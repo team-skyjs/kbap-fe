@@ -60,16 +60,26 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
     return () => { cancelAnimation(burst); cancelAnimation(entrance); };
   }, [started, reduceMotion, burst, entrance]);
   React.useEffect(() => () => { if (shown.current !== null) consumeUnlock(shown.current); }, []);
+  // Codex #291 R9: a dismissal that lands while the app is inactive keeps its continuation until the app is active again (once).
+  const deferred = React.useRef<{ event: UnlockEvent; start: boolean } | null>(null);
   const afterDismiss = React.useCallback(() => {
     if (!closing || continued.current === closing.event.id) return;
     continued.current = closing.event.id;
-    const canContinue = isUnlockEventCurrent(closing.event) && eligible && AppState.currentState === 'active';
+    const current = isUnlockEventCurrent(closing.event) && eligible;
     setClosing(null);
-    if (canContinue) {
-      if (closing.start) onStartScanning?.();
-      else onClosed?.();
-    }
+    if (!current) return;
+    if (AppState.currentState !== 'active') { deferred.current = closing; return; }
+    if (closing.start) onStartScanning?.();
+    else onClosed?.();
   }, [closing, eligible, onStartScanning, onClosed]);
+  React.useEffect(() => {
+    const held = deferred.current;
+    if (!held || !active) return;
+    deferred.current = null;
+    if (!isUnlockEventCurrent(held.event) || !eligible) return;
+    if (held.start) onStartScanning?.();
+    else onClosed?.();
+  }, [active, eligible, onStartScanning, onClosed]);
   React.useEffect(() => {
     if (!closing || Platform.OS === 'ios') return;
     // Android has no Modal.onDismiss. No animation means the native window is removed before this task.

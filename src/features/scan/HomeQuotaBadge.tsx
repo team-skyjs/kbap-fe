@@ -60,7 +60,9 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
   // Codex #221 P2: 시트가 열린 채 노출 자격이 사라지면(세션 만료·게스트·해금·null) 닫는다 — 렌더 중 동기화.
   // 주 경로(시트 → 리뷰 쓰기 → 해금)에선 해금 시점에 시트가 이미 닫혀 있어 축하와 순서가 엮이지 않는다
   // (리뷰 쓰기 탭이 먼저 시트를 닫고, 픽커 예약(pickerAfterDismiss)은 사용자가 고른 것이라 그대로 둔다).
-  if (sheet && !model && !rewardedShowing) setSheet(false);
+  // Codex #291 R9: a confirmed reward unlock closes the dialog once the ad closes, even if the ['me'] refetch failed or is stale.
+  const [unlockConfirmed, setUnlockConfirmed] = React.useState(false);
+  if (sheet && (!model || unlockConfirmed) && !rewardedShowing) { setSheet(false); setUnlockConfirmed(false); }
   const [picker, setPicker] = React.useState(false);
   const pickerAfterDismiss = React.useRef(false);
   const openPicker = () => {
@@ -170,6 +172,7 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
   // 끌기 직후 손을 뗄 때 들어올 수 있는 탭은 시트를 열지 않는다(끌기 = 시트 안 열림)
   const openSheet = () => {
     if (justDragged.get()) return;
+    setUnlockConfirmed(false);
     setSheet(true);
     // KB-765: 다이얼로그 노출 — 여는 탭에서 1회(이벤트 핸들러 — effect 아님). remaining = 그 순간 남은 무료 횟수
     track(EVENTS.scan_quota_dialog_view, { remaining: model?.value ?? 0 });
@@ -207,7 +210,7 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
           state={shown?.state ?? 'empty'}
           title={left}
           onWriteReview={openPicker}
-          onUnlocked={() => { if (!isRewardedShowing()) setSheet(false); }}
+          onUnlocked={() => { if (!isRewardedShowing()) setSheet(false); else setUnlockConfirmed(true); }}
           onClose={() => setSheet(false)}
           onDismiss={onSheetDismiss}
         />

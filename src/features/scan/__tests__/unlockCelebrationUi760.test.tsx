@@ -167,3 +167,24 @@ it('QA Android: motion starts at visible without waiting for the late onShow; mo
     Object.defineProperty(Platform, 'OS', { configurable: true, get: () => os });
   }
 });
+it('Codex #291 R9: CTA dismissal while inactive defers the scan continuation and runs it once on return', async () => {
+  let appChange!: (value: string) => void;
+  const realAdd = AppState.addEventListener.bind(AppState);
+  jest.spyOn(AppState, 'addEventListener').mockImplementation(((name: string, cb: (value: string) => void) => {
+    if (name === 'change') { appChange = cb; return { remove: () => {} }; }
+    return realAdd(name as never, cb as never);
+  }) as never);
+  const setState = (value: string) => Object.defineProperty(AppState, 'currentState', { configurable: true, value });
+  const start = jest.fn(); const tree = await mount(start);
+  act(() => unlock()); act(() => modal(tree).props.onShow());
+  act(() => action(tree).props.onPress());
+  act(() => { setState('background'); appChange('background'); });
+  act(() => { if (Platform.OS === 'ios') modal(tree).props.onDismiss(); else jest.runOnlyPendingTimers(); });
+  expect(start).not.toHaveBeenCalled();
+  expect(getUnlockSnapshot().event).toBeNull(); // event stays consumed
+  act(() => { setState('active'); appChange('active'); });
+  expect(start).toHaveBeenCalledTimes(1);
+  act(() => { setState('background'); appChange('background'); });
+  act(() => { setState('active'); appChange('active'); });
+  expect(start).toHaveBeenCalledTimes(1);
+});
