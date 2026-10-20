@@ -6,7 +6,7 @@ import { blockUnlockPresentation, getUnlockSnapshot, observeUnlock, resetUnlockS
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }), initReactI18next: { type: '3rdParty', init: () => {} } }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) }));
 jest.mock('@/components/FlameShape', () => ({ FlameShape: () => null }));
-jest.mock('@/components/CountdownBadge', () => ({ QuotaBurstParticle: () => null }));
+jest.mock('@/components/CountdownBadge', () => ({ QuotaBurstParticle: () => null, BADGE_W: 64, BADGE_H: 72 }));
 let mockGate: { mode: string } = { mode: 'pass' };
 jest.mock('@/lib/versionGate', () => ({ useVersionGate: () => mockGate }));
 const mockShared: { value: number }[] = [];
@@ -118,4 +118,15 @@ it('hard version gate suppresses the native modal without consuming the pending 
   mockGate = { mode: 'pass' };
   act(() => tree.update(<UnlockCelebration eligible onStartScanning={jest.fn()} />));
   expect(modal(tree).props.visible).toBe(true);
+});
+it('Codex #291 R4: burst wrapper has the badge frame and its center is the flame frame center (scale keeps it there)', async () => {
+  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(false);
+  const { StyleSheet } = jest.requireActual('react-native');
+  const { FLAME_FRAME } = jest.requireActual('../UnlockCelebration');
+  const tree = await mount(); act(() => unlock(false));
+  const burst = StyleSheet.flatten(tree.root.findAll((n) => n.props.testID === 'unlock-celebration-burst')[0].props.style);
+  expect(burst).toMatchObject({ position: 'absolute', width: 64, height: 72 });
+  expect(burst.left + burst.width / 2).toBe(FLAME_FRAME.w / 2);
+  expect(burst.top + burst.height / 2).toBe(FLAME_FRAME.h / 2);
+  expect(burst.transform).toEqual([{ scale: 4 }]); // scale pivots on the wrapper center = flame center
 });

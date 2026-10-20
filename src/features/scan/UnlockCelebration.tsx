@@ -8,7 +8,7 @@ import { Btn } from '@/components/Btn';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { FlameShape } from '@/components/FlameShape';
-import { QuotaBurstParticle } from '@/components/CountdownBadge';
+import { BADGE_H, BADGE_W, QuotaBurstParticle } from '@/components/CountdownBadge';
 import { IconClose } from '@/components/icons';
 import { color as C, font } from '@/lib/theme';
 import { useVersionGate } from '@/lib/versionGate';
@@ -83,10 +83,12 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
       <View style={styles.root} accessibilityViewIsModal testID="unlock-celebration">
         <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
           <View style={[styles.hero, { paddingTop: insets.top + 60 }]} accessible={false} importantForAccessibility="no-hide-descendants">
-            <View style={styles.flameFrame}><View style={styles.flameCanvas}><FlameShape state="active" scale={1.9} /></View></View>
-            {!reduceMotion && visible && <Animated.View style={styles.burst} pointerEvents="none">
-              {Array.from({ length: 12 }, (_, index) => <QuotaBurstParticle key={index} index={index} progress={burst} />)}
-            </Animated.View>}
+            <View style={styles.flameAnchor}>
+              <View style={styles.flameFrame}><View style={styles.flameCanvas}><FlameShape state="active" scale={1.9} /></View></View>
+              {!reduceMotion && visible && <Animated.View style={styles.burst} pointerEvents="none" testID="unlock-celebration-burst">
+                {Array.from({ length: 12 }, (_, index) => <QuotaBurstParticle key={index} index={index} progress={burst} />)}
+              </Animated.View>}
+            </View>
             <Svg width={110} height={42} viewBox="0 0 110 42"><Path d="M55 21C38-4 5 1 5 21S38 46 55 21C72-4 105 1 105 21S72 46 55 21" stroke={C.surface} strokeWidth={8} fill="none" /></Svg>
           </View>
           <Animated.View style={[styles.sheet, sheetMotion]}>
@@ -103,13 +105,16 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
     </Modal>
   );
 }
+export const FLAME_FRAME = { w: 216, h: 252 } as const;
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.primaryPress },
   scroll: { flexGrow: 1 },
   hero: { minHeight: 470, paddingBottom: 56, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  flameFrame: { width: 216, height: 252, overflow: 'hidden', marginBottom: 16 },
+  flameAnchor: { width: FLAME_FRAME.w, height: FLAME_FRAME.h, marginBottom: 16 },
+  flameFrame: { width: FLAME_FRAME.w, height: FLAME_FRAME.h, overflow: 'hidden' },
   flameCanvas: { position: 'absolute', left: -29, top: -129 },
-  burst: { position: 'absolute', top: 180, left: '50%', transform: [{ scale: 4 }] },
+  // Particles orbit the badge's own center, so the wrapper takes the badge frame and that center sits on the flame frame's center (Codex #291 R4).
+  burst: { position: 'absolute', width: BADGE_W, height: BADGE_H, left: (FLAME_FRAME.w - BADGE_W) / 2, top: (FLAME_FRAME.h - BADGE_H) / 2, transform: [{ scale: 4 }] },
   sheet: { flexGrow: 1, backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 36, paddingHorizontal: 20, minHeight: 342 },
   title: { fontFamily: font.bodyBold, fontSize: 34, lineHeight: 46, color: C.ink, textAlign: 'center' },
   body: { fontFamily: font.body, fontSize: 16, lineHeight: 26, color: '#4B4F58', textAlign: 'center', marginTop: 8 },
