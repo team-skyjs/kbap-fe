@@ -1181,7 +1181,10 @@
     "guide": "ガイド",
     "viewGuideA11y": "ガイドを見る、{{name}}",
     "viewGuideHint": "ブラウザで開きます",
-    "photoUnavailable": "写真なし"
+    "photoUnavailable": "写真なし",
+    "openGalleryHint": "写真と紹介が開きます",
+    "nextPhoto": "次の写真",
+    "prevPhoto": "前の写真"
   },
   "packaged": {
     "segmentDishes": "料理",

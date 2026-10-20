@@ -1181,7 +1181,10 @@
     "guide": "คู่มือ",
     "viewGuideA11y": "ดูคู่มือ {{name}}",
     "viewGuideHint": "เปิดในเบราว์เซอร์",
-    "photoUnavailable": "ไม่มีรูปภาพ"
+    "photoUnavailable": "ไม่มีรูปภาพ",
+    "openGalleryHint": "เปิดรูปภาพและรายละเอียด",
+    "nextPhoto": "รูปถัดไป",
+    "prevPhoto": "รูปก่อนหน้า"
   },
   "packaged": {
     "segmentDishes": "อาหาร",

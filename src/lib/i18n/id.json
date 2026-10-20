@@ -1181,7 +1181,10 @@
     "guide": "Panduan",
     "viewGuideA11y": "Lihat panduan, {{name}}",
     "viewGuideHint": "Dibuka di browser",
-    "photoUnavailable": "Foto tidak tersedia"
+    "photoUnavailable": "Foto tidak tersedia",
+    "openGalleryHint": "Membuka foto dan info",
+    "nextPhoto": "Foto berikutnya",
+    "prevPhoto": "Foto sebelumnya"
   },
   "packaged": {
     "segmentDishes": "Hidangan",

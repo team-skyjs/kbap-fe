@@ -1181,7 +1181,10 @@
     "guide": "指南",
     "viewGuideA11y": "查看指南，{{name}}",
     "viewGuideHint": "将在浏览器中打开",
-    "photoUnavailable": "暂无照片"
+    "photoUnavailable": "暂无照片",
+    "openGalleryHint": "打开照片和介绍",
+    "nextPhoto": "下一张照片",
+    "prevPhoto": "上一张照片"
   },
   "packaged": {
     "segmentDishes": "菜品",

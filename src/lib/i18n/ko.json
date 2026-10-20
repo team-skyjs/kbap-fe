@@ -1181,7 +1181,10 @@
     "guide": "안내",
     "viewGuideA11y": "안내 보기, {{name}}",
     "viewGuideHint": "브라우저에서 열려요",
-    "photoUnavailable": "사진 없음"
+    "photoUnavailable": "사진 없음",
+    "openGalleryHint": "사진과 소개가 열려요",
+    "nextPhoto": "다음 사진",
+    "prevPhoto": "이전 사진"
   },
   "packaged": {
     "segmentDishes": "요리",

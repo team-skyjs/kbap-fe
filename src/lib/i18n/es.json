@@ -1181,7 +1181,10 @@
     "guide": "Guía",
     "viewGuideA11y": "Ver guía, {{name}}",
     "viewGuideHint": "Se abre en un navegador",
-    "photoUnavailable": "Foto no disponible"
+    "photoUnavailable": "Foto no disponible",
+    "openGalleryHint": "Abre las fotos y la información",
+    "nextPhoto": "Foto siguiente",
+    "prevPhoto": "Foto anterior"
   },
   "packaged": {
     "segmentDishes": "Platos",

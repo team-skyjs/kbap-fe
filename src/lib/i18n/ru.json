@@ -1219,7 +1219,10 @@
     "guide": "Гид",
     "viewGuideA11y": "Открыть гид, {{name}}",
     "viewGuideHint": "Откроется в браузере",
-    "photoUnavailable": "Фото нет"
+    "photoUnavailable": "Фото нет",
+    "openGalleryHint": "Открывает фото и описание",
+    "nextPhoto": "Следующее фото",
+    "prevPhoto": "Предыдущее фото"
   },
   "packaged": {
     "segmentDishes": "Блюда",
