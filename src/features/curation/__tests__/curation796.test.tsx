@@ -12,7 +12,7 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 jest.mock('react-native-reanimated', () => ({ useReducedMotion: () => false }));
 jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View {...p} /> }; });
 jest.mock('@/components/RemoteImage', () => { const { View } = jest.requireActual('react-native'); return { RemoteImage: (p: { uri: string }) => <View testID={`img:${p.uri}`} /> }; });
-jest.mock('@/components/icons', () => ({ IconChevron: () => null, IconArrowLeft: () => null }));
+jest.mock('@/components/icons', () => { const { View } = jest.requireActual('react-native'); return { IconChevron: () => null, IconArrowLeft: () => null, IconChevronDown: (p: { style?: unknown }) => <View testID="chevron-down" style={p.style} /> }; });
 jest.mock('@/components/SubHeader', () => { const { Text } = jest.requireActual('react-native'); return { SubHeader: (p: { title: string }) => <Text testID="subheader">{p.title}</Text> }; });
 jest.mock('@/components/Btn', () => {
   const { Pressable, Text } = jest.requireActual('react-native');
@@ -151,8 +151,11 @@ describe('모음 상세', () => {
     expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].every((p) => byId(t, `curation-item-${p}`).length === 1)).toBe(true);
     expect(byId(t, 'curation-item-attribution-1')).toHaveLength(1);
     expect(byId(t, 'curation-item-attribution-2')).toHaveLength(0);
-    expect(byId(t, 'curation-item-nearby-2')).toHaveLength(1);
-    expect(byId(t, 'curation-item-nearby-1')).toHaveLength(0);
+    // KB-829: 역 모음 = 지역 행에 area + nearby 공백 2칸(빈 이름 제거) · "Explore nearby" 줄 없음
+    expect(t.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Area\u00A02  Hongdae\u00A0streets  Forest\u00A0Park')).toHaveLength(1);
+    expect(t.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Area\u00A01')).toHaveLength(1);
+    expect(text(t)).not.toContain('exploreNearby');
+    expect(byId(t, 'curation-cover')).toHaveLength(0); // v2: 상세 표지 없음
     expect(byId(t, 'curation-fallback')).toHaveLength(0);
     mockDetail = q({ data: { ...detail, fallbackUsed: true } });
     expect(byId(render(<CurationDetailScreen />), 'curation-fallback')).toHaveLength(1);
@@ -197,6 +200,91 @@ describe('모음 상세', () => {
   });
 });
 
+describe('KB-829 사진 중심 카드(D-29 v2)', () => {
+  const detail = adaptCurationDetail(DETAIL_WIRE) as CurationDetail;
+  beforeEach(() => { mockParams = { key: 'stations' }; });
+  const flat = (st: unknown): Record<string, unknown> => Object.assign({}, ...([] as unknown[]).concat(st as never).flat(Infinity).filter(Boolean));
+  const toggle = (t: ReactTestRenderer, p: number) => t.root.findAll((n) => n.props?.testID === `curation-item-toggle-${p}` && typeof n.type === 'string')[0];
+  const chevron = (t: ReactTestRenderer, p: number) => byId(byIdTree(t, `curation-item-${p}`), 'chevron-down')[0];
+  const byIdTree = (t: ReactTestRenderer, id: string) => ({ root: t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0] }) as unknown as ReactTestRenderer;
+
+  it('사진 335×208 비율 · 소개·선정 이유 기본 접힘 · 펼침 버튼 = 장소명 라벨 + expanded false', () => {
+    mockDetail = q({ data: detail });
+    const t = render(<CurationDetailScreen />);
+    expect(t.root.findAll((n) => n.props?.testID === 'img:https://cdn/i1.jpg' && typeof n.type === 'string')).toHaveLength(1); // 표지 없음 = 1번 사진 한 번
+    expect(fs.readFileSync('src/app/curations/[key].tsx', 'utf8')).toContain('export const ITEM_PHOTO_RATIO = 208 / 335;');
+    expect(byId(t, 'curation-item-about-1')).toHaveLength(0);
+    expect(text(t)).not.toContain('Intro 1');
+    const tg = toggle(t, 1);
+    expect(tg.props.accessibilityRole).toBe('button');
+    expect(tg.props.accessibilityLabel).toBe('Place 1');
+    expect(tg.props.accessibilityState).toMatchObject({ expanded: false });
+    expect(flat(chevron(t, 1).props.style).transform).toBeUndefined();
+  });
+
+  it('사진 탭 = 펼침(소개·이유, chevron 위로, expanded true) → 이름 행 탭 = 접힘 · 항목별 독립', () => {
+    mockDetail = q({ data: detail });
+    const t = render(<CurationDetailScreen />);
+    press(t, 'curation-item-photo-3');
+    expect(byId(t, 'curation-item-about-3')).toHaveLength(1);
+    expect(text(t)).toContain('Intro 3');
+    expect(text(t)).toContain('Why 3');
+    expect(toggle(t, 3).props.accessibilityState).toMatchObject({ expanded: true });
+    expect(flat(chevron(t, 3).props.style).transform).toEqual([{ rotate: '180deg' }]);
+    expect(byId(t, 'curation-item-about-2')).toHaveLength(0); // 다른 항목은 그대로
+    press(t, 'curation-item-toggle-3');
+    expect(byId(t, 'curation-item-about-3')).toHaveLength(0);
+  });
+
+  it('Guide 탭 = 외부 링크만 · 펼침 상태 불변', () => {
+    mockDetail = q({ data: detail });
+    const t = render(<CurationDetailScreen />);
+    press(t, 'curation-item-link-5');
+    expect(mockOpen).toHaveBeenCalledWith('https://example.com/5');
+    expect(byId(t, 'curation-item-about-5')).toHaveLength(0);
+    press(t, 'curation-item-toggle-5');
+    press(t, 'curation-item-link-5');
+    expect(byId(t, 'curation-item-about-5')).toHaveLength(1);
+  });
+
+  it('출처 캡션은 지역 행 아래·본문 위 · 사진 없는 항목 = 104 회색 "Photo unavailable"(사진 자리 축소)', () => {
+    mockDetail = q({ data: { ...detail, items: detail.items.map((it) => (it.position === 4 ? { ...it, imageUrl: '' } : it)) } });
+    const t = render(<CurationDetailScreen />);
+    press(t, 'curation-item-toggle-1');
+    const card = t.root.findAll((n) => n.props?.testID === 'curation-item-1' && typeof n.type === 'string')[0];
+    const ids = card.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
+    const at = (id: string) => ids.indexOf(id);
+    expect(at('curation-item-toggle-1')).toBeGreaterThanOrEqual(0);
+    expect(at('curation-item-attribution-1')).toBeGreaterThan(at('curation-item-toggle-1'));
+    expect(at('curation-item-about-1')).toBeGreaterThan(at('curation-item-attribution-1'));
+    const ph = byId(t, 'curation-item-nophoto-4')[0];
+    expect(flat(ph.props.style).height).toBe(104);
+    expect(text(t)).toContain('curation.photoUnavailable');
+    expect(t.root.findAll((n) => n.props?.testID === 'img:')).toHaveLength(0);
+  });
+
+  it('목록 재조회(새 dataUpdatedAt) = 펼침 초기화', () => {
+    mockDetail = { ...q({ data: detail }), dataUpdatedAt: 1 } as Q;
+    const t = render(<CurationDetailScreen />);
+    press(t, 'curation-item-toggle-2');
+    expect(byId(t, 'curation-item-about-2')).toHaveLength(1);
+    mockDetail = { ...q({ data: detail }), dataUpdatedAt: 2 } as Q;
+    act(() => t.update(<CurationDetailScreen />));
+    expect(byId(t, 'curation-item-about-2')).toHaveLength(0);
+  });
+});
+
+describe('KB-829 QA S3 지역 행 줄바꿈', () => {
+  it('이름 안 공백 = NBSP(이름 중간 줄바꿈 0) · 이름 사이 = 일반 공백 2칸(여기서만 줄바꿈) · 앞뒤 공백 제거', () => {
+    const { areaLine } = jest.requireActual('@/app/curations/[key]') as { areaLine: (a: string, n: string[]) => string };
+    const s = areaLine('Hongdae / Yeonnam-dong', [' Hongdae streets ', 'Gyeongui Line  Forest Park']);
+    expect(s).toBe('Hongdae\u00A0/\u00A0Yeonnam-dong  Hongdae\u00A0streets  Gyeongui\u00A0Line\u00A0Forest\u00A0Park');
+    expect(s.split('  ')).toHaveLength(3); // 줄바꿈 가능한 자리 = 이름 경계뿐
+    expect(s.split('  ').every((name) => !name.includes(' '))).toBe(true);
+    expect(areaLine('Jongno-gu', [])).toBe('Jongno-gu');
+  });
+});
+
 describe('배치·문구 잠금', () => {
   it('홈: 음식 레일 뒤·Safe picks 앞 슬롯에 큐레이션 · 모음 키 하드코딩 0', () => {
     const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8');
@@ -215,7 +303,7 @@ describe('배치·문구 잠금', () => {
     }
   });
   it('10언어 앱 문구 전부 · 가운데점 0 · 이름 자리표시자 유지', () => {
-    const keys = ['sectionTitle', 'loadError', 'refreshFailed', 'prev', 'next', 'fallbackNotice', 'errorTitle', 'errorBody', 'unavailableTitle', 'unavailableBody', 'backHome', 'viewGuide', 'viewGuideA11y', 'viewGuideHint', 'exploreNearby'];
+    const keys = ['sectionTitle', 'loadError', 'refreshFailed', 'prev', 'next', 'fallbackNotice', 'errorTitle', 'errorBody', 'unavailableTitle', 'unavailableBody', 'backHome', 'guide', 'photoUnavailable', 'viewGuideA11y', 'viewGuideHint'];
     for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'es', 'id', 'ru', 'th', 'vi']) {
       const c = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).curation as Record<string, string>;
       for (const k of keys) { expect(c[k]).toBeTruthy(); expect(c[k]).not.toContain('·'); }

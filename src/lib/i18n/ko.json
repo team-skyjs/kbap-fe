@@ -1152,9 +1152,9 @@
     "unavailableTitle": "더 이상 볼 수 없는 모음이에요",
     "unavailableBody": "홈으로 돌아가 계속 둘러보세요.",
     "backHome": "홈으로 돌아가기",
-    "viewGuide": "안내 보기",
+    "guide": "안내",
     "viewGuideA11y": "안내 보기, {{name}}",
     "viewGuideHint": "브라우저에서 열려요",
-    "exploreNearby": "주변 둘러보기"
+    "photoUnavailable": "사진 없음"
   }
 }

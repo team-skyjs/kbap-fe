@@ -1168,9 +1168,9 @@
     "unavailableTitle": "Эта подборка больше недоступна",
     "unavailableBody": "Вернитесь на главную, чтобы продолжить.",
     "backHome": "На главную",
-    "viewGuide": "Открыть гид",
+    "guide": "Гид",
     "viewGuideA11y": "Открыть гид, {{name}}",
     "viewGuideHint": "Откроется в браузере",
-    "exploreNearby": "Что рядом"
+    "photoUnavailable": "Фото нет"
   }
 }

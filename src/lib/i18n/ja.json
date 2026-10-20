@@ -1152,9 +1152,9 @@
     "unavailableTitle": "このコレクションは公開を終了しました",
     "unavailableBody": "ホームに戻って引き続きお楽しみください。",
     "backHome": "ホームに戻る",
-    "viewGuide": "ガイドを見る",
+    "guide": "ガイド",
     "viewGuideA11y": "ガイドを見る、{{name}}",
     "viewGuideHint": "ブラウザで開きます",
-    "exploreNearby": "周辺を巡る"
+    "photoUnavailable": "写真なし"
   }
 }

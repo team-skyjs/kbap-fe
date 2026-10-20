@@ -1152,9 +1152,9 @@
     "unavailableTitle": "Esta colección ya no está disponible",
     "unavailableBody": "Vuelve al inicio para seguir explorando.",
     "backHome": "Volver al inicio",
-    "viewGuide": "Ver guía",
+    "guide": "Guía",
     "viewGuideA11y": "Ver guía, {{name}}",
     "viewGuideHint": "Se abre en un navegador",
-    "exploreNearby": "Explora los alrededores"
+    "photoUnavailable": "Foto no disponible"
   }
 }
