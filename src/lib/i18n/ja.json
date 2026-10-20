@@ -1179,6 +1179,7 @@
     "guideBody": "商品名を入力すると原材料とアレルギー表示を確認できます。",
     "emptyTitle": "商品が見つかりません",
     "emptyBody": "別の商品名で検索してください。",
+    "loadMoreFailed": "これ以上の商品を読み込めませんでした。",
     "detailTitle": "商品情報",
     "labelDeclared": "パッケージのアレルギー表示に基づいています。",
     "labelIngredientsOnly": "アレルギー表示欄がありません。原材料名のみで判定しました。",

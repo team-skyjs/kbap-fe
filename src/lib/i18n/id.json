@@ -1179,6 +1179,7 @@
     "guideBody": "Ketik nama produk untuk melihat bahan dan label alergennya.",
     "emptyTitle": "Produk tidak ditemukan",
     "emptyBody": "Coba nama produk lain.",
+    "loadMoreFailed": "Tidak dapat memuat produk lainnya.",
     "detailTitle": "Detail produk",
     "labelDeclared": "Berdasarkan label alergen pada kemasan.",
     "labelIngredientsOnly": "Tidak ada label alergen. Hanya dibaca dari daftar bahan.",

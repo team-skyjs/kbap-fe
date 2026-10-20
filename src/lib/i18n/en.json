@@ -1175,6 +1175,7 @@
     "guideBody": "Type a product name to see its ingredients and allergen label.",
     "emptyTitle": "No products found",
     "emptyBody": "Try another product name.",
+    "loadMoreFailed": "Couldn't load more products.",
     "detailTitle": "Product details",
     "labelDeclared": "Based on the allergen label on the package.",
     "labelIngredientsOnly": "No allergen label. Read from the ingredient list only.",

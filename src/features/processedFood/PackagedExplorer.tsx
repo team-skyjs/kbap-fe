@@ -159,9 +159,17 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
       renderItem={({ item }: { item: ProcessedFoodSummary }) => <ProductRow item={item} onOpen={() => router.push(`/processed-foods/${item.id}` as Href)} />}
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
-      ListFooterComponent={q.isFetchingNextPage ? <Spinner /> : null}
+      ListFooterComponent={
+        q.isFetchingNextPage ? <Spinner /> : q.isFetchNextPageError ? (
+          // Codex #308 P2: 다음 페이지 실패 = 안내 + 다시 시도(자동 재요청은 멈춤 — 수동만)
+          <Pressable style={st.moreErr} onPress={() => void q.fetchNextPage()} accessibilityRole="button" testID="packaged-more-retry">
+            <Text style={st.moreErrText}>{t('packaged.loadMoreFailed')}</Text>
+            <Text style={st.moreErrCta}>{t('common.tryAgain')}</Text>
+          </Pressable>
+        ) : null
+      }
       onEndReachedThreshold={0.6}
-      onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage) void q.fetchNextPage(); }}
+      onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage && !q.isFetchNextPageError) void q.fetchNextPage(); }}
       contentContainerStyle={{ paddingTop: topPad, paddingBottom: 110 }}
       keyboardShouldPersistTaps="handled"
       onScroll={onScroll}
@@ -199,6 +207,9 @@ const st = StyleSheet.create({
   maker: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink3 },
   type: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: C.ink3 },
   skel: { paddingHorizontal: 20, gap: 20 },
+  moreErr: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', columnGap: 8, minHeight: 44, paddingHorizontal: 20 },
+  moreErrText: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
+  moreErrCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
   skelCard: { height: 104, borderRadius: 8 },
   errorPad: { paddingHorizontal: 20, paddingTop: 24 },
   // 시안 empty(12338:37301): 유형 아트 335×150 r8 → 제목 → 본문

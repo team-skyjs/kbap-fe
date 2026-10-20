@@ -1179,6 +1179,7 @@
     "guideBody": "输入商品名称即可查看配料和过敏原标识。",
     "emptyTitle": "未找到商品",
     "emptyBody": "请尝试其他商品名称。",
+    "loadMoreFailed": "无法加载更多商品。",
     "detailTitle": "商品详情",
     "labelDeclared": "依据包装上的过敏原标识。",
     "labelIngredientsOnly": "没有过敏原标识栏，仅根据配料表判断。",

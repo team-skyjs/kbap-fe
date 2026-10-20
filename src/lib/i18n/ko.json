@@ -1179,6 +1179,7 @@
     "guideBody": "제품 이름을 입력하면 원재료와 알레르기 표시를 볼 수 있어요.",
     "emptyTitle": "제품을 찾지 못했어요",
     "emptyBody": "다른 제품 이름으로 검색해 보세요.",
+    "loadMoreFailed": "제품을 더 불러오지 못했어요.",
     "detailTitle": "제품 정보",
     "labelDeclared": "제품의 알레르기 표시란 기준이에요.",
     "labelIngredientsOnly": "알레르기 표시란이 없어요. 원재료명으로만 판독했어요.",

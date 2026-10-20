@@ -227,6 +227,28 @@ describe('Food 탭 세그먼트·목록', () => {
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(ids(t)).toContain('packaged-empty');
   });
+  it('Codex #308 P2: 다음 페이지 실패 = 안내 + 다시 시도 · 실패 중 자동 재요청 0', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const t = render(<QueryClientProvider client={qc}><PackagedExplorer top={null} /></QueryClientProvider>);
+    mockGet.mockResolvedValueOnce({ items: [{ id: 1, productName: 'a', imageUrl: null }], hasNext: true, nextCursor: '1' });
+    const input = t.root.findAll((n) => n.props?.testID === 'packaged-search-input' && typeof n.props?.onChangeText === 'function')[0];
+    act(() => input.props.onChangeText('우유'));
+    await act(async () => { input.props.onSubmitEditing(); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    mockGet.mockRejectedValueOnce(new ApiError('down', 503));
+    const list = () => t.root.findAll((n) => n.props?.testID === 'packaged-list' && typeof n.props?.onEndReached === 'function')[0];
+    await act(async () => { list().props.onEndReached(); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(ids(t)).toContain('packaged-more-retry');
+    const calls = mockGet.mock.calls.length;
+    await act(async () => { list().props.onEndReached(); });
+    expect(mockGet.mock.calls.length).toBe(calls); // 자동 재요청 없음
+    mockGet.mockResolvedValueOnce({ items: [{ id: 2, productName: 'b', imageUrl: null }], hasNext: false, nextCursor: null });
+    await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-more-retry' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(ids(t)).toContain('packaged-item-2');
+    expect(ids(t)).not.toContain('packaged-more-retry');
+  });
   it('검색 중심: 빈 검색어는 요청 0(서버 400) · 유형 칩 0(3.2에 필터 없음 — 클라 필터 금지) · 검색 계측에 검색어 원문 0', () => {
     const src = fs.readFileSync('src/lib/data/useProcessedFoods.ts', 'utf8');
     expect(src).toContain('enabled: term.length > 0');

@@ -35,6 +35,13 @@ export default function Food() {
   const { segment, risk } = parseFoodFilterParams({ segment: one(raw.segment), risk: one(raw.risk) });
   const [foodSegment, setFoodSegmentState] = useState<FoodSegment>(() => lastSegment);
   const setFoodSegment = (s: FoodSegment) => { rememberSegment(s); setFoodSegmentState(s); };
+  // Codex #308 P2: 홈 "See all"(새 t 파라미터) = 요리 카탈로그 요청 — Packaged에 있었어도 Dishes로(렌더 중 전이 비교, KB-603)
+  const seeAllKey = one(raw.t) ?? '';
+  const [prevSeeAll, setPrevSeeAll] = useState(seeAllKey);
+  if (seeAllKey !== prevSeeAll) {
+    setPrevSeeAll(seeAllKey);
+    if (seeAllKey) { rememberSegment('dishes'); setFoodSegmentState('dishes'); }
+  }
   const segRow = <FoodSegmentRow value={foodSegment} onChange={setFoodSegment} />;
 
   return (

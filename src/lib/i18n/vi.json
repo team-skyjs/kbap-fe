@@ -1179,6 +1179,7 @@
     "guideBody": "Nhập tên sản phẩm để xem thành phần và nhãn dị ứng.",
     "emptyTitle": "Không tìm thấy sản phẩm",
     "emptyBody": "Hãy thử tên sản phẩm khác.",
+    "loadMoreFailed": "Không tải thêm được sản phẩm.",
     "detailTitle": "Chi tiết sản phẩm",
     "labelDeclared": "Dựa trên nhãn dị ứng trên bao bì.",
     "labelIngredientsOnly": "Không có nhãn dị ứng. Chỉ đọc từ danh sách thành phần.",

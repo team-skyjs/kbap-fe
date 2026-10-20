@@ -1179,6 +1179,7 @@
     "guideBody": "Escribe el nombre de un producto para ver sus ingredientes y alérgenos.",
     "emptyTitle": "No se encontraron productos",
     "emptyBody": "Prueba con otro nombre de producto.",
+    "loadMoreFailed": "No se pudieron cargar más productos.",
     "detailTitle": "Detalles del producto",
     "labelDeclared": "Según la etiqueta de alérgenos del envase.",
     "labelIngredientsOnly": "Sin etiqueta de alérgenos. Leído solo de la lista de ingredientes.",

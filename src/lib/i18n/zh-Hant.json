@@ -1179,6 +1179,7 @@
     "guideBody": "輸入商品名稱即可查看原料與過敏原標示。",
     "emptyTitle": "找不到商品",
     "emptyBody": "請嘗試其他商品名稱。",
+    "loadMoreFailed": "無法載入更多商品。",
     "detailTitle": "商品詳情",
     "labelDeclared": "依據包裝上的過敏原標示。",
     "labelIngredientsOnly": "沒有過敏原標示欄，僅根據原料表判斷。",
