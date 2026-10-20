@@ -1,5 +1,5 @@
 /**
- * FeedAd (KB-739 ④-③④) — 리뷰 목록·커뮤니티 피드 "3개마다 1개" 네이티브 광고. 리뷰 카드(FeedCard)와 같은 폭·여백(pad 22/20·하단 구분선).
+ * FeedAd (KB-739 ④-③④) — 리뷰 탭 피드 "5개마다 1개"(KB-816)·음식 상세 리뷰 미리보기 "3개마다 1개" 네이티브 광고. 리뷰 카드(FeedCard)와 같은 폭·여백(pad 22/20·하단 구분선).
  * 네이티브 no-fill·실패면 인라인 배너(feed_banner)로 폴백, 그것도 없으면 높이 0. "Sponsored" 배지 + AdChoices(우상단 — SDK 오버레이,
  * 그 자리를 비워 둔다) 필수. 등록한 asset만 클릭된다(NativeAsset 바로 안에 뷰, 래퍼 금지 — 라이브러리 규칙).
  * 계측: ad_impression/ad_click(format native·placement feed_native).
