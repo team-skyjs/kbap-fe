@@ -184,6 +184,17 @@ describe('상세 판정', () => {
     render(<Detail />);
     expect(mockReviewsProps).toHaveBeenLastCalledWith({ productId: '1711', summary: null });
   });
+  it('KB-812 2차(Codex #314 R2): 롤백 스위치 reviewsLiveEnabled off = 리뷰 섹션째 없음(빈 목록 위 서버 요약 모순 0)', () => {
+    const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { reviewsLiveEnabled: boolean } };
+    const live = FLAGS.reviewsLiveEnabled;
+    FLAGS.reviewsLiveEnabled = false;
+    try {
+      mockDetail = q({ data: adaptProcessedDetail({ ...W1711, reviewSummary: { count: 2, avgRating: 4.5 } }) });
+      expect(ids(render(<Detail />))).not.toContain('pf-reviews-stub');
+    } finally {
+      FLAGS.reviewsLiveEnabled = live;
+    }
+  });
   it('410 = 생산종료 · 404 = 없음 — 캐시가 있어도 이긴다(옛 판정 노출 0) · 503 = 다시 시도', () => {
     mockDetail = q({ data: adaptProcessedDetail(W1711), isError: true, error: new ApiError('gone', 410, 'PFOOD-002') });
     let t = render(<Detail />);

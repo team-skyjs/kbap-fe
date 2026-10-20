@@ -234,7 +234,8 @@ export default function ProcessedFoodDetailScreen() {
           // F2(KB-813)에서 성분표 촬영 진입으로 바꾼다 — 그때까지 플래그 off(숨김)
           <Btn variant="ghost" onPress={() => router.navigate('/scan' as Href)} style={s.outlineBtn} testID="pf-label-scan">{t('packaged.scanLabel')}</Btn>
         )}
-        {FLAGS.reviewsEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} />}
+        {/* 롤백 스위치(reviewsLiveEnabled off) = 가공식품 리뷰는 목 경로가 없어 목록이 비는데 서버 요약은 남는다 — "리뷰 n개" 위 "첫 리뷰" 모순 대신 섹션째 숨김(Codex #314 R2) */}
+        {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} />}
       </ScrollView>
     );
   }
