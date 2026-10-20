@@ -265,6 +265,17 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(pager().props.accessibilityActions.map((a: { name: string }) => a.name)).toEqual(['increment', 'decrement']);
   });
 
+  it('Codex #309 R2: 갤러리가 열린 채 재조회가 404 CURATION-001이면 갤러리도 사라진다(내린 모음의 사진·Guide 0)', () => {
+    mockDetail = q({ data: detail });
+    const t = render(<CurationDetailScreen />);
+    press(t, 'curation-item-1');
+    expect(ids(t)).toContain('curation-gallery');
+    mockDetail = q({ data: detail, isError: true, error: new ApiError('withdrawn', 404, 'CURATION-001') });
+    act(() => t.update(<CurationDetailScreen />));
+    expect(ids(t)).toContain('curation-unavailable');
+    expect(ids(t)).not.toContain('curation-gallery');
+    expect(ids(t)).not.toContain('curation-gallery-guide');
+  });
   it('사진 0장 = 카드 회색 자리 · 시트도 플레이스홀더 1장(카운터 0)', () => {
     mockDetail = q({ data: { ...detail, items: detail.items.map((it) => (it.position === 4 ? { ...it, imageUrl: '', images: [] } : it)) } });
     const t = render(<CurationDetailScreen />);

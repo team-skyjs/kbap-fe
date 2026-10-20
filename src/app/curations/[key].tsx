@@ -96,7 +96,8 @@ export default function CurationDetailScreen() {
     <View style={styles.root}>
       <SubHeader title={detail?.title ?? ''} onBack={back} />
       {body}
-      <CurationGallerySheet item={gallery} listKey={detail?.key ?? ''} area={gallery ? areaLine(gallery.area, gallery.nearby) : ''} onClose={() => setGallery(null)} />
+      {/* Codex #309 R2: 열린 채 재조회가 404 CURATION-001(내림)이면 갤러리도 닫힌다 — 내린 모음의 사진·외부 링크 노출 0 */}
+      <CurationGallerySheet item={isCurationUnavailable(q.error) ? null : gallery} listKey={detail?.key ?? ''} area={gallery ? areaLine(gallery.area, gallery.nearby) : ''} onClose={() => setGallery(null)} />
     </View>
   );
 }
