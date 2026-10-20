@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { AccessibilityInfo, AppState, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, AppState, Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -44,11 +44,16 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
   // iOS presents the Modal only after the rewarded ad screen finishes dismissing, so the clock starts at onShow, not at visible.
   const [onScreen, setOnScreen] = React.useState(false);
   if (!visible && onScreen) setOnScreen(false);
+  // QA P-489 Android G2 (home): starting at visible ran the timing while the dialog window was not drawing yet (start pose,
+  // then a jump to the end). Android starts after the content's first layout + one frame; onShow stays as the fallback.
+  const markPainted = () => {
+    if (Platform.OS === 'android' && visible && !onScreen) requestAnimationFrame(() => setOnScreen(true));
+  };
+  // The dialog content's first layout can be shorter than the screen (home tab bar showed through) — cover it from frame one.
+  const screenH = useWindowDimensions().height;
   // QA E2: the Modal's first frame reads whatever the value is at rest, so the hidden value is already the starting pose
   // (0, or 1 under Reduce Motion) — resetting after visible flips is one frame late.
-  // QA Android: onShow arrives ~0.7s after the dialog's first frame there, which reads as a frozen start pose.
-  // Android shows the dialog on mount (no presenter to wait for), so it starts at visible; iOS keeps onShow.
-  const started = visible && (onScreen || Platform.OS === 'android');
+  const started = visible && onScreen;
   React.useEffect(() => {
     if (!started || reduceMotion) {
       entrance.set(reduceMotion ? 1 : 0);
@@ -97,7 +102,7 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
     <Modal visible={visible} animationType="none" presentationStyle="fullScreen" statusBarTranslucent navigationBarTranslucent onRequestClose={() => dismiss(false)}
       onShow={() => { setOnScreen(true); if (event) { shown.current = event.id; markUnlockPresented(event.id); AccessibilityInfo.announceForAccessibility(t('scan.unlockedCelebrationTitle')); } }}
       onDismiss={afterDismiss}>
-      <View style={styles.root} accessibilityViewIsModal testID="unlock-celebration">
+      <View style={[styles.root, { minHeight: screenH }]} onLayout={markPainted} accessibilityViewIsModal testID="unlock-celebration">
         <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
           <View style={[styles.hero, { paddingTop: insets.top + 60 }]} accessible={false} importantForAccessibility="no-hide-descendants">
             <View style={styles.flameAnchor}>

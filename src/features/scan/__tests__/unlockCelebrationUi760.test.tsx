@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { AccessibilityInfo, AppState, Modal, Platform } from 'react-native';
+import { AccessibilityInfo, AppState, Modal, Platform, StyleSheet } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { UnlockCelebration } from '../UnlockCelebration';
 import { blockUnlockPresentation, getUnlockSnapshot, observeUnlock, resetUnlockSession, setUnlockScanFocused } from '../unlockCelebrationStore';
@@ -152,17 +152,23 @@ it('QA E2: under Reduce Motion the resting pose is the finished sheet (no hidden
   act(() => unlock(false));
   expect(modal(tree).props.visible).toBe(true);
 });
-it('QA Android: motion starts at visible without waiting for the late onShow; modal covers status and nav bars', async () => {
+it('QA Android G2: motion starts after the content first lays out + one frame (not at visible, not waiting for late onShow); covers the full screen', async () => {
   const os = Platform.OS;
   Object.defineProperty(Platform, 'OS', { configurable: true, get: () => 'android' });
   try {
     mockReduced = false;
     const withTiming = jest.requireMock('react-native-reanimated').withTiming as jest.Mock;
     const tree = await mount(); act(() => unlock(false));
-    expect(withTiming).toHaveBeenCalledTimes(2); // no onShow yet
+    expect(withTiming).not.toHaveBeenCalled(); // committed but not drawn yet
+    const root = tree.root.findAll((n) => n.props.testID === 'unlock-celebration' && typeof n.props.onLayout === 'function')[0];
+    expect(StyleSheet.flatten(root.props.style).minHeight).toBe(jest.requireActual('react-native').Dimensions.get('window').height);
+    act(() => root.props.onLayout({ nativeEvent: { layout: { width: 400, height: 300 } } }));
+    expect(withTiming).not.toHaveBeenCalled(); // waits one frame
+    act(() => jest.runOnlyPendingTimers());
+    expect(withTiming).toHaveBeenCalledTimes(2);
     expect(modal(tree).props).toMatchObject({ statusBarTranslucent: true, navigationBarTranslucent: true });
     act(() => modal(tree).props.onShow());
-    expect(withTiming).toHaveBeenCalledTimes(2); // onShow does not restart it
+    expect(withTiming).toHaveBeenCalledTimes(2); // late onShow does not restart it
   } finally {
     Object.defineProperty(Platform, 'OS', { configurable: true, get: () => os });
   }
