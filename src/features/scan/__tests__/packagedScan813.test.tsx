@@ -42,8 +42,10 @@ jest.mock('@/lib/api/client', () => {
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 const mockOcr = jest.fn();
 jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockOcr(...a) }));
+let mockGranted = true;
+jest.mock('@/lib/openExternal', () => ({ openAppSettings: jest.fn(async () => true) }));
 jest.mock('expo-image-picker', () => ({
-  requestCameraPermissionsAsync: async () => ({ granted: true }),
+  requestCameraPermissionsAsync: async () => ({ granted: mockGranted }),
   launchCameraAsync: async () => ({ canceled: false, assets: [{ uri: 'file:front.jpg', width: 900, height: 1200 }] }),
 }));
 
@@ -61,7 +63,7 @@ const DETAIL = { id: 11, reportNo: 'R1', productName: '새우깡', maker: '농�
 
 const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
-beforeEach(() => { qc = new QueryClient(); mockParams = {}; });
+beforeEach(() => { qc = new QueryClient(); mockParams = {}; mockGranted = true; });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -208,6 +210,41 @@ describe('흐름', () => {
     mockParams = { id: '11', scan: '1', charged: 'u' };
     const t = render(<Detail />);
     expect(t.root.findAll((n) => n.props?.testID === 'pf-scan-charge')[0].props.children).toBe('packagedScan.chargeSeeHome');
+  });
+  it('Codex #310 R2: 카메라 권한 거부 = 설정 유도 알럿(조용히 무시 0) · 서버 호출 0', async () => {
+    mockGranted = false;
+    const { Alert } = jest.requireActual('react-native');
+    const spy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const t = flow();
+    await press(t, 'pscan-take-photo');
+    expect(spy).toHaveBeenCalledWith('scan.permissionTitle', 'scan.permissionSettingsBody', expect.any(Array));
+    expect(mockPost).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+  it('Codex #310 R2: OCR 대기 중 뒤로 = 늦은 OCR 결과 무시(서버 호출 0 · 촬영 화면 유지)', async () => {
+    let release!: (v: unknown) => void;
+    mockOcr.mockReturnValueOnce(new Promise((r) => (release = r)));
+    const t = flow();
+    act(() => { void t.root.findAll((n) => n.props?.testID === 'pscan-take-photo' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(ids(t)).toContain('pscan-reading');
+    act(() => t.root.findAll((n) => typeof n.props?.onBack === 'function')[0].props.onBack());
+    await act(async () => { release([{ text: '새우깡' }]); await new Promise((r) => setTimeout(r, 0)); });
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(ids(t)).toContain('pscan-capture');
+  });
+  it('Codex #310 R2: 차감된 확정 뒤 같은 후보 재확정(서버 멱등 charged false) = 1회 사용 표시 유지', async () => {
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost
+      .mockResolvedValueOnce({ analysisId: 'A8', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
+      .mockResolvedValueOnce({ analysisId: 'A8', state: 'CONFIRMED', charged: true, product: DETAIL })
+      .mockResolvedValueOnce({ analysisId: 'A8', state: 'CONFIRMED', charged: false, product: DETAIL });
+    const t = flow();
+    await press(t, 'pscan-take-photo');
+    await press(t, 'packaged-item-11');
+    expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/11?scan=1&charged=1');
+    await press(t, 'packaged-item-11'); // 상세에서 뒤로 와서 다시
+    expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/11?scan=1&charged=1');
   });
   it('OCR이 글자를 못 읽음 = 서버 호출 0 · 성분표 안내(새 분석 — 같은 분석 문구 없음)', async () => {
     mockOcr.mockResolvedValueOnce([]);

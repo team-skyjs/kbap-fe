@@ -11,7 +11,7 @@
  * - OCR 주입(개발·진단 채널 전용): 시뮬엔 카메라 OCR이 없어 텍스트를 직접 넣는 디버그 입력.
  */
 import * as React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,6 +29,7 @@ import { FLAGS, isDiagnosticChannel } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { apiLang } from '@/lib/api/client';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
+import { openAppSettings } from '@/lib/openExternal';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { confirmProcessedScan, scanFailureOf, scanProcessedName, type ScanFailure } from '@/lib/data/useProcessedScan';
 import type { ScanCandidate } from '@/lib/api/processedFoodAdapter';
@@ -68,6 +69,8 @@ export function PackagedScanFlow({ mode, onMode, onClose }: { mode: ScanMode; on
   // Codex #310 P2: 뒤로가기 뒤에 도착한 응답은 버린다 — 요청마다 회차, 단계를 사용자가 바꾸면 회차가 올라 늦은 응답이 화면을 되돌리거나 이동시키지 않는다
   const reqSeq = React.useRef(0);
   const goStep = (next: Step) => { reqSeq.current += 1; setStep(next); };
+  // Codex #310 R2: 확정해 차감된 분석 — 상세에서 뒤로 와 같은 후보를 다시 고르면 서버는 멱등이라 charged false를 준다 → 이미 쓴 1회를 잊지 않는다
+  const chargedIds = React.useRef(new Set<string>());
 
   const runName = async (ocrText: string) => {
     goStep({ kind: 'reading' });
@@ -86,17 +89,26 @@ export function PackagedScanFlow({ mode, onMode, onClose }: { mode: ScanMode; on
   const capture = () =>
     guard.run(async () => {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) return;
+      if (!perm.granted) {
+        // Codex #310 R2: 거부 = 메뉴판 흐름과 같은 설정 유도(조용히 무시하면 이 모드를 쓸 길이 없다)
+        Alert.alert(t('scan.permissionTitle'), t('scan.permissionSettingsBody'), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('photo.openSettings'), onPress: () => void openAppSettings() },
+        ]);
+        return;
+      }
       const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
       if (res.canceled || !res.assets?.length) return;
       const a = res.assets[0];
-      setStep({ kind: 'reading' });
+      goStep({ kind: 'reading' });
+      const my = reqSeq.current;
       let text = '';
       try {
         text = (await recognizeMenuLines(a.uri, a.width ?? 0, a.height ?? 0)).map((l) => l.text).join('\n');
       } catch {
         text = '';
       }
+      if (my !== reqSeq.current) return; // Codex #310 R2: OCR 중 뒤로 감 — 늦은 OCR 결과로 흐름을 다시 열지 않는다
       if (!text.trim()) {
         // 글자를 못 읽음 = 서버 호출 없이 후보 없음과 같은 길(차감 0) — 분석 ID가 없으니 새 분석 문맥
         setStep({ kind: 'handoff', sameAnalysis: false });
@@ -121,7 +133,8 @@ export function PackagedScanFlow({ mode, onMode, onClose }: { mode: ScanMode; on
         // 남은 횟수 = 서버 프로필 재조회(로컬 차감 0) — 차감됐거나 차감 여부를 모를 때
         if (r.charged || chargeUnknown) void qc.invalidateQueries({ queryKey: ['me'] });
         qc.setQueryData(['processedFoods', 'detail', r.product.id, 'member'], r.product);
-        const charge = r.charged ? '1' : chargeUnknown ? 'u' : '0';
+        if (r.charged) chargedIds.current.add(analysisId);
+        const charge = r.charged || chargedIds.current.has(analysisId) ? '1' : chargeUnknown ? 'u' : '0';
         router.push(`/processed-foods/${r.product.id}?scan=1&charged=${charge}` as Href);
       } catch (e) {
         if (my !== reqSeq.current) return;
