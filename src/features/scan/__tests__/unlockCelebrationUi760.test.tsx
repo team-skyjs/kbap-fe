@@ -115,7 +115,7 @@ it('motion clock starts at native onShow, not at visible (iOS presents after the
   mockShared.forEach((shared) => expect(shared.value).toBe(0));
   act(() => modal(tree).props.onShow());
   expect(springs()).toHaveBeenCalledTimes(SEQUENCE_SPRINGS);
-  expect(withTiming).toHaveBeenCalledWith(1, { duration: 150 }); // 배경
+  expect(withTiming).toHaveBeenCalledWith(1, { duration: 450 }); // 글로우
   act(() => modal(tree).props.onRequestClose());
   act(() => { if (Platform.OS === 'ios') modal(tree).props.onDismiss(); else jest.runOnlyPendingTimers(); });
   springs().mockClear(); act(() => unlock());
@@ -156,7 +156,7 @@ it('KB-819: 시트는 내용만큼(flexGrow·minHeight 없음), 히어로가 남
   expect(sheet.minHeight).toBeUndefined();
   reanimated.cancelAnimation.mockClear();
   act(() => { trees.splice(trees.indexOf(tree), 1); tree.unmount(); });
-  expect(reanimated.cancelAnimation.mock.calls.length).toBeGreaterThanOrEqual(16); // 시퀀스 16값(루프 flicker·breath 포함)
+  expect(reanimated.cancelAnimation.mock.calls.length).toBeGreaterThanOrEqual(15); // 시퀀스 15값(루프 flicker·breath 포함)
 });
 it('QA E2: the hidden resting pose is the start pose, so the first shown frame never has the finished sheet', async () => {
   mockReduced = false;
@@ -174,7 +174,7 @@ it('QA E2: the hidden resting pose is the start pose, so the first shown frame n
 });
 it('QA E2: under Reduce Motion the resting pose is the finished sheet (no hidden first frame)', async () => {
   const tree = await mount(); // Reduce Motion ON (beforeEach)
-  expect(mockShared.filter((shared) => shared.value === 1)).toHaveLength(9); // 배경·불꽃·글로우·무한(등장·그리기)·시트·제목·본문·버튼 = 최종
+  expect(mockShared.filter((shared) => shared.value === 1)).toHaveLength(8); // 불꽃·글로우·무한(등장·그리기)·시트·제목·본문·버튼 = 최종
   expect(mockShared.every((shared) => shared.value === 0 || shared.value === 1)).toBe(true); // 파티클·링·shimmer·루프 = 정지(0)
   expect(springs()).not.toHaveBeenCalled();
   act(() => unlock(false));
@@ -221,4 +221,15 @@ it('Codex #291 R9: CTA dismissal while inactive defers the scan continuation and
   act(() => { setState('background'); appChange('background'); });
   act(() => { setState('active'); appChange('active'); });
   expect(start).toHaveBeenCalledTimes(1);
+});
+it('QA P-493 Android N1: 모달 루트 = 첫 프레임부터 불투명 주황(배경 페이드 없음 — 흰 플래시 금지)', async () => {
+  mockReduced = false;
+  const { StyleSheet } = jest.requireActual('react-native');
+  const { color: C } = jest.requireActual('@/lib/theme');
+  const tree = await mount(); act(() => unlock(false));
+  const root = tree.root.findAll((n) => n.props.testID === 'unlock-celebration' && typeof n.type === 'string')[0];
+  const style = StyleSheet.flatten(root.props.style);
+  expect(style.backgroundColor).toBe(C.primaryPress);
+  expect(style.opacity).toBeUndefined();
+  expect(tree.root.findAll((n) => n.props.testID === 'unlock-bg')).toHaveLength(0);
 });

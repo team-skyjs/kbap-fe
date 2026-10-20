@@ -31,7 +31,6 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
   const actionTaken = React.useRef<number | null>(null);
   const continued = React.useRef<number | null>(null);
   // KB-819 등장 시퀀스 — 쉬는 값 = 시작 포즈(0). 각 값 0→1(wobble만 각도).
-  const bg = useSharedValue(0);
   const flameIn = useSharedValue(0);
   const wobble = useSharedValue(0);
   const glowIn = useSharedValue(0);
@@ -47,7 +46,6 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
   const shimmer = useSharedValue(0);
   const flicker = useSharedValue(0);
   const breath = useSharedValue(0);
-  const bgStyle = useAnimatedStyle(() => ({ opacity: bg.value }));
   const flameStyle = useAnimatedStyle(() => ({
     transform: [{ scale: flameIn.value }, { scaleY: 1 + 0.03 * flicker.value }, { rotate: `${wobble.value}deg` }],
   }));
@@ -85,7 +83,7 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
   const title = t('scan.unlockedCelebrationTitle');
   const titleMs = WORD_MS + WORD_STAGGER_MS * (titleWords(title).length - 1);
   React.useEffect(() => {
-    const all = [bg, flameIn, wobble, glowIn, particles, ring1, ring2, infIn, infDraw, sheetIn, titleIn, bodyIn, btnIn, shimmer, flicker, breath];
+    const all = [flameIn, wobble, glowIn, particles, ring1, ring2, infIn, infDraw, sheetIn, titleIn, bodyIn, btnIn, shimmer, flicker, breath];
     if (!started || reduceMotion) {
       // 시작 포즈(숨김) 또는 Reduce Motion = 최종 상태 즉시(루프·파티클·링·shimmer 없음)
       const end = reduceMotion ? 1 : 0;
@@ -95,7 +93,6 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
       return;
     }
     // t=0 = 모달 첫 그리기(iOS onShow · Android onLayout+rAF). 시간은 발주 P-493 §3.
-    bg.set(withTiming(1, { duration: 150 }));
     flameIn.set(withSpring(1, { damping: 9, stiffness: 180 })); // 0 → ~1.18 오버슈트 → 1
     wobble.set(withSequence(withTiming(-6, { duration: 150 }), withTiming(4, { duration: 150 }), withTiming(0, { duration: 150 })));
     glowIn.set(withTiming(1, { duration: 450 }));
@@ -112,7 +109,7 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
     flicker.set(withDelay(900, withRepeat(withTiming(1, { duration: 600 }), -1, true)));
     breath.set(withDelay(900, withRepeat(withTiming(1, { duration: 1200 }), -1, true)));
     return () => { for (const v of all) cancelAnimation(v); };
-  }, [started, reduceMotion, titleMs, bg, flameIn, wobble, glowIn, particles, ring1, ring2, infIn, infDraw, sheetIn, titleIn, bodyIn, btnIn, shimmer, flicker, breath]);
+  }, [started, reduceMotion, titleMs, flameIn, wobble, glowIn, particles, ring1, ring2, infIn, infDraw, sheetIn, titleIn, bodyIn, btnIn, shimmer, flicker, breath]);
   // 작은 화면·큰 글씨에서 Done이 스크롤 없이 보이게 — 히어로가 남는 높이에 맞춰 불꽃 묶음을 줄인다(최소 0.7)
   const [sheetH, setSheetH] = React.useState(0);
   const heroAvail = screenH - sheetH - insets.top - HERO_PAD_TOP - HERO_PAD_BOTTOM;
@@ -157,7 +154,6 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
       onShow={() => { setOnScreen(true); if (event) { shown.current = event.id; markUnlockPresented(event.id); AccessibilityInfo.announceForAccessibility(title); } }}
       onDismiss={afterDismiss}>
       <View style={[styles.root, { minHeight: screenH }]} onLayout={markPainted} accessibilityViewIsModal testID="unlock-celebration">
-        <Animated.View style={[StyleSheet.absoluteFill, styles.orange, bgStyle]} testID="unlock-bg" />
         <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
           <View style={[styles.hero, { paddingTop: insets.top + HERO_PAD_TOP }]} accessible={false} importantForAccessibility="no-hide-descendants">
             <View style={{ width: FLAME_FRAME.w * k, height: FLAME_FRAME.h * k, marginBottom: 16 * k }} testID="unlock-flame-anchor">
@@ -206,8 +202,8 @@ const HERO_PAD_BOTTOM = 32;
 /** 히어로 묶음 높이(배율 1) = 불꽃 프레임 + 간격 16 + 무한 기호 42 */
 const HERO_CONTENT_H = FLAME_FRAME.h + 16 + 42;
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.surface },
-  orange: { backgroundColor: C.primaryPress },
+  // QA P-493 Android N1: 루트는 첫 프레임부터 불투명 주황 — 페이드하면 Dialog 창이 그 사이 흰색으로 비친다(0.36s 흰 플래시)
+  root: { flex: 1, backgroundColor: C.primaryPress },
   scroll: { flexGrow: 1 },
   // KB-819: 히어로가 남는 높이를 차지(불꽃·무한 기호 중앙), 시트는 내용만큼 — 본문~Done 빈 공간 제거
   hero: { flex: 1, paddingBottom: HERO_PAD_BOTTOM, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
