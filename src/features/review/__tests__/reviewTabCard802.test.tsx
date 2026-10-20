@@ -48,9 +48,8 @@ jest.mock('@/lib/data/useReviewMutations', () => ({ useToggleReviewLike: () => (
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 
 import { carouselMetrics, ReviewPhotoCarousel, snapIndex, snapOffset, PHOTO_H } from '../ReviewPhotoCarousel';
-import { PEEK_REVEAL } from '../ReviewCellParts';
 import { ReviewTabCard } from '../ReviewTabCard';
-import { ReviewAuthorLine } from '../ReviewCellParts';
+import { PEEK_REVEAL, ReviewAuthorLine } from '../ReviewCellParts';
 import { FeedCard } from '../FeedCard';
 import type { Review } from '@/lib/api/types';
 
