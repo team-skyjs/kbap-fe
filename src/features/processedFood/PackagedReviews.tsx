@@ -112,7 +112,7 @@ export function PackagedReviews({ productId, summary }: { productId: string; sum
           )}
         </View>
       )}
-      {FLAGS.packagedReviewWrite && (
+      {FLAGS.packagedReviewWrite && FLAGS.reviewsLiveEnabled && ( /* 롤백 스위치(reviewsLiveEnabled off) = 가공식품 쓰기 경로 없음 — 버튼째 숨김(Codex #314) */
         <View style={s.btnRow}>
           <Btn variant="ghost" onPress={write} testID="pf-write-review">{t('reviews.writeReview')}</Btn>
         </View>

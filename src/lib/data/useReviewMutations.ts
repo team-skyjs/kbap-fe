@@ -115,7 +115,8 @@ export function useCreateProcessedReview() {
   const invalidate = useInvalidateReviews();
   return useMutation({
     mutationFn: async (input: { processedFoodId: string; rating: number; content?: string; imagePaths?: string[] }) => {
-      if (!FLAGS.reviewsLiveEnabled) return; // 봉인 경로 = 호출 0(플래그는 리터럴 true 잠금 — reviewsProdEnable403)
+      // 봉인(롤백 스위치 off) = 저장할 곳이 없다 — 성공으로 끝내면 완료 모달·계측이 뜨고 글이 사라진다(Codex #314). 실패로 끝내 화면이 글을 쥐고 있게
+      if (!FLAGS.reviewsLiveEnabled) throw new Error('packaged reviews need live reviews');
       await api.post(
         `/api/processed-foods/${encodeURIComponent(input.processedFoodId)}/reviews`,
         {

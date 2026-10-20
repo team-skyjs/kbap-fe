@@ -106,6 +106,13 @@ describe('③ 요청', () => {
     await act(async () => { await run({ processedFoodId: '1711', rating: 5, content: 'crunchy and salty', imagePaths: ['p/a.jpg'] }); });
     expect(mockPost).toHaveBeenCalledWith('/api/processed-foods/1711/reviews', { rating: 5, content: 'crunchy and salty', imagePaths: ['p/a.jpg'] }, V32);
     expect(reviewWriteClosed(new ApiError('x', 403, 'PFOOD-005'))).toBe(true);
+    // Codex #314: 롤백 스위치 off = 성공으로 끝내지 않는다(완료 모달·계측 뒤 글 증발 방지) · 요청 0
+    const live = FLAGS.reviewsLiveEnabled;
+    (FLAGS as { reviewsLiveEnabled: boolean }).reviewsLiveEnabled = false;
+    mockPost.mockClear();
+    await act(async () => { await expect(run({ processedFoodId: '1711', rating: 5, content: 'crunchy and salty' })).rejects.toThrow(); });
+    expect(mockPost).not.toHaveBeenCalled();
+    (FLAGS as { reviewsLiveEnabled: boolean }).reviewsLiveEnabled = live;
     expect(reviewWriteClosed(new ApiError('x', 403, 'REVIEW-004'))).toBe(false);
   });
 });
@@ -150,6 +157,9 @@ describe('④ 상세 섹션', () => {
     (FLAGS as { packagedReviewWrite: boolean }).packagedReviewWrite = false;
     expect(ids(render(<PackagedReviews productId="1711" summary={null} />))).not.toContain('pf-write-review');
     (FLAGS as { packagedReviewWrite: boolean }).packagedReviewWrite = true;
+    (FLAGS as { reviewsLiveEnabled: boolean }).reviewsLiveEnabled = false; // Codex #314: 롤백 스위치 off = 버튼 없음
+    expect(ids(render(<PackagedReviews productId="1711" summary={null} />))).not.toContain('pf-write-review');
+    (FLAGS as { reviewsLiveEnabled: boolean }).reviewsLiveEnabled = true;
     const t = render(<PackagedReviews productId="1711" summary={null} />);
     act(() => t.root.findAll((n) => n.props?.testID === 'pf-write-review' && typeof n.props.onPress === 'function')[0].props.onPress());
     expect(mockPush).toHaveBeenCalledWith('/processed-foods/1711/review');
