@@ -152,9 +152,11 @@ export function FoodExplorer({
   // P-318: 딥링크 초기값 — 게스트는 개인화 상태 강등(칩 게이트·저장 게이트 우회 방지)
   const [riskChip, setRiskChip] = React.useState<RiskChip>(guest ? 'all' : (initialRisk ?? 'all'));
   const [savedOnly, setSavedOnly] = React.useState(initialSaved === true && !guest);
-  const [sort, setSortState] = React.useState<FoodSort>(() => sessionSort);
-  const setSort = (next: FoodSort) => { rememberSort(next); setSortState(next); };
-  const nameSort = nameSortOf(sort);
+  // Codex #299 P2: 정렬 컨트롤은 음식 탭(screen)에만 — 홈(embedded) 레일은 기억된 정렬을 물려받지 않고 기본 순서 그대로
+  const sortable = variant === 'screen';
+  const [sort, setSortState] = React.useState<FoodSort>(() => (sortable ? sessionSort : 'popular'));
+  const setSort = (next: FoodSort) => { if (sortable) rememberSort(next); setSortState(next); };
+  const nameSort = sortable ? nameSortOf(sort) : undefined;
   const [sortSheet, setSortSheet] = React.useState(false);
 
   // P-350(KB-492): 위험 칩 = 서버 필터 — browse는 riskChip 전달, 저장은 두 쿼리:

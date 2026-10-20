@@ -120,6 +120,10 @@ it('정렬 시트 = 기존 항목·기본값 불변 + 이름 정순·역순 · �
   const src = fs.readFileSync('src/features/food/FoodExplorer.tsx', 'utf8');
   expect(src).toContain("const FOOD_SORTS: FoodSort[] = ['popular', 'new', 'name_asc', 'name_desc'];");
   expect(src).toContain("let sessionSort: FoodSort = 'popular';");
+  // Codex #299 P2: 기억된 정렬·이름 정렬은 음식 탭(screen)만 — 홈(embedded)은 기본 순서
+  expect(src).toContain("const sortable = variant === 'screen';");
+  expect(src).toContain("React.useState<FoodSort>(() => (sortable ? sessionSort : 'popular'))");
+  expect(src).toContain('const nameSort = sortable ? nameSortOf(sort) : undefined;');
   expect(src).toContain('const saved = useBookmarks(undefined, { enabled: bookmarksOn });');
   for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'es', 'id', 'ru', 'th', 'vi']) {
     const food = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).food as Record<string, string>;
