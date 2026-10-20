@@ -346,3 +346,17 @@ it('KB760: early profile unlock keeps the SDK close listener alive and blocks th
   act(() => mockAds.update('rewarded', { status: 'closed', earnedReward: false })); await flush();
   expect(celebration().props.visible).toBe(true); expect(mockIssue).not.toHaveBeenCalled();
 });
+
+it('Codex #291 2R: profile unlock arriving after preflight reopened the camera still celebrates (Done CTA)', async () => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+  observeUnlock('7', false, currentGen());
+  mockIssue.mockResolvedValue('camera-ticket');
+  mockUseMe.mockReturnValue(me(1));
+  const tree = render(); await flush();
+  expect(quotaShown(tree)).toBe(false); // camera phase
+  act(() => observeUnlock('7', true, currentGen())); await flush();
+  const celebration = tree.root.findAllByType(Modal).find((n) => n.props.presentationStyle === 'fullScreen');
+  expect(celebration?.props.visible).toBe(true);
+  expect(JSON.stringify(tree.toJSON())).toContain('review.done');
+  act(() => tree.unmount());
+});

@@ -1,5 +1,5 @@
 import { UnlockCelebration } from '@/features/scan/UnlockCelebration';
-import { hasUnlockPending, hasObservedUnlockTransition, setUnlockScanFocused } from '@/features/scan/unlockCelebrationStore';
+import { hasUnlockPending, hasObservedUnlockTransition, setUnlockScanFocused, subscribeUnlock } from '@/features/scan/unlockCelebrationStore';
 import { currentGen } from '@/lib/auth/beTokens';
 /**
  * Scan screen — camera → on-device OCR → segment (T072, handoff §14) → live BE
@@ -17,7 +17,7 @@ import { currentGen } from '@/lib/auth/beTokens';
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
 import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
-import { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
+import { useCallback, useEffect, useRef, useState, useLayoutEffect, useSyncExternalStore } from 'react';
 import { ActivityIndicator, Alert, AppState, BackHandler, Image, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
@@ -327,6 +327,7 @@ export default function Scan() {
   // KB-769: 담은 항목이 있는 결과에서 떠나는 모든 길(헤더 ‹·Android 하드웨어 back·iOS 스와이프)을 다시찍기와 같은 확인 창으로.
   // 포커스일 때만 — 주문 카드(scan-order)의 완료 = dismissAll이 아래에 깔린 이 화면을 지울 때 확인 창이 뜨면 안 된다.
   const isFocused = useIsFocused();
+  const unlockPending = useSyncExternalStore(subscribeUnlock, hasUnlockPending, hasUnlockPending);
   const leave = useLeaveConfirm(isFocused && phase === 'result' && cartCount > 0);
   // KB-769: 미등록 안내는 Modal이 아닌 오버레이라 하드웨어 back이 화면째 닫았다 — 열려 있으면 back = 안내만 닫기
   // KB-789: 대체 항목 설명 카드도 같은 오버레이 문법 — back = 카드만 닫기
@@ -1024,6 +1025,10 @@ export default function Scan() {
   }
 
   // ---- camera (default) ----
+  // Codex #291 2R: a late profile refetch can create the scan event after preflight already reopened the camera
+  // (root host excludes /scan). The camera is already open, so the CTA is Done (no onStartScanning).
+  // ponytail: mounted only while an event is pending; the camera path has no continuation that needs onDismiss.
+  const CameraCelebration = unlockPending ? <UnlockCelebration eligible={isFocused && !isGuest} /> : null;
   // P-046: 오프라인 = 전체 J4 (카메라·갤러리·샘플 진입로 전부 이 화면으로 대체 —
   // 촬영 자체가 불가). 밝은 배경으로 다른 탭 J4와 톤 통일.
   if (offline) {
@@ -1057,6 +1062,7 @@ export default function Scan() {
         </View>
         {ImportingOverlay}
         {GateSheet}
+        {CameraCelebration}
       </View>
     );
   }
@@ -1170,6 +1176,7 @@ export default function Scan() {
           )}
         </View>
       </View>
+      {CameraCelebration}
     </View>
   );
 }
