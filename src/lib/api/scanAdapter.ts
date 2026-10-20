@@ -48,6 +48,10 @@ export interface ScanOverlayItem extends ScannedItem {
   imageUrl: string | null;
   /** P-219 v2: 겹친 회피 성분(overlapped=true만). 빈 배열 = 미표시. */
   avoidances: AvoidanceHit[];
+  /** KB-789 v3.0: 유사 음식으로 대체된 항목(foodId·이름·위험도 = 대체 음식). 2.0 = false. */
+  substituted: boolean;
+  /** KB-789 v3.0: 메뉴판에 적힌 원문 — substituted일 때 "Menu says …"·주문 카드 nameKo. 부재 = null. */
+  originalScannedName: string | null;
 }
 
 /**
@@ -96,6 +100,9 @@ function verdict(r: ScanResultWire) {
         : null,
     // P-219 v2: 내 회피 재료 중 겹치는 것만(빈 배열 = 표시 안 함 — 빈 컨테이너 금지)
     avoidances: mapAvoidances(r.avoidances),
+    // KB-789 v3.0: 대체 항목 — 엄격 true만(2.0 부재·이상값 = false). 원문은 비어 있으면 null.
+    substituted: r.substituted === true,
+    originalScannedName: typeof r.originalScannedName === 'string' && r.originalScannedName.trim() ? r.originalScannedName : null,
   } as const;
 }
 
@@ -128,6 +135,9 @@ export interface PhotoOnlyItem {
   imageUrl: string | null;
   /** P-219 v2: 겹친 회피 성분(overlapped=true만). 빈 배열 = 미표시. */
   avoidances: AvoidanceHit[];
+  /** KB-789 v3.0 — ScanOverlayItem과 동일 규칙. */
+  substituted: boolean;
+  originalScannedName: string | null;
 }
 
 /**

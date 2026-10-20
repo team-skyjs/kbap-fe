@@ -23,7 +23,7 @@ const parse = (f: string) => ts.createSourceFile(f, fs.readFileSync(f, 'utf8'), 
 
 const RAW_OK = new Set(['src/components/Pressable.tsx', 'src/components/Btn.tsx', 'src/components/PressScale.tsx']);
 /** 스스로 이름을 붙이는 공용 컴포넌트 — 안쪽 Pressable이 자기 데이터로 testID를 만든다(R2가 그 안쪽 요소를 검사). 호출 자리 testID는 불필요 */
-const SELF_LABELED = new Set(['RecentRow', 'OrderCard', 'OrderPill', 'FoodGridCard', 'Tab', 'TabBar', 'TranslateButton', 'CountdownBadge', 'HomeRecentRow', 'HomeGridCard']); // Home* = 홈 노출 래퍼(그대로 RecentRow·FoodGridCard 렌더)
+const SELF_LABELED = new Set(['RecentRow', 'OrderCard', 'OrderPill', 'FoodGridCard', 'Tab', 'TabBar', 'TranslateButton', 'CountdownBadge', 'HomeRecentRow', 'HomeGridCard', 'TopRatedRow', 'HomeTopRatedRow']); // Home* = 홈 노출 래퍼(그대로 RecentRow·FoodGridCard·TopRatedRow 렌더) · KB-800 TopRatedRow 자체 testID
 const FREE_TEXT = /\.(name|title|label|text|body|query|comment|nickname|email|address|placeName|content)\b|\bplace\b/;
 
 type Site = { file: string; line: number; tag: string };

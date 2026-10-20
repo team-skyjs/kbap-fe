@@ -9,7 +9,7 @@ import * as React from 'react';
 import { useSegments } from 'expo-router';
 import { EVENTS, track } from '@/lib/analytics';
 import { screenFromSegments, setCurrentScreen } from '@/lib/uiClick';
-import { isEntryResolved, subscribeEntryResolved } from '@/lib/deeplink';
+import { hasPendingDeeplink, isDeeplinkQueued, isEntryResolved, releaseNavHold, subscribeEntryResolved } from '@/lib/deeplink';
 
 /** PR 280 Codex P2: 진입 정착(lib/deeplink — 첫 실행 판별·로그인 리다이렉트 끝) **뒤에만** screen_view. 신규 설치는 부팅 때 (tabs)가 먼저
  *  마운트됐다가 /login으로 교체된다 — 그 (tabs)/index는 실제 진입이 아니다. 정착 순간 현재 화면을 1회 기록한다. */
@@ -17,11 +17,24 @@ export function useScreenTracking(): void {
   const segments = useSegments();
   const screen = screenFromSegments(segments);
   const resolved = React.useSyncExternalStore(subscribeEntryResolved, isEntryResolved, isEntryResolved);
+  // KB-786(#280 Codex P2): 보류 딥링크가 있으면(콜드 스타트 kbap://) 기본 루트를 기록하지 않고 이동 뒤 목적지부터
+  const holding = React.useSyncExternalStore(subscribeEntryResolved, hasPendingDeeplink, hasPendingDeeplink);
   const prev = React.useRef<string | null>(null);
+  /** 첫 기록을 미루는 동안 보이던 화면 — 이것과 다른 세그먼트가 오면 = 딥링크 이동이 실제 반영됨(#283 Codex P2) */
+  const heldOn = React.useRef<string | null>(null);
   React.useEffect(() => {
     setCurrentScreen(screen); // ui_click 화면은 정착과 무관하게 최신
-    if (!resolved || prev.current === screen) return;
+    // 보류 대기는 **첫 기록만**(콜드 스타트) — 그 뒤 로그인·온보딩 위 보류 중에도 화면 조회는 그대로
+    // KB-786: 내비게이터 마운트 전 빈 세그먼트('root')는 화면이 아니다 — 콜드 스타트마다 허수 screen_view "root" 1건(Amplitude 실측 10/14)
+    if (!resolved || screen === 'root') return;
+    if (holding && prev.current === null) {
+      // 이동 전(로그인·온보딩 게이트 통과 중)엔 기준 화면을 따라가기만 — flush 뒤 그 기준과 달라져야 도착
+      if (heldOn.current === null || isDeeplinkQueued()) heldOn.current = screen;
+      if (screen === heldOn.current) return; // 아직 옛 경로(이동 큐만 들어감) — 기록 0
+      releaseNavHold(); // 세그먼트가 바뀜 = 목적지 도착 → 보류 해제 후 이 화면을 첫 기록으로
+    }
+    if (prev.current === screen) return;
     prev.current = screen;
     track(EVENTS.screen_view, { screen });
-  }, [screen, resolved]);
+  }, [screen, resolved, holding]);
 }

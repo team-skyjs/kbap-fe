@@ -1,5 +1,5 @@
 /**
- * KB-739 — 단위 ID 채널 분기(production만 실값, 그 외 Google 데모) · 플랫폼별 · 3개마다 삽입 인덱스·key 안정 · 전면 세션 상한 ·
+ * KB-739 — 단위 ID 채널 분기(production만 실값, 그 외 Google 데모) · 플랫폼별 · 3개마다(음식 상세)·5개마다(리뷰 탭, KB-816) 삽입 인덱스·key 안정 · 전면 세션 상한 ·
  * 보상 응답 분기(429 limit / 4xx rejected / 네트워크) · i18n ads.* 10로케일 + 이모지 0.
  */
 import * as fs from 'fs';
@@ -10,7 +10,7 @@ jest.mock('@/lib/flags', () => ({ ...jest.requireActual('@/lib/flags'), isProdCh
 
 /* eslint-disable import/first -- jest.mock 뒤 */
 import { AD_FORMAT, DEMO_UNITS, PROD_UNITS, adUnitId, unitFor, type AdPlacement } from '@/lib/ads/units';
-import { FEED_AD_EVERY, withFeedAds } from '@/lib/ads/feedSlots';
+import { FEED_AD_EVERY, REVIEW_FEED_AD_EVERY, withFeedAds } from '@/lib/ads/feedSlots';
 import { _resetAdsSessionForTest, canShowInterstitial, markInterstitialShown } from '@/lib/ads/adsSession';
 import { classifyAdRewardError } from '@/lib/data/useAdReward';
 import { ApiError } from '@/lib/api/client';
@@ -55,13 +55,24 @@ describe('단위 ID(채널)', () => {
   });
 });
 
-describe('피드 삽입(3개마다)', () => {
+describe('피드 삽입(음식 상세 3개마다 · 리뷰 탭 5개마다)', () => {
   const items = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `r${i + 1}` }));
   it('3개마다 광고 행 1개 — 2개면 0, 3개면 뒤에 1, 7개면 3·6 뒤에 2 · 광고 key는 순번(ad-1, ad-2) 고정', () => {
     expect(FEED_AD_EVERY).toBe(3);
     expect(withFeedAds(items(2), (x) => x.id).map((r) => r.key)).toEqual(['r1', 'r2']);
     expect(withFeedAds(items(3), (x) => x.id).map((r) => r.key)).toEqual(['r1', 'r2', 'r3', 'ad-1']);
     expect(withFeedAds(items(7), (x) => x.id).map((r) => r.key)).toEqual(['r1', 'r2', 'r3', 'ad-1', 'r4', 'r5', 'r6', 'ad-2', 'r7']);
+  });
+  it('KB-816: 리뷰 탭 = 5개마다 — 4개면 0, 5개면 뒤에 1, 11개면 5·10 뒤에 2 · key 순번 고정 · 리뷰 탭이 이 값을 쓴다', () => {
+    expect(REVIEW_FEED_AD_EVERY).toBe(5);
+    const keys = (n: number) => withFeedAds(items(n), (x) => x.id, REVIEW_FEED_AD_EVERY).map((r) => r.key);
+    expect(keys(4)).toEqual(['r1', 'r2', 'r3', 'r4']);
+    expect(keys(5)).toEqual(['r1', 'r2', 'r3', 'r4', 'r5', 'ad-1']);
+    expect(keys(11)).toEqual(['r1', 'r2', 'r3', 'r4', 'r5', 'ad-1', 'r6', 'r7', 'r8', 'r9', 'r10', 'ad-2', 'r11']);
+    expect(keys(12).slice(0, keys(6).length)).toEqual(keys(6)); // 페이지 추가에도 앞 행 identity 유지
+    const fs = jest.requireActual<typeof import('fs')>('fs');
+    expect(fs.readFileSync('src/features/community/ReviewFeed.tsx', 'utf8')).toContain('withFeedAds(reviews, (r) => r.id, REVIEW_FEED_AD_EVERY)');
+    expect(fs.readFileSync('src/app/food/[id]/index.tsx', 'utf8')).toContain('withFeedAds(shownPreviews, (x) => x.id).map'); // 음식 상세 = 기본값 3 불변(미리보기 3장 → 광고 1)
   });
   it('페이지가 늘어도 앞 광고 행 key·위치 불변(리스트 key 안정)', () => {
     const a = withFeedAds(items(4), (x) => x.id);

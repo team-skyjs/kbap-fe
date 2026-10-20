@@ -36,7 +36,6 @@ it('A-HM — 검색 pt0·padH16·placeholder #D1D3D8(스캔 버튼 bg는 C 이�
   expect(cards).toContain("rname: { fontSize: 15, fontWeight: '700'");
   const home = read('src/app/(tabs)/index.tsx');
   expect(home).toMatch(/moreWrap: \{[^}]*paddingTop: 16, paddingBottom: 16/);
-  expect(home).toMatch(/chipRow: \{[^}]*paddingVertical: 0/);
 });
 
 it('A-SV·A-RT·A-NF·A-ER — 저장 그리드 17·리뷰탭 토글 7·FAB 14/18·알림 제목 700·에러 gap 6', () => {

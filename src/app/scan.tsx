@@ -1,3 +1,6 @@
+import { UnlockCelebration } from '@/features/scan/UnlockCelebration';
+import { hasUnlockPending, hasObservedUnlockTransition, setUnlockScanFocused, subscribeUnlock } from '@/features/scan/unlockCelebrationStore';
+import { currentGen } from '@/lib/auth/beTokens';
 /**
  * Scan screen — camera → on-device OCR → segment (T072, handoff §14) → live BE
  * POST /scans (KB-72 신계약 2026-07-16: imagePath + price) → name-pill markers
@@ -14,7 +17,7 @@
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
 import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
-import { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
+import { useCallback, useEffect, useRef, useState, useLayoutEffect, useSyncExternalStore, type ReactElement } from 'react';
 import { ActivityIndicator, Alert, AppState, BackHandler, Image, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
@@ -34,7 +37,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
-import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan, IconArrowLeft } from '@/components';
+import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconScanLines, IconGallery, IconFlip, IconChevron, IconSparkles, IconTabScan, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useLeaveConfirm } from '@/components/LeaveConfirmModal';
@@ -42,7 +45,7 @@ import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
-import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
+import { segmentMenu, formatKrw, orderNameKo, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 // P-219→P-220: 실패 분류·계측 사유 매핑은 순수 모듈 한 곳(전수 유닛 대상)
 import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/lib/scan/scanErrors';
 import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
@@ -169,13 +172,16 @@ export default function Scan() {
   const [facing, setFacing] = useState<CameraType>('back');
   // P-131: 줌 — 핀치+프리셋 상호 동기 (0~1 상대값, cameraZoom 순수 로직)
   const [zoom, setZoom] = useState(0);
-  const pinchBase = useRef(0);
+  const pinchBase = useSharedValue(0);
+  const onPinchStart = useCallback(() => { pinchBase.set(zoom); }, [pinchBase, zoom]);
+  const onPinchUpdate = useCallback((event: { scale: number }) => { setZoom(pinchToZoom(pinchBase.get(), event.scale)); }, [pinchBase]);
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   // P-250: SCAN-004(무료 소진) — "리뷰 작성하기" = 리뷰 픽커(P-245 자격 UX) 직결
   const [quotaPicker, setQuotaPicker] = useState(false);
   // P-255: 진입 시 티켓 선발급 — 소진(SCAN-004)이면 사진 고르기 전에 즉시 잠금
   // (게스트 가드가 상위 — 아래 preflight는 회원·v2만). 티켓은 화면 스코프 1회용.
   const preTicket = useRef<string | null>(null);
+  const ticketEpoch = useRef(0);
   const isGuest = useIsGuest();
   // KB-426(예진 실기 b21): 진입 즉시 OS 권한 팝업 — 안내 화면은 거부 후 폴백으로
   // 강등. 세션당 1회(ref) — OS도 프롬프트를 1회만 주므로(canAskAgain) 중복 무해하나
@@ -205,8 +211,8 @@ export default function Scan() {
   // KB-759 방어 2: 광고 해제 경로의 티켓 재발급 상태 — 'opening'(요청 중) · 'failed'(실패 → 다시 시도 버튼). 조용히 삼키지 않는다.
   // /review 2: 상태는 **그 상태를 띄운 쿼터 에러 객체**에 묶는다 — 화면이 카메라로 가거나 다른 에러(fail·새 쿼터 잠금)로 바뀌면
   // 객체가 달라져 자동으로 'idle'(리셋 호출을 경로마다 흩뿌리지 않는다). 겹친 preflight의 늦은 실패도 지난 객체에 묶여 안 보인다.
-  const [unlock, setUnlock] = useState<{ kind: 'opening' | 'failed'; forError: object } | null>(null);
-  const unlockState: 'idle' | 'opening' | 'failed' = unlock && error && unlock.forError === error ? unlock.kind : 'idle';
+  const [unlock, setUnlock] = useState<{ kind: 'ready' | 'opening' | 'failed'; forError: object } | null>(null);
+  const unlockState: 'idle' | 'ready' | 'opening' | 'failed' = unlock && error && unlock.forError === error ? unlock.kind : 'idle';
   const errorRef = useRef(error);
   useLayoutEffect(() => {
     errorRef.current = error;
@@ -237,6 +243,10 @@ export default function Scan() {
   // ① 옛 스냅샷은 반증 처리(재잠금 0) — 서버가 정본 ② 티켓 성공이면 잠금 ref와 무관하게 카메라 ③ 티켓 실패(비-004 포함)는 '다시 시도' 상태로 노출.
   const preflight = useCallback(async (opts?: { unlocked?: boolean }) => {
     if (!scanV2Enabled()) return;
+    const generation = currentGen();
+    // Codex #291 R12 P2: each invocation is its own epoch — a newer preflight (e.g. the unlock retry) supersedes an older
+    // in-flight one, so a late SCAN-004 from the focus preflight cannot relock after the unlock reopened the camera.
+    const epoch = ++ticketEpoch.current;
     const quota = quotaRef.current;
     const unlocked = opts?.unlocked === true;
     const forError = errorRef.current; // 해제 경로 = 지금 떠 있는 쿼터 에러에 묶는다
@@ -250,7 +260,9 @@ export default function Scan() {
     // KB-759 진단(개발 번들만): 잠금 상태·티켓 결과를 Metro 로그로
     if (__DEV__) console.log('[scan] preflight', JSON.stringify({ phase: phaseRef.current, lock: quotaLockRef.current, unlocked, quota }));
     try {
-      preTicket.current = await issueScanTicket();
+      const ticket = await issueScanTicket();
+      if (generation !== currentGen() || epoch !== ticketEpoch.current) return;
+      preTicket.current = ticket;
       if (__DEV__) console.log('[scan] preflight ticket ok', JSON.stringify({ lock: quotaLockRef.current, phase: phaseRef.current, unlocked }));
       if (isScanQuotaExhausted(quota)) disprovenQuota.current = quota;
       if (unlocked && errorRef.current !== forError) return; // 그새 화면이 바뀌었다(늦은 응답) — 덮지 않는다
@@ -262,6 +274,7 @@ export default function Scan() {
         setPhase('camera');
       }
     } catch (e) {
+      if (generation !== currentGen() || epoch !== ticketEpoch.current) return;
       const code = (e as { code?: string })?.code;
       if (__DEV__) console.log('[scan] preflight ticket err', String(code ?? e), JSON.stringify({ unlocked }));
       if (unlocked && code !== 'SCAN-004') {
@@ -294,7 +307,9 @@ export default function Scan() {
     useCallback(() => {
       if (isGuest) return; // 게스트 가드 상위(순서 유지) — 티켓 로직 미진입
       // 진입·복귀 시: 카메라 대기 중이거나 쿼터 잠금이면 선발급(잠금은 해금 확인 겸)
-      void preflight();
+      if (!hasUnlockPending()) void preflight();
+      setUnlockScanFocused(true);
+      return () => { ticketEpoch.current++; setUnlockScanFocused(false); };
     }, [isGuest, preflight]),
   );
   const [gateOpen, setGateOpen] = useState(false); // 게스트 스캔 게이트 (KB-77/78, §3-Q1)
@@ -308,21 +323,26 @@ export default function Scan() {
   // 두 소스가 같은 camOrientation state를 먹인다 — 오버레이 로직은 무변 재사용.
   const [camOrientation, setCamOrientation] = useState<CameraOrientation>('portrait');
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
+  const [closestMatch, setClosestMatch] = useState<ResultDish | null>(null); // KB-789 대체 항목 설명 카드(열린 행)
   // P-161: 다시찍기 확인 — 실수 탭 1회에 결과·담은 항목 통째 유실 방지(항상 노출)
   const [retakeConfirm, setRetakeConfirm] = useState(false);
   // KB-769: 담은 항목이 있는 결과에서 떠나는 모든 길(헤더 ‹·Android 하드웨어 back·iOS 스와이프)을 다시찍기와 같은 확인 창으로.
   // 포커스일 때만 — 주문 카드(scan-order)의 완료 = dismissAll이 아래에 깔린 이 화면을 지울 때 확인 창이 뜨면 안 된다.
   const isFocused = useIsFocused();
+  const unlockPending = useSyncExternalStore(subscribeUnlock, hasUnlockPending, hasUnlockPending);
   const leave = useLeaveConfirm(isFocused && phase === 'result' && cartCount > 0);
   // KB-769: 미등록 안내는 Modal이 아닌 오버레이라 하드웨어 back이 화면째 닫았다 — 열려 있으면 back = 안내만 닫기
+  // KB-789: 대체 항목 설명 카드도 같은 오버레이 문법 — back = 카드만 닫기
+  const noticeOpen = unmatchedOpen || closestMatch !== null;
   useEffect(() => {
-    if (!unmatchedOpen) return;
+    if (!noticeOpen) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       setUnmatchedOpen(false);
+      setClosestMatch(null);
       return true;
     });
     return () => sub.remove();
-  }, [unmatchedOpen]);
+  }, [noticeOpen]);
   // P-192: 푸시 프라이머 — 스캔 완료 도달 시 미응답자만 1회(기록 = pushAdapter).
   // P-267(KB-377): 단독 effect 폐지 — 코치마크와 **직렬화**(아래 결과 진입 effect가
   // 순차 판정). 동시 present = 네이티브 fullScreenModal 위 RN Modal 2개 같은 커밋
@@ -639,6 +659,12 @@ export default function Scan() {
     }
   }
 
+  // KB-789: Closest match 칩 탭 = 설명 카드(긍정 프레임). 상세 버튼은 openDish 재사용(가격 param·src=scan 동일).
+  function openClosestMatch(dish: ResultDish) {
+    track(EVENTS.scan_closest_match_open, { food_id: dish.foodId });
+    setClosestMatch(dish);
+  }
+
   const GateSheet = <AuthGateSheet context="scan" open={gateOpen} onClose={() => setGateOpen(false)} />;
 
   const Close = (
@@ -648,6 +674,58 @@ export default function Scan() {
       </Animated.View>
     </Pressable>
   );
+
+  const [celebrationTurn, setCelebrationTurn] = useState(false);
+  if (phase !== 'result' && celebrationTurn) setCelebrationTurn(false);
+  const celebrationDone = useRef<(() => void) | null>(null);
+  const celebrationQueued = useRef(false);
+  const celebrationClosed = useCallback(() => {
+    celebrationQueued.current = false;
+    setCelebrationTurn(false);
+    const done = celebrationDone.current;
+    celebrationDone.current = null;
+    done?.();
+  }, []);
+  useEffect(() => {
+    if (phase !== 'result') { celebrationQueued.current = false; celebrationDone.current = null; return; } // modalQueue.clear() drops the step
+    if (!unlockPending || celebrationQueued.current) return;
+    celebrationQueued.current = true;
+    modalQueue.add({
+      key: 'unlock-celebration',
+      present: (done) => {
+        if (!hasUnlockPending()) { celebrationQueued.current = false; return false; }
+        celebrationDone.current = done;
+        setCelebrationTurn(true);
+        return true;
+      },
+    });
+  }, [phase, unlockPending, modalQueue]);
+  // Safety: an event consumed without a native dismissal (screen blur) must not keep the queue waiting forever.
+  useEffect(() => {
+    if (!celebrationTurn || unlockPending) return;
+    const timer = setTimeout(celebrationClosed, 600);
+    return () => clearTimeout(timer);
+  }, [celebrationTurn, unlockPending, celebrationClosed]);
+  // Codex #291 R10/R11: ONE celebration presenter for every scan phase (root host excludes /scan). Each phase return goes
+  // through withPresenter, so the presenter keeps its identity across phase changes and no phase can lose an event.
+  // Continuation (reopen camera with a ticket) only in the quota-error context; elsewhere the CTA is Done.
+  // ponytail: mounted while an event is pending or holds the result-queue turn, and always in the quota context
+  // (its continuation / the queue's onDismissed must survive consume).
+  const quotaContext = phase === 'error' && error?.stage === 'quota';
+  // Codex #291 R12 P1: the result phase serializes its modals (coach → primer → review prompt) because two native modals
+  // presenting from the scan full-screen modal deadlock UIKit. The celebration takes a turn in that same queue there,
+  // and also waits while a user-opened sheet/dialog is up. The queue advances only after the celebration fully dismissed.
+  const resultSheetOpen = sortSheet || unmatchedOpen || closestMatch != null || retakeConfirm || leave.modal.visible || gateOpen;
+  const presenterEligible = isFocused && !isGuest && !(quotaContext && quotaPicker) && (phase !== 'result' || (celebrationTurn && !resultSheetOpen));
+  const presenter = quotaContext || unlockPending || celebrationTurn ? (
+    <UnlockCelebration
+      eligible={presenterEligible}
+      onDismissed={celebrationClosed}
+      onStartScanning={quotaContext ? () => void runUnlockRetry(() => preflight({ unlocked: true })) : undefined}
+      onClosed={quotaContext ? () => { if (errorRef.current) setUnlock({ kind: 'ready', forError: errorRef.current }); } : undefined}
+    />
+  ) : null;
+  const withPresenter = (node: ReactElement) => <>{node}{presenter}</>;
 
   // 라우트 자체 가드 (실기기 반려분 #2): 진입로별 가드는 누락이 생긴다 —
   // 게스트는 어떤 경로로 오든 카메라 없이 게이트 시트, 닫으면 뒤로.
@@ -680,6 +758,8 @@ export default function Scan() {
         priceKrw: it.price, // 서버 제공값 그대로 — OCR 추정가 대체, null=미표시 (P-002)
         imageUrl: it.imageUrl, // P-241 v2: 행 썸네일(비매칭 = 서버 디폴트)
         avoidances: it.avoidances, // P-219 v2: 메뉴별 회피 겹침
+        substituted: it.substituted, // KB-789 v3.0
+        originalScannedName: it.originalScannedName,
       }];
     });
     // idx=null(사진에서만 추출) — 좌표 부재로 리스트 전용, 오버레이 마커 없음.
@@ -697,6 +777,8 @@ export default function Scan() {
       koreanName: p.koreanName,
       imageUrl: p.imageUrl, // P-241 v2
       avoidances: p.avoidances, // P-219 v2
+      substituted: p.substituted, // KB-789 v3.0
+      originalScannedName: p.originalScannedName,
     }));
     const allDishes = [...resultDishes, ...photoDishes];
     // §14-5: unable sorted last, never hidden.
@@ -719,7 +801,8 @@ export default function Scan() {
     const goOrder = () => {
       const items = listDishes
         .filter((d) => (cart.get(d.itemId) ?? 0) > 0)
-        .map((d) => ({ nameKo: d.koreanName ?? d.rawMenuName, name: d.displayName, qty: cart.get(d.itemId)!, priceKrw: d.priceKrw, foodId: d.foodId ?? null }));
+        // KB-789: nameKo = 메뉴판 표기(대체 항목은 원문) — 직원에게 보여주는 줄. name·foodId는 대체 음식.
+        .map((d) => ({ nameKo: orderNameKo(d), name: d.displayName, qty: cart.get(d.itemId)!, priceKrw: d.priceKrw, foodId: d.foodId ?? null }));
       // P-242: 스캔 세션의 서버 환율을 주문 카드에도 동승(fx 생략 = v1 테이블)
       const fxParam = fx !== undefined ? `&fx=${encodeURIComponent(JSON.stringify(fx))}` : '';
       // P-252: 스캔 경로 동승 — 주문 완료 시 이력 저장(POST /api/orders) 식별자
@@ -727,7 +810,7 @@ export default function Scan() {
       router.push(`/scan-order?items=${encodeURIComponent(JSON.stringify(items))}${fxParam}${imgParam}` as Href);
     };
 
-    return (
+    return withPresenter(
       <View style={styles.resultRoot}>
         {/* KB-432 §1-1(4150:16420): AppBar 백+제목 중앙 — 다시찍기(P-161 기능 유지)는 우측 */}
         <View style={[styles.quietHeader, { paddingTop: insets.top + 6 }]}>
@@ -818,6 +901,7 @@ export default function Scan() {
               onRemove={(d) => { track(EVENTS.scan_item_remove, { risk: d.risk }); bumpCart(d.itemId, -1); }}
               onOpen={openDish}
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
+              onClosestMatch={openClosestMatch} // KB-789
               t={t}
             />
             )}
@@ -858,6 +942,12 @@ export default function Scan() {
           t={t}
         />
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
+        <ClosestMatchNotice
+          dish={closestMatch}
+          onClose={() => setClosestMatch(null)}
+          onSeeDetails={(d) => { setClosestMatch(null); openDish(d); }}
+          t={t}
+        />
         {/* P-161: 다시찍기 확인 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 재사용 */}
         {/* KB-769: 같은 카드를 이탈 확인에도 — 제목·확인 버튼만 leave 문구, 본문은 담은 개수 문구 재사용 */}
         <Modal visible={retakeConfirm || leave.modal.visible} transparent animationType="fade" onRequestClose={() => (retakeConfirm ? setRetakeConfirm(false) : leave.modal.onKeep())}>
@@ -903,7 +993,7 @@ export default function Scan() {
 
   // ---- scanning ---- P-062②: D2 오버레이 — 사진 배경 + 코너 브래킷 + 스캔라인 스윕
   if (phase === 'scanning') {
-    return (
+    return withPresenter(
       <View style={styles.root}>
         {/* P-187: cover 크롭 → contain 레터박스(어두운 root 배경) — 가로 사진도 전체 표시,
             "잘려서 분석되나?" 오인 소멸(OCR·업로드는 원래 원본 전체 — 표시 문제였음) */}
@@ -926,14 +1016,14 @@ export default function Scan() {
   // ---- error ----
   if (phase === 'error') {
     const stage = error?.stage ?? 'be';
-    return (
+    return withPresenter(
       <View style={[styles.root, styles.center]}>
         {Close}
         {GateSheet}
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
         {/* P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체) */}
         <Text style={styles.errStage}>{stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}</Text>
-        <Text style={styles.statusText}>{t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
+        <Text style={styles.statusText}>{t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'ready' ? 'scan.unlockedBody' : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
         {/* P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자
             노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만. */}
         <View style={styles.errBtns}>
@@ -948,13 +1038,13 @@ export default function Scan() {
             <>
               {/* KB-759: 해제됐는데 티켓 재발급 중/실패 — 광고·리뷰 CTA 대신 다시 시도(실패일 때만) + 나중에 */}
               {/* /review 3: 여는 중에도 같은 버튼을 busy로 유지(스피너·비활성) — 실패면 탭 가능 */}
-              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t('common.retry')}</Btn>
+              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t(unlockState === 'ready' ? 'scan.startScanning' : 'common.retry')}</Btn>
               <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'quota' ? (
             <>
               {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight({unlocked}) → 새 티켓 → 카메라 복원(KB-759) */}
-              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (__DEV__) console.log('[scan] ad unlock → preflight'); void preflight({ unlocked: true }); }} onClose={() => router.back()} />
+              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (!hasObservedUnlockTransition()) void preflight({ unlocked: true }); }} onClose={() => router.back()} />
               <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (
@@ -990,7 +1080,7 @@ export default function Scan() {
   // P-046: 오프라인 = 전체 J4 (카메라·갤러리·샘플 진입로 전부 이 화면으로 대체 —
   // 촬영 자체가 불가). 밝은 배경으로 다른 탭 J4와 톤 통일.
   if (offline) {
-    return (
+    return withPresenter(
       <View style={[styles.root, styles.center, { backgroundColor: C.surface }]}>
         {Close}
         <QueryErrorBlock error={probe.error} onRetry={() => void probe.refetch()} />
@@ -1000,7 +1090,7 @@ export default function Scan() {
   // P-137: 시스템 카메라 on = 커스텀 뷰파인더 대신 콰이엇 런처 — 안내 한 줄 +
   // 촬영(주 CTA) + 갤러리(보조). 권한은 launchCameraAsync가 자체 처리.
   if (FLAGS.systemCamera) {
-    return (
+    return withPresenter(
       <View style={styles.launcherRoot}>
         <Pressable style={[styles.close, { top: insets.top + 8, backgroundColor: C.surface2 }]} onPress={() => router.back()} hitSlop={8} testID="scan-close">
           <IconClose size={22} color={C.ink2} />
@@ -1025,19 +1115,15 @@ export default function Scan() {
   }
 
   const granted = permission?.granted;
-  return (
+  return withPresenter(
     <View style={styles.root}>
       {granted ? (
         /* P-131: 핀치 줌 — runOnJS(true)로 JS 스레드 콜백(워클릿 0, P-065 교훈 준수) */
         <GestureDetector
           gesture={Gesture.Pinch()
             .runOnJS(true)
-            .onStart(() => {
-              pinchBase.current = zoom;
-            })
-            .onUpdate((e) => {
-              setZoom(pinchToZoom(pinchBase.current, e.scale));
-            })}
+            .onStart(onPinchStart)
+            .onUpdate(onPinchUpdate)}
         >
           <View style={StyleSheet.absoluteFill}>
             <CameraView
@@ -1186,6 +1272,36 @@ function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => v
         <Text style={styles.noticeBody}>{t('scan.unmatchedSheetBody')}</Text>
         <View style={{ alignSelf: 'stretch' }}>
           <Btn testID="unmatched-gotit" variant="ghost" onPress={onClose}>{t('common.gotIt')}</Btn>
+        </View>
+      </Pressable>
+    </Pressable>
+  );
+}
+
+/** KB-789 유사 음식 대체 안내(시안 C4 14297:8300) — UnmatchedNotice 골격·스타일 공유. 글리프 sparkles 30 primary,
+ *  버튼은 primary "See {{food}} details" 1개(= 대체 음식 상세), 닫기 = 배경 탭. 긍정 프레임·안전 단정 없음(헌법 III). */
+function ClosestMatchNotice({
+  dish,
+  onClose,
+  onSeeDetails,
+  t,
+}: {
+  dish: ResultDish | null;
+  onClose: () => void;
+  onSeeDetails: (d: ResultDish) => void;
+  t: (k: string, o?: Record<string, unknown>) => string;
+}) {
+  if (!dish) return null;
+  const food = dish.displayName || dish.koreanName || dish.rawMenuName;
+  const vars = { scanned: dish.originalScannedName ?? dish.rawMenuName, food, foodKo: dish.koreanName ?? food };
+  return (
+    <Pressable testID="closest-backdrop" style={styles.noticeBackdrop} onPress={onClose}>
+      <Pressable testID="closest-card" style={styles.noticeCard} noTrack onPress={() => {}}>
+        <IconSparkles size={30} color={C.primary} />
+        <Text style={styles.noticeTitle}>{t('scan.closestMatchSheetTitle')}</Text>
+        <Text style={styles.noticeBody}>{t('scan.closestMatchSheetBody', vars)}</Text>
+        <View style={{ alignSelf: 'stretch' }}>
+          <Btn testID="closest-details" onPress={() => onSeeDetails(dish)}>{t('scan.closestMatchSeeDetails', vars)}</Btn>
         </View>
       </Pressable>
     </Pressable>

@@ -26,6 +26,7 @@ export function ExpandToggle({
   labelExpanded,
   labelCollapsed,
   testID,
+  color = C.primaryText,
 }: {
   expanded: boolean;
   onPress: () => void;
@@ -33,6 +34,8 @@ export function ExpandToggle({
   labelExpanded?: string;
   /** 기본 = reviews.seeMore */
   labelCollapsed?: string;
+  /** KB-817: 리뷰 탭만 본문 잉크색 — 기본 = 기존 토글 색(C.primaryText) */
+  color?: string;
   testID: string; // KB-784(PR 280 Codex P2): 필수 — 생략하면 ui_click target이 'unlabeled'로 샌다(tsc가 모든 사용처를 강제)
 }) {
   const { t } = useTranslation();
@@ -45,10 +48,10 @@ export function ExpandToggle({
       accessibilityState={{ expanded }}
       testID={testID}
     >
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color }]}>{label}</Text>
       {/* 펼침 = 같은 아이콘 180° — 방향만 뒤집는다(에셋 추가 없음) */}
       <View style={expanded ? styles.iconUp : undefined}>
-        <IconChevronDown size={16} color={C.primaryText} />
+        <IconChevronDown size={16} color={color} />
       </View>
     </Pressable>
   );

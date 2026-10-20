@@ -92,8 +92,8 @@ it('홈 진입당 1회 — 같은 진입의 재정지·재등록은 재전송 0,
 it('블러(홈을 떠남) 뒤엔 측정 0 · 언마운트(null 등록) 대상은 제외', () => {
   const t = new ImpressionTracker(VP);
   t.focus();
-  t.register({ kind: 'section', section: 'reviews' }, node({ x: 0, y: 200, width: 400, height: 200 }));
-  t.register({ kind: 'section', section: 'reviews' }, null);
+  t.register({ kind: 'section', section: 'top_rated' }, node({ x: 0, y: 200, width: 400, height: 200 }));
+  t.register({ kind: 'section', section: 'top_rated' }, null);
   t.register({ kind: 'section', section: 'guest_cta' }, node({ x: 0, y: 200, width: 400, height: 200 }));
   t.blur();
   jest.advanceTimersByTime(1000);
@@ -116,6 +116,22 @@ it('PR 280 Codex P2: 비동기 측정 응답 전에 스크롤이 다시 시작�
   expect(mockTrack).toHaveBeenCalledWith('home_section_view', { section: 'popular' });
 });
 
+it('KB-786(#280 P2): 빠른 blur→refocus — 이전 방문의 늦은 측정 응답은 새 방문에 기록 0(새 방문 측정은 정상)', () => {
+  const t = new ImpressionTracker(VP);
+  const cbs: ((x: number, y: number, w: number, h: number) => void)[] = [];
+  const asyncNode = { measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => { cbs.push(cb); } };
+  t.focus();
+  t.register({ kind: 'section', section: 'recent' }, asyncNode);
+  jest.advanceTimersByTime(400); // 방문 1 측정 요청
+  t.blur();
+  t.focus(); // 방문 2
+  cbs[0](0, 200, 400, 200); // 방문 1의 늦은 응답
+  expect(mockTrack).not.toHaveBeenCalled();
+  jest.advanceTimersByTime(400); // 방문 2 측정
+  cbs[1](0, 200, 400, 200);
+  expect(mockTrack).toHaveBeenCalledTimes(1);
+});
+
 it('카드 클릭 = home_card_click {section, position, food_id}', () => {
   trackHomeCardClick('most_reviewed', 2, '41');
   expect(mockTrack).toHaveBeenCalledWith('home_card_click', { section: 'most_reviewed', position: 2, food_id: '41' });
@@ -126,8 +142,8 @@ describe('배선 잠금(소스) — 홈 섹션 7종·카드 클릭·스크롤 �
   const read = (p: string) => (require('fs') as typeof import('fs')).readFileSync(p, 'utf8') as string;
   const home = read('src/app/(tabs)/index.tsx');
   const fx = read('src/features/food/FoodExplorer.tsx');
-  it('홈: 포커스 리셋·컨텍스트·세로 정지 props · recent/guest_cta/reviews 섹션 · recent/reviews 카드 클릭', () => {
-    for (const s of ["impressions.focus();", "impressions.blur()", '<HomeImpressionContext.Provider value={impressions}>', '{...listScrollProps}', "useImpressionRef('recent')", "useImpressionRef('guest_cta')", "useImpressionRef('reviews')", "trackHomeCardClick('recent', position", "trackHomeCardClick('reviews', index, rv.foodId)"]) {
+  it('홈: 포커스 리셋·컨텍스트·세로 정지 props · recent/guest_cta/top_rated 섹션 · recent/top_rated 카드 클릭(KB-800)', () => {
+    for (const s of ["impressions.focus();", "impressions.blur()", '<HomeImpressionContext.Provider value={impressions}>', '{...listScrollProps}', "useImpressionRef('recent')", "useImpressionRef('guest_cta')", "useImpressionRef('top_rated')", "useImpressionRef('top_rated', position, rest.food.foodId)", "trackHomeCardClick('recent', position", "trackHomeCardClick('top_rated', position, rest.food.foodId)"]) {
       expect({ s, has: home.includes(s) }).toEqual({ s, has: true });
     }
   });

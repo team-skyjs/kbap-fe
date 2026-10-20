@@ -2,7 +2,7 @@
  * Home tab — KB-430(P-275) 디자인 4차 D-2 (Figma 4150:16377).
  * AppBar(로고+벨) · 검색 행(+스캔 버튼) · 언더라인 탭(Popular/Saved/Food) ·
  * 위험도 칩 필터 · 음식 카드 2열 그리드(+More) · RECENTLY SCANNED 리스트 ·
- * REVIEWS 무한 스크롤 피드(P-317 v2) · 면책. 데이터 훅·라우트 무변 — 표시만 교체.
+ * 평점 높은 음식 행(KB-800 — 구 REVIEWS 무한 피드 대체) · 스캔 CTA · 면책. 데이터 훅·라우트 무변 — 표시만 교체.
  * 구 표면(인사말·식단 배너·스캔 CTA·Safe for you·카테고리)은 시안 부재로 제거.
  */
 import { useCallback, useEffect, useState } from 'react';
@@ -21,39 +21,25 @@ import {
   useHeaderHeight,
   SkeletonHome,
   Btn,
-  Chip,
   SectionHead,
   IconLock,
+  IconCamera,
 } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
-import { RecentRow } from '@/features/food/FoodCards';
+import { RecentRow, TopRatedRow } from '@/features/food/FoodCards';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
-import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { EVENTS, track } from '@/lib/analytics';
-import { useGlobalReviews } from '@/lib/data/useFoodReviews';
-import { FeedCard } from '@/features/review/FeedCard';
 import { HomeQuotaBadge, BADGE_GAP } from '@/features/scan/HomeQuotaBadge';
 import { useUnreadCount } from '@/lib/data/useNotifications';
-import type { Review } from '@/lib/api/types';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { HomeImpressionContext, ImpressionTracker, trackHomeCardClick, useImpressionRef, useImpressionScrollProps } from '@/features/home/homeImpressions';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900 (D-1 Chip과 동일 명시값)
-
-/** 9/5 예진 확정("싹 다 시안대로"): For You·Nearby도 시안대로 렌더 — 서버 파라미터
- *  부재라 선택해도 결과는 현재(latest) 유지(무동작), Popular만 sort=helpful. */
-type ReviewChip = 'all' | 'foryou' | 'nearby' | 'popular';
-const REVIEW_CHIPS: [ReviewChip, string][] = [
-  ['all', 'home.filterAll'],
-  ['foryou', 'home.chipForYou'],
-  ['nearby', 'home.chipNearby'],
-  ['popular', 'reviews.sort_helpful'],
-];
 
 const RECENT_N = 4;
 
@@ -102,13 +88,14 @@ function HomeBody() {
   // KB-784: 섹션 노출 노드(home_section_view)
   const recentImpressionRef = useImpressionRef('recent');
   const guestCtaImpressionRef = useImpressionRef('guest_cta');
-  const reviewsImpressionRef = useImpressionRef('reviews');
+  const topRatedImpressionRef = useImpressionRef('top_rated');
   const listScrollProps = useImpressionScrollProps(); // 세로 스크롤 정지 = 노출 판정(reanimated onScroll 워클릿과 별개 JS 콜백)
 
   const unread = useUnreadCount();
-  const [reviewChip, setReviewChip] = useState<ReviewChip>('all');
+  // KB-800: 평점 높은 음식(서버 정렬·최대 20) — 리뷰 기반 섹션이라 리뷰 플래그를 따른다(CTA 는 무관)
+  const topRated = FLAGS.reviewsEnabled ? (home?.topRated ?? []) : [];
 
-  // P-349 ③(KB-512): 당겨서 새로고침 — 홈 표면 키 접두 3종 무효화(완료까지 스피너)
+  // P-349 ③(KB-512): 당겨서 새로고침 — 홈 표면 키 접두 3종 무효화(완료까지 스피너). KB-800: 홈 리뷰 피드 제거로 reviews 무효화 삭제
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -116,25 +103,8 @@ function HomeBody() {
       queryClient.invalidateQueries({ queryKey: ['home'] }),
       queryClient.invalidateQueries({ queryKey: ['foods'] }),
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] }),
-      queryClient.invalidateQueries({ queryKey: ['reviews', 'global'] }), // #111 P2 ①: 홈 리뷰 피드
     ]).finally(() => setRefreshing(false));
   }, []);
-  // P-339 ②(KB-494): 홈 피드도 ⋯ 전 카드 — 신고만(차단 없음), 위치 통일
-  const [mod, setMod] = useState<ModTarget | null>(null);
-
-  // P-317: 리뷰 = 무한 스크롤(Reviews 탭과 같은 커서 API·FeedCard). 칩: All=latest·Popular=helpful.
-  const feed = useGlobalReviews(true, { sort: reviewChip === 'popular' ? 'helpful' : 'latest' });
-  const seen = new Set<string>();
-  const feedReviews = (feed.data?.pages ?? [])
-    .flatMap((p) => p.items)
-    .filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true))); // 페이지 경계 중복 0
-  const loadMoreReviews = () => {
-    // Codex #80 P2(=#58 P2-2 문법): 에러 푸터가 높이를 바꿔 onEndReached 재발화 →
-    // 자동 재시도 루프. 실패 상태에선 재시도 = 푸터 버튼만.
-    if (feed.isFetchNextPageError) return;
-    if (FLAGS.reviewsEnabled && feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
-  };
-
 
   if (isError && !isLoading) {
     return (
@@ -143,7 +113,7 @@ function HomeBody() {
           {/* P-007 false-empty 금지 유지 — 에러는 에러로 */}
           <QueryErrorBlock error={error} onRetry={() => void refetch()} />
         </ScreenCenterFill>
-        <StickyHeader hidden={hidden} atTop={atTop} mode="brand" alignToHomeGutter bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
+        <StickyHeader hidden={hidden} atTop={atTop} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
       </View>
     );
   }
@@ -213,22 +183,11 @@ function HomeBody() {
       </View>
       )}
 
-      {/* REVIEWS — P-317: 프리뷰 3장+More → 무한 스크롤 피드 헤더(칩 유지) */}
-      {FLAGS.reviewsEnabled && feedReviews.length > 0 && (
-        <>
-          <SectionHead label={t('reviews.headerTitle')} title={t('home.reviewsSub')} testID="home-reviews-head" />
-          <View ref={reviewsImpressionRef} style={styles.chipRow}>{/* KB-784: 리뷰 섹션 노출 노드 = 헤드 아래 칩 줄 */}
-            {REVIEW_CHIPS.map(([c, key]) => (
-              <Chip
-                key={c}
-                label={t(key)}
-                selected={reviewChip === c}
-                onPress={() => setReviewChip(c)}
-                testID={`home-review-chip-${c}`}
-              />
-            ))}
-          </View>
-        </>
+      {/* KB-800: 평점 높은 음식 — 0건이면 헤더째 숨김(CTA 는 푸터). 노출 노드 = 헤더 래퍼 */}
+      {topRated.length > 0 && (
+        <View ref={topRatedImpressionRef} collapsable={false}>
+          <SectionHead label={t('reviews.headerTitle')} title={t('home.reviewsSub')} testID="home-top-rated-head" />
+        </View>
       )}
     </View>
   );
@@ -236,8 +195,8 @@ function HomeBody() {
   return (
     <View style={styles.root}>
       <Animated.FlatList
-        data={isLoading || !FLAGS.reviewsEnabled ? [] : feedReviews}
-        keyExtractor={(rv) => rv.id}
+        data={isLoading ? [] : topRated}
+        keyExtractor={(f) => f.foodId}
         onScroll={onScroll}
         {...listScrollProps}
         scrollEventThrottle={16}
@@ -245,56 +204,22 @@ function HomeBody() {
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={headerH} />}
         ListHeaderComponent={header}
-        renderItem={({ item: rv, index }) => (
-          <HomeFeedItem review={rv} position={index}>
-          <FeedCard
-            review={rv}
-            t={t}
-            mine={false}
-            /* P-339 ②: ⋯ 전 카드(구 showMore=false 폐기) — 홈은 신고만·차단 없음 */
-            onOpenFood={() => {
-              if (!rv.foodId) return;
-              trackHomeCardClick('reviews', index, rv.foodId); // KB-784: 리뷰 카드의 음식 칩 = 리뷰 섹션 카드 클릭
-              openFood(rv.foodId);
-            }}
-            onGuestHelpful={() => router.push('/login?entry=gate_review' as Href)} // P-389: 게이트 시트와 같은 축(helpful → review)
-            onMore={() =>
-              setMod({
-                type: 'review',
-                id: rv.id,
-                author: { id: rv.author?.memberId ?? rv.memberId ?? `rv-${rv.id}`, nickname: rv.author?.nickname ?? null, nationality: rv.authorNationality },
-                mine: false,
-                anonymized: rv.anonymized === true,
-                reportOnly: true,
-              })
-            }
-          />
-          </HomeFeedItem>
+        renderItem={({ item: f, index }) => (
+          <HomeTopRatedRow position={index} food={f} risk={personalRisk(f.risk, hasR)} onPress={() => openFood(f.foodId)} />
         )}
-        onEndReachedThreshold={0.6}
-        onEndReached={loadMoreReviews}
         ListFooterComponent={
-          <View>
-            {feed.isFetchingNextPage && (
-              /* P-317: 다음 페이지 로딩 = 하단 스켈레톤 3장(공백 금지) */
-              <View style={styles.feedSkel} testID="home-feed-skel">
-                {[0, 1, 2].map((i) => (
-                  <View key={i} style={styles.feedSkelCard} />
-                ))}
+          isLoading ? null : (
+            <View>
+              {/* KB-800: 스캔 CTA — 섹션이 비어도 노출. 클릭 계측 = Btn testID 자동 ui_click */}
+              <View style={styles.scanCta}>
+                <Btn testID="home-scan-cta" icon={<IconCamera size={20} color="#fff" />} onPress={() => router.navigate('/scan' as Href)}>
+                  {t('home.scanCta')}
+                </Btn>
               </View>
-            )}
-            {feed.isFetchNextPageError && (
-              /* Codex #80 P2: 다음 페이지 실패 = 푸터 소형 에러 + 수동 재시도(자동 재요청 0) */
-              <View style={styles.footerErr} testID="home-feed-next-error">
-                <Text style={styles.footerErrText}>{t('states.errorTitle')}</Text>
-                <Pressable style={styles.footerRetry} onPress={() => void feed.fetchNextPage()} testID="home-feed-next-retry">
-                  <Text style={styles.footerRetryText}>{t('common.retry')}</Text>
-                </Pressable>
-              </View>
-            )}
-            {/* 면책 (FR-030 유지 — §1-10) */}
-            {!isLoading && <Text style={styles.disc}>{t('home.disclaimer')}</Text>}
-          </View>
+              {/* 면책 (FR-030 유지 — §1-10) */}
+              <Text style={styles.disc}>{t('home.disclaimer')}</Text>
+            </View>
+          )
         }
         testID="home-list"
       />
@@ -303,7 +228,6 @@ function HomeBody() {
         hidden={hidden}
         atTop={atTop}
         mode="brand"
-        alignToHomeGutter /* KB-777: 마크·벨 보이는 끝 = 본문 거터 20 */
         bell={FLAGS.notificationCenter}
         bellCount={unread}
         onBell={() => router.push('/notifications' as Href)}
@@ -311,9 +235,6 @@ function HomeBody() {
 
       {/* KB-680(P-432) → KB-701: 불꽃 "무료 스캔 N회 남음" = 스캔 버튼 바로 아래(스크롤 0 기준, 화면 고정) — 플래그 countdownBadge(진단 채널만) · 노출 조건은 컴포넌트 안 */}
       <HomeQuotaBadge top={badgeTop} />
-
-      {/* P-339 ②: 홈 피드 ⋯ = 신고만(reportOnly — 차단·수정 없음, 게스트는 플로우 내 게이트) */}
-      <ModerationFlow target={mod} onClose={() => setMod(null)} onEdit={() => {}} onDelete={() => {}} onBlocked={() => {}} />
 
     </View>
   );
@@ -334,8 +255,6 @@ const styles = StyleSheet.create({
   tabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   tabBarOn: { backgroundColor: INK_TITLE },
   tabsDivider: { height: 0.5, backgroundColor: C.line2 },
-
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20, paddingVertical: 0 }, // A-HM-08(KB-486)
 
   // 2열 그리드 (§1-5)
   gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24 },
@@ -359,13 +278,8 @@ const styles = StyleSheet.create({
   guestCtaText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 18 },
   guestCtaBtn: { fontSize: 13, fontWeight: '700', color: C.primaryText },
 
-  feedSkel: { gap: 12, paddingHorizontal: 20, paddingTop: 12 },
-  feedSkelCard: { height: 150, borderRadius: 8, backgroundColor: '#F2F3F6' },
-  // Codex #80 P2: 다음 페이지 실패 푸터 (ReviewFeed footerErr 문법)
-  footerErr: { paddingVertical: 20, alignItems: 'center', gap: 10 },
-  footerErrText: { fontSize: 13, fontWeight: '500', color: C.inkInfo },
-  footerRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: 4, paddingHorizontal: 20, paddingVertical: 8 },
-  footerRetryText: { fontSize: 14, fontWeight: '600', color: C.ink },
+  // KB-800: 스캔 CTA — 면책 paddingTop 32 가 CTA↔면책 간격
+  scanCta: { paddingHorizontal: 20, paddingTop: 24 },
   // 면책 (§1-10)
   disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 18, paddingHorizontal: 20, paddingTop: 32, paddingBottom: 40 },
 });
@@ -385,12 +299,17 @@ function HomeRecentRow({ position, onPress, ...rest }: React.ComponentProps<type
   );
 }
 
-/** KB-784: 리뷰 피드 카드 노출 노드(무스타일 View — FlatList 셀 안 흐름 그대로). 음식 없는 리뷰는 카드 노출 대상 아님 */
-function HomeFeedItem({ review, position, children }: { review: Review; position: number; children: React.ReactNode }) {
-  const ref = useImpressionRef(review.foodId ? 'reviews' : null, position, review.foodId ?? undefined);
+/** KB-800: 평점 높은 음식 행 = TopRatedRow + 노출 노드 + 카드 클릭(top_rated, 위치) */
+function HomeTopRatedRow({ position, onPress, ...rest }: React.ComponentProps<typeof TopRatedRow> & { position: number }) {
+  const ref = useImpressionRef('top_rated', position, rest.food.foodId);
   return (
-    <View ref={ref} collapsable={false}>
-      {children}
-    </View>
+    <TopRatedRow
+      {...rest}
+      ref={ref}
+      onPress={() => {
+        trackHomeCardClick('top_rated', position, rest.food.foodId);
+        onPress();
+      }}
+    />
   );
 }

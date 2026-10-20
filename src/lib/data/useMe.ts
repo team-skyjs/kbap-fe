@@ -10,6 +10,7 @@
  *   구서버 대비 fallback.
  * - useMyReviews: 리뷰 API 미배포(KB-73) — mock 유지.
  */
+import { observeUnlock } from '@/features/scan/unlockCelebrationStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import i18n from '../i18n';
@@ -30,6 +31,10 @@ import { MOCK_MY_REVIEWS, MOCK_USER } from '../mocks/me';
 import { toBeCode } from '../mocks/ingredients';
 
 
+/** Codex #291 R4: request order, not completion order, feeds the unlock transition (an older false must not erase a newer true). */
+let meRequestSeq = 0;
+let meAppliedSeq = 0;
+
 /** 내 프로필 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
 export async function fetchMe(): Promise<User> {
   if (!(await hasBeSession())) {
@@ -37,6 +42,7 @@ export async function fetchMe(): Promise<User> {
     return MOCK_USER; // guest/dev fallback
   }
   const gen = currentGen(); // 공부 #242 3: 요청 시작 시점의 세션 세대
+  const seq = ++meRequestSeq;
   const wire = await api.get<MyProfileWire>('/members/me/profile');
   const user = adaptProfile(wire, await loadLocalSpice());
   // 응답 도착 전에 로그아웃(세션 경계 = 세대 bump)됐으면 옛 회원 번호로 식별을 되살리지 않는다(queryClient.clear()는 진행 중 요청을 취소하지 않음)
@@ -44,6 +50,7 @@ export async function fetchMe(): Promise<User> {
     setSentryUser(user.id); // P-197: 유저 식별 = memberId만(PII 발주 고정)
     setAnalyticsUser(user.id); // KB-732: 로그인 직후·앱 시작 세션 복원 모두 여기(members/me 성공)를 지난다 — 회원 번호 문자열
     setAirbridgeUser(user.id); // KB-783: 같은 지점·같은 값(회원 번호만 — 이메일 등 PII 금지)
+    if (seq > meAppliedSeq) { meAppliedSeq = seq; observeUnlock(user.id, user.scanQuota?.unlocked, gen); }
     observeScanQuota(user.id, user.scanQuota?.unlocked); // KB-783 ⑮: 리뷰 해제 = 서버 프로필 전이로만 안다
   }
   return user;

@@ -30,6 +30,15 @@ export interface MenuSummaryWire {
   review?: ReviewInfoWire | null;
 }
 
+/** KB-800: 홈 1.3 `topRatedFoods` 항목 — 요약 + 세부 평균(소수 1자리). 속도·친절도는 입력 0건이면 null.
+ *  taste·overallRating 은 BE 가 항상 채우지만 FE 는 null 방어. */
+export interface TopRatedFoodWire extends MenuSummaryWire {
+  taste: number | null;
+  servingSpeed: number | null;
+  staffKindness: number | null;
+  overallRating: number | null;
+}
+
 export interface PageMenuSummaryWire {
   items: MenuSummaryWire[];
   hasNext: boolean;

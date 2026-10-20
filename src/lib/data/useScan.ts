@@ -58,8 +58,10 @@ export interface ScanOutcome {
  *  `{ imagePath }`만.
  *  KB-418: 채널 게이트 제거 — prod 서버도 신계약(v2 라우트) 통일.
  *  ⚠️ 킬스위치 롤백(v1)은 이제 전 채널 공통 — prod 서버의 v1 계약 유지 여부는
- *  롤백 시점에 재확인 필요(구계약 정리 진행 중). */
-export const SCAN_API_VERSION = '2.0';
+ *  롤백 시점에 재확인 필요(구계약 정리 진행 중).
+ *  KB-789: **'3.0'** — 항목마다 `substituted`·`originalScannedName` 동봉(유사 음식 대체).
+ *  2.0 응답(두 필드 부재)도 어댑터가 false/null로 흡수한다. */
+export const SCAN_API_VERSION = '3.0';
 export function scanV2Enabled(): boolean {
   return FLAGS.scanV2;
 }

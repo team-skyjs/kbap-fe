@@ -28,7 +28,7 @@ import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
 import { FeedCard } from '@/features/review/FeedCard';
 import { FeedAd } from '@/features/ads/FeedAd';
-import { withFeedAds } from '@/lib/ads/feedSlots';
+import { REVIEW_FEED_AD_EVERY, withFeedAds } from '@/lib/ads/feedSlots';
 import { IlloSpeechBubble } from '@/components/design4Assets';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useMe } from '@/lib/data/useMe';
@@ -82,7 +82,7 @@ export function ReviewFeed() {
     const author = r.author?.memberId ?? r.memberId;
     return author == null || !blockedIds.has(author);
   });
-  const rows = withFeedAds(reviews, (r) => r.id); // KB-739: 광고 행 key 순번 고정(페이지 추가에도 앞 행 identity 유지)
+  const rows = withFeedAds(reviews, (r) => r.id, REVIEW_FEED_AD_EVERY); // KB-816: 5개마다 · KB-739: 광고 행 key 순번 고정(페이지 추가에도 앞 행 identity 유지)
   const loadMore = () => {
     // Codex #58 P2-2: 에러 푸터가 콘텐츠 높이를 바꿔 onEndReached가 재발화 →
     // 자동 재시도 루프. 실패 상태에선 재시도 = 푸터 버튼만.
@@ -165,11 +165,12 @@ export function ReviewFeed() {
         onEndReached={loadMore}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={headerH} />}
         renderItem={({ item: row }) => row.kind === 'ad' ? (
-          <FeedAd testID={`ad-feed-${row.slot}`} /> /* KB-739 ④-④: 글 3개마다 네이티브 광고(③과 같은 컴포넌트) */
+          <FeedAd testID={`ad-feed-${row.slot}`} /> /* KB-739 ④-④ → KB-816: 글 5개마다 네이티브 광고(③과 같은 컴포넌트) */
         ) : (
           <FeedCard
             review={row.item}
             t={t}
+            photoVariant="peek" // KB-817: 리뷰 탭만
             mine={row.item.memberId != null && row.item.memberId === myId}
             onOpenFood={() => row.item.foodId && router.push(`/food/${row.item.foodId}?src=feed` as Href)}
             onGuestHelpful={() => setGateOpen('helpful')}
@@ -241,7 +242,8 @@ export function ReviewFeed() {
         onPress={() => (isGuest ? setGateOpen('writeReview') : setPickerOpen(true))}
       >
         <IconEdit size={20} color="#fff" />
-        <Text style={styles.fabLabel}>{t('reviews.writeReview')}</Text>
+        {/* KB-818: 큰 글씨에서 iOS가 라벨을 실제보다 좁게 재서 "Write a revi"로 잘렸다 — 한 줄 + 들어가게 축소(탭 라벨과 같은 규칙) */}
+        <Text style={styles.fabLabel} numberOfLines={1} adjustsFontSizeToFit testID="feed-write-fab-label">{t('reviews.writeReview')}</Text>
       </Pressable>
 
       <TagPickerSheet

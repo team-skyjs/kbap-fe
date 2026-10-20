@@ -11,13 +11,11 @@ it('① 홈 레일 See all = 텍스트+chevron(점선 카드 소멸)', () => {
   expect(fx).toMatch(/seeAllText[^}]*\}>\{t\('home\.seeAll'\)\}<\/Text>\s*<IconChevron size=\{16\}/);
 });
 
-it('② ⋯ 전 카드 — 탈퇴 리뷰 포함(FeedCard anon 게이트 소멸)·홈 = 신고만·차단은 익명/reportOnly 미노출', () => {
+it('② ⋯ 전 카드 — 탈퇴 리뷰 포함(FeedCard anon 게이트 소멸)·차단은 익명/reportOnly 미노출 (KB-800: 홈 피드·신고 플로우 제거)', () => {
   const fc = read('src/features/review/FeedCard.tsx');
   expect(fc).not.toContain('!anon && showMore');
   const home = read('src/app/(tabs)/index.tsx');
-  expect(home).not.toContain('showMore={false}');
-  expect(home).toContain('reportOnly: true');
-  expect(home).toContain('<ModerationFlow');
+  expect(home).not.toContain('<ModerationFlow'); // KB-800: 홈 리뷰 피드 소멸 → 홈 신고 플로우도 없음
   const mod = read('src/features/community/moderation.tsx');
   expect(mod).toContain('!isGuest && !target.anonymized && !target.reportOnly');
   const rf = read('src/features/community/ReviewFeed.tsx');

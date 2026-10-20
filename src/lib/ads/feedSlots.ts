@@ -5,6 +5,8 @@
 export type FeedRow<T> = { kind: 'item'; key: string; item: T } | { kind: 'ad'; key: string; slot: number };
 
 export const FEED_AD_EVERY = 3;
+/** KB-816(예진 10/20): 리뷰 탭 피드만 5개마다. 음식 상세 미리보기는 최대 3장이라 기본 3 유지(5면 광고 0). */
+export const REVIEW_FEED_AD_EVERY = 5;
 
 export function withFeedAds<T>(items: readonly T[], keyOf: (item: T) => string, every: number = FEED_AD_EVERY): FeedRow<T>[] {
   const rows: FeedRow<T>[] = [];
