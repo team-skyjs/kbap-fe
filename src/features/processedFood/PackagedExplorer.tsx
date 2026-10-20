@@ -1,0 +1,221 @@
+/**
+ * Food 탭 Packaged (KB-812, D-32 R-95 12338:38030) — 가공식품 검색 중심 목록 + Food 탭 상단 Dishes|Packaged 세그먼트.
+ * - 전체 둘러보기 없음: 검색어가 있을 때만 조회(빈 검색어 = 서버 400). 첫 화면 = 검색 안내.
+ * - 유형 칩(Snacks/Ramen/…)은 3.2에 필터 파라미터가 없어 1차 제외(클라 필터 금지) — 카드에 유형 라벨만.
+ * - 카드 = 시안 dish-item(2200:21188 — pad 12 · r8 · #EAEBEE): 왼쪽 72 썸네일(사진 없으면 유형 플레이스홀더) + 제품명·제조사.
+ *   리뷰 수·평점은 3.2 목록에 없어 숨김(리뷰 2차). 판정 칩도 목록 응답에 검출이 없어 없음 — 판정은 상세에서.
+ * - 로딩 = 시안 loading(335×104 회색 4장) · 결과 0 = 시안 empty(유형 플레이스홀더 + 문구, 성분표 촬영 버튼은 F2 전까지 숨김).
+ */
+import * as React from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { useRouter, type Href } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import { Pressable } from '@/components/Pressable';
+import { Txt as Text } from '@/components/Txt';
+import { Input, IconSearch, IconClose, IconCamera, IconTabFood, Spinner, QueryErrorBlock } from '@/components';
+import { RemoteImage } from '@/components/RemoteImage';
+import { Shimmer } from '@/components/Skeleton';
+import { color as C, font } from '@/lib/theme';
+import { EVENTS, track } from '@/lib/analytics';
+import { useProcessedSearch } from '@/lib/data/useProcessedFoods';
+import type { PackagedType, ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
+
+export type FoodSegment = 'dishes' | 'packaged';
+
+/** R-95 반응형 탭(9:4546) — 두 칸 반반, 활성 = 진한 글자 + 칸 폭 2pt 밑줄, 아래 0.5 구분선. 밑줄은 비활성도 투명으로 자리 유지(프레임 불변). */
+export function FoodSegmentRow({ value, onChange }: { value: FoodSegment; onChange: (s: FoodSegment) => void }) {
+  const { t } = useTranslation();
+  return (
+    <View>
+      <View style={seg.row} accessibilityRole="tablist">
+        {(['dishes', 'packaged'] as FoodSegment[]).map((s) => (
+          <Pressable
+            key={s}
+            style={seg.tab}
+            onPress={() => onChange(s)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: value === s }}
+            testID={`food-segment-${s}`}
+          >
+            <Text style={[seg.label, value === s && seg.labelOn]} numberOfLines={1}>{t(s === 'dishes' ? 'packaged.segmentDishes' : 'packaged.segmentPackaged')}</Text>
+            <View style={[seg.bar, value === s && seg.barOn]} />
+          </Pressable>
+        ))}
+      </View>
+      <View style={seg.divider} />
+    </View>
+  );
+}
+
+/** 유형 플레이스홀더(시안: Ramen = soup 아이콘, 나머지 = camera 아이콘 + 유형 글자) — 목록 썸네일·상세 사진 자리 공용. */
+export function PackagedPlaceholder({ type, foodType, style }: { type: PackagedType | null; foodType: string | null; style: object }) {
+  const { t } = useTranslation();
+  const label = type ? t(`packaged.type.${type}`) : foodType;
+  return (
+    <View style={[ph.box, style]} testID="packaged-placeholder">
+      {type === 'ramen' ? <IconTabFood size={24} color={C.inkMute} /> : <IconCamera size={24} color={C.inkMute} />}
+      {!!label && <Text style={ph.label} numberOfLines={1}>{label}</Text>}
+    </View>
+  );
+}
+
+function ProductRow({ item, onOpen }: { item: ProcessedFoodSummary; onOpen: () => void }) {
+  const { t } = useTranslation();
+  const typeLabel = item.type ? t(`packaged.type.${item.type}`) : item.foodType;
+  return (
+    <Pressable style={st.row} onPress={onOpen} accessibilityRole="button" accessibilityLabel={[item.name, item.maker].filter(Boolean).join(', ')} testID={`packaged-item-${item.id}`} uiTarget="packaged-item">
+      {item.imageUrl ? (
+        <RemoteImage uri={item.imageUrl} style={st.thumb} recyclingKey={`pf-${item.id}`} />
+      ) : (
+        <PackagedPlaceholder type={item.type} foodType={item.foodType} style={st.thumb} />
+      )}
+      <View style={st.card}>
+        <Text style={st.name} numberOfLines={2}>{item.name}</Text>
+        {!!item.maker && <Text style={st.maker} numberOfLines={1}>{item.maker}</Text>}
+        {!!typeLabel && <Text style={st.type} numberOfLines={1}>{typeLabel}</Text>}
+      </View>
+    </Pressable>
+  );
+}
+
+export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.ReactNode; topPad?: number; onScroll?: React.ComponentProps<typeof Animated.FlatList<ProcessedFoodSummary>>['onScroll'] }) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const [draft, setDraft] = React.useState('');
+  const [query, setQuery] = React.useState('');
+  const [searchSeq, setSearchSeq] = React.useState(0); // 제출 회차 — 같은 검색어를 다시 제출해도 1회로 센다(Codex #308 R2)
+  const q = useProcessedSearch(query);
+  const items = q.data ?? [];
+  const term = query.trim();
+
+  // 검색 1회 = 제출 1번마다 결과(첫 페이지) 도착 시 1번 — 검색어 원문은 보내지 않는다(길이·결과 수만)
+  const tracked = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    if (!term || !q.isSuccess || tracked.current === searchSeq) return;
+    tracked.current = searchSeq;
+    track(EVENTS.food_packaged_search, { query_length: Array.from(term).length, result_count: items.length });
+  }, [term, q.isSuccess, items.length, searchSeq]);
+
+  const submit = () => { setQuery(draft); setSearchSeq((n) => n + 1); };
+  const clear = () => { setDraft(''); setQuery(''); };
+
+  const header = (
+    <View>
+      {top}
+      <View style={st.searchBox}>
+        <Input
+          value={draft}
+          onChangeText={setDraft}
+          onSubmitEditing={submit}
+          placeholder={t('packaged.searchPlaceholder')}
+          placeholderTextColor={C.inkDisabled}
+          returnKeyType="search"
+          style={st.searchInput}
+          testID="packaged-search-input"
+        />
+        {draft ? (
+          <Pressable onPress={clear} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('packaged.clearSearch')} testID="packaged-search-clear">
+            <IconClose size={18} color={C.ink3} />
+          </Pressable>
+        ) : null}
+        <Pressable onPress={submit} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('packaged.searchPlaceholder')} testID="packaged-search-submit">
+          <IconSearch size={20} color={C.ink3} />
+        </Pressable>
+      </View>
+    </View>
+  );
+
+  let empty: React.ReactElement | null = null;
+  if (!term) {
+    empty = (
+      <View style={st.state} testID="packaged-guide">
+        <PackagedPlaceholder type={null} foodType={null} style={st.stateArt} />
+        <Text style={st.stateTitle}>{t('packaged.guideTitle')}</Text>
+        <Text style={st.stateBody}>{t('packaged.guideBody')}</Text>
+      </View>
+    );
+  } else if (q.isPending) {
+    empty = (
+      <View style={st.skel} testID="packaged-skeleton">
+        {[0, 1, 2, 3].map((i) => <Shimmer key={i} style={st.skelCard} />)}
+      </View>
+    );
+  } else if (q.isError) {
+    empty = <View style={st.errorPad}><QueryErrorBlock error={q.error} onRetry={() => void q.refetch()} /></View>;
+  } else {
+    empty = (
+      <View style={st.state} testID="packaged-empty">
+        <PackagedPlaceholder type={null} foodType={null} style={st.stateArt} />
+        <Text style={st.stateTitle}>{t('packaged.emptyTitle')}</Text>
+        <Text style={st.stateBody}>{t('packaged.emptyBody')}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <Animated.FlatList
+      data={items}
+      keyExtractor={(it: ProcessedFoodSummary) => it.id}
+      renderItem={({ item }: { item: ProcessedFoodSummary }) => <ProductRow item={item} onOpen={() => router.push(`/processed-foods/${item.id}` as Href)} />}
+      ListHeaderComponent={header}
+      ListEmptyComponent={empty}
+      ListFooterComponent={
+        q.isFetchingNextPage ? <Spinner /> : q.isFetchNextPageError ? (
+          // Codex #308 P2: 다음 페이지 실패 = 안내 + 다시 시도(자동 재요청은 멈춤 — 수동만)
+          <Pressable style={st.moreErr} onPress={() => void q.fetchNextPage()} accessibilityRole="button" testID="packaged-more-retry">
+            <Text style={st.moreErrText}>{t('packaged.loadMoreFailed')}</Text>
+            <Text style={st.moreErrCta}>{t('common.tryAgain')}</Text>
+          </Pressable>
+        ) : null
+      }
+      onEndReachedThreshold={0.6}
+      onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage && !q.isFetchNextPageError) void q.fetchNextPage(); }}
+      contentContainerStyle={{ paddingTop: topPad, paddingBottom: 110 }}
+      keyboardShouldPersistTaps="handled"
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+      showsVerticalScrollIndicator={false}
+      testID="packaged-list"
+    />
+  );
+}
+
+// R-95 실측(2x PNG): 탭 높이 48(라벨 16/24 semibold · 밑줄 2) · 활성 #2F3137 · 비활성 gray-700 · 구분선 0.5 gray-300
+const seg = StyleSheet.create({
+  row: { flexDirection: 'row' },
+  tab: { flex: 1, height: 48, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
+  label: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 24, color: C.ink2 },
+  labelOn: { color: '#2F3137' },
+  bar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
+  barOn: { backgroundColor: '#212124' },
+  divider: { height: 0.5, backgroundColor: C.line2 },
+});
+
+const ph = StyleSheet.create({
+  box: { backgroundColor: C.hair, alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden' },
+  label: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2, paddingHorizontal: 6 },
+});
+
+// R-95 실측: 검색 335×48(세그먼트 아래 24) · 행 72(썸네일 72 r8) 간격 20 · 이름 16 bold ink · 제조사 14 gray-600 · 카드 보더 #EAEBEE
+const st = StyleSheet.create({
+  searchBox: { marginTop: 24, marginBottom: 24, marginHorizontal: 20, height: 48, borderRadius: 4, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
+  searchInput: { flex: 1, height: 48, fontSize: 15, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
+  row: { flexDirection: 'row', gap: 12, marginHorizontal: 20, marginBottom: 20 },
+  thumb: { width: 72, height: 72, borderRadius: 8 },
+  card: { flex: 1, minWidth: 0, minHeight: 72, justifyContent: 'center', borderWidth: 1, borderColor: C.line, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: C.card },
+  name: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 22, color: C.ink },
+  maker: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink3 },
+  type: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: C.ink3 },
+  skel: { paddingHorizontal: 20, gap: 20 },
+  moreErr: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', columnGap: 8, minHeight: 44, paddingHorizontal: 20 },
+  moreErrText: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
+  moreErrCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+  skelCard: { height: 104, borderRadius: 8 },
+  errorPad: { paddingHorizontal: 20, paddingTop: 24 },
+  // 시안 empty(12338:37301): 유형 아트 335×150 r8 → 제목 → 본문
+  state: { paddingHorizontal: 20, gap: 16 },
+  stateArt: { height: 150, borderRadius: 8 },
+  stateTitle: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 28, color: C.ink, marginTop: 8 },
+  stateBody: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink },
+});

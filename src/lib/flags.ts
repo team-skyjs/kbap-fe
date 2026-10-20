@@ -159,6 +159,11 @@ export const FLAGS = {
    * off = 본문만(버튼 없음), 원문 렌더 무변.
    */
   contentTranslation: true,
+  /**
+   * KB-812: 가공식품 상세 "성분표 직접 확인"(성분표 촬영 진입) — F2(KB-813, 서버 #428) 전까지 숨김.
+   * 켜면 상세에 버튼이 보이지만 촬영 화면이 아직 없으니 F2와 함께 켤 것.
+   */
+  packagedLabelScan: false,
 } as const;
 
 /** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).
