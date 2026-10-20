@@ -387,21 +387,30 @@ describe('KB-828 리뷰 본문 최소 10자', () => {
     expect(mockToast).not.toHaveBeenCalled();
   });
 
-  it('서버 400 REVIEW-005 = 같은 안내 강조 · 일반 실패 표면 없음 · 입력 보존 · 버튼 복구(다시 제출 가능)', async () => {
+  it('서버 400 REVIEW-005(클라 기준 통과한 본문) = 안내 표시·강조 + 스크린리더 사유 · 일반 실패 없음 · 입력 보존 · 그대로면 재제출 막음 → 고치면 풀림', async () => {
     mockCreate.mockRejectedValueOnce(new ApiError('리뷰 본문은 10자 이상이어야 해요', 400, 'REVIEW-005'));
     const tree = render(<ReviewCompose />);
     pickStar(tree);
     act(() => bodyInput(tree).props.onChangeText('Tasty food!'));
+    expect(byId(tree, 'review-min-length')).toHaveLength(0); // 11자 = 클라 통과
     await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
     expect(mockCreate).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(tree.toJSON())).not.toContain('review.postError');
     expect(bodyInput(tree).props.value).toBe('Tasty food!');
-    expect(byId(tree, 'post-review')[0].props.variant).toBe('primary');
-    expect(byId(tree, 'post-review')[0].props.busy).toBe(false);
-    // 강조가 걸린 상태 — 9자로 줄이면 안내가 강조색으로 보인다(새 화면의 기본 회색과 다름)
-    act(() => bodyInput(tree).props.onChangeText('Tasty foo'));
+    expect(textOf(tree, 'review-min-length')).toBe('review.minLength'); // Codex #304: 본문이 10자 이상이어도 보인다
     const fresh = render(<ReviewCompose />);
-    expect(flat(host(tree, 'review-min-length')[0].props.style).color).not.toBe(flat(host(fresh, 'review-min-length')[0].props.style).color);
+    act(() => bodyInput(fresh).props.onChangeText('Tasty'));
+    expect(flat(host(tree, 'review-min-length')[0].props.style).color).not.toBe(flat(host(fresh, 'review-min-length')[0].props.style).color); // 강조색
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('off');
+    expect(byId(tree, 'post-review')[0].props.busy).toBe(false);
+    expect(byId(tree, 'post-review')[0].props.accessibilityHint).toBe('review.minLength');
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(mockCreate).toHaveBeenCalledTimes(1); // 같은 본문 재제출 0
+    act(() => bodyInput(tree).props.onChangeText('Tasty food!!'));
+    expect(byId(tree, 'review-min-length')).toHaveLength(0);
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('primary');
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(mockCreate).toHaveBeenCalledTimes(2);
   });
 
   it('수정: 본문 없던 리뷰(사진·별점만) = 저장 off + 안내 · 10자 채우면 저장 → changes.body = trim 본문', async () => {

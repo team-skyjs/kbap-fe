@@ -141,7 +141,11 @@ function ReviewComposeScreen() {
   const bodyLen = reviewBodyLength(body);
   const bodyShort = bodyLen < REVIEW_MIN_BODY;
   const [minLenStressed, setMinLenStressed] = useState(false);
-  const canPost = canPostReview(rating, body) && !posting && !submitted; // KB-730: 등록 뒤 Post 재활성 0(중복 리뷰 — P-168 류)
+  // Codex #304: 서버 REVIEW-005는 클라 기준을 통과한 본문에 온다 — 거부된 본문 그대로인 동안 안내를 띄우고 재제출을 막는다(고치면 풀림)
+  const [rejectedBody, setRejectedBody] = useState<string | null>(null);
+  const serverRejected = rejectedBody !== null && body === rejectedBody;
+  const showMinLen = bodyShort || serverRejected;
+  const canPost = canPostReview(rating, body) && !serverRejected && !posting && !submitted; // KB-730: 등록 뒤 Post 재활성 0(중복 리뷰 — P-168 류)
 
   // P-156: 갤러리 멀티 선택 — selectionLimit = 남은 슬롯(3 − 현재). 구형 안드 등
   // limit 미준수 산출물은 addReviewPhotos slice(3)가 방어 + 안내 토스트 1회.
@@ -201,7 +205,7 @@ function ReviewComposeScreen() {
   // 성공 시 무효화(useCreateReview)가 목록·평점을 서버값으로 갱신. 실패는 화면 유지+표시.
   const post = () =>
     runPost(async () => {
-      if (!canPostReview(rating, body)) return;
+      if (!canPostReview(rating, body) || serverRejected) return;
       setPostError(null);
       try {
         // P-358: 신규(local)만 업로드, 기존(remote)은 URL→path 역변환 — 슬롯 순서 보존
@@ -241,7 +245,7 @@ function ReviewComposeScreen() {
         await runAfterKeyboardHidden(() => setSubmitted(true)); // await = 지연 창에도 posting 가드 유지(P-173)
       } catch (e) {
         if (isUploadAborted(e)) return; // KB-711: 화면을 떠나 업로드를 취소한 것 — 떠난 화면에 실패 표시 없음
-        if (e instanceof ApiError && e.code === 'REVIEW-005') { setMinLenStressed(true); return; } // KB-828: 서버 기준 미달 = 같은 안내(입력 보존·버튼 복구)
+        if (e instanceof ApiError && e.code === 'REVIEW-005') { setRejectedBody(body); return; } // KB-828: 서버 기준 미달 = 같은 안내(입력 보존·버튼 복구)
         console.log('[review] post failed — staying on screen:', (e as Error)?.message);
         // KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**이면 에러 표면 대신 조용한 안내.
         // ⚠️ 화면을 닫지 않는다 — 리뷰엔 초안 저장소가 없어 닫는 순간 본문·사진이 사라진다.
@@ -537,11 +541,11 @@ function ReviewComposeScreen() {
             }}
           />
           <View style={styles.metaRow}>
+            {showMinLen && (
+              <Text style={[styles.minLenHint, (minLenStressed || serverRejected) && styles.minLenStressed]} testID="review-min-length">{t('review.minLength')}</Text>
+            )}
             {bodyShort ? (
-              <>
-                <Text style={[styles.minLenHint, minLenStressed && styles.minLenStressed]} testID="review-min-length">{t('review.minLength')}</Text>
-                <Text style={[styles.tag, minLenStressed && styles.minLenStressed]} testID="review-min-count">{t('review.minLengthCount', { count: bodyLen })}</Text>
-              </>
+              <Text style={[styles.tag, minLenStressed && styles.minLenStressed]} testID="review-min-count">{t('review.minLengthCount', { count: bodyLen })}</Text>
             ) : (
               <Text style={styles.tag}>{t('review.charCount', { count: body.length })}</Text>
             )}
@@ -595,12 +599,12 @@ function ReviewComposeScreen() {
           Btn busy(공용 문법 — 메트릭 불변 스피너). */}
       <View style={[styles.bottomBar, { paddingBottom: 10 + bottomInset }]} testID="review-bottom-bar">
         {/* KB-828: 비활성 Btn은 터치를 받지 않아 바깥 래퍼가 받는다 → 토스트 없이 안내 강조. 스크린리더는 Btn(비활성 + 사유 힌트) */}
-        <Pressable onPress={bodyShort ? () => setMinLenStressed(true) : undefined} accessible={false} testID="post-review-blocked">
+        <Pressable onPress={showMinLen ? () => setMinLenStressed(true) : undefined} accessible={false} testID="post-review-blocked">
           <Btn
             variant={canPost || posting ? 'primary' : 'off'}
             busy={posting}
             onPress={post}
-            accessibilityHint={bodyShort ? t('review.minLength') : undefined}
+            accessibilityHint={showMinLen ? t('review.minLength') : undefined}
             testID="post-review"
           >
             {t(editing ? 'editReview.save' : 'review.postReview')}
