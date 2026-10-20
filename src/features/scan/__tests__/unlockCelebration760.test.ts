@@ -56,3 +56,8 @@ it('Codex #291 P1: a fresh login (saveTokens newSession) moves the store to the 
   observeUnlock('a', false, gen); observeUnlock('a', true, gen);
   expect(hasUnlockPending()).toBe(true);
 });
+it('Codex #291 3R P1: root layout keeps gesture-handler as its first import', () => {
+  const fs = jest.requireActual<typeof import('fs')>('fs');
+  const first = fs.readFileSync('src/app/_layout.tsx', 'utf8').split('\n').find((line) => line.startsWith('import '));
+  expect(first).toBe("import 'react-native-gesture-handler';");
+});

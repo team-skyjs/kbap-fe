@@ -1,4 +1,3 @@
-import { UnlockCelebrationHost } from '@/features/scan/UnlockCelebrationHost';
 /**
  * Root layout — global providers for the whole app:
  *  - TanStack Query (data seam)
@@ -13,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { Stack, useRouter, type Href } from 'expo-router';
 import { useScreenTracking } from '@/lib/useScreenTracking';
+import { UnlockCelebrationHost } from '@/features/scan/UnlockCelebrationHost';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
