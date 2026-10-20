@@ -247,3 +247,17 @@ it('QA P-493 iOS L1: 불꽃 묶음 배율 k는 표시 1회당 시트 첫 측정�
   act(() => sheet().props.onLayout({ nativeEvent: { layout: { height: height } } })); // (그대로 쓰면 k = 0.7)
   expect(anchorW()).toBe(first);
 });
+it('Codex #297 P1: 띄어쓰기 없는 제목은 한 덩어리로 시트 전체 폭(줄바꿈 유지) · 여러 단어는 각자 시트 폭 상한', async () => {
+  const { StyleSheet } = jest.requireActual('react-native');
+  const { StaggerTitle } = jest.requireActual('../celebrationMotion');
+  const progress = { value: 1 };
+  let one!: ReactTestRenderer; let many!: ReactTestRenderer;
+  act(() => { one = renderer.create(<StaggerTitle title="スキャンが無制限になりました" progress={progress} style={{}} />); });
+  act(() => { many = renderer.create(<StaggerTitle title="Unlimited scanning unlocked" progress={progress} style={{}} />); });
+  trees.push(one, many);
+  const words = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.props.testID === 'string' && n.props.testID.startsWith('unlock-title-word-') && typeof n.type === 'string');
+  expect(words(one)).toHaveLength(1);
+  expect(StyleSheet.flatten(words(one)[0].props.style)).toMatchObject({ width: '100%' });
+  expect(words(many)).toHaveLength(3);
+  for (const w of words(many)) expect(StyleSheet.flatten(w.props.style)).toMatchObject({ maxWidth: '100%', flexShrink: 1 });
+});

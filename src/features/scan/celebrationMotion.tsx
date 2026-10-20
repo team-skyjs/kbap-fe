@@ -114,8 +114,9 @@ function Word({ word, index, count, progress, style }: { word: string; index: nu
     const local = Math.min(1, Math.max(0, (progress.value - start) / span));
     return { opacity: local, transform: [{ scale: 0.6 + 0.4 * local }] };
   });
+  // Codex #297 P1: 띄어쓰기 없는 제목(ko 일부·ja·zh·th)은 한 덩어리 — 폭을 시트에 묶어 원래처럼 줄바꿈되게. 모든 단어도 시트 폭 상한.
   return (
-    <Animated.View style={animated}>
+    <Animated.View style={[count === 1 ? styles.wordFull : styles.word, animated]} testID={`unlock-title-word-${index}`}>
       <Text style={style}>{word}</Text>
     </Animated.View>
   );
@@ -135,4 +136,6 @@ const styles = StyleSheet.create({
   particle: { position: 'absolute', left: 0, top: 0 },
   ring: { position: 'absolute', left: '50%', top: '50%', borderWidth: 3, borderColor: C.surface },
   words: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: 8 },
+  word: { maxWidth: '100%', flexShrink: 1 },
+  wordFull: { width: '100%' },
 });
