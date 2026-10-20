@@ -418,7 +418,7 @@ describe('P-384(KB-442): 쿼터 넛지 카드 = 회원 && 잔여 0 && 미해금�
 it('KB-777 B3-7: 작은 화면 판정(폭<360 또는 높이<700) · 기본 화면 = 라벨 필 · 작은 화면 = 36 원형 아이콘만 + 접근성 이름', () => {
   const { isCompactFabScreen } = jest.requireActual('../ReviewFeed') as { isCompactFabScreen: (w: number, h: number) => boolean };
   expect([isCompactFabScreen(360, 640), isCompactFabScreen(320, 800), isCompactFabScreen(375, 667), isCompactFabScreen(390, 844), isCompactFabScreen(360, 760)]).toEqual([true, true, true, false, false]);
-  const RN = require('react-native');
+  const RN = jest.requireActual('react-native');
   const big = render();
   const fab = () => big.root.findAll((n) => n.props?.testID === 'feed-write-fab' && typeof n.type === 'string')[0];
   expect(big.root.findAll((n) => n.props?.testID === 'feed-write-fab-label')).not.toHaveLength(0);

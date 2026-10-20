@@ -221,9 +221,9 @@ it('KB-777 B3-6: 남은 점수 = 서버 pointsToNext(없으면 at − score) · 
   expect([barPercent(81, 180), barPercent(0, 80), barPercent(200, 180), barPercent(5, 0)]).toEqual([45, 0, 100, 100]);
   const tree = render(<RankingScreen />); // taster 45 → explorer @80, pointsToNext 35
   const fill = tree.root.findAll((n) => n.props?.testID === 'ranking-progress-fill' && typeof n.type === 'string')[0];
-  expect((require('react-native').StyleSheet.flatten(fill.props.style) as { width?: string }).width).toBe('56%'); // 45/80 — 종전 (45−30)/50 = 30%
-  const src = require('fs').readFileSync('src/app/profile/ranking.tsx', 'utf8') as string;
+  expect((jest.requireActual('react-native').StyleSheet.flatten(fill.props.style) as { width?: string }).width).toBe('56%'); // 45/80 — 종전 (45−30)/50 = 30%
+  const src = jest.requireActual('fs').readFileSync('src/app/profile/ranking.tsx', 'utf8') as string;
   expect(src).toContain("t('ranking.ptsTo', { count: rk.pointsToNext ?? Math.max(0, next.at - rk.score), tier:");
-  const en = JSON.parse(require('fs').readFileSync('src/lib/i18n/en.json', 'utf8')).ranking;
+  const en = JSON.parse(jest.requireActual('fs').readFileSync('src/lib/i18n/en.json', 'utf8')).ranking;
   expect([en.ptsTo_one, en.ptsTo_other]).toEqual(['{{count}} pt to {{tier}}', '{{count}} pts to {{tier}}']);
 });

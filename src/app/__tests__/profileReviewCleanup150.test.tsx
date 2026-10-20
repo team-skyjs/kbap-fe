@@ -571,9 +571,9 @@ it('KB-708 B: 작성 중 세션 만료(게스트 전환) = 막지 않음(게이�
 
 // KB-777 B2-6: 본인 리뷰 ⋯ = 피드와 같은 공용 하단 시트(수정·삭제 — 삭제 위험색), OS Alert 0
 it('KB-777 B2-6: 내 리뷰 ⋯ → 공용 시트(mod-actions: edit·delete, delete destructive) · Alert 0 · 삭제 = 그 리뷰 삭제', () => {
-  const { Alert } = require('react-native');
+  const { Alert } = jest.requireActual('react-native');
   const alertSpy = jest.spyOn(Alert, 'alert');
-  const { QueryClient, QueryClientProvider } = require('@tanstack/react-query');
+  const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
   const qc = new QueryClient();
   const tree = render(<QueryClientProvider client={qc}><MyReviews /></QueryClientProvider>);
   const more = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('feed-more-') && typeof n.props?.onPress === 'function')[0];
