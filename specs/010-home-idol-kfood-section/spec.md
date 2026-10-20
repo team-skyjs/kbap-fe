@@ -98,7 +98,7 @@
 
 - 계약 C-1(01_cto_plan.md) 그대로 — BE 진행 중이라 JSON 예시 기준으로 어댑터 작성.
 - 상세 카드는 목록 캐시가 있을 때만 뜬다 — 딥링크·검색·다른 목록 직진입, 앱 재시작·gcTime 만료 뒤엔 매핑 음식이어도 카드 없음(D3, 사용자 결정).
-- 배너 사진 = 번들 dish-01·02·03(인물 없음 확인, dish-04 는 배경 인물이라 제외).
+- 배너 사진 = 번들 dish-05 잡채·dish-03 구운 소고기·dish-12 갈비탕(인물 없음, 시드 제외 5종·닮은꼴 아님 — 근거 research R-3).
 - 이벤트 이름은 레포 도메인 접두 잠금(analyticsNaming215)에 따라 `idol_pick_list_view` → `home_idol_pick_list_view`, `idol_video_open` → `food_idol_video_open`(속성·시점은 계획 그대로, cto 통보).
 - 비영어·비한국어 8개 로케일 문구는 en 기준 번역 — 번역 검수 필요.
 - en `idolPicks.sub`("…check the ingredients and find the video link.")는 "재료 검색 약속 금지" 잠금(copy722)에 오탐 — 확정 문구라 허용 목록에 추가.

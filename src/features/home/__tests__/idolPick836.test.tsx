@@ -141,6 +141,9 @@ describe('홈 배너 (정적)', () => {
     expect(json).toContain('home.idolPick.sub');
     expect(json).not.toContain('count');
     expect(fs.readFileSync('src/features/home/IdolPickBanner.tsx', 'utf8')).not.toMatch(/RemoteImage|useHome|useIdolPicks|uri:/);
+    // 사진 = 인물 없음 + 시드 제외 음식·닮은꼴 아님(01 비빔밥·02 돼지고기 찌개·08 김밥 금지, 04·06 배경 인물 금지)
+    const photos = [...fs.readFileSync('src/features/home/IdolPickBanner.tsx', 'utf8').matchAll(/dishes\/(dish-\d+)\.jpg/g)].map((m) => m[1]);
+    expect(photos).toEqual(['dish-05', 'dish-03', 'dish-12']);
   });
 
   it('탭 = home_card_click{section:idol_pick, position:0}(food_id·collection_key 없음, D4) → /idol-picks · 라벨', () => {

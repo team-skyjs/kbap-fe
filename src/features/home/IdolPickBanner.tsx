@@ -1,7 +1,9 @@
 /**
  * IdolPickBanner (KB-836 H1, 02_designer_spec 화면 1) — 홈 인기 레일 아래 K-POP & K-FOOD 다크 포스터 배너.
  * **정적**(사용자 결정 2026-10-21): 데이터·네트워크·로딩·0건 분기 없음, 음식 수 표시 없음. 배너 전체가 단일 버튼 → `/idol-picks`.
- * 콜라주 = 번들 사진 3장(로그인 콜라주와 같은 assets/images/dishes — 인물 없는 01·02·03, 용량 증가 0) + 물음표 SVG.
+ * 콜라주 = 번들 사진 3장(로그인 콜라주와 같은 assets/images/dishes, 용량 증가 0) + 물음표 SVG.
+ *  선택 = 인물 없음 + 시드 제외 5종(김밥·비빔밥·김치찌개·닭한마리·불닭)·그 닮은꼴 아님: 05 잡채 · 03 구운 소고기 · 12 갈비탕.
+ *  01 비빔밥·08 김밥 = 제외 음식, 02 돼지고기 찌개 = 김치찌개 닮은꼴, 04 떡볶이·06 삼겹살 = 배경 인물.
  * 눌림 = 흰 12% 오버레이 opacity 만(크기·보더 불변). 계측: 노출 home_section_view(idol_pick) · 클릭 home_card_click{section, position 0}(id 없음, D4).
  */
 import * as React from 'react';
@@ -16,9 +18,9 @@ import { trackHomeCardClick, useImpressionRef } from './homeImpressions';
 
 // 번들 정적 이미지(login.tsx 와 같은 방식)
 const PHOTOS = [
-  require('../../../assets/images/dishes/dish-01.jpg'),
-  require('../../../assets/images/dishes/dish-02.jpg'),
-  require('../../../assets/images/dishes/dish-03.jpg'),
+  require('../../../assets/images/dishes/dish-05.jpg'), // 잡채
+  require('../../../assets/images/dishes/dish-03.jpg'), // 구운 소고기(시드 한우구이 계열) — 가운데 슬롯
+  require('../../../assets/images/dishes/dish-12.jpg'), // 갈비탕
 ];
 
 /** 폭 360 기준 콜라주 규격(사진 크기·슬롯 위치·회전·물음표). 슬롯 #1이 맨 아래, #3이 맨 위. */
