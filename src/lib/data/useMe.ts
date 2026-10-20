@@ -29,6 +29,7 @@ import { loadLocalSpice, SPICE_KEY } from '../onboarding/submit';
 import { spiceChoiceToWire } from '../api/spiceAdapter';
 import { MOCK_MY_REVIEWS, MOCK_USER } from '../mocks/me';
 import { toBeCode } from '../mocks/ingredients';
+import { REVIEW_READ_HEADERS } from './useFoodReviews';
 
 
 /** Codex #291 R4: request order, not completion order, feeds the unlock transition (an older false must not erase a newer true). */
@@ -78,7 +79,7 @@ export async function fetchMyReviews(): Promise<Review[]> {
   for (let page = 0; page < 20; page++) {
     // ponytail: 20페이지 안전 상한 — 초과분은 잘림(개인 리뷰 수백 건이면 그때 페이지네이션 UI)
     const res = adaptReviewPage(
-      await api.get<ReviewPageWire>(`/api/reviews/me?lang=${apiLang()}${cursor ? `&cursor=${cursor}` : ''}`),
+      await api.get<ReviewPageWire>(`/api/reviews/me?lang=${apiLang()}${cursor ? `&cursor=${cursor}` : ''}`, REVIEW_READ_HEADERS), // KB-812 2차: 3.2 = 가공식품 리뷰 포함
     );
     all.push(...res.items);
     if (!res.hasNext || !res.nextCursor) break;

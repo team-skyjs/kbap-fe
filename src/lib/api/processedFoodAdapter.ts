@@ -36,6 +36,8 @@ export type ProcessedFoodDetail = ProcessedFoodSummary & {
   unmapped: string[];
   sourceAttributionKey: string;
   image: { url: string; attributionKey: string } | null;
+  /** KB-812 2차: 리뷰 요약(서버 3.2 #435) — 구서버(필드 없음) = null → 화면은 숨김 */
+  reviewSummary: { count: number; avgRating: number | null } | null;
 };
 
 type SummaryWire = { id: number; productName: string; maker?: string | null; foodType?: string | null; imageUrl?: string | null };
@@ -50,6 +52,7 @@ export type DetailWire = SummaryWire & {
   unmapped?: string[] | null;
   source: { provider: string; attributionKey: string };
   image?: { url: string; source: string; attributionKey: string } | null;
+  reviewSummary?: { count: number; avgRating?: number | null } | null;
 };
 
 const blankToNull = (s: string | null | undefined): string | null => (s && s.trim() ? s.trim() : null);
@@ -91,6 +94,7 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     unmapped: (w.unmapped ?? []).map((u) => u.trim()).filter(Boolean),
     sourceAttributionKey: w.source.attributionKey,
     image: w.image?.url ? { url: toHttps(w.image.url) as string, attributionKey: w.image.attributionKey } : null,
+    reviewSummary: w.reviewSummary ? { count: w.reviewSummary.count ?? 0, avgRating: w.reviewSummary.avgRating ?? null } : null,
   };
 }
 

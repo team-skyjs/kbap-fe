@@ -39,6 +39,7 @@ import { isScanQuotaExhausted } from '@/lib/api/memberAdapter';
 import { useUnreadCount } from '@/lib/data/useNotifications';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
+import { reviewTargetHref, reviewTargetType } from '@/lib/review/reviewTarget';
 import type { Review } from '@/lib/api/types';
 import type { FoodTagRef } from '@/lib/community/types';
 
@@ -93,7 +94,7 @@ export function ReviewFeed() {
   const qc = useQueryClient();
   const openReview = (review: Review, target: ReviewOpenTarget) => {
     qc.setQueryData(reviewDetailKey(review.id), review);
-    track(EVENTS.review_card_open, { target, photo_count: review.photos?.length ?? 0 });
+    track(EVENTS.review_card_open, { target, photo_count: review.photos?.length ?? 0, target_type: reviewTargetType(review) });
     router.push(`/review/${review.id}` as Href);
   };
 
@@ -206,7 +207,7 @@ export function ReviewFeed() {
             tracker={impressions}
             t={t}
             onOpen={(target) => openReview(row.item, target)}
-            onOpenFood={() => row.item.foodId && router.push(`/food/${row.item.foodId}?src=feed` as Href)}
+            onOpenFood={() => { const href = reviewTargetHref(row.item, 'feed'); if (href) router.push(href); }} /* KB-812 2차: 가공식품 리뷰 = 제품 상세 */
           />
         )}
         ListEmptyComponent={

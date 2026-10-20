@@ -11,7 +11,8 @@
  */
 import * as React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
+import { reviewEditHref, reviewTargetHref } from '@/lib/review/reviewTarget';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -126,7 +127,7 @@ function ReviewDetail() {
       {header}
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 34 }]} showsVerticalScrollIndicator={false}>
         <ReviewAuthorLine review={review} t={t} />
-        <ReviewFoodChip review={review} t={t} onOpen={() => review.foodId && router.push(`/food/${review.foodId}?src=review_detail` as Href)} />
+        <ReviewFoodChip review={review} t={t} onOpen={() => { const href = reviewTargetHref(review, 'review_detail'); if (href) router.push(href); }} />
         {photos.length > 0 && (
           <ReviewPhotoCarousel
             photos={photos}
@@ -152,7 +153,7 @@ function ReviewDetail() {
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={() => router.push(`/food/${review.foodId}/review?reviewId=${review.id}` as Href)} /* P-358 편집 진입 */
+        onEdit={() => { const href = reviewEditHref(review); if (href) router.push(href); }} /* P-358 편집 진입 · KB-812 2차: 대상별 */
         onDelete={() =>
           deleteReview.mutate(
             { reviewId: review.id, foodId: review.foodId },

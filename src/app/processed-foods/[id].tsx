@@ -1,7 +1,7 @@
 /**
  * 가공식품 상세 (KB-812, D-32 Product details 12338:36272 · 전체 12338:37427 · R-95 확정 메모) — `/processed-foods/[id]`.
  * 사진 335×223(없으면 유형 플레이스홀더, 출처 캡션) → 제조사·제품명·유형 → 판정 → 원재료 원문(접기) → 알레르기 표시(표시란 있을 때만)
- * → 출처 고지(접히지 않는 본문 — 자료·사진·상표 3종) → (리뷰 = 2차, 자리 비움).
+ * → 출처 고지(접히지 않는 본문 — 자료·사진·상표 3종) → 리뷰(KB-812 2차 — PackagedReviews, 음식 상세 리뷰 부품 재사용).
  *
  * 판정 규칙(R-95 · 헌법 III false-safe 금지):
  * - **가공식품엔 Safe 배지 없음**, "안전·없음" 문구 금지. 검출 = 빨간 X, 미매핑 원문 = 노란 느낌표(서버 unmapped[]가 올 때만),
@@ -34,6 +34,7 @@ import { processedUnavailable, useProcessedDetail } from '@/lib/data/useProcesse
 import type { LabelSource, ProcessedFoodDetail } from '@/lib/api/processedFoodAdapter';
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
 import { FlameShape } from '@/components/FlameShape';
+import { PackagedReviews } from '@/features/processedFood/PackagedReviews';
 
 const GUTTER = 20;
 export const PHOTO_RATIO = 223 / 335; // 시안 사진 슬롯 335×223(원본 500×333 비율)
@@ -233,7 +234,8 @@ export default function ProcessedFoodDetailScreen() {
           // F2(KB-813)에서 성분표 촬영 진입으로 바꾼다 — 그때까지 플래그 off(숨김)
           <Btn variant="ghost" onPress={() => router.navigate('/scan' as Href)} style={s.outlineBtn} testID="pf-label-scan">{t('packaged.scanLabel')}</Btn>
         )}
-        {/* 리뷰 = 2차(R-101 뒤) — 자리만 */}
+        {/* 롤백 스위치(reviewsLiveEnabled off) = 가공식품 리뷰는 목 경로가 없어 목록이 비는데 서버 요약은 남는다 — "리뷰 n개" 위 "첫 리뷰" 모순 대신 섹션째 숨김(Codex #314 R2) */}
+        {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} />}
       </ScrollView>
     );
   }
