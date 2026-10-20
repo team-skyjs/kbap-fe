@@ -31,7 +31,7 @@ import { findCachedReview, useCreateReview, useUpdateReview } from '@/lib/data/u
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { imageUrlToPath } from '@/lib/api/reviewAdapter';
-import { foodHiddenReason, type FoodHiddenReason } from '@/lib/api/client';
+import { ApiError, foodHiddenReason, type FoodHiddenReason } from '@/lib/api/client';
 import { showTopToast } from '@/components/topToastStore';
 import { Shimmer } from '@/components/Skeleton';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -39,7 +39,7 @@ import { Snackbar } from '@/components/Snackbar';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { EVENTS, track } from '@/lib/analytics';
 import { airbridge } from '@/lib/airbridge';
-import { addReviewPhotos, canPostReview, removeReviewPhoto, reviewPhotoKey, REVIEW_MAX_PHOTOS, uploadReviewImages, type ReviewPhoto } from '@/lib/review/reviewPhotos';
+import { addReviewPhotos, canPostReview, removeReviewPhoto, reviewBodyLength, reviewPhotoKey, REVIEW_MAX_PHOTOS, REVIEW_MIN_BODY, uploadReviewImages, type ReviewPhoto } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
@@ -137,7 +137,15 @@ function ReviewComposeScreen() {
   // 거기서 막으면 뒤로·게이트 "둘러보기"가 전부 무반응 = 나갈 길이 로그인뿐. 폼이 보이는 분기에서만 막는다.
   const formShown = !isGuest && !(editing && !editReviewData);
   const leave = useLeaveConfirm(formShown && draftKey(rating, body, photos, place, extras) !== baseline && !submitted, posting);
-  const canPost = canPostReview(rating) && !posting && !submitted; // KB-730: 등록 뒤 Post 재활성 0(중복 리뷰 — P-168 류)
+  // KB-828: 본문 10자 미만 = Post 비활성 + 안내. 비활성 버튼 탭·서버 REVIEW-005 = 같은 안내를 강조(색만 — 프레임 불변)
+  const bodyLen = reviewBodyLength(body);
+  const bodyShort = bodyLen < REVIEW_MIN_BODY;
+  const [minLenStressed, setMinLenStressed] = useState(false);
+  // Codex #304: 서버 REVIEW-005는 클라 기준을 통과한 본문에 온다 — 거부된 본문 그대로인 동안 안내를 띄우고 재제출을 막는다(고치면 풀림)
+  const [rejectedBody, setRejectedBody] = useState<string | null>(null);
+  const serverRejected = rejectedBody !== null && body === rejectedBody;
+  const showMinLen = bodyShort || serverRejected;
+  const canPost = canPostReview(rating, body) && !serverRejected && !posting && !submitted; // KB-730: 등록 뒤 Post 재활성 0(중복 리뷰 — P-168 류)
 
   // P-156: 갤러리 멀티 선택 — selectionLimit = 남은 슬롯(3 − 현재). 구형 안드 등
   // limit 미준수 산출물은 addReviewPhotos slice(3)가 방어 + 안내 토스트 1회.
@@ -197,7 +205,7 @@ function ReviewComposeScreen() {
   // 성공 시 무효화(useCreateReview)가 목록·평점을 서버값으로 갱신. 실패는 화면 유지+표시.
   const post = () =>
     runPost(async () => {
-      if (!canPostReview(rating)) return;
+      if (!canPostReview(rating, body) || serverRejected) return;
       setPostError(null);
       try {
         // P-358: 신규(local)만 업로드, 기존(remote)은 URL→path 역변환 — 슬롯 순서 보존
@@ -237,6 +245,7 @@ function ReviewComposeScreen() {
         await runAfterKeyboardHidden(() => setSubmitted(true)); // await = 지연 창에도 posting 가드 유지(P-173)
       } catch (e) {
         if (isUploadAborted(e)) return; // KB-711: 화면을 떠나 업로드를 취소한 것 — 떠난 화면에 실패 표시 없음
+        if (e instanceof ApiError && e.code === 'REVIEW-005') { setRejectedBody(body); return; } // KB-828: 서버 기준 미달 = 같은 안내(입력 보존·버튼 복구)
         console.log('[review] post failed — staying on screen:', (e as Error)?.message);
         // KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**이면 에러 표면 대신 조용한 안내.
         // ⚠️ 화면을 닫지 않는다 — 리뷰엔 초안 저장소가 없어 닫는 순간 본문·사진이 사라진다.
@@ -532,7 +541,14 @@ function ReviewComposeScreen() {
             }}
           />
           <View style={styles.metaRow}>
-            <Text style={styles.tag}>{t('review.charCount', { count: body.length })}</Text>
+            {showMinLen && (
+              <Text style={[styles.minLenHint, (minLenStressed || serverRejected) && styles.minLenStressed]} testID="review-min-length">{t('review.minLength')}</Text>
+            )}
+            {bodyShort ? (
+              <Text style={[styles.tag, minLenStressed && styles.minLenStressed]} testID="review-min-count">{t('review.minLengthCount', { count: bodyLen })}</Text>
+            ) : (
+              <Text style={styles.tag}>{t('review.charCount', { count: body.length })}</Text>
+            )}
           </View>
           {/* §2-7(4150:16511): 장소 필 — 좌하단 pill h38(선택 = 장소명 + Clear) */}
           {FLAGS.reviewPlaceEnabled && (
@@ -582,9 +598,18 @@ function ReviewComposeScreen() {
       {/* §2-8: FixedBottom — primary "Post review" full-width. P-173 가드 = useSubmitGuard +
           Btn busy(공용 문법 — 메트릭 불변 스피너). */}
       <View style={[styles.bottomBar, { paddingBottom: 10 + bottomInset }]} testID="review-bottom-bar">
-        <Btn variant={canPost || posting ? 'primary' : 'off'} busy={posting} onPress={post} testID="post-review">
-          {t(editing ? 'editReview.save' : 'review.postReview')}
-        </Btn>
+        {/* KB-828: 비활성 Btn은 터치를 받지 않아 바깥 래퍼가 받는다 → 토스트 없이 안내 강조. 스크린리더는 Btn(비활성 + 사유 힌트) */}
+        <Pressable onPress={showMinLen ? () => setMinLenStressed(true) : undefined} accessible={false} testID="post-review-blocked">
+          <Btn
+            variant={canPost || posting ? 'primary' : 'off'}
+            busy={posting}
+            onPress={post}
+            accessibilityHint={showMinLen ? t('review.minLength') : undefined}
+            testID="post-review"
+          >
+            {t(editing ? 'editReview.save' : 'review.postReview')}
+          </Btn>
+        </Pressable>
       </View>
 
       {/* P-168 ②: 완료 = P-162 주문 완료 모달 문법(화면 전환 없이) — 확인 = 상세 복귀 */}
@@ -669,8 +694,10 @@ const styles = StyleSheet.create({
   photoThumb: { width: 100, height: 100, borderRadius: radius.sm, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.inkDisabled },
   photoDel: { position: 'absolute', top: 6, right: 6, width: 16, height: 16, borderRadius: 8, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center' }, // A-RW-06
   photoAdd: { width: 100, height: 100, borderRadius: radius.sm, borderWidth: 1, borderColor: C.line2, backgroundColor: 'rgba(244,246,246,0.5)', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
-  metaRow: { flexDirection: 'row', justifyContent: 'flex-end' },
+  metaRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
   tag: { fontSize: 13, fontWeight: '500', color: C.ink3 },
+  minLenHint: { flex: 1, fontSize: 13, fontWeight: '500', color: C.ink3 }, // KB-828: tag와 같은 메트릭 — 강조는 색만
+  minLenStressed: { color: C.primaryText },
   // §2-7: 장소 필 h38 border #DCDEE3 r24 pad 8/12
   placePill: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 38, borderWidth: 1, borderColor: C.line2, borderRadius: 24, paddingVertical: 8, paddingHorizontal: 12, maxWidth: '100%' }, // A-RW-09
   placePillText: { flexShrink: 1, fontSize: 13, fontWeight: '500', color: C.ink },

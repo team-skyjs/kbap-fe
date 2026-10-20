@@ -404,6 +404,8 @@
     "reviewLabel": "Đánh giá của bạn",
     "placeholder": "Chia sẻ mùi vị và bất kỳ mẹo nào cho du khách có cùng hạn chế như bạn…",
     "charCount": "{{count}}/500",
+    "minLength": "Viết ít nhất 10 ký tự",
+    "minLengthCount": "{{count}}/10",
     "postReview": "Đăng đánh giá",
     "postedTitle": "Đã đăng đánh giá",
     "postedBody": "Cảm ơn! Đánh giá {{rating}} sao của bạn cho {{name}} nay đã có trong phần đánh giá món ăn và được tính vào xếp hạng của bạn.",

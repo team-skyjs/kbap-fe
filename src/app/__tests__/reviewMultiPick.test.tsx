@@ -129,8 +129,11 @@ beforeEach(() => {
 });
 
 /* ---- P-168 헬퍼: 별점 세팅(star pick = hitSlop 4 Pressable) + 하단 Post 버튼 ---- */
-const pickStar = (tree: ReactTestRenderer) =>
+const pickStar = (tree: ReactTestRenderer) => {
   act(() => tree.root.findAll((n) => n.props?.hitSlop === 4 && typeof n.props?.onPress === 'function')[4].props.onPress());
+  // KB-828: 등록 = 본문 10자 이상 필수 — 제출 흐름 테스트는 유효 본문을 함께 채운다
+  act(() => tree.root.findAll((n) => n.props?.multiline === true && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('Tasty and not too spicy'));
+};
 const postBtn = (tree: ReactTestRenderer) =>
   tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'review.postReview').length > 0).pop()!;
 

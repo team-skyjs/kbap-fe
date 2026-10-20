@@ -449,6 +449,8 @@
     "reviewLabel": "리뷰 내용",
     "placeholder": "맛은 어땠나요? 비슷한 식이 제한이 있는 여행자에게 팁을 남겨주세요.",
     "charCount": "{{count}}/500",
+    "minLength": "10자 이상 적어 주세요",
+    "minLengthCount": "{{count}}/10",
     "postReview": "리뷰 게시",
     "postedTitle": "리뷰가 게시됐어요",
     "postedBody": "{{name}}에 {{rating}}점 리뷰를 등록했어요. 랭킹에도 반영돼요.",

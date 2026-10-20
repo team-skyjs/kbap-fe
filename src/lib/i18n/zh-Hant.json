@@ -404,6 +404,8 @@
     "reviewLabel": "你的評論",
     "placeholder": "分享它嚐起來如何，以及給有相同飲食限制旅客的任何建議…",
     "charCount": "{{count}}/500",
+    "minLength": "請至少輸入 10 個字",
+    "minLengthCount": "{{count}}/10",
     "postReview": "發布評論",
     "postedTitle": "評論已發布",
     "postedBody": "謝謝你！你對 {{name}} 的 {{rating}} 星評論已列入該美食的評論中，並計入你的排名。",

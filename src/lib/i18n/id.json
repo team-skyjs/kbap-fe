@@ -404,6 +404,8 @@
     "reviewLabel": "Ulasan Anda",
     "placeholder": "Ceritakan rasanya, dan tips untuk pelancong dengan pantangan seperti Anda…",
     "charCount": "{{count}}/500",
+    "minLength": "Tulis minimal 10 karakter",
+    "minLengthCount": "{{count}}/10",
     "postReview": "Kirim ulasan",
     "postedTitle": "Ulasan terkirim",
     "postedBody": "Terima kasih! Ulasan {{rating}} bintang Anda untuk {{name}} kini ada di ulasan makanan ini dan menambah peringkat Anda.",

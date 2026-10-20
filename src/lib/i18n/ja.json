@@ -404,6 +404,8 @@
     "reviewLabel": "レビュー",
     "placeholder": "味の感想や、同じ食事制限のある旅行者へのヒントを共有しましょう…",
     "charCount": "{{count}}/500",
+    "minLength": "10文字以上入力してください",
+    "minLengthCount": "{{count}}/10",
     "postReview": "レビューを投稿",
     "postedTitle": "レビューを投稿しました",
     "postedBody": "ありがとうございます！{{name}}への{{rating}}つ星レビューが料理のレビューに反映され、ランキングに加算されました。",

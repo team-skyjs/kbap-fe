@@ -404,6 +404,8 @@
     "reviewLabel": "你的点评",
     "placeholder": "分享一下味道如何，以及给有相同禁忌的旅行者的建议…",
     "charCount": "{{count}}/500",
+    "minLength": "请至少输入 10 个字",
+    "minLengthCount": "{{count}}/10",
     "postReview": "发布点评",
     "postedTitle": "点评已发布",
     "postedBody": "谢谢！你对 {{name}} 的 {{rating}} 星点评已加入该菜品的点评，并计入你的排名。",

@@ -151,6 +151,8 @@ jest.mock('@/lib/review/reviewPhotos', () => ({
   removeReviewPhoto: (arr: string[], u: string) => arr.filter((x) => x !== u),
   addReviewPhotos: (arr: string[]) => arr,
   canPostReview: () => true,
+  reviewBodyLength: (b: string) => Array.from(b.trim()).length, // KB-828
+  REVIEW_MIN_BODY: 10,
   REVIEW_MAX_PHOTOS: 3,
 }));
 
