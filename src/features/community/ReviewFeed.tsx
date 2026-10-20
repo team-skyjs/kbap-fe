@@ -10,7 +10,7 @@
  * 게스트: 열람 개방(P-235) — 쓰기·Helpful 게이트 유지(AuthGateSheet).
  */
 import * as React from 'react';
-import { RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
@@ -44,6 +44,9 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 const INK_TITLE = '#2F3137'; // 시안 gray-900(D-1 Chip과 동일 명시값)
 const SORT_OPTIONS: FeedSort[] = ['latest', 'rating_high', 'rating_low', 'food_review_count', 'helpful'];
 
+/** KB-777 B3-7: 플로팅 "Write a review"를 아이콘만으로 줄이는 작은 화면(폭 < 360 또는 높이 < 700 dp — QA 720×1280@2x = 360×640). */
+export const isCompactFabScreen = (w: number, h: number): boolean => w < 360 || h < 700;
+
 export function ReviewFeed() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -72,6 +75,8 @@ export function ReviewFeed() {
   const [gateOpen, setGateOpen] = React.useState<GateContext | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [mod, setMod] = React.useState<ModTarget | null>(null);
+  const win = useWindowDimensions();
+  const fabCompact = isCompactFabScreen(win.width, win.height);
   const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
 
@@ -236,14 +241,17 @@ export function ReviewFeed() {
       ) : null}
 
       {/* KB-430 §2-5: 플로팅 "Write a review" 필(4150:17079) — 진입점 = 음식 픽커(현행) */}
+      {/* KB-777 B3-7: 작은 화면(폭 < 360 또는 높이 < 700) = 아이콘만 36 원형 — 필이 본문을 넓게 가렸다. 라벨은 스크린리더 이름으로 유지 */}
       <Pressable
-        style={styles.fab}
+        style={[styles.fab, fabCompact && styles.fabCompact]}
         testID="feed-write-fab"
+        accessibilityRole="button"
+        accessibilityLabel={t('reviews.writeReview')}
         onPress={() => (isGuest ? setGateOpen('writeReview') : setPickerOpen(true))}
       >
         <IconEdit size={20} color="#fff" />
         {/* KB-818: 큰 글씨에서 iOS가 라벨을 실제보다 좁게 재서 "Write a revi"로 잘렸다 — 한 줄 + 들어가게 축소(탭 라벨과 같은 규칙) */}
-        <Text style={styles.fabLabel} numberOfLines={1} adjustsFontSizeToFit testID="feed-write-fab-label">{t('reviews.writeReview')}</Text>
+        {!fabCompact && <Text style={styles.fabLabel} numberOfLines={1} adjustsFontSizeToFit testID="feed-write-fab-label">{t('reviews.writeReview')}</Text>}
       </Pressable>
 
       <TagPickerSheet
@@ -330,6 +338,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   fabLabel: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  fabCompact: { width: 36, height: 36, borderRadius: 18, paddingVertical: 0, paddingHorizontal: 0, justifyContent: 'center' }, // KB-777 B3-7
 });
 
 export default ReviewFeed;

@@ -413,3 +413,22 @@ describe('P-384(KB-442): 쿼터 넛지 카드 = 회원 && 잔여 0 && 미해금�
     expect(nudge(render())).toBe(0);
   });
 });
+
+// KB-777 B3-7: 작은 화면 = 플로팅 "Write a review" 아이콘만 36 원형(본문 가림 축소), 라벨은 스크린리더 이름
+it('KB-777 B3-7: 작은 화면 판정(폭<360 또는 높이<700) · 기본 화면 = 라벨 필 · 작은 화면 = 36 원형 아이콘만 + 접근성 이름', () => {
+  const { isCompactFabScreen } = jest.requireActual('../ReviewFeed') as { isCompactFabScreen: (w: number, h: number) => boolean };
+  expect([isCompactFabScreen(360, 640), isCompactFabScreen(320, 800), isCompactFabScreen(375, 667), isCompactFabScreen(390, 844), isCompactFabScreen(360, 760)]).toEqual([true, true, true, false, false]);
+  const RN = require('react-native');
+  const big = render();
+  const fab = () => big.root.findAll((n) => n.props?.testID === 'feed-write-fab' && typeof n.type === 'string')[0];
+  expect(big.root.findAll((n) => n.props?.testID === 'feed-write-fab-label')).not.toHaveLength(0);
+  expect(fab().props.accessibilityLabel).toBe('reviews.writeReview');
+  const spy = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: 360, height: 640, scale: 2, fontScale: 1 });
+  const small = render();
+  const sfab = small.root.findAll((n) => n.props?.testID === 'feed-write-fab' && typeof n.type === 'string')[0];
+  expect(small.root.findAll((n) => n.props?.testID === 'feed-write-fab-label')).toHaveLength(0);
+  const st = RN.StyleSheet.flatten(sfab.props.style);
+  expect({ w: st.width, h: st.height, r: st.borderRadius }).toEqual({ w: 36, h: 36, r: 18 });
+  expect(sfab.props.accessibilityLabel).toBe('reviews.writeReview');
+  spy.mockRestore();
+});
