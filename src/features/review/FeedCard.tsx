@@ -45,6 +45,7 @@ export function FeedCard({
   onMore,
   showMore = true,
   showFood = true,
+  photoVariant = 'tiles',
 }: {
   review: Review;
   t: TFn;
@@ -56,6 +57,8 @@ export function FeedCard({
   showMore?: boolean;
   /** KB-431: 음식 상세 프리뷰 = 자기 자신 칩 무의미 — 숨김 */
   showFood?: boolean;
+  /** KB-817: 리뷰 탭만 'peek'(사진 가로 스냅 + See more 잉크색). 홈·음식 상세·내 리뷰 = 'tiles' 불변 */
+  photoVariant?: 'tiles' | 'peek';
 }) {
   const anon = review.anonymized;
   const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
@@ -114,8 +117,8 @@ export function FeedCard({
       </View>
 
       {/* P-390(KB-578): 사진 위·본문 아래 — 4표면 동일 순서(예진 실기: 반대였다) */}
-      <ReviewPhotoStrip photos={review.photos ?? []} size={104} radius={4} />
-      <ReviewBody review={review} t={t} style={styles.body} />
+      <ReviewPhotoStrip photos={review.photos ?? []} size={104} radius={4} variant={photoVariant} />
+      <ReviewBody review={review} t={t} style={styles.body} toggleColor={photoVariant === 'peek' ? INK_TITLE : undefined} />
 
       {/* 음식 칩 행 — 탭 = 음식 상세 (구 미니 카드 대체) */}
       {showFood && (
