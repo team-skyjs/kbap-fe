@@ -122,7 +122,8 @@ export function TabBar({
           FAB은 슬롯 위 절대 배치로 돌출. 라벨 = 비활성색(시안). */}
       <View style={styles.slot}>
         <View style={styles.iconSpace} />
-        <Text style={[styles.tlbl, { color: C.inkMute }]}>{labels.scan}</Text>
+        {/* KB-818: 다른 탭과 같은 규칙(한 줄 + 축소) — 빠져 있어 큰 글씨에서 "Scai"로 잘렸다 */}
+        <Text style={[styles.tlbl, { color: C.inkMute }]} numberOfLines={1} adjustsFontSizeToFit testID="tab-scan-label">{labels.scan}</Text>
         <Pressable style={styles.fab} onPress={onScan} hitSlop={8} testID="tab-scan">
           <IconTabScan size={24} color="#fff" />
         </Pressable>

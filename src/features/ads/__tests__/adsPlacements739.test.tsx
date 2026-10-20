@@ -282,9 +282,10 @@ describe('피드 네이티브', () => {
     // 자산 전부 NativeAdView 안
     const leaves = adView.findAll((x) => typeof x.props?.children === 'string').map((x) => x.props.children as string);
     expect(leaves).toEqual(expect.arrayContaining(['H', 'B', 'INSTALL', 'Adv']));
-    for (const text of ['H', 'B', 'INSTALL', 'Adv']) {
+    for (const text of ['H', 'B', 'INSTALL', 'Adv', 'ads.sponsored']) {
       const asset = adView.findAll((x) => typeof x.type === 'string' && x.props.children === text)[0];
       expect(asset.props.numberOfLines).toBeUndefined();
+      expect(asset.props.maxFontSizeMultiplier).toBe(1); // KB-818: 큰 글씨에서도 자산이 광고 뷰 경계 안(기본 글씨 픽셀 불변)
     }
     act(() => mockAds.update('native', { nativeAd: { ...(mockAds.native.nativeAd as object), mediaContent: { aspectRatio: 16 / 9, hasVideoContent: true } } }));
     act(() => t.root.findAll((x) => x.props?.testID === 'ad-feed-1-frame' && typeof x.type === 'string')[0].props.onLayout({ nativeEvent: { layout: { width: 200 } } }));

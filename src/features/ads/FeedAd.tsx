@@ -22,6 +22,10 @@ import { adUnitId } from '@/lib/ads/units';
 import { compactMediaSize } from '@/lib/ads/compactMedia';
 import { AdBanner } from './AdBanner';
 
+/** KB-818: 광고 자산 텍스트는 시스템 큰 글씨로 키우지 않는다 — 큰 글씨에서 자산 경계가 NativeAdView 밖으로 나가
+ *  AdMob 검증기 경고("Advertiser assets outside native ad view"). 기본 글씨(배율 1)에선 픽셀 동일. */
+export const AD_ASSET_FONT_SCALE = 1;
+
 export function FeedAd({ testID }: { testID?: string }) {
   const sdk = useAdsSdk();
   if (!sdk) return null;
@@ -60,7 +64,7 @@ function NativeSlot({ sdk, testID }: { sdk: AdsSdk; testID?: string }) {
       {unsupported ? <AdBanner placement="feed_banner" inline testID={testID} /> : mediaSize && (
         <NativeAdView nativeAd={nativeAd} style={styles.inner} testID={testID ?? 'ad-native-feed_native'}>
           <View style={styles.badgeWrap}>
-            <Text style={styles.badge} testID="ad-sponsored">{t('ads.sponsored')}</Text>
+            <Text style={styles.badge} maxFontSizeMultiplier={AD_ASSET_FONT_SCALE} testID="ad-sponsored">{t('ads.sponsored')}</Text>
             <View style={styles.adChoicesSpace} />
           </View>
           <View style={styles.top}>
@@ -71,11 +75,11 @@ function NativeSlot({ sdk, testID }: { sdk: AdsSdk; testID?: string }) {
             )}
             <View style={styles.who}>
               <NativeAsset assetType={NativeAssetType.HEADLINE}>
-                <Text style={styles.headline}>{nativeAd.headline}</Text>
+                <Text style={styles.headline} maxFontSizeMultiplier={AD_ASSET_FONT_SCALE}>{nativeAd.headline}</Text>
               </NativeAsset>
               {nativeAd.advertiser ? (
                 <NativeAsset assetType={NativeAssetType.ADVERTISER}>
-                  <Text style={styles.advertiser}>{nativeAd.advertiser}</Text>
+                  <Text style={styles.advertiser} maxFontSizeMultiplier={AD_ASSET_FONT_SCALE}>{nativeAd.advertiser}</Text>
                 </NativeAsset>
               ) : null}
             </View>
@@ -83,11 +87,11 @@ function NativeSlot({ sdk, testID }: { sdk: AdsSdk; testID?: string }) {
           <NativeMediaView style={[styles.media, mediaSize]} resizeMode="contain" />
           {nativeAd.body ? (
             <NativeAsset assetType={NativeAssetType.BODY}>
-              <Text style={styles.body}>{nativeAd.body}</Text>
+              <Text style={styles.body} maxFontSizeMultiplier={AD_ASSET_FONT_SCALE}>{nativeAd.body}</Text>
             </NativeAsset>
           ) : null}
           <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}>
-            <Text style={styles.cta}>{nativeAd.callToAction}</Text>
+            <Text style={styles.cta} maxFontSizeMultiplier={AD_ASSET_FONT_SCALE}>{nativeAd.callToAction}</Text>
           </NativeAsset>
         </NativeAdView>
       )}

@@ -242,7 +242,8 @@ export function ReviewFeed() {
         onPress={() => (isGuest ? setGateOpen('writeReview') : setPickerOpen(true))}
       >
         <IconEdit size={20} color="#fff" />
-        <Text style={styles.fabLabel}>{t('reviews.writeReview')}</Text>
+        {/* KB-818: 큰 글씨에서 iOS가 라벨을 실제보다 좁게 재서 "Write a revi"로 잘렸다 — 한 줄 + 들어가게 축소(탭 라벨과 같은 규칙) */}
+        <Text style={styles.fabLabel} numberOfLines={1} adjustsFontSizeToFit testID="feed-write-fab-label">{t('reviews.writeReview')}</Text>
       </Pressable>
 
       <TagPickerSheet
