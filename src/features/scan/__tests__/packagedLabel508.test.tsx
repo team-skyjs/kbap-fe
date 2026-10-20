@@ -151,9 +151,12 @@ describe('흐름', () => {
     const t = flow(true);
     expect(ids(t)).toContain('pscan-handoff');
     expect(ids(t)).not.toContain('pscan-same-analysis');
-    expect(fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8')).toContain("router.navigate('/scan?mode=packaged&label=1' as Href)");
+    // Codex #315 R2: 진입마다 새 토큰 — 아래 깔린 /scan으로 돌아가도(navigate 재사용) 플로우를 새로(key) 띄워 이전 analysisId·후보가 남지 않게
+    expect(fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8')).toContain('router.navigate(`/scan?mode=packaged&label=1&t=${Date.now()}` as Href)');
     const scan = fs.readFileSync('src/app/scan.tsx', 'utf8');
-    expect(scan).toContain("startLabel={scanParams.label === '1' && FLAGS.packagedLabelScan}");
+    expect(scan).toContain("const labelEntry = scanParams.label === '1' && FLAGS.packagedLabelScan ? (scanParams.t ?? 'entry') : null;");
+    expect(scan).toMatch(/if \(labelEntry !== seenLabelEntry\) \{\s*setSeenLabelEntry\(labelEntry\);\s*if \(labelEntry\) setScanModeState\('packaged'\);/);
+    expect(scan).toContain("<PackagedScanFlow key={labelEntry ?? 'flow'} mode={scanMode} onMode={setScanMode} onClose={() => router.back()} startLabel={labelEntry != null} />");
   });
   it('결과에서 한 면 더 = 같은 ID 재분석(면 누적) · charged false여도 이 분석에서 쓴 1회 표시 유지 · 프로필 재조회 추가 0', async () => {
     const t = flow(true);
@@ -189,7 +192,7 @@ describe('흐름', () => {
     expect(texts(t)).toContain('packagedScan.noScanUsed');
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_label_scan', { pages: 1, charged: false, result: 'unreadable' });
     await press(t, 'pscan-retake');
-    expect(ids(t)).toContain('pscan-handoff');
+    expect(ids(t)).toContain('pscan-label-pages'); // Codex #315 R2: 보낸 면 화면으로(처음으로 초기화 아님)
   });
   it('409 PFOOD-007(무료 재분석 초과) = 새로 분석 버튼 → analysisId null · 같은 면', async () => {
     const t = flow(true);
@@ -267,6 +270,38 @@ describe('흐름', () => {
     expect(ids(t)).toContain('pscan-label-result');
     await act(async () => { ocrRelease([{ text: LABEL_P2 }]); await new Promise((r) => setTimeout(r, 0)); });
     expect(labelCalls()).toHaveLength(2); // 늦은 OCR로 재분석 0
+  });
+  it('Codex #315 R2: 2면째가 안 읽힘 → 다시 찍기 = 모은 면 화면(1면·같은 분석 유지) · 결과에서 한 면 더가 안 읽힘 → 다시 찍기 = 그 결과', async () => {
+    const t = flow();
+    await toHandoffFromNone(t);
+    mockOcr.mockResolvedValueOnce([{ text: LABEL_P1 }]).mockResolvedValueOnce([]);
+    await press(t, 'pscan-label-capture');
+    await press(t, 'pscan-label-add');
+    expect(ids(t)).toContain('pscan-error-unreadable');
+    expect(labelCalls()).toHaveLength(0);
+    await press(t, 'pscan-retake');
+    expect(ids(t)).toContain('pscan-label-pages');
+    expect(ids(t)).toContain('pscan-same-analysis');
+    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":1,"max":4}');
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3' }));
+    await press(t, 'pscan-label-analyze');
+    expect(labelCalls()[0][1]).toMatchObject({ analysisId: 'A3', pages: [{ ocrText: LABEL_P1 }] }); // 새 분석으로 바뀌지 않았다
+    mockOcr.mockResolvedValueOnce([]);
+    await press(t, 'pscan-label-more');
+    await press(t, 'pscan-retake');
+    expect(ids(t)).toContain('pscan-label-result');
+    expect(ids(t)).toContain('pf-det-WHEAT');
+  });
+  it('Codex #315 R2: 서버 400(PFOOD-006) 뒤 다시 찍기 = 보낸 면 화면 그대로(분석 ID 유지)', async () => {
+    const t = flow();
+    await toHandoffFromNone(t);
+    mockOcr.mockResolvedValueOnce([{ text: '바코드' }]);
+    await press(t, 'pscan-label-capture');
+    mockPost.mockRejectedValueOnce(new ApiError('x', 400, 'PFOOD-006'));
+    await press(t, 'pscan-label-analyze');
+    await press(t, 'pscan-retake');
+    expect(ids(t)).toContain('pscan-label-pages');
+    expect(ids(t)).toContain('pscan-same-analysis');
   });
   it('플래그 off = 성분표 촬영 버튼 비활성 + 곧 지원 안내 · 촬영 호출 0', async () => {
     setFlag(false);

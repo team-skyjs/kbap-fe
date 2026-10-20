@@ -246,8 +246,9 @@ export default function ProcessedFoodDetailScreen() {
         </View>
 
         {FLAGS.packagedLabelScan && (
-          // P-508: 성분표 직접 확인 = 새 분석(이 상세의 제품과 연결하지 않는다 — 서버 분석에 제품 id가 없다) · 성공 1회
-          <Btn variant="ghost" onPress={() => router.navigate('/scan?mode=packaged&label=1' as Href)} style={s.outlineBtn} testID="pf-label-scan">{t('packaged.scanLabel')}</Btn>
+          // P-508: 성분표 직접 확인 = 새 분석(이 상세의 제품과 연결하지 않는다 — 서버 분석에 제품 id가 없다) · 성공 1회.
+          // t = 진입 토큰(Codex #315 R2): 앞면 스캔 → 상세로 왔으면 navigate가 **아래 깔린 /scan**으로 돌아가므로, 매번 새 토큰으로 플로우를 새로 띄운다
+          <Btn variant="ghost" onPress={() => router.navigate(`/scan?mode=packaged&label=1&t=${Date.now()}` as Href)} style={s.outlineBtn} testID="pf-label-scan">{t('packaged.scanLabel')}</Btn>
         )}
         {/* 롤백 스위치(reviewsLiveEnabled off) = 가공식품 리뷰는 목 경로가 없어 목록이 비는데 서버 요약은 남는다 — "리뷰 n개" 위 "첫 리뷰" 모순 대신 섹션째 숨김(Codex #314 R2) */}
         {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} />}

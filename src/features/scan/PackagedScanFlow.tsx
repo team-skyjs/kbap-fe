@@ -52,7 +52,8 @@ type Step =
   /** used = 이 분석에서 차감된 적 있음(이번 charged 또는 앞선 성공) — 결과 도착 때 정해 둔다(렌더 중 ref 읽기 금지).
    *  chargeUnknown = 앞선 전송 실패 뒤 재시도로 받은 결과(첫 요청이 차감했을 수 있음) — "추가 사용 없음"을 단정하지 않는다(Codex #315) */
   | { kind: 'labelResult'; result: LabelScanResult; pages: string[]; used: boolean; chargeUnknown: boolean }
-  | { kind: 'error'; failure: ScanFailure; retry: (() => void) | null; chargeUnknown?: boolean; labelPages?: string[] };
+  /** labelBack = 성분표 경로의 "다시 찍기" 목적지(Codex #315 R2: 2면째 이후 못 읽음 = 모은 면·분석 ID·결과를 지킨다 — 처음으로 초기화 금지) */
+  | { kind: 'error'; failure: ScanFailure; retry: (() => void) | null; chargeUnknown?: boolean; labelBack?: Step };
 
 /** 디버그 OCR 주입 노출 — 개발 번들·진단 채널(dev·teamtest)만, 스토어 채널 0 */
 export const showOcrDebug = (): boolean => __DEV__ || isDiagnosticChannel();
@@ -157,7 +158,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
       const text = await shootText(true, pages.length ? { kind: 'labelPages', analysisId, pages } : { kind: 'handoff', analysisId });
       if (text == null) return; // 취소(단계 그대로 — 모은 면 유지) · OCR 중 뒤로 감(늦은 결과 버림)
       if (!text.trim()) {
-        setStep({ kind: 'error', failure: 'unreadable', retry: null, labelPages: pages });
+        setStep({ kind: 'error', failure: 'unreadable', retry: null, labelBack: pages.length ? { kind: 'labelPages', analysisId, pages } : { kind: 'handoff', analysisId } });
         return;
       }
       setStep({ kind: 'labelPages', analysisId, pages: [...pages, text].slice(0, LABEL_PAGES_MAX) });
@@ -183,7 +184,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
         // ponytail: 새 분석의 전송 실패는 서버가 새 분석을 만들고 차감했을 수 있다(응답이 없으니 그 ID를 모른다) — 다시 시도는 또 새 분석.
         // 차감 여부를 단정하지 않는 문구("확인 중")로 남긴다. 서버가 요청 멱등 키를 받으면 그걸로 바꿀 것.
         const unknown = chargeUnknown || failure === 'network';
-        setStep({ kind: 'error', failure, chargeUnknown: unknown, labelPages: pages, retry: failure === 'network' ? () => void analyzeLabel(analysisId, pages, unknown) : failure === 'newAnalysis' ? () => void analyzeLabel(null, pages) : null });
+        setStep({ kind: 'error', failure, chargeUnknown: unknown, labelBack: back, retry: failure === 'network' ? () => void analyzeLabel(analysisId, pages, unknown) : failure === 'newAnalysis' ? () => void analyzeLabel(null, pages) : null });
       }
   };
   const analyzeLabel = (analysisId: string | null, pages: string[], chargeUnknown = false) => guard.run(() => runLabel(analysisId, pages, chargeUnknown));
@@ -195,7 +196,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
       const text = await shootText(true, from);
       if (text == null) return;
       if (!text.trim()) {
-        setStep({ kind: 'error', failure: 'unreadable', retry: null, labelPages: pages });
+        setStep({ kind: 'error', failure: 'unreadable', retry: null, labelBack: from }); // 결과 그대로 돌아간다
         return;
       }
       await runLabel(analysisId, [...pages, text].slice(0, LABEL_PAGES_MAX), from.chargeUnknown, from);
@@ -374,8 +375,8 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
           {f === 'quota' ? (
             <Btn variant="ghost" onPress={onClose} testID="pscan-close">{t('common.close')}</Btn>
           ) : (
-            // 성분표 못 읽음 = 성분표 다시 찍기(새 분석 문맥 — 이어 붙이던 분석은 서버에 그대로 있어도 앱은 새로 시작)
-            <Btn variant="ghost" onPress={() => goStep(f === 'unreadable' ? { kind: 'handoff', analysisId: null } : { kind: 'capture' })} testID="pscan-retake">{t('packagedScan.retake')}</Btn>
+            // 성분표 경로 = 직전 단계(모은 면·분석 ID·결과 유지 — 서버 400은 이전 결과를 지우지 않는다) · 그 밖 = 앞면 촬영
+            <Btn variant="ghost" onPress={() => goStep(step.labelBack ?? { kind: 'capture' })} testID="pscan-retake">{t('packagedScan.retake')}</Btn>
           )}
         </View>
       </View>
