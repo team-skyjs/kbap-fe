@@ -101,6 +101,8 @@
     "searchPlaceholder": "搜索菜品…",
     "sort_popular": "热门",
     "sort_new": "最新",
+    "sort_name_asc": "名称顺序",
+    "sort_name_desc": "名称倒序",
     "categories": {
       "all": "全部",
       "stews": "汤锅",
