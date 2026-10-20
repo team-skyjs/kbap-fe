@@ -169,7 +169,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   ui_click: ['screen', 'target'],
   home_section_view: ['section'],
   home_card_view: ['section', 'position', 'food_id'],
-  review_card_open: ['target', 'photo_count'], // target: card|photo|read · photo_count 0~3
+  review_card_open: ['target', 'photo_count'], // target: card|read · photo_count 0~3
   review_card_view: ['photo_count', 'position', 'review_id'], // position = 피드 리뷰 순번(광고 행 제외, 0부터) · review_id = 콘텐츠 id(PII 아님)
   home_card_click: ['section', 'position', 'food_id', 'collection_key'], // KB-796: section=curation이면 collection_key(서버 모음 키)
   home_curation_link_click: ['collection_key', 'position'],

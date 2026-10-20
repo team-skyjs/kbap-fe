@@ -53,6 +53,8 @@ jest.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
 }));
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
+// 리뷰 탭 사진 탭 = PhotoViewer(RNGH) — 열림만, 네이티브 없음
+jest.mock('@/components/PhotoViewer', () => ({ PhotoViewer: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -139,26 +141,27 @@ it('KB-802 카드 = ReviewTabCard — 작성자·서버 음식 칩·도움돼요
 it.each([
   ['review-card-r1', 'card'],
   ['review-card-read-r1', 'read'],
-])('KB-802 %s 탭 → 상세 캐시 시드 → review_card_open → /review/{id}?photo=0', (testID, target) => {
+])('KB-802 %s 탭 → 상세 캐시 시드 → review_card_open → /review/{id}', (testID, target) => {
   const tree = render();
   act(() => tree.root.findAll((n) => n.props?.testID === testID && typeof n.props?.onPress === 'function')[0].props.onPress());
   expect(mockSetQueryData).toHaveBeenCalledWith(['reviews', 'detail', 'r1'], expect.objectContaining({ id: 'r1', body: 'Great dish' }));
   expect(mockTrack).toHaveBeenCalledWith('review_card_open', { target, photo_count: 0 });
-  expect(mockPush).toHaveBeenCalledWith('/review/r1?photo=0');
+  expect(mockPush).toHaveBeenCalledWith('/review/r1');
   // 시드가 이동보다 먼저(상세 첫 프레임 완성 렌더)
   expect(mockSetQueryData.mock.invocationCallOrder[0]).toBeLessThan(mockPush.mock.invocationCallOrder[0]);
 });
 
-it('KB-802 사진 탭 = 그 장 index 로 상세 이동(target photo)', () => {
+it('리뷰 탭 사진 탭 = 뷰어(KB-817 peek 스트립 그대로) — 상세 이동·review_card_open 없음', () => {
   mockFeed.mockReturnValue({
     data: { pages: [{ items: [{ ...REVIEW, photos: ['https://cdn/a.jpg', 'https://cdn/b.jpg', 'https://cdn/c.jpg'] }], hasNext: false, nextCursor: null }] },
     isLoading: false, isError: false, error: null, refetch: jest.fn(),
     hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
   });
   const tree = render();
-  act(() => tree.root.findAll((n) => n.props?.testID === 'review-card-photo-r1-2' && typeof n.props?.onPress === 'function')[0].props.onPress());
-  expect(mockTrack).toHaveBeenCalledWith('review_card_open', { target: 'photo', photo_count: 3 });
-  expect(mockPush).toHaveBeenCalledWith('/review/r1?photo=2');
+  expect(tree.root.findAll((n) => n.props?.testID === 'photo-peek').length).toBeGreaterThan(0);
+  act(() => tree.root.findAll((n) => n.props?.testID === 'photo-2' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockTrack).not.toHaveBeenCalledWith('review_card_open', expect.anything());
+  expect(mockPush).not.toHaveBeenCalled();
 });
 
 it('KB-802 R-16: 노출 등록 = 리뷰 카드만(광고 행 제외) · position = 광고 제외 리뷰 순번 · 포커스 = tracker.focus', () => {

@@ -26,6 +26,8 @@ jest.mock('react-native-reanimated', () => {
     Easing: { out: () => () => 0, quad: 0, linear: () => 0, inOut: () => () => 0 },
   };
 });
+// 사진 탭 = PhotoViewer(RNGH) — 열림만 확인, 네이티브 없음
+jest.mock('@/components/PhotoViewer', () => ({ PhotoViewer: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
 jest.mock('expo-image', () => {
@@ -46,6 +48,7 @@ jest.mock('@/lib/data/useReviewMutations', () => ({ useToggleReviewLike: () => (
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 
 import { carouselMetrics, ReviewPhotoCarousel, snapIndex, snapOffset, PHOTO_H } from '../ReviewPhotoCarousel';
+import { PEEK_REVEAL } from '../ReviewCellParts';
 import { ReviewTabCard } from '../ReviewTabCard';
 import { ReviewAuthorLine } from '../ReviewCellParts';
 import { FeedCard } from '../FeedCard';
@@ -204,8 +207,9 @@ describe('ReviewTabCard', () => {
   };
   const root = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID === 'review-card-r1' && typeof n.props?.style === 'function')[0];
 
-  it('높이 메트릭 = 사진 481 / 사진 없음 236 (구분선은 절대 위치 — 높이 밖)', () => {
+  it('높이 메트릭 = 사진 없음 236 + 사진(peek 타일 폭×3/4 + gap) (구분선은 절대 위치 — 높이 밖)', () => {
     const { tree } = card();
+    act(() => byId(tree, 'photo-peek')[0].props.onLayout({ nativeEvent: { layout: { width: 335 } } }));
     const st = StyleSheet.flatten(root(tree).props.style({ pressed: false }));
     const gap = st.gap as number;
     const chip = StyleSheet.flatten(byId(tree, 'feed-food-r1')[0].props.style);
@@ -216,7 +220,10 @@ describe('ReviewTabCard', () => {
     const base = (st.paddingTop as number) + AUTHOR + gap + (chip.height as number) + gap + ratingH + gap + (footer.marginTop as number) + (footer.height as number) + (st.paddingBottom as number);
     expect(ratingH).toBe(68);
     expect(base).toBe(236);
-    expect(base + PHOTO_H + gap).toBe(481);
+    const tileW = 335 - PEEK_REVEAL;
+    const photo = StyleSheet.flatten(byId(tree, 'photo-0')[0].findAll((n) => n.props?.uri)[0].props.style);
+    expect(photo).toMatchObject({ width: tileW, height: (tileW * 3) / 4 });
+    expect(base + photo.height + gap).toBe(236 + 221.25 + 12);
     const divider = tree.root.findAll((n) => n.props?.pointerEvents === 'none' && StyleSheet.flatten(n.props.style)?.height === 1)[0];
     expect(StyleSheet.flatten(divider.props.style)).toMatchObject({ position: 'absolute', bottom: 0 });
   });
@@ -249,20 +256,20 @@ describe('ReviewTabCard', () => {
     expect(texts(tree)).toContain('reviews.helpful');
   });
 
-  it('탭 위임 — 카드·리뷰 읽기 = 보던 장 · 사진 = 그 장 · 음식 칩 = onOpenFood', () => {
+  it('탭 위임 — 카드·리뷰 읽기 = onOpen · 사진 = 뷰어(상세 이동 아님, KB-817 스트립 그대로) · 음식 칩 = onOpenFood', () => {
     const { tree, onOpen, onOpenFood } = card();
-    act(() => byId(tree, 'review-card-photo-r1-list')[0].props.onMomentumScrollEnd({ nativeEvent: { contentOffset: { x: 319 } } }));
     act(() => root(tree).props.onPress());
-    expect(onOpen).toHaveBeenLastCalledWith('card', 1);
+    expect(onOpen).toHaveBeenLastCalledWith('card');
     act(() => byId(tree, 'review-card-read-r1')[0].props.onPress());
-    expect(onOpen).toHaveBeenLastCalledWith('read', 1);
-    act(() => byId(tree, 'review-card-photo-r1-2')[0].props.onPress());
-    expect(onOpen).toHaveBeenLastCalledWith('photo', 2);
+    expect(onOpen).toHaveBeenLastCalledWith('read');
+    expect(byId(tree, 'photo-peek').length).toBeGreaterThan(0);
+    act(() => byId(tree, 'photo-2')[0].props.onPress());
+    expect(onOpen).toHaveBeenCalledTimes(2);
     act(() => byId(tree, 'feed-food-r1')[0].props.onPress());
     expect(onOpenFood).toHaveBeenCalled();
   });
 
-  it('접근성 — 카드는 한 요소로 묶지 않음 · 리뷰 읽기 = 대표 버튼 · 캐러셀·평점 숨김', () => {
+  it('접근성 — 카드는 한 요소로 묶지 않음 · 리뷰 읽기 = 대표 버튼 · 사진·평점 숨김', () => {
     const { tree } = card();
     expect(root(tree).props.accessible).toBe(false);
     const read = byId(tree, 'review-card-read-r1')[0];

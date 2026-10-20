@@ -89,12 +89,12 @@ export function ReviewFeed() {
   const rows = withFeedAds(reviews, (r) => r.id, REVIEW_FEED_AD_EVERY); // KB-816: 5개마다 · KB-739: 광고 행 key 순번 고정(페이지 추가에도 앞 행 identity 유지)
   const positions = new Map(reviews.map((r, i) => [r.id, i])); // review_card_view position = 광고 행 제외 리뷰 순번
 
-  // KB-802: 카드·사진·"리뷰 읽기" → 리뷰 상세. 이동 전 상세 캐시 시드 = 상세 첫 프레임 완성 렌더(단건 쿼리는 백그라운드 갱신)
+  // KB-802: 카드·"리뷰 읽기" → 리뷰 상세. 이동 전 상세 캐시 시드 = 상세 첫 프레임 완성 렌더(단건 쿼리는 백그라운드 갱신)
   const qc = useQueryClient();
-  const openReview = (review: Review, target: ReviewOpenTarget, photoIndex: number) => {
+  const openReview = (review: Review, target: ReviewOpenTarget) => {
     qc.setQueryData(reviewDetailKey(review.id), review);
     track(EVENTS.review_card_open, { target, photo_count: review.photos?.length ?? 0 });
-    router.push(`/review/${review.id}?photo=${photoIndex}` as Href);
+    router.push(`/review/${review.id}` as Href);
   };
 
   // KB-802(R-16): 카드 노출 = 홈 KB-784 판정 그대로(50%↑ · 스크롤 정지 · 리뷰 탭 포커스당 같은 리뷰 1회)
@@ -205,7 +205,7 @@ export function ReviewFeed() {
             position={positions.get(row.item.id) ?? 0}
             tracker={impressions}
             t={t}
-            onOpen={(target, i) => openReview(row.item, target, i)}
+            onOpen={(target) => openReview(row.item, target)}
             onOpenFood={() => row.item.foodId && router.push(`/food/${row.item.foodId}?src=feed` as Href)}
           />
         )}
@@ -317,7 +317,7 @@ function ReviewCardRow({
   position: number;
   tracker: ImpressionTracker;
   t: TFn;
-  onOpen: (target: ReviewOpenTarget, photoIndex: number) => void;
+  onOpen: (target: ReviewOpenTarget) => void;
   onOpenFood: () => void;
 }) {
   const photoCount = review.photos?.length ?? 0;
