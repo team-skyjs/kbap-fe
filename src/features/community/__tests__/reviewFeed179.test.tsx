@@ -429,6 +429,11 @@ it('KB-777 B3-7: 작은 화면 판정(폭<360 또는 높이<700) · 기본 화�
   expect(small.root.findAll((n) => n.props?.testID === 'feed-write-fab-label')).toHaveLength(0);
   const st = RN.StyleSheet.flatten(sfab.props.style);
   expect({ w: st.width, h: st.height, r: st.borderRadius }).toEqual({ w: 36, h: 36, r: 18 });
+  // Codex #306 P2: 터치 = 36 + hitSlop 4×2 = 44, hitSlop은 부모(화면) 안 — right 14·bottom 18 ≥ 4
+  const slop = sfab.props.hitSlop;
+  expect(36 + slop * 2).toBeGreaterThanOrEqual(44);
+  expect(st.right >= slop && st.bottom >= slop).toBe(true);
+  expect(fab().props.hitSlop).toBeUndefined(); // 일반 화면 필은 그대로
   expect(sfab.props.accessibilityLabel).toBe('reviews.writeReview');
   spy.mockRestore();
 });

@@ -46,6 +46,7 @@ const SORT_OPTIONS: FeedSort[] = ['latest', 'rating_high', 'rating_low', 'food_r
 
 /** KB-777 B3-7: 플로팅 "Write a review"를 아이콘만으로 줄이는 작은 화면(폭 < 360 또는 높이 < 700 dp — QA 720×1280@2x = 360×640). */
 export const isCompactFabScreen = (w: number, h: number): boolean => w < 360 || h < 700;
+const FAB_COMPACT_SLOP = 4; // 36 + 4×2 = 44
 
 export function ReviewFeed() {
   const router = useRouter();
@@ -244,6 +245,8 @@ export function ReviewFeed() {
       {/* KB-777 B3-7: 작은 화면(폭 < 360 또는 높이 < 700) = 아이콘만 36 원형 — 필이 본문을 넓게 가렸다. 라벨은 스크린리더 이름으로 유지 */}
       <Pressable
         style={[styles.fab, fabCompact && styles.fabCompact]}
+        // Codex #306 P2: 원형 36 → 터치 44(시각 36 유지). 부모 = 화면 전체이고 right 14·bottom 18 여유라 hitSlop이 부모 안이다
+        hitSlop={fabCompact ? FAB_COMPACT_SLOP : undefined}
         testID="feed-write-fab"
         accessibilityRole="button"
         accessibilityLabel={t('reviews.writeReview')}
