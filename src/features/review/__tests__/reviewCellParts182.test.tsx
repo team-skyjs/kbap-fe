@@ -288,6 +288,15 @@ describe('KB-824 See more = 전체 줄 수가 3을 넘을 때만', () => {
       expect(flat(tree)).toContain('reviews.seeMore');
     }
   });
+  it('Codex #301 P2: 측정 전엔 접힌 채(3줄) — 긴 본문이 전체로 그려졌다 줄어드는 점프 0 · 본문 교체 직후도 접힘', () => {
+    const tree = render(<ExpandableBody body="unmeasured" t={t} />);
+    expect(visible(tree).props.numberOfLines).toBe(3);
+    expect(toggle(tree)).toBeUndefined();
+    measure(tree, 2);
+    expect(visible(tree).props.numberOfLines).toBeUndefined();
+    act(() => tree.update(<ExpandableBody body="changed" t={t} />));
+    expect(visible(tree).props.numberOfLines).toBe(3);
+  });
   it('본문 교체(원문↔번역) = 접힘으로 돌아가 다시 측정 · 짧은 본문엔 잔상 0, 긴 본문엔 다시 버튼', () => {
     const tree = render(<ExpandableBody body="long one" t={t} />);
     measure(tree, 6);

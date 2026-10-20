@@ -58,7 +58,8 @@ export function ExpandableBody({ body, t, style, toggleColor }: { body: string; 
   );
   return (
     <View style={{ gap: 3 }}>
-      <Text style={[styles.body, style]} numberOfLines={expanded || !clamped ? undefined : BODY_CLAMP_LINES} testID="body-text">
+      {/* Codex #301 P2: 측정 전(null)은 접힌 채 — 긴 본문이 전체로 그려졌다 줄어드는 높이 점프 0(짧은 본문엔 3줄 제한이 보이지 않는다) */}
+      <Text style={[styles.body, style]} numberOfLines={expanded || (fullLines != null && !clamped) ? undefined : BODY_CLAMP_LINES} testID="body-text">
         {body}
       </Text>
       {/* KB-824: 전체 줄 수 측정용 — 보이지 않고 터치·스크린리더 0, 레이아웃에 자리 0(absolute) */}
