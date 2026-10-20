@@ -500,7 +500,7 @@
     "sort_latest": "最新",
     "sort_rating_high": "評分從高到低",
     "sort_rating_low": "評分從低到高",
-    "sort_food_review_count": "評價最多的菜色",
+    "sort_food_review_count": "評價多的菜色優先",
     "sort_helpful": "最有幫助",
     "ratingAll": "全部評分",
     "ratingMin": "{{min}}分以上",

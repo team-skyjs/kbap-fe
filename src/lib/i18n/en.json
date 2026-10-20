@@ -541,7 +541,7 @@
     "sort_latest": "Latest",
     "sort_rating_high": "Highest rated",
     "sort_rating_low": "Lowest rated",
-    "sort_food_review_count": "Most reviewed dishes",
+    "sort_food_review_count": "Most-reviewed dishes first",
     "sort_helpful": "Most helpful",
     "ratingAll": "All ratings",
     "ratingMin": "{{min}}+ stars",

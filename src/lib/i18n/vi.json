@@ -500,7 +500,7 @@
     "sort_latest": "Mới nhất",
     "sort_rating_high": "Điểm cao nhất",
     "sort_rating_low": "Điểm thấp nhất",
-    "sort_food_review_count": "Món nhiều đánh giá nhất",
+    "sort_food_review_count": "Món nhiều đánh giá trước",
     "sort_helpful": "Hữu ích nhất",
     "ratingAll": "Mọi mức sao",
     "ratingMin": "Từ {{min}} sao",
