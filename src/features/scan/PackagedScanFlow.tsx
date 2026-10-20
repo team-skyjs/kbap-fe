@@ -18,6 +18,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import * as Crypto from 'expo-crypto';
 import { useQueryClient } from '@tanstack/react-query';
 import { SubHeader } from '@/components/SubHeader';
 import { Txt as Text } from '@/components/Txt';
@@ -165,29 +166,35 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
     });
 
   /** analysisId null = 새 분석(성공 1회) · 있음 = 같은 분석(이어 붙이기·재분석 — 서버 규칙 안에서 차감 0).
-   *  가드 없는 본체 — 촬영 뒤 이어 부르는 경로(면 추가 재분석)가 같은 가드 안에서 쓴다 */
-  const runLabel = async (analysisId: string | null, pages: string[], chargeUnknown = false, back: Step = { kind: 'labelPages', analysisId, pages }): Promise<void> => {
+   *  가드 없는 본체 — 촬영 뒤 이어 부르는 경로(면 추가 재분석)가 같은 가드 안에서 쓴다.
+   *  requestKey(서버 #444 clientRequestId) = 새 분석의 멱등 키 — 없으면 새로 만들고, **전송 실패 재시도만 같은 키**를 넘긴다
+   *  (면이 바뀌는 경로 = 키 없이 불러 새 키). 같은 키·같은 원문 재전송 = 서버가 같은 분석을 charged=false로 돌려준다. */
+  const runLabel = async (analysisId: string | null, pages: string[], opts: { chargeUnknown?: boolean; back?: Step; requestKey?: string } = {}): Promise<void> => {
+      const { chargeUnknown = false, back = { kind: 'labelPages', analysisId, pages } } = opts;
+      const requestKey = analysisId == null ? (opts.requestKey ?? Crypto.randomUUID()) : undefined;
       goStep({ kind: 'reading', label: true, back });
       const my = reqSeq.current;
       try {
-        const r = await scanProcessedLabel(analysisId, pages, apiLang());
+        const r = await scanProcessedLabel(analysisId, pages, apiLang(), requestKey);
         if (my !== reqSeq.current) return;
         track(EVENTS.food_packaged_label_scan, { pages: pages.length, charged: r.charged, result: 'ok' });
-        if (r.charged || chargeUnknown) void qc.invalidateQueries({ queryKey: ['me'] }); // 남은 횟수 = 서버 재조회
-        if (r.charged) chargedIds.current.add(r.analysisId);
+        // 새 분석의 성공 = 그 분석이 정확히 1회 차감(이번 응답이든, 응답을 잃은 첫 요청이든 — 같은 키 재전송은 charged=false로 온다)
+        const fresh = analysisId == null;
+        if (r.charged || chargeUnknown || fresh) void qc.invalidateQueries({ queryKey: ['me'] }); // 남은 횟수 = 서버 재조회
+        if (r.charged || fresh) chargedIds.current.add(r.analysisId);
         const used = chargedIds.current.has(r.analysisId);
         setStep({ kind: 'labelResult', result: r, pages, used, chargeUnknown: chargeUnknown && !used });
       } catch (e) {
         if (my !== reqSeq.current) return;
         const failure = scanFailureOf(e);
         track(EVENTS.food_packaged_label_scan, { pages: pages.length, charged: false, result: failure });
-        // ponytail: 새 분석의 전송 실패는 서버가 새 분석을 만들고 차감했을 수 있다(응답이 없으니 그 ID를 모른다) — 다시 시도는 또 새 분석.
-        // 차감 여부를 단정하지 않는 문구("확인 중")로 남긴다. 서버가 요청 멱등 키를 받으면 그걸로 바꿀 것.
+        // 전송 실패 = 서버가 처리했을 수 있다 → 다시 시도는 **같은 요청**(같은 분석 ID, 새 분석이면 같은 멱등 키) — 이중 차감 0.
+        // 오류 화면의 "확인 중"은 응답을 받기 전까지만(재시도 결과가 정한다)
         const unknown = chargeUnknown || failure === 'network';
-        setStep({ kind: 'error', failure, chargeUnknown: unknown, labelBack: back, retry: failure === 'network' ? () => void analyzeLabel(analysisId, pages, unknown) : failure === 'newAnalysis' ? () => void analyzeLabel(null, pages) : null });
+        setStep({ kind: 'error', failure, chargeUnknown: unknown, labelBack: back, retry: failure === 'network' ? () => void analyzeLabel(analysisId, pages, { chargeUnknown: unknown, back, requestKey }) : failure === 'newAnalysis' ? () => void analyzeLabel(null, pages) : null });
       }
   };
-  const analyzeLabel = (analysisId: string | null, pages: string[], chargeUnknown = false) => guard.run(() => runLabel(analysisId, pages, chargeUnknown));
+  const analyzeLabel = (analysisId: string | null, pages: string[], opts: { chargeUnknown?: boolean; back?: Step; requestKey?: string } = {}) => guard.run(() => runLabel(analysisId, pages, opts));
   /** 결과에서 "한 면 더" = 찍고 같은 분석으로 다시(면은 누적 — 서버는 보낸 면 전체로 결과를 갱신). 뒤로 = 그 결과 화면 */
   const shootMoreAndReanalyze = (from: Extract<Step, { kind: 'labelResult' }>) =>
     guard.run(async () => {
@@ -199,7 +206,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
         setStep({ kind: 'error', failure: 'unreadable', retry: null, labelBack: from }); // 결과 그대로 돌아간다
         return;
       }
-      await runLabel(analysisId, [...pages, text].slice(0, LABEL_PAGES_MAX), from.chargeUnknown, from);
+      await runLabel(analysisId, [...pages, text].slice(0, LABEL_PAGES_MAX), { chargeUnknown: from.chargeUnknown, back: from });
     });
 
   /** chargeUnknown = 앞선 확정이 전송 실패(서버는 커밋했을 수 있음) — 재확정이 charged false여도 "사용 안 됨"이라 단정하지 않는다 */
@@ -348,7 +355,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
             <>
               <Btn variant="ghost" busy={guard.busy} onPress={() => void shootMoreAndReanalyze(step)} style={st.outline} testID="pscan-label-more">{t('packagedScan.labelAddPage')}</Btn>
               <Text style={st.muted}>{t('packagedScan.labelFreeRetry')}</Text>
-              <LabelDebug onAdd={(text) => void guard.run(() => runLabel(result.analysisId, [...pages, text], chargeUnknown, step))} />
+              <LabelDebug onAdd={(text) => void guard.run(() => runLabel(result.analysisId, [...pages, text], { chargeUnknown, back: step }))} />
             </>
           )}
         </ScrollView>

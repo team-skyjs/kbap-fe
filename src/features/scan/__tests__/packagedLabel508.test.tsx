@@ -43,6 +43,8 @@ const mockOcr = jest.fn();
 jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockOcr(...a) }));
 let mockGranted = true;
 jest.mock('@/lib/openExternal', () => ({ openAppSettings: jest.fn(async () => true) }));
+let mockUuid = 0;
+jest.mock('expo-crypto', () => ({ randomUUID: () => `uuid-${++mockUuid}` }));
 let mockCanceled = false;
 jest.mock('expo-image-picker', () => ({
   requestCameraPermissionsAsync: async () => ({ granted: mockGranted }),
@@ -71,7 +73,7 @@ const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
 const flagLabel = FLAGS.packagedLabelScan;
 const setFlag = (v: boolean) => { (FLAGS as { packagedLabelScan: boolean }).packagedLabelScan = v; };
-beforeEach(() => { qc = new QueryClient(); mockParams = {}; mockGranted = true; mockCanceled = false; setFlag(true); });
+beforeEach(() => { qc = new QueryClient(); mockParams = {}; mockGranted = true; mockCanceled = false; mockUuid = 0; setFlag(true); });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); setFlag(flagLabel); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -109,6 +111,7 @@ describe('어댑터·요청·오류', () => {
   it('오류: 400 PFOOD-006 = unreadable · 409 PFOOD-007 = newAnalysis', () => {
     expect(scanFailureOf(new ApiError('x', 400, 'PFOOD-006'))).toBe('unreadable');
     expect(scanFailureOf(new ApiError('x', 409, 'PFOOD-007'))).toBe('newAnalysis');
+    expect(scanFailureOf(new ApiError('x', 409, 'SCAN-005'))).toBe('newAnalysis'); // #444 같은 키·다른 원문 = 새 키로 새 분석
   });
 });
 
@@ -205,7 +208,7 @@ describe('흐름', () => {
     expect(ids(t)).toContain('pscan-error-newAnalysis');
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L6' }));
     await press(t, 'pscan-new-analysis');
-    expect(labelCalls()[2][1]).toEqual({ analysisId: null, pages: [{ ocrText: LABEL_P1 }, { ocrText: LABEL_P2 }], lang: 'en' });
+    expect(labelCalls()[2][1]).toEqual({ analysisId: null, clientRequestId: expect.any(String), pages: [{ ocrText: LABEL_P1 }, { ocrText: LABEL_P2 }], lang: 'en' });
     expect(ids(t)).toContain('pscan-label-result');
   });
   it('글자 없는 성분표 면 = 서버 호출 0 · 못 읽음 · 촬영 취소 = 단계 그대로', async () => {
@@ -302,6 +305,39 @@ describe('흐름', () => {
     await press(t, 'pscan-retake');
     expect(ids(t)).toContain('pscan-label-pages');
     expect(ids(t)).toContain('pscan-same-analysis');
+  });
+  it('#444 멱등 키: 새 분석 = clientRequestId · 전송 실패 재시도 = 같은 키 · 재전송 charged false여도 "1회 사용"(새 분석 성공 = 정확히 1회) · 같은 분석 = 키 없음', async () => {
+    const inv = jest.spyOn(qc, 'invalidateQueries');
+    const t = flow(true);
+    mockOcr.mockResolvedValueOnce([{ text: LABEL_P1 }]);
+    await press(t, 'pscan-label-capture');
+    mockPost.mockRejectedValueOnce(new Error('timeout'));
+    await press(t, 'pscan-label-analyze');
+    expect(labelCalls()[0][1]).toMatchObject({ analysisId: null, clientRequestId: 'uuid-1' });
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L7', charged: false })); // 첫 요청이 이미 차감 — 서버가 같은 분석을 charged=false로
+    await press(t, 'pscan-retry');
+    expect(labelCalls()[1][1]).toMatchObject({ analysisId: null, clientRequestId: 'uuid-1' });
+    expect(texts(t)).toContain('packagedScan.scanUsed');
+    expect(texts(t)).not.toContain('packagedScan.chargeSeeHome');
+    expect(inv).toHaveBeenCalledWith({ queryKey: ['me'] });
+    mockOcr.mockResolvedValueOnce([{ text: LABEL_P2 }]);
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L7', charged: false }));
+    await press(t, 'pscan-label-more');
+    expect(labelCalls()[2][1]).toEqual({ analysisId: 'L7', pages: [{ ocrText: LABEL_P1 }, { ocrText: LABEL_P2 }], lang: 'en' }); // 이어 붙이기 = 키 없음
+  });
+  it('#444 멱등 키: 면을 바꿔 다시 분석(새 분석 버튼·다시 찍은 면) = 새 키', async () => {
+    const t = flow(true);
+    mockOcr.mockResolvedValueOnce([{ text: '바코드' }]);
+    await press(t, 'pscan-label-capture');
+    mockPost.mockRejectedValueOnce(new ApiError('x', 400, 'PFOOD-006'));
+    await press(t, 'pscan-label-analyze');
+    await press(t, 'pscan-retake');
+    mockOcr.mockResolvedValueOnce([{ text: LABEL_P1 }]);
+    await press(t, 'pscan-label-add');
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L8' }));
+    await press(t, 'pscan-label-analyze');
+    const keys = labelCalls().map((c) => (c[1] as { clientRequestId?: string }).clientRequestId);
+    expect(keys).toEqual(['uuid-1', 'uuid-2']);
   });
   it('플래그 off = 성분표 촬영 버튼 비활성 + 곧 지원 안내 · 촬영 호출 0', async () => {
     setFlag(false);

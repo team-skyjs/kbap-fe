@@ -24,9 +24,11 @@ export async function confirmProcessedScan(analysisId: string, reportNo: string 
  *  이어 붙임(같은 분석 — 첫 성공 뒤 30분·3회까지 재호출 차감 0), null = 새 분석(성공 1회). 실패 400 PFOOD-006 = 차감 0. */
 export const LABEL_PAGES_MAX = 4;
 export const LABEL_PAGE_TEXT_MAX = 4000;
-export async function scanProcessedLabel(analysisId: string | null, pages: string[], lang: string): Promise<LabelScanResult> {
+/** clientRequestId(서버 #444) = 새 분석(analysisId null)일 때 필수 멱등 키(UUID) — 이어 붙이기는 서버가 무시하므로 보내지 않는다 */
+export async function scanProcessedLabel(analysisId: string | null, pages: string[], lang: string, clientRequestId?: string): Promise<LabelScanResult> {
   const body = {
     analysisId,
+    ...(analysisId == null && clientRequestId ? { clientRequestId } : {}),
     pages: pages.slice(0, LABEL_PAGES_MAX).map((p) => ({ ocrText: Array.from(p).slice(0, LABEL_PAGE_TEXT_MAX).join('') })),
     lang,
   };
@@ -41,6 +43,7 @@ export function scanFailureOf(e: unknown): ScanFailure {
   if (!(e instanceof ApiError)) return 'network';
   if (e.code === 'PFOOD-006') return 'unreadable';
   if (e.code === 'PFOOD-007') return 'newAnalysis';
+  if (e.code === 'SCAN-005') return 'newAnalysis'; // #444: 같은 멱등 키에 다른 원문 — 새 키로 새 분석(재시도 금지: 같은 키면 계속 409)
   if (e.code === 'PFOOD-003') return 'expired'; // 만료·없음 — 다시 촬영
   if (e.code === 'PFOOD-004') return 'conflict'; // 이미 다른 결과로 확정된 분석
   if (e.code === 'SCAN-004' || e.status === 403) return 'quota';
