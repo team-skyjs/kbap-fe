@@ -317,6 +317,28 @@ describe('KB-824 See more = 전체 줄 수가 3을 넘을 때만', () => {
     measure(tree, 3); // 회전·글꼴 축소로 3줄에 들어감
     expect(toggle(tree)).toBeUndefined();
   });
+  it('KB-777: 앱을 켠 채 글씨 크기 변경(fontScale 전이) = 측정 Text 새로 마운트 + 줄 수 다시 잼 → 커진 글씨로 4줄 넘으면 See more · 펼침 상태 유지', () => {
+    const RN = jest.requireActual('react-native');
+    const spy = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 1 });
+    const tree = render(<ExpandableBody body="three lines at 1x" t={t} />);
+    measure(tree, 3);
+    expect(toggle(tree)).toBeUndefined();
+    const before = tree.root.findAll((x) => x.props?.testID === 'body-measure' && typeof x.type === 'string')[0];
+    spy.mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 1.3 });
+    act(() => tree.update(<ExpandableBody body="three lines at 1x" t={t} />));
+    const after = tree.root.findAll((x) => x.props?.testID === 'body-measure' && typeof x.type === 'string')[0];
+    expect(after).not.toBe(before); // 새 인스턴스 = 새 onTextLayout
+    expect(visible(tree).props.numberOfLines).toBe(3); // 재측정 전 = 접힌 채(높이 점프 0)
+    measure(tree, 5);
+    expect(toggle(tree)).toBeDefined();
+    act(() => toggle(tree).props.onPress());
+    spy.mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 1 });
+    act(() => tree.update(<ExpandableBody body="three lines at 1x" t={t} />));
+    measure(tree, 4);
+    expect(visible(tree).props.numberOfLines).toBeUndefined(); // 펼친 채 유지
+    expect(flat(tree)).toContain('reviews.seeLess');
+    spy.mockRestore();
+  });
   it('측정 Text = 보이지 않고 스크린리더·터치 0', () => {
     const { StyleSheet } = jest.requireActual('react-native');
     const tree = render(<ExpandableBody body="x" t={t} />);
