@@ -9,10 +9,11 @@ jest.mock('@/components/FlameShape', () => ({ FlameShape: () => null }));
 jest.mock('@/components/CountdownBadge', () => ({ QuotaBurstParticle: () => null, BADGE_W: 64, BADGE_H: 72 }));
 let mockGate: { mode: string } = { mode: 'pass' };
 jest.mock('@/lib/versionGate', () => ({ useVersionGate: () => mockGate }));
+let mockReduced = true;
 const mockShared: { value: number }[] = [];
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual('react-native');
-  return { __esModule: true, default: { View }, useSharedValue: (value: number) => jest.requireActual('react').useState(() => { const shared = { value, set: (next: number) => { shared.value = next; } }; mockShared.push(shared); return shared; })[0], useAnimatedStyle: () => ({}), cancelAnimation: jest.fn(), withTiming: jest.fn((v: number) => v) };
+  return { __esModule: true, default: { View }, useSharedValue: (value: number) => jest.requireActual('react').useState(() => { const shared = { value, set: (next: number) => { shared.value = next; } }; mockShared.push(shared); return shared; })[0], useAnimatedStyle: () => ({}), useReducedMotion: () => mockReduced, cancelAnimation: jest.fn(), withTiming: jest.fn((v: number) => v) };
 });
 jest.mock('@/components/Btn', () => ({ Btn: (p: Record<string, unknown>) => {
   const { Pressable, Text } = jest.requireActual('react-native');
@@ -22,7 +23,7 @@ const trees: ReactTestRenderer[] = [];
 beforeEach(() => {
   resetUnlockSession(0); jest.useFakeTimers(); jest.clearAllMocks(); mockShared.length = 0; mockGate = { mode: 'pass' };
   Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
-  jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+  mockReduced = true;
   jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 });
 afterEach(() => { act(() => trees.splice(0).forEach((tree) => tree.unmount())); jest.useRealTimers(); jest.restoreAllMocks(); });
@@ -70,27 +71,28 @@ it('presentation waits for existing modal and eligible route, without consuming 
   act(() => release()); expect(modal(tree).props.visible).toBe(true);
 });
 
-it('unknown/failed Reduce Motion lookup keeps a readable static modal', async () => {
-  let reject!: (e: Error) => void;
-  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockImplementation(() => new Promise((_, fail) => { reject = fail; }));
-  const tree = await mount(); act(() => unlock());
-  act(() => jest.advanceTimersByTime(10000)); expect(modal(tree).props.visible).toBe(true);
-  await act(async () => reject(new Error('unavailable')));
-  expect(modal(tree).props.visible).toBe(true);
-  expect(jest.requireMock('react-native-reanimated').withTiming).not.toHaveBeenCalled();
+it('QA P-489 home: app-start host animates with Reduce Motion OFF even if the async lookup never answers', async () => {
+  mockReduced = false;
+  jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockImplementation(() => new Promise(() => {}));
+  const withTiming = jest.requireMock('react-native-reanimated').withTiming as jest.Mock;
+  const tree = await mount(); // host mounted long before the unlock
+  act(() => jest.advanceTimersByTime(60000));
+  act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  expect(withTiming).toHaveBeenCalledTimes(2);
+  expect(tree.root.findAll((n) => n.props.testID === 'unlock-celebration-burst').length).toBeGreaterThan(0);
 });
-it('a newer Reduce Motion change wins over the delayed initial lookup', async () => {
-  let resolve!: (value: boolean) => void;
-  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockImplementation(() => new Promise((ok) => { resolve = ok; }));
+it('a Reduce Motion change after mount wins over the startup value', async () => {
+  mockReduced = false;
   let change!: (value: boolean) => void;
   jest.spyOn(AccessibilityInfo, 'addEventListener').mockImplementation(((_name: string, cb: (value: boolean) => void) => { change = cb; return { remove: () => {} }; }) as never);
   const tree = await mount(); act(() => { change(true); unlock(); });
-  await act(async () => resolve(false));
+  act(() => modal(tree).props.onShow());
   expect(modal(tree).props.visible).toBe(true);
   expect(jest.requireMock('react-native-reanimated').withTiming).not.toHaveBeenCalled();
+  expect(tree.root.findAll((n) => n.props.testID === 'unlock-celebration-burst')).toHaveLength(0);
 });
 it('motion clock starts at native onShow, not at visible (iOS presents after the ad dismisses)', async () => {
-  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(false);
+  mockReduced = false;
   const withTiming = jest.requireMock('react-native-reanimated').withTiming as jest.Mock;
   const tree = await mount(); act(() => unlock());
   expect(modal(tree).props.visible).toBe(true);
@@ -120,7 +122,7 @@ it('hard version gate suppresses the native modal without consuming the pending 
   expect(modal(tree).props.visible).toBe(true);
 });
 it('Codex #291 R4: burst wrapper has the badge frame and its center is the flame frame center (scale keeps it there)', async () => {
-  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(false);
+  mockReduced = false;
   const { StyleSheet } = jest.requireActual('react-native');
   const { FLAME_FRAME } = jest.requireActual('../UnlockCelebration');
   const tree = await mount(); act(() => unlock(false));
@@ -131,7 +133,7 @@ it('Codex #291 R4: burst wrapper has the badge frame and its center is the flame
   expect(burst.transform).toEqual([{ scale: 4 }]); // scale pivots on the wrapper center = flame center
 });
 it('QA E2: the hidden resting pose is the start pose, so the first shown frame never has the finished sheet', async () => {
-  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(false);
+  mockReduced = false;
   const withTiming = jest.requireMock('react-native-reanimated').withTiming as jest.Mock;
   const tree = await mount();
   expect(mockShared.length).toBeGreaterThanOrEqual(2);
@@ -145,7 +147,7 @@ it('QA E2: the hidden resting pose is the start pose, so the first shown frame n
   mockShared.forEach((shared) => expect(shared.value).toBe(0)); // closing returns to the start pose for the next show
 });
 it('QA E2: under Reduce Motion the resting pose is the finished sheet (no hidden first frame)', async () => {
-  const tree = await mount(); // isReduceMotionEnabled → true (beforeEach)
+  const tree = await mount(); // Reduce Motion ON (beforeEach)
   expect(mockShared.map((shared) => shared.value).sort()).toEqual([0, 1]); // burst 0, entrance 1
   act(() => unlock(false));
   expect(modal(tree).props.visible).toBe(true);

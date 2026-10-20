@@ -2,7 +2,7 @@ import * as React from 'react';
 import { AccessibilityInfo, AppState, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { Btn } from '@/components/Btn';
 import { Pressable } from '@/components/Pressable';
@@ -20,7 +20,11 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [active, setActive] = React.useState(AppState.currentState === 'active');
-  const [reduceMotion, setReduceMotion] = React.useState(true);
+  // QA P-489 home: the async isReduceMotionEnabled() lookup could stay unresolved for the app-start host, leaving the
+  // "unknown = static" default on. Reanimated reads the system setting synchronously at startup; live toggles come from the event.
+  const systemReduced = useReducedMotion();
+  const [changedTo, setChangedTo] = React.useState<boolean | null>(null);
+  const reduceMotion = changedTo ?? systemReduced;
   const [closing, setClosing] = React.useState<{ event: UnlockEvent; start: boolean } | null>(null);
   const shown = React.useRef<number | null>(null);
   const actionTaken = React.useRef<number | null>(null);
@@ -34,11 +38,8 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
   const visible = eligible && active && !gateBlocked && !state.blocked && event !== null && closing === null;
   React.useEffect(() => {
     const app = AppState.addEventListener('change', (value) => setActive(value === 'active'));
-    let alive = true;
-    let changed = false;
-    void AccessibilityInfo.isReduceMotionEnabled().then((value) => { if (alive && !changed) setReduceMotion(value); }).catch(() => {});
-    const motion = AccessibilityInfo.addEventListener('reduceMotionChanged', (value) => { changed = true; setReduceMotion(value); });
-    return () => { alive = false; app.remove(); motion.remove(); };
+    const motion = AccessibilityInfo.addEventListener('reduceMotionChanged', setChangedTo);
+    return () => { app.remove(); motion.remove(); };
   }, []);
   // iOS presents the Modal only after the rewarded ad screen finishes dismissing, so the clock starts at onShow, not at visible.
   const [onScreen, setOnScreen] = React.useState(false);
