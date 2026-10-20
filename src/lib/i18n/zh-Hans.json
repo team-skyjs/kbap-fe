@@ -300,7 +300,7 @@
     "unlockedTitle": "已解锁无限扫描！",
     "unlockedBody": "现在可以不限次数扫描韩语菜单。",
     "unlockedCelebrationTitle": "已解锁无限扫描",
-    "unlockedCelebrationBody": "任何韩语菜单都能扫描，次数不限。",
+    "unlockedCelebrationBody": "任何韩语菜单都能扫描，\n次数不限。",
     "startScanning": "开始扫描",
     "unlockedOpening": "正在重新打开相机…",
     "unlockedRetry": "无法重新打开相机，请重试。",

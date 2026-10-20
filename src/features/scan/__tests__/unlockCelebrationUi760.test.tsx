@@ -13,7 +13,16 @@ let mockReduced = true;
 const mockShared: { value: number }[] = [];
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual('react-native');
-  return { __esModule: true, default: { View }, useSharedValue: (value: number) => jest.requireActual('react').useState(() => { const shared = { value, set: (next: number) => { shared.value = next; } }; mockShared.push(shared); return shared; })[0], useAnimatedStyle: () => ({}), useReducedMotion: () => mockReduced, cancelAnimation: jest.fn(), withTiming: jest.fn((v: number) => v) };
+  const pass = (c: unknown) => c;
+  return {
+    __esModule: true,
+    default: { View, createAnimatedComponent: pass },
+    useSharedValue: (value: number) => jest.requireActual('react').useState(() => { const shared = { value, set: (next: number) => { shared.value = next; } }; mockShared.push(shared); return shared; })[0],
+    useAnimatedStyle: () => ({}), useAnimatedProps: () => ({}), useReducedMotion: () => mockReduced, cancelAnimation: jest.fn(),
+    withTiming: jest.fn((v: number) => v), withSpring: jest.fn((v: number) => v), withDelay: (_d: number, a: unknown) => a,
+    withSequence: (...a: unknown[]) => a[a.length - 1], withRepeat: (a: unknown) => a,
+    Easing: { linear: (x: number) => x, quad: (x: number) => x, out: (f: unknown) => f },
+  };
 });
 jest.mock('@/components/Btn', () => ({ Btn: (p: Record<string, unknown>) => {
   const { Pressable, Text } = jest.requireActual('react-native');
@@ -33,6 +42,8 @@ async function mount(start = jest.fn(), eligible = true) {
   trees.push(tree); return tree;
 }
 function unlock(scan = true) { observeUnlock('a', false, 0); setUnlockScanFocused(scan); observeUnlock('a', true, 0); }
+const springs = () => jest.requireMock('react-native-reanimated').withSpring as jest.Mock;
+const SEQUENCE_SPRINGS = 2; // KB-819: 시트·버튼 — 시퀀스 1회 시작 = 스프링 2회(불꽃 R4·∞ R5부터 키프레임)
 const modal = (tree: ReactTestRenderer) => tree.root.findByType(Modal);
 const action = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props.testID === 'unlock-celebration-action' && typeof n.props.onPress === 'function')[0];
 it('scan CTA requests nothing until native dismissal, double tap calls continuation once', async () => {
@@ -78,7 +89,8 @@ it('QA P-489 home: app-start host animates with Reduce Motion OFF even if the as
   const tree = await mount(); // host mounted long before the unlock
   act(() => jest.advanceTimersByTime(60000));
   act(() => unlock(false)); act(() => modal(tree).props.onShow());
-  expect(withTiming).toHaveBeenCalledTimes(2);
+  expect(withTiming).toHaveBeenCalled();
+  expect(springs()).toHaveBeenCalledTimes(SEQUENCE_SPRINGS);
   expect(tree.root.findAll((n) => n.props.testID === 'unlock-celebration-burst').length).toBeGreaterThan(0);
 });
 it('a Reduce Motion change after mount wins over the startup value', async () => {
@@ -89,6 +101,7 @@ it('a Reduce Motion change after mount wins over the startup value', async () =>
   act(() => modal(tree).props.onShow());
   expect(modal(tree).props.visible).toBe(true);
   expect(jest.requireMock('react-native-reanimated').withTiming).not.toHaveBeenCalled();
+  expect(springs()).not.toHaveBeenCalled();
   expect(tree.root.findAll((n) => n.props.testID === 'unlock-celebration-burst')).toHaveLength(0);
 });
 it('motion clock starts at native onShow, not at visible (iOS presents after the ad dismisses)', async () => {
@@ -98,19 +111,18 @@ it('motion clock starts at native onShow, not at visible (iOS presents after the
   expect(modal(tree).props.visible).toBe(true);
   act(() => jest.advanceTimersByTime(1000));
   expect(withTiming).not.toHaveBeenCalled();
-  expect(mockShared.length).toBeGreaterThanOrEqual(2);
+  expect(springs()).not.toHaveBeenCalled();
   mockShared.forEach((shared) => expect(shared.value).toBe(0));
   act(() => modal(tree).props.onShow());
-  expect(withTiming).toHaveBeenCalledWith(1, { duration: 550 });
-  expect(withTiming).toHaveBeenCalledWith(1, { duration: 700 });
-  expect(withTiming).toHaveBeenCalledTimes(2);
+  expect(springs()).toHaveBeenCalledTimes(SEQUENCE_SPRINGS);
+  expect(withTiming).toHaveBeenCalledWith(1, { duration: 450 }); // 글로우
   act(() => modal(tree).props.onRequestClose());
   act(() => { if (Platform.OS === 'ios') modal(tree).props.onDismiss(); else jest.runOnlyPendingTimers(); });
-  withTiming.mockClear(); act(() => unlock());
+  springs().mockClear(); act(() => unlock());
   expect(modal(tree).props.visible).toBe(true);
-  expect(withTiming).not.toHaveBeenCalled();
+  expect(springs()).not.toHaveBeenCalled();
   act(() => modal(tree).props.onShow());
-  expect(withTiming).toHaveBeenCalledTimes(2);
+  expect(springs()).toHaveBeenCalledTimes(SEQUENCE_SPRINGS);
 });
 it('hard version gate suppresses the native modal without consuming the pending event', async () => {
   mockGate = { mode: 'blocked' };
@@ -121,16 +133,30 @@ it('hard version gate suppresses the native modal without consuming the pending 
   act(() => tree.update(<UnlockCelebration eligible onStartScanning={jest.fn()} />));
   expect(modal(tree).props.visible).toBe(true);
 });
-it('Codex #291 R4: burst wrapper has the badge frame and its center is the flame frame center (scale keeps it there)', async () => {
+it('KB-819: 파티클 48개가 불꽃 프레임 중심(0×0 원점)에서 방사 · 충격파 링 2개', async () => {
   mockReduced = false;
   const { StyleSheet } = jest.requireActual('react-native');
-  const { FLAME_FRAME } = jest.requireActual('../UnlockCelebration');
-  const tree = await mount(); act(() => unlock(false));
-  const burst = StyleSheet.flatten(tree.root.findAll((n) => n.props.testID === 'unlock-celebration-burst')[0].props.style);
-  expect(burst).toMatchObject({ position: 'absolute', width: 64, height: 72 });
-  expect(burst.left + burst.width / 2).toBe(FLAME_FRAME.w / 2);
-  expect(burst.top + burst.height / 2).toBe(FLAME_FRAME.h / 2);
-  expect(burst.transform).toEqual([{ scale: 4 }]); // scale pivots on the wrapper center = flame center
+  const tree = await mount(); act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  const origin = tree.root.findAll((n) => n.props.testID === 'unlock-celebration-burst' && typeof n.type === 'string')[0];
+  expect(StyleSheet.flatten(origin.props.style)).toMatchObject({ position: 'absolute', left: '50%', top: '50%', width: 0, height: 0 });
+  let anchor = origin.parent; while (anchor && anchor.props.testID !== 'unlock-flame-anchor') anchor = anchor.parent;
+  expect(anchor).toBeTruthy(); // 불꽃 프레임 상자 안의 중심
+  const ids = new Set(tree.root.findAll((n) => typeof n.props.testID === 'string' && /^unlock-particle-\d+$/.test(n.props.testID)).map((n) => n.props.testID));
+  expect(ids.size).toBe(48);
+  expect(tree.root.findAll((n) => n.props.testID === 'unlock-ring-1').length).toBeGreaterThan(0);
+  expect(tree.root.findAll((n) => n.props.testID === 'unlock-ring-2').length).toBeGreaterThan(0);
+});
+it('KB-819: 시트는 내용만큼(flexGrow·minHeight 없음), 히어로가 남는 높이 · 루프·시퀀스는 언마운트 시 전부 cancel', async () => {
+  mockReduced = false;
+  const { StyleSheet } = jest.requireActual('react-native');
+  const reanimated = jest.requireMock('react-native-reanimated');
+  const tree = await mount(); act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  const sheet = StyleSheet.flatten(tree.root.findAll((n) => n.props.testID === 'unlock-sheet' && typeof n.type === 'string')[0].props.style);
+  expect(sheet.flexGrow).toBeUndefined();
+  expect(sheet.minHeight).toBeUndefined();
+  reanimated.cancelAnimation.mockClear();
+  act(() => { trees.splice(trees.indexOf(tree), 1); tree.unmount(); });
+  expect(reanimated.cancelAnimation.mock.calls.length).toBeGreaterThanOrEqual(15); // 시퀀스 15값(루프 flicker·breath 포함)
 });
 it('QA E2: the hidden resting pose is the start pose, so the first shown frame never has the finished sheet', async () => {
   mockReduced = false;
@@ -139,8 +165,8 @@ it('QA E2: the hidden resting pose is the start pose, so the first shown frame n
   expect(mockShared.length).toBeGreaterThanOrEqual(2);
   mockShared.forEach((shared) => expect(shared.value).toBe(0)); // hidden, before any event
   act(() => unlock(false)); act(() => modal(tree).props.onShow());
-  expect(withTiming).toHaveBeenCalledTimes(2);
-  mockShared.forEach((shared) => expect(shared.value).toBe(1)); // mock withTiming jumps to the end value
+  expect(withTiming).toHaveBeenCalled();
+  expect(mockShared.filter((shared) => shared.value === 1).length).toBeGreaterThanOrEqual(10); // mock 애니메이션 = 끝값 즉시
   act(() => modal(tree).props.onRequestClose());
   act(() => { if (Platform.OS === 'ios') modal(tree).props.onDismiss(); else jest.runOnlyPendingTimers(); });
   expect(modal(tree).props.visible).toBe(false);
@@ -148,7 +174,9 @@ it('QA E2: the hidden resting pose is the start pose, so the first shown frame n
 });
 it('QA E2: under Reduce Motion the resting pose is the finished sheet (no hidden first frame)', async () => {
   const tree = await mount(); // Reduce Motion ON (beforeEach)
-  expect(mockShared.map((shared) => shared.value).sort()).toEqual([0, 1]); // burst 0, entrance 1
+  expect(mockShared.filter((shared) => shared.value === 1)).toHaveLength(8); // 불꽃·글로우·무한(등장·그리기)·시트·제목·본문·버튼 = 최종
+  expect(mockShared.every((shared) => shared.value === 0 || shared.value === 1)).toBe(true); // 파티클·링·shimmer·루프 = 정지(0)
+  expect(springs()).not.toHaveBeenCalled();
   act(() => unlock(false));
   expect(modal(tree).props.visible).toBe(true);
 });
@@ -165,10 +193,10 @@ it('QA Android G2: motion starts after the content first lays out + one frame (n
     act(() => root.props.onLayout({ nativeEvent: { layout: { width: 400, height: 300 } } }));
     expect(withTiming).not.toHaveBeenCalled(); // waits one frame
     act(() => jest.runOnlyPendingTimers());
-    expect(withTiming).toHaveBeenCalledTimes(2);
+    expect(springs()).toHaveBeenCalledTimes(SEQUENCE_SPRINGS);
     expect(modal(tree).props).toMatchObject({ statusBarTranslucent: true, navigationBarTranslucent: true });
     act(() => modal(tree).props.onShow());
-    expect(withTiming).toHaveBeenCalledTimes(2); // late onShow does not restart it
+    expect(springs()).toHaveBeenCalledTimes(SEQUENCE_SPRINGS); // late onShow does not restart it
   } finally {
     Object.defineProperty(Platform, 'OS', { configurable: true, get: () => os });
   }
@@ -193,4 +221,66 @@ it('Codex #291 R9: CTA dismissal while inactive defers the scan continuation and
   act(() => { setState('background'); appChange('background'); });
   act(() => { setState('active'); appChange('active'); });
   expect(start).toHaveBeenCalledTimes(1);
+});
+it('QA P-493 Android N1: 모달 루트 = 첫 프레임부터 불투명 주황(배경 페이드 없음 — 흰 플래시 금지)', async () => {
+  mockReduced = false;
+  const { StyleSheet } = jest.requireActual('react-native');
+  const { color: C } = jest.requireActual('@/lib/theme');
+  const tree = await mount(); act(() => unlock(false));
+  const root = tree.root.findAll((n) => n.props.testID === 'unlock-celebration' && typeof n.type === 'string')[0];
+  const style = StyleSheet.flatten(root.props.style);
+  expect(style.backgroundColor).toBe(C.primaryPress);
+  expect(style.opacity).toBeUndefined();
+  expect(tree.root.findAll((n) => n.props.testID === 'unlock-bg')).toHaveLength(0);
+});
+it('QA P-493 iOS L1: 불꽃 묶음 배율 k는 표시 1회당 시트 첫 측정값으로 고정 — 애니 중 시트 레이아웃이 다시 와도 불변', async () => {
+  mockReduced = false;
+  const { StyleSheet } = jest.requireActual('react-native');
+  const tree = await mount(); act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  const sheet = () => tree.root.findAll((n) => n.props.testID === 'unlock-sheet' && typeof n.props.onLayout === 'function')[0];
+  const anchorW = () => StyleSheet.flatten(tree.root.findAll((n) => n.props.testID === 'unlock-flame-anchor' && typeof n.type === 'string')[0].props.style).width;
+  const { height } = jest.requireActual('react-native').Dimensions.get('window');
+  act(() => sheet().props.onLayout({ nativeEvent: { layout: { height: height - 44 - 56 - 310 * 0.8 } } })); // 첫 측정 → k = 0.8 (insets.top 44 · 패딩 24+32)
+  const first = anchorW();
+  expect(first).toBeCloseTo(216 * 0.8, 3);
+  act(() => sheet().props.onLayout({ nativeEvent: { layout: { height: 100 } } })); // 슬라이드·스태거 중 재측정(그대로 쓰면 k = 1)
+  act(() => sheet().props.onLayout({ nativeEvent: { layout: { height: height } } })); // (그대로 쓰면 k = 0.7)
+  expect(anchorW()).toBe(first);
+});
+it('Codex #297 P1: 띄어쓰기 없는 제목은 한 덩어리로 시트 전체 폭(줄바꿈 유지) · 여러 단어는 각자 시트 폭 상한', async () => {
+  const { StyleSheet } = jest.requireActual('react-native');
+  const { StaggerTitle } = jest.requireActual('../celebrationMotion');
+  const progress = { value: 1 };
+  let one!: ReactTestRenderer; let many!: ReactTestRenderer;
+  act(() => { one = renderer.create(<StaggerTitle title="スキャンが無制限になりました" progress={progress} style={{}} />); });
+  act(() => { many = renderer.create(<StaggerTitle title="Unlimited scanning unlocked" progress={progress} style={{}} />); });
+  trees.push(one, many);
+  const words = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.props.testID === 'string' && n.props.testID.startsWith('unlock-title-word-') && typeof n.type === 'string');
+  expect(words(one)).toHaveLength(1);
+  expect(StyleSheet.flatten(words(one)[0].props.style)).toMatchObject({ width: '100%' });
+  expect(words(many)).toHaveLength(3);
+  for (const w of words(many)) expect(StyleSheet.flatten(w.props.style)).toMatchObject({ maxWidth: '100%', flexShrink: 1 });
+});
+it('QA P-493 R4: 불꽃 팝 = 한 번만 넘쳤다 1로 안착(최대 ≤1.2 · 총 ≈450ms · 스프링 없음 → 진동 0)', async () => {
+  const { FLAME_POP } = jest.requireActual('../UnlockCelebration');
+  const keys = FLAME_POP.map((f: { to: number }) => f.to);
+  expect(Math.max(...keys)).toBeLessThanOrEqual(1.2);
+  expect(Math.max(...keys)).toBeGreaterThan(1); // 넘침은 있다("뽱")
+  expect(keys[keys.length - 1]).toBe(1);
+  for (let i = 1; i < keys.length; i++) expect(keys[i]).toBeLessThan(keys[i - 1]); // 정점 뒤 단조 수렴(되튐 0)
+  expect(FLAME_POP.reduce((n: number, f: { ms: number }) => n + f.ms, 0)).toBe(450);
+  mockReduced = false;
+  const reanimated = jest.requireMock('react-native-reanimated');
+  const tree = await mount(); act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  for (const { to, ms } of FLAME_POP) expect(reanimated.withTiming).toHaveBeenCalledWith(to, expect.objectContaining({ duration: ms }));
+  expect(reanimated.withSpring).not.toHaveBeenCalledWith(1, expect.objectContaining({ damping: 9 }));
+});
+it('QA P-493 R5: ∞ 기호도 불꽃과 같은 1회 팝 키프레임(스프링 0 — 피크 ≤1.2·단조·450ms는 R4 테스트가 잠금) · stroke 그리기 420ms 유지', async () => {
+  mockReduced = false;
+  const reanimated = jest.requireMock('react-native-reanimated');
+  const { FLAME_POP } = jest.requireActual('../UnlockCelebration');
+  const tree = await mount(); act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  for (const { to, ms } of FLAME_POP) expect(reanimated.withTiming.mock.calls.filter((c: unknown[]) => c[0] === to && (c[1] as { duration: number }).duration === ms)).toHaveLength(2); // 불꽃 + ∞
+  expect(reanimated.withTiming).toHaveBeenCalledWith(1, { duration: 420 }); // stroke 그리기
+  expect(reanimated.withSpring).not.toHaveBeenCalledWith(1, expect.objectContaining({ damping: 10, stiffness: 200 }));
 });
