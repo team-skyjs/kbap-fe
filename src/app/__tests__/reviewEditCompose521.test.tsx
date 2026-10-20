@@ -344,3 +344,77 @@ it('KB-708 B: 고친 뒤 리뷰가 캐시에서 사라져 미도착 분기로 �
   expect(byId(tree, 'leave-confirm')).toHaveLength(0);
   expect(mockPrevent.on).toBe(false);
 });
+
+// ── KB-828 본문 최소 10자(trim 후 코드포인트) — 안내·버튼 비활성·비활성 탭 강조·REVIEW-005·수정 경로
+describe('KB-828 리뷰 본문 최소 10자', () => {
+  const { ApiError } = jest.requireActual('@/lib/api/client') as typeof import('@/lib/api/client');
+  const bodyInput = (t2: ReactTestRenderer) => t2.root.findAll((n) => n.props?.multiline === true && typeof n.props?.onChangeText === 'function')[0];
+  const host = (t2: ReactTestRenderer, id: string) => t2.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string');
+  const textOf = (t2: ReactTestRenderer, id: string) => host(t2, id).map((n) => n.props.children).join('');
+  const flat = (s: unknown): Record<string, unknown> => Object.assign({}, ...([] as unknown[]).concat(s as never).flat(Infinity).filter(Boolean));
+  const pickStar = (t2: ReactTestRenderer) => act(() => t2.root.findAll((n) => n.props?.hitSlop === 4 && typeof n.props?.onPress === 'function')[4].props.onPress());
+  beforeEach(() => { mockParams.reviewId = undefined; });
+
+  it('작성: 0자·9자 = 안내 + "{n}/10" + Post off(스크린리더 비활성 + 사유 힌트) · 공백만 = 0 · 10자 = 안내 사라지고 Post on', () => {
+    const tree = render(<ReviewCompose />);
+    pickStar(tree);
+    expect(textOf(tree, 'review-min-length')).toBe('review.minLength');
+    expect(byId(tree, 'review-min-count')).not.toHaveLength(0);
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('off');
+    expect(byId(tree, 'post-review')[0].props.accessibilityHint).toBe('review.minLength');
+    expect(host(tree, 'post-review')[0].props.accessibilityState).toMatchObject({ disabled: true });
+    act(() => bodyInput(tree).props.onChangeText('          ')); // 공백 10칸 = 0자
+    expect(byId(tree, 'review-min-length')).not.toHaveLength(0);
+    act(() => bodyInput(tree).props.onChangeText(' 123456789 ')); // trim 후 9
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('off');
+    act(() => bodyInput(tree).props.onChangeText('1234567890'));
+    expect(byId(tree, 'review-min-length')).toHaveLength(0);
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('primary');
+    expect(byId(tree, 'post-review')[0].props.accessibilityHint).toBeUndefined();
+  });
+
+  it('비활성 Post 탭 = 등록 0 · 토스트 0 · 안내가 색으로만 강조(크기·굵기 불변)', async () => {
+    const tree = render(<ReviewCompose />);
+    pickStar(tree);
+    act(() => bodyInput(tree).props.onChangeText('Tasty'));
+    const before = flat(host(tree, 'review-min-length')[0].props.style);
+    act(() => byId(tree, 'post-review-blocked')[0].props.onPress());
+    const after = flat(host(tree, 'review-min-length')[0].props.style);
+    expect(after.color).not.toBe(before.color);
+    for (const k of ['fontSize', 'fontWeight', 'lineHeight', 'flex']) expect(after[k]).toBe(before[k]);
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); }); // 버튼을 우회해 불러도 등록 0
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it('서버 400 REVIEW-005 = 같은 안내 강조 · 일반 실패 표면 없음 · 입력 보존 · 버튼 복구(다시 제출 가능)', async () => {
+    mockCreate.mockRejectedValueOnce(new ApiError('리뷰 본문은 10자 이상이어야 해요', 400, 'REVIEW-005'));
+    const tree = render(<ReviewCompose />);
+    pickStar(tree);
+    act(() => bodyInput(tree).props.onChangeText('Tasty food!'));
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(tree.toJSON())).not.toContain('review.postError');
+    expect(bodyInput(tree).props.value).toBe('Tasty food!');
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('primary');
+    expect(byId(tree, 'post-review')[0].props.busy).toBe(false);
+    // 강조가 걸린 상태 — 9자로 줄이면 안내가 강조색으로 보인다(새 화면의 기본 회색과 다름)
+    act(() => bodyInput(tree).props.onChangeText('Tasty foo'));
+    const fresh = render(<ReviewCompose />);
+    expect(flat(host(tree, 'review-min-length')[0].props.style).color).not.toBe(flat(host(fresh, 'review-min-length')[0].props.style).color);
+  });
+
+  it('수정: 본문 없던 리뷰(사진·별점만) = 저장 off + 안내 · 10자 채우면 저장 → changes.body = trim 본문', async () => {
+    mockParams.reviewId = 'r1';
+    queryClient.setQueryData(['me', 'reviews'], [{ ...(REVIEW as object), body: null }]);
+    const tree = render(<ReviewCompose />);
+    expect(byId(tree, 'review-min-length')).not.toHaveLength(0);
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('off');
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(mockUpdate).not.toHaveBeenCalled();
+    act(() => bodyInput(tree).props.onChangeText('  Really good kimbap  '));
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    expect(mockUpdate.mock.calls[0][0].changes.body).toBe('Really good kimbap');
+  });
+});

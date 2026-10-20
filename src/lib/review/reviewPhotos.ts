@@ -28,9 +28,13 @@ export function removeReviewPhoto(current: ReviewPhoto[], key: string): ReviewPh
   return current.filter((p) => reviewPhotoKey(p) !== key);
 }
 
-/** 별점 필수 — 1~5 정수(계약). 텍스트·사진은 선택. */
-export function canPostReview(rating: number): boolean {
-  return Number.isInteger(rating) && rating >= 1 && rating <= 5;
+/** KB-828: 본문 최소 글자 수 — 서버 REVIEW-005(trim 후 코드포인트 10 미만 400)와 같은 기준. */
+export const REVIEW_MIN_BODY = 10;
+/** trim 후 유니코드 코드포인트 수(서버 codePointCount와 같다 — 이모지 1개 = 1, UTF-16 length 아님). */
+export const reviewBodyLength = (body: string): number => Array.from(body.trim()).length;
+/** 별점 필수(1~5 정수) + 본문 10자 이상(KB-828 — 사진·별점만 리뷰 불가). 사진은 선택. 작성·수정 공통. */
+export function canPostReview(rating: number, body: string): boolean {
+  return Number.isInteger(rating) && rating >= 1 && rating <= 5 && reviewBodyLength(body) >= REVIEW_MIN_BODY;
 }
 
 /** presigned 업로드 → 전송용 path 배열. 실패는 throw(호출측 표면화 — 부분 업로드 잔존 없음). */

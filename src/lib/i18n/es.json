@@ -404,6 +404,8 @@
     "reviewLabel": "Tu reseña",
     "placeholder": "Comparte a qué sabía y cualquier consejo para viajeros con tus restricciones…",
     "charCount": "{{count}}/500",
+    "minLength": "Escribe al menos 10 caracteres",
+    "minLengthCount": "{{count}}/10",
     "postReview": "Publicar reseña",
     "postedTitle": "Reseña publicada",
     "postedBody": "¡Gracias! Tu reseña de {{rating}} estrellas de {{name}} ya está en las reseñas del plato y cuenta para tu clasificación.",

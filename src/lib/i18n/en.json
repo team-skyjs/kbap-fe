@@ -445,6 +445,8 @@
     "reviewLabel": "Your review",
     "placeholder": "Share what it tasted like, and any tips for travelers with your restrictions…",
     "charCount": "{{count}}/500",
+    "minLength": "Write at least 10 characters",
+    "minLengthCount": "{{count}}/10",
     "postReview": "Post review",
     "postedTitle": "Review posted",
     "postedBody": "Your {{rating}}-star review of {{name}} is live and counts toward your ranking.",

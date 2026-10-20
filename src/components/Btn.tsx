@@ -26,6 +26,8 @@ export function Btn({
   disabled,
   onPress,
   style,
+  accessibilityLabel,
+  accessibilityHint,
 }: {
   children?: React.ReactNode;
   variant?: BtnVariant;
@@ -42,6 +44,9 @@ export function Btn({
   disabled?: boolean;
   onPress?: () => void;
   style?: ViewStyle;
+  /** KB-796: 라벨만으로 대상이 모호할 때(같은 "View guide"가 여러 개) 스크린리더 이름·힌트 — 미지정 = 라벨 그대로 */
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }) {
   const palette = VARIANTS[variant];
   // P-031(KB-206): press 즉시 피드백 — onPressIn에서 바로(릴리스 대기 금지),
@@ -69,6 +74,9 @@ export function Btn({
         scale.value = withSpring(1, spring.press);
       }}
       disabled={disabled || busy || variant === 'off'}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       testID={testID}
       style={[
         styles.base,
