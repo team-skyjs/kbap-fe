@@ -226,6 +226,13 @@ describe('Food 탭 세그먼트·목록', () => {
     await act(async () => { input.props.onSubmitEditing(); });
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(ids(t)).toContain('packaged-empty');
+    // Codex #308 R2: 지우고 같은 검색어를 다시 제출해도 검색 1회로 센다(캐시 적중이어도)
+    mockTrack.mockClear();
+    act(() => t.root.findAll((n) => n.props?.testID === 'packaged-search-clear' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    act(() => input.props.onChangeText('우유'));
+    await act(async () => { input.props.onSubmitEditing(); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(mockTrack.mock.calls.filter((c) => c[0] === 'food_packaged_search')).toHaveLength(1);
   });
   it('Codex #308 P2: 다음 페이지 실패 = 안내 + 다시 시도 · 실패 중 자동 재요청 0', async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -254,7 +261,7 @@ describe('Food 탭 세그먼트·목록', () => {
     expect(src).toContain('enabled: term.length > 0');
     const ex = fs.readFileSync('src/features/processedFood/PackagedExplorer.tsx', 'utf8');
     expect(ex).not.toMatch(/packaged\.type\.\w+'\)\}\s*selected|<Chip/);
-    expect(ex).toContain('track(EVENTS.food_packaged_search, { query_length: Array.from(term).length, result_count: items.length })');
+    expect(ex).toContain('track(EVENTS.food_packaged_search, { query_length: Array.from(term).length, result_count: items.length });');
   });
   it('10언어 문구 전부 · 가운데점 0 · 안전/없음 단정 0(en·ko)', () => {
     const en = JSON.parse(fs.readFileSync('src/lib/i18n/en.json', 'utf8')).packaged;

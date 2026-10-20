@@ -84,19 +84,20 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   const router = useRouter();
   const [draft, setDraft] = React.useState('');
   const [query, setQuery] = React.useState('');
+  const [searchSeq, setSearchSeq] = React.useState(0); // 제출 회차 — 같은 검색어를 다시 제출해도 1회로 센다(Codex #308 R2)
   const q = useProcessedSearch(query);
   const items = q.data ?? [];
   const term = query.trim();
 
-  // 검색 1회 = 결과(첫 페이지) 도착 시 1번 — 검색어 원문은 보내지 않는다(길이·결과 수만)
-  const tracked = React.useRef<string | null>(null);
+  // 검색 1회 = 제출 1번마다 결과(첫 페이지) 도착 시 1번 — 검색어 원문은 보내지 않는다(길이·결과 수만)
+  const tracked = React.useRef<number | null>(null);
   React.useEffect(() => {
-    if (!term || !q.isSuccess || tracked.current === term) return;
-    tracked.current = term;
+    if (!term || !q.isSuccess || tracked.current === searchSeq) return;
+    tracked.current = searchSeq;
     track(EVENTS.food_packaged_search, { query_length: Array.from(term).length, result_count: items.length });
-  }, [term, q.isSuccess, items.length]);
+  }, [term, q.isSuccess, items.length, searchSeq]);
 
-  const submit = () => setQuery(draft);
+  const submit = () => { setQuery(draft); setSearchSeq((n) => n + 1); };
   const clear = () => { setDraft(''); setQuery(''); };
 
   const header = (
