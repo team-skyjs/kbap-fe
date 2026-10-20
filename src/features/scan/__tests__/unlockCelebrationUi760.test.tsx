@@ -7,6 +7,8 @@ jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) =>
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) }));
 jest.mock('@/components/FlameShape', () => ({ FlameShape: () => null }));
 jest.mock('@/components/CountdownBadge', () => ({ QuotaBurstParticle: () => null }));
+let mockGate: { mode: string } = { mode: 'pass' };
+jest.mock('@/lib/versionGate', () => ({ useVersionGate: () => mockGate }));
 const mockShared: { value: number }[] = [];
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual('react-native');
@@ -18,7 +20,7 @@ jest.mock('@/components/Btn', () => ({ Btn: (p: Record<string, unknown>) => {
 } }));
 const trees: ReactTestRenderer[] = [];
 beforeEach(() => {
-  resetUnlockSession(0); jest.useFakeTimers(); jest.clearAllMocks(); mockShared.length = 0;
+  resetUnlockSession(0); jest.useFakeTimers(); jest.clearAllMocks(); mockShared.length = 0; mockGate = { mode: 'pass' };
   Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
   jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
@@ -107,4 +109,13 @@ it('motion clock starts at native onShow, not at visible (iOS presents after the
   expect(withTiming).not.toHaveBeenCalled();
   act(() => modal(tree).props.onShow());
   expect(withTiming).toHaveBeenCalledTimes(2);
+});
+it('hard version gate suppresses the native modal without consuming the pending event', async () => {
+  mockGate = { mode: 'blocked' };
+  const tree = await mount(); act(() => unlock(false));
+  expect(modal(tree).props.visible).toBe(false);
+  expect(getUnlockSnapshot().event).not.toBeNull();
+  mockGate = { mode: 'pass' };
+  act(() => tree.update(<UnlockCelebration eligible onStartScanning={jest.fn()} />));
+  expect(modal(tree).props.visible).toBe(true);
 });

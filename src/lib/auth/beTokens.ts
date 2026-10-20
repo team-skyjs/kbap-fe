@@ -125,7 +125,7 @@ export function saveTokens(
     newSession?: boolean;
   },
 ): Promise<boolean> {
-  if (opts?.newSession) sessionGen++; // 경계 — 아래 캐시 공개와 동일 동기 틱
+  if (opts?.newSession) bumpSessionGen(); // 경계 — 아래 캐시 공개와 동일 동기 틱(세대 리셋 소비자도 같이 — Codex #291 P1)
   const g = sessionGen; // 호출 시점 세대(동기)
   const mine = { access, refresh };
   cached = mine; // 동기 — 즉시 관찰 가능(기존 시맨틱)

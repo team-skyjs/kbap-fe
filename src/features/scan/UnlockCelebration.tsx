@@ -11,6 +11,7 @@ import { FlameShape } from '@/components/FlameShape';
 import { QuotaBurstParticle } from '@/components/CountdownBadge';
 import { IconClose } from '@/components/icons';
 import { color as C, font } from '@/lib/theme';
+import { useVersionGate } from '@/lib/versionGate';
 import { consumeUnlock, getUnlockSnapshot, isUnlockEventCurrent, markUnlockPresented, subscribeUnlock, type UnlockEvent } from './unlockCelebrationStore';
 
 /** Mounted inside scan's native screen, and at the app host for ordinary routes. */
@@ -28,7 +29,9 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
   const entrance = useSharedValue(1);
   const sheetMotion = useAnimatedStyle(() => ({ opacity: entrance.value, transform: [{ translateY: (1 - entrance.value) * 40 }] }));
   const event = state.event;
-  const visible = eligible && active && !state.blocked && event !== null && closing === null;
+  // Native Modal sits above the in-tree hard update gate; never cover it (Codex #291 P2). The event stays pending.
+  const gateBlocked = useVersionGate().mode === 'blocked';
+  const visible = eligible && active && !gateBlocked && !state.blocked && event !== null && closing === null;
   React.useEffect(() => {
     const app = AppState.addEventListener('change', (value) => setActive(value === 'active'));
     let alive = true;
