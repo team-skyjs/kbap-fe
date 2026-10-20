@@ -64,8 +64,8 @@ it('Codex #291 3R P1: root layout keeps gesture-handler as its first import', ()
 it('P-489 R7: celebration copy keys are modal-only, ko/en match the approved copy, all 10 locales filled', () => {
   const fs = jest.requireActual<typeof import('fs')>('fs');
   const read = (l: string) => JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).scan as Record<string, string>;
-  expect(read('ko')).toMatchObject({ unlockedCelebrationTitle: '스캔이 무제한으로 풀렸어요!', unlockedCelebrationBody: '이제 한국어 메뉴판을 횟수 제한 없이 스캔할 수 있어요.' });
-  expect(read('en')).toMatchObject({ unlockedCelebrationTitle: 'Unlimited scanning unlocked', unlockedCelebrationBody: 'Scan any Korean menu, as many times as you want.' });
+  expect(read('ko')).toMatchObject({ unlockedCelebrationTitle: '스캔이 무제한으로 풀렸어요!', unlockedCelebrationBody: '이제 한국어 메뉴판을\n횟수 제한 없이 스캔할 수 있어요.' }); // KB-819: 줄바꿈만(문구 불변)
+  expect(read('en')).toMatchObject({ unlockedCelebrationTitle: 'Unlimited scanning unlocked', unlockedCelebrationBody: 'Scan any Korean menu,\nas many times as you want.' }); // KB-819 명시 줄바꿈
   for (const l of ['ko', 'en', 'es', 'id', 'ja', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
     const scan = read(l);
     for (const key of ['unlockedCelebrationTitle', 'unlockedCelebrationBody']) {

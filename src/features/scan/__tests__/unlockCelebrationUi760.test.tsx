@@ -13,7 +13,16 @@ let mockReduced = true;
 const mockShared: { value: number }[] = [];
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual('react-native');
-  return { __esModule: true, default: { View }, useSharedValue: (value: number) => jest.requireActual('react').useState(() => { const shared = { value, set: (next: number) => { shared.value = next; } }; mockShared.push(shared); return shared; })[0], useAnimatedStyle: () => ({}), useReducedMotion: () => mockReduced, cancelAnimation: jest.fn(), withTiming: jest.fn((v: number) => v) };
+  const pass = (c: unknown) => c;
+  return {
+    __esModule: true,
+    default: { View, createAnimatedComponent: pass },
+    useSharedValue: (value: number) => jest.requireActual('react').useState(() => { const shared = { value, set: (next: number) => { shared.value = next; } }; mockShared.push(shared); return shared; })[0],
+    useAnimatedStyle: () => ({}), useAnimatedProps: () => ({}), useReducedMotion: () => mockReduced, cancelAnimation: jest.fn(),
+    withTiming: jest.fn((v: number) => v), withSpring: jest.fn((v: number) => v), withDelay: (_d: number, a: unknown) => a,
+    withSequence: (...a: unknown[]) => a[a.length - 1], withRepeat: (a: unknown) => a,
+    Easing: { linear: (x: number) => x, quad: (x: number) => x, out: (f: unknown) => f },
+  };
 });
 jest.mock('@/components/Btn', () => ({ Btn: (p: Record<string, unknown>) => {
   const { Pressable, Text } = jest.requireActual('react-native');
@@ -33,6 +42,8 @@ async function mount(start = jest.fn(), eligible = true) {
   trees.push(tree); return tree;
 }
 function unlock(scan = true) { observeUnlock('a', false, 0); setUnlockScanFocused(scan); observeUnlock('a', true, 0); }
+const springs = () => jest.requireMock('react-native-reanimated').withSpring as jest.Mock;
+const SEQUENCE_SPRINGS = 4; // KB-819: 불꽃·무한 기호·시트·버튼 — 시퀀스 1회 시작 = 스프링 4회
 const modal = (tree: ReactTestRenderer) => tree.root.findByType(Modal);
 const action = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props.testID === 'unlock-celebration-action' && typeof n.props.onPress === 'function')[0];
 it('scan CTA requests nothing until native dismissal, double tap calls continuation once', async () => {
@@ -78,7 +89,8 @@ it('QA P-489 home: app-start host animates with Reduce Motion OFF even if the as
   const tree = await mount(); // host mounted long before the unlock
   act(() => jest.advanceTimersByTime(60000));
   act(() => unlock(false)); act(() => modal(tree).props.onShow());
-  expect(withTiming).toHaveBeenCalledTimes(2);
+  expect(withTiming).toHaveBeenCalled();
+  expect(springs()).toHaveBeenCalledTimes(SEQUENCE_SPRINGS);
   expect(tree.root.findAll((n) => n.props.testID === 'unlock-celebration-burst').length).toBeGreaterThan(0);
 });
 it('a Reduce Motion change after mount wins over the startup value', async () => {
@@ -89,6 +101,7 @@ it('a Reduce Motion change after mount wins over the startup value', async () =>
   act(() => modal(tree).props.onShow());
   expect(modal(tree).props.visible).toBe(true);
   expect(jest.requireMock('react-native-reanimated').withTiming).not.toHaveBeenCalled();
+  expect(springs()).not.toHaveBeenCalled();
   expect(tree.root.findAll((n) => n.props.testID === 'unlock-celebration-burst')).toHaveLength(0);
 });
 it('motion clock starts at native onShow, not at visible (iOS presents after the ad dismisses)', async () => {
@@ -98,19 +111,18 @@ it('motion clock starts at native onShow, not at visible (iOS presents after the
   expect(modal(tree).props.visible).toBe(true);
   act(() => jest.advanceTimersByTime(1000));
   expect(withTiming).not.toHaveBeenCalled();
-  expect(mockShared.length).toBeGreaterThanOrEqual(2);
+  expect(springs()).not.toHaveBeenCalled();
   mockShared.forEach((shared) => expect(shared.value).toBe(0));
   act(() => modal(tree).props.onShow());
-  expect(withTiming).toHaveBeenCalledWith(1, { duration: 550 });
-  expect(withTiming).toHaveBeenCalledWith(1, { duration: 700 });
-  expect(withTiming).toHaveBeenCalledTimes(2);
+  expect(springs()).toHaveBeenCalledTimes(SEQUENCE_SPRINGS);
+  expect(withTiming).toHaveBeenCalledWith(1, { duration: 150 }); // 배경
   act(() => modal(tree).props.onRequestClose());
   act(() => { if (Platform.OS === 'ios') modal(tree).props.onDismiss(); else jest.runOnlyPendingTimers(); });
-  withTiming.mockClear(); act(() => unlock());
+  springs().mockClear(); act(() => unlock());
   expect(modal(tree).props.visible).toBe(true);
-  expect(withTiming).not.toHaveBeenCalled();
+  expect(springs()).not.toHaveBeenCalled();
   act(() => modal(tree).props.onShow());
-  expect(withTiming).toHaveBeenCalledTimes(2);
+  expect(springs()).toHaveBeenCalledTimes(SEQUENCE_SPRINGS);
 });
 it('hard version gate suppresses the native modal without consuming the pending event', async () => {
   mockGate = { mode: 'blocked' };
@@ -121,16 +133,30 @@ it('hard version gate suppresses the native modal without consuming the pending 
   act(() => tree.update(<UnlockCelebration eligible onStartScanning={jest.fn()} />));
   expect(modal(tree).props.visible).toBe(true);
 });
-it('Codex #291 R4: burst wrapper has the badge frame and its center is the flame frame center (scale keeps it there)', async () => {
+it('KB-819: 파티클 48개가 불꽃 프레임 중심(0×0 원점)에서 방사 · 충격파 링 2개', async () => {
   mockReduced = false;
   const { StyleSheet } = jest.requireActual('react-native');
-  const { FLAME_FRAME } = jest.requireActual('../UnlockCelebration');
-  const tree = await mount(); act(() => unlock(false));
-  const burst = StyleSheet.flatten(tree.root.findAll((n) => n.props.testID === 'unlock-celebration-burst')[0].props.style);
-  expect(burst).toMatchObject({ position: 'absolute', width: 64, height: 72 });
-  expect(burst.left + burst.width / 2).toBe(FLAME_FRAME.w / 2);
-  expect(burst.top + burst.height / 2).toBe(FLAME_FRAME.h / 2);
-  expect(burst.transform).toEqual([{ scale: 4 }]); // scale pivots on the wrapper center = flame center
+  const tree = await mount(); act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  const origin = tree.root.findAll((n) => n.props.testID === 'unlock-celebration-burst' && typeof n.type === 'string')[0];
+  expect(StyleSheet.flatten(origin.props.style)).toMatchObject({ position: 'absolute', left: '50%', top: '50%', width: 0, height: 0 });
+  let anchor = origin.parent; while (anchor && anchor.props.testID !== 'unlock-flame-anchor') anchor = anchor.parent;
+  expect(anchor).toBeTruthy(); // 불꽃 프레임 상자 안의 중심
+  const ids = new Set(tree.root.findAll((n) => typeof n.props.testID === 'string' && /^unlock-particle-\d+$/.test(n.props.testID)).map((n) => n.props.testID));
+  expect(ids.size).toBe(48);
+  expect(tree.root.findAll((n) => n.props.testID === 'unlock-ring-1').length).toBeGreaterThan(0);
+  expect(tree.root.findAll((n) => n.props.testID === 'unlock-ring-2').length).toBeGreaterThan(0);
+});
+it('KB-819: 시트는 내용만큼(flexGrow·minHeight 없음), 히어로가 남는 높이 · 루프·시퀀스는 언마운트 시 전부 cancel', async () => {
+  mockReduced = false;
+  const { StyleSheet } = jest.requireActual('react-native');
+  const reanimated = jest.requireMock('react-native-reanimated');
+  const tree = await mount(); act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  const sheet = StyleSheet.flatten(tree.root.findAll((n) => n.props.testID === 'unlock-sheet' && typeof n.type === 'string')[0].props.style);
+  expect(sheet.flexGrow).toBeUndefined();
+  expect(sheet.minHeight).toBeUndefined();
+  reanimated.cancelAnimation.mockClear();
+  act(() => { trees.splice(trees.indexOf(tree), 1); tree.unmount(); });
+  expect(reanimated.cancelAnimation.mock.calls.length).toBeGreaterThanOrEqual(16); // 시퀀스 16값(루프 flicker·breath 포함)
 });
 it('QA E2: the hidden resting pose is the start pose, so the first shown frame never has the finished sheet', async () => {
   mockReduced = false;
@@ -139,8 +165,8 @@ it('QA E2: the hidden resting pose is the start pose, so the first shown frame n
   expect(mockShared.length).toBeGreaterThanOrEqual(2);
   mockShared.forEach((shared) => expect(shared.value).toBe(0)); // hidden, before any event
   act(() => unlock(false)); act(() => modal(tree).props.onShow());
-  expect(withTiming).toHaveBeenCalledTimes(2);
-  mockShared.forEach((shared) => expect(shared.value).toBe(1)); // mock withTiming jumps to the end value
+  expect(withTiming).toHaveBeenCalled();
+  expect(mockShared.filter((shared) => shared.value === 1).length).toBeGreaterThanOrEqual(10); // mock 애니메이션 = 끝값 즉시
   act(() => modal(tree).props.onRequestClose());
   act(() => { if (Platform.OS === 'ios') modal(tree).props.onDismiss(); else jest.runOnlyPendingTimers(); });
   expect(modal(tree).props.visible).toBe(false);
@@ -148,7 +174,9 @@ it('QA E2: the hidden resting pose is the start pose, so the first shown frame n
 });
 it('QA E2: under Reduce Motion the resting pose is the finished sheet (no hidden first frame)', async () => {
   const tree = await mount(); // Reduce Motion ON (beforeEach)
-  expect(mockShared.map((shared) => shared.value).sort()).toEqual([0, 1]); // burst 0, entrance 1
+  expect(mockShared.filter((shared) => shared.value === 1)).toHaveLength(9); // 배경·불꽃·글로우·무한(등장·그리기)·시트·제목·본문·버튼 = 최종
+  expect(mockShared.every((shared) => shared.value === 0 || shared.value === 1)).toBe(true); // 파티클·링·shimmer·루프 = 정지(0)
+  expect(springs()).not.toHaveBeenCalled();
   act(() => unlock(false));
   expect(modal(tree).props.visible).toBe(true);
 });
@@ -165,10 +193,10 @@ it('QA Android G2: motion starts after the content first lays out + one frame (n
     act(() => root.props.onLayout({ nativeEvent: { layout: { width: 400, height: 300 } } }));
     expect(withTiming).not.toHaveBeenCalled(); // waits one frame
     act(() => jest.runOnlyPendingTimers());
-    expect(withTiming).toHaveBeenCalledTimes(2);
+    expect(springs()).toHaveBeenCalledTimes(SEQUENCE_SPRINGS);
     expect(modal(tree).props).toMatchObject({ statusBarTranslucent: true, navigationBarTranslucent: true });
     act(() => modal(tree).props.onShow());
-    expect(withTiming).toHaveBeenCalledTimes(2); // late onShow does not restart it
+    expect(springs()).toHaveBeenCalledTimes(SEQUENCE_SPRINGS); // late onShow does not restart it
   } finally {
     Object.defineProperty(Platform, 'OS', { configurable: true, get: () => os });
   }
