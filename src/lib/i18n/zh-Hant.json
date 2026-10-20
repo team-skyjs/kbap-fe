@@ -101,6 +101,8 @@
     "searchPlaceholder": "搜尋食物…",
     "sort_popular": "熱門",
     "sort_new": "最新",
+    "sort_name_asc": "名稱順序",
+    "sort_name_desc": "名稱倒序",
     "categories": {
       "all": "全部",
       "stews": "湯鍋",

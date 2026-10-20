@@ -97,6 +97,8 @@
     "searchPlaceholder": "Search food…",
     "sort_popular": "Popular",
     "sort_new": "New",
+    "sort_name_asc": "Name A–Z",
+    "sort_name_desc": "Name Z–A",
     "categories": {
       "all": "All",
       "stews": "Stews",

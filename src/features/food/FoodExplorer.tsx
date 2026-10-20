@@ -30,6 +30,7 @@ import { railCardW } from '@/features/food/railLayout';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SectionHead } from '@/components/SectionHead';
 import { useInfiniteFoods, FOODS_PAGE_SIZE } from '@/lib/data/useFoods';
+import type { FoodNameSort } from '@/lib/data/foodNameSort';
 import { useBookmarks, useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
@@ -86,10 +87,14 @@ function useMoreOnRight() {
 }
 
 /** P-318 정렬 — new는 서버 정렬 파라미터 부재로 시트에서 비활성(선택 불가, P-385 실측).
- *  P-335(9/8 예진): A–Z 제거 — 커서 페이지네이션 위 클라 정렬은 페이지 도착마다
- *  전체가 재정렬돼 항목이 튐(구조 결함). 서버 sort=name 생기면 재도입(TODO). */
-type FoodSort = 'popular' | 'new';
-const FOOD_SORTS: FoodSort[] = ['popular', 'new'];
+ *  P-335(9/8 예진): 클라 A–Z 제거(커서 페이지 위 클라 정렬 = 항목 튐) → KB-821: 서버 3.1 sort=name_asc|name_desc로 재도입
+ *  (서버가 전체 순서·불투명 커서를 소유 — 클라는 받은 순서 그대로). popular = 기본 정렬(요청 무변). */
+type FoodSort = 'popular' | 'new' | FoodNameSort;
+const FOOD_SORTS: FoodSort[] = ['popular', 'new', 'name_asc', 'name_desc'];
+const nameSortOf = (s: FoodSort): FoodNameSort | undefined => (s === 'name_asc' || s === 'name_desc' ? s : undefined);
+/** KB-821: 선택 유지 = 세션 내(탭 전환·재진입 유지), 앱 재시작 시 기본 — KB-797 UX안에 유지 범위가 없어 발주 기본값. */
+let sessionSort: FoodSort = 'popular';
+const rememberSort = (s: FoodSort) => { sessionSort = s; };
 
 export const HOME_RAIL_N = 10; // P-317: 홈 레일 최대 10 + See all 카드
 // P-319: 카드 폭 174 고정 → 화면 폭 기준 railCardW(2장 + 3번째 peek) — railLayout.ts
@@ -147,20 +152,23 @@ export function FoodExplorer({
   // P-318: 딥링크 초기값 — 게스트는 개인화 상태 강등(칩 게이트·저장 게이트 우회 방지)
   const [riskChip, setRiskChip] = React.useState<RiskChip>(guest ? 'all' : (initialRisk ?? 'all'));
   const [savedOnly, setSavedOnly] = React.useState(initialSaved === true && !guest);
-  const [sort, setSort] = React.useState<FoodSort>('popular');
+  const [sort, setSortState] = React.useState<FoodSort>(() => sessionSort);
+  const setSort = (next: FoodSort) => { rememberSort(next); setSortState(next); };
+  const nameSort = nameSortOf(sort);
   const [sortSheet, setSortSheet] = React.useState(false);
 
   // P-350(KB-492): 위험 칩 = 서버 필터 — browse는 riskChip 전달, 저장은 두 쿼리:
   // saved(무필터) = 북마크 판정 소스(드레인 유지) / savedList(risk) = Saved 목록 소스
   // (riskChip 'all'이면 같은 쿼리키 = 캐시 공유, 추가 요청 없음).
   const savedTabActive = variant === 'screen' ? savedOnly : gridTab === 'saved';
-  const browse = useInfiniteFoods(riskChip, { enabled: !savedTabActive }); // #112 2R ②: Saved 활성 = browse 휴면
+  const browse = useInfiniteFoods(riskChip, { enabled: !savedTabActive, sort: nameSort }); // #112 2R ②: Saved 활성 = browse 휴면 · KB-821 이름 정렬
   // KB-779: 홈(embedded) 별·토글 방향 = 카드의 bookmarked(/home·/foods·/bookmarks 전부 FoodSummaryResponse 동봉)
   // → 북마크 쿼리(드레인 포함)는 Saved 탭이 활성일 때만(빈 상태 판정·목록). 콜드 스타트 GET /bookmarks 0회.
   // 음식 탭(screen)은 기존 savedIds 판정 경로 그대로(비범위).
   const bookmarksOn = variant === 'screen' || savedTabActive;
   const saved = useBookmarks(undefined, { enabled: bookmarksOn });
-  const savedList = useBookmarks(savedTabActive ? riskChip : 'all', { enabled: bookmarksOn });
+  // KB-821: 이름 정렬은 Saved 목록(savedList)에만 — 북마크 판정 소스(saved, 드레인)는 기본 정렬 그대로
+  const savedList = useBookmarks(savedTabActive ? riskChip : 'all', { enabled: bookmarksOn, sort: nameSort });
   const toggleBookmark = useToggleBookmark();
 
   // P-349 ③(KB-512): 당겨서 새로고침 — #112 3R ②: 활성 쿼리만(browse는 Saved 활성 중
@@ -169,13 +177,13 @@ export function FoodExplorer({
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     const jobs: Promise<unknown>[] = savedOnly
-      ? riskChip === 'all'
-        ? [saved.refetch()] // 5R ②: 같은 키 두 관찰자 — refetch 1회
+      ? riskChip === 'all' && !nameSort
+        ? [saved.refetch()] // 5R ②: 같은 키 두 관찰자 — refetch 1회 (KB-821 이름 정렬이면 키가 갈라져 둘 다)
         : [savedList.refetch(), saved.refetch()] // 목록 + 북마크 판정 소스
       : [browse.refetch()];
     void Promise.all(jobs).finally(() => setRefreshing(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedOnly, riskChip, browse.refetch, saved.refetch, savedList.refetch]);
+  }, [savedOnly, riskChip, nameSort, browse.refetch, saved.refetch, savedList.refetch]);
 
   // P-350 ③: 얇은 페이지 — risk 지정 목록은 hasNext=true·items 미만(0 포함)이 정상.
   // onEndReached만으론 빈 화면에서 다음 페이지가 안 당겨짐 → 화면을 채울 때까지
@@ -187,7 +195,7 @@ export function FoodExplorer({
   // #112 3R ① → 5R ①: 실패한 채움 시도 기억 — **쿼리 스코프 키 + 길이(커서 프록시)**.
   // 키 없이 길이만 기억하면 칩 전환 중 도착한 옛 실패 콜백이 새 쿼리를 잠근다.
   // 재개는 에러 블록의 수동 재시도(onRetry가 클리어)만.
-  const fillKey = `${savedTabActive}:${riskChip}`;
+  const fillKey = `${savedTabActive}:${riskChip}:${sort}`; // KB-821: 정렬 = 다른 쿼리(실패 기억 스코프 분리)
   // 6R P2: dataUpdatedAt 동봉 — 리마운트 자동 재조회(retryGrid 우회) 성공 시 마커 무효
   const fillFailedAtRef = React.useRef<{ key: string; len: number; at: number } | null>(null);
   // #112 4R: 재시도 핸들러 공유(레일 블록·screen 전체 화면 게이트) — 실패 기억

@@ -101,6 +101,8 @@
     "searchPlaceholder": "음식 검색…",
     "sort_popular": "인기순",
     "sort_new": "최신순",
+    "sort_name_asc": "이름 가나다순",
+    "sort_name_desc": "이름 역순",
     "categories": {
       "all": "전체",
       "stews": "찌개·탕",
