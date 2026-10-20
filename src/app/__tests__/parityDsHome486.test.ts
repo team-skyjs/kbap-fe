@@ -18,8 +18,9 @@ it('A-DS — SectionHead 11/700·22/700, 세그먼트 탭 14/700 #9196A1, 북마
 it('A-FC — card gap 8·who gap 4·아바타 0.5 스트로크·케밥 20 #262C31·음식 칩 gap 4', () => {
   const fc = read('src/features/review/FeedCard.tsx');
   expect(fc).toMatch(/card: \{ paddingVertical: 22, paddingHorizontal: 20, gap: 8/);
-  expect(fc).toMatch(/who: \{[^}]*gap: 4/);
-  expect(fc).toMatch(/avatar: \{[^}]*borderWidth: 0\.5, borderColor: 'rgba\(0,0,0,0\.10\)'/);
+  const author = read('src/features/review/ReviewCellParts.tsx'); // KB-802: 작성자 줄 = ReviewAuthorLine 으로 이관
+  expect(author).toMatch(/who: \{[^}]*gap: 4/);
+  expect(author).toMatch(/avatar: \{[^}]*borderWidth: 0\.5, borderColor: 'rgba\(0,0,0,0\.10\)'/);
   expect(fc).toContain("<IconMore size={20} color={'#262C31'} />");
   expect(fc).toMatch(/foodChip: \{[^}]*gap: 4/);
 });

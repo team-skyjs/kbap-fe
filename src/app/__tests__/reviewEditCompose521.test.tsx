@@ -173,7 +173,7 @@ it('③ place 해제(X) 후 저장 = changes.place null(제거 의도 명시)', 
 it('⑤ ReviewEditSheet 소멸 — 컴포넌트·4표면 배선·전용 키 잔존 0', () => {
   const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
   expect(read('src/features/review/ReviewCellParts.tsx')).not.toContain('ReviewEditSheet');
-  for (const f of ['src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx', 'src/app/profile/reviews.tsx', 'src/features/community/ReviewFeed.tsx']) {
+  for (const f of ['src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx', 'src/app/profile/reviews.tsx', 'src/app/review/[id].tsx'] /* KB-802: 리뷰 탭 편집 진입 = 리뷰 상세 ⋯ */) {
     const src = read(f);
     expect(src).not.toContain('ReviewEditSheet');
     expect(src).toContain('reviewId='); // 편집 = 라우트 push

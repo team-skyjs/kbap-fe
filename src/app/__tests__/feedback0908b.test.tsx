@@ -24,7 +24,7 @@ it('② 정렬 시트 NEW = "준비 중" 칩(DS pill·trailing) + 키 10로케�
 
 it('③ 카카오 심볼 광학 확대(1.6 매트릭스 — N·G 20 박스와 동일) · ④ 국기 배지 링 제거(이모지만)', () => {
   expect(read('src/components/design4Assets.tsx')).toContain('transform="matrix(1.6,0,0,1.6,4,4.8)"');
-  const fc = read('src/features/review/FeedCard.tsx');
+  const fc = read('src/features/review/ReviewCellParts.tsx'); // KB-802: 작성자 줄 = ReviewAuthorLine 으로 이관
   expect(fc).not.toMatch(/flagBadge: \{[^}]*backgroundColor: '#FFFFFF'/);
   expect(fc).not.toMatch(/flagBadge: \{[^}]*borderWidth/);
   expect(fc).toMatch(/flagBadge: \{ position: 'absolute', right: -2, bottom: -2, width: 14, height: 14/);

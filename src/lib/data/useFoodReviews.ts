@@ -6,11 +6,12 @@
  * on + 세션 → GET /foods/{foodId}/reviews keyset(cursor·hasNext·nextCursor)
  * + countryCode 필터(서버 정확 일치). 목 경로는 필터를 클라이언트에서 흉내.
  */
-import { useInfiniteQuery } from '@tanstack/react-query';
-import type { ReviewPage } from '@/lib/api/types';
-import { api, apiLang } from '@/lib/api/client';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import type { Review, ReviewPage } from '@/lib/api/types';
+import { api, apiLang, ApiError } from '@/lib/api/client';
+import { shouldRetry } from '@/lib/queryClient';
 import { trackReadyFood } from './hiddenFoods';
-import { adaptReviewPage, type ReviewPageWire } from '@/lib/api/reviewAdapter';
+import { adaptReview, adaptReviewPage, type ReviewPageWire, type ReviewWire } from '@/lib/api/reviewAdapter';
 import { FLAGS } from '@/lib/flags';
 import { mockFoodReviews } from '@/lib/mocks/reviews';
 
@@ -104,5 +105,29 @@ export function useFoodReviews(foodId: string, countryCode?: string | null) {
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasNext ? last.nextCursor : undefined),
     enabled: !!foodId,
+  });
+}
+
+/* ---- KB-802: 리뷰 단건(상세) — 계약 C-1 GET /api/reviews/{id}?lang= ---- */
+
+/** 상세 캐시 키. ['reviews','global'] 프리픽스와 겹치지 않는다 — 언어는 넣지 않는다(전역 피드와 같은 관례, cto A-8). */
+export const reviewDetailKey = (id: string) => ['reviews', 'detail', id] as const;
+
+/** REVIEW-001 = 없음·삭제·볼 수 없음(HTTP 400 — 상태가 아니라 code 로 분기). */
+export const isReviewNotFound = (e: unknown): boolean => e instanceof ApiError && e.code === 'REVIEW-001';
+
+export async function fetchReview(id: string): Promise<Review> {
+  return adaptReview(await api.get<ReviewWire>(`/api/reviews/${encodeURIComponent(id)}?lang=${apiLang()}`));
+}
+
+/** KB-307 재발 방지: 상세는 캐시 전용이 아니라 단건 쿼리가 정본이다. 리스트 탭이 시드한 값으로 즉시 그리고(staleTime 0)
+ *  마운트 때 백그라운드로 갱신한다. 봉인 플래그 off = 네트워크 0(시드만 — 없으면 화면이 notFound). */
+export function useReview(id: string) {
+  return useQuery({
+    queryKey: reviewDetailKey(id),
+    queryFn: () => fetchReview(id),
+    staleTime: 0,
+    retry: (n, e) => !isReviewNotFound(e) && shouldRetry(n, e), // REVIEW-001 은 재시도해도 같다
+    enabled: FLAGS.reviewsLiveEnabled && !!id,
   });
 }

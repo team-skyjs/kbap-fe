@@ -113,6 +113,9 @@ export const EVENTS = {
   home_section_view: 'home_section_view', // 홈 섹션 노출(50%↑ + 스크롤 정지, 홈 진입당 1회)
   home_card_view: 'home_card_view', // 홈 카드 노출(같은 규칙)
   home_card_click: 'home_card_click', // 홈 카드 클릭(섹션·위치) — 표시 이름 "홈컨텐츠_카드_클릭"
+  // KB-802: 리뷰 탭 카드 → 리뷰 상세 진입 · 리뷰 탭 카드 노출(홈 KB-784 판정 규칙). CSV 등재는 PR 본문으로 커맨드 센터에
+  review_card_open: 'review_card_open',
+  review_card_view: 'review_card_view',
   home_curation_link_click: 'home_curation_link_click', // KB-796(홈 큐레이션 도메인 home_) 큐레이션 항목 외부 링크(View guide) — 모음 키·위치만(URL 금지)
   food_packaged_search: 'food_packaged_search', // KB-812 가공식품 검색(첫 페이지 도착 1회) — 검색어 원문 금지, 길이·결과 수만(발주명 packaged_search → 도메인 규칙상 food_)
   food_packaged_detail_view: 'food_packaged_detail_view', // KB-812 가공식품 상세 진입 — id·labelSource
@@ -168,6 +171,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   ui_click: ['screen', 'target'],
   home_section_view: ['section'],
   home_card_view: ['section', 'position', 'food_id'],
+  review_card_open: ['target', 'photo_count'], // target: card|read · photo_count 0~3
+  review_card_view: ['photo_count', 'position', 'review_id'], // position = 피드 리뷰 순번(광고 행 제외, 0부터) · review_id = 콘텐츠 id(PII 아님)
   home_card_click: ['section', 'position', 'food_id', 'collection_key'], // KB-796: section=curation이면 collection_key(서버 모음 키)
   home_curation_link_click: ['collection_key', 'position'],
   food_packaged_search: ['query_length', 'result_count'],

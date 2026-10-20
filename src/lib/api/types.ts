@@ -207,6 +207,8 @@ export interface Review {
   foodName?: string | null;
   /** P-165(#144): 음식 대표 썸네일 URL — 부재 시 null. */
   foodImageUrl?: string | null;
+  /** KB-802(C-2): 음식 한국어 표시명(칩 부제) — null = lang=ko 이거나 구서버. */
+  foodKoreanName?: string | null;
   /** 작성자 프로필 — **null = 탈퇴 회원** (P-085 방어 렌더 3케이스의 하나). */
   author?: ReviewAuthor | null;
   /** 파생(author.nationality) — 화면 호환 유지. */

@@ -10,7 +10,9 @@
  * 게스트: 열람 개방(P-235) — 쓰기·Helpful 게이트 유지(AuthGateSheet).
  */
 import * as React from 'react';
-import { RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
@@ -22,15 +24,16 @@ import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/Stat
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { useGlobalReviews, type FeedSort } from '@/lib/data/useFoodReviews';
+import { reviewDetailKey, useGlobalReviews, type FeedSort } from '@/lib/data/useFoodReviews';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
 import { FeedCard } from '@/features/review/FeedCard';
+import { ReviewTabCard, type ReviewOpenTarget } from '@/features/review/ReviewTabCard';
+import { ImpressionTracker } from '@/features/home/homeImpressions';
+import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { FeedAd } from '@/features/ads/FeedAd';
 import { REVIEW_FEED_AD_EVERY, withFeedAds } from '@/lib/ads/feedSlots';
 import { IlloSpeechBubble } from '@/components/design4Assets';
-import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useMe } from '@/lib/data/useMe';
 import { isScanQuotaExhausted } from '@/lib/api/memberAdapter';
 import { useUnreadCount } from '@/lib/data/useNotifications';
@@ -70,14 +73,9 @@ export function ReviewFeed() {
     if ((isGuest || !myNat) && profileFilter) setProfileFilter(false);
   }
   const feed = useGlobalReviews(true, { sort, countryCode: filterActive ? myNat : undefined });
-  const deleteReview = useDeleteReview();
-  const myId = me?.id;
   const unread = useUnreadCount();
   const [gateOpen, setGateOpen] = React.useState<GateContext | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
-  const [mod, setMod] = React.useState<ModTarget | null>(null);
-  const win = useWindowDimensions();
-  const fabCompact = isCompactFabScreen(win.width, win.height);
   const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
 
@@ -89,6 +87,30 @@ export function ReviewFeed() {
     return author == null || !blockedIds.has(author);
   });
   const rows = withFeedAds(reviews, (r) => r.id, REVIEW_FEED_AD_EVERY); // KB-816: 5개마다 · KB-739: 광고 행 key 순번 고정(페이지 추가에도 앞 행 identity 유지)
+  const positions = new Map(reviews.map((r, i) => [r.id, i])); // review_card_view position = 광고 행 제외 리뷰 순번
+
+  // KB-802: 카드·"리뷰 읽기" → 리뷰 상세. 이동 전 상세 캐시 시드 = 상세 첫 프레임 완성 렌더(단건 쿼리는 백그라운드 갱신)
+  const qc = useQueryClient();
+  const openReview = (review: Review, target: ReviewOpenTarget) => {
+    qc.setQueryData(reviewDetailKey(review.id), review);
+    track(EVENTS.review_card_open, { target, photo_count: review.photos?.length ?? 0 });
+    router.push(`/review/${review.id}` as Href);
+  };
+
+  // KB-802(R-16): 카드 노출 = 홈 KB-784 판정 그대로(50%↑ · 스크롤 정지 · 리뷰 탭 포커스당 같은 리뷰 1회)
+  const { height: winH, width: winW } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const fabCompact = isCompactFabScreen(winW, winH); // KB-777 B3-7
+  const [impressions] = React.useState(() => new ImpressionTracker({ top: 0, bottom: winH, left: 0, right: winW }));
+  React.useEffect(() => {
+    impressions.setViewport({ top: headerH, bottom: winH - (TABBAR_CONTENT_H + insets.bottom), left: 0, right: winW });
+  }, [impressions, headerH, winH, winW, insets.bottom]);
+  useFocusEffect(
+    React.useCallback(() => {
+      impressions.focus();
+      return () => impressions.blur();
+    }, [impressions]),
+  );
   const loadMore = () => {
     // Codex #58 P2-2: 에러 푸터가 콘텐츠 높이를 바꿔 onEndReached가 재발화 →
     // 자동 재시도 루프. 실패 상태에선 재시도 = 푸터 버튼만.
@@ -167,28 +189,24 @@ export function ReviewFeed() {
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        onScrollBeginDrag={() => impressions.scrollBegin()}
+        onScrollEndDrag={() => impressions.scrollEnd(false)}
+        onMomentumScrollBegin={() => impressions.scrollBegin()}
+        onMomentumScrollEnd={() => impressions.scrollEnd(true)}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={headerH} />}
         renderItem={({ item: row }) => row.kind === 'ad' ? (
           <FeedAd testID={`ad-feed-${row.slot}`} /> /* KB-739 ④-④ → KB-816: 글 5개마다 네이티브 광고(③과 같은 컴포넌트) */
         ) : (
-          <FeedCard
+          <ReviewCardRow
+            key={row.item.id /* 셀 재사용 = 캐러셀 첫 장 리셋 */}
             review={row.item}
+            position={positions.get(row.item.id) ?? 0}
+            tracker={impressions}
             t={t}
-            photoVariant="peek" // KB-817: 리뷰 탭만
-            mine={row.item.memberId != null && row.item.memberId === myId}
+            onOpen={(target) => openReview(row.item, target)}
             onOpenFood={() => row.item.foodId && router.push(`/food/${row.item.foodId}?src=feed` as Href)}
-            onGuestHelpful={() => setGateOpen('helpful')}
-            onMore={() =>
-              setMod({
-                type: 'review',
-                id: row.item.id,
-                author: { id: row.item.author?.memberId ?? row.item.memberId ?? `rv-${row.item.id}`, nickname: row.item.author?.nickname ?? null, nationality: row.item.authorNationality },
-                mine: row.item.memberId != null && row.item.memberId === myId, // P-186: 실값 — 타인 = 신고/차단
-                anonymized: row.item.anonymized === true, // P-339 ②: 탈퇴 = 신고만
-              })
-            }
           />
         )}
         ListEmptyComponent={
@@ -267,17 +285,6 @@ export function ReviewFeed() {
         onClose={() => setPickerOpen(false)}
         t={t}
       />
-      {/* P-182: 본인 셀 ⋯ → 기존 액션시트(수정/삭제) + 공용 수정 시트 */}
-      <ModerationFlow
-        target={mod}
-        onClose={() => setMod(null)}
-        onEdit={(m) => { const rv = reviews.find((r) => r.id === m.id); if (rv) router.push(`/food/${rv.foodId}/review?reviewId=${rv.id}` as Href); }} /* P-358 */
-        onDelete={(m) => {
-          const r = reviews.find((x) => x.id === m.id);
-          if (r) deleteReview.mutate({ reviewId: r.id, foodId: r.foodId });
-        }}
-        onBlocked={() => void feed.refetch()}
-      />
       {/* P-237: 소팅 시트 — 공용 ActionSheet 재사용(5종·현재값 표시) */}
       <ActionSheet
         open={sortSheet}
@@ -295,6 +302,31 @@ export function ReviewFeed() {
       <AuthGateSheet context={gateOpen ?? 'helpful'} trigger="community" open={gateOpen != null} onClose={() => setGateOpen(null)} />
     </View>
   );
+}
+
+/** KB-802: 카드 + 노출 측정 노드 등록(원시값 의존 콜백 ref — 렌더마다 재등록·측정 타이머 재시작 없게) */
+function ReviewCardRow({
+  review,
+  position,
+  tracker,
+  t,
+  onOpen,
+  onOpenFood,
+}: {
+  review: Review;
+  position: number;
+  tracker: ImpressionTracker;
+  t: TFn;
+  onOpen: (target: ReviewOpenTarget) => void;
+  onOpenFood: () => void;
+}) {
+  const photoCount = review.photos?.length ?? 0;
+  const id = review.id;
+  const ref = React.useCallback(
+    (node: View | null) => tracker.register({ kind: 'review', position, reviewId: id, photoCount }, node),
+    [tracker, position, id, photoCount],
+  );
+  return <ReviewTabCard ref={ref} review={review} t={t} onOpen={onOpen} onOpenFood={onOpenFood} />;
 }
 
 // KB-431: FeedCard는 경량 모듈로 분리(@/features/review/FeedCard) — 홈 등 기존
