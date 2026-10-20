@@ -114,6 +114,8 @@ export const EVENTS = {
   home_card_view: 'home_card_view', // 홈 카드 노출(같은 규칙)
   home_card_click: 'home_card_click', // 홈 카드 클릭(섹션·위치) — 표시 이름 "홈컨텐츠_카드_클릭"
   home_curation_link_click: 'home_curation_link_click', // KB-796(홈 큐레이션 도메인 home_) 큐레이션 항목 외부 링크(View guide) — 모음 키·위치만(URL 금지)
+  food_packaged_search: 'food_packaged_search', // KB-812 가공식품 검색(첫 페이지 도착 1회) — 검색어 원문 금지, 길이·결과 수만(발주명 packaged_search → 도메인 규칙상 food_)
+  food_packaged_detail_view: 'food_packaged_detail_view', // KB-812 가공식품 상세 진입 — id·labelSource
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -168,6 +170,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   home_card_view: ['section', 'position', 'food_id'],
   home_card_click: ['section', 'position', 'food_id', 'collection_key'], // KB-796: section=curation이면 collection_key(서버 모음 키)
   home_curation_link_click: ['collection_key', 'position'],
+  food_packaged_search: ['query_length', 'result_count'],
+  food_packaged_detail_view: ['product_id', 'label_source'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open
