@@ -93,7 +93,8 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
       return;
     }
     // t=0 = 모달 첫 그리기(iOS onShow · Android onLayout+rAF). 시간은 발주 P-493 §3.
-    flameIn.set(withSpring(1, { damping: 9, stiffness: 180 })); // 0 → ~1.18 오버슈트 → 1
+    // QA P-493 R4: 스프링(damping 9)은 1.58×→0.66×→1.19× 감쇠 진동(≈0.95s 주기) — "뽱" 한 번만: 1.15까지 넘쳤다가 1로 안착, 총 450ms, 진동 0
+    flameIn.set(withSequence(...FLAME_POP.map(({ to, ms }) => withTiming(to, { duration: ms, easing: Easing.out(Easing.quad) }))));
     wobble.set(withSequence(withTiming(-6, { duration: 150 }), withTiming(4, { duration: 150 }), withTiming(0, { duration: 150 })));
     glowIn.set(withTiming(1, { duration: 450 }));
     particles.set(withDelay(150, withTiming(1, { duration: PARTICLE_MS, easing: Easing.linear })));
@@ -200,6 +201,8 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
   );
 }
 export const FLAME_FRAME = { w: 216, h: 252 } as const;
+/** 불꽃 팝 키프레임 — 0 → 1.15(220ms) → 1(230ms). 스프링 없이 한 번만 넘친다(진동 0). */
+export const FLAME_POP = [{ to: 1.15, ms: 220 }, { to: 1, ms: 230 }] as const;
 const HERO_PAD_TOP = 24;
 const HERO_PAD_BOTTOM = 32;
 /** 히어로 묶음 높이(배율 1) = 불꽃 프레임 + 간격 16 + 무한 기호 42 */

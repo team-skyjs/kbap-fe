@@ -43,7 +43,7 @@ async function mount(start = jest.fn(), eligible = true) {
 }
 function unlock(scan = true) { observeUnlock('a', false, 0); setUnlockScanFocused(scan); observeUnlock('a', true, 0); }
 const springs = () => jest.requireMock('react-native-reanimated').withSpring as jest.Mock;
-const SEQUENCE_SPRINGS = 4; // KB-819: 불꽃·무한 기호·시트·버튼 — 시퀀스 1회 시작 = 스프링 4회
+const SEQUENCE_SPRINGS = 3; // KB-819: 무한 기호·시트·버튼 — 시퀀스 1회 시작 = 스프링 3회(불꽃은 R4부터 키프레임)
 const modal = (tree: ReactTestRenderer) => tree.root.findByType(Modal);
 const action = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props.testID === 'unlock-celebration-action' && typeof n.props.onPress === 'function')[0];
 it('scan CTA requests nothing until native dismissal, double tap calls continuation once', async () => {
@@ -260,4 +260,18 @@ it('Codex #297 P1: 띄어쓰기 없는 제목은 한 덩어리로 시트 전체 
   expect(StyleSheet.flatten(words(one)[0].props.style)).toMatchObject({ width: '100%' });
   expect(words(many)).toHaveLength(3);
   for (const w of words(many)) expect(StyleSheet.flatten(w.props.style)).toMatchObject({ maxWidth: '100%', flexShrink: 1 });
+});
+it('QA P-493 R4: 불꽃 팝 = 한 번만 넘쳤다 1로 안착(최대 ≤1.2 · 총 ≈450ms · 스프링 없음 → 진동 0)', async () => {
+  const { FLAME_POP } = jest.requireActual('../UnlockCelebration');
+  const keys = FLAME_POP.map((f: { to: number }) => f.to);
+  expect(Math.max(...keys)).toBeLessThanOrEqual(1.2);
+  expect(Math.max(...keys)).toBeGreaterThan(1); // 넘침은 있다("뽱")
+  expect(keys[keys.length - 1]).toBe(1);
+  for (let i = 1; i < keys.length; i++) expect(keys[i]).toBeLessThan(keys[i - 1]); // 정점 뒤 단조 수렴(되튐 0)
+  expect(FLAME_POP.reduce((n: number, f: { ms: number }) => n + f.ms, 0)).toBe(450);
+  mockReduced = false;
+  const reanimated = jest.requireMock('react-native-reanimated');
+  const tree = await mount(); act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  for (const { to, ms } of FLAME_POP) expect(reanimated.withTiming).toHaveBeenCalledWith(to, expect.objectContaining({ duration: ms }));
+  expect(reanimated.withSpring).not.toHaveBeenCalledWith(1, expect.objectContaining({ damping: 9 }));
 });
