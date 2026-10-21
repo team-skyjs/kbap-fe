@@ -296,8 +296,15 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     // KB-846: 본문 = 고정(스크롤 0) · 소개 최대 4줄 · X 버튼 없음 · 짧은 화면은 사진 영역이 줄어든다(flexShrink — Guide 도달)
     const RN = jest.requireActual('react-native');
     const body = t.root.findAll((n) => n.props?.testID === 'curation-gallery-body')[0];
-    expect(body.type).not.toBe(RN.ScrollView);
-    expect(t.root.findAll((n) => n.type === RN.ScrollView && n.findAll((m) => m.props?.testID === 'curation-gallery-guide').length > 0)).toHaveLength(0);
+    // 평소 = 고정(스크롤·바운스 0) · Codex #316: 본문이 시트를 넘는 극단에서만 스크롤로 Guide 도달
+    const bodySv = () => t.root.findAll((n) => n.props?.testID === 'curation-gallery-body' && n.type === RN.ScrollView)[0];
+    expect(bodySv().props.scrollEnabled).toBe(false);
+    expect(bodySv().props.bounces).toBe(false);
+    act(() => bodySv().props.onLayout({ nativeEvent: { layout: { height: 300 } } }));
+    act(() => bodySv().props.onContentSizeChange(375, 280));
+    expect(bodySv().props.scrollEnabled).toBe(false);
+    act(() => bodySv().props.onContentSizeChange(375, 420));
+    expect(bodySv().props.scrollEnabled).toBe(true);
     expect(body.findAll((n) => n.props?.testID === 'curation-gallery-guide').length).toBeGreaterThan(0);
     expect(t.root.findAll((n) => n.props?.testID === 'curation-gallery-intro' && typeof n.type === 'string')[0].props.numberOfLines).toBe(4);
     expect(ids(t)).not.toContain('curation-gallery-close');
