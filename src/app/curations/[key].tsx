@@ -20,6 +20,7 @@ import { Pressable } from '@/components/Pressable';
 import { RemoteImage } from '@/components/RemoteImage';
 import { IconChevron } from '@/components/icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { CurationGallerySheet } from '@/features/curation/CurationGallerySheet';
 import { Shimmer } from '@/components/Skeleton';
 import { color as C, font } from '@/lib/theme';
@@ -44,6 +45,16 @@ export default function CurationDetailScreen() {
   const back = () => (router.canGoBack() ? router.back() : goHome());
   const detail = q.data;
   const [gallery, setGallery] = React.useState<CurationItem | null>(null); // KB-832: 열린 갤러리(항목) — 화면은 그대로라 닫으면 스크롤 유지
+  // Codex #320 P1: 블러 8띠는 화면 ± 1화면 안 카드만 마운트(전부 마운트 = 10장 × 8 = 80 블러 비트맵). 범위가 바뀔 때만 상태 갱신(리렌더 폭주 0)
+  const winH = useWindowDimensions().height;
+  const geo = React.useRef({ scrollY: 0, viewH: 0, listTop: 0, cards: new Map<number, { y: number; h: number }>() });
+  const [near, setNear] = React.useState<ReadonlySet<number>>(() => new Set());
+  const refreshNear = React.useCallback(() => {
+    const g = geo.current;
+    const next = nearCards(g.cards, g.listTop, g.scrollY, g.viewH || winH);
+    setNear((prev) => (sameSet(prev, next) ? prev : next));
+  }, [winH]);
+  const onPlace = React.useCallback((pos: number, y: number, h: number) => { geo.current.cards.set(pos, { y, h }); refreshNear(); }, [refreshNear]);
 
   let body: React.ReactNode;
   if (q.isPending) {
@@ -68,7 +79,13 @@ export default function CurationDetailScreen() {
     );
   } else {
     body = (
-      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 32 }]} testID="curation-detail">
+      <ScrollView
+        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 32 }]}
+        onScroll={(e) => { geo.current.scrollY = e.nativeEvent.contentOffset.y; refreshNear(); }}
+        scrollEventThrottle={32}
+        onLayout={(e) => { geo.current.viewH = e.nativeEvent.layout.height; refreshNear(); }}
+        testID="curation-detail"
+      >
         {q.isError && (
           <Pressable onPress={() => void q.refetch()} style={styles.staleRow} accessibilityRole="button" testID="curation-detail-stale">
             <Text style={styles.staleText}>{t('curation.refreshFailed')}</Text>
@@ -77,11 +94,13 @@ export default function CurationDetailScreen() {
         )}
         {detail.fallbackUsed && <Text style={styles.fallback} testID="curation-fallback">{t('curation.fallbackNotice')}</Text>}
         <Text style={styles.description}>{detail.description}</Text>
-        <View style={styles.list}>
+        <View style={styles.list} onLayout={(e) => { geo.current.listTop = e.nativeEvent.layout.y; refreshNear(); }}>
           {detail.items.map((item) => (
             <ItemCard
               key={item.id}
               item={item}
+              blur={near.has(item.position)}
+              onPlace={onPlace}
               onOpen={() => {
                 track(EVENTS.home_curation_gallery_open, { collection_key: detail.key, entry_id: item.id });
                 setGallery(item);
@@ -103,7 +122,7 @@ export default function CurationDetailScreen() {
 }
 
 /** v5 카드(12344:29771): 사진 전체 + 아래 흐림(어둡게) 위에 흰 이름·지역 + 오른쪽 흰 chevron(박스 없음, 44 자리). 카드 어디를 눌러도 갤러리 시트. */
-function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) {
+function ItemCard({ item, onOpen, blur, onPlace }: { item: CurationItem; onOpen: () => void; blur: boolean; onPlace: (pos: number, y: number, h: number) => void }) {
   const { t } = useTranslation();
   const large = captionLargeText(useWindowDimensions().fontScale); // KB-846 QA: 큰 글씨 = 고정 줄 높이 없이(아래 잘림 0)
   const p = item.position;
@@ -114,7 +133,7 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
   return (
     <Pressable
       style={styles.card}
-      onLayout={(e) => setCardH(e.nativeEvent.layout.height)}
+      onLayout={(e) => { const { y, height } = e.nativeEvent.layout; setCardH(height); onPlace(p, y, height); }}
       onPress={onOpen}
       accessibilityRole="button"
       accessibilityLabel={`${item.name}, ${item.area}`}
@@ -130,14 +149,15 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
       {/* KB-846 점진 블러(Tripsy — 위는 투명, 아래로 갈수록 흐리고 어둡게, 네이티브 모듈 없이): 밴드 = 이름 위 16부터 카드 바닥까지를
           띠 4개로 나눠 위에서 아래로 blurRadius 1/4 → 2/4 → 3/4 → 1. 각 띠는 같은 사진을 카드 높이 그대로 **같은 오프셋**(띠 위치만큼 위로)에
           깔아 원본과 정확히 겹친다(이음새 0). 그 위 스크림(투명 → 어둡게)이 밴드 전체를 덮어 띠 경계·글자 대비를 함께 맡는다 */}
-      {cover && band && (
-        <View style={[styles.blurBand, { top: band.top }]} pointerEvents="none" testID={`curation-item-blur-${p}`}>
+      {/* Codex #320 P1: 화면 ± 1화면 밖 카드 = 블러 없음(원본 + 스크림) · 들어오면 마운트 + 150ms 페이드인(모션 줄이기 = 즉시) */}
+      {cover && band && blur && (
+        <FadeInBand style={[styles.blurBand, { top: band.top }]} testID={`curation-item-blur-${p}`}>
           {band.strips.map((s, i) => (
             <View key={i} style={[styles.blurStrip, { top: s.top - band.top, height: s.height, opacity: s.opacity }]} testID={`curation-item-blur-strip-${p}-${i}`}>
               <RemoteImage uri={cover} style={[styles.blurImg, { top: -s.top, height: cardH as number }]} recyclingKey={`${item.id}-blur-${i}`} blurRadius={s.radius} />
             </View>
           ))}
-        </View>
+        </FadeInBand>
       )}
       {band && <LinearGradient colors={CARD_SCRIM} style={[styles.shade, { top: band.top }]} pointerEvents="none" />}
       <View style={{ height: CARD_SPACER }} />
@@ -154,6 +174,35 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
     </Pressable>
   );
 }
+
+/** 블러 밴드 페이드인 — 마운트 순간 0 → 1(150ms), 모션 줄이기 = 바로 1. 범위에 들어와 블러가 붙을 때 뚝 바뀌지 않게 */
+export const BLUR_FADE_MS = 150;
+function FadeInBand({ style, testID, children }: { style: object; testID: string; children: React.ReactNode }) {
+  const reduced = useReducedMotion();
+  const o = useSharedValue(reduced ? 1 : 0);
+  React.useEffect(() => {
+    if (!reduced) o.set(withTiming(1, { duration: BLUR_FADE_MS }));
+  }, [reduced, o]);
+  const fade = useAnimatedStyle(() => ({ opacity: o.get() }));
+  return (
+    <Animated.View style={[style, fade]} pointerEvents="none" testID={testID}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** 블러를 붙일 카드 = 화면(스크롤 위치 ~ +화면 높이)에서 위·아래로 1화면 더 늘린 범위와 겹치는 카드. 카드 y = 목록 기준 + 목록 위치 */
+export function nearCards(cards: ReadonlyMap<number, { y: number; h: number }>, listTop: number, scrollY: number, viewH: number): Set<number> {
+  const from = scrollY - viewH;
+  const to = scrollY + viewH * 2;
+  const out = new Set<number>();
+  for (const [pos, c] of cards) {
+    const top = listTop + c.y;
+    if (c.h > 0 && top < to && top + c.h > from) out.add(pos);
+  }
+  return out;
+}
+const sameSet = (a: ReadonlySet<number>, b: ReadonlySet<number>) => a.size === b.size && [...a].every((x) => b.has(x));
 
 // KB-846 스크림 — 밴드 위(투명) → 카드 바닥(어둡게 0.45). 띠 경계를 숨기고 흰 글자 대비를 맡는다(구 55% 그라데이션 대체 — 밴드 위 사진은 투명 그대로)
 const CARD_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.45)'] as const;

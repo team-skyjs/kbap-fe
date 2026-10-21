@@ -11,7 +11,7 @@ jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, o?: 
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual('react-native');
-  return { __esModule: true, default: { View }, useReducedMotion: () => false, useSharedValue: (v: number) => { let x = v; return { get: () => x, set: (n: number) => { x = n; } }; }, useAnimatedStyle: (f: () => object) => f(), withSpring: (v: number) => v };
+  return { __esModule: true, default: { View }, useReducedMotion: () => false, useSharedValue: (v: number) => { let x = v; return { get: () => x, set: (n: number) => { x = n; } }; }, useAnimatedStyle: (f: () => object) => f(), withSpring: (v: number) => v, withTiming: (v: number) => v };
 });
 // KB-846 끌어 닫기 — Pan 설정을 잡아 콜백을 테스트가 직접 부른다
 type PanCbs = { onUpdate?: (e: { translationY: number }) => void; onEnd?: (e: { translationY: number; velocityY: number }, ok: boolean) => void; onFinalize?: (e: object, ok: boolean) => void; activeOffsetY?: unknown; failOffsetX?: unknown };
@@ -306,6 +306,33 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       spyGet.mockRestore();
       spyRound.mockRestore();
     }
+  });
+  it('Codex #320 P1: nearCards = 화면 ± 1화면과 겹치는 카드만 · 범위 밖 0 · 동시 상한(화면 3개 높이 안)', () => {
+    const { nearCards } = jest.requireActual('@/app/curations/[key]') as { nearCards: (c: Map<number, { y: number; h: number }>, top: number, sy: number, vh: number) => Set<number> };
+    const cards = new Map(Array.from({ length: 10 }, (_, i) => [i + 1, { y: i * 312, h: 300 }] as [number, { y: number; h: number }]));
+    expect([...nearCards(cards, 100, 0, 700)]).toEqual([1, 2, 3, 4, 5]); // 범위 -700~1400(목록 위 100) → 카드 1~5
+    expect([...nearCards(cards, 100, 2000, 700)]).toEqual([4, 5, 6, 7, 8, 9, 10]); // 1300~3400(카드 4 바닥 1336이 걸침)
+    for (const sy of [0, 500, 1000, 1500, 2500]) expect(nearCards(cards, 100, sy, 700).size).toBeLessThanOrEqual(Math.ceil((700 * 3) / 312) + 1);
+    expect(nearCards(new Map([[1, { y: 0, h: 0 }]]), 0, 0, 700).size).toBe(0); // 측정 전(높이 0) = 블러 없음
+  });
+  it('Codex #320 P1: 렌더 — 범위 밖 카드 블러 0 · 스크롤로 들어오면 마운트(150ms 페이드인 래퍼) · 나가면 해제', () => {
+    const items = Array.from({ length: 10 }, (_, i) => ({ ...detail.items[0], id: `e${i + 1}`, position: i + 1 }));
+    mockDetail = q({ data: { ...detail, items } });
+    const t = render(<CurationDetailScreen />);
+    const sv = t.root.findAll((n) => n.props?.testID === 'curation-detail' && typeof n.props?.onScroll === 'function')[0];
+    act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } }));
+    for (let i = 1; i <= 10; i++) {
+      act(() => t.root.findAll((n) => n.props?.testID === `curation-item-${i}` && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout: { x: 0, y: (i - 1) * 312, width: 335, height: 300 } } }));
+      act(() => t.root.findAll((n) => n.props?.testID === `curation-item-caption-${i}` && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout: { x: 0, y: 236, width: 335, height: 64 } } }));
+    }
+    const blurred = () => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((i) => t.root.findAll((n) => n.props?.testID === `curation-item-blur-${i}` && typeof n.type === 'string').length > 0);
+    expect(blurred()).toEqual([1, 2, 3, 4, 5]);
+    const strips = () => t.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('curation-item-blur-strip-') && typeof n.type === 'string').length;
+    expect(strips()).toBe(5 * 8); // 동시 마운트 = 범위 안 카드 × 8(전부 = 80)
+    act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { x: 0, y: 2000 } } }));
+    expect(blurred()).toEqual([5, 6, 7, 8, 9, 10]);
+    const band = t.root.findAll((n) => n.props?.testID === 'curation-item-blur-10' && typeof n.type === 'string')[0];
+    expect(jest.requireActual('react-native').StyleSheet.flatten(band.props.style).opacity).toBe(0); // 막 붙은 블러 = 투명에서 시작(150ms 페이드인 — 뚝 바뀌지 않게)
   });
   it('KB-846 blurBandOf: Android 9 = 띠 반경 정수 1~9 8단계(단조 증가) · 캡션이 카드 위쪽 16 안이면 밴드 top 0', () => {
     const { blurBandOf } = jest.requireActual('@/app/curations/[key]') as { blurBandOf: (h: number, c: number, r?: number) => { top: number; strips: { radius: number }[] } };
