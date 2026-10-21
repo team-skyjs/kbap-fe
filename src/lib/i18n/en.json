@@ -1304,5 +1304,20 @@
     "newAnalysisCta": "Start a new analysis",
     "debugLabelPlaceholder": "Text of one side of the label",
     "debugAddPage": "Add as one side"
+  },
+  "scanCamera": {
+    "title": "Scan",
+    "menuTitle": "Fit the whole menu",
+    "menuHint": "Pinch to zoom",
+    "packageTitle": "Show the front of the package",
+    "packageHint": "Keep the name and flavor visible.",
+    "labelTitle": "Show the ingredient label",
+    "labelHint": "Keep all ingredients sharp and readable.",
+    "photos": "Photos",
+    "menuLink": "Choose a photo from your library",
+    "frontLink": "Scan package front instead",
+    "capturedMenu": "Your captured menu",
+    "capturedPackage": "Your captured package",
+    "capturedLabel": "Your captured label"
   }
 }

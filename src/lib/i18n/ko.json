@@ -1308,5 +1308,20 @@
     "newAnalysisCta": "새로 분석하기",
     "debugLabelPlaceholder": "성분표 한 면의 글자",
     "debugAddPage": "한 면으로 추가"
+  },
+  "scanCamera": {
+    "title": "스캔",
+    "menuTitle": "메뉴판 전체가 들어오게 해 주세요",
+    "menuHint": "두 손가락으로 확대할 수 있어요",
+    "packageTitle": "포장 앞면을 보여 주세요",
+    "packageHint": "제품 이름과 맛이 보이게 해 주세요.",
+    "labelTitle": "성분표를 보여 주세요",
+    "labelHint": "원재료가 모두 선명하게 보이게 해 주세요.",
+    "photos": "사진",
+    "menuLink": "앨범에서 사진 고르기",
+    "frontLink": "포장 앞면으로 확인하기",
+    "capturedMenu": "찍은 메뉴판",
+    "capturedPackage": "찍은 포장",
+    "capturedLabel": "찍은 성분표"
   }
 }

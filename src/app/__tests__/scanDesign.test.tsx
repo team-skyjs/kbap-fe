@@ -262,19 +262,23 @@ it('P-285(최종본): 다시찍기 복원 — camera_restart 탭 = P-161 확인 
   expect(src).toContain('D4CameraRestart size={24}'); // 최종본 아이콘(2200:21514)
 });
 
-it('P-187: 진행 화면 미리보기 = contain(레터박스) — cover 크롭 소멸(소스 잠금)', () => {
+// P-187 contain(레터박스) → KB-845(D-31 scan refresh 로딩 C, 예진 채택): 흰 바탕 335×430 r12 사진 = cover(시안). 교체 근거 = 디자인 변경(P-510)
+it('KB-845 로딩 C: 진행 화면 = ScanLoading(흰 바탕) · 사진 cover(D-31 — P-187 contain 대체) · 스피너 0', () => {
   const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
   const scanning = src.split("phase === 'scanning'")[1].split('// ---- error ----')[0];
-  expect(scanning).toContain('resizeMode="contain"');
-  expect(scanning).not.toContain('resizeMode="cover"');
+  expect(scanning).toContain('<ScanLoading');
+  expect(scanning).not.toContain('ActivityIndicator');
+  const loading = fs.readFileSync('src/features/scan/ScanLoading.tsx', 'utf8');
+  expect(loading).toContain('resizeMode="cover"');
+  expect(loading).not.toContain('ActivityIndicator');
 });
 
 it('P-222: 진행 화면 = 이탈 자제 안내 보조 한 줄(주 문구 유지·과잉 개입 0)', () => {
   const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
   const scanning = src.split("phase === 'scanning'")[1].split('// ---- error ----')[0];
   expect(scanning).toContain("t('scan.reading')"); // 주 문구 존치
-  expect(scanning).toContain("t('scan.stayHint')"); // 보조 안내 신설
-  expect(scanning).toContain('testID="scan-stay-hint"');
+  expect(scanning).toContain("t('scan.stayHint')"); // 보조 안내 신설(KB-845: 로딩 C 본문 — 시간 문구 그대로)
+  expect(fs.readFileSync('src/features/scan/ScanLoading.tsx', 'utf8')).toContain('testID="scan-stay-hint"');
   // 10 로케일 문구 존재(하드코딩 0)
   for (const lang of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'ru', 'th', 'es', 'id']) {
     const dict = JSON.parse(fs.readFileSync(`src/lib/i18n/${lang}.json`, 'utf8')) as { scan: Record<string, string> };
@@ -432,8 +436,9 @@ describe('KB-769 스캔 결과 뒤로가기 가드', () => {
   });
 });
 
-// KB-777 B1-4: 어두운 바탕(카메라·인식 중·오류 "Not a menu" 등) = 상태바 아이콘 밝게 · 밝은 결과 화면 = 앱 기본(dark)으로
-it('KB-777 B1-4: 카메라 = StatusBar light · 결과(밝은 바탕) = 없음(기본 dark 복귀) · 오류·인식 중도 대상(소스 잠금)', async () => {
+// KB-777 B1-4: 어두운 바탕(카메라·오류 "Not a menu" 등) = 상태바 아이콘 밝게 · 밝은 결과 화면 = 앱 기본(dark)으로.
+// KB-845: 인식 중 = 흰 로딩 C라 대상에서 뺀다(어두운 바탕 아님)
+it('KB-777 B1-4: 카메라 = StatusBar light · 결과(밝은 바탕) = 없음(기본 dark 복귀) · 오류 대상 · 인식 중(흰 로딩 C) 제외(소스 잠금)', async () => {
   const { StatusBar } = jest.requireActual('expo-status-bar') as typeof import('expo-status-bar');
   const bars = (tr: ReactTestRenderer) => tr.root.findAll((n) => n.type === StatusBar).map((n) => n.props.style);
   const tree = render(<Scan />);
@@ -443,7 +448,7 @@ it('KB-777 B1-4: 카메라 = StatusBar light · 결과(밝은 바탕) = 없음(�
   });
   expect(bars(tree)).toEqual([]);
   const src = jest.requireActual('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
-  expect(src).toContain("const DARK_ROOT_PHASES = new Set<string>(['error', 'scanning']);");
+  expect(src).toContain("const DARK_ROOT_PHASES = new Set<string>(['error']);");
   expect(src).toContain("const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera && scanMode !== 'packaged');");
   expect(src).toContain('const lightBar = isFocused && darkRoot ?');
 });
@@ -459,4 +464,57 @@ it('KB-777 B1-11: 카메라 뷰파인더 위·아래 스크림(제목·안내 �
     await galleryBtn(tree).props.onPress();
   });
   expect(tree.root.findAll((n) => n.props?.testID === 'cam-scrim-top')).toHaveLength(0);
+});
+
+// ── KB-845(D-31 scan refresh) 공통 카메라 ──
+describe('KB-845 공통 카메라', () => {
+  const RN = jest.requireActual('react-native');
+  const byId = (tree: ReactTestRenderer, id: string) => tree.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string');
+  const pressId = async (tree: ReactTestRenderer, id: string) => {
+    await act(async () => { await tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  };
+  it('메뉴: "Scan" 헤더 · 안내 제목+힌트 · Photos(텍스트) · 하단 링크 = 라이브러리 · Food photo 탭 불가', async () => {
+    const tree = render(<Scan />);
+    for (const k of ['scanCamera.title', 'scanCamera.menuTitle', 'scanCamera.menuHint', 'scanCamera.photos', 'scanCamera.menuLink']) expect(texts(tree, k)).toBeGreaterThan(0);
+    const food = tree.root.findAll((n) => n.props?.testID === 'scan-mode-food')[0];
+    expect(food.props.onPress).toBeUndefined();
+    expect(food.props.accessibilityState).toMatchObject({ disabled: true });
+    await pressId(tree, 'scan-library-link'); // 라이브러리 = 메뉴 스캔 시작(로딩 C로 넘어간다)
+    expect(mockLaunchLibrary).toHaveBeenCalledTimes(1);
+  });
+  it('줌 칩 1x·2x = 같은 틀(높이 36·테두리 1 — 상태는 색만) · 셔터 64 + 링 76 stroke 3', () => {
+    const tree = render(<Scan />);
+    const chip = (k: string) => RN.StyleSheet.flatten(byId(tree, `zoom-${k}`)[0].props.style);
+    const [a, b] = [chip('x1'), chip('x2')];
+    for (const k of ['height', 'borderWidth', 'borderRadius', 'minWidth', 'paddingHorizontal']) expect(a[k]).toBe(b[k]);
+    expect(a.height).toBe(36);
+    expect(a.backgroundColor).not.toBe(b.backgroundColor); // 활성 = 흰 · 비활성 = gray-800
+    const shutter = RN.StyleSheet.flatten(byId(tree, 'scan-shutter')[0].props.style);
+    expect(shutter).toMatchObject({ width: 76, height: 76, borderWidth: 3 });
+    const inner = RN.StyleSheet.flatten(byId(tree, 'scan-shutter')[0].children.find((c: { props: { style?: unknown } }) => c.props?.style).props.style);
+    expect(inner).toMatchObject({ width: 64, height: 64 });
+  });
+  it('탭 Packaged food = 같은 카메라 가공식품 안내 · 링크 "성분표로 확인하기" → 성분표 안내(탭은 Packaged 유지) → "앞면으로" 되돌림', async () => {
+    const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
+    const prev = FLAGS.packagedLabelScan;
+    FLAGS.packagedLabelScan = true;
+    try {
+      const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
+      const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
+      await pressId(tree, 'scan-mode-packaged');
+      expect(texts(tree, 'scanCamera.packageTitle')).toBeGreaterThan(0);
+      expect(texts(tree, 'scanCamera.packageHint')).toBeGreaterThan(0);
+      expect(byId(tree, 'scan-shutter')).toHaveLength(1);
+      await pressId(tree, 'pscan-label-instead');
+      expect(texts(tree, 'scanCamera.labelTitle')).toBeGreaterThan(0);
+      expect(texts(tree, 'scanCamera.labelHint')).toBeGreaterThan(0);
+      expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-packaged')[0].props.accessibilityState).toMatchObject({ selected: true });
+      await pressId(tree, 'pscan-front-instead');
+      expect(texts(tree, 'scanCamera.packageTitle')).toBeGreaterThan(0);
+      await pressId(tree, 'scan-mode-menu');
+      expect(texts(tree, 'scanCamera.menuTitle')).toBeGreaterThan(0);
+    } finally {
+      FLAGS.packagedLabelScan = prev;
+    }
+  });
 });

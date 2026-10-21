@@ -53,7 +53,7 @@ jest.mock('expo-image-picker', () => ({
 import { ApiError } from '@/lib/api/client';
 import { adaptScanConfirm, adaptScanName } from '@/lib/api/processedFoodAdapter';
 import { scanFailureOf, scanProcessedName } from '@/lib/data/useProcessedScan';
-import { PackagedScanFlow } from '../PackagedScanFlow';
+import { PackagedScanFlow, type ScanCamOpts } from '../PackagedScanFlow';
 import { ScanModeTabs } from '../ScanModeTabs';
 import Detail from '@/app/processed-foods/[id]';
 /* eslint-enable import/first */
@@ -68,7 +68,21 @@ afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.c
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
 const press = async (t: ReactTestRenderer, id: string) => { await act(async () => { await t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); }); await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); };
-const flow = () => render(<PackagedScanFlow mode="packaged" onMode={jest.fn()} onClose={jest.fn()} />);
+/** KB-845: 공통 카메라 대역 — 모드·힌트를 그리고 셔터 = onShot(고정 사진). testID는 옛 촬영 버튼 이름 그대로(앞면 = pscan-take-photo · 성분표 = pscan-label-capture) */
+const mockShot = { uri: 'file:shot.jpg', width: 900, height: 1200 };
+function mockCamera(o: ScanCamOpts) {
+  const { View, Pressable, Text } = jest.requireActual('react-native');
+  return (
+    <View testID={`cam-${o.kind}`}>
+      <Text testID="cam-hint">{o.hint ?? 'default-hint'}</Text>
+      <Pressable testID={o.kind === 'package' ? 'pscan-take-photo' : 'pscan-label-capture'} onPress={() => o.onShot(mockShot)} />
+      {o.link && <Pressable testID={o.link.testID} onPress={o.link.onPress} />}
+      {o.onClose && <Pressable testID="cam-close" onPress={o.onClose} />}
+      {o.debug}
+    </View>
+  );
+}
+const flow = () => render(<PackagedScanFlow mode="packaged" onMode={jest.fn()} onClose={jest.fn()}  renderCamera={mockCamera} />);
 const texts = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
 
 describe('어댑터·요청·오류', () => {
@@ -146,10 +160,10 @@ describe('흐름', () => {
     expect(texts(t)).toContain('packagedScan.noScanUsed');
     await press(t, 'pscan-to-label');
     expect(ids(t)).toContain('pscan-same-analysis');
+    // KB-845: 성분표 분석 꺼진 채널 = 앞면 카메라의 "성분표로 확인하기" 링크 숨김(P-510 승인 — 켜진 채널의 링크·새 분석은 packagedLabel508)
+    const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
     const t2 = flow();
-    await press(t2, 'pscan-label-instead');
-    expect(ids(t2)).toContain('pscan-handoff');
-    expect(ids(t2)).not.toContain('pscan-same-analysis');
+    expect(ids(t2).includes('pscan-label-instead')).toBe(FLAGS.packagedLabelScan);
   });
   it('확정 네트워크 실패 = 오류 화면(차감 여부 확인 중) → 다시 시도 = 같은 analysisId · 만료(PFOOD-003) = 다시 찍기 안내', async () => {
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
@@ -196,12 +210,11 @@ describe('흐름', () => {
     act(() => t.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
     await act(async () => { t.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-run' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
     expect(ids(t)).toContain('pscan-reading');
-    // SubHeader 목은 onBack을 노출하지 않으므로 화면의 onBack을 직접 — reading 헤더의 뒤로
-    const header = t.root.findAll((n) => typeof n.props?.onBack === 'function')[0];
-    act(() => header.props.onBack());
-    expect(ids(t)).toContain('pscan-capture');
+    // KB-845: 읽는 중 = 로딩 C — 닫기 X가 직전 단계(앞면 카메라)로
+    act(() => t.root.findAll((n) => n.props?.testID === 'scan-loading-close' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    expect(ids(t)).toContain('cam-package');
     await act(async () => { release({ analysisId: 'A7', state: 'CANDIDATES', candidates: [cand(11, 'R1')] }); await new Promise((r) => setTimeout(r, 0)); });
-    expect(ids(t)).toContain('pscan-capture');
+    expect(ids(t)).toContain('cam-package');
     expect(ids(t)).not.toContain('pscan-candidates');
   });
   it('상세: charged=u(차감 여부 미상) = 단정 없이 "남은 횟수는 홈에서"', () => {
@@ -211,15 +224,15 @@ describe('흐름', () => {
     const t = render(<Detail />);
     expect(t.root.findAll((n) => n.props?.testID === 'pf-scan-charge')[0].props.children).toBe('packagedScan.chargeSeeHome');
   });
-  it('Codex #310 R2: 카메라 권한 거부 = 설정 유도 알럿(조용히 무시 0) · 서버 호출 0', async () => {
-    mockGranted = false;
-    const { Alert } = jest.requireActual('react-native');
-    const spy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  it('KB-845: 앞면 = 공통 카메라(package) — 시스템 카메라·권한 알럿은 흐름에 없다(권한 = scan.tsx 카메라의 기존 거부 화면, Codex #310 R2 대체)', () => {
     const t = flow();
-    await press(t, 'pscan-take-photo');
-    expect(spy).toHaveBeenCalledWith('scan.permissionTitle', 'scan.permissionSettingsBody', expect.any(Array));
-    expect(mockPost).not.toHaveBeenCalled();
-    spy.mockRestore();
+    expect(ids(t)).toContain('cam-package');
+    const flowSrc = fs.readFileSync('src/features/scan/PackagedScanFlow.tsx', 'utf8');
+    expect(flowSrc).not.toContain('launchCameraAsync');
+    expect(flowSrc).not.toContain('expo-image-picker');
+    const scanSrc = fs.readFileSync('src/app/scan.tsx', 'utf8');
+    expect(scanSrc).toContain('testID="perm-denied-alert"');
+    expect(scanSrc).toContain('renderCamera={cameraUi}');
   });
   it('Codex #310 R2: OCR 대기 중 뒤로 = 늦은 OCR 결과 무시(서버 호출 0 · 촬영 화면 유지)', async () => {
     let release!: (v: unknown) => void;
@@ -228,10 +241,10 @@ describe('흐름', () => {
     act(() => { void t.root.findAll((n) => n.props?.testID === 'pscan-take-photo' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(ids(t)).toContain('pscan-reading');
-    act(() => t.root.findAll((n) => typeof n.props?.onBack === 'function')[0].props.onBack());
+    act(() => t.root.findAll((n) => n.props?.testID === 'scan-loading-close' && typeof n.props?.onPress === 'function')[0].props.onPress());
     await act(async () => { release([{ text: '새우깡' }]); await new Promise((r) => setTimeout(r, 0)); });
     expect(mockPost).not.toHaveBeenCalled();
-    expect(ids(t)).toContain('pscan-capture');
+    expect(ids(t)).toContain('cam-package');
   });
   it('Codex #310 R2: 차감된 확정 뒤 같은 후보 재확정(서버 멱등 charged false) = 1회 사용 표시 유지', async () => {
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
@@ -289,7 +302,7 @@ describe('모드 탭·상세 띠·배선', () => {
     expect(src.match(/<ScanModeTabs /g)).toHaveLength(2);
     const flowSrc = fs.readFileSync('src/features/scan/PackagedScanFlow.tsx', 'utf8');
     expect(flowSrc).toContain('export const showOcrDebug = (): boolean => __DEV__ || isDiagnosticChannel();');
-    expect(flowSrc).toContain('{showOcrDebug() && (');
+    expect(flowSrc.match(/if \(!showOcrDebug\(\)\) return null;/g)).toHaveLength(2); // KB-845: 앞면·성분표 주입 패널 둘 다(카메라 위 작은 패널)
   });
   it('10언어 문구 전부 · 가운데점 0', () => {
     const flat = (o: Record<string, unknown>, p = ''): string[] => Object.entries(o).flatMap(([k, v]) => (v && typeof v === 'object' ? flat(v as Record<string, unknown>, `${p}${k}.`) : [`${p}${k}`]));

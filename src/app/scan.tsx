@@ -1,5 +1,6 @@
 import { ScanModeTabs, type ScanMode } from '@/features/scan/ScanModeTabs';
-import { PackagedScanFlow } from '@/features/scan/PackagedScanFlow';
+import { CameraSlot, PackagedScanFlow, type ScanCamOpts } from '@/features/scan/PackagedScanFlow';
+import { ScanLoading } from '@/features/scan/ScanLoading';
 import { UnlockCelebration } from '@/features/scan/UnlockCelebration';
 import { hasUnlockPending, hasObservedUnlockTransition, setUnlockScanFocused, subscribeUnlock } from '@/features/scan/unlockCelebrationStore';
 import { currentGen } from '@/lib/auth/beTokens';
@@ -20,9 +21,9 @@ import { currentGen } from '@/lib/auth/beTokens';
  */
 import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
 import { useCallback, useEffect, useRef, useState, useLayoutEffect, useSyncExternalStore, type ReactElement } from 'react';
-import { ActivityIndicator, Alert, AppState, BackHandler, Image, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, BackHandler, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
-import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Txt as Text } from '@/components/Txt';
@@ -40,7 +41,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
-import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconScanLines, IconGallery, IconFlip, IconChevron, IconSparkles, IconTabScan, IconArrowLeft } from '@/components';
+import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconScanLines, IconChevron, IconSparkles, IconTabScan, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useLeaveConfirm } from '@/components/LeaveConfirmModal';
@@ -97,7 +98,7 @@ function deletePhotoFile(uri: string | null | undefined): void {
 }
 
 // KB-777 B1-4: 바탕이 어두운(#16110d) 단계 — 상태바 아이콘 light
-const DARK_ROOT_PHASES = new Set<string>(['error', 'scanning']);
+const DARK_ROOT_PHASES = new Set<string>(['error']); // KB-845: scanning = 흰 로딩 C(어두운 상태바 글자) — 어두운 바탕 단계에서 뺀다
 // KB-777 B1-11: 카메라 크롬 스크림 — 위(제목·닫기)·아래(힌트·줌·셔터)
 const CAM_SCRIM_TOP = ['rgba(0,0,0,0.5)', 'rgba(0,0,0,0)'] as const;
 const CAM_SCRIM_BOTTOM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)'] as const;
@@ -574,7 +575,8 @@ export default function Scan() {
     }
   }
 
-  async function capture() {
+  /** KB-845: onShot = 크롭본을 받을 곳(메뉴 = scanImage, 가공식품·성분표 = PackagedScanFlow) · menu = scan_start 계측(메뉴만 — 가공식품은 자기 이벤트) */
+  async function capture(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, menu = true) {
     if (capturingRef.current) return; // P-062⓪: 동기 가드 — 리렌더 전 연타도 차단
     if (isGuest) return setGateOpen(true); // 스캔=회원 전용 (게이트)
     // P-131: 가로 촬영 허용 (KB-141 가드 폐기 — 캡슐 전환으로 겹침 사유 소멸)
@@ -583,30 +585,31 @@ export default function Scan() {
     capturingRef.current = true;
     setCapturing(true);
     setError(null);
-    track(EVENTS.scan_start, { source: 'camera' }); // P-144
+    if (menu) track(EVENTS.scan_start, { source: 'camera' }); // P-144
     try {
       const pic = await cam.takePictureAsync({ quality: 0.7, exif: true }); // P-338: Orientation 태그 — raw 치수 정규화용
       console.log('[scan] photo =', JSON.stringify({ uri: pic?.uri, w: pic?.width, h: pic?.height }));
       if (!pic?.uri) return fail('capture', 'takePictureAsync returned no uri');
       // KB-202: 업로드·표시·OCR 전부 크롭본 기준 — 미리보기 밖은 어디에도 안 간다
       const cropped = await cropToPreview({ uri: pic.uri, width: pic.width ?? 0, height: pic.height ?? 0 }, (pic.exif as { Orientation?: number } | undefined)?.Orientation);
-      await scanImage(cropped);
+      await onShot(cropped);
     } catch (e) {
-      fail('capture', (e as Error)?.message ?? String(e));
+      if (menu) fail('capture', (e as Error)?.message ?? String(e));
+      else console.log('[scan] packaged capture failed:', (e as Error)?.message ?? e); // 가공식품은 카메라에 그대로(메뉴 오류 화면으로 가지 않는다)
     } finally {
       capturingRef.current = false;
       setCapturing(false); // 화면 전환(scanning) 후거나 실패 — 어느 쪽이든 셔터 복구
     }
   }
 
-  async function pickFromGallery() {
+  async function pickFromGallery(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, menu = true) {
     if (capturingRef.current) return; // P-062⓪: 셔터와 동일 동기 가드
     if (isGuest) return setGateOpen(true);
     capturingRef.current = true;
     setCapturing(true);
     setImporting(true); // P-191: 픽커 복귀~원본 준비(iCloud 다운로드 수 초) 구간 표시
     setError(null);
-    track(EVENTS.scan_start, { source: 'gallery' }); // P-144
+    if (menu) track(EVENTS.scan_start, { source: 'gallery' }); // P-144
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -616,9 +619,10 @@ export default function Scan() {
       });
       if (result.canceled || !result.assets?.length) return;
       const a = result.assets[0];
-      await scanImage({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });
+      await onShot({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });
     } catch (e) {
-      fail('capture', (e as Error)?.message ?? String(e));
+      if (menu) fail('capture', (e as Error)?.message ?? String(e));
+      else console.log('[scan] packaged library pick failed:', (e as Error)?.message ?? e);
     } finally {
       capturingRef.current = false;
       setCapturing(false);
@@ -693,13 +697,158 @@ export default function Scan() {
 
   const GateSheet = <AuthGateSheet context="scan" open={gateOpen} onClose={() => setGateOpen(false)} />;
 
-  const Close = (
-    <Pressable style={[styles.close, { top: insets.top + 8 }]} onPress={() => router.back()} hitSlop={8} testID="scan-close">
+  // KB-845: 카메라 = 시안 X(24, 흰색, (20,60) — 배경 원 없음) · 그 밖(오류·오프라인 밝은 바탕) = 기존 어두운 원(흰 X가 보이게)
+  const closeBtn = (cam: boolean) => (
+    <Pressable style={[cam ? styles.camClose : styles.close, { top: insets.top + (cam ? 16 : 8) }]} onPress={() => router.back()} hitSlop={cam ? 10 : 8} accessibilityLabel={t('common.close')} testID="scan-close">
       <Animated.View style={uiRotate}>
-        <IconClose size={22} color="#fff" />
+        <IconClose size={cam ? 24 : 22} color="#fff" />
       </Animated.View>
     </Pressable>
   );
+  const Close = closeBtn(false);
+
+  /**
+   * KB-845 공통 카메라(D-31 scan refresh screen-3/4/5) — 메뉴·가공식품 앞면·성분표 한 화면. 가공식품 흐름은 PackagedScanFlow가
+   * renderCamera로 이 함수를 불러 쓴다(카메라·권한·WYSIWYG 크롭·줌·전환은 여기 하나).
+   * 레이아웃(375×812): 헤더 0~100 gray-1000(닫기 X (20,60) · "Scan" 가운데) · 프리뷰 100~780 · 탭 y104 h40 ·
+   * 아래 기준 스택 = 안내(제목+힌트, gap 8) → 43 → 줌 칩 36 → 16 → 컨트롤 80(Photos · 셔터 64+링 76 · 전환) → 16 → 링크 → 홈 인디케이터.
+   */
+  function cameraUi(o: ScanCamOpts): ReactElement {
+    const granted = permission?.granted;
+    const menu = o.kind === 'menu';
+    const title = t(menu ? 'scanCamera.menuTitle' : o.kind === 'package' ? 'scanCamera.packageTitle' : 'scanCamera.labelTitle');
+    const hint = o.hint ?? (menu ? t(uiDeg === 0 ? 'scanCamera.menuHint' : 'scan.cameraHintLandscape') : t(o.kind === 'package' ? 'scanCamera.packageHint' : 'scanCamera.labelHint'));
+    const shoot = () => void capture(o.onShot, menu);
+    const library = () => void pickFromGallery(o.onShot, menu);
+    return (
+      <View style={styles.camRoot}>
+        {/* 프리뷰 = 헤더(탭 위) 아래 ~ 홈 인디케이터 위. 크롭 기준(previewSize)도 이 영역 */}
+        <View style={[styles.camPreview, { top: insets.top + 56, bottom: bottom }]}>
+          {granted ? (
+            /* P-131: 핀치 줌 — runOnJS(true)로 JS 스레드 콜백(워클릿 0, P-065 교훈 준수) */
+            <GestureDetector
+              gesture={Gesture.Pinch()
+                .runOnJS(true)
+                .onStart(onPinchStart)
+                .onUpdate(onPinchUpdate)}
+            >
+              <View style={StyleSheet.absoluteFill}>
+                <CameraView
+                  ref={cameraRef}
+                  style={StyleSheet.absoluteFill}
+                  onLayout={(e) => { previewSize.current = { width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height }; }}
+                  facing={facing}
+                  zoom={zoom}
+                  responsiveOrientationWhenOrientationLocked
+                  onResponsiveOrientationChanged={(e) => setCamOrientation(e.orientation)}
+                />
+                {/* KB-777 B1-11: 밝은 장면에서 흰 안내·버튼이 묻히지 않게 위·아래 스크림(터치 통과 — 핀치·셔터 무영향) */}
+                <LinearGradient pointerEvents="none" colors={CAM_SCRIM_TOP} style={[styles.camScrimTop, { height: 96 }]} testID="cam-scrim-top" />
+                <LinearGradient pointerEvents="none" colors={CAM_SCRIM_BOTTOM} style={styles.camScrimBottom} testID="cam-scrim-bottom" />
+              </View>
+            </GestureDetector>
+          ) : permDenied ? (
+            /* P-285(최종본 4003:12656): 권한 거부 = D-1 Alert(320×190·스크림 40%) */
+            <View style={[StyleSheet.absoluteFill, styles.permScrim]} testID="perm-denied-alert">
+              <View style={styles.permAlert}>
+                <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
+                <Text style={[styles.permAlertBody, { marginBottom: 13 }]}>{t('scan.permissionSettingsBody')}</Text>
+                <Btn testID="scan-perm-settings" onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
+                  {t('photo.openSettings')}
+                </Btn>
+              </View>
+            </View>
+          ) : (
+            <View style={[StyleSheet.absoluteFill, styles.permission]}>
+              <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
+              <Text style={styles.permTitle}>{t('scan.permissionTitle')}</Text>
+              <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
+              <View style={{ width: '100%', maxWidth: 280 }}>
+                {/* P-214: 권한 퍼널 — 요청 후 결과(grant|deny) 구분 */}
+                <Btn testID="scan-perm-grant" onPress={() => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))}>
+                  {t('scan.grant')}
+                </Btn>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* 헤더: 닫기 X + "Scan"(가운데). 가공식품 흐름 안의 한 면 더 찍기 등은 o.onClose = 직전 단계로 */}
+        <View style={[styles.camTitleWrap, { top: insets.top + 16 }]} pointerEvents="none">
+          <Text style={styles.camTitle}>{t('scanCamera.title')}</Text>
+        </View>
+        {o.onClose ? (
+          <Pressable style={[styles.close, { top: insets.top + 16 }]} onPress={o.onClose} hitSlop={10} accessibilityLabel={t('common.close')} testID="scan-close-step">
+            <IconClose size={24} color={C.surface} />
+          </Pressable>
+        ) : (
+          closeBtn(true)
+        )}
+        {menu && uiDeg !== 0 && (
+          <View style={[styles.landscapeBadge, styles.camBadge, { top: insets.top + 108 }]} testID="landscape-badge" pointerEvents="none">
+            <Text style={styles.landscapeBadgeText}>{t('scan.landscapeBadge')}</Text>
+          </View>
+        )}
+        {/* KB-813 → KB-845 탭: Menu / Food photo(비활성) / Packaged food — 성분표도 Packaged food 활성(screen-5) */}
+        <View style={[styles.camModeTabs, { top: insets.top + 60 }]} pointerEvents="box-none">
+          <ScanModeTabs value={menu ? 'menu' : 'packaged'} onChange={setScanMode} tone="dark" />
+        </View>
+        {o.debug ? <View style={[styles.camDebug, { top: insets.top + 116 }]}>{o.debug}</View> : null}
+        {ImportingOverlay}
+        {GateSheet}
+
+        <View style={[styles.bottom, { paddingBottom: bottom + 5 }]}>
+          <View style={styles.camGuide} testID="scan-cam-guide">
+            <Text style={styles.camGuideTitle}>{title}</Text>
+            <Text style={styles.camGuideHint} testID="scan-cam-hint">{hint}</Text>
+          </View>
+          {/* P-131: 배율 프리셋 1x/2x — 핀치와 상호 동기(근사 시 하이라이트). 상태 = 색만(보더 폭 동일 — 프레임 불변) */}
+          <View style={[styles.zoomRow, !granted && styles.hidden]}>
+            {(['x1', 'x2'] as CamZoomPreset[]).map((pKey) => {
+              const on = activePreset(zoom) === pKey;
+              return (
+                <Pressable key={pKey} style={[styles.zoomPill, on && styles.zoomPillOn]} onPress={() => setZoom(CAM_ZOOM_PRESETS[pKey])} disabled={!granted} hitSlop={6} testID={`zoom-${pKey}`}>
+                  <Animated.View style={uiRotate}>
+                    <Text style={[styles.zoomPillText, on && styles.zoomPillTextOn]}>{pKey === 'x1' ? '1x' : '2x'}</Text>
+                  </Animated.View>
+                </Pressable>
+              );
+            })}
+          </View>
+          <View style={styles.camRow}>
+            <Pressable testID="scan-gallery" style={[styles.photosBtn, capturing && styles.shutterOff]} onPress={library} disabled={capturing} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('scan.gallery')}>
+              <Animated.View style={uiRotate}>
+                <Text style={styles.photosText}>{t('scanCamera.photos')}</Text>
+              </Animated.View>
+            </Pressable>
+            {granted ? (
+              <Pressable testID="scan-shutter" style={[styles.shutter, capturing && styles.shutterOff]} onPress={shoot} disabled={capturing} accessibilityRole="button" accessibilityLabel={t('photo.take')}>
+                <View style={styles.shutterInner} />
+              </Pressable>
+            ) : (
+              <View style={styles.shutterSpacer} />
+            )}
+            {granted ? (
+              <Pressable testID="scan-flip" style={styles.sideBtn} onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))} hitSlop={8} accessibilityLabel={t('scan.flip')}>
+                <Animated.View style={uiRotate}>
+                  <D4CameraRestart size={24} color={C.surface} />
+                </Animated.View>
+              </Pressable>
+            ) : (
+              <View style={styles.sideBtn} />
+            )}
+          </View>
+          {o.link ? (
+            <Pressable onPress={o.link.onPress} hitSlop={8} accessibilityRole="button" testID={o.link.testID} style={styles.camLink}>
+              <Text style={styles.camLinkText}>{o.link.label}</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.camLink} />
+          )}
+        </View>
+      </View>
+    );
+  }
 
   const [celebrationTurn, setCelebrationTurn] = useState(false);
   if (phase !== 'result' && celebrationTurn) setCelebrationTurn(false);
@@ -1023,24 +1172,13 @@ export default function Scan() {
     );
   }
 
-  // ---- scanning ---- P-062②: D2 오버레이 — 사진 배경 + 코너 브래킷 + 스캔라인 스윕
+  // ---- scanning ---- KB-845 로딩 C(D-31 screen-2): 흰 바탕 · 상태 먼저 · 찍은 사진(cover) 안 스캔선 1개 · 스피너 0
+  // P-222: 서버 처리를 HTTP 응답 대기로 버티므로 오래 이탈하면 결과 소실 — 정적 안내 한 줄(scan.stayHint, 시간 문구 그대로)만. AppState 감시·경고 모달 금지(발주 고정)
   if (phase === 'scanning') {
     return withPresenter(
-      <View style={styles.root}>
-        {/* P-187: cover 크롭 → contain 레터박스(어두운 root 배경) — 가로 사진도 전체 표시,
-            "잘려서 분석되나?" 오인 소멸(OCR·업로드는 원래 원본 전체 — 표시 문제였음) */}
-        {photo && <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} resizeMode="contain" testID="scanning-preview" />}
-        <ScanSweepOverlay />
-        {Close}
+      <View style={{ flex: 1 }}>
+        <ScanLoading title={t('scan.reading')} body={t('scan.stayHint')} photoUri={photo?.uri ?? null} caption={t('scanCamera.capturedMenu')} onClose={() => router.back()} testID="scan-loading" />
         {GateSheet}
-        <View style={[styles.scanCaption, { paddingBottom: bottom + 26 }]}>
-          <ActivityIndicator size="small" color="#fff" />
-          <Text style={styles.statusText}>{t('scan.reading')}</Text>
-          {/* P-222: 서버 처리 10~20초를 HTTP 응답 대기로 버티므로, 오래 이탈하면 OS가
-              연결을 끊어 결과가 소실된다(재조회 API 부재 — BE 안건). 정적 보조 한 줄만
-              — AppState 감시·경고 모달 같은 과잉 개입은 금지(발주 고정). */}
-          <Text style={styles.stayHint} testID="scan-stay-hint">{t('scan.stayHint')}</Text>
-        </View>
       </View>
     );
   }
@@ -1110,7 +1248,7 @@ export default function Scan() {
 
   // ---- KB-813 가공식품 모드 — 카메라 단계에서만(결과·오류·쿼터 잠금은 위에서 먼저 처리돼 이 분기에 오지 않는다) ----
   if (scanMode === 'packaged' && !offline) {
-    return withPresenter(<PackagedScanFlow key={labelEntry ?? 'flow'} mode={scanMode} onMode={setScanMode} onClose={() => router.back()} startLabel={labelEntry != null} />);
+    return withPresenter(<PackagedScanFlow key={labelEntry ?? 'flow'} mode={scanMode} onMode={setScanMode} onClose={() => router.back()} startLabel={labelEntry != null} renderCamera={cameraUi} />);
   }
 
   // ---- camera (default) ----
@@ -1155,159 +1293,10 @@ export default function Scan() {
     );
   }
 
-  const granted = permission?.granted;
-  return withPresenter(
-    <View style={styles.root}>
-      {granted ? (
-        /* P-131: 핀치 줌 — runOnJS(true)로 JS 스레드 콜백(워클릿 0, P-065 교훈 준수) */
-        <GestureDetector
-          gesture={Gesture.Pinch()
-            .runOnJS(true)
-            .onStart(onPinchStart)
-            .onUpdate(onPinchUpdate)}
-        >
-          <View style={StyleSheet.absoluteFill}>
-            <CameraView
-              ref={cameraRef}
-              style={StyleSheet.absoluteFill}
-              onLayout={(e) => { previewSize.current = { width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height }; }}
-              facing={facing}
-              zoom={zoom}
-              responsiveOrientationWhenOrientationLocked
-              onResponsiveOrientationChanged={(e) => setCamOrientation(e.orientation)}
-            />
-            {/* KB-777 B1-11: 밝은 장면에서 흰 제목·안내·버튼이 묻히지 않게 위·아래 스크림(터치 통과 — 핀치·셔터 무영향) */}
-            <LinearGradient pointerEvents="none" colors={CAM_SCRIM_TOP} style={[styles.camScrimTop, { height: insets.top + 96 }]} testID="cam-scrim-top" />
-            <LinearGradient pointerEvents="none" colors={CAM_SCRIM_BOTTOM} style={styles.camScrimBottom} testID="cam-scrim-bottom" />
-          </View>
-        </GestureDetector>
-      ) : (
-        permDenied ? (
-          /* P-285(최종본 4003:12656): 권한 거부 = D-1 Alert(320×190·스크림 40%) —
-             제목 18/600 #262C31 · 본문 15/500 #ADB4BA · primary 48 Open Settings(현 키) */
-          <View style={[StyleSheet.absoluteFill, styles.permScrim]} testID="perm-denied-alert">
-            <View style={styles.permAlert}>
-              <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
-              <Text style={[styles.permAlertBody, { marginBottom: 13 }]}>{t('scan.permissionSettingsBody')}</Text>
-              <Btn testID="scan-perm-settings" onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
-                {t('photo.openSettings')}
-              </Btn>
-            </View>
-          </View>
-        ) : (
-          <View style={[StyleSheet.absoluteFill, styles.permission]}>
-            <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
-            <Text style={styles.permTitle}>{t('scan.permissionTitle')}</Text>
-            <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
-            <View style={{ width: '100%', maxWidth: 280 }}>
-              {/* P-214: 권한 퍼널 — 요청 후 결과(grant|deny) 구분 */}
-              <Btn testID="scan-perm-grant" onPress={() => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))}>
-                {t('scan.grant')}
-              </Btn>
-            </View>
-          </View>
-        )
-      )}
+  return withPresenter(<CameraSlot o={{ kind: 'menu', onShot: (p: NonNullable<Photo>) => scanImage(p), link: { label: t('scanCamera.menuLink'), onPress: () => void pickFromGallery(), testID: 'scan-library-link' } }} render={cameraUi} />);
 
-      {/* P-131: 세로 유도 오버레이 소멸 — 가로 촬영 허용 (UI는 제자리 회전) */}
-
-      {Close}
-        {ImportingOverlay}
-        {GateSheet}
-
-      {/* P-136 D: 시안 S3 크롬 — 타이틀 줄 + 가로 배지(기능 무변, P-131 위 미세) */}
-      {/* KB-813 모드 탭(어두운 뷰파인더 위 흰 글자) — 제목 아래, 닫기 버튼 줄 밑 */}
-      <View style={[styles.camModeTabs, { top: insets.top + 56 }]} pointerEvents="box-none">
-        <ScanModeTabs value={scanMode} onChange={setScanMode} tone="dark" />
-      </View>
-      <View style={[styles.camTitleWrap, { top: insets.top + 14 }]} pointerEvents="none">
-        <Text style={styles.camTitle}>{t('scan.cameraTitle')}</Text>
-        {uiDeg !== 0 && (
-          <View style={styles.landscapeBadge} testID="landscape-badge">
-            <Text style={styles.landscapeBadgeText}>{t('scan.landscapeBadge')}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={[styles.bottom, { paddingBottom: bottom + 20 }]}>
-        {/* P-131: 배율 프리셋 1x/2x — 핀치와 상호 동기(근사 시 하이라이트) */}
-        {granted && (
-          <View style={styles.zoomRow}>
-            {(['x1', 'x2'] as CamZoomPreset[]).map((pKey) => {
-              const on = activePreset(zoom) === pKey;
-              return (
-                <Pressable key={pKey} style={[styles.zoomPill, on && styles.zoomPillOn]} onPress={() => setZoom(CAM_ZOOM_PRESETS[pKey])} hitSlop={6} testID={`zoom-${pKey}`}>
-                  <Animated.View style={uiRotate}>
-                    <Text style={[styles.zoomPillText, on && styles.zoomPillTextOn]}>{pKey === 'x1' ? '1x' : '2x'}</Text>
-                  </Animated.View>
-                </Pressable>
-              );
-            })}
-          </View>
-        )}
-        {/* P-136 D: 방향별 힌트 — 세로 = 줌·전체 담기 / 가로 = 와이드 메뉴판 */}
-        <Text style={styles.hint}>{t(uiDeg === 0 ? 'scan.cameraHintPortrait' : 'scan.cameraHintLandscape')}</Text>
-        <View style={styles.camRow}>
-          <Pressable testID="scan-gallery" style={[styles.sideBtn, capturing && styles.shutterOff]} onPress={pickFromGallery} disabled={capturing} hitSlop={8} accessibilityLabel={t('scan.gallery')}>
-            <Animated.View style={uiRotate}>
-              <IconGallery size={22} color="#fff" />
-            </Animated.View>
-          </Pressable>
-          {granted ? (
-            <Pressable testID="scan-shutter" style={[styles.shutter, capturing && styles.shutterOff]} onPress={capture} disabled={capturing}>
-              <View style={styles.shutterInner} />
-            </Pressable>
-          ) : (
-            <View style={styles.shutterSpacer} />
-          )}
-          {granted ? (
-            <Pressable testID="scan-flip" style={styles.sideBtn} onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))} hitSlop={8} accessibilityLabel={t('scan.flip')}>
-              <Animated.View style={uiRotate}>
-                <IconFlip size={22} color="#fff" />
-              </Animated.View>
-            </Pressable>
-          ) : (
-            <View style={styles.sideBtn} />
-          )}
-        </View>
-      </View>
-    </View>
-  );
 }
 
-/** P-062②: D2 스캐닝 오버레이 — 코너 브래킷 4 + 주황 스캔라인 스윕(글로우 트레일) */
-function ScanSweepOverlay() {
-  const [h, setH] = useState(0);
-  // P-196 ③: 상단 브래킷을 X 닫기(top: insets.top+8, 40pt) 세이프존 아래로 —
-  // 노치/다이내믹 아일랜드 기기에서 X와 브래킷이 겹치던 실기 반려. 겹침 0 보장.
-  const insets = useSafeAreaInsets();
-  const bracketTop = Math.max(90, insets.top + 60);
-  const y = useSharedValue(0);
-  useEffect(() => {
-    if (!h) return;
-    y.value = 0;
-    y.value = withRepeat(withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.quad) }), -1, true); // P-064①: 왕복(핑퐁) — 리셋 점프 소멸
-  }, [h, y]);
-  const sweep = useAnimatedStyle(() => ({ transform: [{ translateY: y.value * Math.max(0, h - 90) }] }));
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none" onLayout={(e) => setH(e.nativeEvent.layout.height)}>
-      {/* 어둡게 한 겹 — 사진 위 브래킷/라인 대비 */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.25)' }]} />
-      {/* 코너 브래킷 4 */}
-      <View style={[styles.bracket, { top: bracketTop, left: 26, borderTopWidth: 3, borderLeftWidth: 3 }]} testID="bracket-tl" />
-      <View style={[styles.bracket, { top: bracketTop, right: 26, borderTopWidth: 3, borderRightWidth: 3 }]} />
-      <View style={[styles.bracket, { bottom: 150, left: 26, borderBottomWidth: 3, borderLeftWidth: 3 }]} />
-      <View style={[styles.bracket, { bottom: 150, right: 26, borderBottomWidth: 3, borderRightWidth: 3 }]} />
-      {/* 스캔라인 + 글로우 트레일 */}
-      {h > 0 && (
-        <Animated.View style={[styles.sweepWrap, sweep]}>
-          <LinearGradient colors={['rgba(226,88,12,0)', 'rgba(226,88,12,0.35)']} style={styles.sweepTrail} />
-          <View style={styles.sweepLine} />
-        </Animated.View>
-      )}
-    </View>
-  );
-}
 
 /** KB-140 unmatched 안내 — 중립 톤(unable 마크·ink 텍스트), 안전 인상 금지. */
 function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => void; t: (k: string) => string }) {
@@ -1429,9 +1418,8 @@ const styles = StyleSheet.create({
   permAlertTitle: { fontSize: 18, fontWeight: '600', color: '#262C31', textAlign: 'center' },
   permAlertBody: { fontSize: 15, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 22.3 }, // A-SN-04(lineHeight만 — 색 대비는 Codex #45 위임 유지) // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
   permBody: { fontFamily: font.body, fontSize: 14, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 20 },
-  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center', gap: 14 },
-  hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },
-  camTitleWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 8 },
+  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center' }, // KB-845 아래 기준 스택(안내 → 43 → 칩 → 16 → 컨트롤 → 16 → 링크)
+  camTitleWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   camModeTabs: { position: 'absolute', left: 0, right: 0 },
   camScrimTop: { position: 'absolute', top: 0, left: 0, right: 0 },
   camScrimBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 300 },
@@ -1440,17 +1428,30 @@ const styles = StyleSheet.create({
   launcherTitle: { fontFamily: font.bodyBold, fontSize: 21, color: C.ink },
   launcherHint: { fontFamily: font.body, fontSize: 13.5, lineHeight: 20, color: C.ink2, textAlign: 'center' },
   launcherGallery: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, paddingVertical: 8 },
-  camTitle: { fontFamily: font.bodyBold, fontSize: 15, color: '#fff' },
+  camTitle: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 24, color: C.surface }, // title3-sbold gray-00
+  camRoot: { flex: 1, backgroundColor: C.ink }, // 헤더 띠 0~100·홈 인디케이터 줄 = gray-1000
+  camPreview: { position: 'absolute', left: 0, right: 0, backgroundColor: C.gray800, overflow: 'hidden' }, // 라이브 프리뷰 100~780(권한 전 = 시안 gray-800 자리)
+  camClose: { position: 'absolute', left: 20, zIndex: 40, width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }, // 닫기 X (20,60) — 권한 스크림 위(Codex #47)
+  camBadge: { position: 'absolute', alignSelf: 'center' },
+  camDebug: { position: 'absolute', left: 20, right: 20 },
+  camGuide: { width: '100%', alignItems: 'center', gap: 8, marginBottom: 43 }, // 안내 (20,508) w335 gap 8 가운데
+  camGuideTitle: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 24, color: C.surface, textAlign: 'center' }, // title3-sbold gray-00
+  camGuideHint: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.gray200, textAlign: 'center' }, // body-l3-regular gray-200
+  photosBtn: { width: 68, height: 44, justifyContent: 'center', paddingLeft: 12 }, // "Photos" (12,30) — 아이콘 없이 텍스트(DS 마스터 없음)
+  photosText: { fontFamily: font.body, fontSize: 13, lineHeight: 19.5, color: C.surface }, // caption1-regular gray-00
+  camLink: { minHeight: 21, alignItems: 'center', justifyContent: 'center' },
+  camLinkText: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.surface, textAlign: 'center' }, // body-l3-regular gray-00
+  hidden: { opacity: 0 },
   landscapeBadge: { backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   landscapeBadgeText: { fontFamily: font.bodyBold, fontSize: 11, color: '#fff' },
-  camRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
-  zoomRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 10 },
-  zoomPill: { minWidth: 40, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
-  zoomPillOn: { backgroundColor: 'rgba(255,255,255,0.9)', borderColor: '#fff' },
-  zoomPillText: { fontFamily: font.bodyBold, fontSize: 12.5, color: '#fff' },
-  zoomPillTextOn: { color: '#1c1917' },
-  sideBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
-  shutter: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  camRow: { width: '100%', height: 80, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }, // 335×80 — 좌 Photos · 가운데 셔터 · 우 전환(같은 폭 슬롯이라 셔터 정중앙)
+  zoomRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 16 },
+  zoomPill: { height: 36, minWidth: 42, paddingHorizontal: 12, borderRadius: 18, backgroundColor: C.gray800, borderWidth: 1, borderColor: C.surface, alignItems: 'center', justifyContent: 'center' }, // DS chips 36:41(비활성 gray-800 + 흰 테두리) — 활성도 같은 폭 테두리(프레임 불변)
+  zoomPillOn: { backgroundColor: C.surface },
+  zoomPillText: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.surface }, // body-l3-regular
+  zoomPillTextOn: { color: C.ink },
+  sideBtn: { width: 68, height: 44, alignItems: 'flex-end', justifyContent: 'center', paddingRight: 24 }, // 전환 아이콘 24 @ (287,28)
+  shutter: { width: 76, height: 76, borderRadius: 38, borderWidth: 3, borderColor: C.surface, alignItems: 'center', justifyContent: 'center' }, // 링 76 stroke 3 @ (129,2)
   shutterOff: { opacity: 0.35 },
   // P-038: 빈 프로필 넛지 — Close 버튼(좌 16, 폭 40) 우측에 정렬, 리스트 여백(60) 위 오버레이
   // P-057: 배너 = 리스트 첫 카드 — 밝은 브랜드 틴트, 메뉴 카드와 같은 radius 리듬
@@ -1462,10 +1463,9 @@ const styles = StyleSheet.create({
   noticeCard: { backgroundColor: '#fff', borderRadius: 20, padding: 22, alignItems: 'center', gap: 10, maxWidth: 340, alignSelf: 'stretch' },
   noticeTitle: { fontFamily: font.display, fontSize: 17, color: C.ink, textAlign: 'center' },
   noticeBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20 },
-  shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
+  shutterInner: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.surface }, // 셔터 64 @ (135,8)
   shutterSpacer: { width: 76, height: 76 },
   // P-222: 주 문구를 밀어내지 않는 보조 톤(작게·흐리게)
-  stayHint: { fontFamily: font.body, fontSize: 12, color: 'rgba(255,255,255,0.72)', textAlign: 'center', marginTop: 2, paddingHorizontal: 24, lineHeight: 17 },
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
   // P-191: 갤러리 원본 로드 오버레이 — scanning 캡션과 동일 톤, 화면 하단 중앙
   importingOverlay: { position: 'absolute', left: 0, right: 0, bottom: 120, alignItems: 'center', gap: 8, zIndex: 20 },
@@ -1473,11 +1473,6 @@ const styles = StyleSheet.create({
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
   degradedNote: { fontFamily: font.body, fontSize: 12, color: '#fbbf24', textAlign: 'center' },
   // P-062② D2 스캐닝 오버레이
-  scanCaption: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', gap: 10 },
-  bracket: { position: 'absolute', width: 34, height: 34, borderColor: 'rgba(255,255,255,0.9)', borderRadius: 2 },
-  sweepWrap: { position: 'absolute', left: 14, right: 14, top: 0, height: 90 },
-  sweepTrail: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 2 },
-  sweepLine: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, borderRadius: 2, backgroundColor: '#E2580C', shadowColor: '#E2580C', shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   // P-064② 파파고식 플로팅 버튼 + 사진 하단 섀도
   resultShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
   listShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
