@@ -28,7 +28,7 @@ jest.mock('react-native-gesture-handler', () => {
   return { Gesture: { Pan: pan }, GestureDetector: ({ children }: { children: React.ReactNode }) => children, GestureHandlerRootView: View };
 });
 jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View {...p} /> }; });
-jest.mock('@/components/RemoteImage', () => { const { View } = jest.requireActual('react-native'); return { RemoteImage: (p: { uri: string; blurRadius?: number; style?: unknown }) => <View testID={p.blurRadius ? `blur:${p.uri}` : `img:${p.uri}`} style={p.style} {...({ blurRadius: p.blurRadius } as object)} /> }; });
+jest.mock('@/components/RemoteImage', () => { const { View } = jest.requireActual('react-native'); return { RemoteImage: (p: { uri: string; blurRadius?: number; style?: unknown; placeholder?: string; onLoad?: () => void; onError?: () => void }) => <View testID={p.blurRadius ? `blur:${p.uri}` : `img:${p.uri}`} style={p.style} {...({ blurRadius: p.blurRadius, placeholder: p.placeholder, onLoad: p.onLoad, onError: p.onError } as object)} /> }; });
 jest.mock('@/components/icons', () => { const { View } = jest.requireActual('react-native'); return { IconChevron: (p: { color?: string }) => <View testID="chevron-right" style={{ color: p.color }} />, IconArrowLeft: () => null, IconClose: () => null }; });
 jest.mock('expo-linear-gradient', () => { const { View } = jest.requireActual('react-native'); return { LinearGradient: (p: object) => <View {...p} testID="card-shade" /> }; });
 jest.mock('@/components/SubHeader', () => { const { Text } = jest.requireActual('react-native'); return { SubHeader: (p: { title: string }) => <Text testID="subheader">{p.title}</Text> }; });
@@ -333,6 +333,26 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(blurred()).toEqual([5, 6, 7, 8, 9, 10]);
     const band = t.root.findAll((n) => n.props?.testID === 'curation-item-blur-10' && typeof n.type === 'string')[0];
     expect(jest.requireActual('react-native').StyleSheet.flatten(band.props.style).opacity).toBe(0); // 막 붙은 블러 = 투명에서 시작(150ms 페이드인 — 뚝 바뀌지 않게)
+  });
+  it('KB-846 Android QA(플링 뒤 회색 띠): 블러 띠 사진 로딩 자리 = 투명(placeholder none) · 띠 8장이 다 그려지기(onLoad/onError) 전엔 밴드 투명 → 전부 끝나면 페이드', () => {
+    const RNs = jest.requireActual('react-native');
+    mockDetail = q({ data: detail });
+    const t = render(<CurationDetailScreen />);
+    const layoutOf = (id: string, layout: object) => act(() => t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout } }));
+    layoutOf('curation-item-1', { x: 0, y: 0, width: 335, height: 300 });
+    layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 335, height: 64 });
+    const imgs = () => t.root.findAll((n) => n.props?.testID === 'blur:https://cdn/i1.jpg' && typeof n.type === 'string');
+    expect(imgs()).toHaveLength(8);
+    expect(imgs().every((n) => n.props.placeholder === 'none')).toBe(true); // 회색 Shimmer 자리 0
+    const bandOpacity = () => RNs.StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0].props.style).opacity;
+    expect(bandOpacity()).toBe(0);
+    const ready = () => t.root.findAll((n) => typeof n.type === 'function' && n.type.name === 'FadeInBand')[0].props.ready as boolean;
+    expect(ready()).toBe(false);
+    act(() => { imgs().slice(0, 7).forEach((n, i) => (i === 3 ? n.props.onError() : n.props.onLoad())); }); // 실패도 끝으로 센다
+    expect(ready()).toBe(false); // 7/8 — 아직(밴드 투명 = 원본 + 스크림만)
+    expect(bandOpacity()).toBe(0);
+    act(() => { imgs()[7].props.onLoad(); });
+    expect(ready()).toBe(true); // 8/8 → 페이드 시작
   });
   it('KB-846 blurBandOf: Android 9 = 띠 반경 정수 1~9 8단계(단조 증가) · 캡션이 카드 위쪽 16 안이면 밴드 top 0', () => {
     const { blurBandOf } = jest.requireActual('@/app/curations/[key]') as { blurBandOf: (h: number, c: number, r?: number) => { top: number; strips: { radius: number }[] } };

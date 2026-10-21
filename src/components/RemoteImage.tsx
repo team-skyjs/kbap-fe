@@ -22,6 +22,7 @@ export function RemoteImage({
   onError,
   onLoad,
   blurRadius,
+  placeholder = 'shimmer',
 }: {
   uri: string;
   /** 크기·라운딩을 가진 컨테이너 스타일(기존 Image 스타일 그대로 이관) */
@@ -36,11 +37,13 @@ export function RemoteImage({
   onLoad?: () => void;
   /** KB-832: expo-image 흐림(네이티브 의존 추가 없음 — 앱 지문 무변). 큐레이션 카드 하단 블러 밴드 */
   blurRadius?: number;
+  /** 로딩 중 자리: 'shimmer'(기본 — 공백 금지) · 'none' = 투명(아래에 같은 사진 원본이 이미 깔린 겹침 사본 전용 — KB-846 블러 띠) */
+  placeholder?: 'shimmer' | 'none';
 }) {
   const [settled, setSettled] = React.useState(false);
   return (
     <View style={[style, { overflow: 'hidden' }]}>
-      {!settled && <Shimmer style={FILL as never} />}
+      {!settled && placeholder === 'shimmer' && <Shimmer style={FILL as never} />}
       <Image
         source={{ uri }}
         recyclingKey={recyclingKey}
