@@ -735,7 +735,12 @@
     "wildchive": "달래",
     "asafoetida": "아사페티다(힝)",
     "mirin": "미림",
-    "sulfites": "아황산염"
+    "sulfites": "아황산염",
+    "nuts": "견과류(땅콩 포함)",
+    "crustacean": "갑각류",
+    "mollusk": "연체류",
+    "meat": "육류",
+    "meatbroth": "고기 육수"
   },
   "detail": {
     "headerTitle": "음식",

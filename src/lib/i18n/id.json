@@ -949,7 +949,12 @@
     "wildchive": "Bawang liar",
     "asafoetida": "Asafoetida",
     "mirin": "Mirin",
-    "sulfites": "Sulfit"
+    "sulfites": "Sulfit",
+    "nuts": "Kacang (termasuk kacang tanah)",
+    "crustacean": "Krustasea",
+    "mollusk": "Moluska",
+    "meat": "Daging",
+    "meatbroth": "Kaldu daging"
   },
   "saved": {
     "error": "Tidak dapat memperbarui daftar simpanan. Silakan coba lagi.",

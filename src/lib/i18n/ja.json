@@ -949,7 +949,12 @@
     "wildchive": "ノビル",
     "asafoetida": "アサフェティダ",
     "mirin": "みりん",
-    "sulfites": "亜硫酸塩"
+    "sulfites": "亜硫酸塩",
+    "nuts": "ナッツ類(ピーナッツ含む)",
+    "crustacean": "甲殻類",
+    "mollusk": "軟体類",
+    "meat": "肉類",
+    "meatbroth": "肉のだし"
   },
   "saved": {
     "error": "保存リストを更新できませんでした。もう一度お試しください。",

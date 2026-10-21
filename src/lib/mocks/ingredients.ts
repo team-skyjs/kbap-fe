@@ -17,7 +17,7 @@ export interface Ingredient {
 
 const ing = (code: string, name: string, i18nKey?: string): Ingredient => ({ code, name, i18nKey });
 
-/** BE avoidance_substance.code 정본 81종 (guest/온보딩/프로필 공용). */
+/** BE avoidance_substance.code 정본 87종 (guest/온보딩/프로필 공용). KB-843(서버 #446): 묶음 4종 + 말단 2종은 **맨 뒤에 덧붙인다** — 식단 프리셋이 1-기반 위치로 참조(dietPresets)라 중간 삽입 금지. 화면 순서는 INGREDIENT_SECTIONS가 정한다. */
 export const INGREDIENTS: Ingredient[] = [
   // dairy & animal-derived
   ing('EGG', 'Egg', 'egg'), ing('MILK', 'Milk', 'milk'), ing('DAIRY', 'Dairy', 'dairy'),
@@ -57,6 +57,11 @@ export const INGREDIENTS: Ingredient[] = [
   // etc.
   ing('ALCOHOL', 'Alcohol', 'alcohol'), ing('MIRIN', 'Mirin', 'mirin'), ing('COOKING_WINE', 'Cooking wine', 'ricewine'),
   ing('SULFITES', 'Sulfites', 'sulfites'),
+  // KB-843(서버 #446, R-100 묶음 = 하위 전부): 견과류(땅콩 포함)·갑각류·연체류(두족류+조개류)·육류 + 말단 양고기·고기 육수.
+  // 묶음 선택의 하위 판정은 서버 함의 닫힘(Avoidance.codes) — 음식 상세 "피하는 재료 X에 포함돼요"(matchedBy)가 이 코드로 이름을 찾는다
+  // 이름은 짧게(타일 라벨 1줄 — 묶음이라는 뜻은 선택 시 음식 상세의 "피하는 재료 X에 포함돼요"가 말한다). 땅콩 포함만 명시(콩과라 오해 여지)
+  ing('NUTS', 'Nuts (incl. peanut)', 'nuts'), ing('CRUSTACEAN', 'Crustaceans', 'crustacean'), ing('MOLLUSK', 'Mollusks', 'mollusk'),
+  ing('MEAT', 'Meat', 'meat'), ing('LAMB', 'Lamb', 'lamb'), ing('MEAT_BROTH', 'Meat broth', 'meatbroth'),
 ];
 
 const BY_CODE: Record<string, Ingredient> = Object.fromEntries(INGREDIENTS.map((i) => [i.code, i]));
@@ -82,7 +87,7 @@ const LEGACY_TO_BE: Record<string, string | null> = {
   fish: 'FISH', mackerel: 'MACKEREL', anchovy: 'ANCHOVY', tuna: 'TUNA', pollock: 'FISH',
   cod: 'COD', salmon: 'SALMON', eel: 'FISH', fishsauce: 'FISH_SAUCE', fishcake: 'FISH',
   shrimppaste: 'SALTED_SHRIMP',
-  beef: 'BEEF', pork: 'PORK', chicken: 'CHICKEN', duck: 'POULTRY', lamb: null,
+  beef: 'BEEF', pork: 'PORK', chicken: 'CHICKEN', duck: 'POULTRY', lamb: 'LAMB', // KB-843: 양고기 코드 신설(전엔 대응 없음 → 드롭)
   ham: 'PORK', sausage: 'PORK', bloodsausage: 'PORK',
   garlic: 'GARLIC', onion: 'ONION', greenonion: 'SCALLION', ginger: null, chili: null,
   perilla: null, cilantro: null, tomato: 'TOMATO', peach: 'PEACH', kiwi: null, apple: null,
@@ -126,10 +131,10 @@ export function ingredientLabel(code: string): string {
 /** P-134(온보딩 v3): 카테고리 섹션 — 파일 내 주석 그룹의 데이터 승격(회피 타일 그리드용). 라벨 = i18n ingCat.<key>. */
 export const INGREDIENT_SECTIONS: { key: string; codes: string[] }[] = [
   { key: 'dairy', codes: ['EGG', 'MILK', 'DAIRY', 'GOAT_MILK', 'BUTTER', 'GHEE', 'CHEESE', 'GELATIN', 'RENNET', 'HONEY', 'CARMINE'] },
-  { key: 'nuts', codes: ['PEANUT', 'WALNUT', 'PINE_NUT', 'ALMOND', 'CASHEW', 'PISTACHIO', 'HAZELNUT', 'MACADAMIA', 'PECAN', 'BRAZIL_NUT', 'CHESTNUT', 'SESAME', 'SUNFLOWER_SEED', 'MUSTARD'] },
+  { key: 'nuts', codes: ['PEANUT', 'WALNUT', 'PINE_NUT', 'ALMOND', 'CASHEW', 'PISTACHIO', 'HAZELNUT', 'MACADAMIA', 'PECAN', 'BRAZIL_NUT', 'CHESTNUT', 'NUTS', 'SESAME', 'SUNFLOWER_SEED', 'MUSTARD'] },
   { key: 'grains', codes: ['WHEAT', 'BUCKWHEAT', 'BARLEY', 'RYE', 'OAT', 'CORN', 'SOY', 'LUPIN', 'PEA', 'CHICKPEA', 'LENTIL'] },
-  { key: 'seafood', codes: ['SHRIMP', 'SALTED_SHRIMP', 'CRAB', 'CRAYFISH', 'LOBSTER', 'SQUID', 'OCTOPUS', 'OYSTER', 'OYSTER_SAUCE', 'ABALONE', 'MUSSEL', 'CLAM', 'SHORT_NECK_CLAM', 'SCALLOP', 'SEAFOOD', 'FISH', 'MACKEREL', 'SALMON', 'TUNA', 'COD', 'ANCHOVY', 'FISH_SAUCE', 'BROTH', 'DASHI'] },
-  { key: 'meat', codes: ['BEEF', 'PORK', 'LARD', 'TALLOW', 'CHICKEN', 'POULTRY'] },
+  { key: 'seafood', codes: ['SHRIMP', 'SALTED_SHRIMP', 'CRAB', 'CRAYFISH', 'LOBSTER', 'CRUSTACEAN', 'SQUID', 'OCTOPUS', 'OYSTER', 'OYSTER_SAUCE', 'ABALONE', 'MUSSEL', 'CLAM', 'SHORT_NECK_CLAM', 'SCALLOP', 'MOLLUSK', 'SEAFOOD', 'FISH', 'MACKEREL', 'SALMON', 'TUNA', 'COD', 'ANCHOVY', 'FISH_SAUCE', 'BROTH', 'DASHI'] },
+  { key: 'meat', codes: ['BEEF', 'PORK', 'LARD', 'TALLOW', 'CHICKEN', 'POULTRY', 'LAMB', 'MEAT_BROTH', 'MEAT'] }, // KB-843: 묶음(MEAT)은 하위 뒤 — SEAFOOD·POULTRY와 같은 자리 규칙
   { key: 'produce', codes: ['PEACH', 'TOMATO', 'CELERY', 'POTATO', 'CARROT', 'ONION', 'GARLIC', 'SCALLION', 'CHIVE', 'WILD_CHIVE', 'ASAFOETIDA'] },
   { key: 'etc', codes: ['ALCOHOL', 'MIRIN', 'COOKING_WINE', 'SULFITES'] },
 ];

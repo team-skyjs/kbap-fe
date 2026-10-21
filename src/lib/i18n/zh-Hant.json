@@ -949,7 +949,12 @@
     "wildchive": "野蒜",
     "asafoetida": "阿魏",
     "mirin": "味醂",
-    "sulfites": "亞硫酸鹽"
+    "sulfites": "亞硫酸鹽",
+    "nuts": "堅果（含花生）",
+    "crustacean": "甲殼類",
+    "mollusk": "軟體類",
+    "meat": "肉類",
+    "meatbroth": "肉湯"
   },
   "saved": {
     "error": "無法更新收藏清單，請重試。",

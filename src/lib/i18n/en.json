@@ -731,7 +731,12 @@
     "wildchive": "Wild chive",
     "asafoetida": "Asafoetida",
     "mirin": "Mirin",
-    "sulfites": "Sulfites"
+    "sulfites": "Sulfites",
+    "nuts": "Nuts (incl. peanut)",
+    "crustacean": "Crustaceans",
+    "mollusk": "Mollusks",
+    "meat": "Meat",
+    "meatbroth": "Meat broth"
   },
   "detail": {
     "headerTitle": "Food",
