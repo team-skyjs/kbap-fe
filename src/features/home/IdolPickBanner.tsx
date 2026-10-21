@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   inner: { paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
   texts: { gap: 6 },
   label: { fontFamily: font.bodyBold, fontSize: 11, lineHeight: 16, letterSpacing: 1.6, color: C.primary },
-  title: { fontFamily: font.bodyBlack, fontSize: 24, lineHeight: 32, color: '#FFFFFF' },
+  title: { fontFamily: font.bodyBlack, fontSize: 24, lineHeight: 34, color: '#FFFFFF' }, // 34 = th 성조·모음 기호 잘림 방지(전 로케일 공통)
   pill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, borderRadius: 22, paddingHorizontal: 18, backgroundColor: '#FFFFFF' },
   pillText: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
   press: { backgroundColor: 'rgba(255,255,255,0.12)' },
