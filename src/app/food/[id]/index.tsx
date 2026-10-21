@@ -380,6 +380,10 @@ function Registered({
 }) {
   const isNew = useIsNewFood(food.publishedAt);
   const idolVideo = useIdolPickVideo(id); // KB-836 D3: 목록 쿼리 캐시만 — 상세 진입으로 목록 API 를 부르지 않는다
+  // Codex #328: 카드가 사라지면(캐시 갱신·언어 전환·라우트 변경) 저장된 카드 위치를 비운다 — 빈 자리에서 알약이 계속 숨지 않게(높이 0 = 화면에 없음)
+  useEffect(() => {
+    if (!idolVideo) onIdolLayout?.(0, 0);
+  }, [idolVideo, onIdolLayout]);
   const writeReview = (source: 'detail') => {
     // P-392(KB-584): 자격 게이트 폐기 — 게스트 게이트(AuthGateSheet)는 그대로
     track(EVENTS.review_write_tap, { source });

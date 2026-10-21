@@ -57,6 +57,11 @@ export function useScrollAwarePill() {
   }, [apply]);
   const onViewLayout = React.useCallback((h: number) => { scroll.current = { ...scroll.current, viewH: h }; settle(); }, [settle]);
   const onContentSize = React.useCallback((h: number) => { scroll.current = { ...scroll.current, contentH: h }; settle(); }, [settle]);
-  const onCardLayout = React.useCallback((y: number, h: number) => { scroll.current = { ...scroll.current, card: { y, h } }; settle(); }, [settle]);
+  const onCardLayout = React.useCallback((y: number, h: number) => {
+    scroll.current = { ...scroll.current, card: { y, h } };
+    // 높이 0 = 카드가 사라짐(Codex #328) — 카드 때문에 숨어 있던 알약을 멈춤과 같이 다시 보인다
+    if (h === 0) apply(pillOnIdle(st.current, scroll.current));
+    else settle();
+  }, [settle, apply]);
   return { shown, onScroll, onViewLayout, onContentSize, onCardLayout };
 }

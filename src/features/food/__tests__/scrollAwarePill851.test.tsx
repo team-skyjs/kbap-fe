@@ -59,5 +59,10 @@ it('훅: 아래로 스크롤 = 숨김 → 300ms 멈춤 = 표시 · 카드 위치
   expect(api.shown).toBe(false);
   act(() => { jest.advanceTimersByTime(PILL_IDLE_MS * 2); });
   expect(api.shown).toBe(false);
+  // Codex #328: 카드가 사라지면 위치를 높이 0으로 비운다 → 같은 자리에서도 다시 표시
+  act(() => { api.onCardLayout(0, 0); });
+  expect(api.shown).toBe(true);
   jest.useRealTimers();
+  const src = jest.requireActual('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
+  expect(src).toContain('if (!idolVideo) onIdolLayout?.(0, 0);');
 });
