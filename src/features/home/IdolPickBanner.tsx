@@ -15,7 +15,7 @@ import { IconChevron } from '@/components/icons';
 import { color as C, font } from '@/lib/theme';
 import { trackHomeCardClick, useImpressionRef } from './homeImpressions';
 
-const BG = require('../../../assets/images/idol_pick_banner_bg.jpg');
+const BG = require('../../../assets/images/idol_pick_banner_bg.webp');
 /** 배경 에셋 비율(1170×695) */
 export const BG_ASPECT = 1170 / 695;
 /** 텍스트 시작 = 카드폭 × 182/320 (카드폭 = 창 폭 − 좌우 20×2) */

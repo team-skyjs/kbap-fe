@@ -143,8 +143,8 @@ describe('홈 배너 (정적)', () => {
     expect(json).not.toContain('count');
     const src = fs.readFileSync('src/features/home/IdolPickBanner.tsx', 'utf8');
     expect(src).not.toMatch(/RemoteImage|useHome|useIdolPicks|uri:|IconQuestion|dishes\/|LinearGradient|COLLAGE/);
-    expect([...src.matchAll(/require\('([^']+)'\)/g)].map((m) => m[1])).toEqual(['../../../assets/images/idol_pick_banner_bg.jpg']);
-    expect(fs.existsSync('assets/images/idol_pick_banner_bg.jpg')).toBe(true);
+    expect([...src.matchAll(/require\('([^']+)'\)/g)].map((m) => m[1])).toEqual(['../../../assets/images/idol_pick_banner_bg.webp']);
+    expect(fs.existsSync('assets/images/idol_pick_banner_bg.webp')).toBe(true);
   });
 
   it('배경 Image = absolute · top/left 0 · width 100% · aspectRatio 1170/695 · cover · 장식(a11y 숨김)', () => {
