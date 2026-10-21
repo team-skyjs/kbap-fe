@@ -170,6 +170,15 @@ it('P-243(BE #179): dietCategories 패치 → 풀 셋 전송 · 빈 배열(전�
   expect(body.avoidanceSubstanceCodes).toEqual(['EGG']);
 });
 
+it('KB-843(서버 백필 #448 짝): 서버 프로필에 있던 앱이 모르는 코드(FUTURE_X) = 보존해 다시 보낸다 · 서버에 없던 미지 값·레거시 잔재 = 드롭', async () => {
+  const qc = seededClient();
+  const lang = (jest.requireActual('@/lib/i18n') as { default: { language: string } }).default.language;
+  qc.setQueryData(['me', lang], { restrictions: [{ kind: 'allergy', code: 'EGG' }, { kind: 'allergy', code: 'FUTURE_X' }] });
+  await runMutation(qc, { restrictions: [{ kind: 'allergy', code: 'EGG' }, { kind: 'allergy', code: 'FUTURE_X' }, { kind: 'allergy', code: 'BOGUS_Y' }, { kind: 'allergy', code: 'ing:unknown-thing' }, { kind: 'allergy', code: 'ing:cheese' }] });
+  const body = (api.patch as jest.Mock).mock.calls.at(-1)![1] as Record<string, unknown>;
+  expect(body.avoidanceSubstanceCodes).toEqual(['EGG', 'FUTURE_X', 'CHEESE']);
+});
+
 it('P-165(#145): currency 패치 → PATCH body 포함 · null(해제)도 전송(국적 폴백 복귀)', async () => {
   await runMutation(seededClient(), { currency: 'THB' });
   expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { currency: 'THB' }, { headers: { 'X-API-Version': '1.1' } });
