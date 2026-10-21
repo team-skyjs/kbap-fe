@@ -856,9 +856,8 @@
     "mostReviewedSub": "사람들이 많이 이야기한 메뉴예요.",
     "idolPick": {
       "label": "K-POP & K-FOOD",
-      "title": "아이돌이 먹던 그 음식, 나도 한 입?",
-      "sub": "누가 먹었는지는 영상에서 확인해요.",
-      "seeAll": "음식 둘러보기",
+      "title": "K-POP 아이돌이 먹은\n음식, 궁금하지 않아요?",
+      "seeAll": "둘러보기",
       "bannerA11y": "K-POP 아이돌이 먹은 음식 목록 보기"
     }
   },

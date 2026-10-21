@@ -694,9 +694,8 @@
     "mostReviewedSub": "Yang sedang ramai dibicarakan.",
     "idolPick": {
       "label": "K-POP & K-FOOD",
-      "title": "Idol K-pop pernah mencicipi ini. Mau coba?",
-      "sub": "Lihat siapa yang mencobanya di video.",
-      "seeAll": "Jelajahi hidangannya",
+      "title": "Penasaran apa yang\ndimakan idol K-pop?",
+      "seeAll": "Jelajahi",
       "bannerA11y": "Lihat hidangan yang dicicipi idol K-pop"
     }
   },
