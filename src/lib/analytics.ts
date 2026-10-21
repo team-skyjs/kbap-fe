@@ -24,7 +24,7 @@
  * | food_detail_view         | source (scan|list|search|home|idol_pick|other) |
  * | home_idol_pick_list_view      | count (KB-836 K-POP & K-FOOD 목록 포커스)     |
  * | food_idol_video_open          | food_id, platform (youtube|tiktok), video_position — URL 금지 |
- * | review_submit            | (props 없음)                                |
+ * | review_submit            | has_photos, photo_count, rating, target_type(food|packaged) |
  * | auth_login_success            | provider (APPLE|GOOGLE), is_new (bool),    |
  * |                              | entry (intro|gate_*|profile|other)         |
  * | auth_guest_enter              | (props 없음)                                |
@@ -129,6 +129,7 @@ export const EVENTS = {
   food_packaged_scan_handoff: 'food_packaged_scan_handoff', // KB-813 성분표 안내 진입(from: none|rejected|capture)
   home_idol_pick_list_view: 'home_idol_pick_list_view', // KB-836 K-POP & K-FOOD 목록 화면 포커스(음식 수) — 발주명 idol_pick_list_view → 도메인 규칙상 home_
   food_idol_video_open: 'food_idol_video_open', // KB-836 발주명 idol_video_open → 도메인 규칙상 food_ · 상세 티저 카드 → 대표 영상 열기(platform 은 계측 전용 — 화면 비노출, URL 금지)
+  food_packaged_label_scan: 'food_packaged_label_scan', // P-508 성분표 분석 결과(pages 1~4 · charged = 서버값 · result ok|unreadable|newAnalysis|expired|quota|network… — OCR 원문 금지)
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -143,7 +144,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   // ⚠️ not_menu(사용자 촬영 문제)와 ocr(우리 인식 실패)은 개선 투자처가 반대라 분리.
   scan_complete: ['degraded', 'item_count', 'success', 'fail_reason'], // P-144 확장
   food_detail_view: ['source', 'food_id'], // P-144: food_id 추가(카탈로그 id — PII 아님)
-  review_submit: ['has_photos', 'photo_count', 'rating'], // P-144 확장
+  review_submit: ['has_photos', 'photo_count', 'rating', 'target_type'], // P-144 확장 · KB-812 2차 target_type: food|packaged
   // P-389(KB-576): is_new = 서버 newMember(가입/재로그인 구분) · entry = 가입 유입 경로.
   // 실패·취소는 종전대로 미전송이라 전환율 분모는 auth_gate_view가 유지한다.
   auth_login_success: ['provider', 'is_new', 'entry'],
@@ -158,7 +159,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   // P-214 🔒: keyword = **카탈로그 매칭 시에만**(호출처 searchKeywordProps가 판정) —
   // 자유 텍스트는 matched:false + len_bucket만(알레르기·신념 추론 차단)
   search_query: ['keyword', 'result_count', 'matched', 'len_bucket'],
-  review_write_tap: ['source'],
+  review_write_tap: ['source', 'target_type'], // KB-812 2차 target_type: food|packaged(생략 = food — 음식 진입점은 무변)
   food_bookmark_toggle: ['on'],
   // P-389(KB-576): user_type = BE 토큰 유무(guest|registered) — 탭별 회원/게스트 분해용.
   app_tab_view: ['tab', 'user_type'], // home|food|reviews|community|profile — KB-429: community 슬롯 → reviews 교체(community 값은 구버전 이벤트 호환용 잔존)
@@ -181,7 +182,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   ui_click: ['screen', 'target'],
   home_section_view: ['section'],
   home_card_view: ['section', 'position', 'food_id'],
-  review_card_open: ['target', 'photo_count'], // target: card|read · photo_count 0~3
+  review_card_open: ['target', 'photo_count', 'target_type'], // target: card|read · photo_count 0~3 · KB-812 2차 target_type: food|packaged
   review_card_view: ['photo_count', 'position', 'review_id'], // position = 피드 리뷰 순번(광고 행 제외, 0부터) · review_id = 콘텐츠 id(PII 아님)
   home_card_click: ['section', 'position', 'food_id', 'collection_key'], // KB-796: section=curation이면 collection_key(서버 모음 키)
   home_curation_link_click: ['collection_key', 'position'],
@@ -195,11 +196,12 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   food_packaged_scan_handoff: ['from'],
   home_idol_pick_list_view: ['count'],
   food_idol_video_open: ['food_id', 'platform', 'video_position'],
+  food_packaged_label_scan: ['pages', 'charged', 'result'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open
   error_state_view: ['screen', 'kind', 'action'], // kind: error|offline|empty · action: view|retry
-  review_helpful_toggle: ['on', 'surface'],
+  review_helpful_toggle: ['on', 'surface', 'target_type'], // KB-812 2차 target_type: food|packaged
   review_translate_toggle: ['action', 'target', 'result'], // action: translate|original · target: review|post · result: ok|fail|same(KB-679 — 번역 시도 결과, original엔 없음 · KB-689 same = 원문 언어 == 요청 언어)
   push_primer_response: ['action', 'surface'], // accept|later · onboarding|scan
   push_pref_toggle: ['key', 'on'],

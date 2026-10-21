@@ -108,6 +108,8 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
   const p = item.position;
   const cover = item.images[0]?.url ?? null;
   const [cardH, setCardH] = React.useState<number | null>(null); // 블러 사본을 원본과 같은 높이로 정렬(큰 글씨면 카드가 자란다)
+  const [captionTop, setCaptionTop] = React.useState<number | null>(null); // 캡션 블록 위(= 이름 위) — 블러 밴드 시작 = 여기서 16 위
+  const band = cardH != null && captionTop != null ? blurBandOf(cardH, captionTop) : null;
   return (
     <Pressable
       style={styles.card}
@@ -124,16 +126,21 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.noPhoto]} testID={`curation-item-nophoto-${p}`} />
       )}
-      {/* v4 하단 블러(예진 "시안 그대로", 네이티브 모듈 없이): 같은 사진을 expo-image blurRadius로 한 장 더 —
-          카드 높이와 같은 크기로 하단 정렬해 원본과 겹치고, 하단 96 밴드만 보이게 클립. 위 경계·글자 대비는 기존 그라데이션 */}
-      {cover && cardH != null && (
-        <View style={styles.blurBand} pointerEvents="none" testID={`curation-item-blur-${p}`}>
-          <RemoteImage uri={cover} style={[styles.blurImg, { height: cardH }]} recyclingKey={`${item.id}-blur`} blurRadius={CARD_BLUR_RADIUS} />
+      {/* KB-846 점진 블러(Tripsy — 위는 투명, 아래로 갈수록 흐리고 어둡게, 네이티브 모듈 없이): 밴드 = 이름 위 16부터 카드 바닥까지를
+          띠 4개로 나눠 위에서 아래로 blurRadius 1/4 → 2/4 → 3/4 → 1. 각 띠는 같은 사진을 카드 높이 그대로 **같은 오프셋**(띠 위치만큼 위로)에
+          깔아 원본과 정확히 겹친다(이음새 0). 그 위 스크림(투명 → 어둡게)이 밴드 전체를 덮어 띠 경계·글자 대비를 함께 맡는다 */}
+      {cover && band && (
+        <View style={[styles.blurBand, { top: band.top }]} pointerEvents="none" testID={`curation-item-blur-${p}`}>
+          {band.strips.map((s, i) => (
+            <View key={i} style={[styles.blurStrip, { top: s.top - band.top, height: s.height }]} testID={`curation-item-blur-strip-${p}-${i}`}>
+              <RemoteImage uri={cover} style={[styles.blurImg, { top: -s.top, height: cardH as number }]} recyclingKey={`${item.id}-blur-${i}`} blurRadius={s.radius} />
+            </View>
+          ))}
         </View>
       )}
-      <LinearGradient colors={CARD_SHADE} style={styles.shade} pointerEvents="none" />
+      {band && <LinearGradient colors={CARD_SCRIM} style={[styles.shade, { top: band.top }]} pointerEvents="none" />}
       <View style={{ height: CARD_SPACER }} />
-      <View style={styles.caption}>
+      <View style={styles.caption} onLayout={(e) => setCaptionTop(e.nativeEvent.layout.y)} testID={`curation-item-caption-${p}`}>
         <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
           <Text style={styles.name}>{item.name}</Text>
           {/* 역 모음 = 지역 + 주변 이름을 공백 2칸으로(가운데점 금지) · 이름 안 공백은 NBSP — 줄바꿈은 이름 사이에서만(QA S3) */}
@@ -147,9 +154,22 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
   );
 }
 
-const CARD_SHADE = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)'] as const;
-// 시안 v4 하단 블러 — 밴드 = 카드 아래 96(2x PNG 눈금 근사), 흐림 = 윤곽은 지우고 색 덩어리만(시안 02b-mock)
-export const CARD_BLUR_BAND = 96;
+// KB-846 스크림 — 밴드 위(투명) → 카드 바닥(어둡게 0.45). 띠 경계를 숨기고 흰 글자 대비를 맡는다(구 55% 그라데이션 대체 — 밴드 위 사진은 투명 그대로)
+const CARD_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.45)'] as const;
+/** 블러 밴드 시작 = 이름(캡션 블록) 위 16 */
+export const CARD_BLUR_LEAD = 16;
+export const CARD_BLUR_STRIPS = 4;
+/** 밴드·띠 계산(KB-846) — 띠 i(0=맨 위)의 blurRadius = 기준값 × (i+1)/4(정수 — Android Glide는 정수 반경). 큰 글씨면 캡션이 높아져 밴드도 늘어난다 */
+export function blurBandOf(cardH: number, captionTop: number, radius: number = CARD_BLUR_RADIUS) {
+  const top = Math.max(0, Math.round(captionTop - CARD_BLUR_LEAD));
+  const h = cardH - top;
+  const strips = Array.from({ length: CARD_BLUR_STRIPS }, (_, i) => {
+    const s = top + Math.round((h * i) / CARD_BLUR_STRIPS);
+    const e = top + Math.round((h * (i + 1)) / CARD_BLUR_STRIPS);
+    return { top: s, height: e - s, radius: Math.max(1, Math.round((radius * (i + 1)) / CARD_BLUR_STRIPS)) };
+  });
+  return { top, strips };
+}
 // expo-image blurRadius는 플랫폼마다 다르다(node_modules/expo-image 실측):
 // - iOS: radius/2를 SDImageBlurTransformer에 — **원본 이미지 픽셀** 단위라 고해상도 사진엔 약하다(16 = 원본 8px)
 // - Android: Glide BlurTransformation(min(radius, 25), sampling 4) — 1/4로 줄인 뒤 흐리므로 같은 값이 iOS보다 훨씬 세다
@@ -170,9 +190,10 @@ const styles = StyleSheet.create({
   // v5 실측: 카드 335×300 r12 · 캡션 하단 inset 16 · 이름 18 semibold 흰색 · 4 · 지역 13 흰색 · chevron 24(44 자리, 오른쪽 inset 16)
   card: { borderRadius: 12, overflow: 'hidden', backgroundColor: C.surface2, justifyContent: 'flex-end' },
   noPhoto: { backgroundColor: C.hair },
-  shade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
-  blurBand: { position: 'absolute', left: 0, right: 0, bottom: 0, height: CARD_BLUR_BAND, overflow: 'hidden' },
-  blurImg: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  shade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  blurBand: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden' },
+  blurStrip: { position: 'absolute', left: 0, right: 0, overflow: 'hidden' },
+  blurImg: { position: 'absolute', left: 0, right: 0 },
   caption: { flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 16, paddingRight: 16, paddingBottom: 16, gap: 4 },
   name: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 26, color: '#FFFFFF' },
   area: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: '#FFFFFF' },

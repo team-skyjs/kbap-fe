@@ -65,9 +65,9 @@ it('② 4탭 배선 소스 잠금 — 홈·Food·커뮤니티 피드·프로필 
   expect(home.indexOf('ScreenCenterFill')).toBeLessThan(home.indexOf('Animated.FlatList'));
 });
 
-it('③ 스캔 X-브래킷 겹침 0 — 상단 브래킷 = X 세이프존 아래(전 insets 범위)', () => {
+it('③ 스캔 X-브래킷 겹침 0 — KB-845: 브래킷 소멸(로딩 C = 흰 바탕 · 사진 안 스캔선) · 이전 기하 기록 유지', () => {
   const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
-  expect(src).toContain('Math.max(90, insets.top + 60)'); // inset-aware 시작점
+  expect(src).not.toContain('bracket-tl'); // KB-845: 코너 브래킷 오버레이 자체가 없다 — X와 겹칠 요소 0
   // 기하 검증: X = top insets.top+8, 높이 40 → 하단 insets.top+48.
   // 브래킷 top이 X 하단보다 항상 아래(겹침 0): 전 구간 샘플.
   for (const insetTop of [0, 20, 47, 59, 66]) {

@@ -437,7 +437,8 @@
     "extrasTitle": "Nhà hàng thế nào?",
     "extrasSpeed": "Tốc độ phục vụ",
     "extrasService": "Thái độ phục vụ",
-    "extrasTaste": "Hương vị"
+    "extrasTaste": "Hương vị",
+    "writeSoon": "Sắp mở đánh giá cho thực phẩm đóng gói. Nội dung bạn đã viết vẫn còn trên màn hình này."
   },
   "translation": {
     "showTranslation": "Hiện bản dịch",
@@ -1250,7 +1251,8 @@
       "ramen": "Mì ramen",
       "bread": "Bánh mì",
       "drinks": "Đồ uống"
-    }
+    },
+    "mayContainTitle": "Có thể chứa (cùng cơ sở sản xuất, lẫn chéo)"
   },
   "scanMode": {
     "menu": "Thực đơn",
@@ -1298,13 +1300,43 @@
       "goneTitle": "Không tìm thấy sản phẩm",
       "goneBody": "Hãy chụp lại.",
       "discontinuedTitle": "Sản phẩm này đã ngừng sản xuất",
-      "discontinuedBody": "Hãy chụp lại."
+      "discontinuedBody": "Hãy chụp lại.",
+      "unreadableTitle": "Không đọc được nhãn",
+      "unreadableBody": "Hãy chụp lại sao cho danh sách thành phần rõ nét.",
+      "newAnalysisTitle": "Hãy bắt đầu phân tích mới",
+      "newAnalysisBody": "Không thể thêm ảnh vào phân tích này. Phân tích mới sẽ dùng 1 lượt quét khi thành công."
     },
     "chargeChecking": "Đang kiểm tra xem đã dùng lượt quét chưa.",
     "chargeSeeHome": "Xem số lượt quét còn lại ở màn hình chính.",
     "debugLabel": "Văn bản OCR (chỉ để thử)",
     "debugPlaceholder": "Mỗi dòng một dòng chữ trên bao bì",
-    "debugRun": "Dùng văn bản này"
+    "debugRun": "Dùng văn bản này",
+    "labelReading": "Đang đọc nhãn thành phần…",
+    "labelPagesTitle": "Ảnh nhãn thành phần",
+    "labelPagesCount": "Ảnh: {{count}}/{{max}}",
+    "labelAddPage": "Chụp thêm một mặt",
+    "labelAnalyze": "Phân tích nhãn",
+    "labelNoExtra": "Phân tích này không dùng thêm lượt quét.",
+    "labelRawTitle": "Chữ đọc được trên nhãn",
+    "labelFreeRetry": "Trong 30 phút, bạn có thể phân tích lại tối đa 3 lần mà không dùng thêm lượt quét.",
+    "newAnalysisCta": "Phân tích mới",
+    "debugLabelPlaceholder": "Chữ của một mặt nhãn",
+    "debugAddPage": "Thêm làm một mặt"
+  },
+  "scanCamera": {
+    "title": "Quét",
+    "menuTitle": "Hãy chụp trọn cả thực đơn",
+    "menuHint": "Chụm hai ngón để thu phóng",
+    "packageTitle": "Hãy chụp mặt trước bao bì",
+    "packageHint": "Để tên và hương vị hiện rõ.",
+    "labelTitle": "Hãy chụp nhãn thành phần",
+    "labelHint": "Để mọi thành phần hiện rõ, dễ đọc.",
+    "photos": "Ảnh",
+    "menuLink": "Chọn ảnh từ thư viện",
+    "frontLink": "Quét mặt trước bao bì thay thế",
+    "capturedMenu": "Thực đơn bạn đã chụp",
+    "capturedPackage": "Bao bì bạn đã chụp",
+    "capturedLabel": "Nhãn bạn đã chụp"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

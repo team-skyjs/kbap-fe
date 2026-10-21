@@ -27,8 +27,9 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { SubHeader, Btn, CardPhoto, Star, RiskMark, IconCamera, IconCheck, IconClose, IconMapPin, IconRetry, Input } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
-import { findCachedReview, useCreateReview, useUpdateReview } from '@/lib/data/useReviewMutations';
-import { useFoodReviews } from '@/lib/data/useFoodReviews';
+import { findCachedReview, reviewWriteClosed, useCreateProcessedReview, useCreateReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { useFoodReviews, useProcessedReviews } from '@/lib/data/useFoodReviews';
+import { processedUnavailable, useProcessedDetail } from '@/lib/data/useProcessedFoods';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { imageUrlToPath } from '@/lib/api/reviewAdapter';
 import { ApiError, foodHiddenReason, type FoodHiddenReason } from '@/lib/api/client';
@@ -70,17 +71,25 @@ export default function ReviewCompose() {
   return <ReviewComposeScreen />;
 }
 
-function ReviewComposeScreen() {
+/** KB-812 2차: packaged = 가공식품 리뷰(`/processed-foods/[id]/review`) — 같은 화면, 대상 카드 = 제품 · 식당 전용 입력(세부 별점·장소) 숨김 ·
+ *  작성 = POST /api/processed-foods/{id}/reviews. 10자 규칙·사진·수정 모드는 음식과 동일. */
+export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }) {
   const { id, reviewId } = useLocalSearchParams<{ id: string; reviewId?: string }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const { data: food } = useFoodDetail(id ?? '');
+  const { data: food } = useFoodDetail(packaged ? '' : (id ?? ''));
+  const { data: product } = useProcessedDetail(packaged ? id : undefined);
+  // 대상 카드 한 벌 — 음식: 상세 캐시 사진·이름·"한글명 | n reviews" / 가공식품: 제품 사진·이름·제조사
+  const targetName = (packaged ? product?.name : food?.name) ?? '';
+  const targetPhoto = packaged ? product?.imageUrl : food?.photoUrl;
 
   // P-358(KB-521): 편집 모드 — ?reviewId= 진입. 리뷰는 params가 아니라 캐시에서 조회
   // (내리뷰 → 음식 리뷰 → 전역 피드), 캐시 미스면 목록 재조회 후 프리필(스켈레톤).
   const editing = !!reviewId;
   const cached = editing ? findCachedReview(queryClient, { reviewId: reviewId ?? '', foodId: id ?? '' }) : null;
-  const refill = useFoodReviews(editing && !cached ? (id ?? '') : ''); // 미스에만 재조회(enabled = foodId 유무)
+  const refillFood = useFoodReviews(editing && !cached && !packaged ? (id ?? '') : ''); // 미스에만 재조회(enabled = foodId 유무)
+  const refillPackaged = useProcessedReviews(editing && !cached && packaged ? (id ?? '') : '');
+  const refill = packaged ? refillPackaged : refillFood;
   const editReviewData = cached ?? (editing ? (refill.data?.pages.flatMap((p) => p.items) ?? []).find((r) => r.id === reviewId) ?? null : null);
 
   const [rating, setRating] = useState(0);
@@ -89,7 +98,8 @@ function ReviewComposeScreen() {
   const [submitted, setSubmitted] = useState(false);
   /** 제출 실패 종류. ⚠️ 불리언 둘(에러·숨김)로 두면 "둘 다 참"이라는 **있을 수 없는 상태**가
    *  생긴다 — 셋 중 하나로 고정한다. `hidden` = 음식이 일시 숨김(KB-620): 에러가 아니다. */
-  const [postError, setPostError] = useState<'failed' | FoodHiddenReason | null>(null); // KB-650: 숨김은 사유별
+  // KB-812 2차: 'closed' = 서버 가공식품 쓰기 플래그 OFF(403 PFOOD-005) — 실패가 아니라 "곧 열려요"
+  const [postError, setPostError] = useState<'failed' | 'closed' | FoodHiddenReason | null>(null); // KB-650: 숨김은 사유별
   // P-095 목 → P-201 실연결: 장소 태그(선택·최대 1) — nearby/search 실 API, MANUAL 직접 입력
   const [place, setPlace] = useState<ReviewPlaceTag | null>(null);
   const [bodyFocused, setBodyFocused] = useState(false); // §2-6: focus = primary 보더
@@ -98,6 +108,7 @@ function ReviewComposeScreen() {
   const [extras, setExtras] = useState<ReviewExtras>(EMPTY_EXTRAS);
   const isGuest = useIsGuest();
   const createReview = useCreateReview();
+  const createProcessedReview = useCreateProcessedReview();
   const updateReview = useUpdateReview();
   const bottomInset = useBottomInset(); // Codex #31 P1: 안드 내비바 플로어 포함
 
@@ -229,16 +240,21 @@ function ReviewComposeScreen() {
           leave.release(() => router.back());
           return;
         }
-        await createReview.mutateAsync({
-          foodId: id ?? '',
-          rating,
-          content: body.trim() || undefined,
-          imagePaths,
-          place,
-          extras, // P-236: servingSpeed·staffKindness(미평가 = 0)
-        });
-        track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating }); // P-083→144 확장
-        airbridge.rate({ foodId: id ?? '', rating, hasPhoto: photos.length > 0 }); // KB-783 ⑫ — 새 리뷰 등록만(수정은 위에서 return)
+        if (packaged) {
+          await createProcessedReview.mutateAsync({ processedFoodId: id ?? '', rating, content: body.trim() || undefined, imagePaths });
+        } else {
+          await createReview.mutateAsync({
+            foodId: id ?? '',
+            rating,
+            content: body.trim() || undefined,
+            imagePaths,
+            place,
+            extras, // P-236: servingSpeed·staffKindness(미평가 = 0)
+          });
+        }
+        track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating, target_type: packaged ? 'packaged' : 'food' }); // P-083→144 확장 · KB-812 2차 대상
+        // KB-783 ⑫ — 새 리뷰 등록만(수정은 위에서 return). 가공식품은 제외: 이 이벤트의 foodId 축은 음식 id(같은 숫자 공간이 아니다)
+        if (!packaged) airbridge.rate({ foodId: id ?? '', rating, hasPhoto: photos.length > 0 });
         // P-236: extras는 mutateAsync 페이로드로 서버 전송(로컬 프리뷰 폐기)
         // 프리즈 방어(9/5, Codex #24): dismiss 직후 동기 present는 hide 애니메이션과
         // 겹침 — 시트와 동일 헬퍼로 통일(키보드 내려간 뒤 확인 Modal 표시)
@@ -246,6 +262,7 @@ function ReviewComposeScreen() {
       } catch (e) {
         if (isUploadAborted(e)) return; // KB-711: 화면을 떠나 업로드를 취소한 것 — 떠난 화면에 실패 표시 없음
         if (e instanceof ApiError && e.code === 'REVIEW-005') { setRejectedBody(body); return; } // KB-828: 서버 기준 미달 = 같은 안내(입력 보존·버튼 복구)
+        if (reviewWriteClosed(e)) { setPostError('closed'); return; } // KB-812 2차: 서버 쓰기 OFF = 안내(입력 보존 — 열리면 그대로 다시 올린다)
         console.log('[review] post failed — staying on screen:', (e as Error)?.message);
         // KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**이면 에러 표면 대신 조용한 안내.
         // ⚠️ 화면을 닫지 않는다 — 리뷰엔 초안 저장소가 없어 닫는 순간 본문·사진이 사라진다.
@@ -254,7 +271,8 @@ function ReviewComposeScreen() {
         // 리뷰·이미지 소유권만 확인해서(음식 준비 상태 무관) 숨겨진 음식의 리뷰도 **수정은 성공**한다.
         // 수정 경로도 이 catch를 지나므로 서버가 준비 상태 검사를 추가하면 그대로 대비된다(KB-626 정정 —
         // KB-620 때 "신규·수정 모두 같은 FOOD-001"이라고 적었던 건 서버를 확인하지 않은 추론이었다).
-        setPostError(foodHiddenReason(e) ?? 'failed'); // 실패 = 버튼 복구(가드 finally)
+        // KB-812 2차: 제품 404 PFOOD-001·410 PFOOD-002 = 음식 "없음"과 같은 중립 안내(재시도로 바뀌지 않는다)
+        setPostError(foodHiddenReason(e) ?? (packaged && processedUnavailable(e) ? 'gone' : 'failed')); // 실패 = 버튼 복구(가드 finally)
       }
     });
 
@@ -424,19 +442,19 @@ function ReviewComposeScreen() {
         {/* KB-432 §2-2: 대상 카드(4150:16477) — 이미지 48 r4 + 이름 14/600 + "ko n reviews" */}
         <View style={styles.foodChip}>
           {/* P-170 A안: 썸네일 = 상세 캐시(useFoodDetail) 재사용 — 네트워크 0, 무사진 폴백 */}
-          {food?.photoUrl ? (
+          {targetPhoto ? (
             <View style={styles.foodPh}>
-              <CardPhoto uri={food.photoUrl} borderRadius={4} />
+              <CardPhoto uri={targetPhoto} borderRadius={4} />
             </View>
           ) : (
             <View style={styles.foodPh} testID="food-ph" />
           )}
           <View style={{ flex: 1, minWidth: 0, gap: 4 }}>{/* A-RW-02 */}
-            <Text style={styles.foodName} numberOfLines={1}>{food?.name ?? ''}</Text>
+            <Text style={styles.foodName} numberOfLines={1}>{targetName}</Text>
             {/* P-352(KB-514): count 0 = 리뷰 수 숨김(한글명 없으면 줄 생략),
                 n≥1 = "한글명 | n reviews"(" | " 구분 — 예진 결정, 구 P-196 공백 구분 대체) */}
             {(() => {
-              const sub = foodSubtitle(food, t);
+              const sub = packaged ? product?.maker ?? null : foodSubtitle(food, t);
               return sub == null ? null : (
                 <Text style={styles.foodKo} numberOfLines={1}>
                   {sub}
@@ -464,7 +482,8 @@ function ReviewComposeScreen() {
         </View>
 
         {/* P-202: 확장 별점 3축 — 쿠팡이츠식 별도 섹션(선택), 찾아가기 = 장소 태그 연동 */}
-        <ExtrasRater extras={extras} onChange={setExtras} t={t} />
+        {/* KB-812 2차: 가공식품 = 식당 축(서빙 속도·직원 친절) 없음 — 서버도 0으로 저장 */}
+        {!packaged && <ExtrasRater extras={extras} onChange={setExtras} t={t} />}
 
         {/* body — onLayout: 블록 하단 = 커서 하단 프록시(성장 시 재발화) */}
         {/* A-RW-03(KB-486): 사진 블록 = 텍스트 영역 위 */}
@@ -552,7 +571,7 @@ function ReviewComposeScreen() {
             )}
           </View>
           {/* §2-7(4150:16511): 장소 필 — 좌하단 pill h38(선택 = 장소명 + Clear) */}
-          {FLAGS.reviewPlaceEnabled && (
+          {FLAGS.reviewPlaceEnabled && !packaged && ( // KB-812 2차: 가공식품 = 식당 위치 없음
             place ? (
               <View style={styles.placePill} testID="place-pill-selected">
                 <IconMapPin size={12} color={C.ink} />
@@ -587,6 +606,12 @@ function ReviewComposeScreen() {
           <View style={styles.hiddenNote} testID="review-food-updating">
             <IconRetry size={16} color={C.inkInfo} />
             <Text style={styles.hiddenNoteText}>{t('review.foodUpdating')}</Text>
+          </View>
+        )}
+        {/* KB-812 2차: 가공식품 쓰기 아직 닫힘(403 PFOOD-005) — 중립 안내, 쓴 글은 화면에 그대로 */}
+        {postError === 'closed' && (
+          <View style={styles.hiddenNote} testID="review-write-soon">
+            <Text style={styles.hiddenNoteText}>{t('review.writeSoon')}</Text>
           </View>
         )}
         {postError === 'gone' && (
@@ -631,7 +656,7 @@ function ReviewComposeScreen() {
               <IconCheck size={26} color={C.primary} />
             </View>
             <Text style={styles.confirmTitle}>{t('review.postedTitle')}</Text>
-            <Text style={styles.confirmBody}>{t('review.postedBody', { rating, name: food?.name ?? '' })}</Text>
+            <Text style={styles.confirmBody}>{t('review.postedBody', { rating, name: targetName })}</Text>
             <View style={{ marginTop: 6 }}>
               {/* P-211 ①: 진입점 무관 "Done" 단일 문구 — 피드 발 작성은 목적지가 상세가 아님 */}
               {/* KB-730: 완료 모달을 닫은 **뒤** 리뷰 유도 시트(겹침 0) — 조건 미달이면 바로 복귀 */}

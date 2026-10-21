@@ -15,7 +15,8 @@
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { Redirect, useRouter, type Href } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
+import { reviewEditHref, reviewTargetHref } from '@/lib/review/reviewTarget';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
@@ -90,7 +91,7 @@ function MyReviewsScreen() {
                   review={rv}
                   t={t}
                   mine
-                  onOpenFood={() => rv.foodId && router.push(`/food/${rv.foodId}?src=my_reviews` as Href)}
+                  onOpenFood={() => { const href = reviewTargetHref(rv, 'my_reviews'); if (href) router.push(href); }} /* KB-812 2차: 가공식품 = 제품 상세 */
                   onGuestHelpful={() => {}}
                   onMore={() => onMore(rv)}
                 />
@@ -110,7 +111,7 @@ function MyReviewsScreen() {
       {mod && <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => { const rv = byId(m.id); if (rv) router.push(`/food/${rv.foodId}/review?reviewId=${rv.id}` as Href); }} /* P-358 */
+        onEdit={(m) => { const rv = byId(m.id); const href = rv && reviewEditHref(rv); if (href) router.push(href); }} /* P-358 · KB-812 2차: 대상별 작성 화면 */
         onDelete={(m) => { const rv = byId(m.id); if (rv) deleteReview.mutate({ reviewId: rv.id, foodId: rv.foodId }); }}
         onBlocked={() => {}}
       />}

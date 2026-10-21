@@ -164,7 +164,7 @@ describe('P-352(KB-514) 리뷰 작성 부제·건너뛰기', () => {
       expect((JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { review: { foodSubtitle: string } }).review.foodSubtitle).toBe('{{nameKo}} | {{reviews}}');
     }
     const rv = read('src/app/food/[id]/review.tsx');
-    expect(rv).toContain('const sub = foodSubtitle(food, t);'); // 배선 잠금
+    expect(rv).toContain('const sub = packaged ? product?.maker ?? null : foodSubtitle(food, t);' /* KB-812 2차: 가공식품 = 제조사 */); // 배선 잠금
     expect(rv).not.toContain('`${food.nameKo} `'); // 구 공백 구분 소멸
   });
 

@@ -96,8 +96,10 @@ const mockFoodDetail = jest.fn();
 jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => mockFoodDetail() }));
 
 const mockMutateAsync = jest.fn();
-jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, isLoading: false, isFetching: false }) }));
-jest.mock('@/lib/data/useReviewMutations', () => ({ findCachedReview: () => null,
+jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, isLoading: false, isFetching: false }), useProcessedReviews: () => ({ data: undefined, isLoading: false, isFetching: false }) }));
+// KB-812 2차: 작성 화면이 가공식품 모드용 상세 훅을 부른다(음식 모드 = id 없음·비활성)
+jest.mock('@/lib/data/useProcessedFoods', () => ({ useProcessedDetail: () => ({ data: undefined }), processedUnavailable: () => null }));
+jest.mock('@/lib/data/useReviewMutations', () => ({ findCachedReview: () => null, useCreateProcessedReview: () => ({ mutateAsync: jest.fn() }), reviewWriteClosed: () => false,
   useUpdateReview: () => ({ mutateAsync: jest.fn().mockResolvedValue(undefined), mutate: jest.fn(), isPending: false }), useCreateReview: () => ({ mutateAsync: mockMutateAsync, isPending: false }) }));
 const mockLaunchLibrary = jest.fn();
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: (o: unknown) => mockLaunchLibrary(o) }));

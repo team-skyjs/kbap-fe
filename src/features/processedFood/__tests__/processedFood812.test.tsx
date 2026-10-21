@@ -57,6 +57,12 @@ jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => true }));
 type Q = { isPending: boolean; isError: boolean; data?: unknown; error?: unknown; refetch: jest.Mock };
 let mockDetail: Q;
 jest.mock('@/lib/data/useProcessedFoods', () => ({ ...jest.requireActual('@/lib/data/useProcessedFoods'), useProcessedDetail: () => mockDetail }));
+// KB-812 2차: 리뷰 섹션은 자기 쿼리를 가진다 — 판정 화면 테스트에선 자리·전달값만(섹션 자체는 packagedReviews507)
+const mockReviewsProps = jest.fn();
+jest.mock('@/features/processedFood/PackagedReviews', () => {
+  const { View } = jest.requireActual('react-native');
+  return { PackagedReviews: (p: object) => { mockReviewsProps(p); return <View testID="pf-reviews-stub" />; } };
+});
 
 /* eslint-disable import/first -- jest.mock 뒤 */
 import { ApiError } from '@/lib/api/client';
@@ -167,6 +173,27 @@ describe('상세 판정', () => {
     expect(ids(t2)).toContain('pf-source-disclaimer');
     expect(text(t2)).toContain('packaged.sourceData1');
     expect(ids(t2)).toContain('packaged-placeholder');
+  });
+  it('KB-812 2차: 리뷰 섹션 = 출처 고지 아래 · 제품 id·서버 요약 전달 · 구서버(요약 없음) = null', () => {
+    mockDetail = q({ data: adaptProcessedDetail({ ...W1711, reviewSummary: { count: 2, avgRating: 4.5 } }) });
+    const t = render(<Detail />);
+    const order = ids(t);
+    expect(order.indexOf('pf-reviews-stub')).toBeGreaterThan(order.indexOf('pf-source'));
+    expect(mockReviewsProps).toHaveBeenLastCalledWith({ productId: '1711', summary: { count: 2, avgRating: 4.5 } });
+    mockDetail = q({ data: adaptProcessedDetail(W1711) });
+    render(<Detail />);
+    expect(mockReviewsProps).toHaveBeenLastCalledWith({ productId: '1711', summary: null });
+  });
+  it('KB-812 2차(Codex #314 R2): 롤백 스위치 reviewsLiveEnabled off = 리뷰 섹션째 없음(빈 목록 위 서버 요약 모순 0)', () => {
+    const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { reviewsLiveEnabled: boolean } };
+    const live = FLAGS.reviewsLiveEnabled;
+    FLAGS.reviewsLiveEnabled = false;
+    try {
+      mockDetail = q({ data: adaptProcessedDetail({ ...W1711, reviewSummary: { count: 2, avgRating: 4.5 } }) });
+      expect(ids(render(<Detail />))).not.toContain('pf-reviews-stub');
+    } finally {
+      FLAGS.reviewsLiveEnabled = live;
+    }
   });
   it('410 = 생산종료 · 404 = 없음 — 캐시가 있어도 이긴다(옛 판정 노출 0) · 503 = 다시 시도', () => {
     mockDetail = q({ data: adaptProcessedDetail(W1711), isError: true, error: new ApiError('gone', 410, 'PFOOD-002') });

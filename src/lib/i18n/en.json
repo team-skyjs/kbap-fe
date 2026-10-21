@@ -478,7 +478,8 @@
     "extrasTitle": "How was the restaurant?",
     "extrasSpeed": "Speed",
     "extrasService": "Service",
-    "extrasTaste": "Taste"
+    "extrasTaste": "Taste",
+    "writeSoon": "Reviews for packaged foods are opening soon. What you wrote is still here on this screen."
   },
   "translation": {
     "showTranslation": "Show translation",
@@ -1246,7 +1247,8 @@
       "ramen": "Ramen",
       "bread": "Bread",
       "drinks": "Drinks"
-    }
+    },
+    "mayContainTitle": "May contain (same facility, cross-contact)"
   },
   "scanMode": {
     "menu": "Menu",
@@ -1294,13 +1296,43 @@
       "goneTitle": "Product not found",
       "goneBody": "Take the photo again.",
       "discontinuedTitle": "This product is no longer made",
-      "discontinuedBody": "Take the photo again."
+      "discontinuedBody": "Take the photo again.",
+      "unreadableTitle": "We couldn't read the label",
+      "unreadableBody": "Keep the ingredient list in focus and take the photo again.",
+      "newAnalysisTitle": "Start a new analysis",
+      "newAnalysisBody": "This analysis can't take more photos. A new analysis uses 1 scan when it succeeds."
     },
     "chargeChecking": "We're checking whether a scan was used.",
     "chargeSeeHome": "Check your remaining scans on the home screen.",
     "debugLabel": "OCR text (test only)",
     "debugPlaceholder": "One line per row of the package text",
-    "debugRun": "Use this text"
+    "debugRun": "Use this text",
+    "labelReading": "Reading the ingredient label…",
+    "labelPagesTitle": "Ingredient label photos",
+    "labelPagesCount": "Photos: {{count}} of {{max}}",
+    "labelAddPage": "Photograph another side",
+    "labelAnalyze": "Analyze label",
+    "labelNoExtra": "No extra scan used for this analysis.",
+    "labelRawTitle": "Label text",
+    "labelFreeRetry": "Within 30 minutes you can re-analyze this label up to 3 times with no extra scan.",
+    "newAnalysisCta": "Start a new analysis",
+    "debugLabelPlaceholder": "Text of one side of the label",
+    "debugAddPage": "Add as one side"
+  },
+  "scanCamera": {
+    "title": "Scan",
+    "menuTitle": "Fit the whole menu",
+    "menuHint": "Pinch to zoom",
+    "packageTitle": "Show the front of the package",
+    "packageHint": "Keep the name and flavor visible.",
+    "labelTitle": "Show the ingredient label",
+    "labelHint": "Keep all ingredients sharp and readable.",
+    "photos": "Photos",
+    "menuLink": "Choose a photo from your library",
+    "frontLink": "Scan package front instead",
+    "capturedMenu": "Your captured menu",
+    "capturedPackage": "Your captured package",
+    "capturedLabel": "Your captured label"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

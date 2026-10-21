@@ -37,6 +37,7 @@ import { useContentTranslation } from '@/lib/data/useContentTranslation';
 import { TRANSLATE_LABEL_BOX, TranslateButton } from '@/components/TranslateButton';
 import type { Review } from '@/lib/api/types';
 import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
+import { reviewTargetType } from '@/lib/review/reviewTarget';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
 
@@ -497,7 +498,7 @@ export function ReviewFoodChip({ review, t, onOpen }: { review: Review; t: TFn; 
       testID={`feed-food-${review.id}`}
     >
       <View style={styles.foodThumb}>
-        <CardPhoto uri={review.foodImageUrl} recyclingKey={review.foodId} borderRadius={radius.xs} />
+        <CardPhoto uri={review.foodImageUrl} recyclingKey={review.processedFoodId ?? review.foodId} borderRadius={radius.xs} />
       </View>
       <View style={styles.foodText}>
         <Text style={styles.foodName} numberOfLines={1}>{name}</Text>
@@ -510,6 +511,7 @@ export function ReviewFoodChip({ review, t, onOpen }: { review: Review; t: TFn; 
 
 /** KB-802: 평점 3줄(맛=rating · 속도 · 친절) — 3축 항상 표시, 0 = 빈 별 5개 + "—"(같은 자리·같은 크기). 줄 20 · 간격 4 = 68. */
 export function ReviewRatingLines({ review, t }: { review: Review; t: TFn }) {
+  // KB-812 2차: 가공식품 리뷰도 3줄 유지(속도·친절 = 서버 0 → "—") — 리뷰 탭 카드 높이 236 고정 메트릭(reviewTabCard802). 축을 줄일지는 디자인 확인 대상
   const rows: [string, number][] = [
     [t('review.extrasTaste'), review.rating],
     [t('review.extrasSpeed'), review.servingSpeed ?? 0],
@@ -562,7 +564,7 @@ export function HelpfulButton({
       return;
     }
     if (isGuest) return onGuest?.();
-    track(EVENTS.review_helpful_toggle, { on: !review.myLike, surface }); // P-214: 4표면 공용 한 곳
+    track(EVENTS.review_helpful_toggle, { on: !review.myLike, surface, target_type: reviewTargetType(review) }); // P-214: 4표면 공용 한 곳 · KB-812 2차 대상
     // P-366 ④ → #131 P2: 토스트 = 성공 후 발화(실패 롤백 시 무토스트) — 켜는 방향은
     // 호출 시점 스냅샷(onSuccess 시점 myLike는 낙관 반영으로 이미 반전됨)
     const turningOn = !review.myLike;
