@@ -714,7 +714,7 @@ export default function Scan() {
    * 아래 기준 스택 = 안내(제목+힌트, gap 8) → 43 → 줌 칩 36 → 16 → 컨트롤 80(Photos · 셔터 64+링 76 · 전환) → 16 → 링크 → 홈 인디케이터.
    */
   // KB-845 QA(Android): 카메라 프리뷰는 **화면 바깥 층 하나**(cameraLayer) — 메뉴·가공식품 두 분기가 같은 자리에 렌더해 탭을 바꿔도 CameraView를 다시
-  // 마운트하지 않는다(새 카메라 세션 = 에뮬 검정 화면). 컨트롤만 cameraUi가 위에 그리고, 카메라 화면이 아닐 때(가공식품 로딩·후보·결과)는 active=false로 멈춘다
+  // 마운트하지 않는다(새 카메라 세션 = 에뮬 검정 화면). 컨트롤만 cameraUi가 위에 그리고, 카메라 화면이 아닐 때(가공식품 로딩·후보·결과)나 라우트가 가려졌을 때는 active=false로 멈춘다
   const [camShown, setCamShown] = useState(false);
   const cameraLayer = permission?.granted ? (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none" testID="scan-camera-layer">
@@ -733,7 +733,7 @@ export default function Scan() {
               onLayout={(e) => { previewSize.current = { width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height }; }}
               facing={facing}
               zoom={zoom}
-              active={camShown}
+              active={camShown && isFocused} // Codex #318: 다른 화면이 위로 올라가 스캔이 가려지면 카메라(프라이버시 표시등) 정지
               responsiveOrientationWhenOrientationLocked
               onResponsiveOrientationChanged={(e) => setCamOrientation(e.orientation)}
             />

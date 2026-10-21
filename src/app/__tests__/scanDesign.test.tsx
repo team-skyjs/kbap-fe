@@ -69,6 +69,7 @@ jest.mock('react-native-gesture-handler', () => {
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+const mockFocused = { v: true }; // 라우트 포커스(useIsFocused) — 다른 화면이 위로 올라가면 false
 const mockCamMounts = { n: 0 }; // CameraView 마운트 수 — 새 마운트 = 새 카메라 세션(KB-845 QA: Android 탭 전환 뒤 프리뷰 검정)
 jest.mock('expo-camera', () => {
   const React = jest.requireActual('react');
@@ -93,7 +94,7 @@ jest.mock('expo-linear-gradient', () => {
 // KB-769: 스캔 결과 이탈 가드(useLeaveConfirm) — 포커스·내비 표면 + usePreventRemove 기록(scanDesign이 콜백을 흉내)
 jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
 jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), /* P-508: scan.tsx 진입 파라미터(mode·label) */
-  useIsFocused: () => true,
+  useIsFocused: () => mockFocused.v,
   useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   useFocusEffect: (cb: () => void) => cb(), // P-255: 진입 선발급 훅 목
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }), // KB-789: push 공유 목(상세 이동 단언)
@@ -541,6 +542,31 @@ describe('KB-845 공통 카메라', () => {
       }
       expect(mockCamMounts.n).toBe(before); // 전환 내내 새 마운트 0
     } finally {
+      FLAGS.packagedLabelScan = prev;
+    }
+  });
+  it('Codex #318: 스캔이 다른 화면에 가려지면(포커스 잃음) 카메라 active=false → 돌아오면 다시 true(같은 인스턴스)', async () => {
+    const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
+    const prev = FLAGS.packagedLabelScan;
+    FLAGS.packagedLabelScan = true;
+    try {
+      const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
+      const qc = new QueryClient();
+      const el = () => <QueryClientProvider client={qc}><Scan /></QueryClientProvider>;
+      const tree = render(el());
+      await pressId(tree, 'scan-mode-packaged');
+      const cam = () => tree.root.findAll((n) => typeof n.type === 'string' && n.props?.zoom !== undefined && n.props?.facing !== undefined)[0];
+      const before = mockCamMounts.n;
+      expect(cam().props.active).toBe(true);
+      mockFocused.v = false;
+      await act(async () => { tree.update(el()); });
+      expect(cam().props.active).toBe(false);
+      mockFocused.v = true;
+      await act(async () => { tree.update(el()); });
+      expect(cam().props.active).toBe(true);
+      expect(mockCamMounts.n).toBe(before);
+    } finally {
+      mockFocused.v = true;
       FLAGS.packagedLabelScan = prev;
     }
   });
