@@ -262,12 +262,15 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     const strips = [0, 1, 2, 3].map((i) => t.root.findAll((n) => n.props?.testID === `curation-item-blur-strip-1-${i}` && typeof n.type === 'string')[0]);
     const tops = strips.map((s) => RN.StyleSheet.flatten(s.props.style).top as number);
     const hs = strips.map((s) => RN.StyleSheet.flatten(s.props.style).height as number);
-    expect(tops).toEqual([0, 20, 40, 60]); // 밴드 80 = 띠 20 ×4, 빈틈·겹침 0
-    expect(hs).toEqual([20, 20, 20, 20]);
+    // 밴드 80 = 띠 20 ×4 · 2번째부터 위 띠와 기기 픽셀 2개 겹침(jest 배율 2 → 1pt — 경계 틈 0, Android 계단선) · 마지막 띠 바닥 = 카드 바닥
+    expect(tops).toEqual([0, 19, 39, 59]);
+    expect(hs).toEqual([20, 21, 21, 21]);
+    const ops = strips.map((s) => RN.StyleSheet.flatten(s.props.style).opacity as number);
+    expect(ops).toEqual([0.35, 0.6, 0.85, 1]); // 위로 갈수록 투명 — 밴드 시작선 크로스페이드
     const imgs = strips.map((s) => s.findAll((n) => n.props?.testID === 'blur:https://cdn/i1.jpg' && typeof n.type === 'string')[0]);
     expect(imgs.map((im) => im.props.blurRadius)).toEqual([11, 23, 34, 45]); // iOS 45 × 1/4…1
     // 각 띠의 사진 = 카드 높이 그대로, 띠의 카드 기준 위치만큼 위로 → 원본과 같은 자리
-    expect(imgs.map((im) => RN.StyleSheet.flatten(im.props.style))).toEqual([220, 240, 260, 280].map((y) => expect.objectContaining({ top: -y, height: 300 })));
+    expect(imgs.map((im) => RN.StyleSheet.flatten(im.props.style))).toEqual([220, 239, 259, 279].map((y) => expect.objectContaining({ top: -y, height: 300 })));
     const scrim = t.root.findAll((n) => n.props?.testID === 'card-shade' && typeof n.type === 'string');
     expect(scrim).toHaveLength(1);
     expect(RN.StyleSheet.flatten(scrim[0].props.style)).toMatchObject({ top: 220, bottom: 0 });
@@ -279,6 +282,29 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(fs.readFileSync('src/app/curations/[key].tsx', 'utf8')).toContain("export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 9 : 45;");
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     expect(pkg.dependencies['expo-blur']).toBeUndefined();
+  });
+  it('KB-846 계단 제거: 소수 레이아웃(2.625배)에서도 띠 경계 = 기기 픽셀 정수 · 이웃 띠 겹침 ≥1 · 불투명도 단조 증가(끝 1) · 마지막 띠 바닥 = 카드 바닥', () => {
+    const RNmod = jest.requireActual('react-native');
+    const spyGet = jest.spyOn(RNmod.PixelRatio, 'get').mockReturnValue(2.625);
+    const spyRound = jest.spyOn(RNmod.PixelRatio, 'roundToNearestPixel').mockImplementation((v: number) => Math.round(v * 2.625) / 2.625);
+    try {
+      const { blurBandOf } = jest.requireActual('@/app/curations/[key]') as { blurBandOf: (h: number, c: number, r?: number) => { top: number; strips: { top: number; height: number; opacity: number }[] } };
+      const b = blurBandOf(300.38, 236.57);
+      const onPixel = (v: number) => Math.abs(v * 2.625 - Math.round(v * 2.625)) < 1e-6;
+      expect(onPixel(b.top)).toBe(true);
+      for (const s of b.strips) { expect(onPixel(s.top)).toBe(true); expect(onPixel(s.top + s.height)).toBe(true); }
+      for (let i = 1; i < b.strips.length; i++) {
+        const prevBottom = b.strips[i - 1].top + b.strips[i - 1].height;
+        expect((prevBottom - b.strips[i].top) * 2.625).toBeGreaterThanOrEqual(1 - 1e-6); // 겹침 ≥1 기기 픽셀
+        expect(b.strips[i].opacity).toBeGreaterThan(b.strips[i - 1].opacity); // 단조 증가
+      }
+      expect(b.strips[b.strips.length - 1].opacity).toBe(1);
+      const last = b.strips[b.strips.length - 1];
+      expect(last.top + last.height).toBeCloseTo(Math.round(300.38 * 2.625) / 2.625, 6);
+    } finally {
+      spyGet.mockRestore();
+      spyRound.mockRestore();
+    }
   });
   it('KB-846 blurBandOf: Android 9 = 띠 반경 정수 2·5·7·9 · 캡션이 카드 위쪽 16 안이면 밴드 top 0', () => {
     const { blurBandOf } = jest.requireActual('@/app/curations/[key]') as { blurBandOf: (h: number, c: number, r?: number) => { top: number; strips: { radius: number }[] } };
