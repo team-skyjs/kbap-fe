@@ -66,7 +66,7 @@ jest.mock('@/lib/i18n/useAppLanguage', () => ({ useAppLanguage: () => 'en' }));
 import { adaptIdolPicks, type IdolPick } from '@/lib/api/idolPickAdapter';
 import { adaptMenuSummary } from '@/lib/api/foodAdapter';
 import { fetchIdolPicks, idolPicksKey, useIdolPickVideo } from '@/lib/data/useIdolPicks';
-import { BG_ASPECT, IdolPickBanner, textTop } from '../IdolPickBanner';
+import { BG_ASPECT, IdolPickBanner, bgHeight, textTop } from '../IdolPickBanner';
 import { trackHomeCardClick } from '../homeImpressions';
 import { IdolVideoCard } from '@/features/food/IdolVideoCard';
 import IdolPicksScreen, { cellWidth } from '@/app/idol-picks';
@@ -147,11 +147,16 @@ describe('홈 배너 (정적)', () => {
     expect(fs.existsSync('assets/images/idol_pick_banner_bg.webp')).toBe(true);
   });
 
-  it('배경 Image = absolute · top/left 0 · width 100% · aspectRatio 1170/695 · cover · 장식(a11y 숨김)', () => {
+  it.each([[360, 320], [320, 280]])('배경 Image(화면폭 %d) = absolute · top/left 0 · width 카드폭 %d · height 카드폭/비율 명시(aspectRatio·% 금지 — 실기 전체높이 회귀) · cover · 장식(a11y 숨김)', (w, cw) => {
+    const dims = jest.spyOn(jest.requireActual('react-native'), 'useWindowDimensions').mockReturnValue({ width: w, height: 640, scale: 2, fontScale: 1 });
     const t = render(<IdolPickBanner />);
+    dims.mockRestore();
     const bg = t.root.find((n) => n.props.testID === 'idol-pick-bg' && typeof n.type === 'string');
     expect(BG_ASPECT).toBe(1170 / 695);
-    expect(StyleSheet.flatten(bg.props.style)).toMatchObject({ position: 'absolute', top: 0, left: 0, width: '100%', aspectRatio: 1170 / 695 });
+    expect(bgHeight(w)).toBeCloseTo(cw / (1170 / 695), 6);
+    const st = StyleSheet.flatten(bg.props.style);
+    expect(st).toMatchObject({ position: 'absolute', top: 0, left: 0, width: cw, height: bgHeight(w) });
+    expect(st.aspectRatio).toBeUndefined();
     expect(bg.props.resizeMode).toBe('cover');
     expect(bg.props.accessibilityElementsHidden).toBe(true);
   });
