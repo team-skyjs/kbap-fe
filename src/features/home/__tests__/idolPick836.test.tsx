@@ -334,7 +334,7 @@ describe('상세 V1 카드', () => {
     const card = src.indexOf('{idolVideo && <IdolVideoCard foodId={id} video={idolVideo} />}');
     expect(card).toBeGreaterThan(src.indexOf("t('detail.addProfileHint')"));
     expect(card).toBeLessThan(src.indexOf('<View style={styles.thickDivider} />'));
-    expect(src).toMatch(/\[[^\]]*'review_detail', 'idol_pick'\]\.includes\(src\)/);
+    expect(src).toMatch(/\[[^\]]*'tag_sheet', 'idol_pick'\]\.includes\(src\)/); // KB-847: review_detail은 #288 되돌림으로 빠짐
   });
 });
 
