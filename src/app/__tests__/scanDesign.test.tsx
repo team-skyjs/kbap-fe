@@ -270,13 +270,13 @@ it('P-285(최종본): 다시찍기 복원 — camera_restart 탭 = P-161 확인 
 });
 
 // P-187 contain(레터박스) → KB-845(D-31 scan refresh 로딩 C, 예진 채택): 흰 바탕 335×430 r12 사진 = cover(시안). 교체 근거 = 디자인 변경(P-510)
-it('KB-845 로딩 C: 진행 화면 = ScanLoading(흰 바탕) · 사진 cover(D-31 — P-187 contain 대체) · 스피너 0', () => {
+it('KB-845 로딩 C: 진행 화면 = ScanLoading(흰 바탕) · 사진 contain + 원본 비율 박스(KB-853 예진 결정 — D-31 cover 교체) · 스피너 0', () => {
   const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
   const scanning = src.split("phase === 'scanning'")[1].split('// ---- error ----')[0];
   expect(scanning).toContain('<ScanLoading');
   expect(scanning).not.toContain('ActivityIndicator');
   const loading = fs.readFileSync('src/features/scan/ScanLoading.tsx', 'utf8');
-  expect(loading).toContain('resizeMode="cover"');
+  expect(loading).toContain('resizeMode="contain"');
   expect(loading).not.toContain('ActivityIndicator');
 });
 

@@ -1,6 +1,6 @@
 /**
- * KB-845 로딩 C(D-31 screen-2·6·7) — 스캔선 범위(사진 안 · 시작 = 시안 y480) · 1.8s 왕복 · 모션 줄이기 = 정지(표시 유지) ·
- * 사진 cover · 스피너 0 · 본문 선택 · 큰 글씨 변형.
+ * KB-845 로딩 C(D-31 screen-2·6·7) — 1.8s 왕복 · 모션 줄이기 = 정지(표시 유지) · 스피너 0 · 본문 선택 · 큰 글씨 변형.
+ * KB-853(예진 테플): 스캔선 = PR318 이전 글로우 스윕 복원 · 사진 박스 맨 위~맨 아래 왕복 · 사진 contain + 박스 = 원본 비율(최대 영역 안).
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
@@ -27,9 +27,10 @@ jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t:
 jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
 jest.mock('@/components/icons', () => ({ IconClose: () => null }));
+jest.mock('expo-linear-gradient', () => ({ LinearGradient: jest.requireActual('react-native').View }));
 
 /* eslint-disable import/first -- jest.mock 뒤 */
-import { ScanLoading, scanLineRange, LOADING_PHOTO_H, SCAN_LINE_MS } from '../ScanLoading';
+import { ScanLoading, scanLineRange, fitPhotoBox, LOADING_PHOTO_H, SCAN_LINE_MS, SCAN_GLOW_H } from '../ScanLoading';
 /* eslint-enable import/first */
 
 const RN = jest.requireActual('react-native');
@@ -37,21 +38,44 @@ const trees: ReactTestRenderer[] = [];
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); mockReduced = false; });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(el); }); trees.push(t); return t; };
 const host = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0];
-const layoutPhoto = (t: ReactTestRenderer, h: number) => act(() => host(t, 'scan-loading-photo').props.onLayout({ nativeEvent: { layout: { height: h } } }));
+/** 영역 335×h 측정 + (선택) 사진 원본 크기 로드 */
+const layoutPhoto = (t: ReactTestRenderer, h: number, img?: { width: number; height: number }) => {
+  act(() => host(t, 'scan-loading-area').props.onLayout({ nativeEvent: { layout: { width: 335, height: h } } }));
+  if (img) act(() => host(t, 'scanning-preview').props.onLoad({ nativeEvent: { source: img } }));
+};
+const boxOf = (t: ReactTestRenderer) => RN.StyleSheet.flatten(host(t, 'scan-loading-photo').props.style);
+const glowY = (t: ReactTestRenderer) => (RN.StyleSheet.flatten(host(t, 'scan-loading-glow').props.style).transform as { translateY: number }[])[0].translateY;
 
-it('스캔선 범위 = 사진 안(시작 200/430 · 끝 = 바닥 − 3) · 짧아진 사진도 비율 그대로 · 0 = 0', () => {
+it('KB-853 스캔선 범위 = 사진 박스 맨 위(0) ~ 맨 아래(높이 − 3) · 0 = 0', () => {
   expect(LOADING_PHOTO_H).toBe(430);
-  expect(scanLineRange(430)).toEqual({ from: 200, to: 427 });
-  expect(scanLineRange(215)).toEqual({ from: 100, to: 212 });
+  expect(scanLineRange(430)).toEqual({ from: 0, to: 427 });
+  expect(scanLineRange(188)).toEqual({ from: 0, to: 185 });
   expect(scanLineRange(0)).toEqual({ from: 0, to: 0 });
 });
 
-it('사진 cover · 스캔선 = 주황(primary) 3 · 1.8s 왕복 무한 · 스피너 0 · 본문 = stayHint 자리', () => {
+it('KB-853 사진 박스 = 원본 비율 contain(최대 영역 안) — 가로 = 폭 가득·낮게 · 세로 = 높이 가득·좁게 · 크기 미상 = 영역', () => {
+  expect(fitPhotoBox(335, 430, 4032, 3024)).toEqual({ width: 335, height: 251 }); // 4:3 가로
+  expect(fitPhotoBox(335, 430, 3024, 4032)).toEqual({ width: 323, height: 430 }); // 3:4 세로
+  expect(fitPhotoBox(335, 200, 3024, 4032)).toEqual({ width: 150, height: 200 }); // 짧은 화면
+  expect(fitPhotoBox(335, 430, 0, 0)).toEqual({ width: 335, height: 430 });
+  const t = render(<ScanLoading title="T" body="B" photoUri="file:m.jpg" caption="C" onClose={jest.fn()} />);
+  layoutPhoto(t, 430, { width: 4032, height: 3024 });
+  expect(host(t, 'scanning-preview').props.resizeMode).toBe('contain');
+  expect(boxOf(t)).toMatchObject({ width: 335, height: 251, borderRadius: 12, overflow: 'hidden' }); // r12 = 박스(비율 = 원본)
+  expect(boxOf(t).width / boxOf(t).height).toBeCloseTo(4032 / 3024, 1);
+  // 선은 박스 안에서만: 왕복 끝(1) = 박스 바닥 − 3
+  const line = RN.StyleSheet.flatten(host(t, 'scan-loading-line').props.style);
+  expect(line).toMatchObject({ bottom: 0, height: 3 });
+  expect(glowY(t)).toBe(0 - (SCAN_GLOW_H - 3)); // 시작 = 선이 박스 맨 위(0)
+});
+
+it('KB-853 글로우 스윕(PR318 이전 그대로) = 띠 90 · 위로 퍼지는 트레일(투명 → 35%) + 바닥 선 3 빛 번짐 · 1.8s 왕복 무한 · 스피너 0 · 본문 = stayHint 자리', () => {
   const t = render(<ScanLoading title="T" body="B" photoUri="file:m.jpg" caption="C" onClose={jest.fn()} />);
   layoutPhoto(t, 430);
-  expect(host(t, 'scanning-preview').props.resizeMode).toBe('cover');
+  expect(RN.StyleSheet.flatten(host(t, 'scan-loading-glow').props.style)).toMatchObject({ left: 14, right: 14, height: 90 });
+  expect(host(t, 'scan-loading-trail').props.colors).toEqual(['rgba(226,88,12,0)', 'rgba(226,88,12,0.35)']);
   const line = RN.StyleSheet.flatten(host(t, 'scan-loading-line').props.style);
-  expect(line).toMatchObject({ height: 3, backgroundColor: '#FF7134' });
+  expect(line).toMatchObject({ height: 3, backgroundColor: '#E2580C', shadowColor: '#E2580C', shadowOpacity: 0.9, shadowRadius: 8 });
   expect(mockRepeat).toHaveBeenCalledWith(expect.anything(), -1, true);
   expect(mockTiming.mock.calls[0][1]).toMatchObject({ duration: SCAN_LINE_MS });
   expect(SCAN_LINE_MS).toBe(1800);
@@ -59,12 +83,12 @@ it('사진 cover · 스캔선 = 주황(primary) 3 · 1.8s 왕복 무한 · 스�
   expect(host(t, 'scan-stay-hint').props.children).toBe('B');
 });
 
-it('모션 줄이기 = 스캔선 정지(시작 위치에 표시 유지) · 애니메이션 시작 0', () => {
+it('모션 줄이기 = 스캔선 정지(박스 맨 위에 표시 유지) · 애니메이션 시작 0', () => {
   mockReduced = true;
   const t = render(<ScanLoading title="T" body="B" photoUri="file:m.jpg" caption="C" onClose={jest.fn()} />);
   layoutPhoto(t, 430);
-  const line = RN.StyleSheet.flatten(host(t, 'scan-loading-line').props.style);
-  expect(line.transform).toEqual([{ translateY: 200 }]);
+  expect(glowY(t)).toBe(-(SCAN_GLOW_H - 3));
+  expect(host(t, 'scan-loading-line')).toBeTruthy();
   expect(mockRepeat).not.toHaveBeenCalled();
 });
 
