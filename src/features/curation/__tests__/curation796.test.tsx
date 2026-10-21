@@ -9,7 +9,24 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k}:${JSON.stringify(o)}` : k) }), initReactI18next: { type: '3rdParty', init: () => {} } }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
-jest.mock('react-native-reanimated', () => ({ useReducedMotion: () => false }));
+jest.mock('react-native-reanimated', () => {
+  const { View } = jest.requireActual('react-native');
+  return { __esModule: true, default: { View }, useReducedMotion: () => false, useSharedValue: (v: number) => { let x = v; return { get: () => x, set: (n: number) => { x = n; } }; }, useAnimatedStyle: (f: () => object) => f(), withSpring: (v: number) => v };
+});
+// KB-846 끌어 닫기 — Pan 설정을 잡아 콜백을 테스트가 직접 부른다
+type PanCbs = { onUpdate?: (e: { translationY: number }) => void; onEnd?: (e: { translationY: number; velocityY: number }, ok: boolean) => void; onFinalize?: (e: object, ok: boolean) => void; activeOffsetY?: unknown; failOffsetX?: unknown };
+let mockPan: PanCbs = {};
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = jest.requireActual('react-native');
+  const pan = () => {
+    const cbs: PanCbs = {};
+    mockPan = cbs;
+    const g: Record<string, (...a: unknown[]) => unknown> = {};
+    for (const k of ['runOnJS', 'activeOffsetY', 'failOffsetX', 'onUpdate', 'onEnd', 'onFinalize']) g[k] = (v: unknown) => { (cbs as Record<string, unknown>)[k] = v; return g; };
+    return g;
+  };
+  return { Gesture: { Pan: pan }, GestureDetector: ({ children }: { children: React.ReactNode }) => children, GestureHandlerRootView: View };
+});
 jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View {...p} /> }; });
 jest.mock('@/components/RemoteImage', () => { const { View } = jest.requireActual('react-native'); return { RemoteImage: (p: { uri: string; blurRadius?: number; style?: unknown }) => <View testID={p.blurRadius ? `blur:${p.uri}` : `img:${p.uri}`} style={p.style} {...({ blurRadius: p.blurRadius } as object)} /> }; });
 jest.mock('@/components/icons', () => { const { View } = jest.requireActual('react-native'); return { IconChevron: (p: { color?: string }) => <View testID="chevron-right" style={{ color: p.color }} />, IconArrowLeft: () => null, IconClose: () => null }; });
@@ -224,28 +241,49 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(card.props.accessibilityLabel).toBe('Place 1, Area 1');
     expect(card.props.accessibilityHint).toBe('curation.openGalleryHint');
     expect(ids(t)).toContain('img:https://cdn/i1.jpg');
-    expect(ids(t).filter((i) => i === 'card-shade')).toHaveLength(10);
+    expect(ids(t).filter((i) => i === 'card-shade')).toHaveLength(0); // KB-846: 스크림은 밴드(이름 위 16)를 잰 뒤에만
     expect(byId(t, 'curation-item-arrow-1')).toHaveLength(1);
     expect(ids(t).some((i) => /curation-item-(toggle|link|about)-/.test(i))).toBe(false);
     expect(ids(t)).not.toContain('curation-gallery'); // 처음엔 닫힘
   });
 
-  it('v4 하단 블러 밴드(네이티브 의존 0): 카드 높이 측정 뒤 같은 사진을 blurRadius로 한 장 더 — 원본 높이로 하단 정렬 · 96 밴드만 클립 · 터치 통과 · expo-blur 없음', () => {
+  it('KB-846 점진 블러(네이티브 의존 0): 카드·캡션을 잰 뒤 이름 위 16부터 바닥까지 띠 4개 · blurRadius 1/4→1 · 같은 사진 같은 오프셋(이음새 0) · 스크림이 밴드 전체 · 큰 글씨 = 밴드도 늘어남', () => {
     mockDetail = q({ data: detail });
     const t = render(<CurationDetailScreen />);
     expect(ids(t).some((i) => i.startsWith('curation-item-blur-'))).toBe(false); // 높이 모르는 첫 렌더 = 밴드 없음
-    const card = t.root.findAll((n) => n.props?.testID === 'curation-item-1' && typeof n.props?.onLayout === 'function')[0];
-    act(() => card.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 335, height: 330 } } }));
     const RN = jest.requireActual('react-native');
+    const layoutOf = (id: string, layout: object) => act(() => t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout } }));
+    layoutOf('curation-item-1', { x: 0, y: 0, width: 335, height: 300 });
+    expect(ids(t).some((i) => i.startsWith('curation-item-blur-1'))).toBe(false); // 캡션 위치 전 = 없음
+    layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 335, height: 64 }); // 이름 위 = 236
     const band = t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0];
-    expect(RN.StyleSheet.flatten(band.props.style)).toMatchObject({ position: 'absolute', bottom: 0, height: 96, overflow: 'hidden' });
+    expect(RN.StyleSheet.flatten(band.props.style)).toMatchObject({ position: 'absolute', top: 220, bottom: 0, overflow: 'hidden' }); // 236 − 16
     expect(band.props.pointerEvents).toBe('none');
-    const img = band.findAll((n) => n.props?.testID === 'blur:https://cdn/i1.jpg' && typeof n.type === 'string')[0];
-    expect(img.props.blurRadius).toBe(45); // iOS(jest 기본) — QA 2회 대조로 16과 72 사이
-    expect(RN.StyleSheet.flatten(img.props.style)).toMatchObject({ position: 'absolute', bottom: 0, height: 330 }); // 원본과 같은 높이 → 같은 자리 겹침
+    const strips = [0, 1, 2, 3].map((i) => t.root.findAll((n) => n.props?.testID === `curation-item-blur-strip-1-${i}` && typeof n.type === 'string')[0]);
+    const tops = strips.map((s) => RN.StyleSheet.flatten(s.props.style).top as number);
+    const hs = strips.map((s) => RN.StyleSheet.flatten(s.props.style).height as number);
+    expect(tops).toEqual([0, 20, 40, 60]); // 밴드 80 = 띠 20 ×4, 빈틈·겹침 0
+    expect(hs).toEqual([20, 20, 20, 20]);
+    const imgs = strips.map((s) => s.findAll((n) => n.props?.testID === 'blur:https://cdn/i1.jpg' && typeof n.type === 'string')[0]);
+    expect(imgs.map((im) => im.props.blurRadius)).toEqual([11, 23, 34, 45]); // iOS 45 × 1/4…1
+    // 각 띠의 사진 = 카드 높이 그대로, 띠의 카드 기준 위치만큼 위로 → 원본과 같은 자리
+    expect(imgs.map((im) => RN.StyleSheet.flatten(im.props.style))).toEqual([220, 240, 260, 280].map((y) => expect.objectContaining({ top: -y, height: 300 })));
+    const scrim = t.root.findAll((n) => n.props?.testID === 'card-shade' && typeof n.type === 'string');
+    expect(scrim).toHaveLength(1);
+    expect(RN.StyleSheet.flatten(scrim[0].props.style)).toMatchObject({ top: 220, bottom: 0 });
+    expect(scrim[0].props.colors).toEqual(['rgba(0,0,0,0)', 'rgba(0,0,0,0.45)']);
+    // 큰 글씨 = 캡션이 높아져 위로 — 밴드도 이름 위 16 유지
+    layoutOf('curation-item-1', { x: 0, y: 0, width: 335, height: 340 });
+    layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 335, height: 104 });
+    expect(RN.StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0].props.style).top).toBe(220);
     expect(fs.readFileSync('src/app/curations/[key].tsx', 'utf8')).toContain("export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 9 : 45;");
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     expect(pkg.dependencies['expo-blur']).toBeUndefined();
+  });
+  it('KB-846 blurBandOf: Android 9 = 띠 반경 정수 2·5·7·9 · 캡션이 카드 위쪽 16 안이면 밴드 top 0', () => {
+    const { blurBandOf } = jest.requireActual('@/app/curations/[key]') as { blurBandOf: (h: number, c: number, r?: number) => { top: number; strips: { radius: number }[] } };
+    expect(blurBandOf(300, 236, 9).strips.map((s) => s.radius)).toEqual([2, 5, 7, 9]);
+    expect(blurBandOf(300, 10, 9).top).toBe(0);
   });
   it('카드 탭 → 시트(1장 = 카운터 숨김 · 출처 = 그 사진 것) + home_curation_gallery_open · 닫기 → 시트 없음(목록 그대로)', () => {
     mockDetail = q({ data: detail });
@@ -253,13 +291,18 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     press(t, 'curation-item-1');
     expect(ids(t)).toContain('curation-gallery');
     expect(mockTrack).toHaveBeenCalledWith('home_curation_gallery_open', { collection_key: 'stations', entry_id: 'e1' });
-    expect(ids(t)).not.toContain('curation-gallery-counter');
+    expect(ids(t)).not.toContain('curation-gallery-dots'); // 1장 = 점 없음
     expect(byId(t, 'curation-gallery-credit')[0].props.children).toBe('Photo: KTO');
-    // Codex #309 P2: 사진 아래 본문 = 스크롤(짧은 화면·큰 글씨에서 Guide 도달)
+    // KB-846: 본문 = 고정(스크롤 0) · 소개 최대 4줄 · X 버튼 없음 · 짧은 화면은 사진 영역이 줄어든다(flexShrink — Guide 도달)
+    const RN = jest.requireActual('react-native');
     const body = t.root.findAll((n) => n.props?.testID === 'curation-gallery-body')[0];
-    expect(body.type).toBe(jest.requireActual('react-native').ScrollView);
+    expect(body.type).not.toBe(RN.ScrollView);
+    expect(t.root.findAll((n) => n.type === RN.ScrollView && n.findAll((m) => m.props?.testID === 'curation-gallery-guide').length > 0)).toHaveLength(0);
     expect(body.findAll((n) => n.props?.testID === 'curation-gallery-guide').length).toBeGreaterThan(0);
-    press(t, 'curation-gallery-close');
+    expect(t.root.findAll((n) => n.props?.testID === 'curation-gallery-intro' && typeof n.type === 'string')[0].props.numberOfLines).toBe(4);
+    expect(ids(t)).not.toContain('curation-gallery-close');
+    expect(RN.StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === 'curation-gallery-photo' && typeof n.type === 'string')[0].props.style)).toMatchObject({ flexShrink: 1 });
+    press(t, 'curation-gallery-backdrop'); // 배경 탭 = 닫기
     expect(ids(t)).not.toContain('curation-gallery');
     expect(byId(t, 'curation-item-1')).toHaveLength(1);
   });
@@ -268,13 +311,22 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     mockDetail = q({ data: withImages(3) });
     const t = render(<CurationDetailScreen />);
     press(t, 'curation-item-1');
-    const counter = () => byId(t, 'curation-gallery-counter')[0]?.props.children;
+    // KB-846: 숫자 → 점 3개(활성 1) · 스크린리더 값 = "n / 3"
+    const pagerA11y = () => t.root.findAll((n) => n.props?.testID === 'curation-gallery-pager' && typeof n.props?.onMomentumScrollEnd === 'function')[0].props.accessibilityValue?.text;
+    const activeDot = () => {
+      const dots = t.root.findAll((n) => n.props?.testID === 'curation-gallery-dots' && typeof n.type === 'string')[0].children as unknown as { props: { testID: string } }[];
+      return dots.findIndex((d) => d.props.testID === 'curation-gallery-dot-on');
+    };
+    const counter = () => `${activeDot() + 1} / ${byId(t, 'curation-gallery-dots').length ? 3 : 0}`;
+    expect(ids(t).filter((i) => i === 'curation-gallery-dot' || i === 'curation-gallery-dot-on')).toHaveLength(3);
     expect(counter()).toBe('1 / 3');
+    expect(pagerA11y()).toBe('1 / 3');
     expect(byId(t, 'curation-gallery-credit')[0].props.children).toBe('Photo 0');
     const pager = () => t.root.findAll((n) => n.props?.testID === 'curation-gallery-pager' && typeof n.props?.onMomentumScrollEnd === 'function')[0];
     const width = jest.requireActual('react-native').Dimensions.get('window').width;
     act(() => pager().props.onMomentumScrollEnd({ nativeEvent: { contentOffset: { x: width * 2, y: 0 } } }));
     expect(counter()).toBe('3 / 3');
+    expect(pagerA11y()).toBe('3 / 3');
     expect(mockTrack).toHaveBeenCalledWith('home_curation_gallery_swipe', { collection_key: 'stations', entry_id: 'e1', index: 2 });
     act(() => pager().props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
     expect(counter()).toBe('2 / 3');
@@ -293,13 +345,40 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(ids(t)).not.toContain('curation-gallery');
     expect(ids(t)).not.toContain('curation-gallery-guide');
   });
+  it('KB-846 그래버를 아래로 끌어 임계 넘김 = 닫힘 · 못 넘김 = 시트 유지·제자리 · 가로 우선 끌기는 실패(캐러셀 보호) · 스크린리더 = 그래버 "닫기" 동작', () => {
+    mockDetail = q({ data: detail });
+    const t = render(<CurationDetailScreen />);
+    press(t, 'curation-item-1');
+    expect(mockPan.failOffsetX).toEqual([-12, 12]);
+    act(() => mockPan.onUpdate?.({ translationY: 50 }));
+    act(() => mockPan.onEnd?.({ translationY: 50, velocityY: 100 }, true));
+    expect(ids(t)).toContain('curation-gallery');
+    const grab = t.root.findAll((n) => n.props?.testID === 'curation-gallery-grabber' && typeof n.type === 'string')[0];
+    expect(grab.props.accessibilityRole).toBe('button');
+    expect(grab.props.accessibilityLabel).toBe('common.close');
+    act(() => mockPan.onEnd?.({ translationY: 400, velocityY: 0 }, true));
+    expect(ids(t)).not.toContain('curation-gallery');
+    press(t, 'curation-item-1');
+    act(() => t.root.findAll((n) => n.props?.testID === 'curation-gallery-grabber' && typeof n.props?.onAccessibilityAction === 'function')[0].props.onAccessibilityAction({ nativeEvent: { actionName: 'activate' } }));
+    expect(ids(t)).not.toContain('curation-gallery');
+  });
   it('사진 0장 = 카드 회색 자리 · 시트도 플레이스홀더 1장(카운터 0)', () => {
     mockDetail = q({ data: { ...detail, items: detail.items.map((it) => (it.position === 4 ? { ...it, imageUrl: '', images: [] } : it)) } });
     const t = render(<CurationDetailScreen />);
     expect(byId(t, 'curation-item-nophoto-4')).toHaveLength(1);
     press(t, 'curation-item-4');
     expect(byId(t, 'curation-gallery-nophoto')).toHaveLength(1);
-    expect(ids(t)).not.toContain('curation-gallery-counter');
+    expect(ids(t)).not.toContain('curation-gallery-dots'); // 1장 = 점 없음
+  });
+});
+
+describe('KB-846 갤러리 시트 끌어 닫기', () => {
+  it('shouldDismiss: 시트 높이 25% 이상 또는 아래로 빠르게(1000px/s) = 닫기 · 위로·작은 끌기 = 되돌림', () => {
+    const { shouldDismiss } = jest.requireActual('@/features/curation/CurationGallerySheet') as { shouldDismiss: (y: number, v: number, h: number) => boolean };
+    expect(shouldDismiss(187, 0, 748)).toBe(true); // 25%
+    expect(shouldDismiss(186, 0, 748)).toBe(false);
+    expect(shouldDismiss(40, 1200, 748)).toBe(true); // 빠른 튕김
+    expect(shouldDismiss(-40, 1200, 748)).toBe(false);
   });
 });
 
