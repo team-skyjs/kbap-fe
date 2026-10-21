@@ -39,7 +39,8 @@ export function IdolPickBanner() {
             <View style={[styles.inner, { paddingTop: textTop(width) }]} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden testID="idol-pick-inner">
               <View style={styles.texts}>
                 <Text style={styles.label}>{t('home.idolPick.label')}</Text>
-                <Text style={styles.title}>{t('home.idolPick.title')}</Text>
+                {/* 긴 로케일(es·ru·ja)은 24pt 2줄 초과 → 로케일 분기 없이 네이티브 축소(24 → 최소 21.6) */}
+                <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.9}>{t('home.idolPick.title')}</Text>
               </View>
               <View style={styles.pill}>
                 <Text style={styles.pillText}>{t('home.idolPick.seeAll')}</Text>

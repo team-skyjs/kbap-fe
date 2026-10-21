@@ -167,6 +167,14 @@ describe('홈 배너 (정적)', () => {
     dims.mockRestore();
   });
 
+  it('제목 = 최대 2줄 · 네이티브 축소(adjustsFontSizeToFit, minimumFontScale 0.9 → 24pt 최소 21.6) — 로케일별 fontSize 분기 없음', () => {
+    const t = render(<IdolPickBanner />);
+    const title = t.root.find((n) => typeof n.type === 'string' && n.props.children === 'home.idolPick.title');
+    expect(title.props).toMatchObject({ numberOfLines: 2, adjustsFontSizeToFit: true, minimumFontScale: 0.9 });
+    expect(StyleSheet.flatten(title.props.style)).toMatchObject({ fontSize: 24, lineHeight: 32 });
+    expect(fs.readFileSync('src/features/home/IdolPickBanner.tsx', 'utf8')).not.toMatch(/language|locale|i18n\.lang/i);
+  });
+
   it('탭 = home_card_click{section:idol_pick, position:0}(food_id·collection_key 없음, D4) → /idol-picks · 라벨', () => {
     const t = render(<IdolPickBanner />);
     expect(t.root.find((n) => n.props.testID === 'idol-pick-banner' && n.props.accessibilityRole === 'button').props.accessibilityLabel).toBe('home.idolPick.bannerA11y');
