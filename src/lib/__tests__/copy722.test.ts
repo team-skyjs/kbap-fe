@@ -26,9 +26,8 @@ it('placeholderSeed는 무변 — 10로케일 모두 {{name}} 포함', () => {
 
 // "재료 검색"을 약속하는 문구가 어디에도 없게 — 재료 낱말 + 검색 낱말이 한 값에 같이 오는 키 전수.
 // 허용 = 회피 재료 편집기(restrictionsEdit.*: 거기선 재료를 진짜 검색한다) · onboarding.demo.safe(vi "회피 재료를 찾지 못했다" — 판정 결과 문장, 검색 아님)
-//  · idolPicks.sub(KB-836 en "check the ingredients and find the video link" — find 의 대상은 영상 링크, 재료 검색 약속 아님. 사용자 확정 문구)
 const SEARCH: Record<string, RegExp> = { en: /search|find/i, ko: /검색|찾/, ja: /検索|探/, 'zh-Hans': /搜索|查找/, 'zh-Hant': /搜尋|查找/, vi: /tìm/i, id: /cari/i, th: /ค้นหา/, ru: /найти|поиск|искать/i, es: /buscar|búsqueda/i };
-const ALLOW = [/^restrictionsEdit\./, /^onboarding\.demo\.safe$/, /^idolPicks\.sub$/];
+const ALLOW = [/^restrictionsEdit\./, /^onboarding\.demo\.safe$/];
 it('10로케일 전수: 재료+검색 낱말이 같이 오는 값은 회피 재료 편집기(restrictionsEdit.*)·onboarding.demo.safe뿐', () => {
   const flat = (o: Record<string, unknown>, pre = ''): [string, string][] =>
     Object.entries(o).flatMap(([k, v]) => (v && typeof v === 'object' ? flat(v as Record<string, unknown>, `${pre}${k}.`) : [[`${pre}${k}`, String(v)] as [string, string]]));

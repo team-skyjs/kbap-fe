@@ -1344,8 +1344,6 @@
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",
-    "title": "Idol K-pop pernah mencicipi ini. Mau coba?",
-    "sub": "Pilih hidangan untuk melihat bahan dan tautan videonya.",
     "cardA11y": "Lihat detail {{name}}",
     "empty": "Belum ada hidangan yang tersedia saat ini."
   }

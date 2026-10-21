@@ -1344,8 +1344,6 @@
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",
-    "title": "Los idols del K-pop probaron esto. ¿Te animas?",
-    "sub": "Elige un plato para ver los ingredientes y el enlace al video.",
     "cardA11y": "Ver detalles de {{name}}",
     "empty": "No hay platos disponibles por ahora."
   }

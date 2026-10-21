@@ -1340,8 +1340,6 @@
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",
-    "title": "K-pop idols tried these. Want a taste?",
-    "sub": "Pick a dish to check the ingredients and find the video link.",
     "cardA11y": "View details for {{name}}",
     "empty": "No dishes available right now."
   }
