@@ -9,12 +9,12 @@
  * 외부 링크 = lib/openExternal openWebPage(실패 시 토스트 — `void Linking.*` 직접 호출 금지 규칙).
  */
 import * as React from 'react';
-import { PixelRatio, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { PixelRatio, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SubHeader } from '@/components/SubHeader';
-import { Txt as Text } from '@/components/Txt';
+import { MAX_FONT_SCALE, Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { Pressable } from '@/components/Pressable';
 import { RemoteImage } from '@/components/RemoteImage';
@@ -105,6 +105,7 @@ export default function CurationDetailScreen() {
 /** v5 카드(12344:29771): 사진 전체 + 아래 흐림(어둡게) 위에 흰 이름·지역 + 오른쪽 흰 chevron(박스 없음, 44 자리). 카드 어디를 눌러도 갤러리 시트. */
 function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) {
   const { t } = useTranslation();
+  const lh = captionLineHeights(useWindowDimensions().fontScale); // KB-846 QA: 큰 글씨에서 고정 줄 높이가 g·y 아래를 자르던 것
   const p = item.position;
   const cover = item.images[0]?.url ?? null;
   const [cardH, setCardH] = React.useState<number | null>(null); // 블러 사본을 원본과 같은 높이로 정렬(큰 글씨면 카드가 자란다)
@@ -142,9 +143,9 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
       <View style={{ height: CARD_SPACER }} />
       <View style={styles.caption} onLayout={(e) => setCaptionTop(e.nativeEvent.layout.y)} testID={`curation-item-caption-${p}`}>
         <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-          <Text style={styles.name}>{item.name}</Text>
+          <Text style={[styles.name, { lineHeight: lh.name }]}>{item.name}</Text>
           {/* 역 모음 = 지역 + 주변 이름을 공백 2칸으로(가운데점 금지) · 이름 안 공백은 NBSP — 줄바꿈은 이름 사이에서만(QA S3) */}
-          <Text style={styles.area}>{areaLine(item.area, item.nearby)}</Text>
+          <Text style={[styles.area, { lineHeight: lh.area }]}>{areaLine(item.area, item.nearby)}</Text>
         </View>
         <View style={styles.arrow} testID={`curation-item-arrow-${p}`}>
           <IconChevron size={24} color="#FFFFFF" />
@@ -158,12 +159,19 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
 const CARD_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.45)'] as const;
 /** 블러 밴드 시작 = 이름(캡션 블록) 위 16 */
 export const CARD_BLUR_LEAD = 16;
-export const CARD_BLUR_STRIPS = 4;
-/** 띠 불투명도(위 → 아래) — 아래 원본 사진과 크로스페이드해 밴드 시작선·띠 경계가 보이지 않게(Android QA 확대 캡처의 계단 3~4줄) */
-export const CARD_BLUR_OPACITY = [0.35, 0.6, 0.85, 1] as const;
+/** 카드 이름·지역 줄 높이 — 글꼴 배율(최대 MAX_FONT_SCALE)만큼 같이 키운다. iOS는 글자만 커지고 고정 lineHeight는 그대로라 아래가 잘렸다(KB-846 QA 큰 글씨) */
+export const captionLineHeights = (fontScale: number) => {
+  const k = Math.min(Math.max(fontScale, 1), MAX_FONT_SCALE);
+  return { name: Math.ceil(26 * k), area: Math.ceil(18 * k) };
+};
+/** KB-846 QA(iOS 확대): 4띠는 3→4 경계(반경 최대·불투명도 0.85→1)에서 선명도 계단이 보였다 → 8띠 균등 */
+export const CARD_BLUR_STRIPS = 8;
+/** 띠 불투명도(위 → 아래) = 1/8 간격 균등(0.125 … 1) — 아래 원본과 크로스페이드, 마지막 단계도 같은 간격(점프 없음) */
+export const CARD_BLUR_OPACITY = Array.from({ length: CARD_BLUR_STRIPS }, (_, i) => (i + 1) / CARD_BLUR_STRIPS);
 /** 밴드·띠 계산(KB-846) — 띠 i(0=맨 위)의 blurRadius = 기준값 × (i+1)/4(정수 — Android Glide는 정수 반경). 큰 글씨면 캡션이 높아져 밴드도 늘어난다.
  *  좌표는 **기기 픽셀에 스냅**(PixelRatio.roundToNearestPixel — 2.625배 Android에서 정수 pt도 소수 픽셀이라 경계가 앤티앨리어싱 선으로 보였다).
  *  띠는 **맞닿기만**(겹침 0): 같은 픽셀 경계라 틈이 없고, 반투명 띠를 겹치면 겹친 줄이 더 진해져(0.6 + 0.35×0.4 = 0.74) 그 자체가 가는 선이 된다(Codex #320) */
+// 띠 i의 blurRadius = 기준값 × (i+1)/8 (정수) — 반경도 1/8 간격 균등
 export function blurBandOf(cardH: number, captionTop: number, radius: number = CARD_BLUR_RADIUS) {
   const px = PixelRatio.roundToNearestPixel;
   const top = px(Math.max(0, captionTop - CARD_BLUR_LEAD));

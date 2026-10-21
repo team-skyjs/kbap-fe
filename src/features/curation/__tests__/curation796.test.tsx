@@ -259,18 +259,19 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     const band = t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0];
     expect(RN.StyleSheet.flatten(band.props.style)).toMatchObject({ position: 'absolute', top: 220, bottom: 0, overflow: 'hidden' }); // 236 − 16
     expect(band.props.pointerEvents).toBe('none');
-    const strips = [0, 1, 2, 3].map((i) => t.root.findAll((n) => n.props?.testID === `curation-item-blur-strip-1-${i}` && typeof n.type === 'string')[0]);
+    const strips = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => t.root.findAll((n) => n.props?.testID === `curation-item-blur-strip-1-${i}` && typeof n.type === 'string')[0]);
     const tops = strips.map((s) => RN.StyleSheet.flatten(s.props.style).top as number);
     const hs = strips.map((s) => RN.StyleSheet.flatten(s.props.style).height as number);
-    // 밴드 80 = 띠 20 ×4 · 맞닿기만(겹침 0 — 반투명 띠가 겹친 줄은 더 진해져 선이 된다, Codex #320) · 마지막 띠 바닥 = 카드 바닥
-    expect(tops).toEqual([0, 20, 40, 60]);
-    expect(hs).toEqual([20, 20, 20, 20]);
+    // KB-846 QA(iOS 확대): 밴드 80 = 띠 10 ×8 · 맞닿기만(겹침 0 — Codex #320) · 마지막 띠 바닥 = 카드 바닥
+    expect(tops).toEqual([0, 10, 20, 30, 40, 50, 60, 70]);
+    expect(hs).toEqual([10, 10, 10, 10, 10, 10, 10, 10]);
     const ops = strips.map((s) => RN.StyleSheet.flatten(s.props.style).opacity as number);
-    expect(ops).toEqual([0.35, 0.6, 0.85, 1]); // 위로 갈수록 투명 — 밴드 시작선 크로스페이드
+    expect(ops).toEqual([0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1]); // 1/8 균등 — 마지막 단계도 같은 간격(0.85→1 점프 소멸)
+    for (let i = 1; i < ops.length; i++) expect(ops[i] - ops[i - 1]).toBeCloseTo(0.125, 10);
     const imgs = strips.map((s) => s.findAll((n) => n.props?.testID === 'blur:https://cdn/i1.jpg' && typeof n.type === 'string')[0]);
-    expect(imgs.map((im) => im.props.blurRadius)).toEqual([11, 23, 34, 45]); // iOS 45 × 1/4…1
+    expect(imgs.map((im) => im.props.blurRadius)).toEqual([6, 11, 17, 23, 28, 34, 39, 45]); // iOS 45 × 1/8…1(정수)
     // 각 띠의 사진 = 카드 높이 그대로, 띠의 카드 기준 위치만큼 위로 → 원본과 같은 자리
-    expect(imgs.map((im) => RN.StyleSheet.flatten(im.props.style))).toEqual([220, 240, 260, 280].map((y) => expect.objectContaining({ top: -y, height: 300 })));
+    expect(imgs.map((im) => RN.StyleSheet.flatten(im.props.style))).toEqual([220, 230, 240, 250, 260, 270, 280, 290].map((y) => expect.objectContaining({ top: -y, height: 300 })));
     const scrim = t.root.findAll((n) => n.props?.testID === 'card-shade' && typeof n.type === 'string');
     expect(scrim).toHaveLength(1);
     expect(RN.StyleSheet.flatten(scrim[0].props.style)).toMatchObject({ top: 220, bottom: 0 });
@@ -306,10 +307,17 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       spyRound.mockRestore();
     }
   });
-  it('KB-846 blurBandOf: Android 9 = 띠 반경 정수 2·5·7·9 · 캡션이 카드 위쪽 16 안이면 밴드 top 0', () => {
+  it('KB-846 blurBandOf: Android 9 = 띠 반경 정수 1~9 8단계(단조 증가) · 캡션이 카드 위쪽 16 안이면 밴드 top 0', () => {
     const { blurBandOf } = jest.requireActual('@/app/curations/[key]') as { blurBandOf: (h: number, c: number, r?: number) => { top: number; strips: { radius: number }[] } };
-    expect(blurBandOf(300, 236, 9).strips.map((s) => s.radius)).toEqual([2, 5, 7, 9]);
+    expect(blurBandOf(300, 236, 9).strips.map((s) => s.radius)).toEqual([1, 2, 3, 5, 6, 7, 8, 9]);
     expect(blurBandOf(300, 10, 9).top).toBe(0);
+  });
+  it('KB-846 QA 큰 글씨: 카드 이름·지역 줄 높이 = 글꼴 배율만큼(최대 1.3) — 고정 26·18이 g·y 아래를 자르던 것', () => {
+    const { captionLineHeights } = jest.requireActual('@/app/curations/[key]') as { captionLineHeights: (k: number) => { name: number; area: number } };
+    expect(captionLineHeights(1)).toEqual({ name: 26, area: 18 });
+    expect(captionLineHeights(1.3)).toEqual({ name: 34, area: 24 });
+    expect(captionLineHeights(2)).toEqual({ name: 34, area: 24 }); // Txt 최대 배율 1.3에서 멈춤(글자도 거기서 멈춘다)
+    expect(captionLineHeights(0.85)).toEqual({ name: 26, area: 18 });
   });
   it('카드 탭 → 시트(1장 = 카운터 숨김 · 출처 = 그 사진 것) + home_curation_gallery_open · 닫기 → 시트 없음(목록 그대로)', () => {
     mockDetail = q({ data: detail });
