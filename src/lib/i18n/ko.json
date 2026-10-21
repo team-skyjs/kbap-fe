@@ -553,14 +553,7 @@
     "ratingAll": "전체 별점",
     "ratingMin": "{{min}}점 이상",
     "countryOnly": "{{code}}만",
-    "allReviews": "전체 리뷰",
-    "readReview": "리뷰 읽기",
-    "ratingNone": "평가 없음",
-    "cardA11y": "{{name}}의 {{food}} 리뷰 읽기",
-    "cardA11yDetail": "사진 {{photos}}장, 맛 {{taste}}, 음식 나오는 속도 {{speed}}, 친절도 {{service}}, 도움돼요 {{helpful}}",
-    "ratingPoints": "{{n}}점",
-    "openFoodA11y": "{{food}}, 음식 정보 보기",
-    "photoCount": "{{index}}/{{total}}"
+    "allReviews": "전체 리뷰"
   },
   "ranking": {
     "headerTitle": "내 랭킹",
@@ -735,7 +728,12 @@
     "wildchive": "달래",
     "asafoetida": "아사페티다(힝)",
     "mirin": "미림",
-    "sulfites": "아황산염"
+    "sulfites": "아황산염",
+    "nuts": "견과류",
+    "crustacean": "갑각류",
+    "mollusk": "연체류",
+    "meat": "육류",
+    "meatbroth": "고기 육수"
   },
   "detail": {
     "headerTitle": "음식",
@@ -781,7 +779,14 @@
     "ingGuestBody": "이 음식의 {{ingredient}} 사용 비율은 약 {{percent}}%예요. 식당마다 다를 수 있으니 사장님께 확인해 보세요.",
     "ingGuestBodyNoPct": "이 음식은 {{ingredient}} 사용이 흔해요. 식당마다 다를 수 있으니 사장님께 확인해 보세요.",
     "foodHidden": "지금은 이 음식 정보를 볼 수 없어요.",
-    "foodUpdating": "이 음식 정보를 새로 고치는 중이에요. 잠시 후 다시 확인해 주세요."
+    "foodUpdating": "이 음식 정보를 새로 고치는 중이에요. 잠시 후 다시 확인해 주세요.",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "이 음식, 어떤 아이돌이 먹었을까?",
+      "sub": "익숙한 얼굴이 나올지도 몰라요.",
+      "cta": "영상으로 확인하기",
+      "a11y": "이 음식을 먹는 K-POP 아이돌 영상 열기"
+    }
   },
   "states": {
     "catalogTitle": "상태",
@@ -841,7 +846,13 @@
     "safeForYouSub": "못 먹는 재료 목록을 기준으로 판정했어요. 사장님께 꼭 확인하세요.",
     "railFilterEmpty": "이 목록에서 '{{risk}}' 판정 메뉴를 찾지 못했어요. 다른 필터를 선택해 보세요.",
     "mostReviewed": "리뷰가 많은 음식",
-    "mostReviewedSub": "사람들이 많이 이야기한 메뉴예요."
+    "mostReviewedSub": "사람들이 많이 이야기한 메뉴예요.",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "K-POP 아이돌이 먹은\n음식, 궁금하지 않아요?",
+      "seeAll": "둘러보기",
+      "bannerA11y": "K-POP 아이돌이 먹은 음식 목록 보기"
+    }
   },
   "onboarding": {
     "welcomeTag": "주문 전에, 먹어도 되는지 먼저.",
@@ -1161,12 +1172,6 @@
     "monLong11": "11월",
     "monLong12": "12월"
   },
-  "reviewDetail": {
-    "title": "리뷰",
-    "notFound": "삭제되었거나 볼 수 없는 리뷰예요",
-    "photoA11y": "리뷰 사진, 크게 보기",
-    "moreA11y": "더보기"
-  },
   "curation": {
     "sectionTitle": "한국 둘러보기",
     "loadError": "모음을 불러오지 못했어요.",
@@ -1308,5 +1313,27 @@
     "newAnalysisCta": "새로 분석하기",
     "debugLabelPlaceholder": "성분표 한 면의 글자",
     "debugAddPage": "한 면으로 추가"
+  },
+  "scanCamera": {
+    "title": "스캔",
+    "menuTitle": "메뉴판 전체가 들어오게 해 주세요",
+    "menuHint": "두 손가락으로 확대할 수 있어요",
+    "packageTitle": "포장 앞면을 보여 주세요",
+    "packageHint": "제품 이름과 맛이 보이게 해 주세요.",
+    "labelTitle": "성분표를 보여 주세요",
+    "labelHint": "원재료가 모두 선명하게 보이게 해 주세요.",
+    "photos": "사진",
+    "menuLink": "앨범에서 사진 고르기",
+    "frontLink": "포장 앞면으로 확인하기",
+    "capturedMenu": "찍은 메뉴판",
+    "capturedPackage": "찍은 포장",
+    "capturedLabel": "찍은 성분표",
+    "choosePhoto": "사진 선택",
+    "switchCamera": "카메라 전환"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "cardA11y": "{{name}}, 음식 상세 보기",
+    "empty": "지금은 볼 수 있는 음식이 없어요."
   }
 }

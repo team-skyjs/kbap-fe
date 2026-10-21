@@ -7,13 +7,13 @@
  *    첫 진입·데이터 도착(등록)은 짧은 지연 뒤 1회 측정.
  *  - **홈 진입(포커스)당 같은 대상 1회** — 포커스마다 본 목록을 비운다. 같은 진입 안에서 새로고침·레일 탭 왕복은 다시 보내지 않는다.
  *  - 측정 = measureInWindow(정지 시점만 — 스크롤 중 비용 0). JS 스크롤 콜백(onMomentumScrollEnd 등)만 쓰고 reanimated onScroll 워클릿은 건드리지 않는다.
- * 섹션 키 = popular|saved|food(레일 탭) · safe · most_reviewed · recent · top_rated(KB-800 — 구 reviews 피드 대체) · guest_cta. 카드 food_id = 카탈로그 id(PII 아님).
+ * 섹션 키 = popular|saved|food(레일 탭) · safe · most_reviewed · recent · top_rated(KB-800 — 구 reviews 피드 대체) · guest_cta · curation · idol_pick(KB-836 배너). 카드 food_id = 카탈로그 id(PII 아님).
  */
 import * as React from 'react';
 import type { View } from 'react-native';
 import { EVENTS, track } from '@/lib/analytics';
 
-export type HomeSection = 'popular' | 'saved' | 'food' | 'safe' | 'most_reviewed' | 'recent' | 'top_rated' | 'guest_cta' | 'curation'; // KB-796 curation = 큐레이션 배너
+export type HomeSection = 'popular' | 'saved' | 'food' | 'safe' | 'most_reviewed' | 'recent' | 'top_rated' | 'guest_cta' | 'curation' | 'idol_pick'; // KB-796 curation = 큐레이션 배너 · KB-836 idol_pick = K-POP & K-FOOD 배너
 export type Rect = { x: number; y: number; width: number; height: number };
 export type Viewport = { top: number; bottom: number; left: number; right: number };
 
@@ -29,15 +29,10 @@ export const VISIBLE_THRESHOLD = 0.5;
 const SETTLE_MS = 350; // 등록·포커스 뒤 첫 측정 지연(레이아웃 정착)
 const DRAG_END_MS = 120; // 손 뗌 뒤 관성 시작 여부를 기다리는 창
 
-/** KB-802: 'review' = 리뷰 탭 카드(review_card_view) — 판정 규칙은 홈과 같다, 키 = 리뷰 id(셀 재사용·순번 변동에도 포커스당 1회) */
-export type Target =
-  | { kind: 'section'; section: HomeSection }
-  | { kind: 'card'; section: HomeSection; position: number; foodId: string }
-  | { kind: 'review'; position: number; reviewId: string; photoCount: number };
+type Target = { kind: 'section'; section: HomeSection } | { kind: 'card'; section: HomeSection; position: number; foodId: string };
 type Measurable = Pick<View, 'measureInWindow'>;
 
-const keyOf = (t: Target) =>
-  t.kind === 'section' ? `s:${t.section}` : t.kind === 'review' ? `r:${t.reviewId}` : `c:${t.section}:${t.position}:${t.foodId}`;
+const keyOf = (t: Target) => (t.kind === 'section' ? `s:${t.section}` : `c:${t.section}:${t.position}:${t.foodId}`);
 
 /** 순수 상태기 — 테스트가 측정·타이머를 직접 몰 수 있게 RN·React 밖에 둔다 */
 export class ImpressionTracker {
@@ -99,8 +94,6 @@ export class ImpressionTracker {
           if (visibleFraction({ x, y, width, height }, v) < VISIBLE_THRESHOLD) return;
           this.seen.add(k);
           if (target.kind === 'section') track(EVENTS.home_section_view, { section: target.section });
-          else if (target.kind === 'review')
-            track(EVENTS.review_card_view, { photo_count: target.photoCount, position: target.position, review_id: target.reviewId });
           else track(EVENTS.home_card_view, { section: target.section, position: target.position, food_id: target.foodId });
         });
       } catch {
@@ -121,9 +114,11 @@ export class ImpressionTracker {
   }
 }
 
-/** id = 음식 카드는 foodId, 큐레이션 배너(KB-796)는 collectionKey(→ collection_key — food_id에 섞지 않는다). */
-export function trackHomeCardClick(section: HomeSection, position: number, id: string): void {
-  track(EVENTS.home_card_click, section === 'curation' ? { section, position, collection_key: id } : { section, position, food_id: id });
+/** id = 음식 카드는 foodId, 큐레이션 배너(KB-796)는 collectionKey(→ collection_key — food_id에 섞지 않는다).
+ *  KB-836: id 없음 = 음식 1개가 아닌 배너(idol_pick) — {section, position}만(가짜 food_id 로 음식별 분석을 오염시키지 않는다). */
+export function trackHomeCardClick(section: HomeSection, position: number, id?: string): void {
+  if (id == null) track(EVENTS.home_card_click, { section, position });
+  else track(EVENTS.home_card_click, section === 'curation' ? { section, position, collection_key: id } : { section, position, food_id: id });
 }
 
 /** 홈 밖(음식 탭 등 같은 컴포넌트 재사용)에선 null — 노출 계측 없음 */

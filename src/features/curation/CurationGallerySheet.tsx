@@ -32,6 +32,14 @@ export const INTRO_MAX_LINES = 4;
 /** 짧은 화면에서 사진이 줄어드는 하한 — 그 아래로는 본문이 스크롤로 넘친다(Codex #316) */
 export const PHOTO_MIN_H = 160;
 /** 사진 영역 높이 — 본문 고유 높이(content)가 아직 없으면 기본값, 있으면 남는 자리(하한 160·상한 기본값) */
+/** KB-852: 출처 오버레이 최대 폭 — 우하단 12에서 왼쪽으로, 하단 가운데 점 줄(지름 6 · 간격 8)과 8 띄운다. 1장(점 없음) = 사진 폭 - 좌우 12 */
+export const CREDIT_INSET = 12;
+export const creditMaxWidth = (width: number, count: number): number => {
+  if (count <= 1) return width - CREDIT_INSET * 2;
+  const dotsW = count * 6 + (count - 1) * 8;
+  return Math.max(0, (width - dotsW) / 2 - CREDIT_INSET - 8);
+};
+
 export const photoBoxHeight = (photoH: number, sheetMax: number, bodyContent: number): number =>
   bodyContent > 0 ? Math.max(PHOTO_MIN_H, Math.min(photoH, sheetMax - bodyContent)) : photoH;
 export const shouldDismiss = (translationY: number, velocityY: number, sheetH: number): boolean =>
@@ -133,9 +141,9 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
                 keyExtractor={(img, i) => img?.url ?? `none-${i}`}
                 getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
                 onMomentumScrollEnd={onMomentumEnd}
-                accessible={count > 1}
-                accessibilityRole={count > 1 ? 'adjustable' : undefined}
-                accessibilityLabel={item.name}
+                accessible /* Codex #322: 1장도 읽힘 — 사진 설명(이름, 출처). 그래버(닫기)는 형제라 가려지지 않는다 */
+                accessibilityRole={count > 1 ? 'adjustable' : 'image'}
+                accessibilityLabel={current?.attribution ? `${item.name}, ${current.attribution}` : item.name} /* KB-852: 출처 = 사진 설명에 포함(오버레이 글자는 스크린리더 무음) */
                 accessibilityValue={count > 1 ? { text: `${index + 1} / ${count}` } : undefined}
                 accessibilityActions={count > 1 ? [{ name: 'increment', label: t('curation.nextPhoto') }, { name: 'decrement', label: t('curation.prevPhoto') }] : undefined}
                 onAccessibilityAction={(e) => go(e.nativeEvent.actionName === 'increment' ? index + 1 : index - 1)}
@@ -167,6 +175,19 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
                   <View style={st.handle} />
                 </View>
               </GestureDetector>
+              {/* KB-852: 출처 = 사진 우하단 오버레이(흰 글자 + 은은한 그림자, 1줄 말줄임) — 본문에서 빼서 사진을 넘겨도 아래 흰 영역 높이 불변. 출처 없는 사진 = 없음 */}
+              {!!current?.attribution && (
+                <Text
+                  style={[st.credit, { maxWidth: creditMaxWidth(width, count) }]}
+                  numberOfLines={1}
+                  pointerEvents="none"
+                  accessible={false}
+                  importantForAccessibility="no"
+                  testID="curation-gallery-credit"
+                >
+                  {current.attribution}
+                </Text>
+              )}
               {/* KB-846: 숫자 카운터 → 점(Expedia). 1장이면 숨김 · 스크린리더 값은 페이저의 "n / 3" */}
               {count > 1 && (
                 <View style={st.dots} pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden testID="curation-gallery-dots">
@@ -192,7 +213,6 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
               <Text style={st.name} accessibilityRole="header">{item.name}</Text>
               <Text style={st.area}>{area}</Text>
               <Text style={st.intro} numberOfLines={INTRO_MAX_LINES} testID="curation-gallery-intro">{item.introduction}</Text>
-              {!!current?.attribution && <Text style={st.credit} testID="curation-gallery-credit">{current.attribution}</Text>}
               <Btn
                 variant="ghost"
                 onPress={openGuide}
@@ -211,7 +231,7 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
   );
 }
 
-// 시안 실측(2x PNG): 시트 top 64 · 위 모서리 24 · 핸들 36×4(위 12) · 본문 pad 20, 사진→이름 16, 이후 8 간격 · 이름 24 bold · 지역 13 gray-700 · 소개 15/21 · 출처 13 gray-700 · Guide 44
+// 시안 실측(2x PNG): 시트 top 64 · 위 모서리 24 · 핸들 36×4(위 12) · 본문 pad 20, 사진→이름 16, 이후 8 간격 · 이름 24 bold · 지역 13 gray-700 · 소개 15/21 · Guide 44 (출처 = 사진 우하단 오버레이, KB-852)
 // KB-846: 점 인디케이터 = 사진 하단 가운데(아래 16) · 지름 6 · 간격 8 · 활성 흰 · 비활성 흰 40% · 그래버 띠 = 사진 위쪽 전폭 44(끌기 시작 영역)
 const st = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.32)', justifyContent: 'flex-end' },
@@ -230,6 +250,7 @@ const st = StyleSheet.create({
   name: { fontFamily: font.bodyBold, fontSize: 24, lineHeight: 32, color: C.ink },
   area: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
   intro: { fontFamily: font.body, fontSize: 15, lineHeight: 21, color: C.ink },
-  credit: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
+  // KB-852: 사진 우하단 오버레이 — caption 13 흰(gray-00) + 은은한 그림자(밝은 사진에서도 읽힘)
+  credit: { position: 'absolute', right: CREDIT_INSET, bottom: CREDIT_INSET, fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.card, textAlign: 'right', textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   guide: { minHeight: 44, paddingVertical: 8, marginTop: 4 },
 });

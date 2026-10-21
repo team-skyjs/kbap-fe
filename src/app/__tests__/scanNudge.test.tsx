@@ -147,7 +147,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
 /** P-062①: 샘플 스캔 폐기 — 갤러리 경로로 결과 화면 구동 (OCR mock → 실 segmentMenu) */
 async function renderResult(): Promise<ReactTestRenderer> {
   const tree = render(<Scan />);
-  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function');
+  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto' && typeof n.props?.onPress === 'function');
   expect(gallery.length).toBeGreaterThanOrEqual(1);
   await act(async () => {
     await gallery[0].props.onPress();

@@ -549,14 +549,7 @@
     "ratingAll": "All ratings",
     "ratingMin": "{{min}}+ stars",
     "countryOnly": "{{code}} only",
-    "allReviews": "All reviews",
-    "readReview": "Read review",
-    "ratingNone": "Not rated",
-    "cardA11y": "Read {{name}}'s review of {{food}}",
-    "cardA11yDetail": "{{photos}} photos, taste {{taste}}, serving speed {{speed}}, friendliness {{service}}, helpful {{helpful}}",
-    "ratingPoints": "{{n}} points",
-    "openFoodA11y": "{{food}}, view food info",
-    "photoCount": "{{index}}/{{total}}"
+    "allReviews": "All reviews"
   },
   "ranking": {
     "headerTitle": "My Ranking",
@@ -731,7 +724,12 @@
     "wildchive": "Wild chive",
     "asafoetida": "Asafoetida",
     "mirin": "Mirin",
-    "sulfites": "Sulfites"
+    "sulfites": "Sulfites",
+    "nuts": "Nuts",
+    "crustacean": "Crustaceans",
+    "mollusk": "Mollusks",
+    "meat": "Meat",
+    "meatbroth": "Meat broth"
   },
   "detail": {
     "headerTitle": "Food",
@@ -777,7 +775,14 @@
     "ingGuestBody": "{{ingredient}} is used in about {{percent}}% of versions of this dish. It varies by restaurant. Ask the owner to be sure.",
     "ingGuestBodyNoPct": "{{ingredient}} is commonly used in this dish. It varies by restaurant. Ask the owner to be sure.",
     "foodHidden": "This dish isn't available to view right now.",
-    "foodUpdating": "This dish's info is being refreshed. Please check back in a little while."
+    "foodUpdating": "This dish's info is being refreshed. Please check back in a little while.",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "Which K-pop idol tried this?",
+      "sub": "You might spot a familiar face.",
+      "cta": "Watch to find out",
+      "a11y": "Open a video of a K-pop idol trying this dish"
+    }
   },
   "states": {
     "catalogTitle": "States",
@@ -837,7 +842,13 @@
     "safeForYouSub": "Based on your avoid list. Always confirm with the owner.",
     "railFilterEmpty": "No {{risk}} dishes in this list yet. Try another filter.",
     "mostReviewed": "Most reviewed",
-    "mostReviewedSub": "What people are talking about."
+    "mostReviewedSub": "What people are talking about.",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "Curious what K-pop\nidols ate?",
+      "seeAll": "Explore",
+      "bannerA11y": "View the dishes tried by K-pop idols"
+    }
   },
   "onboarding": {
     "welcomeTag": "Know what to avoid before you order.",
@@ -1157,12 +1168,6 @@
     "monLong11": "November",
     "monLong12": "December"
   },
-  "reviewDetail": {
-    "title": "Review",
-    "notFound": "This review was deleted or isn't available",
-    "photoA11y": "Review photo, view larger",
-    "moreA11y": "More"
-  },
   "curation": {
     "sectionTitle": "Explore Korea",
     "loadError": "Couldn't load these collections.",
@@ -1304,5 +1309,27 @@
     "newAnalysisCta": "Start a new analysis",
     "debugLabelPlaceholder": "Text of one side of the label",
     "debugAddPage": "Add as one side"
+  },
+  "scanCamera": {
+    "title": "Scan",
+    "menuTitle": "Fit the whole menu",
+    "menuHint": "Pinch to zoom",
+    "packageTitle": "Show the front of the package",
+    "packageHint": "Keep the name and flavor visible.",
+    "labelTitle": "Show the ingredient label",
+    "labelHint": "Keep all ingredients sharp and readable.",
+    "photos": "Photos",
+    "menuLink": "Choose a photo from your library",
+    "frontLink": "Scan package front instead",
+    "capturedMenu": "Your captured menu",
+    "capturedPackage": "Your captured package",
+    "capturedLabel": "Your captured label",
+    "choosePhoto": "Choose photo",
+    "switchCamera": "Switch camera"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "cardA11y": "View details for {{name}}",
+    "empty": "No dishes available right now."
   }
 }

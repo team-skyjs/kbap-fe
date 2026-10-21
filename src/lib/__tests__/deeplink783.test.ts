@@ -36,7 +36,6 @@ it('지원 딥링크 표(URL → 화면) — 광고 링크 작성용, 바뀌면 
     'kbap://profile': '/(tabs)/profile',
     'kbap://food/:id': '/food/123',
     'kbap://food/:id/reviews': '/food/123/reviews',
-    'kbap://review/:id': '/review/123', // KB-802 리뷰 상세
     'kbap://search': '/search',
     'kbap://scan': '/scan',
     'kbap://notifications': '/notifications',

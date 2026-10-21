@@ -508,14 +508,7 @@
     "ratingAll": "Todas las valoraciones",
     "ratingMin": "{{min}}+ estrellas",
     "countryOnly": "Solo {{code}}",
-    "allReviews": "Todas las reseñas",
-    "readReview": "Leer reseña",
-    "ratingNone": "Sin valorar",
-    "cardA11y": "Leer la reseña de {{name}} sobre {{food}}",
-    "cardA11yDetail": "{{photos}} fotos, sabor {{taste}}, rapidez {{speed}}, amabilidad {{service}}, útil {{helpful}}",
-    "ratingPoints": "{{n}} puntos",
-    "openFoodA11y": "{{food}}, ver información del plato",
-    "photoCount": "{{index}}/{{total}}"
+    "allReviews": "Todas las reseñas"
   },
   "ranking": {
     "headerTitle": "Mi clasificación",
@@ -624,7 +617,14 @@
     "ingGuestBody": "{{ingredient}} se usa en aproximadamente el {{percent}}% de las versiones de este plato. Puede variar según el restaurante; pregunta al dueño para asegurarte.",
     "ingGuestBodyNoPct": "{{ingredient}} se usa comúnmente en este plato. Puede variar según el restaurante; pregunta al dueño para asegurarte.",
     "foodHidden": "Ahora mismo no se puede ver la información de este plato.",
-    "foodUpdating": "La información de este plato se está actualizando. Vuelve a comprobarlo en un momento."
+    "foodUpdating": "La información de este plato se está actualizando. Vuelve a comprobarlo en un momento.",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "¿Qué idol del K-pop probó esto?",
+      "sub": "Quizás veas una cara conocida.",
+      "cta": "Míralo en video",
+      "a11y": "Abrir un video de un idol del K-pop probando este plato"
+    }
   },
   "states": {
     "catalogTitle": "Estados",
@@ -684,7 +684,13 @@
     "safeForYouSub": "Según tu lista de evitados — confirma siempre con el restaurante.",
     "railFilterEmpty": "Aún no hay platos \"{{risk}}\" en esta lista. Prueba otro filtro.",
     "mostReviewed": "Más reseñados",
-    "mostReviewedSub": "De lo que todos hablan."
+    "mostReviewedSub": "De lo que todos hablan.",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "¿Sabes qué comen\nlos idols de K-pop?",
+      "seeAll": "Explorar",
+      "bannerA11y": "Ver los platos que probaron idols del K-pop"
+    }
   },
   "onboarding": {
     "welcomeTag": "Sabe qué es seguro comer, antes de pedir.",
@@ -949,7 +955,12 @@
     "wildchive": "Ajo silvestre",
     "asafoetida": "Asafétida",
     "mirin": "Mirin",
-    "sulfites": "Sulfitos"
+    "sulfites": "Sulfitos",
+    "nuts": "Frutos secos",
+    "crustacean": "Crustáceos",
+    "mollusk": "Moluscos",
+    "meat": "Carne",
+    "meatbroth": "Caldo de carne"
   },
   "saved": {
     "error": "No se pudo actualizar tu lista guardada. Inténtalo de nuevo.",
@@ -1161,12 +1172,6 @@
     "monLong11": "noviembre",
     "monLong12": "diciembre"
   },
-  "reviewDetail": {
-    "title": "Reseña",
-    "notFound": "Esta reseña se eliminó o no está disponible",
-    "photoA11y": "Foto de la reseña, ver en grande",
-    "moreA11y": "Más"
-  },
   "curation": {
     "sectionTitle": "Explora Corea",
     "loadError": "No se pudieron cargar estas colecciones.",
@@ -1308,5 +1313,27 @@
     "newAnalysisCta": "Nuevo análisis",
     "debugLabelPlaceholder": "Texto de un lado de la etiqueta",
     "debugAddPage": "Añadir como un lado"
+  },
+  "scanCamera": {
+    "title": "Escanear",
+    "menuTitle": "Encuadra todo el menú",
+    "menuHint": "Pellizca para hacer zoom",
+    "packageTitle": "Muestra el frente del envase",
+    "packageHint": "Que se vean el nombre y el sabor.",
+    "labelTitle": "Muestra la etiqueta de ingredientes",
+    "labelHint": "Que todos los ingredientes se lean con nitidez.",
+    "photos": "Fotos",
+    "menuLink": "Elegir una foto de tu galería",
+    "frontLink": "Escanear el frente del envase",
+    "capturedMenu": "Tu foto del menú",
+    "capturedPackage": "Tu foto del envase",
+    "capturedLabel": "Tu foto de la etiqueta",
+    "choosePhoto": "Elegir foto",
+    "switchCamera": "Cambiar cámara"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "cardA11y": "Ver detalles de {{name}}",
+    "empty": "No hay platos disponibles por ahora."
   }
 }

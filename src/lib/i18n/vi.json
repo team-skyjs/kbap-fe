@@ -508,14 +508,7 @@
     "ratingAll": "Mọi mức sao",
     "ratingMin": "Từ {{min}} sao",
     "countryOnly": "Chỉ {{code}}",
-    "allReviews": "Tất cả đánh giá",
-    "readReview": "Đọc đánh giá",
-    "ratingNone": "Chưa đánh giá",
-    "cardA11y": "Đọc đánh giá {{food}} của {{name}}",
-    "cardA11yDetail": "{{photos}} ảnh, hương vị {{taste}}, tốc độ phục vụ {{speed}}, sự thân thiện {{service}}, hữu ích {{helpful}}",
-    "ratingPoints": "{{n}} điểm",
-    "openFoodA11y": "{{food}}, xem thông tin món ăn",
-    "photoCount": "{{index}}/{{total}}"
+    "allReviews": "Tất cả đánh giá"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",
@@ -624,7 +617,14 @@
     "ingGuestBody": "{{ingredient}} được dùng trong khoảng {{percent}}% phiên bản của món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
     "ingGuestBodyNoPct": "{{ingredient}} thường được dùng trong món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
     "foodHidden": "Hiện không thể xem thông tin món này.",
-    "foodUpdating": "Thông tin món này đang được cập nhật. Vui lòng kiểm tra lại sau ít phút."
+    "foodUpdating": "Thông tin món này đang được cập nhật. Vui lòng kiểm tra lại sau ít phút.",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "Idol K-pop nào đã ăn món này?",
+      "sub": "Có thể bạn sẽ thấy một gương mặt quen thuộc.",
+      "cta": "Xem video để biết",
+      "a11y": "Mở video idol K-pop ăn món này"
+    }
   },
   "states": {
     "catalogTitle": "Trạng thái",
@@ -684,7 +684,13 @@
     "safeForYouSub": "Dựa trên danh sách cần tránh của bạn — luôn xác nhận với chủ quán.",
     "railFilterEmpty": "Chưa có món {{risk}} trong danh sách này. Hãy thử bộ lọc khác.",
     "mostReviewed": "Được đánh giá nhiều nhất",
-    "mostReviewedSub": "Món mọi người đang nói tới."
+    "mostReviewedSub": "Món mọi người đang nói tới.",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "Tò mò idol K-pop\nđã ăn gì không?",
+      "seeAll": "Khám phá",
+      "bannerA11y": "Xem các món idol K-pop đã ăn"
+    }
   },
   "onboarding": {
     "welcomeTag": "Biết món nào an toàn để ăn — trước khi bạn gọi món.",
@@ -949,7 +955,12 @@
     "wildchive": "Hành dại",
     "asafoetida": "A ngùy (asafoetida)",
     "mirin": "Rượu mirin",
-    "sulfites": "Sunfit"
+    "sulfites": "Sunfit",
+    "nuts": "Các loại hạt",
+    "crustacean": "Giáp xác",
+    "mollusk": "Thân mềm",
+    "meat": "Thịt",
+    "meatbroth": "Nước dùng thịt"
   },
   "saved": {
     "error": "Không thể cập nhật danh sách đã lưu. Vui lòng thử lại.",
@@ -1161,12 +1172,6 @@
     "monLong11": "tháng 11",
     "monLong12": "tháng 12"
   },
-  "reviewDetail": {
-    "title": "Đánh giá",
-    "notFound": "Đánh giá này đã bị xóa hoặc không khả dụng",
-    "photoA11y": "Ảnh đánh giá, xem lớn hơn",
-    "moreA11y": "Thêm"
-  },
   "curation": {
     "sectionTitle": "Khám phá Hàn Quốc",
     "loadError": "Không tải được các bộ sưu tập này.",
@@ -1308,5 +1313,27 @@
     "newAnalysisCta": "Phân tích mới",
     "debugLabelPlaceholder": "Chữ của một mặt nhãn",
     "debugAddPage": "Thêm làm một mặt"
+  },
+  "scanCamera": {
+    "title": "Quét",
+    "menuTitle": "Hãy chụp trọn cả thực đơn",
+    "menuHint": "Chụm hai ngón để thu phóng",
+    "packageTitle": "Hãy chụp mặt trước bao bì",
+    "packageHint": "Để tên và hương vị hiện rõ.",
+    "labelTitle": "Hãy chụp nhãn thành phần",
+    "labelHint": "Để mọi thành phần hiện rõ, dễ đọc.",
+    "photos": "Ảnh",
+    "menuLink": "Chọn ảnh từ thư viện",
+    "frontLink": "Quét mặt trước bao bì thay thế",
+    "capturedMenu": "Thực đơn bạn đã chụp",
+    "capturedPackage": "Bao bì bạn đã chụp",
+    "capturedLabel": "Nhãn bạn đã chụp",
+    "choosePhoto": "Chọn ảnh",
+    "switchCamera": "Đổi camera"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "cardA11y": "Xem chi tiết {{name}}",
+    "empty": "Hiện chưa có món nào để xem."
   }
 }

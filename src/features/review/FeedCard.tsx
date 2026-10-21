@@ -12,9 +12,12 @@ import * as React from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
-import { color as C } from '@/lib/theme';
-import { CardPhoto, Star, IconChevron, IconFood, IconMore } from '@/components';
-import { HelpfulButton, ReviewAuthorLine, ReviewBody, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { color as C, type as type_ } from '@/lib/theme';
+import { useReviewTime } from '@/lib/reviewTime';
+import { CardPhoto, RankMedal, Star, IconChevron, IconFood, IconMore } from '@/components';
+import { AvatarPlaceholder } from '@/components/design4Assets';
+import { FlagEmoji } from '@/components/FlagEmoji';
+import { HelpfulButton, ReviewBody, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import type { Review } from '@/lib/api/types';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
@@ -58,12 +61,43 @@ export function FeedCard({
   photoVariant?: 'tiles' | 'peek';
 }) {
   const fontScale = useWindowDimensions().fontScale; // KB-777: 글꼴 배율 전이 = 칩 재측정
+  const anon = review.anonymized;
+  const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
+  const when = useReviewTime(review.createdAt, t);
   return (
     <View style={styles.card} testID={`feed-${review.id}`}>
       <View style={styles.cardTop}>
-        {/* KB-802: 작성자 블록 = ReviewAuthorLine(리뷰 탭 카드·상세와 공용, 시각 무변) */}
         <View style={styles.who}>
-          <ReviewAuthorLine review={review} t={t} />
+          {/* 9/5 예진 판정(Q3): 아바타 24 통일 — 시안 avatar-placeholder SVG.
+              P-340(KB-495, 1-B): 우하단 국기 배지 14 — FlagEmoji(유니코드 국기 이모지)는
+              **국기 한정 헌법 이모지 예외(예진 결정 9/8)**. 탈퇴·국적 null = 배지 없음. */}
+          <View style={styles.avatarWrap}>
+            <View style={styles.avatar}>
+              <AvatarPlaceholder height={24} />
+            </View>
+            {/* Codex #101 P2: 배지 = 순수 장식(스크린리더 무음) — 국가명 10로케일 도입 안 함, 닉네임만 읽힘 */}
+            {!anon && !!review.authorNationality && (
+              <View
+                style={styles.flagBadge}
+                testID={`feed-flag-${review.id}`}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
+                <FlagEmoji code={review.authorNationality} size={10} />
+              </View>
+            )}
+          </View>
+          {/* KB-781(D-25 v2): name-group = [닉네임+메달(간격 4)] + [작성 시각] — 가로 wrap(간격 8, 줄 간격 2). 공간이 모자라면 시각이 닉네임 아래로.
+              닉네임만 말줄임, 시각은 안 잘림. 구분 문자 없음(가운데 점 금지 — 간격으로만). 스크린리더 = 전체 날짜 */}
+          <View style={styles.nameGroup}>
+            <View style={styles.nameRow}>
+              <Text style={styles.whoName} numberOfLines={1}>{name}</Text>
+              {!anon && !!review.authorRankTier && <RankMedal level={review.author?.level ?? 1} size={16} />}
+            </View>
+            {!!when.label && (
+              <Text style={styles.when} accessibilityLabel={when.a11y} testID={`feed-when-${review.id}`}>{when.label}</Text>
+            )}
+          </View>
         </View>
         {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}
         <HelpfulButton review={review} mine={mine} t={t} onGuest={onGuestHelpful} />
@@ -114,7 +148,18 @@ const styles = StyleSheet.create({
   // 카드(4150:13934) — 구분선형(보더·그림자 소멸)
   card: { paddingVertical: 22, paddingHorizontal: 20, gap: 8, borderBottomWidth: 1, borderBottomColor: C.line }, // A-FC-01(KB-486) · gap ↔ 번역 라벨 padTop(TRANSLATE_LABEL_BOX) 묶임 — 줄이면 라벨 상자가 위 사진 터치를 덮는다(유닛)
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 }, // A-FC-01
-  who: { flex: 1, minWidth: 0 }, // 작성자 줄이 행의 남는 가로 폭을 차지(Helpful·⋯ 는 오른쪽) — ReviewAuthorLine 자체는 flex 없음
+  who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FC-02
+  whoName: { flexShrink: 1, fontSize: 15, fontWeight: '500', color: '#2F3137' }, // A-FC-02
+  // KB-781: name-group — 가로 wrap(간격 8 · 줄 간격 2). 닉네임 줄은 상자 폭까지만(말줄임), 시각은 자기 폭 그대로(안 잘림)
+  nameGroup: { flex: 1, minWidth: 0, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1, maxWidth: '100%' },
+  when: { ...type_.caption, color: C.ink3, flexShrink: 0 }, // caption1-regular · gray-600
+  // 시안 아바타: 원 bg #E8F6FF + 실루엣(SVG) — TabBar 프로필 슬롯과 동일 문법
+  avatarWrap: { width: 24, height: 24 }, // P-340: 배지 오버행 수용(overflow 기본 visible)
+  avatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#E8F6FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.10)' }, // A-FC-03
+  // P-340(1-B): 국기 배지 14 — 흰 링 1.5 원형, 아바타 밖 우하단 -2 걸침
+  flagBadge: { position: 'absolute', right: -2, bottom: -2, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }, // P-342 ④: 이모지만(흰 원·링 제거)
+
   // KB-431 후속(9/7 .fig 실측 #2162:11360): 평점 행 = hug 273×20 @x20 — **좌측 정렬**
   // (main=CENTER 속성은 hug 너비라 무효). gap 16(항목 간)·4(라벨-별) 현행 유지.
   axisRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 16 },
