@@ -107,12 +107,10 @@ it('P-333 ② 저장 카드 배지 — 회원(guest=false) 카드 3장 전부 Ri
 
 it('P-334 — 하단 바 비율(≥360 = 3:5, <360 = 1:1)·아이콘 없음·fitLabel(2줄+0.85), Read all chevron, Btn pad 10', () => {
   const fd = read('src/app/food/[id]/index.tsx');
-  expect(fd).toContain("useWindowDimensions().width < 360");
-  expect(fd).toContain('flex: narrow ? 1 : 3');
-  expect(fd).toContain('flex: scanEntry ? 1 : narrow ? 1 : 5'); // P-353 ②: 스캔 진입 = Ask 전폭
-  // KB-710(2): 두 버튼 모두 style={styles.bottomBtnFill}(같은 높이) — 아이콘 prop은 여전히 없음
-  expect(fd).toMatch(/<Btn fitLabel onPress=\{onAsk\} testID="bottom-ask" style=\{styles\.bottomBtnFill\}>/); // 말풍선 아이콘 없음
-  expect(fd).toMatch(/<Btn variant=\{onAsk \? 'ghost' : 'primary'\} fitLabel onPress=\{onWrite\} testID="bottom-write" style=\{styles\.bottomBtnFill\}>/);
+  // KB-851: 하단 바(3:5 비율) → 떠 있는 알약(오른쪽 정렬, 내용 폭) — Ask = 라벨 단독(말풍선 아이콘 없음) · Write = file-pen + 라벨
+  expect(fd).toContain('<Text style={styles.pillAskText}>{t(\'detail.askOwner\')}</Text>');
+  expect(fd).toContain('<IconEdit size={20} color={INK_TITLE} />');
+  expect(fd).toMatch(/pillWriteText: \{ flexShrink: 1/); // 긴 번역 = 줄바꿈(잘림 0)
   expect(fd).toMatch(/iconEnd=\{<IconChevron size=\{16\}[^}]*\}/);
   const btn = read('src/components/Btn.tsx');
   expect(btn).toContain('paddingHorizontal: 10, // P-334');

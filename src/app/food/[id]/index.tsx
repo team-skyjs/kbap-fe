@@ -12,10 +12,10 @@
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Modal, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useReducedMotion, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,6 +29,7 @@ import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { HeroGallery } from '@/features/food/HeroGallery';
+import { PILL_FADE_MS, useScrollAwarePill } from '@/features/food/scrollAwarePill';
 import { IdolVideoCard } from '@/features/food/IdolVideoCard';
 import { useIdolPickVideo } from '@/lib/data/useIdolPicks';
 import { useIsNewFood } from '@/lib/newFood';
@@ -44,7 +45,7 @@ import { FeedAd } from '@/features/ads/FeedAd';
 import { withFeedAds } from '@/lib/ads/feedSlots';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { IconFood, IconLock } from '@/components/icons';
+import { IconEdit, IconFood, IconLock } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -123,8 +124,12 @@ export default function FoodDetailScreen() {
 
   // P-139: 플로팅 헤더 — 스크롤 임계 통과 시 솔리드+타이틀 페이드인
   const [solid, setSolid] = useState(false);
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
+  // KB-851: 떠 있는 리뷰 알약 — K-pop 카드가 보이는 동안·아래로 스크롤 = 숨김, 위로·멈춤·맨 위/아래 = 표시
+  const pill = useScrollAwarePill();
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setSolid(e.nativeEvent.contentOffset.y > HEADER_SOLID_Y);
+    pill.onScroll(e);
+  };
   const solidFade = useAnimatedStyle(() => ({ opacity: withTiming(solid ? 1 : 0, { duration: 180 }) }));
 
   // 북마크 — 게스트=게이트 시트, 회원=BE 토글 (KB-142: 낙관적+실패 롤백, 무변)
@@ -148,15 +153,23 @@ export default function FoodDetailScreen() {
     });
   };
 
-  // KB-431 §1-8 FixedBottom — 등록 음식만(미등록은 본문 CTA 현행 유지)
+  // KB-431 §1-8 → KB-851 떠 있는 알약 — 등록 음식만(미등록은 본문 CTA 현행 유지)
   const showBottomBar = !!food && food.isRegistered;
-  // Codex #97 3R P2: fitLabel 2줄(es 등)이면 바 실높이가 고정 예약(107)을 초과해
-  // 콘텐츠 끝을 가림 — onLayout 실측으로 스크롤 하단 여백 파생(측정 전 폴백 107).
+  // Codex #97 3R P2 → KB-851: 알약 줄 실높이(큰 글씨·긴 번역이면 커짐) + 바닥 여백만큼 콘텐츠 하단 여백 — 마지막 리뷰를 가리지 않게(측정 전 폴백 48)
   const [barH, setBarH] = useState(0);
+  const pillBottom = Math.max(insets.bottom, 12);
 
   return (
     <View style={styles.root}>
-      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 107) + 12 : 40 }, (error || hidden) && !food ? { flexGrow: 1 } : null]}>
+      <ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        onLayout={(e) => pill.onViewLayout(e.nativeEvent.layout.height)}
+        onContentSizeChange={(_w, h) => pill.onContentSize(h)}
+        contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 48) + pillBottom + 16 : 40 }, (error || hidden) && !food ? { flexGrow: 1 } : null]}
+        testID="detail-scroll"
+      >
         {/* KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**(FOOD-001)이면 에러 블록 대신 조용한 안내.
             QueryErrorBlock을 쓰면 안 되는 이유 셋 — ① 재시도가 **영원히 실패**해 버튼이 함정이 된다
             ② 안전 판정 글리프(RiskGlyph caution)가 붙어 음식 자체에 대한 판정처럼 읽힌다(헌법 III)
@@ -208,6 +221,7 @@ export default function FoodDetailScreen() {
                 t={t}
                 router={router}
                 id={id ?? ''}
+                onIdolLayout={pill.onCardLayout}
               />
             ) : (
               <View style={styles.body}>
@@ -218,14 +232,15 @@ export default function FoodDetailScreen() {
         )}
       </ScrollView>
 
-      {/* §1-8: FixedBottom(4150:16963) — 아웃라인 Write + primary Ask(회원) /
-          게스트·Ask 부재 시 Write primary 단독. */}
+      {/* §1-8 → KB-851(시안 kpop-detail v1 "Review CTA"): 흰 바·구분선 없이 콘텐츠 위에 뜬 알약 — 흰 Outline + file-pen Write
+          (+ 회원 = primary Ask 알약). 표시 규칙 = useScrollAwarePill */}
       {showBottomBar && (
         <RegisteredBottomBar
+          shown={pill.shown}
+          bottom={pillBottom}
           guest={isGuest}
           scanEntry={src === 'scan'}
           onHeight={setBarH}
-          insetsBottom={insets.bottom}
           t={t}
           onWrite={() => {
             // P-392(KB-584): 자격 게이트 폐기 — 회원이면 스캔 여부 무관(BE #274: reviewEligible 항상 true)
@@ -280,51 +295,56 @@ type IngChip = 'all' | 'safe' | 'danger' | 'caution';
 const ING_CHIPS: IngChip[] = ['all', 'safe', 'danger', 'caution'];
 
 function RegisteredBottomBar({
-  guest,
-  insetsBottom,
+  shown,
+  bottom,
   t,
   onWrite,
   onAsk,
   scanEntry = false,
   onHeight,
 }: {
+  /** KB-851: 표시 여부(useScrollAwarePill) — 숨김 = 아래로 미끄러지며 투명(스크린리더 포커스는 유지) */
+  shown: boolean;
+  /** 화면 바닥에서 알약까지(안전 영역, 최소 12) */
+  bottom: number;
   guest: boolean;
-  insetsBottom: number;
   t: TFn;
   onWrite: () => void;
   onAsk?: () => void;
-  /** P-353 ②(KB-515): 스캔 진입 = Write 미렌더·Ask 전폭(스캔한 음식이라 리뷰 유도 대신 문의 단독) */
+  /** P-353 ②(KB-515): 스캔 진입 = Write 미렌더·Ask 단독(스캔한 음식이라 리뷰 유도 대신 문의 단독) */
   scanEntry?: boolean;
-  /** Codex #97 3R P2: 실높이 보고 — 스크롤 하단 여백 파생용(fitLabel 2줄 대응) */
+  /** 알약 줄 실높이 보고 — 스크롤 하단 여백 파생(큰 글씨·긴 번역 대응) */
   onHeight?: (h: number) => void;
 }) {
-  // P-334 2R: 시안 비율 3:5는 ≥360 전제 — 좁은 폭(<360)에선 1:1로 라벨 공간 확보(i18n 절단 방지)
-  const narrow = useWindowDimensions().width < 360;
+  const reduced = useReducedMotion();
+  const [rowH, setRowH] = useState(48);
+  const hideY = rowH + bottom + 8; // 화면 밖까지
+  // 표시 = 150ms 페이드(시안) · 모션 줄이기 = 즉시
+  const anim = useAnimatedStyle(() => ({
+    opacity: reduced ? (shown ? 1 : 0) : withTiming(shown ? 1 : 0, { duration: PILL_FADE_MS }),
+    transform: [{ translateY: reduced ? (shown ? 0 : hideY) : withTiming(shown ? 0 : hideY, { duration: PILL_FADE_MS }) }],
+  }));
+  const write = FLAGS.reviewsEnabled && !(scanEntry && onAsk);
+  if (!write && !onAsk) return null;
   return (
-    <View
-      style={[styles.bottomBar, { paddingBottom: insetsBottom + 10 }]}
-      onLayout={(e) => onHeight?.(e.nativeEvent.layout.height)}
+    <Animated.View
+      style={[styles.pillRow, { bottom }, anim]}
+      pointerEvents="box-none"
+      onLayout={(e) => { const h = e.nativeEvent.layout.height; setRowH(h); onHeight?.(h); }}
       testID="detail-bottom-bar"
     >
-      {FLAGS.reviewsEnabled && !(scanEntry && onAsk) && (
-        <View style={onAsk ? { flex: narrow ? 1 : 3 } : { flex: 1 }} testID="bottom-write-slot">{/* P-334: flex 3/5(P-329 판정 문법) */}
-          {/* KB-710(2): 두 버튼 높이 맞춤 — 큰 글자에서 좁은 Write만 두 줄로 접혀 키가 달랐다. 줄(row)은 슬롯을 가장 큰 쪽에
-              맞춰 늘리니 버튼이 슬롯을 채우면 같은 높이(기본 크기 = 둘 다 48 그대로) */}
-          <Btn variant={onAsk ? 'ghost' : 'primary'} fitLabel onPress={onWrite} testID="bottom-write" style={styles.bottomBtnFill}>
-            {t('reviews.writeReview')}
-          </Btn>
-        </View>
+      {write && (
+        <Pressable style={styles.pillWrite} onPress={onWrite} accessibilityRole="button" testID="bottom-write">
+          <IconEdit size={20} color={INK_TITLE} />
+          <Text style={styles.pillWriteText}>{t('reviews.writeReview')}</Text>
+        </Pressable>
       )}
       {onAsk && (
-        <View style={{ flex: scanEntry ? 1 : narrow ? 1 : 5 }} testID="bottom-ask-slot">{/* P-334: 시안 = 라벨 단독(말풍선 아이콘 제거) · P-353 ②: 스캔 진입 = 전폭 */}
-          <Btn fitLabel onPress={onAsk} testID="bottom-ask" style={styles.bottomBtnFill}>
-            {t('detail.askOwner')}
-          </Btn>
-        </View>
+        <Pressable style={styles.pillAsk} onPress={onAsk} accessibilityRole="button" testID="bottom-ask">
+          <Text style={styles.pillAskText}>{t('detail.askOwner')}</Text>
+        </Pressable>
       )}
-      {/* reviewsEnabled off + guest(Ask 없음) = 빈 바 방지 — 둘 다 없으면 렌더 안 함 */}
-      {!FLAGS.reviewsEnabled && !onAsk && <View />}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -341,7 +361,10 @@ function Registered({
   router,
   id,
   setCoachOpen,
+  onIdolLayout,
 }: {
+  /** KB-851: K-pop 카드의 콘텐츠 y·높이 보고(리뷰 알약 숨김 판정) */
+  onIdolLayout?: (y: number, h: number) => void;
   setCoachOpen: (v: boolean) => void;
   guest: boolean;
   food: FoodDetail;
@@ -481,7 +504,12 @@ function Registered({
       {!guest && !hasRestrictions && <Text style={styles.profileHint}>{t('detail.addProfileHint')}</Text>}
 
       {/* KB-836 V1: 대표 아이돌 영상 티저 — 목록 캐시에 이 음식이 있을 때만(없으면 래퍼·여백 0). 위험 요약·헤더 아래(안전 정보 위계 유지) */}
-      {idolVideo && <IdolVideoCard foodId={id} video={idolVideo} />}
+      {idolVideo && (
+        /* KB-851: 카드 위치(스크롤 콘텐츠 기준) — 카드가 보이는 동안 리뷰 알약을 숨긴다. 래퍼는 스타일 없음(배치 무변) */
+        <View onLayout={(e) => onIdolLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)} testID="detail-idol-wrap">
+          <IdolVideoCard foodId={id} video={idolVideo} />
+        </View>
+      )}
 
       {/* §1-4: 섹션 디바이더 — 8px 회색 띠(4095:1793) */}
       {ingredients.length > 0 && (
@@ -852,8 +880,13 @@ const styles = StyleSheet.create({
   disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 17, paddingHorizontal: 20 },
 
   // §1-8: FixedBottom
-  bottomBtnFill: { flexGrow: 1 }, // KB-710(2): 슬롯 높이 채움(옆 버튼과 같은 높이)
-  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
+  // KB-851(시안 kpop-detail v1 12357:31965 "Review pill"): 바 배경·구분선 없음 · 오른쪽 20 · 알약 높이 48 radius full
+  // Write = 흰 Outline(gray-300 테두리) + file-pen 20(왼쪽 14) + subtitle1-sbold gray-1000 · 최소 폭 196(긴 번역은 늘어남 — 잘림 0)
+  pillRow: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'stretch', gap: 8 },
+  pillWrite: { minHeight: 48, minWidth: 196, flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 14, paddingRight: 24, paddingVertical: 12, borderRadius: 999, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
+  pillWriteText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
+  pillAsk: { minHeight: 48, flexShrink: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, backgroundColor: C.primary },
+  pillAskText: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: '#FFFFFF', textAlign: 'center' },
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },
