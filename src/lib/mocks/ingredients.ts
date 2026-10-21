@@ -59,8 +59,8 @@ export const INGREDIENTS: Ingredient[] = [
   ing('SULFITES', 'Sulfites', 'sulfites'),
   // KB-843(서버 #446, R-100 묶음 = 하위 전부): 견과류(땅콩 포함)·갑각류·연체류(두족류+조개류)·육류 + 말단 양고기·고기 육수.
   // 묶음 선택의 하위 판정은 서버 함의 닫힘(Avoidance.codes) — 음식 상세 "피하는 재료 X에 포함돼요"(matchedBy)가 이 코드로 이름을 찾는다
-  // 이름은 짧게(타일 라벨 1줄 — 묶음이라는 뜻은 선택 시 음식 상세의 "피하는 재료 X에 포함돼요"가 말한다). 땅콩 포함만 명시(콩과라 오해 여지)
-  ing('NUTS', 'Nuts (incl. peanut)', 'nuts'), ing('CRUSTACEAN', 'Crustaceans', 'crustacean'), ing('MOLLUSK', 'Mollusks', 'mollusk'),
+  // 이름 = 서버 카탈로그 이름과 같게(타일 1줄 — 묶음 뜻은 음식 상세의 "피하는 재료 X에 포함돼요"가 말한다). "땅콩 포함" 표기는 아이콘 자산과 함께 디자인 후속(커맨드 10/21)
+  ing('NUTS', 'Nuts', 'nuts'), ing('CRUSTACEAN', 'Crustaceans', 'crustacean'), ing('MOLLUSK', 'Mollusks', 'mollusk'),
   ing('MEAT', 'Meat', 'meat'), ing('LAMB', 'Lamb', 'lamb'), ing('MEAT_BROTH', 'Meat broth', 'meatbroth'),
 ];
 
