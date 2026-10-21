@@ -1,7 +1,7 @@
 /**
  * IdolPickBanner (KB-836 H1 → KB-856 v2 "실루엣 B", 02_designer_spec 배너 v2 절) — 홈 인기 레일 아래 K-POP & K-FOOD 다크 포스터 배너.
  * **정적**(사용자 결정 2026-10-21): 데이터·네트워크·로딩·0건 분기 없음, 음식 수 표시 없음. 배너 전체가 단일 버튼 → `/idol-picks`.
- * v2 = 카드 상단 absolute 배경 1장(번들 1170×695, 청록 틴트·상하 ink 페이드가 이미지에 구워짐 — 그라데이션·오버레이 뷰 없음).
+ * v2 = 카드 상단 absolute 배경 1장(번들 1170×695, 청록 틴트·상하 ink 페이드가 이미지에 구워짐 — 그라데이션·오버레이 뷰 없음). 크기는 카드폭·카드폭/비율 명시값.
  *  텍스트 블록은 카드폭 × 182/320(이미지가 완전한 ink 가 되는 지점)부터 시작 → 라벨이 인물 위에 걸치지 않는다. 카드 높이는 내용 따라.
  * 눌림 = 흰 12% 오버레이 opacity 만(크기·보더 불변). 계측: 노출 home_section_view(idol_pick) · 클릭 home_card_click{section, position 0}(id 없음, D4).
  */
@@ -18,8 +18,12 @@ import { trackHomeCardClick, useImpressionRef } from './homeImpressions';
 const BG = require('../../../assets/images/idol_pick_banner_bg.webp');
 /** 배경 에셋 비율(1170×695) */
 export const BG_ASPECT = 1170 / 695;
-/** 텍스트 시작 = 카드폭 × 182/320 (카드폭 = 창 폭 − 좌우 20×2) */
-export const textTop = (windowWidth: number) => ((windowWidth - 40) * 182) / 320;
+/** 카드폭 = 창 폭 − 좌우 20×2 */
+const cardWidth = (windowWidth: number) => windowWidth - 40;
+/** 배경 띠 높이 = 카드폭 / 에셋 비율. ponytail: absolute + width% + aspectRatio 는 실기(iOS)에서 높이가 카드 전체로 늘어나 2인만 확대됨(KB-856 회귀) → 명시 높이 */
+export const bgHeight = (windowWidth: number) => cardWidth(windowWidth) / BG_ASPECT;
+/** 텍스트 시작 = 카드폭 × 182/320 */
+export const textTop = (windowWidth: number) => (cardWidth(windowWidth) * 182) / 320;
 
 export function IdolPickBanner() {
   const { t } = useTranslation();
@@ -35,7 +39,7 @@ export function IdolPickBanner() {
       <Pressable onPress={open} style={styles.banner} accessibilityRole="button" accessibilityLabel={t('home.idolPick.bannerA11y')} testID="idol-pick-banner">
         {({ pressed }) => (
           <>
-            <Image source={BG} style={styles.bg} resizeMode="cover" accessibilityElementsHidden importantForAccessibility="no" testID="idol-pick-bg" />
+            <Image source={BG} style={[styles.bg, { width: cardWidth(width), height: bgHeight(width) }]} resizeMode="cover" accessibilityElementsHidden importantForAccessibility="no" testID="idol-pick-bg" />
             <View style={[styles.inner, { paddingTop: textTop(width) }]} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden testID="idol-pick-inner">
               <View style={styles.texts}>
                 <Text style={styles.label}>{t('home.idolPick.label')}</Text>
@@ -58,7 +62,7 @@ export function IdolPickBanner() {
 const styles = StyleSheet.create({
   outer: { paddingHorizontal: 20, paddingTop: 32 },
   banner: { backgroundColor: C.ink, borderRadius: 16, overflow: 'hidden' },
-  bg: { position: 'absolute', top: 0, left: 0, width: '100%', aspectRatio: BG_ASPECT },
+  bg: { position: 'absolute', top: 0, left: 0 },
   inner: { paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
   texts: { gap: 6 },
   label: { fontFamily: font.bodyBold, fontSize: 11, lineHeight: 16, letterSpacing: 1.6, color: C.primary },

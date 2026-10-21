@@ -15,7 +15,7 @@ import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { Shimmer } from '@/components/Skeleton';
 import { EmptyBlock, QueryErrorBlock } from '@/components/StateBlock';
-import { IconArrowLeft, IconQuestion } from '@/components/icons';
+import { IconArrowLeft } from '@/components/icons';
 import { IdolPosterCard } from '@/features/home/IdolPosterCard';
 import { isGridPad, padOddGrid } from '@/features/food/FoodCards';
 import { useIdolPicks } from '@/lib/data/useIdolPicks';
@@ -63,15 +63,10 @@ export default function IdolPicksScreen() {
       <Pressable onPress={() => (router.canGoBack() ? router.back() : router.navigate('/(tabs)' as Href))} hitSlop={4} style={styles.back} accessibilityRole="button" accessibilityLabel={t('common.goBack')} testID="idol-picks-back">
         <IconArrowLeft size={24} color="#FFFFFF" />
       </Pressable>
-      <View style={styles.headRow}>
-        <View style={styles.headText}>
-          <Text style={styles.label}>{t('idolPicks.label')}</Text>
-          <Text style={styles.title} accessibilityRole="header">{t('idolPicks.title')}</Text>
-          <Text style={styles.sub}>{t('idolPicks.sub')}</Text>
-        </View>
-        <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-          <IconQuestion size={56} color={C.primary} />
-        </View>
+      <View style={styles.headText}>
+        <Text style={styles.label}>{t('idolPicks.label')}</Text>
+        {/* KB-856: 홈 배너와 같은 문구·같은 폭(화면 − GUTTER×2) → 배너 i18n 값의 \n 그대로 2줄. 소제목·물음표 아이콘 제거 */}
+        <Text style={styles.title} accessibilityRole="header" numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.9}>{t('home.idolPick.title')}</Text>
       </View>
     </View>
   );
@@ -128,11 +123,9 @@ const styles = StyleSheet.create({
   statusScrim: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.ink },
   header: { backgroundColor: C.ink, paddingHorizontal: GUTTER, paddingBottom: 24, gap: 12, marginBottom: 20 },
   back: { width: 36, height: 36, justifyContent: 'center' },
-  headRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
-  headText: { flex: 1, gap: 6 },
+  headText: { gap: 6 },
   label: { fontFamily: font.bodyBold, fontSize: 11, lineHeight: 16, letterSpacing: 1.6, color: C.primary },
-  title: { fontFamily: font.bodyBlack, fontSize: 24, lineHeight: 32, color: '#FFFFFF' },
-  sub: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: '#FFFFFF', opacity: 0.7 },
+  title: { fontFamily: font.bodyBlack, fontSize: 24, lineHeight: 34, color: '#FFFFFF' },
   row: { paddingHorizontal: GUTTER, gap: GAP },
   grid: { paddingHorizontal: GUTTER },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },

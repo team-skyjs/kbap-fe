@@ -1344,8 +1344,6 @@
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",
-    "title": "Món idol K-pop từng ăn, bạn thử một miếng?",
-    "sub": "Chọn món bạn muốn thử để xem thành phần và link video.",
     "cardA11y": "Xem chi tiết {{name}}",
     "empty": "Hiện chưa có món nào để xem."
   }
