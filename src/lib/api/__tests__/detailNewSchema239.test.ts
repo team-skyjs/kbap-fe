@@ -107,3 +107,22 @@ describe('③ recentReviews 인라인', () => {
     expect(fs.readFileSync('src/lib/data/useFoods.ts', 'utf8')).not.toContain("X-API-Version");
   });
 });
+
+describe('KB-857(서버 #453): reviewSummary 축 평균 → 집계 speedAverage·serviceAverage', () => {
+  it('값 있음 = 그대로 · Count 0·null·필드 없음(구 응답) = null(축 숨김) · sameCountry도 같은 규칙', () => {
+    const d = adaptFoodDetail(
+      {
+        ...BASE,
+        reviewSummary: {
+          overall: { averageRating: 4.3, reviewCount: 12, servingSpeedAverage: 4.2, servingSpeedCount: 9, staffKindnessAverage: null, staffKindnessCount: 0 },
+          sameCountry: { averageRating: 4.0, reviewCount: 3, servingSpeedAverage: 3.5, servingSpeedCount: 0, staffKindnessAverage: 4.8, staffKindnessCount: 2 },
+        },
+      } as FoodDetailWire,
+      '7',
+    );
+    expect(d.overall).toEqual({ average: 4.3, count: 12, speedAverage: 4.2 }); // Service null + Count 0 = 키 없음(숨김)
+    expect(d.sameNationality).toEqual({ average: 4.0, count: 3, serviceAverage: 4.8 }); // Speed Count 0 = 값이 와도 숨김
+    const old = adaptFoodDetail({ ...BASE, reviewSummary: { overall: { averageRating: 4.3, reviewCount: 12 } } } as FoodDetailWire, '7');
+    expect(old.overall).toEqual({ average: 4.3, count: 12 }); // 구 응답 = 축 없음
+  });
+});
