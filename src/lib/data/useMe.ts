@@ -130,11 +130,16 @@ export function useUpdateMe() {
       // P-060②: appLanguage 철거(BE 계약 삭제 확인) — 언어는 서버 무저장, 매 요청 lang
       if (patch.currency !== undefined) body.currency = patch.currency; // P-165(#145) — null = 미설정(국적 폴백)
       if (patch.restrictions !== undefined) {
-        // 와이어 경계: BE 표준 코드만 (KB-75) — unmapped 드롭+로그
+        // 와이어 경계: BE 표준 코드만 (KB-75) — unmapped 드롭+로그.
+        // KB-843(서버 백필 #448 짝): 단, **서버 프로필에 이미 있던 코드**는 앱이 몰라도 보존(서버가 목록을 통째로 교체 — 빼면 백필·새 코드가 지워진다).
+        // 레거시 잔재(ing:…)·서버에 없던 값만 드롭
+        const serverCodes = new Set((qc.getQueryData<User>(['me', i18n.language])?.restrictions ?? []).map((r) => r.code));
         body.avoidanceSubstanceCodes = patch.restrictions.flatMap((r) => {
           const be = toBeCode(r.code);
-          if (!be) console.log('[profile] dropping unmapped ingredient code:', r.code);
-          return be ? [be] : [];
+          if (be) return [be];
+          if (serverCodes.has(r.code)) return [r.code];
+          console.log('[profile] dropping unmapped ingredient code:', r.code);
+          return [];
         });
       }
       // P-243(BE #179): 식이 카테고리 — 풀 셋 교체(해제 실동작). 회피와 한 요청 가능.

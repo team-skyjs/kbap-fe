@@ -43,6 +43,11 @@ export const color = {
   riskDangerText: '#C4352F', // 흰 5.39 · danger 틴트 위 4.96
   riskUnableText: '#6A6F7C', // Codex #44 P2: unable 텍스트 대비(흰 5.03 — inkInfo 동일값·의미 분리)
   inkInfo: '#6A6F7C', // 12~13px 정보성 회색 텍스트(흰 5.03 — gray-700 동값·의미 토큰)
+  // KB-845(D-31 scan refresh): 시안 gray 팔레트 이름 그대로 — 어두운 카메라·로딩 화면(값은 DS gray-*)
+  gray200: '#EAEBEE', // = line
+  gray500: '#B1B5BD', // = inkMute
+  gray600: '#9196A1', // = ink3
+  gray800: '#4B4F58',
 } as const;
 
 /**

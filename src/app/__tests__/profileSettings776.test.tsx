@@ -58,8 +58,9 @@ jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({ name: (c: string) => `srv:${c}`, imageUrl: (c: string) => `https://cdn/${c.toLowerCase()}.webp` }),
 }));
 const mockMutate = jest.fn();
+let mockCodes = ['EGG'];
 jest.mock('@/lib/data/useMe', () => ({
-  useMe: () => ({ data: { restrictions: [{ kind: 'allergy', code: 'EGG' }] } }),
+  useMe: () => ({ data: { restrictions: mockCodes.map((code) => ({ kind: 'allergy', code })) } }),
   useUpdateMe: () => ({ mutate: mockMutate }),
 }));
 
@@ -79,6 +80,7 @@ async function render(el: React.ReactElement): Promise<ReactTestRenderer> {
 afterEach(() => { while (trees.length) act(() => trees.pop()!.unmount()); });
 beforeEach(() => {
   jest.clearAllMocks();
+  mockCodes = ['EGG'];
   mockPrevent.on = false;
   mockPrevent.cb = null;
 });
@@ -119,6 +121,24 @@ describe('회피 재료 편집', () => {
     await press(tree, 'discard-keep');
     await press(tree, 'avoid-EGG');
     expect(mockPrevent.on).toBe(false);
+  });
+
+  it('KB-843(서버 백필 #448 짝): 서버의 앱이 모르는 코드 = 화면에 안 그림(개수·타일 0) · 무변경 판정 제외 · 저장 때 그대로 보냄 · 전부 해제로도 지우지 않음', async () => {
+    mockCodes = ['EGG', 'FUTURE_X'];
+    mockMutate.mockImplementation((_b: unknown, o?: { onSuccess?: () => void; onSettled?: () => void }) => { o?.onSuccess?.(); o?.onSettled?.(); });
+    const tree = await render(<EditRestrictions />);
+    const filter = tree.root.findAll((n) => Array.isArray(n.props?.selected) && typeof n.props?.onToggle === 'function')[0];
+    expect(filter.props.selected).toEqual(['EGG']); // 보이는 선택(개수 줄 = selected.length) = EGG 하나
+    expect(tree.root.findAll((n) => n.props?.testID === 'avoid-FUTURE_X')).toHaveLength(0);
+    expect(mockPrevent.on).toBe(false); // 숨은 코드가 "변경"으로 잡히지 않는다
+    await press(tree, 'avoid-PEANUT');
+    await press(tree, 'restrictions-save');
+    const sent = (mockMutate.mock.calls[0][0] as { restrictions: { code: string }[] }).restrictions.map((r) => r.code);
+    expect(sent).toEqual(['EGG', 'PEANUT', 'FUTURE_X']);
+    const t2 = await render(<EditRestrictions />);
+    await press(t2, 'avoid-clear');
+    await press(t2, 'restrictions-save');
+    expect((mockMutate.mock.calls[1][0] as { restrictions: { code: string }[] }).restrictions.map((r) => r.code)).toEqual(['FUTURE_X']);
   });
 
   it('B3-3: 저장 성공 = 막기를 먼저 풀고 다음 렌더에서 뒤로 1회(확인 창 0)', async () => {

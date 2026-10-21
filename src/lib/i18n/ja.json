@@ -617,7 +617,14 @@
     "ingGuestBody": "{{ingredient}}はこの料理の約{{percent}}%のバージョンに使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。",
     "ingGuestBodyNoPct": "{{ingredient}}はこの料理によく使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。",
     "foodHidden": "現在、この料理の情報は表示できません。",
-    "foodUpdating": "この料理の情報を更新中です。しばらくしてからもう一度ご確認ください。"
+    "foodUpdating": "この料理の情報を更新中です。しばらくしてからもう一度ご確認ください。",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "この料理、どのアイドルが食べたのかな？",
+      "sub": "見覚えのある顔が出てくるかも。",
+      "cta": "動画で確かめる",
+      "a11y": "この料理を食べるK-POPアイドルの動画を開く"
+    }
   },
   "states": {
     "catalogTitle": "状態",
@@ -677,7 +684,13 @@
     "safeForYouSub": "回避リストに基づく判定です。お店に必ず確認してください。",
     "railFilterEmpty": "このリストには{{risk}}のメニューがまだありません。他のフィルターをお試しください。",
     "mostReviewed": "レビューが多い料理",
-    "mostReviewedSub": "みんながよく話している一品。"
+    "mostReviewedSub": "みんながよく話している一品。",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "K-POPアイドルが食べた\n料理、気になりませんか？",
+      "seeAll": "見てみる",
+      "bannerA11y": "K-POPアイドルが食べた料理の一覧を見る"
+    }
   },
   "onboarding": {
     "welcomeTag": "注文する前に、食べても安全か分かる。",
@@ -942,7 +955,12 @@
     "wildchive": "ノビル",
     "asafoetida": "アサフェティダ",
     "mirin": "みりん",
-    "sulfites": "亜硫酸塩"
+    "sulfites": "亜硫酸塩",
+    "nuts": "ナッツ類",
+    "crustacean": "甲殻類",
+    "mollusk": "軟体類",
+    "meat": "肉類",
+    "meatbroth": "肉のだし"
   },
   "saved": {
     "error": "保存リストを更新できませんでした。もう一度お試しください。",
@@ -1295,5 +1313,25 @@
     "newAnalysisCta": "新しく分析する",
     "debugLabelPlaceholder": "成分表示1面分の文字",
     "debugAddPage": "1面として追加"
+  },
+  "scanCamera": {
+    "title": "スキャン",
+    "menuTitle": "メニュー全体が入るようにしてください",
+    "menuHint": "ピンチで拡大できます",
+    "packageTitle": "パッケージの表面を写してください",
+    "packageHint": "商品名と味が見えるようにしてください。",
+    "labelTitle": "成分表示を写してください",
+    "labelHint": "原材料がすべてはっきり読めるようにしてください。",
+    "photos": "写真",
+    "menuLink": "アルバムから写真を選ぶ",
+    "frontLink": "パッケージ表面で確認する",
+    "capturedMenu": "撮影したメニュー",
+    "capturedPackage": "撮影したパッケージ",
+    "capturedLabel": "撮影した成分表示"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "cardA11y": "{{name}}、料理の詳細を見る",
+    "empty": "今は見られる料理がありません。"
   }
 }

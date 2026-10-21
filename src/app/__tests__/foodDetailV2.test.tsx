@@ -84,6 +84,7 @@ jest.mock('@/lib/i18n', () => ({
 const mockIsGuest = jest.fn(() => false);
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockIsGuest() }));
 const mockUseFoodDetail = jest.fn();
+jest.mock('@/lib/data/useIdolPicks', () => ({ useIdolPickVideo: () => null })); // KB-836: 목록 캐시 구독(QueryClient 없음)
 jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => mockUseFoodDetail() }));
 const mockUseMe = jest.fn();
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockUseMe() }));
@@ -794,6 +795,15 @@ describe('KB-599 재료 타일 — 함의 회피 근거 문구', () => {
     expect(node.length).toBeGreaterThan(0);
     expect(node[0].props.numberOfLines).toBe(2);
     expect(flat(tree)).toContain('detail.avoidImplied');
+  });
+
+  it('KB-843: 새 묶음(육류·견과류·갑각류·연체류) 회피로 걸린 재료 = "피하는 재료 {묶음}에 포함돼요"(묶음 코드가 카탈로그에 있어야 보인다)', () => {
+    for (const [code, name, by] of [['BEEF', 'Beef', 'MEAT'], ['PEANUT', 'Peanut', 'NUTS'], ['SHRIMP', 'Shrimp', 'CRUSTACEAN'], ['SQUID', 'Squid', 'MOLLUSK'], ['BROTH', 'Broth', 'MEAT_BROTH']] as const) {
+      withIngs([{ code, name, percentage: 40, risk: 'danger', note: null, impliedBy: by }]);
+      const tree = render(<FoodDetailScreen />);
+      expect(implied(tree, code).length).toBeGreaterThan(0);
+      act(() => tree.unmount());
+    }
   });
 
   it('직접 매치(impliedBy 없음) = 문구 없음', () => {

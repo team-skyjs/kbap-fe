@@ -617,7 +617,14 @@
     "ingGuestBody": "{{ingredient}}约在此菜{{percent}}%的版本中使用。各家餐厅可能不同——想确认请询问店主。",
     "ingGuestBodyNoPct": "{{ingredient}}常用于此菜。各家餐厅可能不同——想确认请询问店主。",
     "foodHidden": "目前无法查看这道菜的信息。",
-    "foodUpdating": "这道菜的信息正在更新中，请稍后再来查看。"
+    "foodUpdating": "这道菜的信息正在更新中，请稍后再来查看。",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "这道菜，是哪位爱豆吃过呢？",
+      "sub": "说不定会看到熟悉的面孔。",
+      "cta": "看视频揭晓",
+      "a11y": "打开K-POP爱豆吃这道菜的视频"
+    }
   },
   "states": {
     "catalogTitle": "状态",
@@ -677,7 +684,13 @@
     "safeForYouSub": "基于你的回避清单判定——请务必向店家确认。",
     "railFilterEmpty": "此列表暂无“{{risk}}”菜品，试试其他筛选。",
     "mostReviewed": "评价最多",
-    "mostReviewedSub": "大家都在聊的菜。"
+    "mostReviewedSub": "大家都在聊的菜。",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "K-POP 偶像吃过的\n美食，不想知道吗？",
+      "seeAll": "去看看",
+      "bannerA11y": "查看K-POP爱豆吃过的菜"
+    }
   },
   "onboarding": {
     "welcomeTag": "点单前，先知道什么能安心吃。",
@@ -942,7 +955,12 @@
     "wildchive": "野蒜",
     "asafoetida": "阿魏",
     "mirin": "味醂",
-    "sulfites": "亚硫酸盐"
+    "sulfites": "亚硫酸盐",
+    "nuts": "坚果",
+    "crustacean": "甲壳类",
+    "mollusk": "软体类",
+    "meat": "肉类",
+    "meatbroth": "肉汤"
   },
   "saved": {
     "error": "无法更新收藏列表，请重试。",
@@ -1295,5 +1313,25 @@
     "newAnalysisCta": "重新分析",
     "debugLabelPlaceholder": "配料表一面的文字",
     "debugAddPage": "作为一面添加"
+  },
+  "scanCamera": {
+    "title": "扫描",
+    "menuTitle": "请把整张菜单拍进来",
+    "menuHint": "双指缩放",
+    "packageTitle": "请对准包装正面",
+    "packageHint": "请让品名和口味清晰可见。",
+    "labelTitle": "请对准配料表",
+    "labelHint": "请让所有配料清晰可读。",
+    "photos": "照片",
+    "menuLink": "从相册选择照片",
+    "frontLink": "改为扫描包装正面",
+    "capturedMenu": "你拍的菜单",
+    "capturedPackage": "你拍的包装",
+    "capturedLabel": "你拍的配料表"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "cardA11y": "{{name}}，查看菜品详情",
+    "empty": "目前没有可查看的菜品。"
   }
 }
