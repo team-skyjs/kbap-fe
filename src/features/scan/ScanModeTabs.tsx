@@ -15,10 +15,23 @@ import { color as C, font } from '@/lib/theme';
 export type ScanMode = 'menu' | 'food' | 'packaged';
 const MODES: ScanMode[] = ['menu', 'food', 'packaged'];
 
+/** 활성 탭 가운데를 화면 가운데로 두는 스크롤 위치 — 0 ~ (줄 폭 − 화면 폭)으로 자른다(들어가는 줄 = 0) */
+export const activeTabOffset = (tab: { x: number; w: number }, viewW: number, contentW: number): number =>
+  Math.max(0, Math.min(contentW - viewW, Math.round(tab.x + tab.w / 2 - viewW / 2)));
+
 export function ScanModeTabs({ value, onChange, tone = 'light' }: { value: ScanMode; onChange: (m: ScanMode) => void; tone?: 'light' | 'dark' }) {
   const { t } = useTranslation();
   const dark = tone === 'dark';
   const third = useWindowDimensions().width / 3;
+  // Codex #325: 긴 번역으로 줄이 화면보다 넓을 때 활성 탭이 잘리지 않게 — 처음 그릴 때·값이 바뀔 때 활성 탭을 가운데 쪽으로 스크롤
+  const scrollRef = React.useRef<ScrollView>(null);
+  const [tabBox, setTabBox] = React.useState<Partial<Record<ScanMode, { x: number; w: number }>>>({});
+  const [box, setBox] = React.useState({ view: 0, content: 0 });
+  const active = tabBox[value];
+  React.useEffect(() => {
+    if (!dark || !active || !box.view || !box.content) return;
+    scrollRef.current?.scrollTo({ x: activeTabOffset(active, box.view, box.content), animated: false });
+  }, [dark, active, box]);
   const tabs = MODES.map((m) => {
     const soon = m === 'food'; // 음식 사진 모드 = 자리만(비범위)
     const on = value === m;
@@ -32,6 +45,7 @@ export function ScanModeTabs({ value, onChange, tone = 'light' }: { value: ScanM
         accessibilityState={{ selected: on, disabled: soon }}
         accessibilityHint={soon ? t('scanMode.soon') : undefined}
         testID={`scan-mode-${m}`}
+        onLayout={dark ? (e) => { const { x, width } = e.nativeEvent.layout; setTabBox((b) => (b[m]?.x === x && b[m]?.w === width ? b : { ...b, [m]: { x, w: width } })); } : undefined}
       >
         <Text
           style={[dark ? st.labelDark : st.label, { color: soon ? (dark ? C.gray500 : C.inkDisabled) : on ? (dark ? C.surface : C.ink) : dark ? C.surface : C.ink2 }]}
@@ -47,7 +61,16 @@ export function ScanModeTabs({ value, onChange, tone = 'light' }: { value: ScanM
   return (
     <View style={dark ? undefined : st.wrap} accessibilityRole="tablist" testID="scan-mode-tabs">
       {dark ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} contentContainerStyle={st.rowDark} testID="scan-mode-tabs-scroll">
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          bounces={false}
+          contentContainerStyle={st.rowDark}
+          onLayout={(e) => { const view = e.nativeEvent.layout.width; setBox((b) => (b.view === view ? b : { ...b, view })); }}
+          onContentSizeChange={(content) => setBox((b) => (b.content === content ? b : { ...b, content }))}
+          testID="scan-mode-tabs-scroll"
+        >
           {tabs}
         </ScrollView>
       ) : (
