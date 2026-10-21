@@ -9,7 +9,7 @@
  * 외부 링크 = lib/openExternal openWebPage(실패 시 토스트 — `void Linking.*` 직접 호출 금지 규칙).
  */
 import * as React from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { PixelRatio, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import { Pressable } from '@/components/Pressable';
 import { RemoteImage } from '@/components/RemoteImage';
 import { IconChevron } from '@/components/icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { CurationGallerySheet } from '@/features/curation/CurationGallerySheet';
 import { Shimmer } from '@/components/Skeleton';
 import { color as C, font } from '@/lib/theme';
@@ -44,6 +45,16 @@ export default function CurationDetailScreen() {
   const back = () => (router.canGoBack() ? router.back() : goHome());
   const detail = q.data;
   const [gallery, setGallery] = React.useState<CurationItem | null>(null); // KB-832: 열린 갤러리(항목) — 화면은 그대로라 닫으면 스크롤 유지
+  // Codex #320 P1: 블러 8띠는 화면 ± 1화면 안 카드만 마운트(전부 마운트 = 10장 × 8 = 80 블러 비트맵). 범위가 바뀔 때만 상태 갱신(리렌더 폭주 0)
+  const winH = useWindowDimensions().height;
+  const geo = React.useRef({ scrollY: 0, viewH: 0, listTop: 0, cards: new Map<number, { y: number; h: number }>() });
+  const [near, setNear] = React.useState<ReadonlySet<number>>(() => new Set());
+  const refreshNear = React.useCallback(() => {
+    const g = geo.current;
+    const next = nearCards(g.cards, g.listTop, g.scrollY, g.viewH || winH);
+    setNear((prev) => (sameSet(prev, next) ? prev : next));
+  }, [winH]);
+  const onPlace = React.useCallback((pos: number, y: number, h: number) => { geo.current.cards.set(pos, { y, h }); refreshNear(); }, [refreshNear]);
 
   let body: React.ReactNode;
   if (q.isPending) {
@@ -68,7 +79,13 @@ export default function CurationDetailScreen() {
     );
   } else {
     body = (
-      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 32 }]} testID="curation-detail">
+      <ScrollView
+        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 32 }]}
+        onScroll={(e) => { geo.current.scrollY = e.nativeEvent.contentOffset.y; refreshNear(); }}
+        scrollEventThrottle={32}
+        onLayout={(e) => { geo.current.viewH = e.nativeEvent.layout.height; refreshNear(); }}
+        testID="curation-detail"
+      >
         {q.isError && (
           <Pressable onPress={() => void q.refetch()} style={styles.staleRow} accessibilityRole="button" testID="curation-detail-stale">
             <Text style={styles.staleText}>{t('curation.refreshFailed')}</Text>
@@ -77,11 +94,13 @@ export default function CurationDetailScreen() {
         )}
         {detail.fallbackUsed && <Text style={styles.fallback} testID="curation-fallback">{t('curation.fallbackNotice')}</Text>}
         <Text style={styles.description}>{detail.description}</Text>
-        <View style={styles.list}>
+        <View style={styles.list} onLayout={(e) => { geo.current.listTop = e.nativeEvent.layout.y; refreshNear(); }}>
           {detail.items.map((item) => (
             <ItemCard
               key={item.id}
               item={item}
+              blur={near.has(item.position)}
+              onPlace={onPlace}
               onOpen={() => {
                 track(EVENTS.home_curation_gallery_open, { collection_key: detail.key, entry_id: item.id });
                 setGallery(item);
@@ -103,8 +122,9 @@ export default function CurationDetailScreen() {
 }
 
 /** v5 카드(12344:29771): 사진 전체 + 아래 흐림(어둡게) 위에 흰 이름·지역 + 오른쪽 흰 chevron(박스 없음, 44 자리). 카드 어디를 눌러도 갤러리 시트. */
-function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) {
+function ItemCard({ item, onOpen, blur, onPlace }: { item: CurationItem; onOpen: () => void; blur: boolean; onPlace: (pos: number, y: number, h: number) => void }) {
   const { t } = useTranslation();
+  const large = captionLargeText(useWindowDimensions().fontScale); // KB-846 QA: 큰 글씨 = 고정 줄 높이 없이(아래 잘림 0)
   const p = item.position;
   const cover = item.images[0]?.url ?? null;
   const [cardH, setCardH] = React.useState<number | null>(null); // 블러 사본을 원본과 같은 높이로 정렬(큰 글씨면 카드가 자란다)
@@ -113,7 +133,7 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
   return (
     <Pressable
       style={styles.card}
-      onLayout={(e) => setCardH(e.nativeEvent.layout.height)}
+      onLayout={(e) => { const { y, height } = e.nativeEvent.layout; setCardH(height); onPlace(p, y, height); }}
       onPress={onOpen}
       accessibilityRole="button"
       accessibilityLabel={`${item.name}, ${item.area}`}
@@ -129,22 +149,23 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
       {/* KB-846 점진 블러(Tripsy — 위는 투명, 아래로 갈수록 흐리고 어둡게, 네이티브 모듈 없이): 밴드 = 이름 위 16부터 카드 바닥까지를
           띠 4개로 나눠 위에서 아래로 blurRadius 1/4 → 2/4 → 3/4 → 1. 각 띠는 같은 사진을 카드 높이 그대로 **같은 오프셋**(띠 위치만큼 위로)에
           깔아 원본과 정확히 겹친다(이음새 0). 그 위 스크림(투명 → 어둡게)이 밴드 전체를 덮어 띠 경계·글자 대비를 함께 맡는다 */}
-      {cover && band && (
-        <View style={[styles.blurBand, { top: band.top }]} pointerEvents="none" testID={`curation-item-blur-${p}`}>
+      {/* Codex #320 P1: 화면 ± 1화면 밖 카드 = 블러 없음(원본 + 스크림) · 들어오면 마운트 + 150ms 페이드인(모션 줄이기 = 즉시) */}
+      {cover && band && blur && (
+        <FadeInBand style={[styles.blurBand, { top: band.top }]} testID={`curation-item-blur-${p}`}>
           {band.strips.map((s, i) => (
-            <View key={i} style={[styles.blurStrip, { top: s.top - band.top, height: s.height }]} testID={`curation-item-blur-strip-${p}-${i}`}>
+            <View key={i} style={[styles.blurStrip, { top: s.top - band.top, height: s.height, opacity: s.opacity }]} testID={`curation-item-blur-strip-${p}-${i}`}>
               <RemoteImage uri={cover} style={[styles.blurImg, { top: -s.top, height: cardH as number }]} recyclingKey={`${item.id}-blur-${i}`} blurRadius={s.radius} />
             </View>
           ))}
-        </View>
+        </FadeInBand>
       )}
       {band && <LinearGradient colors={CARD_SCRIM} style={[styles.shade, { top: band.top }]} pointerEvents="none" />}
       <View style={{ height: CARD_SPACER }} />
       <View style={styles.caption} onLayout={(e) => setCaptionTop(e.nativeEvent.layout.y)} testID={`curation-item-caption-${p}`}>
         <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-          <Text style={styles.name}>{item.name}</Text>
+          <Text style={large ? styles.nameLarge : styles.name}>{item.name}</Text>
           {/* 역 모음 = 지역 + 주변 이름을 공백 2칸으로(가운데점 금지) · 이름 안 공백은 NBSP — 줄바꿈은 이름 사이에서만(QA S3) */}
-          <Text style={styles.area}>{areaLine(item.area, item.nearby)}</Text>
+          <Text style={large ? styles.areaLarge : styles.area}>{areaLine(item.area, item.nearby)}</Text>
         </View>
         <View style={styles.arrow} testID={`curation-item-arrow-${p}`}>
           <IconChevron size={24} color="#FFFFFF" />
@@ -154,19 +175,59 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
   );
 }
 
+/** 블러 밴드 페이드인 — 마운트 순간 0 → 1(150ms), 모션 줄이기 = 바로 1. 범위에 들어와 블러가 붙을 때 뚝 바뀌지 않게 */
+export const BLUR_FADE_MS = 150;
+function FadeInBand({ style, testID, children }: { style: object; testID: string; children: React.ReactNode }) {
+  const reduced = useReducedMotion();
+  const o = useSharedValue(reduced ? 1 : 0);
+  React.useEffect(() => {
+    if (!reduced) o.set(withTiming(1, { duration: BLUR_FADE_MS }));
+  }, [reduced, o]);
+  const fade = useAnimatedStyle(() => ({ opacity: o.get() }));
+  return (
+    <Animated.View style={[style, fade]} pointerEvents="none" testID={testID}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** 블러를 붙일 카드 = 화면(스크롤 위치 ~ +화면 높이)에서 위·아래로 1화면 더 늘린 범위와 겹치는 카드. 카드 y = 목록 기준 + 목록 위치 */
+export function nearCards(cards: ReadonlyMap<number, { y: number; h: number }>, listTop: number, scrollY: number, viewH: number): Set<number> {
+  const from = scrollY - viewH;
+  const to = scrollY + viewH * 2;
+  const out = new Set<number>();
+  for (const [pos, c] of cards) {
+    const top = listTop + c.y;
+    if (c.h > 0 && top < to && top + c.h > from) out.add(pos);
+  }
+  return out;
+}
+const sameSet = (a: ReadonlySet<number>, b: ReadonlySet<number>) => a.size === b.size && [...a].every((x) => b.has(x));
+
 // KB-846 스크림 — 밴드 위(투명) → 카드 바닥(어둡게 0.45). 띠 경계를 숨기고 흰 글자 대비를 맡는다(구 55% 그라데이션 대체 — 밴드 위 사진은 투명 그대로)
 const CARD_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.45)'] as const;
 /** 블러 밴드 시작 = 이름(캡션 블록) 위 16 */
 export const CARD_BLUR_LEAD = 16;
-export const CARD_BLUR_STRIPS = 4;
-/** 밴드·띠 계산(KB-846) — 띠 i(0=맨 위)의 blurRadius = 기준값 × (i+1)/4(정수 — Android Glide는 정수 반경). 큰 글씨면 캡션이 높아져 밴드도 늘어난다 */
+/** KB-846 QA(큰 글씨에서 이름·지역의 g·y 아래 잘림): 글꼴 배율 > 1이면 고정 lineHeight(26·18)를 빼고 글꼴 고유 줄 높이로 —
+ *  RN이 lineHeight도 배율만큼 키우므로 앱에서 곱하면 두 번 커진다(Codex #320). 기본 배율 = 시안 26·18 그대로 */
+export const captionLargeText = (fontScale: number): boolean => fontScale > 1;
+/** KB-846 QA(iOS 확대): 4띠는 3→4 경계(반경 최대·불투명도 0.85→1)에서 선명도 계단이 보였다 → 8띠 균등 */
+export const CARD_BLUR_STRIPS = 8;
+/** 띠 불투명도(위 → 아래) = 1/8 간격 균등(0.125 … 1) — 아래 원본과 크로스페이드, 마지막 단계도 같은 간격(점프 없음) */
+export const CARD_BLUR_OPACITY = Array.from({ length: CARD_BLUR_STRIPS }, (_, i) => (i + 1) / CARD_BLUR_STRIPS);
+/** 밴드·띠 계산(KB-846) — 띠 i(0=맨 위)의 blurRadius = 기준값 × (i+1)/4(정수 — Android Glide는 정수 반경). 큰 글씨면 캡션이 높아져 밴드도 늘어난다.
+ *  좌표는 **기기 픽셀에 스냅**(PixelRatio.roundToNearestPixel — 2.625배 Android에서 정수 pt도 소수 픽셀이라 경계가 앤티앨리어싱 선으로 보였다).
+ *  띠는 **맞닿기만**(겹침 0): 같은 픽셀 경계라 틈이 없고, 반투명 띠를 겹치면 겹친 줄이 더 진해져(0.6 + 0.35×0.4 = 0.74) 그 자체가 가는 선이 된다(Codex #320) */
+// 띠 i의 blurRadius = 기준값 × (i+1)/8 (정수) — 반경도 1/8 간격 균등
 export function blurBandOf(cardH: number, captionTop: number, radius: number = CARD_BLUR_RADIUS) {
-  const top = Math.max(0, Math.round(captionTop - CARD_BLUR_LEAD));
-  const h = cardH - top;
+  const px = PixelRatio.roundToNearestPixel;
+  const top = px(Math.max(0, captionTop - CARD_BLUR_LEAD));
+  const bottom = px(cardH);
+  const h = bottom - top;
   const strips = Array.from({ length: CARD_BLUR_STRIPS }, (_, i) => {
-    const s = top + Math.round((h * i) / CARD_BLUR_STRIPS);
-    const e = top + Math.round((h * (i + 1)) / CARD_BLUR_STRIPS);
-    return { top: s, height: e - s, radius: Math.max(1, Math.round((radius * (i + 1)) / CARD_BLUR_STRIPS)) };
+    const s = px(top + (h * i) / CARD_BLUR_STRIPS);
+    const e = i === CARD_BLUR_STRIPS - 1 ? bottom : px(top + (h * (i + 1)) / CARD_BLUR_STRIPS);
+    return { top: s, height: e - s, radius: Math.max(1, Math.round((radius * (i + 1)) / CARD_BLUR_STRIPS)), opacity: CARD_BLUR_OPACITY[i] };
   });
   return { top, strips };
 }
@@ -197,6 +258,8 @@ const styles = StyleSheet.create({
   caption: { flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 16, paddingRight: 16, paddingBottom: 16, gap: 4 },
   name: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 26, color: '#FFFFFF' },
   area: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: '#FFFFFF' },
+  nameLarge: { fontFamily: font.bodySemi, fontSize: 18, color: '#FFFFFF' }, // 큰 글씨 = 글꼴 고유 줄 높이(KB-846 QA)
+  areaLarge: { fontFamily: font.body, fontSize: 13, color: '#FFFFFF' },
   arrow: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   staleRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, minHeight: 44 },
   staleText: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
