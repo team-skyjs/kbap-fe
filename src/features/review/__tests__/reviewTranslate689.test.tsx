@@ -115,7 +115,7 @@ it('Codex #223 P2(2차): 터치 = **실제 레이아웃 상자 44**(hitSlop 없�
   // 위 확장 ≤ 두 카드의 실제 gap(숫자 8 직접 비교 금지 — 카드 gap을 줄이면 라벨 상자가 위 사진 터치를 덮는데 초록이 되는 것 방지)
   const fs = require('fs') as typeof import('fs');
   const gapOf = (file: string, styleKey: string) => Number(new RegExp(`\\b${styleKey}: \\{[^}]*\\bgap: (\\d+)`).exec(fs.readFileSync(file, 'utf8'))![1]);
-  for (const g of [gapOf('src/features/review/FeedCard.tsx', 'card'), gapOf('src/app/food/[id]/reviews.tsx', 'item')]) {
+  for (const g of [gapOf('src/features/review/FeedCard.tsx', 'card')]) { // KB-848: 목록도 FeedCard
     expect(box.paddingTop).toBeLessThanOrEqual(g);
   }
   // 상자 아래 끝이 래퍼 안: 래퍼 최소 높이 = padTop + 줄 + 간격 + 본문 한 줄(19)
