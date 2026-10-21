@@ -866,3 +866,10 @@ describe('KB-599 재료 타일 — 함의 회피 근거 문구', () => {
     expect(implied(render(<FoodDetailScreen />), 'SALTED_SHRIMP')).toHaveLength(0);
   });
 });
+
+it('Codex #327: 목록 카드에 extras 줄 없음 — 속도·서비스는 FeedCard 평점 축에만(같은 값 두 번 표시 0)', () => {
+  const fs = jest.requireActual('fs') as typeof import('fs');
+  expect(fs.readFileSync('src/app/food/[id]/reviews.tsx', 'utf8')).not.toContain('ReviewExtrasLine');
+  expect(fs.readFileSync('src/app/food/[id]/reviews.tsx', 'utf8')).not.toMatch(/showExtras/);
+  expect(fs.readFileSync('src/features/review/FeedCard.tsx', 'utf8')).not.toContain('ReviewExtrasLine');
+});

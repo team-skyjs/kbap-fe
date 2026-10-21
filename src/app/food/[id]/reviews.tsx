@@ -238,8 +238,7 @@ function FoodReviewsScreen() {
                       t={t}
                       mine={isMine(r)}
                       photoVariant="peek"
-                      showFood={false}
-                      showExtras
+                      showFood={false} /* Codex #327: extras 줄(속도·서비스) = 카드 평점 축과 같은 값이라 붙이지 않는다 */
                       onOpenFood={() => {}}
                       onGuestHelpful={() => {}} /* 게스트 Helpful = 무동작(옛 목록 그대로 — 게이트 시트 없는 화면) */
                       onMore={() => openMenu(r)} /* P-339 ②: 탈퇴 포함 전 카드 ⋯(신고만 — 차단은 플로우가 가드) */
