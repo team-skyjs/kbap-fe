@@ -141,8 +141,8 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
                 keyExtractor={(img, i) => img?.url ?? `none-${i}`}
                 getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
                 onMomentumScrollEnd={onMomentumEnd}
-                accessible={count > 1}
-                accessibilityRole={count > 1 ? 'adjustable' : undefined}
+                accessible /* Codex #322: 1장도 읽힘 — 사진 설명(이름, 출처). 그래버(닫기)는 형제라 가려지지 않는다 */
+                accessibilityRole={count > 1 ? 'adjustable' : 'image'}
                 accessibilityLabel={current?.attribution ? `${item.name}, ${current.attribution}` : item.name} /* KB-852: 출처 = 사진 설명에 포함(오버레이 글자는 스크린리더 무음) */
                 accessibilityValue={count > 1 ? { text: `${index + 1} / ${count}` } : undefined}
                 accessibilityActions={count > 1 ? [{ name: 'increment', label: t('curation.nextPhoto') }, { name: 'decrement', label: t('curation.prevPhoto') }] : undefined}

@@ -293,6 +293,12 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(mockTrack).toHaveBeenCalledWith('home_curation_gallery_open', { collection_key: 'stations', entry_id: 'e1' });
     expect(ids(t)).not.toContain('curation-gallery-dots'); // 1장 = 점 없음
     expect(byId(t, 'curation-gallery-credit')[0].props.children).toBe('Photo: KTO');
+    // Codex #322: 1장 = 페이저가 사진(image)으로 읽힘 — 라벨 "이름, 출처"(오버레이 글자는 무음이라 여기가 유일한 출처 낭독) · 닫기(그래버)는 따로 남는다
+    const pager1 = t.root.findAll((n) => n.props?.testID === 'curation-gallery-pager' && typeof n.props?.onMomentumScrollEnd === 'function')[0];
+    expect(pager1.props.accessible).toBe(true);
+    expect(pager1.props.accessibilityRole).toBe('image');
+    expect(pager1.props.accessibilityLabel).toMatch(/, Photo: KTO$/);
+    expect(t.root.findAll((n) => n.props?.testID === 'curation-gallery-grabber' && n.props?.accessibilityLabel === 'common.close').length).toBeGreaterThan(0);
     // KB-846: 본문 = 고정(스크롤 0) · 소개 최대 4줄 · X 버튼 없음 · 짧은 화면은 사진 영역이 먼저 줄어든다(Codex #317 — Guide 도달)
     const RN = jest.requireActual('react-native');
     const body = t.root.findAll((n) => n.props?.testID === 'curation-gallery-body')[0];
