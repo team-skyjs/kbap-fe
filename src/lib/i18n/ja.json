@@ -1308,5 +1308,20 @@
     "newAnalysisCta": "新しく分析する",
     "debugLabelPlaceholder": "成分表示1面分の文字",
     "debugAddPage": "1面として追加"
+  },
+  "scanCamera": {
+    "title": "スキャン",
+    "menuTitle": "メニュー全体が入るようにしてください",
+    "menuHint": "ピンチで拡大できます",
+    "packageTitle": "パッケージの表面を写してください",
+    "packageHint": "商品名と味が見えるようにしてください。",
+    "labelTitle": "成分表示を写してください",
+    "labelHint": "原材料がすべてはっきり読めるようにしてください。",
+    "photos": "写真",
+    "menuLink": "アルバムから写真を選ぶ",
+    "frontLink": "パッケージ表面で確認する",
+    "capturedMenu": "撮影したメニュー",
+    "capturedPackage": "撮影したパッケージ",
+    "capturedLabel": "撮影した成分表示"
   }
 }

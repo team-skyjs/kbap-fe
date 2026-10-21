@@ -1308,5 +1308,20 @@
     "newAnalysisCta": "Phân tích mới",
     "debugLabelPlaceholder": "Chữ của một mặt nhãn",
     "debugAddPage": "Thêm làm một mặt"
+  },
+  "scanCamera": {
+    "title": "Quét",
+    "menuTitle": "Hãy chụp trọn cả thực đơn",
+    "menuHint": "Chụm hai ngón để thu phóng",
+    "packageTitle": "Hãy chụp mặt trước bao bì",
+    "packageHint": "Để tên và hương vị hiện rõ.",
+    "labelTitle": "Hãy chụp nhãn thành phần",
+    "labelHint": "Để mọi thành phần hiện rõ, dễ đọc.",
+    "photos": "Ảnh",
+    "menuLink": "Chọn ảnh từ thư viện",
+    "frontLink": "Quét mặt trước bao bì thay thế",
+    "capturedMenu": "Thực đơn bạn đã chụp",
+    "capturedPackage": "Bao bì bạn đã chụp",
+    "capturedLabel": "Nhãn bạn đã chụp"
   }
 }

@@ -1308,5 +1308,20 @@
     "newAnalysisCta": "重新分析",
     "debugLabelPlaceholder": "成分表一面的文字",
     "debugAddPage": "作為一面新增"
+  },
+  "scanCamera": {
+    "title": "掃描",
+    "menuTitle": "請把整張菜單拍進來",
+    "menuHint": "雙指縮放",
+    "packageTitle": "請對準包裝正面",
+    "packageHint": "請讓品名和口味清楚可見。",
+    "labelTitle": "請對準成分表",
+    "labelHint": "請讓所有成分清楚可讀。",
+    "photos": "照片",
+    "menuLink": "從相簿選擇照片",
+    "frontLink": "改為掃描包裝正面",
+    "capturedMenu": "你拍的菜單",
+    "capturedPackage": "你拍的包裝",
+    "capturedLabel": "你拍的成分表"
   }
 }

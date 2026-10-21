@@ -1308,5 +1308,20 @@
     "newAnalysisCta": "重新分析",
     "debugLabelPlaceholder": "配料表一面的文字",
     "debugAddPage": "作为一面添加"
+  },
+  "scanCamera": {
+    "title": "扫描",
+    "menuTitle": "请把整张菜单拍进来",
+    "menuHint": "双指缩放",
+    "packageTitle": "请对准包装正面",
+    "packageHint": "请让品名和口味清晰可见。",
+    "labelTitle": "请对准配料表",
+    "labelHint": "请让所有配料清晰可读。",
+    "photos": "照片",
+    "menuLink": "从相册选择照片",
+    "frontLink": "改为扫描包装正面",
+    "capturedMenu": "你拍的菜单",
+    "capturedPackage": "你拍的包装",
+    "capturedLabel": "你拍的配料表"
   }
 }

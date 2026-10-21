@@ -1308,5 +1308,20 @@
     "newAnalysisCta": "Mulai analisis baru",
     "debugLabelPlaceholder": "Teks satu sisi label",
     "debugAddPage": "Tambahkan sebagai satu sisi"
+  },
+  "scanCamera": {
+    "title": "Pindai",
+    "menuTitle": "Muat seluruh menu",
+    "menuHint": "Cubit untuk memperbesar",
+    "packageTitle": "Tunjukkan bagian depan kemasan",
+    "packageHint": "Pastikan nama dan rasa terlihat.",
+    "labelTitle": "Tunjukkan label komposisi",
+    "labelHint": "Pastikan semua bahan tajam dan terbaca.",
+    "photos": "Foto",
+    "menuLink": "Pilih foto dari galeri",
+    "frontLink": "Pindai bagian depan kemasan saja",
+    "capturedMenu": "Menu yang Anda foto",
+    "capturedPackage": "Kemasan yang Anda foto",
+    "capturedLabel": "Label yang Anda foto"
   }
 }
