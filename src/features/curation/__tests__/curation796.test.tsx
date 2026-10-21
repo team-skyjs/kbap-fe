@@ -336,6 +336,27 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(counter()).toBe('1 / 3');
     expect(pagerA11y()).toBe('1 / 3');
     expect(byId(t, 'curation-gallery-credit')[0].props.children).toBe('Photo 0');
+    const { creditMaxWidth } = jest.requireActual('@/features/curation/CurationGallerySheet') as { creditMaxWidth: (w: number, c: number) => number };
+    // KB-852: 출처 = 사진 우하단 오버레이(본문 밖) — 1줄 · 우하단 12 · 점 줄과 안 겹치는 최대 폭 · 스크린리더는 사진 설명으로
+    const RNc = jest.requireActual('react-native');
+    const sub = (id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0];
+    const inside = (root: { findAll: (f: (n: { props?: { testID?: string } }) => boolean) => unknown[] }, id: string) => root.findAll((n) => n.props?.testID === id).length > 0;
+    expect(inside(sub('curation-gallery-photo'), 'curation-gallery-credit')).toBe(true);
+    const bodyOf = () => t.root.findAll((n) => n.props?.testID === 'curation-gallery-body')[0];
+    expect(inside(bodyOf(), 'curation-gallery-credit')).toBe(false);
+    const credit = byId(t, 'curation-gallery-credit')[0];
+    expect(credit.props.numberOfLines).toBe(1);
+    expect(RNc.StyleSheet.flatten(credit.props.style)).toMatchObject({ position: 'absolute', right: 12, bottom: 12, color: '#FFFFFF' });
+    const w0 = jest.requireActual('react-native').Dimensions.get('window').width;
+    const maxW = RNc.StyleSheet.flatten(credit.props.style).maxWidth as number;
+    expect(maxW).toBe(creditMaxWidth(w0, 3));
+    expect(w0 - 12 - maxW).toBeGreaterThanOrEqual((w0 + (3 * 6 + 2 * 8)) / 2 + 8); // 출처 왼쪽 끝 ≥ 점 줄 오른쪽 끝 + 8
+    expect(creditMaxWidth(w0, 1)).toBe(w0 - 24); // 1장 = 점 없음 → 사진 폭 - 좌우 12
+    const pagerLabel = () => t.root.findAll((n) => n.props?.testID === 'curation-gallery-pager' && typeof n.props?.onMomentumScrollEnd === 'function')[0].props.accessibilityLabel;
+    expect(pagerLabel()).toMatch(/, Photo 0$/);
+    // 본문 = 이름·지역·소개·Guide만 — 출처 유무로 본문 구성(=높이)이 바뀌지 않는다
+    const bodyIds = () => bodyOf().findAll((n: { props?: { testID?: string } }) => typeof n.props?.testID === 'string').map((n: { props: { testID: string } }) => n.props.testID).filter((x: string) => x.startsWith('curation-gallery-')).sort();
+    const bodyWithCredit = JSON.stringify(bodyIds());
     const pager = () => t.root.findAll((n) => n.props?.testID === 'curation-gallery-pager' && typeof n.props?.onMomentumScrollEnd === 'function')[0];
     const width = jest.requireActual('react-native').Dimensions.get('window').width;
     act(() => pager().props.onMomentumScrollEnd({ nativeEvent: { contentOffset: { x: width * 2, y: 0 } } }));
@@ -344,7 +365,9 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(mockTrack).toHaveBeenCalledWith('home_curation_gallery_swipe', { collection_key: 'stations', entry_id: 'e1', index: 2 });
     act(() => pager().props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
     expect(counter()).toBe('2 / 3');
-    expect(byId(t, 'curation-gallery-credit')).toHaveLength(0); // 2번째 사진은 출처 없음
+    expect(byId(t, 'curation-gallery-credit')).toHaveLength(0); // 2번째 사진은 출처 없음 = 오버레이 0
+    expect(JSON.stringify(bodyIds())).toBe(bodyWithCredit); // KB-852: 출처 없는 사진으로 넘겨도 본문 구성 동일
+    expect(pagerLabel()).not.toMatch(/,/);
     expect(pager().props.accessibilityActions.map((a: { name: string }) => a.name)).toEqual(['increment', 'decrement']);
   });
 
