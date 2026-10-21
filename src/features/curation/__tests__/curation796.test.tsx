@@ -312,12 +312,23 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(blurBandOf(300, 236, 9).strips.map((s) => s.radius)).toEqual([1, 2, 3, 5, 6, 7, 8, 9]);
     expect(blurBandOf(300, 10, 9).top).toBe(0);
   });
-  it('KB-846 QA 큰 글씨: 카드 이름·지역 줄 높이 = 글꼴 배율만큼(최대 1.3) — 고정 26·18이 g·y 아래를 자르던 것', () => {
-    const { captionLineHeights } = jest.requireActual('@/app/curations/[key]') as { captionLineHeights: (k: number) => { name: number; area: number } };
-    expect(captionLineHeights(1)).toEqual({ name: 26, area: 18 });
-    expect(captionLineHeights(1.3)).toEqual({ name: 34, area: 24 });
-    expect(captionLineHeights(2)).toEqual({ name: 34, area: 24 }); // Txt 최대 배율 1.3에서 멈춤(글자도 거기서 멈춘다)
-    expect(captionLineHeights(0.85)).toEqual({ name: 26, area: 18 });
+  it('KB-846 QA 큰 글씨: 배율 > 1 = 이름·지역 고정 lineHeight 없음(글꼴 고유 줄 높이 — g·y 잘림 0, 앱에서 곱하지 않음 = 두 번 스케일 0 · Codex #320) · 기본 = 26·18', () => {
+    const RNx = jest.requireActual('react-native');
+    const spy = jest.spyOn(RNx, 'useWindowDimensions');
+    try {
+      for (const [scale, nameLh, areaLh] of [[1, 26, 18], [1.3, undefined, undefined], [2, undefined, undefined]] as const) {
+        spy.mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: scale });
+        mockDetail = q({ data: detail });
+        const t = render(<CurationDetailScreen />);
+        const name = t.root.findAll((n) => typeof n.type === 'string' && n.props?.children === detail.items[0].name)[0];
+        expect(RNx.StyleSheet.flatten(name.props.style).lineHeight).toBe(nameLh);
+        const cap = t.root.findAll((n) => n.props?.testID === `curation-item-caption-${detail.items[0].position}` && typeof n.type === 'string')[0];
+        const texts = cap.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string');
+        expect(RNx.StyleSheet.flatten(texts[texts.length - 1].props.style).lineHeight).toBe(areaLh);
+      }
+    } finally {
+      spy.mockRestore();
+    }
   });
   it('카드 탭 → 시트(1장 = 카운터 숨김 · 출처 = 그 사진 것) + home_curation_gallery_open · 닫기 → 시트 없음(목록 그대로)', () => {
     mockDetail = q({ data: detail });
