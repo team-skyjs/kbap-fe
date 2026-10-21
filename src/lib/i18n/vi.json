@@ -1327,7 +1327,9 @@
     "frontLink": "Quét mặt trước bao bì thay thế",
     "capturedMenu": "Thực đơn bạn đã chụp",
     "capturedPackage": "Bao bì bạn đã chụp",
-    "capturedLabel": "Nhãn bạn đã chụp"
+    "capturedLabel": "Nhãn bạn đã chụp",
+    "choosePhoto": "Chọn ảnh",
+    "switchCamera": "Đổi camera"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

@@ -1327,7 +1327,9 @@
     "frontLink": "改为扫描包装正面",
     "capturedMenu": "你拍的菜单",
     "capturedPackage": "你拍的包装",
-    "capturedLabel": "你拍的配料表"
+    "capturedLabel": "你拍的配料表",
+    "choosePhoto": "选择照片",
+    "switchCamera": "切换相机"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

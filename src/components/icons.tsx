@@ -166,6 +166,23 @@ export const IconGallery = (p: IconProps) => (
     <Path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
   </Glyph>
 );
+/** KB-854 카메라 v2 B — 갤러리 진입(시안 로컬 SVG 그대로 — DS 갤러리 마스터 없음, 원 = 채움) */
+export const IconChoosePhoto = (p: IconProps) => (
+  <Glyph {...p}>
+    <Rect width="18" height="18" x="3" y="3" rx="3" />
+    <Circle cx="8.5" cy="8.5" r="1.5" fill={p.color ?? C.ink} stroke="none" />
+    <Path d="m21 15-5-5L5 21" />
+  </Glyph>
+);
+/** KB-854 카메라 전환 — DS refresh-ccw(9:967, Lucide) */
+export const IconRefreshCcw = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <Path d="M3 3v5h5" />
+    <Path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+    <Path d="M16 16h5v5" />
+  </Glyph>
+);
 export const IconStar = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />

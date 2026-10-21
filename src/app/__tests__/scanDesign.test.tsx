@@ -154,7 +154,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
 }
 const texts = (tree: ReactTestRenderer, s: string) => tree.root.findAll((n) => n.props?.children === s).length;
 const galleryBtn = (tree: ReactTestRenderer) =>
-  tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function')[0];
+  tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto' && typeof n.props?.onPress === 'function')[0];
 
 // KB-698: 첫 렌더의 react-native 지연 모듈 로딩·변환(콜드 캐시 1회 비용)을 첫 테스트의 5000ms 밖으로 — 원인·실측은 helpers 주석
 beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
@@ -302,7 +302,7 @@ it('P-191: 갤러리 원본 로드 중 = 로딩 오버레이(scan.loadingPhoto),
   let release!: (v: { canceled: boolean; assets?: { uri: string; width: number; height: number }[] }) => void;
   mockLaunchLibrary.mockImplementation(() => new Promise((r) => (release = r)));
   const tree = render(<Scan />);
-  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery')[0];
+  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto')[0];
   await act(async () => {
     void gallery.props.onPress();
     await Promise.resolve();
@@ -460,17 +460,30 @@ it('KB-777 B1-4: 카메라 = StatusBar light · 결과(밝은 바탕) = 없음(�
   expect(src).toContain('const lightBar = isFocused && darkRoot ?');
 });
 
-it('KB-777 B1-11: 카메라 뷰파인더 위·아래 스크림(제목·안내 대비) — 터치 통과(pointerEvents none) · 결과 화면엔 없음', async () => {
+it('KB-854 카메라 v2 B: 위·아래 단색 바(gray-1000 불투명) 2개 · 스크림 0(B1-11 그라데이션 → 바) · 프레이밍 코너 4 · 결과 화면엔 없음', async () => {
+  const RN = jest.requireActual('react-native');
   const tree = render(<Scan />);
-  for (const id of ['cam-scrim-top', 'cam-scrim-bottom']) {
-    const s = tree.root.findAll((n) => n.props?.testID === id);
-    expect(s.length).toBeGreaterThanOrEqual(1);
-    expect(s[0].props.pointerEvents).toBe('none');
+  for (const id of ['scan-cam-topbar', 'scan-cam-bottombar']) {
+    const bar = tree.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string');
+    expect(bar).toHaveLength(1);
+    expect(RN.StyleSheet.flatten(bar[0].props.style).backgroundColor).toBe('#1C1E21');
   }
+  expect(tree.root.findAll((n) => n.props?.testID === 'scan-cam-topbar')[0].props.pointerEvents).toBe('none'); // 위 바 = 바탕만(닫기·탭은 위에서 받음)
+  expect(tree.root.findAll((n) => n.props?.testID === 'cam-scrim-top' || n.props?.testID === 'cam-scrim-bottom')).toHaveLength(0);
+  const corners = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('scan-frame-corner-') && n.props?.width === 28);
+  expect([...new Set(corners.map((c) => c.props.testID as string))].sort()).toEqual(['scan-frame-corner-bl', 'scan-frame-corner-br', 'scan-frame-corner-tl', 'scan-frame-corner-tr']);
+  expect(tree.root.findAll((n) => n.props?.testID === 'scan-frame-corners')[0].props.pointerEvents).toBe('none'); // 안내일 뿐 — 핀치·탭 통과
+  // 긴 번역 = 탭 가로 스크롤(줄이지 않음) · 칸 최소 폭 = 화면 1/3
+  const tabsScroll = tree.root.findAll((n) => n.props?.testID === 'scan-mode-tabs-scroll' && n.type === RN.ScrollView);
+  expect(tabsScroll).toHaveLength(1);
+  expect(tabsScroll[0].props.horizontal).toBe(true);
+  const w = RN.Dimensions.get('window').width;
+  const menuTab = tree.root.findAll((n) => n.props?.testID === 'scan-mode-menu' && typeof n.type === 'string')[0];
+  expect(RN.StyleSheet.flatten(menuTab.props.style).minWidth).toBeCloseTo(w / 3, 5);
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
-  expect(tree.root.findAll((n) => n.props?.testID === 'cam-scrim-top')).toHaveLength(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'scan-cam-topbar')).toHaveLength(0);
 });
 
 // ── KB-845(D-31 scan refresh) 공통 카메라 ──
@@ -480,16 +493,21 @@ describe('KB-845 공통 카메라', () => {
   const pressId = async (tree: ReactTestRenderer, id: string) => {
     await act(async () => { await tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); });
   };
-  it('메뉴: "Scan" 헤더 · 안내 제목+힌트 · Photos(텍스트) · 하단 링크 = 라이브러리 · Food photo 탭 불가', async () => {
+  it('KB-854 메뉴: "Scan" 헤더만 · 안내 문구·Photos·라이브러리 링크 제거 · 갤러리 아이콘("Choose photo") = 라이브러리 · 전환 = "Switch camera" · Food photo 탭 불가', async () => {
     const tree = render(<Scan />);
-    for (const k of ['scanCamera.title', 'scanCamera.menuTitle', 'scanCamera.menuHint', 'scanCamera.photos', 'scanCamera.menuLink']) expect(texts(tree, k)).toBeGreaterThan(0);
+    expect(texts(tree, 'scanCamera.title')).toBeGreaterThan(0);
+    for (const k of ['scanCamera.menuTitle', 'scanCamera.menuHint', 'scanCamera.photos', 'scanCamera.menuLink', 'scan.cameraHintLandscape']) expect(texts(tree, k)).toBe(0);
+    expect(byId(tree, 'scan-library-link')).toHaveLength(0);
+    expect(byId(tree, 'scan-cam-hint')).toHaveLength(0); // 메뉴 = 흐름 안내 없음
     const food = tree.root.findAll((n) => n.props?.testID === 'scan-mode-food')[0];
     expect(food.props.onPress).toBeUndefined();
     expect(food.props.accessibilityState).toMatchObject({ disabled: true });
-    await pressId(tree, 'scan-library-link'); // 라이브러리 = 메뉴 스캔 시작(로딩 C로 넘어간다)
+    expect(byId(tree, 'scan-flip')[0].props.accessibilityLabel).toBe('scanCamera.switchCamera');
+    expect(byId(tree, 'scan-gallery')[0].props.accessibilityLabel).toBe('scanCamera.choosePhoto');
+    await pressId(tree, 'scan-gallery'); // 갤러리 = 메뉴 스캔 시작(로딩 C로 넘어간다)
     expect(mockLaunchLibrary).toHaveBeenCalledTimes(1);
   });
-  it('줌 칩 1x·2x = 같은 틀(높이 36·테두리 1 — 상태는 색만) · 셔터 64 + 링 76 stroke 3', () => {
+  it('줌 칩 1x·2x = 같은 틀(높이 36·테두리 1 — 상태는 색만) · KB-854 셔터 60 + 링 72 stroke 3 · 갤러리·전환 터치 52', () => {
     const tree = render(<Scan />);
     const chip = (k: string) => RN.StyleSheet.flatten(byId(tree, `zoom-${k}`)[0].props.style);
     const [a, b] = [chip('x1'), chip('x2')];
@@ -497,11 +515,12 @@ describe('KB-845 공통 카메라', () => {
     expect(a.height).toBe(36);
     expect(a.backgroundColor).not.toBe(b.backgroundColor); // 활성 = 흰 · 비활성 = gray-800
     const shutter = RN.StyleSheet.flatten(byId(tree, 'scan-shutter')[0].props.style);
-    expect(shutter).toMatchObject({ width: 76, height: 76, borderWidth: 3 });
+    expect(shutter).toMatchObject({ width: 72, height: 72, borderWidth: 3 });
     const inner = RN.StyleSheet.flatten(byId(tree, 'scan-shutter')[0].children.find((c: { props: { style?: unknown } }) => c.props?.style).props.style);
-    expect(inner).toMatchObject({ width: 64, height: 64 });
+    expect(inner).toMatchObject({ width: 60, height: 60 });
+    for (const id of ['scan-gallery', 'scan-flip']) expect(RN.StyleSheet.flatten(byId(tree, id)[0].props.style)).toMatchObject({ width: 52, height: 52 });
   });
-  it('탭 Packaged food = 같은 카메라 가공식품 안내 · 링크 "성분표로 확인하기" → 성분표 안내(탭은 Packaged 유지) → "앞면으로" 되돌림', async () => {
+  it('탭 Packaged food = 같은 카메라(안내 문구 없음) · 링크 "성분표로 확인하기" 유지 → 성분표(탭은 Packaged 유지) → "앞면으로" 되돌림', async () => {
     const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
     const prev = FLAGS.packagedLabelScan;
     FLAGS.packagedLabelScan = true;
@@ -509,21 +528,23 @@ describe('KB-845 공통 카메라', () => {
       const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
       const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
       await pressId(tree, 'scan-mode-packaged');
-      expect(texts(tree, 'scanCamera.packageTitle')).toBeGreaterThan(0);
-      expect(texts(tree, 'scanCamera.packageHint')).toBeGreaterThan(0);
+      for (const k of ['scanCamera.packageTitle', 'scanCamera.packageHint']) expect(texts(tree, k)).toBe(0); // KB-854: 안내 문구 제거
       expect(byId(tree, 'scan-shutter')).toHaveLength(1);
+      expect(byId(tree, 'pscan-label-instead')).toHaveLength(1); // 기능 링크는 유지(시안 Packaged 하단)
       await pressId(tree, 'pscan-label-instead');
-      expect(texts(tree, 'scanCamera.labelTitle')).toBeGreaterThan(0);
-      expect(texts(tree, 'scanCamera.labelHint')).toBeGreaterThan(0);
+      for (const k of ['scanCamera.labelTitle', 'scanCamera.labelHint']) expect(texts(tree, k)).toBe(0);
+      expect(byId(tree, 'pscan-front-instead')).toHaveLength(1);
       expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-packaged')[0].props.accessibilityState).toMatchObject({ selected: true });
       await pressId(tree, 'pscan-front-instead');
-      expect(texts(tree, 'scanCamera.packageTitle')).toBeGreaterThan(0);
+      expect(byId(tree, 'pscan-label-instead')).toHaveLength(1);
       await pressId(tree, 'scan-mode-menu');
-      expect(texts(tree, 'scanCamera.menuTitle')).toBeGreaterThan(0);
+      expect(byId(tree, 'pscan-label-instead')).toHaveLength(0);
+      expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-menu')[0].props.accessibilityState).toMatchObject({ selected: true });
     } finally {
       FLAGS.packagedLabelScan = prev;
     }
-  });  it('QA(Android 검정 프리뷰): 탭 메뉴 ↔ 가공식품 ↔ 성분표 전환 = CameraView 한 인스턴스(재마운트·새 세션 0) · 카메라 화면 동안 active', async () => {
+  });
+  it('QA(Android 검정 프리뷰): 탭 메뉴 ↔ 가공식품 ↔ 성분표 전환 = CameraView 한 인스턴스(재마운트·새 세션 0) · 카메라 화면 동안 active', async () => {
     const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
     const prev = FLAGS.packagedLabelScan;
     FLAGS.packagedLabelScan = true;

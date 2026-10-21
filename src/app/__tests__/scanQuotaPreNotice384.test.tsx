@@ -228,7 +228,7 @@ describe('Codex #159 P1: 완료된 스캔 결과는 복귀 포커스로 쿼터 �
   async function toResult() {
     let tree!: ReactTestRenderer;
     await act(async () => { tree = renderer.create(<Scan />); });
-    const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function');
+    const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto' && typeof n.props?.onPress === 'function');
     await act(async () => { await gallery[0].props.onPress(); });
     return tree;
   }

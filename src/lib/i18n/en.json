@@ -1323,7 +1323,9 @@
     "frontLink": "Scan package front instead",
     "capturedMenu": "Your captured menu",
     "capturedPackage": "Your captured package",
-    "capturedLabel": "Your captured label"
+    "capturedLabel": "Your captured label",
+    "choosePhoto": "Choose photo",
+    "switchCamera": "Switch camera"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

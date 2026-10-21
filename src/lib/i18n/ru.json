@@ -1365,7 +1365,9 @@
     "frontLink": "Сканировать лицевую сторону",
     "capturedMenu": "Ваше фото меню",
     "capturedPackage": "Ваше фото упаковки",
-    "capturedLabel": "Ваше фото этикетки"
+    "capturedLabel": "Ваше фото этикетки",
+    "choosePhoto": "Выбрать фото",
+    "switchCamera": "Сменить камеру"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",
