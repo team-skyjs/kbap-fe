@@ -20,7 +20,7 @@ export interface DietPreset {
   group: PresetGroup;
   /** 카테고리명 i18n 키 — onboarding.presets.<id 소문자> */
   labelKey: string;
-  /** 정본 표 성분 번호(1~81 — 범위는 [시작, 끝] 튜플) */
+  /** 정본 표 성분 번호(1~87 — 범위는 [시작, 끝] 튜플) */
   nums: (number | [number, number])[];
 }
 
@@ -31,14 +31,16 @@ const P = (id: string, group: PresetGroup, nums: (number | [number, number])[]):
   nums,
 });
 
-/** 정본 매핑 테이블 전사(2026-08-14 확정) — 행 순서·번호 표기 정본 그대로. */
+/** 정본 매핑 테이블 전사(2026-08-14 확정) — 행 순서·번호 표기 정본 그대로.
+ *  KB-843(서버 #446 DietCategory와 같게 — 서버 프리셋 실패 시 폴백): 고기 회피 7종(비건·베지·락토·오보·페스코·불교·자이나) + 85 MEAT·86 LAMB,
+ *  갑각류·조개 알레르기 + 83 CRUSTACEAN·84 MOLLUSK. 견과 알레르기엔 82 NUTS 없음(그 식단은 땅콩을 일부러 뺀 집합인데 NUTS가 땅콩을 끌어온다). */
 export const DIET_PRESETS: DietPreset[] = [
   // ---- 식이 (Dietary) 8 ----
-  P('VEGAN', 'diet', [[1, 11], [37, 66]]),
-  P('VEGETARIAN', 'diet', [8, 9, 11, [37, 66]]),
-  P('LACTO_VEGETARIAN', 'diet', [1, 8, 9, 11, [37, 66]]),
-  P('OVO_VEGETARIAN', 'diet', [[2, 9], 11, [37, 66]]),
-  P('PESCATARIAN', 'diet', [8, 9, 11, 59, [61, 66]]),
+  P('VEGAN', 'diet', [[1, 11], [37, 66], 85, 86]),
+  P('VEGETARIAN', 'diet', [8, 9, 11, [37, 66], 85, 86]),
+  P('LACTO_VEGETARIAN', 'diet', [1, 8, 9, 11, [37, 66], 85, 86]),
+  P('OVO_VEGETARIAN', 'diet', [[2, 9], 11, [37, 66], 85, 86]),
+  P('PESCATARIAN', 'diet', [8, 9, 11, 59, [61, 66], 85, 86]),
   P('GLUTEN_FREE', 'diet', [26, 28, 29, 30]), // 메밀(27)·옥수수(31) 제외 — 글루텐 없음
   P('LACTOSE_FREE', 'diet', [[2, 7]]),
   P('NO_ALCOHOL', 'diet', [78, 79, 80]),
@@ -46,11 +48,11 @@ export const DIET_PRESETS: DietPreset[] = [
   P('MUSLIM', 'religion', [8, 9, 11, 59, 62, 63, 64, 78, 79, 80]), // ⚠️ 할랄 도축 여부는 성분 판별 불가 — 사장님 확인 영역
   P('HINDU', 'religion', [8, 9, 59, 61, 64]),
   P('KOSHER', 'religion', [8, 9, 11, [37, 51], 59, 62, 63]), // 비늘 생선(53~57)은 허용 · 육류×유제품 조합 금지는 표현 불가(한계)
-  P('BUDDHIST', 'religion', [1, 8, 9, 11, [37, 66], [72, 77]]), // 오신채 73~77 + 양파(72) 확장 통례
-  P('JAIN', 'religion', [1, 8, 9, 10, 11, [37, 66], [70, 76]]), // ⚠️ 흥거(77) 제외 — 자이나교는 마늘 대체재로 사용
+  P('BUDDHIST', 'religion', [1, 8, 9, 11, [37, 66], [72, 77], 85, 86]), // 오신채 73~77 + 양파(72) 확장 통례
+  P('JAIN', 'religion', [1, 8, 9, 10, 11, [37, 66], [70, 76], 85, 86]), // ⚠️ 흥거(77) 제외 — 자이나교는 마늘 대체재로 사용
   // ---- 알레르기 묶음 2 ----
   P('NUT_ALLERGY', 'allergy', [[13, 22]]), // 밤(22) 보수 포함 확정
-  P('SHELLFISH_ALLERGY', 'allergy', [[37, 51]]),
+  P('SHELLFISH_ALLERGY', 'allergy', [[37, 51], 83, 84]),
 ];
 
 function expandNums(nums: (number | [number, number])[]): number[] {

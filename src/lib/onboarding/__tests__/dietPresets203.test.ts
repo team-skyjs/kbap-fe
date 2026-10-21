@@ -43,6 +43,22 @@ it('정본 근거 포인트 잠금 — 제외/포함이 의도인 항목들', ()
   expect(codes('NUT_ALLERGY').has('CHESTNUT')).toBe(true);
 });
 
+it('KB-843 서버 #446 DietCategory 정합(폴백 상수) — 고기 회피 7종 = MEAT·LAMB · 갑각류·조개 알레르기 = CRUSTACEAN·MOLLUSK · 견과 알레르기 = NUTS 없음(땅콩을 끌어오므로) · 그 밖 무변', () => {
+  const codes = (id: string) => new Set(presetSubstanceCodes(DIET_PRESETS.find((p) => p.id === id)!));
+  for (const id of ['VEGAN', 'VEGETARIAN', 'LACTO_VEGETARIAN', 'OVO_VEGETARIAN', 'PESCATARIAN', 'BUDDHIST', 'JAIN']) {
+    expect(codes(id).has('MEAT')).toBe(true);
+    expect(codes(id).has('LAMB')).toBe(true);
+    expect(codes(id).has('MEAT_BROTH')).toBe(false); // 고기 육수 = 서버 함의(BROTH → MEAT_BROTH)로 이미 걸림
+  }
+  expect(codes('SHELLFISH_ALLERGY').has('CRUSTACEAN')).toBe(true);
+  expect(codes('SHELLFISH_ALLERGY').has('MOLLUSK')).toBe(true);
+  expect(codes('NUT_ALLERGY').has('NUTS')).toBe(false);
+  expect(codes('NUT_ALLERGY').has('PEANUT')).toBe(false);
+  for (const id of ['GLUTEN_FREE', 'LACTOSE_FREE', 'NO_ALCOHOL', 'MUSLIM', 'HINDU', 'KOSHER']) {
+    for (const c of ['NUTS', 'CRUSTACEAN', 'MOLLUSK', 'MEAT', 'LAMB', 'MEAT_BROTH']) expect(codes(id).has(c)).toBe(false);
+  }
+});
+
 it('복수 선택 = 합집합 + 기존 선택 보존(삭제 금지 — 안전)', () => {
   const merged = unionPresetCodes(['NO_ALCOHOL', 'LACTOSE_FREE'], ['PEANUT']);
   expect(merged.has('PEANUT')).toBe(true); // 기존 보존

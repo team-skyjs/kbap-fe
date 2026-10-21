@@ -963,7 +963,12 @@
     "wildchive": "Ajo silvestre",
     "asafoetida": "Asafétida",
     "mirin": "Mirin",
-    "sulfites": "Sulfitos"
+    "sulfites": "Sulfitos",
+    "nuts": "Frutos secos",
+    "crustacean": "Crustáceos",
+    "mollusk": "Moluscos",
+    "meat": "Carne",
+    "meatbroth": "Caldo de carne"
   },
   "saved": {
     "error": "No se pudo actualizar tu lista guardada. Inténtalo de nuevo.",

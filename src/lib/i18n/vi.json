@@ -963,7 +963,12 @@
     "wildchive": "Hành dại",
     "asafoetida": "A ngùy (asafoetida)",
     "mirin": "Rượu mirin",
-    "sulfites": "Sunfit"
+    "sulfites": "Sunfit",
+    "nuts": "Các loại hạt",
+    "crustacean": "Giáp xác",
+    "mollusk": "Thân mềm",
+    "meat": "Thịt",
+    "meatbroth": "Nước dùng thịt"
   },
   "saved": {
     "error": "Không thể cập nhật danh sách đã lưu. Vui lòng thử lại.",
