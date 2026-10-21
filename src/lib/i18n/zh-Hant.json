@@ -694,9 +694,8 @@
     "mostReviewedSub": "大家都在聊的菜。",
     "idolPick": {
       "label": "K-POP & K-FOOD",
-      "title": "偶像吃過的那道菜，你也來一口？",
-      "sub": "是誰吃的，就到影片裡看看吧。",
-      "seeAll": "瀏覽這些菜色",
+      "title": "K-POP 偶像吃過的\n那道菜，要不要也試試？",
+      "seeAll": "去看看",
       "bannerA11y": "查看K-POP偶像吃過的菜色"
     }
   },

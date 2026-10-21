@@ -694,9 +694,8 @@
     "mostReviewedSub": "Món mọi người đang nói tới.",
     "idolPick": {
       "label": "K-POP & K-FOOD",
-      "title": "Món idol K-pop từng ăn, bạn thử một miếng?",
-      "sub": "Xem ai đã ăn trong video nhé.",
-      "seeAll": "Khám phá các món",
+      "title": "Món idol K-pop đã ăn. Thử theo không?",
+      "seeAll": "Khám phá",
       "bannerA11y": "Xem các món idol K-pop đã ăn"
     }
   },

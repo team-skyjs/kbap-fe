@@ -1,8 +1,8 @@
 /**
  * KB-836 K-POP & K-FOOD (전용 API 설계, 2026-10-21) — 어댑터(GET /api/foods/idol-picks) · 요청(경로·기본 헤더) ·
- * 정적 홈 배너(네트워크 0·번들 사진 3장·탭 계측 id 없음·눌림 메트릭 불변) · 목록 화면(로딩·오류·0건·게스트 배지 미렌더·카드 경로·포커스 계측) ·
+ * 정적 홈 배너(KB-856 v2: 네트워크 0·번들 배경 1장·텍스트 시작 카드폭×182/320·탭 계측 id 없음·눌림 메트릭 불변) · 목록 화면(로딩·오류·0건·게스트 배지 미렌더·카드 경로·포커스 계측) ·
  * 상세 V1 카드(캐시만 구독 — 없으면 null·목록 API 미호출, 탭 = 계측 + openWebPage) · 무효화(기피 성분 변경 = 전면 invalidate) ·
- * 홈·상세 데이터 계층 무변경 · 15키 × 10로케일.
+ * 홈·상세 데이터 계층 무변경 · 14키 × 10로케일(KB-856 home.idolPick.sub 삭제).
  */
 import * as fs from 'fs';
 import * as React from 'react';
@@ -66,7 +66,7 @@ jest.mock('@/lib/i18n/useAppLanguage', () => ({ useAppLanguage: () => 'en' }));
 import { adaptIdolPicks, type IdolPick } from '@/lib/api/idolPickAdapter';
 import { adaptMenuSummary } from '@/lib/api/foodAdapter';
 import { fetchIdolPicks, idolPicksKey, useIdolPickVideo } from '@/lib/data/useIdolPicks';
-import { IdolPickBanner } from '../IdolPickBanner';
+import { BG_ASPECT, IdolPickBanner, textTop } from '../IdolPickBanner';
 import { trackHomeCardClick } from '../homeImpressions';
 import { IdolVideoCard } from '@/features/food/IdolVideoCard';
 import IdolPicksScreen, { cellWidth } from '@/app/idol-picks';
@@ -134,17 +134,37 @@ describe('어댑터·요청 (계약 C-1)', () => {
 });
 
 describe('홈 배너 (정적)', () => {
-  it('네트워크 0 · 번들 사진 3장 · count 없는 문구', () => {
+  it('네트워크 0 · 번들 배경 1장(KB-856 v2) · 콜라주·물음표·서브 없음 · count 없는 문구', () => {
     const t = render(<IdolPickBanner />);
     expect(mockGet).not.toHaveBeenCalled();
-    expect(hostIds(t).filter((i) => i.startsWith('idol-pick-photo-'))).toEqual(['idol-pick-photo-0', 'idol-pick-photo-1', 'idol-pick-photo-2']);
+    expect(hostIds(t).some((i) => i.startsWith('idol-pick-photo-') || i === 'idol-pick-collage')).toBe(false);
     const json = JSON.stringify(t.toJSON());
-    expect(json).toContain('home.idolPick.sub');
+    expect(json).not.toContain('home.idolPick.sub');
     expect(json).not.toContain('count');
-    expect(fs.readFileSync('src/features/home/IdolPickBanner.tsx', 'utf8')).not.toMatch(/RemoteImage|useHome|useIdolPicks|uri:/);
-    // 사진 = 인물 없음 + 시드 제외 음식·닮은꼴 아님(01 비빔밥·02 돼지고기 찌개·08 김밥 금지, 04·06 배경 인물 금지)
-    const photos = [...fs.readFileSync('src/features/home/IdolPickBanner.tsx', 'utf8').matchAll(/dishes\/(dish-\d+)\.jpg/g)].map((m) => m[1]);
-    expect(photos).toEqual(['dish-05', 'dish-03', 'dish-12']);
+    const src = fs.readFileSync('src/features/home/IdolPickBanner.tsx', 'utf8');
+    expect(src).not.toMatch(/RemoteImage|useHome|useIdolPicks|uri:|IconQuestion|dishes\/|LinearGradient|COLLAGE/);
+    expect([...src.matchAll(/require\('([^']+)'\)/g)].map((m) => m[1])).toEqual(['../../../assets/images/idol_pick_banner_bg.jpg']);
+    expect(fs.existsSync('assets/images/idol_pick_banner_bg.jpg')).toBe(true);
+  });
+
+  it('배경 Image = absolute · top/left 0 · width 100% · aspectRatio 1170/695 · cover · 장식(a11y 숨김)', () => {
+    const t = render(<IdolPickBanner />);
+    const bg = t.root.find((n) => n.props.testID === 'idol-pick-bg' && typeof n.type === 'string');
+    expect(BG_ASPECT).toBe(1170 / 695);
+    expect(StyleSheet.flatten(bg.props.style)).toMatchObject({ position: 'absolute', top: 0, left: 0, width: '100%', aspectRatio: 1170 / 695 });
+    expect(bg.props.resizeMode).toBe('cover');
+    expect(bg.props.accessibilityElementsHidden).toBe(true);
+  });
+
+  it.each([[360, 182], [320, 159.25]])('텍스트 블록 paddingTop = (화면폭 %d − 40) × 182/320 = %d · 좌우·아래 20 · gap 16 · 높이 고정 없음', (w, top) => {
+    expect(textTop(w)).toBe(top);
+    const dims = jest.spyOn(jest.requireActual('react-native'), 'useWindowDimensions').mockReturnValue({ width: w, height: 640, scale: 2, fontScale: 1 });
+    const t = render(<IdolPickBanner />);
+    const inner = StyleSheet.flatten(t.root.find((n) => n.props.testID === 'idol-pick-inner' && typeof n.type === 'string').props.style);
+    expect(inner).toMatchObject({ paddingTop: top, paddingHorizontal: 20, paddingBottom: 20, gap: 16 });
+    const banner = StyleSheet.flatten(t.root.find((n) => n.props.testID === 'idol-pick-banner' && typeof n.type === 'string').props.style);
+    expect(banner.height).toBeUndefined();
+    dims.mockRestore();
   });
 
   it('탭 = home_card_click{section:idol_pick, position:0}(food_id·collection_key 없음, D4) → /idol-picks · 라벨', () => {
@@ -169,14 +189,6 @@ describe('홈 배너 (정적)', () => {
     expect(metrics(stylesWhen(t, 'idol-pick-banner', true))).toEqual(metrics(stylesWhen(t, 'idol-pick-banner', false)));
     expect(stylesWhen(t, 'idol-pick-banner', false).some((s) => s.opacity === 0)).toBe(true);
     expect(stylesWhen(t, 'idol-pick-banner', true).some((s) => s.opacity === 0)).toBe(false);
-  });
-
-  it('폭 < 360 = 축소 콜라주(80×100, 높이 120)', () => {
-    const dims = jest.spyOn(jest.requireActual('react-native'), 'useWindowDimensions').mockReturnValue({ width: 320, height: 640, scale: 2, fontScale: 1 });
-    const t = render(<IdolPickBanner />);
-    expect(StyleSheet.flatten(t.root.find((n) => n.props.testID === 'idol-pick-photo-0' && typeof n.type === 'string').props.style)).toMatchObject({ width: 80, height: 100 });
-    expect(StyleSheet.flatten(t.root.find((n) => n.props.testID === 'idol-pick-collage' && typeof n.type === 'string').props.style)).toMatchObject({ height: 120 });
-    dims.mockRestore();
   });
 });
 
@@ -322,15 +334,15 @@ describe('무효화', () => {
   });
 });
 
-describe('문구 (15키 × 10로케일)', () => {
+describe('문구 (14키 × 10로케일)', () => {
   const LOCALES = ['ko', 'en', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es'];
   const KEYS = [
-    'home.idolPick.label', 'home.idolPick.title', 'home.idolPick.sub', 'home.idolPick.seeAll', 'home.idolPick.bannerA11y',
+    'home.idolPick.label', 'home.idolPick.title', 'home.idolPick.seeAll', 'home.idolPick.bannerA11y',
     'idolPicks.label', 'idolPicks.title', 'idolPicks.sub', 'idolPicks.cardA11y', 'idolPicks.empty',
     'detail.idolVideo.label', 'detail.idolVideo.title', 'detail.idolVideo.sub', 'detail.idolVideo.cta', 'detail.idolVideo.a11y',
   ];
   const get = (o: unknown, k: string) => k.split('.').reduce<unknown>((a, p) => (a as Record<string, unknown>)?.[p], o);
-  it('모든 로케일에 15키 · 플랫폼명·PICK·이모지·{{count}} 0 · cardA11y {{name}} 유지 · opensIn 없음', () => {
+  it('모든 로케일에 14키 · 플랫폼명·PICK·이모지·{{count}} 0 · cardA11y {{name}} 유지 · opensIn 없음', () => {
     for (const l of LOCALES) {
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- 로케일 JSON 순회
       const j = require(`@/lib/i18n/${l}.json`);
@@ -346,10 +358,28 @@ describe('문구 (15키 × 10로케일)', () => {
   it('ko·en = 01_copy_list 갱신본', () => {
     const ko = require('@/lib/i18n/ko.json');
     const en = require('@/lib/i18n/en.json');
-    expect(ko.home.idolPick).toEqual({ label: 'K-POP & K-FOOD', title: '아이돌이 먹던 그 음식, 나도 한 입?', sub: '누가 먹었는지는 영상에서 확인해요.', seeAll: '음식 둘러보기', bannerA11y: 'K-POP 아이돌이 먹은 음식 목록 보기' });
-    expect(en.home.idolPick).toEqual({ label: 'K-POP & K-FOOD', title: 'K-pop idols tried these. Want a taste?', sub: 'See who tried them in the videos.', seeAll: 'Explore the dishes', bannerA11y: 'View the dishes tried by K-pop idols' });
+    // KB-856 v2: 제목·버튼 교체, sub 삭제, ko 제목 "먹은" 뒤 \n(단어 중간 끊김 방지)
+    expect(ko.home.idolPick).toEqual({ label: 'K-POP & K-FOOD', title: 'K-POP 아이돌이 먹은\n그 음식, 따라 먹어볼까?', seeAll: '둘러보기', bannerA11y: 'K-POP 아이돌이 먹은 음식 목록 보기' });
+    expect(en.home.idolPick).toEqual({ label: 'K-POP & K-FOOD', title: 'That dish K-pop idols ate. Wanna try it?', seeAll: 'Explore', bannerA11y: 'View the dishes tried by K-pop idols' });
     expect(ko.detail.idolVideo.title).toBe('이 음식, 어떤 아이돌이 먹었을까?');
     expect(en.detail.idolVideo.cta).toBe('Watch to find out');
     expect(en.idolPicks.sub).toBe('Pick a dish to check the ingredients and find the video link.');
+  });
+});
+
+describe('KB-856 배너 v2 문구', () => {
+  const LOCALES = ['ko', 'en', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es'];
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- 로케일 JSON 순회
+  const load = (l: string) => require(`@/lib/i18n/${l}.json`).home.idolPick as Record<string, string>;
+  it('home.idolPick.sub 키 = 10로케일 어디에도 없음', () => {
+    for (const l of LOCALES) expect({ l, sub: 'sub' in load(l) }).toEqual({ l, sub: false });
+  });
+  it('10로케일 title 금칙어 0 — 최애·좋아하·PICK·플랫폼명·이모지 · 줄바꿈 최대 1개', () => {
+    const BANNED = /최애|좋아하|推し|本命|PICK|bias|favou?rite|youtube|tiktok|instagram|\p{Extended_Pictographic}/iu;
+    for (const l of LOCALES) {
+      const title = load(l).title;
+      expect({ l, banned: BANNED.test(title) }).toEqual({ l, banned: false });
+      expect({ l, breaks: (title.match(/\n/g) ?? []).length <= 1 }).toEqual({ l, breaks: true });
+    }
   });
 });

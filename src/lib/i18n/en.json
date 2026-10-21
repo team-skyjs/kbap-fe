@@ -852,9 +852,8 @@
     "mostReviewedSub": "What people are talking about.",
     "idolPick": {
       "label": "K-POP & K-FOOD",
-      "title": "K-pop idols tried these. Want a taste?",
-      "sub": "See who tried them in the videos.",
-      "seeAll": "Explore the dishes",
+      "title": "That dish K-pop idols ate. Wanna try it?",
+      "seeAll": "Explore",
       "bannerA11y": "View the dishes tried by K-pop idols"
     }
   },
