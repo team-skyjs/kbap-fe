@@ -151,13 +151,7 @@ function ItemCard({ item, onOpen, blur, onPlace }: { item: CurationItem; onOpen:
           깔아 원본과 정확히 겹친다(이음새 0). 그 위 스크림(투명 → 어둡게)이 밴드 전체를 덮어 띠 경계·글자 대비를 함께 맡는다 */}
       {/* Codex #320 P1: 화면 ± 1화면 밖 카드 = 블러 없음(원본 + 스크림) · 들어오면 마운트 + 150ms 페이드인(모션 줄이기 = 즉시) */}
       {cover && band && blur && (
-        <FadeInBand style={[styles.blurBand, { top: band.top }]} testID={`curation-item-blur-${p}`}>
-          {band.strips.map((s, i) => (
-            <View key={i} style={[styles.blurStrip, { top: s.top - band.top, height: s.height, opacity: s.opacity }]} testID={`curation-item-blur-strip-${p}-${i}`}>
-              <RemoteImage uri={cover} style={[styles.blurImg, { top: -s.top, height: cardH as number }]} recyclingKey={`${item.id}-blur-${i}`} blurRadius={s.radius} />
-            </View>
-          ))}
-        </FadeInBand>
+        <BlurBand cover={cover} band={band} cardH={cardH as number} itemId={item.id} p={p} />
       )}
       {band && <LinearGradient colors={CARD_SCRIM} style={[styles.shade, { top: band.top }]} pointerEvents="none" />}
       <View style={{ height: CARD_SPACER }} />
@@ -175,14 +169,31 @@ function ItemCard({ item, onOpen, blur, onPlace }: { item: CurationItem; onOpen:
   );
 }
 
+/** 블러 띠 묶음 — 띠 사진이 전부 그려진 뒤(onLoad·실패도 끝으로 셈) 페이드 시작. 띠 사진 로딩 자리 = 투명(아래 원본이 보인다 — 회색 스켈레톤 0) */
+function BlurBand({ cover, band, cardH, itemId, p }: { cover: string; band: ReturnType<typeof blurBandOf>; cardH: number; itemId: string; p: number }) {
+  const [done, setDone] = React.useState(0);
+  const settle = () => setDone((n) => n + 1);
+  return (
+    <FadeInBand style={[styles.blurBand, { top: band.top }]} ready={done >= band.strips.length} testID={`curation-item-blur-${p}`}>
+      {band.strips.map((s, i) => (
+        <View key={i} style={[styles.blurStrip, { top: s.top - band.top, height: s.height, opacity: s.opacity }]} testID={`curation-item-blur-strip-${p}-${i}`}>
+          <RemoteImage uri={cover} style={[styles.blurImg, { top: -s.top, height: cardH }]} recyclingKey={`${itemId}-blur-${i}`} blurRadius={s.radius} placeholder="none" onLoad={settle} onError={settle} />
+        </View>
+      ))}
+    </FadeInBand>
+  );
+}
+
 /** 블러 밴드 페이드인 — 마운트 순간 0 → 1(150ms), 모션 줄이기 = 바로 1. 범위에 들어와 블러가 붙을 때 뚝 바뀌지 않게 */
 export const BLUR_FADE_MS = 150;
-function FadeInBand({ style, testID, children }: { style: object; testID: string; children: React.ReactNode }) {
+function FadeInBand({ style, testID, ready, children }: { style: object; testID: string; ready: boolean; children: React.ReactNode }) {
   const reduced = useReducedMotion();
-  const o = useSharedValue(reduced ? 1 : 0);
+  const o = useSharedValue(0);
+  // KB-846 Android QA: 띠 사진이 다 그려지기(onLoad) 전엔 0 — 그 전엔 원본 + 스크림만 보인다(로딩 중 회색 띠 노출 0). 준비되면 150ms 페이드(모션 줄이기 = 즉시)
   React.useEffect(() => {
-    if (!reduced) o.set(withTiming(1, { duration: BLUR_FADE_MS }));
-  }, [reduced, o]);
+    if (!ready) return;
+    o.set(reduced ? 1 : withTiming(1, { duration: BLUR_FADE_MS }));
+  }, [ready, reduced, o]);
   const fade = useAnimatedStyle(() => ({ opacity: o.get() }));
   return (
     <Animated.View style={[style, fade]} pointerEvents="none" testID={testID}>
