@@ -9,7 +9,7 @@
  * 접근성: 열리면 그래버(닫기 버튼 역할 — 스크린리더 활성화로 닫힘)에 포커스, 페이저에 이전/다음 사진 대체 액션, 시트 escape 제스처 = 닫기.
  */
 import * as React from 'react';
-import { AccessibilityInfo, findNodeHandle, FlatList, Modal, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { AccessibilityInfo, findNodeHandle, FlatList, Modal, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +29,11 @@ export const PHOTO_SHARE = 510 / 748; // 시안: 사진 510 / 시트 748
 export const DISMISS_SHARE = 0.25;
 export const DISMISS_VELOCITY = 1000;
 export const INTRO_MAX_LINES = 4;
+/** 짧은 화면에서 사진이 줄어드는 하한 — 그 아래로는 본문이 스크롤로 넘친다(Codex #316) */
+export const PHOTO_MIN_H = 160;
+/** 사진 영역 높이 — 본문 고유 높이(content)가 아직 없으면 기본값, 있으면 남는 자리(하한 160·상한 기본값) */
+export const photoBoxHeight = (photoH: number, sheetMax: number, bodyContent: number): number =>
+  bodyContent > 0 ? Math.max(PHOTO_MIN_H, Math.min(photoH, sheetMax - bodyContent)) : photoH;
 export const shouldDismiss = (translationY: number, velocityY: number, sheetH: number): boolean =>
   translationY >= sheetH * DISMISS_SHARE || (velocityY >= DISMISS_VELOCITY && translationY > 0);
 
@@ -42,7 +47,10 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
   const [pagerH, setPagerH] = React.useState<number | null>(null); // 짧은 화면·큰 글씨에서 사진 영역이 줄면 실제 높이로 페이지를 맞춘다
   // 끌어 닫기 — 콜백은 JS 스레드(runOnJS(true), 레포 제스처 관례 — HomeQuotaBadge). 공유값 .get()/.set()(컴파일러 호환)
   const dragY = useSharedValue(0);
-  const sheetMeasured = useSharedValue(0); // 실제 시트 높이(콘텐츠 맞춤) — 제스처 콜백에서 읽는다(ref면 렌더 중 읽기로 잡힘)
+  const sheetMeasured = useSharedValue(0);
+  // Codex #316: 본문이 시트 최대 높이를 넘는 극단(짧은 화면 + 큰 글씨 + 여러 줄 이름)에서만 스크롤 — 평소엔 고정(스크롤·바운스 0)
+  const [bodyBox, setBodyBox] = React.useState({ view: 0, content: 0 });
+  const bodyOverflows = bodyBox.content > bodyBox.view + 1; // 실제 시트 높이(콘텐츠 맞춤) — 제스처 콜백에서 읽는다(ref면 렌더 중 읽기로 잡힘)
 
   // 다른 항목으로 열리면 첫 사진부터(렌더 중 전이 비교 — KB-603)
   const itemKey = item?.id ?? null;
@@ -54,7 +62,10 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
 
   const sheetH = height - SHEET_TOP; // 최대 높이(시트는 콘텐츠에 맞춰 이보다 작을 수 있다)
   const photoH = Math.round(sheetH * PHOTO_SHARE);
-  const pageH = pagerH ?? photoH;
+  // Codex #317: 사진이 먼저 줄어든다 — 사진 높이 = 시트 최대 − 본문 고유 높이(160 ~ 기본 68%). 본문은 사진이 160에 닿은 뒤에야 눌려 스크롤이 켜진다
+  //(둘 다 flexShrink면 레이아웃이 부족분을 나눠 사진이 남았는데도 본문이 스크롤됐다)
+  const photoBoxH = photoBoxHeight(photoH, sheetH, bodyBox.content);
+  const pageH = pagerH ?? photoBoxH;
   const images = item ? (item.images.length ? item.images : [null]) : [];
   const count = images.length;
   const current = images[index] ?? null;
@@ -111,7 +122,7 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
             accessibilityViewIsModal
             onAccessibilityEscape={onClose}
           >
-            <View style={{ height: photoH, flexShrink: 1 }} onLayout={(e) => setPagerH(Math.round(e.nativeEvent.layout.height))} testID="curation-gallery-photo">
+            <View style={{ height: photoBoxH }} onLayout={(e) => setPagerH(Math.round(e.nativeEvent.layout.height))} testID="curation-gallery-photo">
               <FlatList
                 ref={listRef}
                 data={images}
@@ -166,7 +177,18 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
               )}
             </View>
             {/* KB-846: 본문 고정(스크롤·바운스 없음) — 소개 최대 4줄. 짧은 화면·큰 글씨는 위 사진 영역이 줄어(flexShrink) Guide가 가려지지 않는다 */}
-            <View style={[st.body, { paddingBottom: Math.max(insets.bottom, 16) }]} testID="curation-gallery-body">
+            <ScrollView
+              style={st.bodyScroll}
+              contentContainerStyle={[st.body, { paddingBottom: Math.max(insets.bottom, 16) }]}
+              scrollEnabled={bodyOverflows}
+              bounces={false}
+              alwaysBounceVertical={false}
+              overScrollMode="never"
+              showsVerticalScrollIndicator={bodyOverflows}
+              onLayout={(e) => { const view = e.nativeEvent.layout.height; setBodyBox((b) => (b.view === view ? b : { ...b, view })); }}
+              onContentSizeChange={(_w, content) => setBodyBox((b) => (b.content === content ? b : { ...b, content }))}
+              testID="curation-gallery-body"
+            >
               <Text style={st.name} accessibilityRole="header">{item.name}</Text>
               <Text style={st.area}>{area}</Text>
               <Text style={st.intro} numberOfLines={INTRO_MAX_LINES} testID="curation-gallery-intro">{item.introduction}</Text>
@@ -181,7 +203,7 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
               >
                 {t('curation.guide')}
               </Btn>
-            </View>
+            </ScrollView>
           </Animated.View>
         )}
       </GestureHandlerRootView>
@@ -199,6 +221,7 @@ const st = StyleSheet.create({
   noPhotoText: { fontFamily: font.body, fontSize: 13, lineHeight: 20, color: C.ink2 },
   handle: { position: 'absolute', top: 12, alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.line2 }, // 그래버 띠 안(띠 기준 위 12 = 시트 기준 그대로)
   grabZone: { position: 'absolute', top: 0, left: 0, right: 0, height: 44 },
+  bodyScroll: { flexGrow: 0, flexShrink: 1 },
   dots: { position: 'absolute', bottom: 16, alignSelf: 'center', flexDirection: 'row', gap: 8 },
   dot: { width: 6, height: 6, borderRadius: 3 },
   dotOn: { backgroundColor: C.card },
