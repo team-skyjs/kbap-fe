@@ -161,10 +161,9 @@ export const CARD_BLUR_LEAD = 16;
 export const CARD_BLUR_STRIPS = 4;
 /** 띠 불투명도(위 → 아래) — 아래 원본 사진과 크로스페이드해 밴드 시작선·띠 경계가 보이지 않게(Android QA 확대 캡처의 계단 3~4줄) */
 export const CARD_BLUR_OPACITY = [0.35, 0.6, 0.85, 1] as const;
-/** 띠끼리 겹치는 폭 = **기기 픽셀 2개**(pt가 아니라 픽셀 — 2.625배에서 1pt는 소수 픽셀이라 다시 경계가 흐려진다). 경계 틈으로 원본이 비치던 가는 가로선 제거 */
-export const CARD_BLUR_OVERLAP_PX = 2;
 /** 밴드·띠 계산(KB-846) — 띠 i(0=맨 위)의 blurRadius = 기준값 × (i+1)/4(정수 — Android Glide는 정수 반경). 큰 글씨면 캡션이 높아져 밴드도 늘어난다.
- *  좌표는 **기기 픽셀에 스냅**(PixelRatio.roundToNearestPixel — 2.625배 Android에서 정수 pt도 소수 픽셀이라 경계가 앤티앨리어싱 선으로 보였다) */
+ *  좌표는 **기기 픽셀에 스냅**(PixelRatio.roundToNearestPixel — 2.625배 Android에서 정수 pt도 소수 픽셀이라 경계가 앤티앨리어싱 선으로 보였다).
+ *  띠는 **맞닿기만**(겹침 0): 같은 픽셀 경계라 틈이 없고, 반투명 띠를 겹치면 겹친 줄이 더 진해져(0.6 + 0.35×0.4 = 0.74) 그 자체가 가는 선이 된다(Codex #320) */
 export function blurBandOf(cardH: number, captionTop: number, radius: number = CARD_BLUR_RADIUS) {
   const px = PixelRatio.roundToNearestPixel;
   const top = px(Math.max(0, captionTop - CARD_BLUR_LEAD));
@@ -173,8 +172,7 @@ export function blurBandOf(cardH: number, captionTop: number, radius: number = C
   const strips = Array.from({ length: CARD_BLUR_STRIPS }, (_, i) => {
     const s = px(top + (h * i) / CARD_BLUR_STRIPS);
     const e = i === CARD_BLUR_STRIPS - 1 ? bottom : px(top + (h * (i + 1)) / CARD_BLUR_STRIPS);
-    const st = i === 0 ? s : Math.max(top, s - CARD_BLUR_OVERLAP_PX / PixelRatio.get()); // 위 띠와 겹침(맨 위 띠는 밴드 시작 그대로)
-    return { top: st, height: e - st, radius: Math.max(1, Math.round((radius * (i + 1)) / CARD_BLUR_STRIPS)), opacity: CARD_BLUR_OPACITY[i] };
+    return { top: s, height: e - s, radius: Math.max(1, Math.round((radius * (i + 1)) / CARD_BLUR_STRIPS)), opacity: CARD_BLUR_OPACITY[i] };
   });
   return { top, strips };
 }

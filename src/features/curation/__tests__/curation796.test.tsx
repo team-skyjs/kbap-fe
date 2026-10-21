@@ -262,15 +262,15 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     const strips = [0, 1, 2, 3].map((i) => t.root.findAll((n) => n.props?.testID === `curation-item-blur-strip-1-${i}` && typeof n.type === 'string')[0]);
     const tops = strips.map((s) => RN.StyleSheet.flatten(s.props.style).top as number);
     const hs = strips.map((s) => RN.StyleSheet.flatten(s.props.style).height as number);
-    // 밴드 80 = 띠 20 ×4 · 2번째부터 위 띠와 기기 픽셀 2개 겹침(jest 배율 2 → 1pt — 경계 틈 0, Android 계단선) · 마지막 띠 바닥 = 카드 바닥
-    expect(tops).toEqual([0, 19, 39, 59]);
-    expect(hs).toEqual([20, 21, 21, 21]);
+    // 밴드 80 = 띠 20 ×4 · 맞닿기만(겹침 0 — 반투명 띠가 겹친 줄은 더 진해져 선이 된다, Codex #320) · 마지막 띠 바닥 = 카드 바닥
+    expect(tops).toEqual([0, 20, 40, 60]);
+    expect(hs).toEqual([20, 20, 20, 20]);
     const ops = strips.map((s) => RN.StyleSheet.flatten(s.props.style).opacity as number);
     expect(ops).toEqual([0.35, 0.6, 0.85, 1]); // 위로 갈수록 투명 — 밴드 시작선 크로스페이드
     const imgs = strips.map((s) => s.findAll((n) => n.props?.testID === 'blur:https://cdn/i1.jpg' && typeof n.type === 'string')[0]);
     expect(imgs.map((im) => im.props.blurRadius)).toEqual([11, 23, 34, 45]); // iOS 45 × 1/4…1
     // 각 띠의 사진 = 카드 높이 그대로, 띠의 카드 기준 위치만큼 위로 → 원본과 같은 자리
-    expect(imgs.map((im) => RN.StyleSheet.flatten(im.props.style))).toEqual([220, 239, 259, 279].map((y) => expect.objectContaining({ top: -y, height: 300 })));
+    expect(imgs.map((im) => RN.StyleSheet.flatten(im.props.style))).toEqual([220, 240, 260, 280].map((y) => expect.objectContaining({ top: -y, height: 300 })));
     const scrim = t.root.findAll((n) => n.props?.testID === 'card-shade' && typeof n.type === 'string');
     expect(scrim).toHaveLength(1);
     expect(RN.StyleSheet.flatten(scrim[0].props.style)).toMatchObject({ top: 220, bottom: 0 });
@@ -283,7 +283,7 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     expect(pkg.dependencies['expo-blur']).toBeUndefined();
   });
-  it('KB-846 계단 제거: 소수 레이아웃(2.625배)에서도 띠 경계 = 기기 픽셀 정수 · 이웃 띠 겹침 ≥1 · 불투명도 단조 증가(끝 1) · 마지막 띠 바닥 = 카드 바닥', () => {
+  it('KB-846 계단 제거: 소수 레이아웃(2.625배)에서도 띠 경계 = 기기 픽셀 정수 · 이웃 띠 정확히 맞닿음(틈 0·겹침 0 — Codex #320) · 불투명도 단조 증가(끝 1) · 마지막 띠 바닥 = 카드 바닥', () => {
     const RNmod = jest.requireActual('react-native');
     const spyGet = jest.spyOn(RNmod.PixelRatio, 'get').mockReturnValue(2.625);
     const spyRound = jest.spyOn(RNmod.PixelRatio, 'roundToNearestPixel').mockImplementation((v: number) => Math.round(v * 2.625) / 2.625);
@@ -295,7 +295,7 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       for (const s of b.strips) { expect(onPixel(s.top)).toBe(true); expect(onPixel(s.top + s.height)).toBe(true); }
       for (let i = 1; i < b.strips.length; i++) {
         const prevBottom = b.strips[i - 1].top + b.strips[i - 1].height;
-        expect((prevBottom - b.strips[i].top) * 2.625).toBeGreaterThanOrEqual(1 - 1e-6); // 겹침 ≥1 기기 픽셀
+        expect(Math.abs(prevBottom - b.strips[i].top)).toBeLessThan(1e-9); // 같은 픽셀 경계에서 맞닿음 — 틈(원본 비침)도 겹침(진한 줄)도 0
         expect(b.strips[i].opacity).toBeGreaterThan(b.strips[i - 1].opacity); // 단조 증가
       }
       expect(b.strips[b.strips.length - 1].opacity).toBe(1);
