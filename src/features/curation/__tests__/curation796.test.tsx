@@ -293,7 +293,7 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(mockTrack).toHaveBeenCalledWith('home_curation_gallery_open', { collection_key: 'stations', entry_id: 'e1' });
     expect(ids(t)).not.toContain('curation-gallery-dots'); // 1장 = 점 없음
     expect(byId(t, 'curation-gallery-credit')[0].props.children).toBe('Photo: KTO');
-    // KB-846: 본문 = 고정(스크롤 0) · 소개 최대 4줄 · X 버튼 없음 · 짧은 화면은 사진 영역이 줄어든다(flexShrink — Guide 도달)
+    // KB-846: 본문 = 고정(스크롤 0) · 소개 최대 4줄 · X 버튼 없음 · 짧은 화면은 사진 영역이 먼저 줄어든다(Codex #317 — Guide 도달)
     const RN = jest.requireActual('react-native');
     const body = t.root.findAll((n) => n.props?.testID === 'curation-gallery-body')[0];
     // 평소 = 고정(스크롤·바운스 0) · Codex #316: 본문이 시트를 넘는 극단에서만 스크롤로 Guide 도달
@@ -305,10 +305,17 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(bodySv().props.scrollEnabled).toBe(false);
     act(() => bodySv().props.onContentSizeChange(375, 420));
     expect(bodySv().props.scrollEnabled).toBe(true);
+    // Codex #317: 사진이 먼저 준다 — 본문 고유 높이만큼 사진 영역이 줄고(하한 160), 그 뒤에야 본문이 눌린다
+    const { photoBoxHeight } = jest.requireActual('@/features/curation/CurationGallerySheet') as { photoBoxHeight: (p: number, m: number, c: number) => number };
+    expect(photoBoxHeight(510, 748, 0)).toBe(510); // 측정 전 = 기본
+    expect(photoBoxHeight(510, 748, 200)).toBe(510); // 다 들어감
+    expect(photoBoxHeight(510, 748, 400)).toBe(348); // 사진만 줄여 들어감(본문 그대로 → 스크롤 off)
+    expect(photoBoxHeight(510, 748, 700)).toBe(160); // 하한 — 이때부터 본문이 넘쳐 스크롤
+    const photoView = () => t.root.findAll((n) => n.props?.testID === 'curation-gallery-photo' && typeof n.type === 'string')[0];
+    expect(RN.StyleSheet.flatten(photoView().props.style).flexShrink).toBeUndefined(); // 본문과 부족분을 나누지 않는다
     expect(body.findAll((n) => n.props?.testID === 'curation-gallery-guide').length).toBeGreaterThan(0);
     expect(t.root.findAll((n) => n.props?.testID === 'curation-gallery-intro' && typeof n.type === 'string')[0].props.numberOfLines).toBe(4);
     expect(ids(t)).not.toContain('curation-gallery-close');
-    expect(RN.StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === 'curation-gallery-photo' && typeof n.type === 'string')[0].props.style)).toMatchObject({ flexShrink: 1 });
     press(t, 'curation-gallery-backdrop'); // 배경 탭 = 닫기
     expect(ids(t)).not.toContain('curation-gallery');
     expect(byId(t, 'curation-item-1')).toHaveLength(1);

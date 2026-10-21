@@ -31,6 +31,9 @@ export const DISMISS_VELOCITY = 1000;
 export const INTRO_MAX_LINES = 4;
 /** 짧은 화면에서 사진이 줄어드는 하한 — 그 아래로는 본문이 스크롤로 넘친다(Codex #316) */
 export const PHOTO_MIN_H = 160;
+/** 사진 영역 높이 — 본문 고유 높이(content)가 아직 없으면 기본값, 있으면 남는 자리(하한 160·상한 기본값) */
+export const photoBoxHeight = (photoH: number, sheetMax: number, bodyContent: number): number =>
+  bodyContent > 0 ? Math.max(PHOTO_MIN_H, Math.min(photoH, sheetMax - bodyContent)) : photoH;
 export const shouldDismiss = (translationY: number, velocityY: number, sheetH: number): boolean =>
   translationY >= sheetH * DISMISS_SHARE || (velocityY >= DISMISS_VELOCITY && translationY > 0);
 
@@ -59,7 +62,10 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
 
   const sheetH = height - SHEET_TOP; // 최대 높이(시트는 콘텐츠에 맞춰 이보다 작을 수 있다)
   const photoH = Math.round(sheetH * PHOTO_SHARE);
-  const pageH = pagerH ?? photoH;
+  // Codex #317: 사진이 먼저 줄어든다 — 사진 높이 = 시트 최대 − 본문 고유 높이(160 ~ 기본 68%). 본문은 사진이 160에 닿은 뒤에야 눌려 스크롤이 켜진다
+  //(둘 다 flexShrink면 레이아웃이 부족분을 나눠 사진이 남았는데도 본문이 스크롤됐다)
+  const photoBoxH = photoBoxHeight(photoH, sheetH, bodyBox.content);
+  const pageH = pagerH ?? photoBoxH;
   const images = item ? (item.images.length ? item.images : [null]) : [];
   const count = images.length;
   const current = images[index] ?? null;
@@ -116,7 +122,7 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
             accessibilityViewIsModal
             onAccessibilityEscape={onClose}
           >
-            <View style={{ height: photoH, flexShrink: 1, minHeight: PHOTO_MIN_H }} onLayout={(e) => setPagerH(Math.round(e.nativeEvent.layout.height))} testID="curation-gallery-photo">
+            <View style={{ height: photoBoxH }} onLayout={(e) => setPagerH(Math.round(e.nativeEvent.layout.height))} testID="curation-gallery-photo">
               <FlatList
                 ref={listRef}
                 data={images}
