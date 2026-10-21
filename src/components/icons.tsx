@@ -98,6 +98,20 @@ export const IconChevron = (p: IconProps) => styled(<D4ChevronRight size={p.size
 export const IconDownload = (p: IconProps) => styled(<D4Download size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 export const IconChevronDown = (p: IconProps) => styled(<D4ChevronDown size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 export const IconArrowLeft = (p: IconProps) => styled(<D4ChevronLeft size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
+/** KB-836 물음표 — 텍스트 "?" 대신(폰트마다 모양이 달라서). 기본 ink. */
+export const IconQuestion = ({ size = 24, color = C.ink, style }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" style={style}>
+    <Path d="M8.6 8.8a3.5 3.5 0 1 1 5 3.2c-1 .5-1.6 1.3-1.6 2.4v.6" stroke={color} strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <Circle cx={12} cy={19} r={1.7} fill={color} />
+  </Svg>
+);
+/** KB-836 재생 — 원 + 삼각형(플랫폼 로고 아님). 기본 ink. */
+export const IconPlay = ({ size = 24, color = C.ink, style }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" style={style}>
+    <Circle cx={12} cy={12} r={9.1} stroke={color} strokeWidth={1.8} fill="none" />
+    <Path d="M10 8.6v6.8l5.6-3.4z" fill={color} stroke={color} strokeWidth={1.2} strokeLinejoin="round" />
+  </Svg>
+);
 export const IconLogout = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="m16 17 5-5-5-5" />

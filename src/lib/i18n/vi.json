@@ -624,7 +624,14 @@
     "ingGuestBody": "{{ingredient}} được dùng trong khoảng {{percent}}% phiên bản của món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
     "ingGuestBodyNoPct": "{{ingredient}} thường được dùng trong món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
     "foodHidden": "Hiện không thể xem thông tin món này.",
-    "foodUpdating": "Thông tin món này đang được cập nhật. Vui lòng kiểm tra lại sau ít phút."
+    "foodUpdating": "Thông tin món này đang được cập nhật. Vui lòng kiểm tra lại sau ít phút.",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "Idol K-pop nào đã ăn món này?",
+      "sub": "Có thể bạn sẽ thấy một gương mặt quen thuộc.",
+      "cta": "Xem video để biết",
+      "a11y": "Mở video idol K-pop ăn món này"
+    }
   },
   "states": {
     "catalogTitle": "Trạng thái",
@@ -684,7 +691,14 @@
     "safeForYouSub": "Dựa trên danh sách cần tránh của bạn — luôn xác nhận với chủ quán.",
     "railFilterEmpty": "Chưa có món {{risk}} trong danh sách này. Hãy thử bộ lọc khác.",
     "mostReviewed": "Được đánh giá nhiều nhất",
-    "mostReviewedSub": "Món mọi người đang nói tới."
+    "mostReviewedSub": "Món mọi người đang nói tới.",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "Món idol K-pop từng ăn, bạn thử một miếng?",
+      "sub": "Xem ai đã ăn trong video nhé.",
+      "seeAll": "Khám phá các món",
+      "bannerA11y": "Xem các món idol K-pop đã ăn"
+    }
   },
   "onboarding": {
     "welcomeTag": "Biết món nào an toàn để ăn — trước khi bạn gọi món.",
@@ -1323,5 +1337,12 @@
     "capturedMenu": "Thực đơn bạn đã chụp",
     "capturedPackage": "Bao bì bạn đã chụp",
     "capturedLabel": "Nhãn bạn đã chụp"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "title": "Món idol K-pop từng ăn, bạn thử một miếng?",
+    "sub": "Chọn món bạn muốn thử để xem thành phần và link video.",
+    "cardA11y": "Xem chi tiết {{name}}",
+    "empty": "Hiện chưa có món nào để xem."
   }
 }

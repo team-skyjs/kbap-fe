@@ -624,7 +624,14 @@
     "ingGuestBody": "{{ingredient}}はこの料理の約{{percent}}%のバージョンに使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。",
     "ingGuestBodyNoPct": "{{ingredient}}はこの料理によく使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。",
     "foodHidden": "現在、この料理の情報は表示できません。",
-    "foodUpdating": "この料理の情報を更新中です。しばらくしてからもう一度ご確認ください。"
+    "foodUpdating": "この料理の情報を更新中です。しばらくしてからもう一度ご確認ください。",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "この料理、どのアイドルが食べたのかな？",
+      "sub": "見覚えのある顔が出てくるかも。",
+      "cta": "動画で確かめる",
+      "a11y": "この料理を食べるK-POPアイドルの動画を開く"
+    }
   },
   "states": {
     "catalogTitle": "状態",
@@ -684,7 +691,14 @@
     "safeForYouSub": "回避リストに基づく判定です。お店に必ず確認してください。",
     "railFilterEmpty": "このリストには{{risk}}のメニューがまだありません。他のフィルターをお試しください。",
     "mostReviewed": "レビューが多い料理",
-    "mostReviewedSub": "みんながよく話している一品。"
+    "mostReviewedSub": "みんながよく話している一品。",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "アイドルが食べたあの料理、ひと口いかが？",
+      "sub": "誰が食べたかは動画でチェックしてね。",
+      "seeAll": "料理を見てみる",
+      "bannerA11y": "K-POPアイドルが食べた料理の一覧を見る"
+    }
   },
   "onboarding": {
     "welcomeTag": "注文する前に、食べても安全か分かる。",
@@ -1323,5 +1337,12 @@
     "capturedMenu": "撮影したメニュー",
     "capturedPackage": "撮影したパッケージ",
     "capturedLabel": "撮影した成分表示"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "title": "アイドルが食べたあの料理、ひと口いかが？",
+    "sub": "食べてみたい料理を選んでください。材料と動画のリンクを確認できます。",
+    "cardA11y": "{{name}}、料理の詳細を見る",
+    "empty": "今は見られる料理がありません。"
   }
 }

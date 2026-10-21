@@ -624,7 +624,14 @@
     "ingGuestBody": "{{ingredient}}約在此菜{{percent}}%的版本中使用。各家餐廳可能不同——想確認請詢問店主。",
     "ingGuestBodyNoPct": "{{ingredient}}常用於此菜。各家餐廳可能不同——想確認請詢問店主。",
     "foodHidden": "目前無法查看這道菜的資訊。",
-    "foodUpdating": "這道菜的資訊正在更新中，請稍後再來查看。"
+    "foodUpdating": "這道菜的資訊正在更新中，請稍後再來查看。",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "這道菜，是哪位偶像吃過呢？",
+      "sub": "說不定會看到熟悉的面孔。",
+      "cta": "看影片揭曉",
+      "a11y": "開啟K-POP偶像吃這道菜的影片"
+    }
   },
   "states": {
     "catalogTitle": "狀態",
@@ -684,7 +691,14 @@
     "safeForYouSub": "依你的迴避清單判定——請務必向店家確認。",
     "railFilterEmpty": "此清單暫無「{{risk}}」菜色，試試其他篩選。",
     "mostReviewed": "評價最多",
-    "mostReviewedSub": "大家都在聊的菜。"
+    "mostReviewedSub": "大家都在聊的菜。",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "偶像吃過的那道菜，你也來一口？",
+      "sub": "是誰吃的，就到影片裡看看吧。",
+      "seeAll": "瀏覽這些菜色",
+      "bannerA11y": "查看K-POP偶像吃過的菜色"
+    }
   },
   "onboarding": {
     "welcomeTag": "點餐前，先知道什麼能安心吃。",
@@ -1323,5 +1337,12 @@
     "capturedMenu": "你拍的菜單",
     "capturedPackage": "你拍的包裝",
     "capturedLabel": "你拍的成分表"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "title": "偶像吃過的那道菜，你也來一口？",
+    "sub": "選一道想吃的菜，可以查看食材和影片連結。",
+    "cardA11y": "{{name}}，查看菜色詳情",
+    "empty": "目前沒有可查看的菜色。"
   }
 }
