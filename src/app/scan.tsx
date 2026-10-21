@@ -720,6 +720,7 @@ export default function Scan() {
     const hint = o.hint ?? (menu ? t(uiDeg === 0 ? 'scanCamera.menuHint' : 'scan.cameraHintLandscape') : t(o.kind === 'package' ? 'scanCamera.packageHint' : 'scanCamera.labelHint'));
     const shoot = () => void capture(o.onShot, menu);
     const library = () => void pickFromGallery(o.onShot, menu);
+    const off = capturing || !!o.shootDisabled; // Codex #318: 성분표 4면이 차면 더 찍지 못한다
     return (
       <View style={styles.camRoot}>
         {/* 프리뷰 = 헤더(탭 위) 아래 ~ 홈 인디케이터 위. 크롭 기준(previewSize)도 이 영역 */}
@@ -816,13 +817,13 @@ export default function Scan() {
             })}
           </View>
           <View style={styles.camRow}>
-            <Pressable testID="scan-gallery" style={[styles.photosBtn, capturing && styles.shutterOff]} onPress={library} disabled={capturing} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('scan.gallery')}>
+            <Pressable testID="scan-gallery" style={[styles.photosBtn, off && styles.shutterOff]} onPress={library} disabled={off} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('scan.gallery')}>
               <Animated.View style={uiRotate}>
                 <Text style={styles.photosText}>{t('scanCamera.photos')}</Text>
               </Animated.View>
             </Pressable>
             {granted ? (
-              <Pressable testID="scan-shutter" style={[styles.shutter, capturing && styles.shutterOff]} onPress={shoot} disabled={capturing} accessibilityRole="button" accessibilityLabel={t('photo.take')}>
+              <Pressable testID="scan-shutter" style={[styles.shutter, off && styles.shutterOff]} onPress={shoot} disabled={off} accessibilityRole="button" accessibilityLabel={t('photo.take')}>
                 <View style={styles.shutterInner} />
               </Pressable>
             ) : (
@@ -1248,7 +1249,7 @@ export default function Scan() {
 
   // ---- KB-813 가공식품 모드 — 카메라 단계에서만(결과·오류·쿼터 잠금은 위에서 먼저 처리돼 이 분기에 오지 않는다) ----
   if (scanMode === 'packaged' && !offline) {
-    return withPresenter(<PackagedScanFlow key={labelEntry ?? 'flow'} mode={scanMode} onMode={setScanMode} onClose={() => router.back()} startLabel={labelEntry != null} renderCamera={cameraUi} />);
+    return withPresenter(<PackagedScanFlow key={labelEntry ?? 'flow'} mode={scanMode} onMode={setScanMode} onClose={() => router.back()} startLabel={labelEntry != null} renderCamera={cameraUi} focused={isFocused} />);
   }
 
   // ---- camera (default) ----

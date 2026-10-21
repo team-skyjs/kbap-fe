@@ -186,7 +186,7 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     expect(fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8')).toContain('router.navigate(`/scan?mode=packaged&label=1&t=${Date.now()}` as Href)');
     const scan = fs.readFileSync('src/app/scan.tsx', 'utf8');
     expect(scan).toContain("const labelEntry = scanParams.label === '1' && FLAGS.packagedLabelScan ? (scanParams.t ?? 'entry') : null;");
-    expect(scan).toContain('startLabel={labelEntry != null} renderCamera={cameraUi} />');
+    expect(scan).toContain('startLabel={labelEntry != null} renderCamera={cameraUi} focused={isFocused} />'); // Codex #318: 흰 상태바 = 보일 때만
   });
   it('결과에서 한 면 더 = 카메라(닫기 = 그 결과) → 찍기 = 같은 ID 재분석(면 누적) · charged false여도 이 분석에서 쓴 1회 유지 · 프로필 재조회 추가 0', async () => {
     const t = flow(true);
@@ -281,6 +281,20 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     }
     expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":4,"max":4}');
     expect(ids(t)).not.toContain('pscan-label-add');
+    // Codex #318: 4면이 찼으면 뒤로 = 성분표 카메라가 아니라 앞면 카메라(더 찍을 수 없는 카메라 진입 0)
+    back(t);
+    expect(ids(t)).toContain('cam-package');
+    expect(ids(t)).not.toContain('cam-ingredient');
+  });
+  it('Codex #318: 4면이 찬 성분표 카메라(방어) = 셔터 비활성 · 상태바 흰 글자는 스캔 화면이 보일 때만', () => {
+    const shots: ScanCamOpts[] = [];
+    const capture = (o: ScanCamOpts) => { shots.push(o); return mockCamera(o); };
+    const { StatusBar } = jest.requireActual('expo-status-bar') as typeof import('expo-status-bar');
+    const t = render(<PackagedScanFlow mode="packaged" onMode={jest.fn()} onClose={jest.fn()} startLabel renderCamera={capture} />);
+    expect(shots[shots.length - 1].shootDisabled).toBe(false);
+    expect(t.root.findAll((n) => n.type === StatusBar)).toHaveLength(1);
+    const t2 = render(<PackagedScanFlow mode="packaged" onMode={jest.fn()} onClose={jest.fn()} startLabel renderCamera={capture} focused={false} />);
+    expect(t2.root.findAll((n) => n.type === StatusBar)).toHaveLength(0);
   });
   it('Codex #315: 전송 실패 뒤 다시 시도가 charged false = "추가 사용 없음" 단정 금지(첫 요청이 차감했을 수 있음 — 홈에서 확인)', async () => {
     const t = flow();

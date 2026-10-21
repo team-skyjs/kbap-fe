@@ -13,6 +13,7 @@ import { Txt as Text } from '@/components/Txt';
 import { Pressable } from '@/components/Pressable';
 import { IconClose } from '@/components/icons';
 import { color as C, font } from '@/lib/theme';
+import { useBottomInset } from '@/lib/useBottomInset';
 
 export const LOADING_PHOTO_H = 430;
 /** 스캔선 출발 = 사진 위에서 200(시안 y480 − 사진 y280), 끝 = 사진 바닥 − 선 두께 3 */
@@ -31,6 +32,7 @@ export function scanLineRange(photoH: number): { from: number; to: number } {
 export function ScanLoading({ title, body, photoUri, caption, onClose, testID }: { title: string; body?: string; photoUri: string | null; caption: string; onClose: () => void; testID?: string }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const bottom = useBottomInset(); // Codex #318: 3버튼 Android에서 safe-area 하단 0 보고 — 48 바닥 보정(캡션이 내비바 밑으로 0)
   const large = useWindowDimensions().fontScale >= LARGE_TEXT_SCALE;
   const reduced = useReducedMotion();
   const [photoH, setPhotoH] = React.useState(0);
@@ -43,7 +45,7 @@ export function ScanLoading({ title, body, photoUri, caption, onClose, testID }:
   const { from, to } = scanLineRange(photoH);
   const lineStyle = useAnimatedStyle(() => ({ transform: [{ translateY: from + p.get() * (to - from) }] }));
   return (
-    <View style={[st.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]} testID={testID ?? 'scan-loading'}>
+    <View style={[st.root, { paddingTop: insets.top + 16, paddingBottom: bottom + 32 }]} testID={testID ?? 'scan-loading'}>
       <Pressable style={st.close} onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('common.close')} testID="scan-loading-close">
         <IconClose size={24} color={C.ink} />
       </Pressable>

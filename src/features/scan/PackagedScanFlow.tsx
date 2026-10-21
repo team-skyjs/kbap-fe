@@ -53,6 +53,8 @@ export type ScanCamOpts = {
   onClose?: () => void;
   /** 진단 채널 OCR 주입 패널(스토어 채널 0) */
   debug?: React.ReactNode;
+  /** 더 찍을 수 없음(성분표 4면이 찼다 — Codex #318) — 셔터·Photos 비활성 */
+  shootDisabled?: boolean;
 };
 
 type Step =
@@ -110,7 +112,8 @@ function LabelDebug({ onAdd }: { onAdd: (text: string) => void }) {
   );
 }
 
-export function PackagedScanFlow({ onClose, startLabel = false, renderCamera }: { mode: ScanMode; onMode: (m: ScanMode) => void; onClose: () => void; startLabel?: boolean; renderCamera: (o: ScanCamOpts) => React.ReactElement }) {
+/** focused = 스캔 화면이 보이는 중(Codex #318: 위에 다른 화면이 열리면 카메라의 흰 상태바를 거둔다 — 메뉴 카메라 lightBar와 같은 조건) */
+export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, focused = true }: { mode: ScanMode; onMode: (m: ScanMode) => void; onClose: () => void; startLabel?: boolean; renderCamera: (o: ScanCamOpts) => React.ReactElement; focused?: boolean }) {
   const { t } = useTranslation();
   const router = useRouter();
   const qc = useQueryClient();
@@ -299,7 +302,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera }: 
       const pages = cam.pages ?? [];
       return (
         <>
-          <StatusBar style="light" />
+          {focused && <StatusBar style="light" />}
           <CameraSlot
             render={renderCamera}
             o={{
@@ -310,6 +313,8 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera }: 
             link: { label: t('scanCamera.frontLink'), onPress: () => goStep({ kind: 'capture' }), testID: 'pscan-front-instead' },
             onClose: cam.from ? () => goStep(cam.from as LabelResultStep) : pages.length ? () => goStep({ kind: 'labelPages', analysisId: cam.analysisId, pages }) : undefined,
             debug: pages.length < LABEL_PAGES_MAX ? <LabelDebug onAdd={(text) => void addLabelText(cam, text, null)} /> : null,
+            // Codex #318: 4면이 찬 채 뒤로 와도 더 찍지 못한다(찍은 면이 잘려 사라지던 것) — 힌트 4/4 · 닫기 = 면 화면
+            shootDisabled: pages.length >= LABEL_PAGES_MAX,
             }}
           />
         </>
@@ -339,7 +344,8 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera }: 
     const full = pages.length >= LABEL_PAGES_MAX;
     return (
       <View style={st.root} testID="pscan-label-pages">
-        <SubHeader title={t('packagedScan.labelTitle')} onBack={() => goStep({ kind: 'handoff', analysisId, pages })} />
+        {/* Codex #318: 성분표 카메라는 면 < 4일 때만 — 4면이 찼으면 뒤로 = 성분표 단계를 떠나 앞면 카메라(더 찍을 수 없는 카메라로 가지 않는다) */}
+        <SubHeader title={t('packagedScan.labelTitle')} onBack={() => goStep(full ? { kind: 'capture' } : { kind: 'handoff', analysisId, pages })} />
         <ScrollView contentContainerStyle={st.page}>
           <Text style={st.h1}>{t('packagedScan.labelPagesTitle')}</Text>
           <Text style={st.body} testID="pscan-label-count">{t('packagedScan.labelPagesCount', { count: pages.length, max: LABEL_PAGES_MAX })}</Text>
@@ -410,7 +416,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera }: 
   // capture — KB-845 공통 카메라(Packaged food). 성분표 링크 = 새 분석(꺼진 채널이면 숨김)
   return (
     <>
-      <StatusBar style="light" />
+      {focused && <StatusBar style="light" />}
       <CameraSlot
         render={renderCamera}
         o={{

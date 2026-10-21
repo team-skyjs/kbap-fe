@@ -85,3 +85,9 @@ it('닫기 X = onClose', () => {
   act(() => t.root.findAll((n) => n.props?.testID === 'scan-loading-close' && typeof n.props?.onPress === 'function')[0].props.onPress());
   expect(onClose).toHaveBeenCalledTimes(1);
 });
+
+it('Codex #318: 하단 여백 = useBottomInset(3버튼 Android 48 바닥) + 32 — safe-area 0 보고에도 캡션이 내비바 밑으로 가지 않는다', () => {
+  const src = jest.requireActual('fs').readFileSync('src/features/scan/ScanLoading.tsx', 'utf8') as string;
+  expect(src).toContain('paddingBottom: bottom + 32');
+  expect(src).toContain('const bottom = useBottomInset();');
+});
