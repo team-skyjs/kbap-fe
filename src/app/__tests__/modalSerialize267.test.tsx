@@ -167,7 +167,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
 }
 
 async function reachResult(tree: ReactTestRenderer) {
-  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function');
+  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto' && typeof n.props?.onPress === 'function');
   await act(async () => {
     await gallery[0].props.onPress();
   });

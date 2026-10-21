@@ -1341,7 +1341,9 @@
     "frontLink": "Pindai bagian depan kemasan saja",
     "capturedMenu": "Menu yang Anda foto",
     "capturedPackage": "Kemasan yang Anda foto",
-    "capturedLabel": "Label yang Anda foto"
+    "capturedLabel": "Label yang Anda foto",
+    "choosePhoto": "Pilih foto",
+    "switchCamera": "Ganti kamera"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

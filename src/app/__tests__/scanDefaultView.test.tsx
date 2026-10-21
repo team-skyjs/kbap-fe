@@ -147,7 +147,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
 it('P-138⑤(예진 8/6, P-071 대체): 스캔 완료 기본 = List — Photo는 세그 전환으로', async () => {
   const tree = render(<Scan />);
   // P-062①: 샘플 폐기 — 갤러리 경로(OCR mock→실 segmentMenu)로 결과 진입
-  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function');
+  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto' && typeof n.props?.onPress === 'function');
   expect(gallery.length).toBeGreaterThanOrEqual(1);
   await act(async () => {
     await gallery[0].props.onPress();

@@ -1341,7 +1341,9 @@
     "frontLink": "สแกนด้านหน้าบรรจุภัณฑ์แทน",
     "capturedMenu": "เมนูที่คุณถ่าย",
     "capturedPackage": "บรรจุภัณฑ์ที่คุณถ่าย",
-    "capturedLabel": "ฉลากที่คุณถ่าย"
+    "capturedLabel": "ฉลากที่คุณถ่าย",
+    "choosePhoto": "เลือกรูปภาพ",
+    "switchCamera": "สลับกล้อง"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

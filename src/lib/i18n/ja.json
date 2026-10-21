@@ -1341,7 +1341,9 @@
     "frontLink": "パッケージ表面で確認する",
     "capturedMenu": "撮影したメニュー",
     "capturedPackage": "撮影したパッケージ",
-    "capturedLabel": "撮影した成分表示"
+    "capturedLabel": "撮影した成分表示",
+    "choosePhoto": "写真を選択",
+    "switchCamera": "カメラを切り替え"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

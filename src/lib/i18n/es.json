@@ -1341,7 +1341,9 @@
     "frontLink": "Escanear el frente del envase",
     "capturedMenu": "Tu foto del menú",
     "capturedPackage": "Tu foto del envase",
-    "capturedLabel": "Tu foto de la etiqueta"
+    "capturedLabel": "Tu foto de la etiqueta",
+    "choosePhoto": "Elegir foto",
+    "switchCamera": "Cambiar cámara"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",
