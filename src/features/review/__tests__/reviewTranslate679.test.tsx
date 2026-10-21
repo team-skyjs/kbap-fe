@@ -244,7 +244,8 @@ it('플래그 off = 버튼 없음 · 본문은 그대로', () => {
 
 it('표면 경유 소스 잠금 — FeedCard·음식별 전체 리뷰 모두 공용 ReviewBody(본문 직접 렌더·옛 번역 훅 0)', () => {
   const fs = require('fs') as typeof import('fs');
-  for (const f of ['src/features/review/FeedCard.tsx', 'src/app/food/[id]/reviews.tsx']) {
+  expect(fs.readFileSync('src/app/food/[id]/reviews.tsx', 'utf8')).toContain('<FeedCard'); // KB-848: 목록 = FeedCard 경유
+  for (const f of ['src/features/review/FeedCard.tsx']) {
     const src = fs.readFileSync(f, 'utf8');
     expect(src).toContain('<ReviewBody');
     expect(src).not.toContain('<ExpandableBody');

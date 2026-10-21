@@ -23,7 +23,7 @@ import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
 import { ingredientLabel, isCatalogIngredient } from '@/lib/mocks/ingredients';
-import { RiskMark, RiskBadge, CardPhoto, Chip, NewBadge, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft } from '@/components';
+import { RiskMark, RiskBadge, CardPhoto, Chip, NewBadge, Star, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
@@ -39,11 +39,12 @@ import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { FeedCard } from '@/features/review/FeedCard';
+import { RatingSummaryBox, reviewAxisAverages } from '@/features/review/RatingSummaryBox';
 import { FeedAd } from '@/features/ads/FeedAd';
 import { withFeedAds } from '@/lib/ads/feedSlots';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { IconFood, IconLock, IconStar } from '@/components/icons';
+import { IconFood, IconLock } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -53,7 +54,7 @@ import { SpicePeppers } from '@/components/SpicePeppers';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import type { FoodDetail, IngredientRisk, Review } from '@/lib/api/types';
+import type { FoodDetail, IngredientRisk } from '@/lib/api/types';
 import { useFoodHiddenReason } from '@/lib/data/hiddenFoods';
 
 const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2, safe: 3 };
@@ -563,32 +564,34 @@ function Registered({
       {FLAGS.reviewsEnabled && !food.reviewSummaryMissing && food.overall.count > 0 && (
         <View testID="review-brief">
           <View style={styles.thickDivider} />
-          <View style={styles.rvHead}>
-            {/* P-360(KB-523): KR only ON = 같은 국적 집계 즉시 전환(서버 요약은 이미 손에),
-                같은 국적 0건 = 별·점수 미렌더(토글 우측 유지 — 빈 spacer) */}
-            {(() => {
-              const agg = natOnly ? food.sameNationality : food.overall;
-              if (natOnly && agg.count === 0) return <View style={{ flex: 1 }} testID="rv-head-empty-spacer" />;
-              return (
-                <>
-                  <Stars value={agg.average ?? 0} size={16} />
-                  <Text style={[styles.rvHeadScore, { flex: 1 }]}>
-                    {agg.average?.toFixed(1) ?? '—'} ({agg.count})
-                  </Text>
-                </>
-              );
-            })()}
-            {/* 9/5 예진 판정(Q12) → P-323: "{국가} only" 토글 = 서버 countryCode 필터.
-                게스트·국적 null(구계정) = 미렌더(국적 미상 — 필터 무의미, 게이트 아님). */}
-            {!guest && nationality && (
+          {/* KB-848: 섹션 머리 = KR only 토글만(오른쪽) — 별·점수는 아래 요약 박스가 맡는다(중복 제거).
+              9/5 예진 판정(Q12) → P-323: "{국가} only" 토글 = 서버 countryCode 필터. 게스트·국적 null(구계정) = 머리 행 없음 */}
+          {!guest && nationality ? (
+            <View style={styles.rvHead}>
               <Pressable style={styles.natToggleRow} onPress={() => setNatOnly((v) => !v)} testID="detail-nat-toggle">
                 <View style={[styles.sw, natOnly && styles.swOn]}>
                   <View style={[styles.knob, natOnly && styles.knobOn]} />
                 </View>
                 <Text style={styles.natToggleLabel}>{t('reviews.countryOnly', { code: nationality })}</Text>
               </Pressable>
-            )}
-          </View>
+            </View>
+          ) : null}
+          {/* KB-848: 평점 요약 박스(리뷰 전체 목록과 공용) — P-360: KR only ON = 같은 국적 집계 · 같은 국적 0건 = 박스 없음. 탭 = 리뷰 전체 목록 */}
+          {(() => {
+            const agg = natOnly ? food.sameNationality : food.overall;
+            if (natOnly && agg.count === 0) return null;
+            return (
+              <Pressable
+                style={[styles.rvSummary, !(!guest && nationality) && styles.rvSummaryTop]}
+                onPress={() => router.push(`/food/${id}/reviews` as Href)}
+                accessibilityRole="button"
+                accessibilityHint={t('detail.readAll')}
+                testID="detail-rating-summary"
+              >
+                <RatingSummaryBox overall={agg} sameNat={natOnly} axes={reviewAxisAverages(activePreviews, agg.average)} t={t} />
+              </Pressable>
+            );
+          })()}
           {/* 9/5 예진 판정(Q10): 같은 국적 병기 줄 제거(시안 부재) */}
 
           {/* P-323: 토글 쿼리 로딩 = 스켈레톤(공백 금지) · 실패 = 에러 표면(P-007 false-empty
@@ -619,6 +622,7 @@ function Registered({
               key={row.key}
               review={row.item}
               t={t}
+              photoVariant="peek" /* KB-848: 리뷰 탭과 같은 카드 */
               mine={row.item.memberId != null && row.item.memberId === myId}
               showFood={false} /* 자기 자신 음식 칩 무의미 */
               /* P-339 ② 2R: 탈퇴 리뷰도 ⋯(신고만) — showMore 게이트 잔존 제거 */
@@ -828,8 +832,9 @@ const styles = StyleSheet.create({
 
   // §1-7: 리뷰 섹션
   reviewSec: { gap: 14, paddingBottom: 8 },
-  rvHead: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 20, paddingTop: 20 }, // A-FD-10(별↔점수 2)
-  rvHeadScore: { fontSize: 13, fontWeight: '600', color: '#2F3137' }, // A-FD-10
+  rvHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 20, paddingTop: 20 }, // KB-848: 토글만 — 오른쪽 정렬
+  rvSummary: { paddingHorizontal: 20, paddingTop: 12 }, // KB-848: 요약 박스(토글 아래)
+  rvSummaryTop: { paddingTop: 20 }, // 토글 없는 경우(게스트·국적 미상) = 디바이더 아래 20
   // Q12: "{국가} only" 토글(시안 Button/Toggle md 44×24)
   natToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 0 }, // A-FD-10
   natToggleLabel: { fontSize: 14, fontWeight: '500', color: C.ink },

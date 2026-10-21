@@ -44,7 +44,8 @@ jest.mock('react-i18next', () => ({
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
 
 import { riskTone } from '@/lib/theme';
-import { AxisBar } from '../food/[id]/reviews';
+// eslint-disable-next-line import/first -- jest.mock 뒤(옛 import 자리 그대로)
+import { AxisBar } from '@/features/review/RatingSummaryBox'; // KB-848: 목록·상세 공용 모듈로 이동
 
 function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;

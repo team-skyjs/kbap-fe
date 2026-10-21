@@ -154,7 +154,7 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
     const surfaces: [string, 'card' | 'button'][] = [
       ['src/features/community/ReviewFeed.tsx', 'card'],
       ['src/app/food/[id]/index.tsx', 'card'],
-      ['src/app/food/[id]/reviews.tsx', 'button'],
+      ['src/app/food/[id]/reviews.tsx', 'card'], // KB-848: 목록 = FeedCard 경유
       ['src/app/profile/reviews.tsx', 'card'], // KB-434 D-6: 내 리뷰 = FeedCard 경유
     ];
     for (const [f, via] of surfaces) {
@@ -256,7 +256,9 @@ describe('KB-817 리뷰 탭 peek', () => {
     const card = fs.readFileSync('src/features/review/FeedCard.tsx', 'utf8');
     expect(card).toContain("photoVariant = 'tiles'");
     expect(card).toContain("toggleColor={photoVariant === 'peek' ? INK_TITLE : undefined}");
-    for (const f of ['src/app/food/[id]/index.tsx', 'src/app/profile/reviews.tsx']) expect(fs.readFileSync(f, 'utf8')).not.toContain('photoVariant');
+    // KB-848: 음식 상세 미리보기·리뷰 전체 목록도 리뷰 탭과 같은 peek · 내 리뷰는 tiles 그대로
+    for (const f of ['src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx']) expect(fs.readFileSync(f, 'utf8')).toContain('photoVariant="peek"');
+    expect(fs.readFileSync('src/app/profile/reviews.tsx', 'utf8')).not.toContain('photoVariant');
   });
 });
 

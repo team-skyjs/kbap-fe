@@ -55,9 +55,10 @@ jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
   return { LinearGradient: View };
 });
+const mockPush = jest.fn(); // KB-848: 요약 박스 탭 = 목록 이동 단언
 jest.mock('expo-router', () => ({
   useSegments: () => [], // P-214: 계측 화면 식별(StateBlock·HelpfulButton)
-  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({ id: '7' }),
   usePathname: () => '/',
   useFocusEffect: () => {},
@@ -269,6 +270,38 @@ it('P-169→KB-431: 리뷰 브리프 — 프리뷰 3 제한(D-2 카드)·같은 
   expect(s).toContain('reviews.helpful');
   expect(byId(tree, 'feed-food-r1').length).toBe(0); // showFood=false
   expect(s).not.toContain('community.report');
+});
+
+const hostBox = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'rating-summary-box' && typeof n.type === 'string');
+it('KB-848: 리뷰 섹션 = 머리 토글만 · 평점 요약 박스(overall → KR only = sameNationality 전환) · 탭 = 전체 목록 · 미리보기 = 리뷰 탭 카드(peek)', () => {
+  const { act } = jest.requireActual('react-test-renderer') as typeof import('react-test-renderer');
+  const tree = render(<FoodDetailScreen />);
+  const box = () => hostBox(tree);
+  const boxText = () => JSON.stringify(box()[0]?.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children));
+  expect(box()).toHaveLength(1);
+  expect(boxText()).toContain('4.5'); // overall 4.5(12)
+  expect(boxText()).toContain('REVIEWS.OVERALL');
+  // 머리 행 = 토글만(별·점수 텍스트 없음)
+  const head = tree.root.findAll((n) => n.props?.testID === 'detail-nat-toggle')[0].parent!;
+  expect(head.findAll((n) => typeof n.props?.children === 'string' && /\(\d+\)/.test(n.props.children))).toHaveLength(0);
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(boxText()).toContain('4.0'); // sameNationality 4.0(3)
+  expect(boxText()).toContain('REVIEWS.SAMENATIONALITY');
+  mockPush.mockClear();
+  act(() => tree.root.findAll((n) => n.props?.testID === 'detail-rating-summary' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockPush).toHaveBeenCalledWith('/food/7/reviews');
+  const cards = tree.root.findAll((n) => n.props?.photoVariant !== undefined && n.props?.review != null);
+  expect(cards.length).toBeGreaterThan(0);
+  expect(cards.every((c) => c.props.photoVariant === 'peek')).toBe(true);
+});
+
+it('KB-848: KR only ON + 같은 국적 0건 = 요약 박스 없음(P-360) · 전체 0건 = 리뷰 섹션째 없음', () => {
+  const { act } = jest.requireActual('react-test-renderer') as typeof import('react-test-renderer');
+  mockUseFoodDetail.mockReturnValue({ data: FOOD('safe', { sameNationality: { average: null, count: 0 } }), isLoading: false, error: null, refetch: jest.fn() });
+  const tree = render(<FoodDetailScreen />);
+  expect(hostBox(tree)).toHaveLength(1);
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(hostBox(tree)).toHaveLength(0);
 });
 
 it('P-182→P-186: 카드 전체 탭 제거 · ⋯ = 본인+타인(신고/차단), 익명(탈퇴)만 부재', () => {

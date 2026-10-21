@@ -81,9 +81,9 @@ describe('리뷰 셀 — 사진 위·본문 아래(4표면)', () => {
     expect(src.indexOf('<ReviewPhotoStrip')).toBeLessThan(src.indexOf('<ReviewBody') /* KB-679: 본문 = 공용 ReviewBody(내부가 ExpandableBody) */);
   });
 
-  it('음식 리뷰 목록 = 사진 → 본문', () => {
-    const src = read('src/app/food/[id]/reviews.tsx');
-    expect(src.indexOf('<ReviewPhotoStrip')).toBeLessThan(src.indexOf('<ReviewBody') /* KB-679: 본문 = 공용 ReviewBody(내부가 ExpandableBody) */);
+  it('음식 리뷰 목록 = 사진 → 본문(KB-848: 목록 = FeedCard 경유 — 순서는 위 FeedCard 잠금)', () => {
+    expect(read('src/app/food/[id]/reviews.tsx')).toContain('<FeedCard');
+    expect(read('src/app/food/[id]/reviews.tsx')).not.toContain('<ReviewBody'); // 표면 직접 렌더 0
   });
 
   it('토글 렌더는 공용 컴포넌트 경유 — 표면이 seeMore를 직접 그리지 않는다', () => {

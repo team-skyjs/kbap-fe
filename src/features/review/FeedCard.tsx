@@ -17,7 +17,7 @@ import { useReviewTime } from '@/lib/reviewTime';
 import { CardPhoto, RankMedal, Star, IconChevron, IconFood, IconMore } from '@/components';
 import { AvatarPlaceholder } from '@/components/design4Assets';
 import { FlagEmoji } from '@/components/FlagEmoji';
-import { HelpfulButton, ReviewBody, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { HelpfulButton, ReviewBody, ReviewExtrasLine, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import type { Review } from '@/lib/api/types';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
@@ -46,6 +46,7 @@ export function FeedCard({
   showMore = true,
   showFood = true,
   photoVariant = 'tiles',
+  showExtras = false,
 }: {
   review: Review;
   t: TFn;
@@ -59,6 +60,8 @@ export function FeedCard({
   showFood?: boolean;
   /** KB-817: 리뷰 탭만 'peek'(사진 가로 스냅 + See more 잉크색). 홈·음식 상세·내 리뷰 = 'tiles' 불변 */
   photoVariant?: 'tiles' | 'peek';
+  /** KB-848: 음식 리뷰 전체 목록 = 장소 아래 extras 줄(식사 유형·인원 등) 유지 — 목록이 이 카드로 바뀌며 옛 레이아웃의 줄을 그대로 */
+  showExtras?: boolean;
 }) {
   const fontScale = useWindowDimensions().fontScale; // KB-777: 글꼴 배율 전이 = 칩 재측정
   const anon = review.anonymized;
@@ -140,6 +143,7 @@ export function FeedCard({
       )}
       {/* P-201: 장소 칩 — 탭 = 지도 시트 */}
       <ReviewPlaceLine place={review.place ?? null} />
+      {showExtras && <ReviewExtrasLine review={review} mine={mine} />}
     </View>
   );
 }
