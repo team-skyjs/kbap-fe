@@ -26,7 +26,6 @@ const ROUTES: { pattern: string; to: (m: string[]) => string }[] = [
   { pattern: 'profile', to: () => '/(tabs)/profile' },
   { pattern: 'food/:id', to: ([id]) => `/food/${id}` },
   { pattern: 'food/:id/reviews', to: ([id]) => `/food/${id}/reviews` },
-  { pattern: 'review/:id', to: ([id]) => `/review/${id}` }, // KB-802: 리뷰 상세(단건 API)
   { pattern: 'search', to: () => '/search' },
   { pattern: 'scan', to: () => '/scan' },
   { pattern: 'notifications', to: () => '/notifications' },

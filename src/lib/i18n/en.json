@@ -549,14 +549,7 @@
     "ratingAll": "All ratings",
     "ratingMin": "{{min}}+ stars",
     "countryOnly": "{{code}} only",
-    "allReviews": "All reviews",
-    "readReview": "Read review",
-    "ratingNone": "Not rated",
-    "cardA11y": "Read {{name}}'s review of {{food}}",
-    "cardA11yDetail": "{{photos}} photos, taste {{taste}}, serving speed {{speed}}, friendliness {{service}}, helpful {{helpful}}",
-    "ratingPoints": "{{n}} points",
-    "openFoodA11y": "{{food}}, view food info",
-    "photoCount": "{{index}}/{{total}}"
+    "allReviews": "All reviews"
   },
   "ranking": {
     "headerTitle": "My Ranking",
@@ -1156,12 +1149,6 @@
     "monLong10": "October",
     "monLong11": "November",
     "monLong12": "December"
-  },
-  "reviewDetail": {
-    "title": "Review",
-    "notFound": "This review was deleted or isn't available",
-    "photoA11y": "Review photo, view larger",
-    "moreA11y": "More"
   },
   "curation": {
     "sectionTitle": "Explore Korea",

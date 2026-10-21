@@ -508,14 +508,7 @@
     "ratingAll": "Semua rating",
     "ratingMin": "{{min}}+ bintang",
     "countryOnly": "Hanya {{code}}",
-    "allReviews": "Semua ulasan",
-    "readReview": "Baca ulasan",
-    "ratingNone": "Belum dinilai",
-    "cardA11y": "Baca ulasan {{name}} tentang {{food}}",
-    "cardA11yDetail": "{{photos}} foto, rasa {{taste}}, kecepatan penyajian {{speed}}, keramahan {{service}}, membantu {{helpful}}",
-    "ratingPoints": "{{n}} poin",
-    "openFoodA11y": "{{food}}, lihat info makanan",
-    "photoCount": "{{index}}/{{total}}"
+    "allReviews": "Semua ulasan"
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",
@@ -1160,12 +1153,6 @@
     "monLong10": "Oktober",
     "monLong11": "November",
     "monLong12": "Desember"
-  },
-  "reviewDetail": {
-    "title": "Ulasan",
-    "notFound": "Ulasan ini sudah dihapus atau tidak tersedia",
-    "photoA11y": "Foto ulasan, lihat lebih besar",
-    "moreA11y": "Lainnya"
   },
   "curation": {
     "sectionTitle": "Jelajahi Korea",

@@ -508,14 +508,7 @@
     "ratingAll": "全部評分",
     "ratingMin": "{{min}}分以上",
     "countryOnly": "僅{{code}}",
-    "allReviews": "全部評論",
-    "readReview": "閱讀評論",
-    "ratingNone": "未評分",
-    "cardA11y": "閱讀{{name}}對{{food}}的評論",
-    "cardA11yDetail": "{{photos}}張照片，味道 {{taste}}，上菜速度 {{speed}}，服務態度 {{service}}，有幫助 {{helpful}}",
-    "ratingPoints": "{{n}}分",
-    "openFoodA11y": "{{food}}，查看餐點資訊",
-    "photoCount": "{{index}}/{{total}}"
+    "allReviews": "全部評論"
   },
   "ranking": {
     "headerTitle": "我的排名",
@@ -1160,12 +1153,6 @@
     "monLong10": "10月",
     "monLong11": "11月",
     "monLong12": "12月"
-  },
-  "reviewDetail": {
-    "title": "評論",
-    "notFound": "此評論已刪除或無法查看",
-    "photoA11y": "評論照片，查看大圖",
-    "moreA11y": "更多"
   },
   "curation": {
     "sectionTitle": "探索韓國",

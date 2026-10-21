@@ -53,8 +53,6 @@ jest.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
 }));
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
-// 리뷰 탭 사진 탭 = PhotoViewer(RNGH) — 열림만, 네이티브 없음
-jest.mock('@/components/PhotoViewer', () => ({ PhotoViewer: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -76,16 +74,8 @@ jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null
 const mockMe = jest.fn(() => ({ data: { id: '9', nationality: 'US' } as { id: string; nationality: string | null; scanQuota?: unknown } | undefined }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 })); // KB-499: 헤더 배지 = react-query 훅 — 이 스위트는 Provider 없이 렌더
-// KB-802: 카드 탭 = 상세 캐시 시드(useQueryClient) — Provider 없이 렌더하므로 클라이언트만 목
-const mockSetQueryData = jest.fn();
-jest.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ setQueryData: mockSetQueryData }) }));
-const mockTrack = jest.fn();
-jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 const mockFeed = jest.fn();
-jest.mock('@/lib/data/useFoodReviews', () => ({
-  useGlobalReviews: (enabled: boolean, filters: unknown) => mockFeed(enabled, filters),
-  reviewDetailKey: (id: string) => ['reviews', 'detail', id],
-}));
+jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: (enabled: boolean, filters: unknown) => mockFeed(enabled, filters) }));
 
 import { ReviewFeed } from '../ReviewFeed';
 
@@ -117,75 +107,53 @@ beforeEach(() => {
   });
 });
 
-it('KB-802 카드 = ReviewTabCard — 작성자·서버 음식 칩·도움돼요 수(표시만)·리뷰 읽기, 본문·⋯·Helpful 버튼 없음', () => {
+it('카드 = P-169 문법 — 작성자·별점·서버 음식 카드·Helpful, 탭 라우팅 3종', () => {
   const tree = render();
   // FlatList 엘리먼트 prop(circular) 회피 — 텍스트/이미지 노드 직접 수집
   const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
   expect(texts).toContain('Amy');
   expect(texts).toContain('Server Kimbap');
-  expect(texts).toContain('reviews.helpful');
-  expect(texts).toContain('reviews.readReview');
-  expect(texts).not.toContain('Great dish'); // 본문은 리스트에서 숨김
+  expect(texts).toContain('3'); // P-342 ①: Helpful = 아이콘+숫자(텍스트 라벨 소멸 — likes 3)
+  // CardPhoto(expo-image)는 source가 문자열 — 양쪽 형태 수집
   const imgs = tree.root
     .findAll((n) => n.props?.source != null)
     .map((n) => (typeof n.props.source === 'string' ? n.props.source : (n.props.source?.uri as string)))
     .filter(Boolean);
   expect(imgs).toContain('https://cdn/kimbap.jpg');
-  expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1')).toHaveLength(0);
-  expect(tree.root.findAll((n) => n.props?.testID === 'helpful-r1')).toHaveLength(0);
+  // P-182: 카드 전체 탭 제거 — feed 카드에 onPress 없음, ⋯는 본인(memberId 9 = me) 셀에 존재
+  const card = tree.root.findAll((n) => n.props?.testID === 'feed-r1');
+  expect(card.every((n) => typeof n.props?.onPress !== 'function')).toBe(true);
+  expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1);
   act(() => tree.root.findAll((n) => n.props?.testID === 'feed-food-r1')[0].props.onPress());
-  expect(mockPush).toHaveBeenCalledWith('/food/7?src=feed'); // P-213: 유입 source 유지
-  expect(mockSetQueryData).not.toHaveBeenCalled();
+  expect(mockPush).toHaveBeenCalledWith('/food/7?src=feed'); // P-213: 유입 source 부여
+  // P-196: 본인 리뷰(memberId 9 = me) Helpful = 카운트 표시 전용 — 탭 무반응
+  act(() => tree.root.findAll((n) => n.props?.testID === 'helpful-r1' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockToggle).not.toHaveBeenCalled();
 });
 
-it.each([
-  ['review-card-r1', 'card'],
-  ['review-card-read-r1', 'read'],
-])('KB-802 %s 탭 → 상세 캐시 시드 → review_card_open → /review/{id}', (testID, target) => {
-  const tree = render();
-  act(() => tree.root.findAll((n) => n.props?.testID === testID && typeof n.props?.onPress === 'function')[0].props.onPress());
-  expect(mockSetQueryData).toHaveBeenCalledWith(['reviews', 'detail', 'r1'], expect.objectContaining({ id: 'r1', body: 'Great dish' }));
-  expect(mockTrack).toHaveBeenCalledWith('review_card_open', { target, photo_count: 0, target_type: 'food' }); // KB-812 2차 대상 속성
-  expect(mockPush).toHaveBeenCalledWith('/review/r1');
-  // 시드가 이동보다 먼저(상세 첫 프레임 완성 렌더)
-  expect(mockSetQueryData.mock.invocationCallOrder[0]).toBeLessThan(mockPush.mock.invocationCallOrder[0]);
-});
-
-it('리뷰 탭 사진 탭 = 뷰어(KB-817 peek 스트립 그대로) — 상세 이동·review_card_open 없음', () => {
+it('KB-847(#288 revert): 리뷰 탭 = main 카드(FeedCard) — 리뷰 상세 경로 없음 · 가공식품 리뷰 칩 = 제품 상세(KB-812 2차 유지)', () => {
+  const PKG = { ...REVIEW, id: 'r2', foodId: '', target: 'packaged', processedFoodId: '1711', foodName: '우유식빵', memberId: '5', author: { ...REVIEW.author, memberId: '5' } };
   mockFeed.mockReturnValue({
-    data: { pages: [{ items: [{ ...REVIEW, photos: ['https://cdn/a.jpg', 'https://cdn/b.jpg', 'https://cdn/c.jpg'] }], hasNext: false, nextCursor: null }] },
+    data: { pages: [{ items: [REVIEW, PKG], hasNext: false, nextCursor: null }] },
     isLoading: false, isError: false, error: null, refetch: jest.fn(),
     hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
   });
   const tree = render();
-  expect(tree.root.findAll((n) => n.props?.testID === 'photo-peek').length).toBeGreaterThan(0);
-  act(() => tree.root.findAll((n) => n.props?.testID === 'photo-2' && typeof n.props?.onPress === 'function')[0].props.onPress());
-  expect(mockTrack).not.toHaveBeenCalledWith('review_card_open', expect.anything());
-  expect(mockPush).not.toHaveBeenCalled();
+  expect(tree.root.findAll((n) => n.props?.testID === 'review-card-r1')).toHaveLength(0); // #288 리뷰 탭 카드 소멸
+  act(() => tree.root.findAll((n) => n.props?.testID === 'feed-food-r2')[0].props.onPress());
+  expect(mockPush).toHaveBeenCalledWith('/processed-foods/1711');
+  expect(mockPush.mock.calls.some(([h]) => String(h).startsWith('/review/'))).toBe(false);
 });
 
-it('KB-802 R-16: 노출 등록 = 리뷰 카드만(광고 행 제외) · position = 광고 제외 리뷰 순번 · 포커스 = tracker.focus', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ImpressionTracker } = require('@/features/home/homeImpressions') as typeof import('@/features/home/homeImpressions');
-  const reg = jest.spyOn(ImpressionTracker.prototype, 'register');
-  const focus = jest.spyOn(ImpressionTracker.prototype, 'focus');
-  const items = ['a', 'b', 'c', 'd'].map((id) => ({ ...REVIEW, id }));
+it('P-196: 타인 리뷰 Helpful = 공용 버튼 경유 토글 · 본인 = 비활성(위 케이스)', () => {
   mockFeed.mockReturnValue({
-    data: { pages: [{ items, hasNext: false, nextCursor: null }] },
+    data: { pages: [{ items: [{ ...REVIEW, id: 'r3', memberId: '5', author: { ...REVIEW.author, memberId: '5', nickname: 'Bob' } }], hasNext: false, nextCursor: null }] },
     isLoading: false, isError: false, error: null, refetch: jest.fn(),
     hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
   });
-  render();
-  expect(focus).toHaveBeenCalled();
-  const targets = reg.mock.calls.filter(([, n]) => n != null).map(([tg]) => tg);
-  expect(targets).toEqual([
-    { kind: 'review', position: 0, reviewId: 'a', photoCount: 0 },
-    { kind: 'review', position: 1, reviewId: 'b', photoCount: 0 },
-    { kind: 'review', position: 2, reviewId: 'c', photoCount: 0 },
-    { kind: 'review', position: 3, reviewId: 'd', photoCount: 0 }, // 3번째 뒤 광고 행은 순번에 안 셈
-  ]);
-  reg.mockRestore();
-  focus.mockRestore();
+  const tree = render();
+  act(() => tree.root.findAll((n) => n.props?.testID === 'helpful-r3' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockToggle).toHaveBeenCalledWith({ reviewId: 'r3', foodId: '7' }, expect.objectContaining({ onSuccess: expect.any(Function) })); // #131 P2
 });
 
 it('FAB → 음식 픽커(작성 시트 재사용, kind=food) → 선택 = 리뷰 작성 라우팅', () => {
@@ -281,14 +249,20 @@ describe('P-186: 타 유저 신고·차단', () => {
   it('차단 회원 리뷰 = 피드에서 클라 숨김', () => {
     mockBlocked.mockReturnValue({ data: [{ id: '9' }] }); // REVIEW 작성자 memberId 9
     const tree = render();
-    expect(tree.root.findAll((n) => n.props?.testID === 'review-card-r1').length).toBe(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBe(0);
   });
 
-  it('KB-802: 리스트 카드엔 ⋯ 없음 — 신고·차단·수정·삭제는 리뷰 상세 헤더(ModerationFlow 미배선)', () => {
+  it('P-339 ②: 익명(탈퇴) 리뷰도 ⋯ 존재(신고만 — 위치 통일) + anonymized 플래그 전달', () => {
     const tree = render();
-    expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1')).toHaveLength(0);
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    expect(require('fs').readFileSync('src/features/community/ReviewFeed.tsx', 'utf8')).not.toContain('<ModerationFlow');
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1);
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [{ ...REVIEW, id: 'r2', memberId: undefined, author: null, anonymized: true }], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: false, error: null, refetch: jest.fn(),
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    const anon = render();
+    const more = anon.root.findAll((n) => n.props?.testID === 'feed-more-r2' && typeof n.props?.onPress === 'function');
+    expect(more.length).toBeGreaterThanOrEqual(1); // 구 "부재" 계약 대체(P-339 ②)
   });
 });
 
@@ -300,7 +274,7 @@ describe('P-297: 에러 오버레이 = 빈 목록일 때만(캐시 리스트 겹
       hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
     });
     const tree = render();
-    expect(tree.root.findAll((n) => n.props?.testID === 'review-card-r1').length).toBeGreaterThanOrEqual(1);
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBeGreaterThanOrEqual(1);
     const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
     expect(texts.some((x) => x.includes('common.retry'))).toBe(false); // 에러 블록 미렌더
   });
@@ -314,7 +288,7 @@ describe('P-297: 에러 오버레이 = 빈 목록일 때만(캐시 리스트 겹
       hasNextPage: true, isFetchingNextPage: false, fetchNextPage,
     });
     const tree = render();
-    expect(tree.root.findAll((n) => n.props?.testID === 'review-card-r1').length).toBeGreaterThanOrEqual(1); // 리스트 유지
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBeGreaterThanOrEqual(1); // 리스트 유지
     expect(tree.root.findAll((n) => n.props?.testID === 'feed-next-error').length).toBeGreaterThanOrEqual(1); // 푸터 에러(host+composite 중복 수용)
     const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
     expect(texts.some((x) => x.includes('states.errorBody'))).toBe(false); // 전체 블록(본문 포함) 미렌더 — 푸터 소형만
@@ -345,7 +319,7 @@ describe('P-297: 에러 오버레이 = 빈 목록일 때만(캐시 리스트 겹
     const tree = render();
     const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
     expect(texts.some((x) => x.includes('common.retry'))).toBe(true);
-    expect(tree.root.findAll((n) => n.props?.testID === 'review-card-r1').length).toBe(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBe(0);
   });
 });
 

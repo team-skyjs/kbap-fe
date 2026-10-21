@@ -27,8 +27,6 @@ function useInvalidateReviews() {
     // P-211 ③: 전역 피드 — 누락 시 피드 발 작성이 복귀 후에도 안 보임(P-196 like와 같은 족보).
     // 생성/수정/삭제 전부 이 함수 경유 — 무효화 대상 추가는 여기 한 곳만.
     void qc.invalidateQueries({ queryKey: ['reviews', 'global'] });
-    // KB-802: 리뷰 상세(['reviews','detail',id]) — 수정·삭제가 열린 상세에도 반영(삭제면 재조회가 REVIEW-001 → notFound)
-    void qc.invalidateQueries({ queryKey: ['reviews', 'detail'] });
     // P-384(KB-442): 리뷰 = 스캔 해금 조건 — 프로필 쿼터(scanUnlocked·scanRemaining) 재조회
     void qc.invalidateQueries({ queryKey: ['me', i18n.language], exact: true });
     // P-393(KB-580): 홈 "리뷰 많은 음식" 랭킹도 리뷰 수 파생 — 빼면 staleTime(60s) 동안
@@ -203,7 +201,6 @@ function flipLikeCaches(qc: QueryClient, input: { reviewId: string; foodId: stri
       ? { ...r, myLike: !r.myLike, likes: Math.max(0, (r.likes ?? 0) + (r.myLike ? -1 : 1)) }
       : r;
   qc.setQueryData<Review[]>(['me', 'reviews'], (prev) => prev?.map(flip));
-  qc.setQueryData<Review>(['reviews', 'detail', input.reviewId], (prev) => (prev ? flip(prev) : prev)); // KB-802: 상세 — 롤백도 같은 반전
   likeInfiniteQueries(qc, input.foodId).forEach((query) => {
     qc.setQueryData<InfiniteData<ReviewPage>>(query.queryKey, (prev) =>
       prev ? { ...prev, pages: prev.pages.map((p) => ({ ...p, items: p.items.map(flip) })) } : prev,
@@ -214,8 +211,6 @@ function flipLikeCaches(qc: QueryClient, input: { reviewId: string; foodId: stri
 /** P-358(KB-521): 편집 진입 프리필 — 캐시(내리뷰 → 음식 리뷰 전 필터 → 전역 피드)에서
  *  reviewId로 조회. 못 찾으면 null(호출측이 목록 재조회 후 재시도). */
 export function findCachedReview(qc: QueryClient, input: { reviewId: string; foodId: string }): Review | null {
-  const detail = qc.getQueryData<Review>(['reviews', 'detail', input.reviewId]); // KB-802: 상세 진입 편집 — 단건이 가장 최신
-  if (detail) return detail;
   const mine = qc.getQueryData<Review[]>(['me', 'reviews'])?.find((r) => r.id === input.reviewId);
   if (mine) return mine;
   for (const query of likeInfiniteQueries(qc, input.foodId)) {
@@ -231,8 +226,6 @@ export function findCachedReview(qc: QueryClient, input: { reviewId: string; foo
 /** 현재 myLike — 캐시가 진실(화면도 이걸 그린다). 내리뷰 → infinite 캐시 순.
  *  P-196: 전역 피드 포함 — 피드에만 있는 리뷰의 next 계산 오류(항상 true 송신) 보수. */
 function currentMyLike(qc: QueryClient, input: { reviewId: string; foodId: string }): boolean {
-  const detail = qc.getQueryData<Review>(['reviews', 'detail', input.reviewId]); // KB-802: 상세 화면이 그리는 값 우선
-  if (detail) return detail.myLike === true;
   const mine = qc.getQueryData<Review[]>(['me', 'reviews'])?.find((r) => r.id === input.reviewId);
   if (mine) return mine.myLike === true;
   for (const query of likeInfiniteQueries(qc, input.foodId)) {
@@ -254,9 +247,6 @@ export function useToggleReviewLike() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { reviewId: string; foodId: string }) => {
-      // KB-802(Codex #288): 상세 단건(staleTime 0)의 백그라운드 재조회가 진행 중이면 먼저 취소 — 늦은 응답이 낙관 값을 덮고
-      // 롤백이 덮인 값을 다시 뒤집는 경합 차단. 취소된 쿼리는 직전(시드) 값으로 돌아가 아래 next 계산도 그 값 기준
-      await qc.cancelQueries({ queryKey: ['reviews', 'detail', input.reviewId] });
       const next = !currentMyLike(qc, input);
       flipLikeCaches(qc, input); // 낙관 반영 (off 경로는 이게 전부 — P-095 목 시맨틱)
       if (!FLAGS.reviewsLiveEnabled) return;
@@ -266,18 +256,6 @@ export function useToggleReviewLike() {
         flipLikeCaches(qc, input); // 실패 롤백
         throw e;
       }
-      void qc.invalidateQueries({ queryKey: ['reviews', 'detail', input.reviewId] }); // 취소한 재조회 대신 서버값으로 재동기
     },
   });
-}
-
-/** KB-802(R-09): 단건이 REVIEW-001(삭제·볼 수 없음)이면 전역 피드 캐시 전 페이지에서 그 리뷰를 뺀다 — 뒤로 가도 리스트에 남지 않게. */
-export function removeReviewFromFeeds(qc: QueryClient, reviewId: string) {
-  qc.getQueryCache()
-    .findAll({ queryKey: ['reviews', 'global'] })
-    .forEach((query) => {
-      qc.setQueryData<InfiniteData<ReviewPage>>(query.queryKey, (prev) =>
-        prev ? { ...prev, pages: prev.pages.map((p) => ({ ...p, items: p.items.filter((r) => r.id !== reviewId) })) } : prev,
-      );
-    });
 }
