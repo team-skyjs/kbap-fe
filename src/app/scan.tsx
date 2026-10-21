@@ -713,6 +713,39 @@ export default function Scan() {
    * 레이아웃(375×812): 헤더 0~100 gray-1000(닫기 X (20,60) · "Scan" 가운데) · 프리뷰 100~780 · 탭 y104 h40 ·
    * 아래 기준 스택 = 안내(제목+힌트, gap 8) → 43 → 줌 칩 36 → 16 → 컨트롤 80(Photos · 셔터 64+링 76 · 전환) → 16 → 링크 → 홈 인디케이터.
    */
+  // KB-845 QA(Android): 카메라 프리뷰는 **화면 바깥 층 하나**(cameraLayer) — 메뉴·가공식품 두 분기가 같은 자리에 렌더해 탭을 바꿔도 CameraView를 다시
+  // 마운트하지 않는다(새 카메라 세션 = 에뮬 검정 화면). 컨트롤만 cameraUi가 위에 그리고, 카메라 화면이 아닐 때(가공식품 로딩·후보·결과)는 active=false로 멈춘다
+  const [camShown, setCamShown] = useState(false);
+  const cameraLayer = permission?.granted ? (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none" testID="scan-camera-layer">
+      <View style={[styles.camPreview, { top: insets.top + 56, bottom: bottom }]}>
+        {/* P-131: 핀치 줌 — runOnJS(true)로 JS 스레드 콜백(워클릿 0, P-065 교훈 준수) */}
+        <GestureDetector
+          gesture={Gesture.Pinch()
+            .runOnJS(true)
+            .onStart(onPinchStart)
+            .onUpdate(onPinchUpdate)}
+        >
+          <View style={StyleSheet.absoluteFill}>
+            <CameraView
+              ref={cameraRef}
+              style={StyleSheet.absoluteFill}
+              onLayout={(e) => { previewSize.current = { width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height }; }}
+              facing={facing}
+              zoom={zoom}
+              active={camShown}
+              responsiveOrientationWhenOrientationLocked
+              onResponsiveOrientationChanged={(e) => setCamOrientation(e.orientation)}
+            />
+            {/* KB-777 B1-11: 밝은 장면에서 흰 안내·버튼이 묻히지 않게 위·아래 스크림(터치 통과 — 핀치·셔터 무영향) */}
+            <LinearGradient pointerEvents="none" colors={CAM_SCRIM_TOP} style={[styles.camScrimTop, { height: 96 }]} testID="cam-scrim-top" />
+            <LinearGradient pointerEvents="none" colors={CAM_SCRIM_BOTTOM} style={styles.camScrimBottom} testID="cam-scrim-bottom" />
+          </View>
+        </GestureDetector>
+      </View>
+    </View>
+  ) : null;
+
   function cameraUi(o: ScanCamOpts): ReactElement {
     const granted = permission?.granted;
     const menu = o.kind === 'menu';
@@ -722,33 +755,11 @@ export default function Scan() {
     const library = () => void pickFromGallery(o.onShot, menu);
     const off = capturing || !!o.shootDisabled; // Codex #318: 성분표 4면이 차면 더 찍지 못한다
     return (
-      <View style={styles.camRoot}>
-        {/* 프리뷰 = 헤더(탭 위) 아래 ~ 홈 인디케이터 위. 크롭 기준(previewSize)도 이 영역 */}
-        <View style={[styles.camPreview, { top: insets.top + 56, bottom: bottom }]}>
-          {granted ? (
-            /* P-131: 핀치 줌 — runOnJS(true)로 JS 스레드 콜백(워클릿 0, P-065 교훈 준수) */
-            <GestureDetector
-              gesture={Gesture.Pinch()
-                .runOnJS(true)
-                .onStart(onPinchStart)
-                .onUpdate(onPinchUpdate)}
-            >
-              <View style={StyleSheet.absoluteFill}>
-                <CameraView
-                  ref={cameraRef}
-                  style={StyleSheet.absoluteFill}
-                  onLayout={(e) => { previewSize.current = { width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height }; }}
-                  facing={facing}
-                  zoom={zoom}
-                  responsiveOrientationWhenOrientationLocked
-                  onResponsiveOrientationChanged={(e) => setCamOrientation(e.orientation)}
-                />
-                {/* KB-777 B1-11: 밝은 장면에서 흰 안내·버튼이 묻히지 않게 위·아래 스크림(터치 통과 — 핀치·셔터 무영향) */}
-                <LinearGradient pointerEvents="none" colors={CAM_SCRIM_TOP} style={[styles.camScrimTop, { height: 96 }]} testID="cam-scrim-top" />
-                <LinearGradient pointerEvents="none" colors={CAM_SCRIM_BOTTOM} style={styles.camScrimBottom} testID="cam-scrim-bottom" />
-              </View>
-            </GestureDetector>
-          ) : permDenied ? (
+      <View style={styles.camRoot} pointerEvents="box-none">
+        <CamOn onChange={setCamShown} />
+        {/* 프리뷰 자리 = 헤더(탭 위) 아래 ~ 홈 인디케이터 위. 허용됨 = 비워 둔다(아래 cameraLayer의 프리뷰가 비치고 핀치가 닿게 터치 통과) */}
+        <View style={[styles.camPreview, { top: insets.top + 56, bottom: bottom }, granted && styles.camPreviewHole]} pointerEvents={granted ? 'none' : 'auto'}>
+          {granted ? null : permDenied ? (
             /* P-285(최종본 4003:12656): 권한 거부 = D-1 Alert(320×190·스크림 40%) */
             <View style={[StyleSheet.absoluteFill, styles.permScrim]} testID="perm-denied-alert">
               <View style={styles.permAlert}>
@@ -1249,7 +1260,12 @@ export default function Scan() {
 
   // ---- KB-813 가공식품 모드 — 카메라 단계에서만(결과·오류·쿼터 잠금은 위에서 먼저 처리돼 이 분기에 오지 않는다) ----
   if (scanMode === 'packaged' && !offline) {
-    return withPresenter(<PackagedScanFlow key={labelEntry ?? 'flow'} mode={scanMode} onMode={setScanMode} onClose={() => router.back()} startLabel={labelEntry != null} renderCamera={cameraUi} focused={isFocused} />);
+    return withPresenter(
+      <View style={styles.camHost}>
+        {cameraLayer}
+        <PackagedScanFlow key={labelEntry ?? 'flow'} mode={scanMode} onMode={setScanMode} onClose={() => router.back()} startLabel={labelEntry != null} renderCamera={cameraUi} focused={isFocused} />
+      </View>,
+    );
   }
 
   // ---- camera (default) ----
@@ -1294,7 +1310,13 @@ export default function Scan() {
     );
   }
 
-  return withPresenter(<CameraSlot o={{ kind: 'menu', onShot: (p: NonNullable<Photo>) => scanImage(p), link: { label: t('scanCamera.menuLink'), onPress: () => void pickFromGallery(), testID: 'scan-library-link' } }} render={cameraUi} />);
+  // 가공식품 분기와 같은 구조(camHost → cameraLayer → 화면) — 탭 전환에도 cameraLayer의 CameraView가 같은 인스턴스로 남는다
+  return withPresenter(
+    <View style={styles.camHost}>
+      {cameraLayer}
+      <CameraSlot o={{ kind: 'menu', onShot: (p: NonNullable<Photo>) => scanImage(p), link: { label: t('scanCamera.menuLink'), onPress: () => void pickFromGallery(), testID: 'scan-library-link' } }} render={cameraUi} />
+    </View>,
+  );
 
 }
 
@@ -1430,7 +1452,9 @@ const styles = StyleSheet.create({
   launcherHint: { fontFamily: font.body, fontSize: 13.5, lineHeight: 20, color: C.ink2, textAlign: 'center' },
   launcherGallery: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, paddingVertical: 8 },
   camTitle: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 24, color: C.surface }, // title3-sbold gray-00
-  camRoot: { flex: 1, backgroundColor: C.ink }, // 헤더 띠 0~100·홈 인디케이터 줄 = gray-1000
+  camRoot: { flex: 1 }, // 바탕 = camHost(gray-1000) — 프리뷰 자리는 비워 cameraLayer가 비친다
+  camHost: { flex: 1, backgroundColor: C.ink }, // 헤더 띠 0~100·홈 인디케이터 줄 = gray-1000
+  camPreviewHole: { backgroundColor: 'transparent' },
   camPreview: { position: 'absolute', left: 0, right: 0, backgroundColor: C.gray800, overflow: 'hidden' }, // 라이브 프리뷰 100~780(권한 전 = 시안 gray-800 자리)
   camClose: { position: 'absolute', left: 20, zIndex: 40, width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }, // 닫기 X (20,60) — 권한 스크림 위(Codex #47)
   camBadge: { position: 'absolute', alignSelf: 'center' },
@@ -1486,3 +1510,12 @@ const styles = StyleSheet.create({
   rowBadge: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
   rowBadgeText: { fontFamily: font.bodyBold, fontSize: 11.5 },
 });
+
+/** 공통 카메라 화면이 보이는 동안만 true — cameraLayer의 CameraView active(로딩·결과 화면 아래에서 카메라를 멈춘다) */
+function CamOn({ onChange }: { onChange: (on: boolean) => void }) {
+  useEffect(() => {
+    onChange(true);
+    return () => onChange(false);
+  }, [onChange]);
+  return null;
+}

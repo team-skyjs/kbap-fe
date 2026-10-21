@@ -298,7 +298,7 @@ describe('모드 탭·상세 띠·배선', () => {
   it('스캔 화면 배선: 가공식품 모드 = PackagedScanFlow(단일 presenter 경유) · 메뉴판 카메라·런처에 모드 탭 · 기본 메뉴판 · OCR 주입은 개발·진단 채널만', () => {
     const src = fs.readFileSync('src/app/scan.tsx', 'utf8');
     expect(src).toContain("useState<ScanMode>(() => (scanParams.mode === 'packaged' && FLAGS.packagedLabelScan ? 'packaged' : 'menu'))"); // 기본 메뉴판 · P-508: 상세 "성분표 직접 확인"만 가공식품 모드로 진입
-    expect(src).toContain("if (scanMode === 'packaged' && !offline) {\n    return withPresenter(<PackagedScanFlow");
+    expect(src).toContain("if (scanMode === 'packaged' && !offline) {\n    return withPresenter(\n      <View style={styles.camHost}>\n        {cameraLayer}\n        <PackagedScanFlow"); // KB-845 QA: 메뉴와 같은 camHost → cameraLayer 구조(CameraView 한 인스턴스)
     expect(src.match(/<ScanModeTabs /g)).toHaveLength(2);
     const flowSrc = fs.readFileSync('src/features/scan/PackagedScanFlow.tsx', 'utf8');
     expect(flowSrc).toContain('export const showOcrDebug = (): boolean => __DEV__ || isDiagnosticChannel();');

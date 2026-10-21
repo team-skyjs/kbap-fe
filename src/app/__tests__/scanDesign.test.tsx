@@ -69,9 +69,15 @@ jest.mock('react-native-gesture-handler', () => {
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+const mockCamMounts = { n: 0 }; // CameraView 마운트 수 — 새 마운트 = 새 카메라 세션(KB-845 QA: Android 탭 전환 뒤 프리뷰 검정)
 jest.mock('expo-camera', () => {
-  const { View } = require('react-native');
-  return { CameraView: View, useCameraPermissions: () => [{ granted: true }, jest.fn()] };
+  const React = jest.requireActual('react');
+  const { View } = jest.requireActual('react-native');
+  const CameraView = React.forwardRef(function MockCameraView(p: object, r: unknown) {
+    React.useEffect(() => { mockCamMounts.n += 1; }, []);
+    return React.createElement(View, { ...p, ref: r });
+  });
+  return { CameraView, useCameraPermissions: () => [{ granted: true }, jest.fn()] };
 });
 const mockLaunchLibrary = jest.fn();
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: (o: unknown) => mockLaunchLibrary(o) }));
@@ -513,6 +519,27 @@ describe('KB-845 공통 카메라', () => {
       expect(texts(tree, 'scanCamera.packageTitle')).toBeGreaterThan(0);
       await pressId(tree, 'scan-mode-menu');
       expect(texts(tree, 'scanCamera.menuTitle')).toBeGreaterThan(0);
+    } finally {
+      FLAGS.packagedLabelScan = prev;
+    }
+  });  it('QA(Android 검정 프리뷰): 탭 메뉴 ↔ 가공식품 ↔ 성분표 전환 = CameraView 한 인스턴스(재마운트·새 세션 0) · 카메라 화면 동안 active', async () => {
+    const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
+    const prev = FLAGS.packagedLabelScan;
+    FLAGS.packagedLabelScan = true;
+    try {
+      const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
+      const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
+      await act(async () => {});
+      const cam = () => tree.root.findAll((n) => typeof n.type === 'string' && n.props?.zoom !== undefined && n.props?.facing !== undefined);
+      const before = mockCamMounts.n;
+      expect(cam()).toHaveLength(1);
+      expect(cam()[0].props.active).toBe(true);
+      for (const id of ['scan-mode-packaged', 'pscan-label-instead', 'pscan-front-instead', 'scan-mode-menu', 'scan-mode-packaged']) {
+        await pressId(tree, id);
+        expect(cam()).toHaveLength(1);
+        expect(cam()[0].props.active).toBe(true);
+      }
+      expect(mockCamMounts.n).toBe(before); // 전환 내내 새 마운트 0
     } finally {
       FLAGS.packagedLabelScan = prev;
     }
