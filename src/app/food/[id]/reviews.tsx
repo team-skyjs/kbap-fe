@@ -45,7 +45,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useBlockedUsers } from '@/lib/community/hooks';
 import { FeedCard } from '@/features/review/FeedCard';
-import { RatingSummaryBox, reviewAxisAverages } from '@/features/review/RatingSummaryBox';
+import { RatingSummaryBox, serverAxes } from '@/features/review/RatingSummaryBox';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import type { Review } from '@/lib/api/types';
 
@@ -110,12 +110,8 @@ function FoodReviewsScreen() {
   const summaryAgg = sameNatOnly ? sameNat : overall;
   // KB-431 §2-3: 축 평균 — Taste = 서버 overall / Speed·Service = 서버 축 집계 부재라
   // 로드된 리뷰(값 있는 것만) 클라 평균. 무데이터 축 = null(바 미표시).
-  // P-360: Taste = 토글 ON이면 같은 국적 평균(OFF = overall) · KB-848: 계산은 공용 모듈(상세 요약 박스와 같은 식)
-  const axisAverages = React.useMemo(
-    () => reviewAxisAverages(all, summaryAgg.average),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [reviewsQ.data, blockedIds, summaryAgg.average],
-  ); // Codex #30 P2 + P-360: 토글 전환 반영
+  // P-360: Taste = 토글 ON이면 같은 국적 평균(OFF = overall) · KB-848 AG3: 서버 집계 축만(상세 요약 박스와 같은 값)
+  const axisAverages = serverAxes(summaryAgg.average);
   // P-085: 내 리뷰 판별 = 서버 memberId (목 시절 내 리뷰 캐시 id 집합 폐기)
   const isMine = (r: Review) => r.memberId != null && r.memberId === me?.id;
   // P-095: 행 ⋯ → 공용 ModerationFlow (내 것 Edit/Delete·남 Report/Block)

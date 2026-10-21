@@ -295,6 +295,17 @@ it('KB-848: 리뷰 섹션 = 머리 토글만 · 평점 요약 박스(overall →
   expect(cards.every((c) => c.props.photoVariant === 'peek')).toBe(true);
 });
 
+it('KB-848 QA(AG3): 요약 박스 = 서버 집계 축만(Taste) — Speed·Service는 로드된 리뷰가 달라도 표시 0(상세·목록 같은 값)', () => {
+  const { serverAxes } = jest.requireActual('@/features/review/RatingSummaryBox') as typeof import('@/features/review/RatingSummaryBox');
+  expect(serverAxes(4.5)).toEqual({ taste: 4.5, speed: null, service: null });
+  const tree = render(<FoodDetailScreen />);
+  const axes = tree.root.findAll((n) => typeof n.props?.testID === 'string' && /^axis-[a-z]+$/.test(n.props.testID) && typeof n.type === 'string').map((n) => n.props.testID);
+  expect(axes).toEqual(['axis-taste']);
+  const list = jest.requireActual('fs').readFileSync('src/app/food/[id]/reviews.tsx', 'utf8') as string;
+  expect(list).toContain('const axisAverages = serverAxes(summaryAgg.average);'); // 목록도 같은 함수 = 같은 값
+  expect(list).not.toContain('servingSpeed');
+});
+
 it('KB-848: KR only ON + 같은 국적 0건 = 요약 박스 없음(P-360) · 전체 0건 = 리뷰 섹션째 없음', () => {
   const { act } = jest.requireActual('react-test-renderer') as typeof import('react-test-renderer');
   mockUseFoodDetail.mockReturnValue({ data: FOOD('safe', { sameNationality: { average: null, count: 0 } }), isLoading: false, error: null, refetch: jest.fn() });

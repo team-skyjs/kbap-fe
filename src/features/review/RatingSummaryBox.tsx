@@ -1,26 +1,23 @@
 /**
  * 평점 요약 박스(KB-431 §2-3, 4150:16775) — 좌 별·총점 "n / 5"·OVERALL / 우 3축 세로 막대(최고 축 강조).
  * KB-848: 리뷰 전체 목록에서 꺼내 음식 상세 리뷰 섹션 상단과 공용.
- * 축 평균: Taste = 서버 집계(overall 또는 KR only = sameNationality) · Speed/Service = 로드된 리뷰(값 있는 것만) 클라 평균
- * (서버 축 집계 부재). 값 없는 축 = 미표시.
+ * 축: Taste = 서버 집계(overall 또는 KR only = sameNationality). 값 없는 축 = 미표시.
+ * KB-848 QA(AG3): Speed·Service는 서버 집계가 없어 "그 화면에 로드된 리뷰" 평균이었다 — 상세(미리보기)와 목록(로드된 페이지)이
+ * 같은 음식에 다른 값을 보였다. 서버 집계(KB-857)가 생길 때까지 두 축은 숨긴다(두 화면 같은 값).
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Stars } from '@/components';
 import { color as C, radius } from '@/lib/theme';
-import type { RatingAggregate, Review } from '@/lib/api/types';
+import type { RatingAggregate } from '@/lib/api/types';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
 export type AxisAverages = { taste: number | null; speed: number | null; service: number | null };
 
-/** Taste = 서버 평균(토글 따라 overall/같은 국적) · Speed·Service = 로드된 리뷰의 값 있는 것만 평균 */
-export function reviewAxisAverages(reviews: Review[], tasteAverage: number | null): AxisAverages {
-  const avg = (pick: (r: Review) => number | undefined) => {
-    const vals = reviews.map(pick).filter((v): v is number => typeof v === 'number' && v > 0);
-    return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-  };
-  return { taste: tasteAverage, speed: avg((r) => r.servingSpeed), service: avg((r) => r.staffKindness) };
+/** 서버 집계만 — Taste = 서버 평균(토글 따라 overall/같은 국적). ponytail: Speed·Service = null, 서버 KB-857 축 평균이 오면 그 값으로 */
+export function serverAxes(tasteAverage: number | null): AxisAverages {
+  return { taste: tasteAverage, speed: null, service: null };
 }
 
 /** KB-431 §2-3: 세로 바 1개 — 뱃지(최고값 강조) + 바(fill 높이 = 점수/5 × 46) + 라벨. */

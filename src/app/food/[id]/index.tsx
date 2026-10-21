@@ -39,7 +39,7 @@ import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { FeedCard } from '@/features/review/FeedCard';
-import { RatingSummaryBox, reviewAxisAverages } from '@/features/review/RatingSummaryBox';
+import { RatingSummaryBox, serverAxes } from '@/features/review/RatingSummaryBox';
 import { FeedAd } from '@/features/ads/FeedAd';
 import { withFeedAds } from '@/lib/ads/feedSlots';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
@@ -588,7 +588,7 @@ function Registered({
                 accessibilityHint={t('detail.readAll')}
                 testID="detail-rating-summary"
               >
-                <RatingSummaryBox overall={agg} sameNat={natOnly} axes={reviewAxisAverages(activePreviews, agg.average)} t={t} />
+                <RatingSummaryBox overall={agg} sameNat={natOnly} axes={serverAxes(agg.average)} t={t} />
               </Pressable>
             );
           })()}
