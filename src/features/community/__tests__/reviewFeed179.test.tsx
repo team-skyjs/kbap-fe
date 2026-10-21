@@ -70,7 +70,8 @@ jest.mock('@/lib/data/useReviewMutations', () => ({
   useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
   useDeleteReview: () => ({ mutate: jest.fn() }),
 }));
-jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
+const mockModFlow = jest.fn((_p: { onEdit: (m: { id: string }) => void }) => null); // 편집 배선 단언용(props 기록)
+jest.mock('@/features/community/moderation', () => ({ ModerationFlow: (p: { onEdit: (m: { id: string }) => void }) => mockModFlow(p) }));
 const mockMe = jest.fn(() => ({ data: { id: '9', nationality: 'US' } as { id: string; nationality: string | null; scanQuota?: unknown } | undefined }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 })); // KB-499: 헤더 배지 = react-query 훅 — 이 스위트는 Provider 없이 렌더
@@ -131,7 +132,7 @@ it('카드 = P-169 문법 — 작성자·별점·서버 음식 카드·Helpful, 
   expect(mockToggle).not.toHaveBeenCalled();
 });
 
-it('KB-847(#288 revert): 리뷰 탭 = main 카드(FeedCard) — 리뷰 상세 경로 없음 · 가공식품 리뷰 칩 = 제품 상세(KB-812 2차 유지)', () => {
+it('KB-847(#288 revert): 리뷰 탭 = main 카드(FeedCard) — 리뷰 상세 경로 없음 · 가공식품 리뷰 칩 = 제품 상세 · ⋯ 수정 = 대상별 편집(KB-812 2차 유지)', () => {
   const PKG = { ...REVIEW, id: 'r2', foodId: '', target: 'packaged', processedFoodId: '1711', foodName: '우유식빵', memberId: '5', author: { ...REVIEW.author, memberId: '5' } };
   mockFeed.mockReturnValue({
     data: { pages: [{ items: [REVIEW, PKG], hasNext: false, nextCursor: null }] },
@@ -143,6 +144,12 @@ it('KB-847(#288 revert): 리뷰 탭 = main 카드(FeedCard) — 리뷰 상세 �
   act(() => tree.root.findAll((n) => n.props?.testID === 'feed-food-r2')[0].props.onPress());
   expect(mockPush).toHaveBeenCalledWith('/processed-foods/1711');
   expect(mockPush.mock.calls.some(([h]) => String(h).startsWith('/review/'))).toBe(false);
+  // Codex #321: ⋯ 수정 = 대상별 작성 화면(가공식품 = 제품 리뷰 편집 — 빈 foodId "/food//review" 0)
+  const onEdit = mockModFlow.mock.calls[mockModFlow.mock.calls.length - 1][0].onEdit;
+  act(() => onEdit({ id: 'r2' }));
+  expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/1711/review?reviewId=r2');
+  act(() => onEdit({ id: 'r1' }));
+  expect(mockPush).toHaveBeenLastCalledWith('/food/7/review?reviewId=r1');
 });
 
 it('P-196: 타인 리뷰 Helpful = 공용 버튼 경유 토글 · 본인 = 비활성(위 케이스)', () => {

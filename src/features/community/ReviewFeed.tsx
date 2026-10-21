@@ -36,7 +36,7 @@ import { isScanQuotaExhausted } from '@/lib/api/memberAdapter';
 import { useUnreadCount } from '@/lib/data/useNotifications';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
-import { reviewTargetHref } from '@/lib/review/reviewTarget';
+import { reviewEditHref, reviewTargetHref } from '@/lib/review/reviewTarget';
 import type { FoodTagRef } from '@/lib/community/types';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900(D-1 Chip과 동일 명시값)
@@ -269,7 +269,7 @@ export function ReviewFeed() {
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => { const rv = reviews.find((r) => r.id === m.id); if (rv) router.push(`/food/${rv.foodId}/review?reviewId=${rv.id}` as Href); }} /* P-358 */
+        onEdit={(m) => { const rv = reviews.find((r) => r.id === m.id); const href = rv && reviewEditHref(rv); if (href) router.push(href); }} /* P-358 · Codex #321: 가공식품 리뷰 = 제품 리뷰 편집(빈 foodId 링크 0) */
         onDelete={(m) => {
           const r = reviews.find((x) => x.id === m.id);
           if (r) deleteReview.mutate({ reviewId: r.id, foodId: r.foodId });
