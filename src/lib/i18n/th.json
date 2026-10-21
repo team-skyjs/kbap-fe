@@ -508,14 +508,7 @@
     "ratingAll": "ทุกคะแนน",
     "ratingMin": "{{min}} ดาวขึ้นไป",
     "countryOnly": "เฉพาะ {{code}}",
-    "allReviews": "รีวิวทั้งหมด",
-    "readReview": "อ่านรีวิว",
-    "ratingNone": "ยังไม่ให้คะแนน",
-    "cardA11y": "อ่านรีวิว {{food}} ของ {{name}}",
-    "cardA11yDetail": "รูป {{photos}} รูป, รสชาติ {{taste}}, ความเร็วในการเสิร์ฟ {{speed}}, ความเป็นมิตร {{service}}, มีประโยชน์ {{helpful}}",
-    "ratingPoints": "{{n}} คะแนน",
-    "openFoodA11y": "{{food}}, ดูข้อมูลอาหาร",
-    "photoCount": "{{index}}/{{total}}"
+    "allReviews": "รีวิวทั้งหมด"
   },
   "ranking": {
     "headerTitle": "อันดับของฉัน",
@@ -1178,12 +1171,6 @@
     "monLong10": "ตุลาคม",
     "monLong11": "พฤศจิกายน",
     "monLong12": "ธันวาคม"
-  },
-  "reviewDetail": {
-    "title": "รีวิว",
-    "notFound": "รีวิวนี้ถูกลบหรือไม่สามารถดูได้",
-    "photoA11y": "รูปรีวิว, ดูภาพขยาย",
-    "moreA11y": "เพิ่มเติม"
   },
   "curation": {
     "sectionTitle": "สำรวจเกาหลี",

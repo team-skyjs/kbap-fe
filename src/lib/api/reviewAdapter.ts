@@ -32,8 +32,6 @@ export interface ReviewAuthorWire {
 export interface ReviewFoodWire {
   foodId: number;
   name: string;
-  /** KB-802(C-2): 한국어 표시명 — 요청 언어명과 같으면(lang=ko) null, 구서버 = 필드 없음. */
-  koreanName?: string | null;
   imageUrl?: string | null;
 }
 
@@ -116,7 +114,6 @@ export function adaptReview(wire: ReviewWire): Review {
     // P-165: 서버 해석 음식 이름·썸네일(내 리뷰 화면 우선 소스) — 부재 시 화면이 캐시 폴백
     foodName: pf ? pf.productName : wire.food?.name ?? null,
     foodImageUrl: pf ? toHttps(pf.imageUrl) : wire.food?.imageUrl ?? null,
-    foodKoreanName: pf ? pf.maker ?? null : wire.food?.koreanName ?? null, // KB-802: 음식 칩 부제 — null = 부제 없음 · 가공식품 = 제조사
     // 파생 — 기존 화면 호환 축. P-181: 탈퇴 판정 = authorWithdrawn **서버 정본 우선**,
     // 필드 부재(구 응답)만 author==null 폴백. 렌더(익명)는 무변.
     authorNationality: author?.nationality ?? null,

@@ -66,7 +66,7 @@ const pageOf = (n: number) => ({ pages: [{ items: Array.from({ length: n }, (_, 
 describe('① 어댑터', () => {
   it('PROCESSED_FOOD + processedFood = packaged · foodId 비움 · 제품명·https 사진·제조사(부제)', () => {
     const r = adaptReview({ ...BASE, targetType: 'PROCESSED_FOOD', servingSpeed: 0, staffKindness: 0, processedFood: { processedFoodId: 1711, reportNo: '19700001001', productName: '우유식빵', maker: '롯데제과', imageUrl: 'http://haccp/a.jpg' } });
-    expect(r).toMatchObject({ target: 'packaged', processedFoodId: '1711', foodId: '', foodName: '우유식빵', foodImageUrl: 'https://haccp/a.jpg', foodKoreanName: '롯데제과' });
+    expect(r).toMatchObject({ target: 'packaged', processedFoodId: '1711', foodId: '', foodName: '우유식빵', foodImageUrl: 'https://haccp/a.jpg' });
   });
   it('FOOD · 필드 없는 구응답 · PROCESSED_FOOD인데 요약 없음 = food 축 그대로', () => {
     const food = { foodId: 7, name: 'Kimbap', koreanName: '김밥', imageUrl: 'https://x/k.jpg' };

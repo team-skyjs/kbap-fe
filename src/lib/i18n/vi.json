@@ -508,14 +508,7 @@
     "ratingAll": "Mọi mức sao",
     "ratingMin": "Từ {{min}} sao",
     "countryOnly": "Chỉ {{code}}",
-    "allReviews": "Tất cả đánh giá",
-    "readReview": "Đọc đánh giá",
-    "ratingNone": "Chưa đánh giá",
-    "cardA11y": "Đọc đánh giá {{food}} của {{name}}",
-    "cardA11yDetail": "{{photos}} ảnh, hương vị {{taste}}, tốc độ phục vụ {{speed}}, sự thân thiện {{service}}, hữu ích {{helpful}}",
-    "ratingPoints": "{{n}} điểm",
-    "openFoodA11y": "{{food}}, xem thông tin món ăn",
-    "photoCount": "{{index}}/{{total}}"
+    "allReviews": "Tất cả đánh giá"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",
@@ -1178,12 +1171,6 @@
     "monLong10": "tháng 10",
     "monLong11": "tháng 11",
     "monLong12": "tháng 12"
-  },
-  "reviewDetail": {
-    "title": "Đánh giá",
-    "notFound": "Đánh giá này đã bị xóa hoặc không khả dụng",
-    "photoA11y": "Ảnh đánh giá, xem lớn hơn",
-    "moreA11y": "Thêm"
   },
   "curation": {
     "sectionTitle": "Khám phá Hàn Quốc",

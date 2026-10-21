@@ -508,14 +508,7 @@
     "ratingAll": "全部评分",
     "ratingMin": "{{min}}分以上",
     "countryOnly": "仅{{code}}",
-    "allReviews": "全部评价",
-    "readReview": "阅读评价",
-    "ratingNone": "未评分",
-    "cardA11y": "阅读{{name}}对{{food}}的评价",
-    "cardA11yDetail": "{{photos}}张照片，味道 {{taste}}，上菜速度 {{speed}}，服务态度 {{service}}，有帮助 {{helpful}}",
-    "ratingPoints": "{{n}}分",
-    "openFoodA11y": "{{food}}，查看菜品信息",
-    "photoCount": "{{index}}/{{total}}"
+    "allReviews": "全部评价"
   },
   "ranking": {
     "headerTitle": "我的排名",
@@ -1178,12 +1171,6 @@
     "monLong10": "10月",
     "monLong11": "11月",
     "monLong12": "12月"
-  },
-  "reviewDetail": {
-    "title": "评价",
-    "notFound": "该评价已删除或无法查看",
-    "photoA11y": "评价照片，查看大图",
-    "moreA11y": "更多"
   },
   "curation": {
     "sectionTitle": "探索韩国",

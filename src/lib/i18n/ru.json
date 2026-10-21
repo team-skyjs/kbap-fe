@@ -526,14 +526,7 @@
     "ratingAll": "Все оценки",
     "ratingMin": "От {{min}} звёзд",
     "countryOnly": "Только {{code}}",
-    "allReviews": "Все отзывы",
-    "readReview": "Читать отзыв",
-    "ratingNone": "Без оценки",
-    "cardA11y": "Читать отзыв {{name}} о блюде {{food}}",
-    "cardA11yDetail": "Фото: {{photos}}, вкус {{taste}}, скорость подачи {{speed}}, вежливость {{service}}, полезно {{helpful}}",
-    "ratingPoints": "{{n}} балл.",
-    "openFoodA11y": "{{food}}, информация о блюде",
-    "photoCount": "{{index}}/{{total}}"
+    "allReviews": "Все отзывы"
   },
   "ranking": {
     "headerTitle": "Мой рейтинг",
@@ -1216,12 +1209,6 @@
     "monLong10": "октября",
     "monLong11": "ноября",
     "monLong12": "декабря"
-  },
-  "reviewDetail": {
-    "title": "Отзыв",
-    "notFound": "Отзыв удалён или недоступен",
-    "photoA11y": "Фото отзыва, открыть крупнее",
-    "moreA11y": "Ещё"
   },
   "curation": {
     "sectionTitle": "Откройте Корею",
