@@ -107,10 +107,10 @@ it('P-333 ② 저장 카드 배지 — 회원(guest=false) 카드 3장 전부 Ri
 
 it('P-334 — 하단 바 비율(≥360 = 3:5, <360 = 1:1)·아이콘 없음·fitLabel(2줄+0.85), Read all chevron, Btn pad 10', () => {
   const fd = read('src/app/food/[id]/index.tsx');
-  // KB-851: 하단 바(3:5 비율) → 떠 있는 알약(오른쪽 정렬, 내용 폭) — Ask = 라벨 단독(말풍선 아이콘 없음) · Write = file-pen + 라벨
-  expect(fd).toContain('<Text style={styles.pillAskText}>{t(\'detail.askOwner\')}</Text>');
-  expect(fd).toContain('<IconEdit size={20} color={INK_TITLE} />');
-  expect(fd).toMatch(/pillWriteText: \{ flexShrink: 1/); // 긴 번역 = 줄바꿈(잘림 0)
+  // KB-851 → KB-871: 가로 전체 두 줄 — Ask = 라벨 단독(말풍선 아이콘 없음) · Write = 흰 file-pen + 라벨
+  expect(fd).toContain("<Text style={write ? styles.pillOutlineText : styles.pillPrimaryText}>{t('detail.askOwner')}</Text>");
+  expect(fd).toContain('<IconEdit size={20} color="#FFFFFF" />');
+  expect(fd).toMatch(/pillPrimaryText: \{ flexShrink: 1/); // 긴 번역 = 줄바꿈(잘림 0)
   expect(fd).toMatch(/iconEnd=\{<IconChevron size=\{16\}[^}]*\}/);
   const btn = read('src/components/Btn.tsx');
   expect(btn).toContain('paddingHorizontal: 10, // P-334');

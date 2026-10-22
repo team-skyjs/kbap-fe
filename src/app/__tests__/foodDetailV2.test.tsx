@@ -56,10 +56,11 @@ jest.mock('expo-linear-gradient', () => {
   return { LinearGradient: View };
 });
 const mockPush = jest.fn(); // KB-848: 요약 박스 탭 = 목록 이동 단언
+let mockParams: Record<string, string> = { id: '7' };
 jest.mock('expo-router', () => ({
   useSegments: () => [], // P-214: 계측 화면 식별(StateBlock·HelpfulButton)
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
-  useLocalSearchParams: () => ({ id: '7' }),
+  useLocalSearchParams: () => mockParams,
   usePathname: () => '/',
   useFocusEffect: () => {},
 }));
@@ -396,32 +397,44 @@ describe('P-228: Ask the owner 플로팅', () => {
     expect(sub.props.numberOfLines).toBe(2);
   });
 
-  // KB-710(2): 큰 글자에서 좁은 Write만 두 줄로 접혀 두 버튼 키가 달랐다 — 둘 다 슬롯 높이를 채운다(줄은 슬롯을 가장 큰 쪽에 맞춤)
-  it('KB-851 떠 있는 알약: 바 배경·구분선 없음 · 알약 radius full · Write = 흰 Outline + file-pen · 두 알약 같은 높이(줄 stretch · 최소 48 · 고정 높이 0)', () => {
+  it('KB-871(예진 10/22): 하단 버튼 = 좌우 20 · 가로 전체 · 위 primary Write(흰 글자·흰 file-pen) + 아래 테두리 Ask(회원) · 높이 48 radius full · 바 배경 0', () => {
     const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
     const tree = render(<FoodDetailScreen />);
     const bar = byId(tree, 'detail-bottom-bar').find((n) => typeof n.type === 'string')!;
     const barStyle = StyleSheet.flatten(bar.props.style) as Record<string, unknown>;
+    expect(barStyle).toMatchObject({ position: 'absolute', left: 20, right: 20, gap: 8 });
     expect(barStyle.backgroundColor).toBeUndefined();
-    expect(barStyle.borderTopWidth).toBeUndefined();
-    expect(barStyle).toMatchObject({ position: 'absolute', flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'stretch' });
-    for (const id of ['bottom-write', 'bottom-ask']) {
-      const st = StyleSheet.flatten(byId(tree, id).find((n) => typeof n.type === 'string')!.props.style) as Record<string, unknown>;
-      expect({ id, r: st.borderRadius, min: st.minHeight, h: st.height }).toEqual({ id, r: 999, min: 48, h: undefined });
-    }
-    const write = StyleSheet.flatten(byId(tree, 'bottom-write').find((n) => typeof n.type === 'string')!.props.style) as Record<string, unknown>;
-    expect(write).toMatchObject({ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', minWidth: 196 }); // Outline 32:14 · gray-300
+    expect(barStyle.flexDirection).toBeUndefined(); // 세로(두 줄) — 가로 반쪽 회귀 방지
+    expect(barStyle.justifyContent).toBeUndefined();
+    const st = (id: string) => StyleSheet.flatten(byId(tree, id).find((n) => typeof n.type === 'string')!.props.style) as Record<string, unknown>;
+    expect(st('bottom-write')).toMatchObject({ alignSelf: 'stretch', backgroundColor: '#FF7134', borderRadius: 999, minHeight: 48 });
+    expect(st('bottom-write').minWidth).toBeUndefined();
+    expect(st('bottom-ask')).toMatchObject({ alignSelf: 'stretch', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', borderRadius: 999, minHeight: 48 });
+    expect(byId(tree, 'bottom-write').find((n) => typeof n.type === 'string')!.findAll((n) => n.props?.color === '#FFFFFF').length).toBeGreaterThan(0); // 흰 file-pen
     expect(bar.props.accessibilityElementsHidden).toBeUndefined(); // 숨김 상태에서도 스크린리더 포커스 유지
-    // 표시 규칙 배선 + 모션 줄이기 = 즉시(타이밍 없이 값 그대로)
+    // 표시 규칙 배선(KB-871): 제스처 시작·끝·관성 · 버튼 띠 · 슬라이드+페이드(모션 줄이기 = 슬라이드 0)
     const src = jest.requireActual('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
     expect(src).toContain('shown={pill.shown}');
-    expect(src).toContain('onLayout={(e) => pill.onInsets(e.nativeEvent.layout.height, insets.bottom)}'); // KB-851 QA ①: 헤더 높이·하단 안전 영역 = 보이는 영역
-    expect(src).toContain('opacity: reduced ? (shown ? 1 : 0) : withTiming(shown ? 1 : 0, { duration: PILL_FADE_MS })');
-    // KB-851 QA: 카드 높이 = 아래 여백(IDOL_CARD_BOTTOM_PAD) 뺀 카드 자체 — 여백까지 세면 헤더 뒤로 숨은 카드(아래끝 93 < 헤더 110)도 "보임"
-    expect(src).toContain('<View onLayout={(e) => onIdolLayout?.(e.nativeEvent.layout.y, Math.max(0, e.nativeEvent.layout.height - IDOL_CARD_BOTTOM_PAD))} testID="detail-idol-wrap">');
+    for (const h of ['onScrollBeginDrag={pill.onScrollBeginDrag}', 'onScrollEndDrag={pill.onScrollEndDrag}', 'onMomentumScrollBegin={pill.onMomentumScrollBegin}', 'onMomentumScrollEnd={pill.onMomentumScrollEnd}']) expect(src).toContain(h);
+    expect(src).toContain('pill.onBand(h + pillBottom + 8)');
+    expect(src).toContain('transform: [{ translateY: reduced ? 0 : withTiming(shown ? 0 : hideY');
+    expect(src).not.toContain('onInsets');
   });
 
-  it('회원+등록 음식 = FixedBottom(아웃라인 Write + primary Ask) + 콘텐츠 바닥 여백', () => {
+  it('KB-871: 스캔 진입(P-353 — Write 없음) = Ask 한 줄이 primary 전체 너비', () => {
+    const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+    mockParams = { id: '7', src: 'scan' };
+    try {
+      const tree = render(<FoodDetailScreen />);
+      expect(byId(tree, 'bottom-write')).toHaveLength(0);
+      const ask = StyleSheet.flatten(byId(tree, 'bottom-ask').find((n) => typeof n.type === 'string')!.props.style) as Record<string, unknown>;
+      expect(ask).toMatchObject({ alignSelf: 'stretch', backgroundColor: '#FF7134', borderRadius: 999 });
+    } finally {
+      mockParams = { id: '7' };
+    }
+  });
+
+  it('회원+등록 음식 = 하단 두 줄(primary Write + 테두리 Ask) + 콘텐츠 바닥 여백', () => {
     const tree = render(<FoodDetailScreen />);
     expect(byId(tree, 'detail-bottom-bar').length).toBeGreaterThanOrEqual(1);
     expect(byId(tree, 'bottom-ask').length).toBeGreaterThanOrEqual(1);

@@ -15,7 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
-import Animated, { useAnimatedStyle, useReducedMotion, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -124,7 +124,7 @@ export default function FoodDetailScreen() {
 
   // P-139: 플로팅 헤더 — 스크롤 임계 통과 시 솔리드+타이틀 페이드인
   const [solid, setSolid] = useState(false);
-  // KB-851: 떠 있는 리뷰 알약 — K-pop 카드가 보이는 동안·아래로 스크롤 = 숨김, 위로·멈춤·맨 위/아래 = 표시
+  // KB-851 → KB-871: 하단 리뷰 버튼 영역 — 아래로 스크롤 = 숨김 · 위로·제스처 끝 멈춤·맨 위/아래 = 표시 · 한 제스처 안 전환 1회 · K-pop 카드는 버튼 자리와 겹칠 때만 숨김
   const pill = useScrollAwarePill();
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setSolid(e.nativeEvent.contentOffset.y > HEADER_SOLID_Y);
@@ -165,6 +165,10 @@ export default function FoodDetailScreen() {
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={pill.onScrollBeginDrag}
+        onScrollEndDrag={pill.onScrollEndDrag}
+        onMomentumScrollBegin={pill.onMomentumScrollBegin}
+        onMomentumScrollEnd={pill.onMomentumScrollEnd}
         onLayout={(e) => pill.onViewLayout(e.nativeEvent.layout.height)}
         onContentSizeChange={(_w, h) => pill.onContentSize(h)}
         contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 48) + pillBottom + 16 : 40 }, (error || hidden) && !food ? { flexGrow: 1 } : null]}
@@ -232,15 +236,15 @@ export default function FoodDetailScreen() {
         )}
       </ScrollView>
 
-      {/* §1-8 → KB-851(시안 kpop-detail v1 "Review CTA"): 흰 바·구분선 없이 콘텐츠 위에 뜬 알약 — 흰 Outline + file-pen Write
-          (+ 회원 = primary Ask 알약). 표시 규칙 = useScrollAwarePill */}
+      {/* §1-8 → KB-851 → KB-871(예진 10/22): 하단 고정 · 가로 전체(좌우 화면 여백 20) — 위 = primary Write(흰 글자·흰 file-pen),
+          회원은 아래에 테두리 Ask 한 줄 더 · 스캔 진입(Ask 단독) = primary 한 줄. 표시 규칙 = useScrollAwarePill(영역 전체) */}
       {showBottomBar && (
         <RegisteredBottomBar
           shown={pill.shown}
           bottom={pillBottom}
           guest={isGuest}
           scanEntry={src === 'scan'}
-          onHeight={setBarH}
+          onHeight={(h) => { setBarH(h); pill.onBand(h + pillBottom + 8); }}
           t={t}
           onWrite={() => {
             // P-392(KB-584): 자격 게이트 폐기 — 회원이면 스캔 여부 무관(BE #274: reviewEligible 항상 true)
@@ -256,7 +260,7 @@ export default function FoodDetailScreen() {
       )}
 
       {/* P-139 ②: 플로팅 헤더 — 사진 위 반투명 원 back(제목 없음) → 솔리드+타이틀 */}
-      <View style={[styles.fhead, { paddingTop: insets.top + 6 }]} pointerEvents="box-none" onLayout={(e) => pill.onInsets(e.nativeEvent.layout.height, insets.bottom)} /* KB-851 QA: 헤더 뒤로 들어간 카드 = 안 보임 */>
+      <View style={[styles.fhead, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
         <Animated.View style={[StyleSheet.absoluteFill, styles.fheadBg, solidFade]} pointerEvents="none" testID="fhead-bg" />
         {/* KB-696: 상태 표시줄 영역은 스크롤 뒤(solid) **불투명** — 헤더 바 배경(FHEAD_BAR_BG)이 반투명이라 그 위로 글자·재료 그림이 비쳤다.
             히어로 위(맨 위)에선 헤더처럼 투명(solidFade). */}
@@ -303,7 +307,7 @@ function RegisteredBottomBar({
   scanEntry = false,
   onHeight,
 }: {
-  /** KB-851: 표시 여부(useScrollAwarePill) — 숨김 = 아래로 미끄러지며 투명(스크린리더 포커스는 유지) */
+  /** 표시 여부(useScrollAwarePill) — 숨김 = 아래로 미끄러지며 투명(스크린리더 포커스는 유지) */
   shown: boolean;
   /** 화면 바닥에서 알약까지(안전 영역, 최소 12) */
   bottom: number;
@@ -319,29 +323,30 @@ function RegisteredBottomBar({
   const reduced = useReducedMotion();
   const [rowH, setRowH] = useState(48);
   const hideY = rowH + bottom + 8; // 화면 밖까지
-  // 표시 = 150ms 페이드(시안) · 모션 줄이기 = 즉시
+  // 표시·숨김 = 200ms 슬라이드 + 페이드(감속 곡선) · 모션 줄이기 = 슬라이드 없이 짧은 페이드만
   const anim = useAnimatedStyle(() => ({
-    opacity: reduced ? (shown ? 1 : 0) : withTiming(shown ? 1 : 0, { duration: PILL_FADE_MS }),
-    transform: [{ translateY: reduced ? (shown ? 0 : hideY) : withTiming(shown ? 0 : hideY, { duration: PILL_FADE_MS }) }],
+    opacity: withTiming(shown ? 1 : 0, { duration: reduced ? 120 : PILL_FADE_MS, easing: Easing.out(Easing.cubic) }),
+    transform: [{ translateY: reduced ? 0 : withTiming(shown ? 0 : hideY, { duration: PILL_FADE_MS, easing: Easing.out(Easing.cubic) }) }],
   }));
   const write = FLAGS.reviewsEnabled && !(scanEntry && onAsk);
   if (!write && !onAsk) return null;
   return (
     <Animated.View
       style={[styles.pillRow, { bottom }, anim]}
-      pointerEvents="box-none"
+      pointerEvents={shown ? 'box-none' : 'none'}
       onLayout={(e) => { const h = e.nativeEvent.layout.height; setRowH(h); onHeight?.(h); }}
       testID="detail-bottom-bar"
     >
       {write && (
-        <Pressable style={styles.pillWrite} onPress={onWrite} accessibilityRole="button" testID="bottom-write">
-          <IconEdit size={20} color={INK_TITLE} />
-          <Text style={styles.pillWriteText}>{t('reviews.writeReview')}</Text>
+        <Pressable style={styles.pillPrimary} onPress={onWrite} accessibilityRole="button" testID="bottom-write">
+          <IconEdit size={20} color="#FFFFFF" />
+          <Text style={styles.pillPrimaryText}>{t('reviews.writeReview')}</Text>
         </Pressable>
       )}
       {onAsk && (
-        <Pressable style={styles.pillAsk} onPress={onAsk} accessibilityRole="button" testID="bottom-ask">
-          <Text style={styles.pillAskText}>{t('detail.askOwner')}</Text>
+        // 회원 = Write 아래 테두리 한 줄 · 스캔 진입(Write 없음) = primary 한 줄(P-353)
+        <Pressable style={write ? styles.pillOutline : styles.pillPrimary} onPress={onAsk} accessibilityRole="button" testID="bottom-ask">
+          <Text style={write ? styles.pillOutlineText : styles.pillPrimaryText}>{t('detail.askOwner')}</Text>
         </Pressable>
       )}
     </Animated.View>
@@ -885,13 +890,12 @@ const styles = StyleSheet.create({
   disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 17, paddingHorizontal: 20 },
 
   // §1-8: FixedBottom
-  // KB-851(시안 kpop-detail v1 12357:31965 "Review pill"): 바 배경·구분선 없음 · 오른쪽 20 · 알약 높이 48 radius full
-  // Write = 흰 Outline(gray-300 테두리) + file-pen 20(왼쪽 14) + subtitle1-sbold gray-1000 · 최소 폭 196(긴 번역은 늘어남 — 잘림 0)
-  pillRow: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'stretch', gap: 8 },
-  pillWrite: { minHeight: 48, minWidth: 196, flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 14, paddingRight: 24, paddingVertical: 12, borderRadius: 999, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
-  pillWriteText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
-  pillAsk: { minHeight: 48, flexShrink: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, backgroundColor: C.primary },
-  pillAskText: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: '#FFFFFF', textAlign: 'center' },
+  // KB-871(예진 10/22): 하단 고정 · 좌우 = 화면 여백 20 · 가로 전체 알약(높이 48 radius full) 세로 간격 8 — primary(흰 글자·흰 file-pen) / 테두리(gray-300)
+  pillRow: { position: 'absolute', left: 20, right: 20, gap: 8 },
+  pillPrimary: { alignSelf: 'stretch', minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, backgroundColor: C.primary },
+  pillPrimaryText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: '#FFFFFF', textAlign: 'center' },
+  pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
+  pillOutlineText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink, textAlign: 'center' },
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },
