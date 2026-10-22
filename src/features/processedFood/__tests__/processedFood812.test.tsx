@@ -560,6 +560,21 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     expect(src).toContain("queryKey: ['processedFoods', 'detail', id, verdictKey],"); // 상세도 같은 키
   });
 
+  it('Codex #338 R4: 언어를 바꾸면(번역 언어) 새 키 = 새로 받는다 — 옛 언어 번역이 남지 않는다', async () => {
+    mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] };
+    const i18nMock = jest.requireMock('@/lib/i18n').default as { language: string };
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    mockGet.mockResolvedValueOnce(V4());
+    const el = () => <QueryClientProvider client={qc}><PackagedExplorer top={null} /></QueryClientProvider>;
+    const t = render(el());
+    await flush();
+    mockGet.mockResolvedValueOnce(V4());
+    i18nMock.language = 'ja';
+    act(() => t.update(el()));
+    await flush();
+    expect(mockGet).toHaveBeenCalledTimes(2);
+  });
+
   it('Codex #338 P1: 목록 리본도 회피 1개 이상 회원만 — 회피 0개·비회원은 응답에 verdict가 남아 있어도 리본 0', async () => {
     mockGuest = false; mockMe = { id: '41', restrictions: [] };
     mockGet.mockResolvedValueOnce(V4());
