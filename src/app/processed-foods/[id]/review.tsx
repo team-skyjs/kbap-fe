@@ -9,6 +9,7 @@ import { ReviewComposeScreen } from '@/app/food/[id]/review';
 
 export default function PackagedReviewCompose() {
   // 가드는 훅 없는 바깥 컴포넌트에(KB-620 — rules-of-hooks). 쓰기 버튼 플래그(packagedReviewWrite)는 진입 버튼 쪽 — 기존 리뷰 수정은 이 경로로 늘 연다
-  if (!FLAGS.reviewsEnabled) return <Redirect href="/" />;
+  // KB-870(Codex #335): 운영 채널 = 가공식품 API 없음 — 직접 링크로 와도 작성 화면 0
+  if (!FLAGS.reviewsEnabled || !FLAGS.processedFoodEnabled) return <Redirect href="/" />;
   return <ReviewComposeScreen packaged />;
 }

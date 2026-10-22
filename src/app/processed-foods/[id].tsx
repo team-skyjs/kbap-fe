@@ -14,7 +14,7 @@
  */
 import * as React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SubHeader } from '@/components/SubHeader';
@@ -148,7 +148,11 @@ export function Verdict({ d, onLogin }: { d: VerdictData; onLogin: () => void })
   );
 }
 
-export default function ProcessedFoodDetailScreen() {
+/** KB-870(Codex #335): 운영 채널(운영 서버 processed-foods 404) = 직접 링크·공유 링크로 와도 상세 0(모듈 상수로 고름 — 감싸는 컴포넌트 없음) */
+const GoneHome = () => <Redirect href="/" />;
+export default FLAGS.processedFoodEnabled ? ProcessedFoodDetailScreen : GoneHome;
+
+export function ProcessedFoodDetailScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();

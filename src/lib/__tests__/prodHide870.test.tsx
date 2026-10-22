@@ -69,12 +69,15 @@ describe('teamtest 채널(dev 서버) — 동작 무변', () => {
 });
 
 describe('표면 게이트(소스·라우트)', () => {
-  it('직접 경로도 막힘: 큐레이션 상세·/idol-picks = 플래그 꺼지면 홈으로', () => {
-    for (const [file, flag] of [['src/app/curations/[key].tsx', 'curationEnabled'], ['src/app/idol-picks.tsx', 'idolPicksEnabled']] as const) {
+  it('직접 경로도 막힘: 큐레이션 상세·/idol-picks·가공식품 상세 = 플래그 꺼지면 홈으로', () => {
+    for (const [file, flag] of [['src/app/curations/[key].tsx', 'curationEnabled'], ['src/app/idol-picks.tsx', 'idolPicksEnabled'], ['src/app/processed-foods/[id].tsx', 'processedFoodEnabled']] as const) {
       const src = fs.readFileSync(file, 'utf8');
       expect(src).toMatch(new RegExp(`export default FLAGS\\.${flag} \\? \\w+ : GoneHome;`));
       expect(src).toContain('const GoneHome = () => <Redirect href="/" />;');
     }
+  });
+  it('Codex #335: 가공식품 리뷰 작성 경로도 직접 링크 차단', () => {
+    expect(fs.readFileSync('src/app/processed-foods/[id]/review.tsx', 'utf8')).toContain('if (!FLAGS.reviewsEnabled || !FLAGS.processedFoodEnabled) return <Redirect href="/" />;');
   });
   it('음식 탭 세그먼트·스캔 모드 탭 = processedFoodEnabled · 상세 K-pop 카드 = idolPicksEnabled · 홈 = 두 플래그', () => {
     const food = fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8');

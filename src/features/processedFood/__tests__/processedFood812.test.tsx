@@ -68,7 +68,7 @@ jest.mock('@/features/processedFood/PackagedReviews', () => {
 import { ApiError } from '@/lib/api/client';
 import { adaptProcessedDetail, adaptProcessedSummary, packagedTypeOf, toHttps, type DetailWire } from '@/lib/api/processedFoodAdapter';
 import { fetchProcessedDetail, fetchProcessedSearch } from '@/lib/data/useProcessedFoods';
-import Detail, { LABEL_SOURCE_KEY } from '@/app/processed-foods/[id]';
+import { ProcessedFoodDetailScreen as Detail, LABEL_SOURCE_KEY } from '@/app/processed-foods/[id]'; // KB-870: 기본 내보내기 = 채널 게이트 — 화면 자체를 직접 렌더
 import { FoodSegmentRow, PackagedExplorer } from '../PackagedExplorer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 /* eslint-enable import/first */
