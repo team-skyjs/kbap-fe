@@ -397,17 +397,27 @@ describe('P-228: Ask the owner 플로팅', () => {
   });
 
   // KB-710(2): 큰 글자에서 좁은 Write만 두 줄로 접혀 두 버튼 키가 달랐다 — 둘 다 슬롯 높이를 채운다(줄은 슬롯을 가장 큰 쪽에 맞춤)
-  it('KB-710 하단 바 두 버튼 = 같은 높이 규칙 — 줄(row)은 슬롯을 늘리고(stretch) 두 버튼은 슬롯을 채움(flexGrow 1)', () => {
+  it('KB-851 떠 있는 알약: 바 배경·구분선 없음 · 알약 radius full · Write = 흰 Outline + file-pen · 두 알약 같은 높이(줄 stretch · 최소 48 · 고정 높이 0)', () => {
     const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
     const tree = render(<FoodDetailScreen />);
     const bar = byId(tree, 'detail-bottom-bar').find((n) => typeof n.type === 'string')!;
-    const barStyle = StyleSheet.flatten(bar.props.style) as { flexDirection?: string; alignItems?: string };
-    expect(barStyle.flexDirection).toBe('row');
-    expect(barStyle.alignItems ?? 'stretch').toBe('stretch');
+    const barStyle = StyleSheet.flatten(bar.props.style) as Record<string, unknown>;
+    expect(barStyle.backgroundColor).toBeUndefined();
+    expect(barStyle.borderTopWidth).toBeUndefined();
+    expect(barStyle).toMatchObject({ position: 'absolute', flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'stretch' });
     for (const id of ['bottom-write', 'bottom-ask']) {
-      const btn = byId(tree, id).find((n) => typeof n.type !== 'string' && n.props?.style != null)!;
-      expect({ id, grow: (StyleSheet.flatten(btn.props.style) as { flexGrow?: number }).flexGrow }).toEqual({ id, grow: 1 });
+      const st = StyleSheet.flatten(byId(tree, id).find((n) => typeof n.type === 'string')!.props.style) as Record<string, unknown>;
+      expect({ id, r: st.borderRadius, min: st.minHeight, h: st.height }).toEqual({ id, r: 999, min: 48, h: undefined });
     }
+    const write = StyleSheet.flatten(byId(tree, 'bottom-write').find((n) => typeof n.type === 'string')!.props.style) as Record<string, unknown>;
+    expect(write).toMatchObject({ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', minWidth: 196 }); // Outline 32:14 · gray-300
+    expect(bar.props.accessibilityElementsHidden).toBeUndefined(); // 숨김 상태에서도 스크린리더 포커스 유지
+    // 표시 규칙 배선 + 모션 줄이기 = 즉시(타이밍 없이 값 그대로)
+    const src = jest.requireActual('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
+    expect(src).toContain('shown={pill.shown}');
+    expect(src).toContain('onLayout={(e) => pill.onInsets(e.nativeEvent.layout.height, insets.bottom)}'); // KB-851 QA ①: 헤더 높이·하단 안전 영역 = 보이는 영역
+    expect(src).toContain('opacity: reduced ? (shown ? 1 : 0) : withTiming(shown ? 1 : 0, { duration: PILL_FADE_MS })');
+    expect(src).toContain('<View onLayout={(e) => onIdolLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)} testID="detail-idol-wrap">');
   });
 
   it('회원+등록 음식 = FixedBottom(아웃라인 Write + primary Ask) + 콘텐츠 바닥 여백', () => {
@@ -417,8 +427,8 @@ describe('P-228: Ask the owner 플로팅', () => {
     expect(byId(tree, 'bottom-write').length).toBeGreaterThanOrEqual(1);
     expect(flat(tree)).toContain('detail.askOwner');
     const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
-    // Codex #97 3R P2: 고정 107 예약 → onLayout 실측 파생(fitLabel 2줄 시 바닥 가림 방지)
-    expect(src).toContain('paddingBottom: showBottomBar ? (barH || 107) + 12 : 40');
+    // Codex #97 3R P2 → KB-851: 알약 줄 실높이 + 바닥 여백 + 16(마지막 리뷰 가림 방지)
+    expect(src).toContain('paddingBottom: showBottomBar ? (barH || 48) + pillBottom + 16 : 40');
     // 라벨 4곳 = FixedBottom 1 + caution 타일 풋터 + 미등록 본문 CTA + 재료 시트(P-306)
     expect(src.match(/detail\.askOwner/g)?.length).toBe(4);
   });
@@ -429,7 +439,7 @@ describe('P-228: Ask the owner 플로팅', () => {
     act(() => bar.props.onLayout({ nativeEvent: { layout: { height: 131 } } }));
     const sv = tree.root.findAll((n) => Array.isArray(n.props?.contentContainerStyle))[0];
     const pad = Object.assign({}, ...sv.props.contentContainerStyle.filter(Boolean)) as { paddingBottom?: number };
-    expect(pad.paddingBottom).toBe(143); // 131 + 12
+    expect(pad.paddingBottom).toBe(159); // 알약 줄 131 + 바닥 12(안전 영역 0 → 최소 12) + 16
   });
 
   it('게스트 = Ask 미노출(회피 프로필 없어 질문 조립 무의미) — Write primary 단독', () => {

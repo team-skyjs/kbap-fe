@@ -331,7 +331,7 @@ describe('상세 V1 카드', () => {
   it('상세 배치 잠금: profileHint 다음·디바이더 앞, 캐시 훅 값이 있을 때만 · source 화이트리스트 idol_pick', () => {
     const src = fs.readFileSync('src/app/food/[id]/index.tsx', 'utf8');
     expect(src).toContain('const idolVideo = useIdolPickVideo(id);');
-    const card = src.indexOf('{idolVideo && <IdolVideoCard foodId={id} video={idolVideo} />}');
+    const card = src.indexOf('<IdolVideoCard foodId={id} video={idolVideo} />'); // KB-851: 위치 보고 래퍼(스타일 없음) 안
     expect(card).toBeGreaterThan(src.indexOf("t('detail.addProfileHint')"));
     expect(card).toBeLessThan(src.indexOf('<View style={styles.thickDivider} />'));
     expect(src).toMatch(/\[[^\]]*'tag_sheet', 'idol_pick'\]\.includes\(src\)/); // KB-847: review_detail은 #288 되돌림으로 빠짐
