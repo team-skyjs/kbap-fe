@@ -18,11 +18,16 @@ import { useBottomInset } from '@/lib/useBottomInset';
 
 export const LOADING_PHOTO_H = 430;
 export const SCAN_LINE_H = 3;
-/** KB-853: 글로우 띠 높이(선 위로 퍼지는 빛 트레일 포함) — PR318 이전 ScanSweepOverlay 값 그대로 */
-export const SCAN_GLOW_H = 90;
+/** KB-862(예진 실기): 빛은 선을 중심으로 **위아래 같은 높이**만 — 선에서 멀어질수록 옅어진다(이전 = 위쪽 90 트레일이 사진 끝까지 남았다).
+ *  위로 갈 때·아래로 갈 때 모양 같음(대칭이라 방향 무관) */
+export const SCAN_GLOW_REACH = 24;
+/** 글로우 띠 전체 높이 = 위 빛 + 선 + 아래 빛 */
+export const SCAN_GLOW_H = SCAN_GLOW_REACH * 2 + SCAN_LINE_H;
 /** 이전 스윕 색 그대로(KB-853 예진 결정 — D-31 단색 C.primary 선 폐기) */
 const SWEEP = '#E2580C';
-const SWEEP_TRAIL = ['rgba(226,88,12,0)', 'rgba(226,88,12,0.35)'] as const;
+/** 위 빛 = 투명 → 선 쪽 35% · 아래 빛 = 그 반대(선에서 멀어질수록 옅어짐) */
+const SWEEP_UP = ['rgba(226,88,12,0)', 'rgba(226,88,12,0.35)'] as const;
+const SWEEP_DOWN = ['rgba(226,88,12,0.35)', 'rgba(226,88,12,0)'] as const;
 export const SCAN_LINE_MS = 1800;
 /** 큰 글씨 변형(screen-6)으로 바꾸는 글꼴 배율 */
 export const LARGE_TEXT_SCALE = 1.3;
@@ -57,7 +62,8 @@ export function ScanLoading({ title, body, photoUri, caption, onClose, testID }:
   }, [photoH, reduced, p]);
   const { from, to } = scanLineRange(photoH);
   // 글로우 띠는 선을 바닥에 두고 위로 퍼진다 — 띠 위치 = 선 위치 − (띠 높이 − 선 두께). 박스 overflow hidden이 위로 넘친 빛을 자른다
-  const glowStyle = useAnimatedStyle(() => ({ transform: [{ translateY: from + p.get() * (to - from) - (SCAN_GLOW_H - SCAN_LINE_H) }] }));
+  // 글로우 띠 위치 = 선 위치 − 위 빛 높이(선이 띠 가운데) — 박스 overflow hidden이 사진 밖으로 나간 빛을 자른다
+  const glowStyle = useAnimatedStyle(() => ({ transform: [{ translateY: from + p.get() * (to - from) - SCAN_GLOW_REACH }] }));
   const onImgLoad = (e: NativeSyntheticEvent<ImageLoadEventData>) => {
     const { width, height } = e.nativeEvent.source;
     setImg((v) => (v.w === width && v.h === height ? v : { w: width, h: height }));
@@ -82,12 +88,13 @@ export function ScanLoading({ title, body, photoUri, caption, onClose, testID }:
           {photoUri ? <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFill} resizeMode="contain" onLoad={onImgLoad} testID="scanning-preview" /> : null}
           {photoH > 0 && (
             <Animated.View
-              style={[st.glow, reduced ? { transform: [{ translateY: from - (SCAN_GLOW_H - SCAN_LINE_H) }] } : glowStyle]}
+              style={[st.glow, reduced ? { transform: [{ translateY: from - SCAN_GLOW_REACH }] } : glowStyle]}
               pointerEvents="none"
               testID="scan-loading-glow"
             >
-              <LinearGradient colors={SWEEP_TRAIL} style={st.trail} testID="scan-loading-trail" />
+              <LinearGradient colors={SWEEP_UP} style={st.trailUp} testID="scan-loading-trail-up" />
               <View style={st.line} testID="scan-loading-line" />
+              <LinearGradient colors={SWEEP_DOWN} style={st.trailDown} testID="scan-loading-trail-down" />
             </Animated.View>
           )}
         </View>
@@ -111,9 +118,11 @@ const st = StyleSheet.create({
   gap: { flexGrow: 1, minHeight: 24, maxHeight: 76 },
   photoArea: { height: LOADING_PHOTO_H, flexShrink: 1, minHeight: 160, alignItems: 'center' }, // 박스는 위·가운데 정렬(가로 사진 = 아래 여백)
   photo: { borderRadius: 12, overflow: 'hidden', backgroundColor: C.surface2 },
-  // KB-853: PR318 이전 ScanSweepOverlay 스윕 그대로 — 좌우 14 안쪽 · 위로 퍼지는 트레일(투명 → 35%) + 바닥 선 3(빛 번짐 그림자)
-  glow: { position: 'absolute', left: 14, right: 14, top: 0, height: SCAN_GLOW_H },
-  trail: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 2 },
-  line: { position: 'absolute', left: 0, right: 0, bottom: 0, height: SCAN_LINE_H, borderRadius: 2, backgroundColor: SWEEP, shadowColor: SWEEP, shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
+  // KB-853 스윕 색·선 3·빛 번짐 그림자는 그대로 — KB-862: 좌우 여백 0(사진 가로 전체) · 빛은 선 위아래 대칭 24(이전 위쪽 90 트레일 폐기)
+  // KB-862: 사진 가로 전체(좌우 0 — 사진 박스의 둥근 모서리 클립 안쪽) · 위 빛 = 선 = 아래 빛 순서(대칭)
+  glow: { position: 'absolute', left: 0, right: 0, top: 0, height: SCAN_GLOW_H },
+  trailUp: { position: 'absolute', left: 0, right: 0, top: 0, height: SCAN_GLOW_REACH },
+  line: { position: 'absolute', left: 0, right: 0, top: SCAN_GLOW_REACH, height: SCAN_LINE_H, backgroundColor: SWEEP, shadowColor: SWEEP, shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
+  trailDown: { position: 'absolute', left: 0, right: 0, top: SCAN_GLOW_REACH + SCAN_LINE_H, height: SCAN_GLOW_REACH },
   caption: { marginTop: 20, fontFamily: font.body, fontSize: 13, lineHeight: 19.5, color: C.ink2 },
 });
