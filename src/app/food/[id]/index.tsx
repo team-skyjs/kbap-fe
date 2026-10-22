@@ -256,7 +256,7 @@ export default function FoodDetailScreen() {
       )}
 
       {/* P-139 ②: 플로팅 헤더 — 사진 위 반투명 원 back(제목 없음) → 솔리드+타이틀 */}
-      <View style={[styles.fhead, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
+      <View style={[styles.fhead, { paddingTop: insets.top + 6 }]} pointerEvents="box-none" onLayout={(e) => pill.onInsets(e.nativeEvent.layout.height, insets.bottom)} /* KB-851 QA: 헤더 뒤로 들어간 카드 = 안 보임 */>
         <Animated.View style={[StyleSheet.absoluteFill, styles.fheadBg, solidFade]} pointerEvents="none" testID="fhead-bg" />
         {/* KB-696: 상태 표시줄 영역은 스크롤 뒤(solid) **불투명** — 헤더 바 배경(FHEAD_BAR_BG)이 반투명이라 그 위로 글자·재료 그림이 비쳤다.
             히어로 위(맨 위)에선 헤더처럼 투명(solidFade). */}

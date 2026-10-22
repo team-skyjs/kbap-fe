@@ -403,6 +403,7 @@ describe('P-228: Ask the owner 플로팅', () => {
     // 표시 규칙 배선 + 모션 줄이기 = 즉시(타이밍 없이 값 그대로)
     const src = jest.requireActual('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
     expect(src).toContain('shown={pill.shown}');
+    expect(src).toContain('onLayout={(e) => pill.onInsets(e.nativeEvent.layout.height, insets.bottom)}'); // KB-851 QA ①: 헤더 높이·하단 안전 영역 = 보이는 영역
     expect(src).toContain('opacity: reduced ? (shown ? 1 : 0) : withTiming(shown ? 1 : 0, { duration: PILL_FADE_MS })');
     expect(src).toContain('<View onLayout={(e) => onIdolLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)} testID="detail-idol-wrap">');
   });

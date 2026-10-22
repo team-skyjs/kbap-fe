@@ -66,3 +66,33 @@ it('훅: 아래로 스크롤 = 숨김 → 300ms 멈춤 = 표시 · 카드 위치
   const src = jest.requireActual('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
   expect(src).toContain('if (!idolVideo) onIdolLayout?.(0, 0);');
 });
+
+it('KB-851 QA ①: 플로팅 헤더 뒤로 들어간 카드 = 안 보임(보이는 영역 = 헤더 아래 ~ 하단 안전 영역 위)', () => {
+  // 화면 기준 카드 -115 ~ 34, 헤더 하단 118(QA 캡처 52) → 스크롤 1000이면 카드 콘텐츠 y 885 ~ 1034
+  const s = { y: 1000, viewH: 812, contentH: 4000, card: { y: 885, h: 149 }, top: 118, bottom: 34 };
+  expect(cardOnScreen(s)).toBe(false);
+  expect(cardOnScreen({ ...s, top: 0 })).toBe(true); // 헤더를 안 빼면 보인다고 오판(수정 전)
+  expect(cardOnScreen({ ...s, card: { y: 1000 + 812 - 30, h: 149 } })).toBe(false); // 하단 안전 영역(34) 뒤 = 안 보임
+  expect(cardOnScreen({ ...s, card: { y: 1000 + 200, h: 149 } })).toBe(true);
+});
+
+it('KB-851 QA ②: 스크린리더 켜짐 = 항상 표시(아래로 스크롤·카드 보임이어도) · 변경 구독', async () => {
+  const RNa = jest.requireActual('react-native') as typeof import('react-native');
+  let changed: ((on: boolean) => void) | null = null;
+  const en = jest.spyOn(RNa.AccessibilityInfo, 'isScreenReaderEnabled').mockResolvedValue(true);
+  const sub = jest.spyOn(RNa.AccessibilityInfo, 'addEventListener').mockImplementation(((_e: string, cb: (on: boolean) => void) => { changed = cb; return { remove: jest.fn() }; }) as never);
+  try {
+    let api!: ReturnType<typeof useScrollAwarePill>;
+    const keep = (a: ReturnType<typeof useScrollAwarePill>) => { api = a; };
+    function Harness({ onApi }: { onApi: typeof keep }) { onApi(useScrollAwarePill()); return null; }
+    await act(async () => { renderer.create(<Harness onApi={keep} />); });
+    const ev = (y: number) => ({ nativeEvent: { contentOffset: { x: 0, y }, layoutMeasurement: { width: 375, height: 700 }, contentSize: { width: 375, height: 3000 } } }) as never;
+    act(() => { api.onScroll(ev(1000)); api.onScroll(ev(1050)); api.onCardLayout(1100, 132); });
+    expect(api.shown).toBe(true); // 규칙상 숨김이지만 스크린리더 = 표시
+    act(() => { changed!(false); });
+    expect(api.shown).toBe(false); // 꺼지면 규칙대로
+  } finally {
+    en.mockRestore();
+    sub.mockRestore();
+  }
+});
