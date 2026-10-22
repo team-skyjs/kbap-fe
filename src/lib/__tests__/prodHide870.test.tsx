@@ -55,6 +55,17 @@ describe('production 채널(운영 서버)', () => {
   });
 });
 
+// P-524 후속(커맨드 10/22): 운영 서버를 쓰는 채널 전부 명시 — production만으론 preview·teamtest-prod가 같은 게이트인지 잠기지 않는다
+describe.each(['preview', 'teamtest-prod'])('%s 채널(운영 서버) = production과 같은 숨김', (channel) => {
+  const m = load(channel);
+  it('플래그 4종 꺼짐 · 리뷰 조회 헤더 없음 · 묶음 6코드 0', () => {
+    const F = m.flags.FLAGS;
+    expect([F.curationEnabled, F.processedFoodEnabled, F.idolPicksEnabled, F.avoidGroupCodesEnabled]).toEqual([false, false, false, false]);
+    expect(m.reviews.REVIEW_READ_HEADERS).toBeUndefined();
+    for (const c of GROUP) expect(m.ing.BE_CODES.has(c)).toBe(false);
+  });
+});
+
 describe('teamtest 채널(dev 서버) — 동작 무변', () => {
   const m = load('teamtest');
   it('플래그 4종 켜짐 · 리뷰 조회 3.2 · 묶음 6코드 노출(87)', () => {

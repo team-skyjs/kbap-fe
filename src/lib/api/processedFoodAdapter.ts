@@ -12,6 +12,9 @@ export type LabelSource = 'DECLARED' | 'INGREDIENTS_ONLY' | 'NONE';
 /** 시안 유형 플레이스홀더 4종(Ramen = soup 아이콘, 나머지 = camera 아이콘 + 유형 글자). 매핑 안 되면 null(카메라 + 원문 유형). */
 export type PackagedType = 'snacks' | 'ramen' | 'bread' | 'drinks';
 
+/** KB-865 v4 판정(서버가 내림 — 앱은 그대로 그린다). 비회원·회피 0개·구서버 = null(배지 없음). */
+export type ProcessedVerdict = 'AVOID' | 'CAUTION' | 'SAFE' | 'SAFE_WITH_NOTE';
+
 export type ProcessedFoodSummary = {
   id: string;
   name: string;
@@ -19,6 +22,11 @@ export type ProcessedFoodSummary = {
   foodType: string | null;
   type: PackagedType | null;
   imageUrl: string | null;
+  /** v4 한국어 원명 — 구서버·표시명과 같으면 null(중복 줄 숨김) */
+  nameKo: string | null;
+  /** v4 평점 — 구서버·리뷰 0 = null(줄 숨김) */
+  rating: { average: number; count: number } | null;
+  verdict: ProcessedVerdict | null;
 };
 
 export type ProcessedDetection = { code: string; evidence: string; fromLabel: boolean };
@@ -40,7 +48,17 @@ export type ProcessedFoodDetail = ProcessedFoodSummary & {
   reviewSummary: { count: number; avgRating: number | null } | null;
 };
 
-type SummaryWire = { id: number; productName: string; maker?: string | null; foodType?: string | null; imageUrl?: string | null };
+type SummaryWire = {
+  id: number;
+  productName: string;
+  maker?: string | null;
+  foodType?: string | null;
+  imageUrl?: string | null;
+  // KB-865 v4 계약 초안(2026-10-22-packaged-v4-contract-draft §2) — 전부 optional, 없으면 숨김
+  nameKo?: string | null;
+  rating?: { average?: number | null; count?: number | null } | null;
+  verdict?: string | null;
+};
 export type SearchPageWire = { items: SummaryWire[]; hasNext: boolean; nextCursor?: string | null };
 export type DetailWire = SummaryWire & {
   capacity?: string | null;
@@ -75,10 +93,30 @@ const LABEL_SOURCES: LabelSource[] = ['DECLARED', 'INGREDIENTS_ONLY', 'NONE'];
 /** 모르는 값 = NONE(가장 보수적 — "성분 정보 없음, 직접 확인") */
 const labelSourceOf = (v: string): LabelSource => ((LABEL_SOURCES as string[]).includes(v) ? (v as LabelSource) : 'NONE');
 
+const VERDICTS: ProcessedVerdict[] = ['AVOID', 'CAUTION', 'SAFE', 'SAFE_WITH_NOTE'];
+/** 모르는 값 = null(배지 없음) — 앱이 SAFE를 만들지 않는다(server-truth, 헌법 III) */
+const verdictOf = (v: string | null | undefined): ProcessedVerdict | null => ((VERDICTS as (string | null | undefined)[]).includes(v) ? (v as ProcessedVerdict) : null);
+const ratingOf = (r: SummaryWire['rating']): ProcessedFoodSummary['rating'] =>
+  r && typeof r.average === 'number' && typeof r.count === 'number' && r.count > 0 ? { average: r.average, count: r.count } : null;
+
 export function adaptProcessedSummary(w: SummaryWire): ProcessedFoodSummary {
   const foodType = blankToNull(w.foodType);
-  return { id: String(w.id), name: w.productName, maker: blankToNull(w.maker), foodType, type: packagedTypeOf(foodType), imageUrl: toHttps(w.imageUrl) };
+  const nameKo = blankToNull(w.nameKo);
+  return {
+    id: String(w.id),
+    name: w.productName,
+    maker: blankToNull(w.maker),
+    foodType,
+    type: packagedTypeOf(foodType),
+    imageUrl: toHttps(w.imageUrl),
+    nameKo: nameKo === w.productName.trim() ? null : nameKo,
+    rating: ratingOf(w.rating),
+    verdict: verdictOf(w.verdict),
+  };
 }
+
+/** 판정 → RiskBadge 상태. 내용 불명 메모가 붙은 Safe도 배지는 safe(결정 4) */
+export const VERDICT_RISK = { AVOID: 'danger', CAUTION: 'caution', SAFE: 'safe', SAFE_WITH_NOTE: 'safe' } as const;
 
 // 판정 원소 변환 — 상세(GET /processed-foods/{id})와 성분표 분석(scan/label)이 같은 모양이라 한 벌로
 const adaptDetections = (ds: DetailWire['detections'] | null | undefined): ProcessedDetection[] =>

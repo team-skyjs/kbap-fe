@@ -45,7 +45,7 @@ jest.mock('@/components/RiskBadge', () => { const { View } = jest.requireActual(
 jest.mock('@/components/icons', () => ({ ...jest.requireActual('@/components/icons'), IconLock: () => null, IconCamera: () => null, IconTabFood: () => null, IconSearch: () => null, IconClose: () => null }));
 jest.mock('@/lib/onboarding/data', () => ({ restrictionLabel: (c: string) => `L(${c})` }));
 const mockBack = jest.fn();
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), back: mockBack, navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => ({ id: '1711' }) }));
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), back: mockBack, navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => ({ id: '1711' }), useSegments: () => [] }));
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 const mockGet = jest.fn();
@@ -66,11 +66,12 @@ jest.mock('@/features/processedFood/PackagedReviews', () => {
 
 /* eslint-disable import/first -- jest.mock 뒤 */
 import { ApiError } from '@/lib/api/client';
-import { adaptProcessedDetail, adaptProcessedSummary, packagedTypeOf, toHttps, type DetailWire } from '@/lib/api/processedFoodAdapter';
+import { adaptProcessedDetail, adaptProcessedSummary, packagedTypeOf, toHttps, VERDICT_RISK, type DetailWire } from '@/lib/api/processedFoodAdapter';
 import { fetchProcessedDetail, fetchProcessedSearch } from '@/lib/data/useProcessedFoods';
 import { ProcessedFoodDetailScreen as Detail, LABEL_SOURCE_KEY } from '@/app/processed-foods/[id]'; // KB-870: 기본 내보내기 = 채널 게이트 — 화면 자체를 직접 렌더
 import { FoodSegmentRow, PackagedExplorer } from '../PackagedExplorer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { FLAGS } from '@/lib/flags';
 /* eslint-enable import/first */
 
 // dev 1711 실응답(10/21 GET) 그대로 — INGREDIENTS_ONLY · 검출 4 · 비회원 avoidance null
@@ -92,7 +93,19 @@ afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.c
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(el); }); trees.push(t); return t; };
 const q = (over: Partial<Q>): Q => ({ isPending: false, isError: false, refetch: jest.fn(), ...over });
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
-const text = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
+// FlatList(2열)는 ListHeader/Empty 엘리먼트 prop이 트리에 실려 순환 참조 — 엘리먼트 prop은 버리고 렌더 트리만(prodFlagSurfaces436 문법)
+const REACT_EL = new Set<symbol>([Symbol.for('react.element'), Symbol.for('react.transitional.element')]);
+const text = (t: ReactTestRenderer) => {
+  const seen = new WeakSet<object>();
+  return JSON.stringify(t.toJSON(), (_k, v: unknown) => {
+    if (typeof v === 'object' && v !== null) {
+      if (REACT_EL.has((v as { $$typeof?: symbol }).$$typeof as symbol)) return undefined;
+      if (seen.has(v)) return undefined;
+      seen.add(v);
+    }
+    return v;
+  });
+};
 
 describe('어댑터·요청', () => {
   it('http 이미지 → https(iOS ATS·Android cleartext 차단 회피) · 빈 값 null', () => {
@@ -234,11 +247,16 @@ describe('Food 탭 세그먼트·목록', () => {
     expect(src).toContain("segRow && foodSegment === 'packaged' ? ("); // KB-870: 운영 채널 = 세그먼트째 없음
     expect(src).toContain('headTop={segRow ? <View style={styles.segGap}>{segRow}</View> : undefined}');
   });
-  it('Packaged 첫 화면 = 검색 안내(요청 0) · 검색 → 결과 행(https 썸네일·유형 라벨) · 결과 0 = 빈 상태', async () => {
+  it('KB-865: 구서버(둘러보기 400) = 검색 안내 폴백(칩·제목 0) · 검색 → 결과 카드(https 사진) · 결과 0 = 빈 상태', async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    mockGet.mockRejectedValueOnce(new ApiError('query required', 400, 'FOOD-003'));
     const t = render(<QueryClientProvider client={qc}><PackagedExplorer top={null} /></QueryClientProvider>);
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(mockGet.mock.calls[0][0]).toBe('/api/processed-foods?size=20');
     expect(ids(t)).toContain('packaged-guide');
-    expect(mockGet).not.toHaveBeenCalled();
+    expect(ids(t)).not.toContain('packaged-types');
+    expect(text(t)).not.toContain('packaged.popularPicks');
     mockGet.mockResolvedValueOnce({ items: [{ id: 1711, productName: '우유식빵', maker: '롯데제과', foodType: '빵류', imageUrl: 'http://h/1.jpg' }], hasNext: false, nextCursor: null });
     const input = t.root.findAll((n) => n.props?.testID === 'packaged-search-input' && typeof n.props?.onChangeText === 'function')[0];
     act(() => input.props.onChangeText('우유'));
@@ -246,7 +264,8 @@ describe('Food 탭 세그먼트·목록', () => {
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(ids(t)).toContain('packaged-item-1711');
     expect(ids(t)).toContain('img:https://h/1.jpg');
-    expect(t.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'packaged.type.bread').length).toBeGreaterThan(0);
+    expect(ids(t)).not.toContain('packaged-types'); // 구서버 = 검색 결과에도 칩 없음(type 무시 → 거른 척 방지)
+    expect(text(t)).toContain('packaged.searchResults');
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_search', { query_length: 2, result_count: 1 });
     mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
     act(() => input.props.onChangeText('없는제품'));
@@ -263,6 +282,7 @@ describe('Food 탭 세그먼트·목록', () => {
   });
   it('Codex #308 P2: 다음 페이지 실패 = 안내 + 다시 시도 · 실패 중 자동 재요청 0', async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    mockGet.mockRejectedValueOnce(new ApiError('query required', 400));
     const t = render(<QueryClientProvider client={qc}><PackagedExplorer top={null} /></QueryClientProvider>);
     mockGet.mockResolvedValueOnce({ items: [{ id: 1, productName: 'a', imageUrl: null }], hasNext: true, nextCursor: '1' });
     const input = t.root.findAll((n) => n.props?.testID === 'packaged-search-input' && typeof n.props?.onChangeText === 'function')[0];
@@ -283,11 +303,10 @@ describe('Food 탭 세그먼트·목록', () => {
     expect(ids(t)).toContain('packaged-item-2');
     expect(ids(t)).not.toContain('packaged-more-retry');
   });
-  it('검색 중심: 빈 검색어는 요청 0(서버 400) · 유형 칩 0(3.2에 필터 없음 — 클라 필터 금지) · 검색 계측에 검색어 원문 0', () => {
-    const src = fs.readFileSync('src/lib/data/useProcessedFoods.ts', 'utf8');
-    expect(src).toContain('enabled: term.length > 0');
+  it('KB-865: 유형은 v4 확인 뒤에만 보낸다 · 칩도 v4일 때만 · 검색 계측에 검색어 원문 0', () => {
     const ex = fs.readFileSync('src/features/processedFood/PackagedExplorer.tsx', 'utf8');
-    expect(ex).not.toMatch(/packaged\.type\.\w+'\)\}\s*selected|<Chip/);
+    expect(ex).toContain('useProcessedSearch(query, { type: v4 ? type : null })');
+    expect(ex).toContain('{v4 && (');
     expect(ex).toContain('track(EVENTS.food_packaged_search, { query_length: Array.from(term).length, result_count: items.length });');
   });
   it('10언어 문구 전부 · 가운데점 0 · 안전/없음 단정 0(en·ko)', () => {
@@ -301,5 +320,158 @@ describe('Food 탭 세그먼트·목록', () => {
     const ko = JSON.parse(fs.readFileSync('src/lib/i18n/ko.json', 'utf8')).packaged;
     expect(JSON.stringify(en)).not.toMatch(/\bsafe\b|no allergens/i);
     expect(JSON.stringify(ko)).not.toMatch(/안전해요|없어요\. 먹어도/);
+  });
+});
+
+describe('KB-865 v4 목록(01·03·05·06·49)', () => {
+  const V4 = (over: object[] = []) => ({
+    items: [
+      { id: 7, productName: 'Banana Flavored Milk', nameKo: '바나나맛우유', maker: 'Binggrae', foodType: '가공유', imageUrl: 'https://h/7.jpg', rating: { average: 4.7, count: 12 }, verdict: 'SAFE' },
+      { id: 8, productName: 'Shrimp Crackers', nameKo: '새우깡', maker: 'Nongshim', foodType: '과자', imageUrl: null, rating: { average: 0, count: 0 }, verdict: 'AVOID' },
+      { id: 9, productName: '새우깡', nameKo: '새우깡', maker: null, foodType: '과자', imageUrl: null, verdict: null },
+      ...over,
+    ],
+    hasNext: false,
+    nextCursor: null,
+  });
+  // TanStack 알림은 setTimeout(0) 배치 — 실패 전이는 두 틱 뒤에 보인다(메모 tanstack-notify-settimeout)
+  const flush = () => act(async () => { for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, 0)); });
+  beforeEach(() => mockGet.mockReset()); // 앞 스위트의 남은 mockResolvedValueOnce 큐 제거(clearAllMocks는 큐를 안 비운다)
+  const mount = async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    const t = render(<QueryClientProvider client={qc}><PackagedExplorer top={null} /></QueryClientProvider>);
+    await flush();
+    return t;
+  };
+
+  it('둘러보기 성공 = Popular picks · 유형 칩 · 카드(판정 리본·한국어명·평점) — 서버 필드가 없으면 그 줄만 숨김', async () => {
+    mockGet.mockResolvedValueOnce(V4());
+    const t = await mount();
+    expect(text(t)).toContain('packaged.popularPicks');
+    expect(ids(t)).toEqual(expect.arrayContaining(['packaged-types', 'packaged-type-all', 'packaged-type-snacks', 'packaged-type-ramen', 'packaged-type-drinks', 'packaged-type-bread']));
+    expect(ids(t).filter((i) => i.startsWith('badge-'))).toEqual(['badge-safe', 'badge-danger']); // verdict null(9) = 배지 0
+    expect(text(t)).toContain('바나나맛우유');
+    expect(text(t)).toContain('"4.7"'); // 음식 목록 카드 평점 줄 그대로(채운 별 + 평균 + (개수))
+    expect(text(t)).toContain('"(","12",")"');
+    expect(ids(t)).toContain('packaged-rating-7');
+    expect(ids(t)).not.toContain('packaged-rating-8'); // 리뷰 0 = 평점 줄 숨김(0.0 (0) 금지)
+    // 9: 한국어명 = 표시명 → 중복 줄 0 · 제조사 없음 → 줄 0
+    const card9 = t.root.findAll((n) => n.props?.testID === 'packaged-item-9' && typeof n.type === 'string')[0];
+    expect(JSON.stringify(card9.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string').map((n) => n.props.children)).match(/새우깡/g)).toHaveLength(1);
+  });
+
+  it('칩 → type 파라미터로 다시 조회 + 계측(type만) · All = 파라미터 없음', async () => {
+    mockGet.mockResolvedValueOnce(V4());
+    const t = await mount();
+    mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
+    const chip = (k: string) => t.root.findAll((n) => n.props?.testID === `packaged-type-${k}` && typeof n.props?.onPress === 'function')[0];
+    await act(async () => { chip('snacks').props.onPress(); });
+    await flush();
+    expect(mockGet.mock.calls[1][0]).toBe('/api/processed-foods?type=snacks&size=20');
+    expect(mockTrack).toHaveBeenCalledWith('food_packaged_type_select', { type: 'snacks' });
+    expect(ids(t)).toContain('packaged-no-filter-match'); // 칩으로 0 = 시안 47
+    await act(async () => { chip('all').props.onPress(); });
+    expect(mockTrack).toHaveBeenLastCalledWith('food_packaged_type_select', { type: 'all' });
+    expect(ids(t)).toContain('packaged-item-7'); // 캐시된 둘러보기로 복귀(추가 요청 0)
+    expect(mockGet).toHaveBeenCalledTimes(2);
+  });
+
+  it('검색 + 칩 = query·type 함께 · 제목 Search results', async () => {
+    mockGet.mockResolvedValueOnce(V4());
+    const t = await mount();
+    const chip = t.root.findAll((n) => n.props?.testID === 'packaged-type-drinks' && typeof n.props?.onPress === 'function')[0];
+    mockGet.mockResolvedValueOnce(V4());
+    await act(async () => { chip.props.onPress(); });
+    await flush();
+    mockGet.mockResolvedValueOnce(V4());
+    const input = t.root.findAll((n) => n.props?.testID === 'packaged-search-input' && typeof n.props?.onChangeText === 'function')[0];
+    act(() => input.props.onChangeText('바나나'));
+    await act(async () => { input.props.onSubmitEditing(); });
+    await flush();
+    expect(mockGet.mock.calls[2][0]).toBe(`/api/processed-foods?query=${encodeURIComponent('바나나')}&type=drinks&size=20`);
+    expect(text(t)).toContain('packaged.searchResults');
+  });
+
+  it('로딩 = 사진 자리 스켈레톤 2열 4장(스피너 중복 0) · 일시 오류(5xx) = 공통 오류 블록(검색 안내로 위장 금지)', async () => {
+    let resolve!: (v: unknown) => void;
+    mockGet.mockReturnValueOnce(new Promise((r) => { resolve = r; }));
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const t = render(<QueryClientProvider client={qc}><PackagedExplorer top={null} /></QueryClientProvider>);
+    expect(ids(t)).toContain('packaged-skeleton');
+    expect(text(t)).toContain('packaged.popularPicks');
+    await act(async () => { resolve({ items: [], hasNext: false, nextCursor: null }); });
+    trees.splice(0).forEach((x) => act(() => x.unmount()));
+    mockGet.mockRejectedValueOnce(new ApiError('down', 503));
+    const t2 = await mount();
+    expect(ids(t2)).not.toContain('packaged-guide');
+    expect(ids(t2)).not.toContain('packaged-skeleton');
+    expect(ids(t2)).toContain('query-error-block'); // 공통 오류 블록(다시 시도)
+  });
+
+  it('사진 로드 실패 = 유형 플레이스홀더로 폴백(공백 금지)', async () => {
+    mockGet.mockResolvedValueOnce(V4());
+    const t = await mount();
+    const { ProductCard } = jest.requireActual('../PackagedExplorer') as typeof import('../PackagedExplorer');
+    expect(ProductCard).toBeDefined();
+    const card7 = t.root.findAll((n) => n.props?.testID === 'packaged-item-7' && typeof n.type === 'string')[0];
+    expect(card7.findAll((n) => typeof n.type === 'string' && n.props?.testID === 'img:https://h/7.jpg').length).toBe(1);
+    const img = t.root.findAll((n) => n.props?.uri === 'https://h/7.jpg' && typeof n.props?.onError === 'function')[0];
+    act(() => img.props.onError());
+    const after = t.root.findAll((n) => n.props?.testID === 'packaged-item-7' && typeof n.type === 'string')[0];
+    expect(after.findAll((n) => n.props?.testID === 'packaged-placeholder').length).toBeGreaterThan(0);
+  });
+
+  it('시안 04: 검색 0 = 탭 안 빈 상태(검색창·칩 유지, 제목 0) · Change search = 비우고 둘러보기로 · 성분표 찍기 = 비회원 가입 게이트', async () => {
+    mockGet.mockResolvedValueOnce(V4());
+    const t = await mount();
+    mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
+    const input = t.root.findAll((n) => n.props?.testID === 'packaged-search-input' && typeof n.props?.onChangeText === 'function')[0];
+    act(() => input.props.onChangeText('쌀과자'));
+    await act(async () => { input.props.onSubmitEditing(); });
+    await flush();
+    expect(ids(t)).toEqual(expect.arrayContaining(['packaged-empty', 'packaged-types', 'packaged-empty-change-search']));
+    expect(text(t)).not.toContain('packaged.searchResults');
+    // packagedLabelScan = 이 스위트 기본 false(dev 서버 채널 아님) → 성분표 버튼 0 · 본문도 성분표 언급 없는 문구
+    expect(ids(t)).not.toContain('packaged-empty-scan-label');
+    expect(text(t)).toContain('packaged.emptyBody');
+    await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-empty-change-search' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    expect(ids(t)).toContain('packaged-item-7'); // 캐시된 둘러보기
+    expect(input.props.value ?? '').toBe('');
+  });
+
+  it('시안 04 + 성분표 플래그 켜짐: 버튼 = 비회원 가입 게이트(내비 0)', async () => {
+    (FLAGS as { packagedLabelScan: boolean }).packagedLabelScan = true;
+    try {
+      mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
+      const t = await mount();
+      expect(text(t)).toContain('packaged.emptyBodyLabel');
+      await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-empty-scan-label' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+      expect(ids(t)).toContain('gate-open');
+    } finally {
+      (FLAGS as { packagedLabelScan: boolean }).packagedLabelScan = false;
+    }
+  });
+
+  it('시안 47: 유형 칩으로 0 = "조건에 맞는 제품 없음" · Show all products = All로(유형 해제)', async () => {
+    mockGet.mockResolvedValueOnce(V4());
+    const t = await mount();
+    mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
+    await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-type-bread' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    await flush();
+    expect(ids(t)).toContain('packaged-no-filter-match');
+    expect(text(t)).toContain('packaged.noFilterMatchTitle');
+    await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-empty-show-all' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    expect(ids(t)).toContain('packaged-item-7');
+    expect(mockTrack).toHaveBeenLastCalledWith('food_packaged_type_select', { type: 'all' });
+  });
+
+  it('어댑터: 모르는 verdict = null(앱이 SAFE를 만들지 않음) · SAFE_WITH_NOTE = safe 리본 · 구서버(필드 없음) = 전부 null', () => {
+    expect(adaptProcessedSummary({ id: 1, productName: 'x', verdict: 'SAFEISH' }).verdict).toBeNull();
+    expect(adaptProcessedSummary({ id: 1, productName: 'x', verdict: 'SAFE_WITH_NOTE' }).verdict).toBe('SAFE_WITH_NOTE');
+    expect(VERDICT_RISK.SAFE_WITH_NOTE).toBe('safe');
+    expect(VERDICT_RISK.CAUTION).toBe('caution');
+    const legacy = adaptProcessedSummary({ id: 1, productName: 'x' });
+    expect([legacy.verdict, legacy.nameKo, legacy.rating]).toEqual([null, null, null]);
+    expect(adaptProcessedSummary({ id: 1, productName: 'x', rating: { average: 4, count: null } }).rating).toBeNull();
   });
 });
