@@ -129,6 +129,7 @@ export const EVENTS = {
   home_idol_pick_list_view: 'home_idol_pick_list_view', // KB-836 K-POP & K-FOOD 목록 화면 포커스(음식 수) — 발주명 idol_pick_list_view → 도메인 규칙상 home_
   food_idol_video_open: 'food_idol_video_open', // KB-836 발주명 idol_video_open → 도메인 규칙상 food_ · 상세 티저 카드 → 대표 영상 열기(platform 은 계측 전용 — 화면 비노출, URL 금지)
   food_packaged_detail_expand: 'food_packaged_detail_expand', // KB-865 상세 원재료·출처 펼침/접기(action see_detail|ingredients_source|see_less) — 제품명 0, id만
+  food_packaged_scan_find_by_name: 'food_packaged_scan_find_by_name', // KB-865 ③ 스캔 "이름으로 찾기" 진입(from none|rejected) — 읽은 글자 원문 0
   food_packaged_type_select: 'food_packaged_type_select', // KB-865 v4 목록 유형 칩(all|snacks|ramen|drinks|bread)
   food_packaged_label_scan: 'food_packaged_label_scan', // P-508 성분표 분석 결과(pages 1~4 · charged = 서버값 · result ok|unreadable|newAnalysis|expired|quota|network… — OCR 원문 금지)
 } as const;
@@ -199,6 +200,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   food_idol_video_open: ['food_id', 'platform', 'video_position'],
   food_packaged_label_scan: ['pages', 'charged', 'result'],
   food_packaged_type_select: ['type'],
+  food_packaged_scan_find_by_name: ['from'],
   food_packaged_detail_expand: ['product_id', 'action'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
