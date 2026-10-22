@@ -31,6 +31,7 @@ import { EVENTS, track } from '@/lib/analytics';
 import { apiLang } from '@/lib/api/client';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
+import { useVerdictKey } from '@/lib/data/useProcessedFoods';
 import { confirmProcessedScan, LABEL_PAGES_MAX, scanFailureOf, scanProcessedLabel, scanProcessedName, type ScanFailure } from '@/lib/data/useProcessedScan';
 import type { LabelScanResult, ScanCandidate } from '@/lib/api/processedFoodAdapter';
 import { RawText, Verdict } from '@/app/processed-foods/[id]';
@@ -117,6 +118,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   const { t } = useTranslation();
   const router = useRouter();
   const qc = useQueryClient();
+  const verdictKey = useVerdictKey(); // 확정 응답을 상세 캐시에 심을 때 상세 키와 같은 판정 기준(Codex #338 R3)
   const insets = useSafeAreaInsets();
   const [step, setStep] = React.useState<Step>(() => (startLabel ? { kind: 'handoff', analysisId: null } : { kind: 'capture' }));
   const guard = useSubmitGuard(); // 촬영·확정 연타 1발(P-173)
@@ -231,7 +233,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         }
         // 남은 횟수 = 서버 프로필 재조회(로컬 차감 0) — 차감됐거나 차감 여부를 모를 때
         if (r.charged || chargeUnknown) void qc.invalidateQueries({ queryKey: ['me'] });
-        qc.setQueryData(['processedFoods', 'detail', r.product.id, 'member'], r.product);
+        qc.setQueryData(['processedFoods', 'detail', r.product.id, verdictKey], r.product);
         if (r.charged) chargedIds.current.add(analysisId);
         const charge = r.charged || chargedIds.current.has(analysisId) ? '1' : chargeUnknown ? 'u' : '0';
         router.push(`/processed-foods/${r.product.id}?scan=1&charged=${charge}` as Href);

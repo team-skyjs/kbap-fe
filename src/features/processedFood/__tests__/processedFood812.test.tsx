@@ -201,7 +201,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(ids(t)).toContain('badge-safe');
     expect(ids(t).some((i) => i.startsWith('pf-verdict-'))).toBe(false);
     press(t, 'pf-see-detail');
-    expect(ids(t)).toEqual(expect.arrayContaining(['pf-expanded', 'pf-your-avoid', 'pf-original', 'pf-source', 'pf-source-disclaimer', 'pf-see-less']));
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-expanded', 'pf-your-avoid', 'pf-ingredients', 'pf-raw', 'pf-source', 'pf-source-disclaimer', 'pf-see-less'])); // 번역 전 = 원재료 본문이 원문
     expect(ids(t)).not.toContain('pf-see-detail');
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_detail_expand', { product_id: '10201', action: 'see_detail' });
     press(t, 'pf-see-less');
@@ -227,6 +227,23 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     const t = detail({ verdict: null });
     expect(ids(t)).toContain('pf-not-verified');
     expect(ids(t).some((i) => i.startsWith('badge-'))).toBe(false);
+  });
+  it('QA AQ2: 번역 없음(#462 전) = 미리보기 원문 2줄 · 펼침 Ingredients 본문 = 원문(빈 제목 0) · "English translation"·별도 Korean original 0', () => {
+    const t = detail({ ingredients: { translated: null, original: '감자,식물성유지,조미료' } });
+    const prev = t.root.findAll((n) => n.props?.testID === 'pf-ingredients-preview' && typeof n.type === 'string')[0];
+    expect(prev.findAll((n) => n.props?.numberOfLines === 2).length).toBeGreaterThan(0);
+    press(t, 'pf-see-detail');
+    const ing = t.root.findAll((n) => n.props?.testID === 'pf-ingredients' && typeof n.type === 'string')[0];
+    expect(JSON.stringify(ing.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children))).toContain('감자,식물성유지,조미료');
+    expect(text(t)).not.toContain('packaged.translationLabel');
+    expect(ids(t)).not.toContain('pf-original');
+    // 번역 있음 = 번역 1줄 + 원문 1줄(시안), 펼침 = 번역 + 별도 원문
+    const w = detail({ ingredients: { translated: 'Potato, oil', original: '감자,식물성유지' } });
+    const p2 = w.root.findAll((n) => n.props?.testID === 'pf-ingredients-preview' && typeof n.type === 'string')[0];
+    expect(p2.findAll((n) => n.props?.numberOfLines === 2)).toHaveLength(0);
+    press(w, 'pf-see-detail');
+    expect(text(w)).toContain('packaged.translationLabel');
+    expect(ids(w)).toContain('pf-original');
   });
   it('원재료: 번역(#462) 있으면 번역 + 원문 · 번역 전 = 원문만 · 한국어 사용자 = 번역 줄 생략', () => {
     const t = detail({ ingredients: { translated: 'Milk, water, sugar', original: '원유,정제수,백설탕' } });
@@ -519,6 +536,28 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-empty-show-all' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
     expect(ids(t)).toContain('packaged-item-7');
     expect(mockTrack).toHaveBeenLastCalledWith('food_packaged_type_select', { type: 'all' });
+  });
+
+  it('Codex #338 R3 P1: 판정 캐시 = 회피 코드 집합에 묶임 — 설정을 다른 목록으로 바꾸면 새로 받고, 받기 전엔 옛 판정(리본)을 그리지 않는다', async () => {
+    mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] };
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    mockGet.mockResolvedValueOnce(V4());
+    const el = () => <QueryClientProvider client={qc}><PackagedExplorer top={null} /></QueryClientProvider>;
+    const t = render(el());
+    await flush();
+    expect(ids(t)).toContain('badge-safe');
+    let resolve!: (v: unknown) => void;
+    mockGet.mockReturnValueOnce(new Promise((r) => { resolve = r; }));
+    mockMe = { id: '41', restrictions: [{ code: 'PEANUT' }, { code: 'MILK' }] };
+    act(() => t.update(el()));
+    expect(mockGet).toHaveBeenCalledTimes(2); // 새 키 = 새 요청(캐시 적중 0)
+    expect(ids(t).some((i) => i.startsWith('badge-'))).toBe(false); // 받기 전 = 옛 판정 0(스켈레톤)
+    expect(ids(t)).toContain('packaged-skeleton');
+    await act(async () => { resolve(V4()); });
+    await flush();
+    expect(ids(t)).toContain('badge-safe');
+    const src = fs.readFileSync('src/lib/data/useProcessedFoods.ts', 'utf8');
+    expect(src).toContain("queryKey: ['processedFoods', 'detail', id, verdictKey],"); // 상세도 같은 키
   });
 
   it('Codex #338 P1: 목록 리본도 회피 1개 이상 회원만 — 회피 0개·비회원은 응답에 verdict가 남아 있어도 리본 0', async () => {

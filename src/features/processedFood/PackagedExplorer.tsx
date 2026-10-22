@@ -112,8 +112,9 @@ export function ProductCard({ item, width, onOpen, personalized = true }: { item
         {risk && <View style={card.badge}><RiskBadge state={risk} size={22} flat testID={`packaged-verdict-${item.id}`} /></View>}
       </View>
       {!!item.maker && <Text style={card.maker} numberOfLines={1}>{item.maker}</Text>}
-      <Text style={card.name} numberOfLines={2}>{item.name}</Text>
-      {!!item.nameKo && <Text style={card.nameKo} numberOfLines={1}>{item.nameKo}</Text>}
+      {/* QA AQ(큰 글씨): 한국어 이름이 글자 단위로 끊겨 '우'만 다음 줄로 — iOS는 어절 단위 줄바꿈(Android는 기본 단어 단위) */}
+      <Text style={card.name} numberOfLines={2} lineBreakStrategyIOS="hangul-word">{item.name}</Text>
+      {!!item.nameKo && <Text style={card.nameKo} numberOfLines={1} lineBreakStrategyIOS="hangul-word">{item.nameKo}</Text>}
       {item.rating && (
         <View testID={`packaged-rating-${item.id}`}>
           <OverallRating average={item.rating.average} count={item.rating.count} style={card.rating} />

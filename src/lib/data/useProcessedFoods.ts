@@ -10,8 +10,20 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { api, ApiError } from '../api/client';
 import { adaptProcessedDetail, adaptProcessedSummary, type DetailWire, type PackagedType, type ProcessedFoodDetail, type SearchPageWire } from '../api/processedFoodAdapter';
 import { useIsGuest } from '../auth/useSession';
+import { useMe } from './useMe';
+import { PROCESSED_FOOD_API_VERSION } from './processedFoodApiVersion';
 
-export const PROCESSED_FOOD_API_VERSION = '3.2';
+/** 판정(verdict)은 회피 설정마다 다르다 — 캐시 키에 회피 코드 집합을 묶어 다른 설정의 판정이 보이지 않게(Codex #338 P1: 설정을 바꾼 뒤 재조회가 끝날 때까지 옛 판정이 남았다).
+ *  비회원 = 'guest' · 회원 = 정렬한 코드(프로필 도착 전 = 'member:?' — 도착하면 키가 바뀌어 새로 받는다) */
+export function useVerdictKey(): string {
+  const guest = useIsGuest();
+  const { data: me } = useMe();
+  if (guest) return 'guest';
+  if (!me) return 'member:?';
+  return `member:${me.restrictions.map((r) => r.code).sort().join(',')}`;
+}
+
+export { PROCESSED_FOOD_API_VERSION };
 export const PROCESSED_PAGE_SIZE = 20;
 const headers = { headers: { 'X-API-Version': PROCESSED_FOOD_API_VERSION } };
 
@@ -45,13 +57,13 @@ export function browseUnsupported(e: unknown): boolean {
   return e instanceof ApiError && e.status === 400;
 }
 
-/** 목록·검색 한 벌. 키에 회원 여부 — 판정(verdict)이 회원만 오므로 로그인 전후 캐시를 나눈다(회피 설정 변경은 useUpdateMe가 전면 무효화). */
+/** 목록·검색 한 벌. 키에 판정 기준(비회원 / 회원 회피 코드 집합 — useVerdictKey). */
 export function useProcessedSearch(query: string, filter: ProcessedListFilter = {}) {
   const term = query.trim();
-  const guest = useIsGuest();
+  const verdictKey = useVerdictKey();
   const type = filter.type ?? null;
   return useInfiniteQuery({
-    queryKey: ['processedFoods', 'search', term, type, guest ? 'guest' : 'member'],
+    queryKey: ['processedFoods', 'search', term, type, verdictKey],
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) => fetchProcessedSearch(term, pageParam, { type }),
     // 커서 에코 가드(#112 문법) — 같은 커서가 다시 오면 끝
@@ -62,9 +74,9 @@ export function useProcessedSearch(query: string, filter: ProcessedListFilter = 
 }
 
 export function useProcessedDetail(id: string | undefined) {
-  const guest = useIsGuest();
+  const verdictKey = useVerdictKey();
   return useQuery({
-    queryKey: ['processedFoods', 'detail', id, guest ? 'guest' : 'member'],
+    queryKey: ['processedFoods', 'detail', id, verdictKey],
     queryFn: () => fetchProcessedDetail(id as string),
     enabled: !!id,
     retry: (n, e) => processedUnavailable(e) == null && n < 1,

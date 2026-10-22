@@ -13,7 +13,7 @@ import { trackReadyFood } from './hiddenFoods';
 import { adaptReviewPage, type ReviewPageWire } from '@/lib/api/reviewAdapter';
 import { FLAGS, isDevServerChannel } from '@/lib/flags';
 import { mockFoodReviews } from '@/lib/mocks/reviews';
-import { PROCESSED_FOOD_API_VERSION } from './useProcessedFoods';
+import { PROCESSED_FOOD_API_VERSION } from './processedFoodApiVersion';
 
 /** KB-812 2차(서버 #435): 리뷰 **조회**는 3.2 — 이 버전부터 피드·내 리뷰에 가공식품 리뷰가 섞이고 응답에 targetType·processedFood가 온다
  *  (3.1 이하 = 음식 리뷰만). 파라미터·정렬은 두 버전 동일(서버 매핑 실측). 쓰기(작성·수정·삭제·좋아요)는 1.0+ 그대로. */

@@ -165,12 +165,14 @@ const namesOf = (codes: string[]) => codes.map((c) => restrictionLabel(c)).join(
 /** 원재료 미리보기(시안 08·12: 번역 1줄 + 원문 1줄, 말줄임) — 번역 전(#462)·한국어 사용자 = 원문 1줄 */
 function IngredientsPreview({ d, showTranslation }: { d: ProcessedFoodDetail; showTranslation: boolean }) {
   const { t } = useTranslation();
-  const { translated, original } = d.ingredients;
+  const { original } = d.ingredients;
+  const translated = showTranslation ? d.ingredients.translated : null;
   if (!translated && !original) return <Text style={s.body} testID="pf-no-raw">{t('packaged.noIngredients')}</Text>;
   return (
     <View testID="pf-ingredients-preview">
-      {showTranslation && !!translated && <Text style={s.preview} numberOfLines={1}>{translated}</Text>}
-      {!!original && <Text style={s.preview} numberOfLines={1}>{original}</Text>}
+      {!!translated && <Text style={s.preview} numberOfLines={1}>{translated}</Text>}
+      {/* 번역 전(#462)·한국어 사용자 = 원문 2줄(QA AQ2: 제목만 있고 비어 보였다) · 번역 있음 = 번역 1줄 + 원문 1줄(시안) */}
+      {!!original && <Text style={s.preview} numberOfLines={translated ? 1 : 2}>{original}</Text>}
     </View>
   );
 }
@@ -180,6 +182,7 @@ function Expanded({ d, showTranslation, showAvoidList }: { d: ProcessedFoodDetai
   const { t } = useTranslation();
   const imageCredit = d.image ? IMAGE_CREDIT[d.image.attributionKey] : undefined;
   const c002 = d.sourceProvider === 'C002';
+  const translated = showTranslation ? d.ingredients.translated : null;
   return (
     <View style={s.expanded} testID="pf-expanded">
       {showAvoidList && (
@@ -190,15 +193,19 @@ function Expanded({ d, showTranslation, showAvoidList }: { d: ProcessedFoodDetai
       )}
       <View style={s.block} testID="pf-ingredients">
         <Text style={s.h2}>{t('packaged.ingredientsHeading')}</Text>
-        {showTranslation && !!d.ingredients.translated ? (
+        {translated ? (
           <View>
             <Text style={s.body}>{t('packaged.translationLabel')}</Text>
-            <Text style={s.body}>{d.ingredients.translated}</Text>
+            <Text style={s.body}>{translated}</Text>
           </View>
-        ) : null}
-        {!d.ingredients.original && !d.ingredients.translated && <Text style={s.body} testID="pf-no-raw">{t('packaged.noIngredients')}</Text>}
+        ) : d.ingredients.original ? (
+          // 번역 없음 = 원문을 본문으로(소제목 "English translation"·별도 "Korean original" 없음 — QA AQ2)
+          <Text style={s.body} testID="pf-raw">{d.ingredients.original}</Text>
+        ) : (
+          <Text style={s.body} testID="pf-no-raw">{t('packaged.noIngredients')}</Text>
+        )}
       </View>
-      {!!d.ingredients.original && (
+      {!!translated && !!d.ingredients.original && (
         <View style={s.block} testID="pf-original">
           <Text style={s.h2}>{t('packaged.koreanOriginal')}</Text>
           <Text style={s.body} testID="pf-raw">{d.ingredients.original}</Text>
@@ -389,7 +396,7 @@ export function ProcessedFoodDetailScreen() {
         </View>
         <View style={s.titleBlock}>
           {!!d.maker && <Text style={s.maker}>{d.maker}</Text>}
-          <Text style={s.name} accessibilityRole="header">{d.name}</Text>
+          <Text style={s.name} accessibilityRole="header" lineBreakStrategyIOS="hangul-word">{d.name}</Text>
           {/* 한국어명 | 유형 — 시안의 세로 막대 구분자(가운데 점 금지 규칙과 무관) */}
           {(!!d.nameKo || !!d.type || !!d.foodType) && (
             <Text style={s.meta}>{[d.nameKo, d.type ? t(packagedTypeKey(d.type)) : d.foodType].filter(Boolean).join(' | ')}</Text>
