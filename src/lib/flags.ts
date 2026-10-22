@@ -1,3 +1,5 @@
+import teamtestTarget from './teamtest-target.json';
+
 /**
  * flags.ts — feature flags for MVP scope switches. Flip a flag to restore the
  * UI; the code behind each flag is intentionally NOT deleted.
@@ -42,7 +44,8 @@ function isDiagnosticChannelInner(): boolean {
 }
 const DIAGNOSTIC_CHANNEL = isDiagnosticChannelInner();
 
-/** KB-812 2차(P-507): **dev 서버를 쓰는 채널**만 참 — development·teamtest(eas.json EXPO_PUBLIC_BE_BASE = dev.kbap.site).
+/** KB-870/P-527: development는 dev 기능 유지. teamtest는 명시 target에 따라 제품 게이트를 선택한다.
+ *  10/23 사용자 승인: 기존 teamtest 설치본 전체를 prod 리허설로 전환. 채널/진단/광고 정책은 무변.
  *  진단 채널과 다르다: teamtest-prod는 진단은 보이지만 백엔드가 prod라 dev 서버에서만 켜진 기능(서버 플래그)은 거기서 막다른 길이다.
  *  채널 부재는 진단과 같은 규칙(__DEV__일 때만 로컬). */
 function isDevServerChannelInner(): boolean {
@@ -50,7 +53,8 @@ function isDevServerChannelInner(): boolean {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const ch = (require('expo-updates') as { channel?: string | null }).channel;
     if (ch == null || ch === '') return __DEV__;
-    return ch === 'teamtest' || ch === 'development';
+    if (ch === 'teamtest') return teamtestTarget.backend === 'dev';
+    return ch === 'development';
   } catch {
     return __DEV__;
   }
@@ -62,7 +66,7 @@ export function isDiagnosticChannel(): boolean {
   return DIAGNOSTIC_CHANNEL;
 }
 
-/** KB-870: dev 서버 채널(development·teamtest) — 운영 서버에 아직 없는 API의 헤더·표면 게이트 공용. */
+/** KB-870: 개발 기능 허용 채널 — teamtest는 공유 target 정본을 따른다. API 헤더와 표면에 같은 게이트 사용. */
 export function isDevServerChannel(): boolean {
   return DEV_SERVER_CHANNEL;
 }

@@ -11,10 +11,11 @@ type Flags = typeof import('@/lib/flags');
 const g = globalThis as unknown as { __DEV__: boolean };
 const DEV0 = g.__DEV__;
 /** channel = undefined → expo-updates require가 던지는 경우(모듈 없음) */
-function flagsFor(channel: string | null | undefined, dev = true): Flags {
+function flagsFor(channel: string | null | undefined, dev = true, backend?: string): Flags {
   let out!: Flags;
   g.__DEV__ = dev;
   jest.isolateModules(() => {
+    if (backend !== undefined) jest.doMock('@/lib/teamtest-target.json', () => ({ backend }));
     if (channel === undefined)
       jest.doMock('expo-updates', () => {
         throw new Error('no native module');
@@ -27,6 +28,7 @@ function flagsFor(channel: string | null | undefined, dev = true): Flags {
 
 afterEach(() => {
   jest.dontMock('expo-updates');
+  jest.dontMock('@/lib/teamtest-target.json');
   g.__DEV__ = DEV0;
 });
 
@@ -50,7 +52,7 @@ describe('KB-812 2차·P-508 — packagedReviewWrite·packagedLabelScan = dev �
   it.each([
     // channel,        __DEV__, write
     ['development', false, true],
-    ['teamtest', false, true],
+    ['teamtest', false, false], // KB-870/P-527: 기존 설치 채널에서 prod 리허설
     ['teamtest-prod', true, false], // 진단 채널이지만 백엔드 prod(쓰기 OFF) — 막다른 버튼 금지
     ['preview', true, false],
     ['production', true, false],
@@ -65,8 +67,7 @@ describe('KB-812 2차·P-508 — packagedReviewWrite·packagedLabelScan = dev �
   it('eas.json — 쓰기 버튼 채널은 전부 dev 서버, 숨김 채널은 dev 서버가 아니다', () => {
     const build = JSON.parse(fs.readFileSync('eas.json', 'utf8')).build as Record<string, { channel?: string; env?: Record<string, string> }>;
     const base = (ch: string) => Object.values(build).find((p) => p.channel === ch)?.env?.EXPO_PUBLIC_BE_BASE;
-    for (const ch of ['teamtest']) expect(base(ch)).toContain('dev.');
-    for (const ch of ['teamtest-prod', 'preview', 'production']) expect(base(ch)).not.toContain('dev.');
+    for (const ch of ['teamtest', 'teamtest-prod', 'preview', 'production']) expect(base(ch)).toBe('https://prod.kbap.site');
   });
 });
 
@@ -135,4 +136,17 @@ describe('eas.json teamtest-prod 프로필', () => {
     expect(wf).toMatch(/--channel teamtest /); // 대조: 발행 채널이 실제로 적혀 있다
     expect(wf).not.toContain('teamtest-prod');
   });
+});
+
+
+it('teamtest dev 기능은 삭제하지 않으며 명시 target=dev일 때만 복원한다', () => {
+  const f = flagsFor('teamtest', false, 'dev');
+  expect(f.isDevServerChannel()).toBe(true);
+  expect(f.FLAGS.processedFoodEnabled).toBe(true);
+  expect(f.FLAGS.curationEnabled).toBe(true);
+});
+
+it('unknown target은 teamtest 개발 기능을 열지 않고 production은 target과 무관하게 OFF다', () => {
+  expect(flagsFor('teamtest', false, 'typo').isDevServerChannel()).toBe(false);
+  expect(flagsFor('production', false, 'dev').FLAGS.processedFoodEnabled).toBe(false);
 });
