@@ -10,6 +10,7 @@ import { ProgressDots } from '@/components/ProgressDots';
 import { Pressable } from '@/components/Pressable';
 
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
+jest.mock('expo-updates', () => ({ channel: 'teamtest' })); // KB-870: dev 서버 채널 동작 고정(운영 채널 숨김은 prodHide870·prodFlagSurfaces436)
 jest.mock('@/lib/data/useDietPresets', () => {
   // P-208: 프리셋 서버 훅 표면 목 — 상수 폴백 형태(react-query 무의존)
   const { DIET_PRESETS, presetSubstanceCodes } = jest.requireActual('@/lib/onboarding/dietPresets');

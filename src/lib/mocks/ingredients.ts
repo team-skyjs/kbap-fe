@@ -8,6 +8,7 @@
  */
 
 import i18n from '@/lib/i18n';
+import { FLAGS } from '@/lib/flags';
 
 export interface Ingredient {
   code: string; // BE 표준 코드 (UPPER_SNAKE) — 와이어 값 그 자체
@@ -66,8 +67,13 @@ export const INGREDIENTS: Ingredient[] = [
 
 const BY_CODE: Record<string, Ingredient> = Object.fromEntries(INGREDIENTS.map((i) => [i.code, i]));
 
+/** KB-843 묶음 4 + 말단 2. KB-870(P-524): 운영 서버가 아직 모르는 코드라(저장 400) 운영 채널에선 타일·와이어·프리셋 폴백에서 뺀다.
+ *  INGREDIENTS 배열 자체는 그대로(프리셋 1-기반 위치 참조·음식 상세 "포함돼요" 이름). 서버 프로필에 이미 있는 코드의 보존 재전송(KB-843 #448)은 무변. */
+export const GROUP_CODES_843: ReadonlySet<string> = new Set(['NUTS', 'CRUSTACEAN', 'MOLLUSK', 'MEAT', 'LAMB', 'MEAT_BROTH']);
+const exposed = (code: string) => FLAGS.avoidGroupCodesEnabled || !GROUP_CODES_843.has(code);
+
 /** BE 정본 코드 집합 — 와이어로 나가도 되는 유일한 값들. */
-export const BE_CODES: ReadonlySet<string> = new Set(INGREDIENTS.map((i) => i.code));
+export const BE_CODES: ReadonlySet<string> = new Set(INGREDIENTS.map((i) => i.code).filter(exposed));
 
 /**
  * 레거시 내부 id(ing:slug — 구 draft/mock 잔재) → BE 코드.
@@ -102,7 +108,8 @@ const LEGACY_TO_BE: Record<string, string | null> = {
 export function toBeCode(code: string): string | null {
   if (BE_CODES.has(code)) return code; // 이미 정본
   const slug = code.startsWith('ing:') ? code.slice(4) : code;
-  return LEGACY_TO_BE[slug] ?? null;
+  const be = LEGACY_TO_BE[slug] ?? null;
+  return be && BE_CODES.has(be) ? be : null; // KB-870: 레거시 lamb → LAMB도 운영 채널에선 드롭
 }
 
 /** KB-599: 81종 카탈로그에 있는 code인지 — 함의 근거 문구는 카탈로그 이름이 있을 때만 그린다(없으면 생략). */
@@ -129,7 +136,7 @@ export function ingredientLabel(code: string): string {
 }
 
 /** P-134(온보딩 v3): 카테고리 섹션 — 파일 내 주석 그룹의 데이터 승격(회피 타일 그리드용). 라벨 = i18n ingCat.<key>. */
-export const INGREDIENT_SECTIONS: { key: string; codes: string[] }[] = [
+export const INGREDIENT_SECTIONS: { key: string; codes: string[] }[] = ([
   { key: 'dairy', codes: ['EGG', 'MILK', 'DAIRY', 'GOAT_MILK', 'BUTTER', 'GHEE', 'CHEESE', 'GELATIN', 'RENNET', 'HONEY', 'CARMINE'] },
   { key: 'nuts', codes: ['PEANUT', 'WALNUT', 'PINE_NUT', 'ALMOND', 'CASHEW', 'PISTACHIO', 'HAZELNUT', 'MACADAMIA', 'PECAN', 'BRAZIL_NUT', 'CHESTNUT', 'NUTS', 'SESAME', 'SUNFLOWER_SEED', 'MUSTARD'] },
   { key: 'grains', codes: ['WHEAT', 'BUCKWHEAT', 'BARLEY', 'RYE', 'OAT', 'CORN', 'SOY', 'LUPIN', 'PEA', 'CHICKPEA', 'LENTIL'] },
@@ -137,4 +144,4 @@ export const INGREDIENT_SECTIONS: { key: string; codes: string[] }[] = [
   { key: 'meat', codes: ['BEEF', 'PORK', 'LARD', 'TALLOW', 'CHICKEN', 'POULTRY', 'LAMB', 'MEAT_BROTH', 'MEAT'] }, // KB-843: 묶음(MEAT)은 하위 뒤 — SEAFOOD·POULTRY와 같은 자리 규칙
   { key: 'produce', codes: ['PEACH', 'TOMATO', 'CELERY', 'POTATO', 'CARROT', 'ONION', 'GARLIC', 'SCALLION', 'CHIVE', 'WILD_CHIVE', 'ASAFOETIDA'] },
   { key: 'etc', codes: ['ALCOHOL', 'MIRIN', 'COOKING_WINE', 'SULFITES'] },
-];
+] as { key: string; codes: string[] }[]).map((sec) => ({ ...sec, codes: sec.codes.filter(exposed) })); // KB-870: 운영 채널 = 묶음 6타일 0

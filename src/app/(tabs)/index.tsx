@@ -142,7 +142,7 @@ function HomeBody() {
           popularLoading={isPending}
           onScanRowBottom={setScanRowBottom}
           // KB-796: 음식 레일 뒤·Safe picks 앞 · KB-836: 정적 배너 → 큐레이션 순서(세 탭 모두, D1)
-          afterRail={<><IdolPickBanner /><CurationSection /></>}
+          afterRail={<>{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}</>}
         />
       </View>
 

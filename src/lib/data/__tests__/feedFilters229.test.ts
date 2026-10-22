@@ -2,7 +2,7 @@
  * P-229(KB-307): 리뷰 피드 필터 — 서버 쿼리 실측(country·foodId·복합) +
  * 클라 필터 금지·소팅 부재(BE 대기) 잠금.
  */
-jest.mock('@/lib/flags', () => ({ FLAGS: { reviewsLiveEnabled: true }, isProdChannel: () => false }));
+jest.mock('@/lib/flags', () => ({ FLAGS: { reviewsLiveEnabled: true }, isProdChannel: () => false, isDevServerChannel: () => true })); // KB-870: dev 서버 채널(리뷰 조회 3.2)
 jest.mock('@/lib/auth/beAuth', () => ({ hasBeSession: jest.fn().mockResolvedValue(true) }));
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),

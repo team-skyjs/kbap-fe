@@ -16,6 +16,7 @@ jest.mock('@/lib/flags', () => ({
       return mockFlagState.live;
     },
   },
+  isDevServerChannel: () => true, // KB-870: dev 서버 채널(리뷰 조회 3.2)
 }));
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),

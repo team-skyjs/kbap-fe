@@ -113,7 +113,11 @@ jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), requ
 import { ApiError } from '@/lib/api/client';
 import { queryClient } from '@/lib/queryClient';
 import PackagedReviewCompose from '../processed-foods/[id]/review';
+import { FLAGS } from '@/lib/flags';
 /* eslint-enable import/first */
+
+// KB-870: 이 경로는 가공식품 채널 게이트(processedFoodEnabled) 뒤 — 작성 화면 자체를 보는 스위트라 켠다(운영 채널 차단은 prodHide870)
+(FLAGS as { processedFoodEnabled: boolean }).processedFoodEnabled = true;
 
 const trees: ReactTestRenderer[] = [];
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); });

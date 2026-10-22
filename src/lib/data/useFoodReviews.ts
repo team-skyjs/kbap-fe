@@ -11,13 +11,16 @@ import type { ReviewPage } from '@/lib/api/types';
 import { api, apiLang } from '@/lib/api/client';
 import { trackReadyFood } from './hiddenFoods';
 import { adaptReviewPage, type ReviewPageWire } from '@/lib/api/reviewAdapter';
-import { FLAGS } from '@/lib/flags';
+import { FLAGS, isDevServerChannel } from '@/lib/flags';
 import { mockFoodReviews } from '@/lib/mocks/reviews';
 import { PROCESSED_FOOD_API_VERSION } from './useProcessedFoods';
 
 /** KB-812 2차(서버 #435): 리뷰 **조회**는 3.2 — 이 버전부터 피드·내 리뷰에 가공식품 리뷰가 섞이고 응답에 targetType·processedFood가 온다
  *  (3.1 이하 = 음식 리뷰만). 파라미터·정렬은 두 버전 동일(서버 매핑 실측). 쓰기(작성·수정·삭제·좋아요)는 1.0+ 그대로. */
-export const REVIEW_READ_HEADERS = { headers: { 'X-API-Version': PROCESSED_FOOD_API_VERSION } };
+/** KB-870(P-524): 운영 서버는 아직 3.2 리뷰 매핑이 없어 400(감사 실측) — dev 서버 채널만 3.2, 운영 채널은 헤더 없음(1.0, main과 같음). */
+export const REVIEW_READ_HEADERS = isDevServerChannel() ? { headers: { 'X-API-Version': PROCESSED_FOOD_API_VERSION } } : undefined;
+/** 가공식품 리뷰 엔드포인트(/api/processed-foods/{id}/reviews)는 3.2+에만 매핑 — 채널 무관 3.2 고정(헤더 없으면 404). */
+export const PROCESSED_REVIEW_HEADERS = { headers: { 'X-API-Version': PROCESSED_FOOD_API_VERSION } };
 
 /** 훅 밖 분리 — 플래그 스위칭 유닛 잠금용 (P-086). */
 export async function fetchFoodReviewsPage(
@@ -121,7 +124,7 @@ export async function fetchProcessedReviewsPage(processedFoodId: string, cursor:
   if (!FLAGS.reviewsLiveEnabled) return { items: [], hasNext: false, nextCursor: null };
   const c = cursor ? `&cursor=${encodeURIComponent(cursor)}` : '';
   return adaptReviewPage(
-    await api.get<ReviewPageWire>(`/api/processed-foods/${encodeURIComponent(processedFoodId)}/reviews?lang=${apiLang()}${c}`, REVIEW_READ_HEADERS),
+    await api.get<ReviewPageWire>(`/api/processed-foods/${encodeURIComponent(processedFoodId)}/reviews?lang=${apiLang()}${c}`, PROCESSED_REVIEW_HEADERS),
   );
 }
 

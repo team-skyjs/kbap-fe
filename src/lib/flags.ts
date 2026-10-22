@@ -62,6 +62,11 @@ export function isDiagnosticChannel(): boolean {
   return DIAGNOSTIC_CHANNEL;
 }
 
+/** KB-870: dev 서버 채널(development·teamtest) — 운영 서버에 아직 없는 API의 헤더·표면 게이트 공용. */
+export function isDevServerChannel(): boolean {
+  return DEV_SERVER_CHANNEL;
+}
+
 export const FLAGS = {
   /**
    * 게스트(비회원) 조회 모드 — 2026-07-13 회의 확정, MVP 기본 ON.
@@ -187,6 +192,18 @@ export const FLAGS = {
    * (그 사이 서버가 꺼져 있으면 작성 화면이 403 PFOOD-005를 "곧 열려요" 안내로 받는다 — 차단 아님.) 리뷰 **읽기**·기존 리뷰 수정은 이 플래그와 무관.
    */
   packagedReviewWrite: DEV_SERVER_CHANNEL,
+  /**
+   * KB-870(P-524, 운영 OTA 1 — 감사 bridge/ops/2026-10-21-prod-ota-audit.md): **운영 서버에 아직 없는 API**를 부르는 표면.
+   * development·teamtest(dev 서버)만 켜고 production·preview·teamtest-prod(운영 서버)는 숨긴다. 서버 운영 릴리스 뒤(OTA 2) 각 줄을 true로.
+   * - curationEnabled: /api/curations/seoul(prod 404) — 홈 큐레이션 섹션·모음 상세(지도 버튼 포함)
+   * - processedFoodEnabled: /api/processed-foods(prod 404) — 음식 탭 Packaged 세그먼트·스캔 Packaged 탭
+   * - idolPicksEnabled: /api/foods/idol-picks(prod 400) — 홈 K-POP 배너·/idol-picks·음식 상세 K-pop 카드
+   * - avoidGroupCodesEnabled: 회피 묶음 6코드(KB-843 — prod 서버가 모름, 저장 400) — 선택 타일·와이어 허용 목록·로컬 프리셋 폴백
+   */
+  curationEnabled: DEV_SERVER_CHANNEL,
+  processedFoodEnabled: DEV_SERVER_CHANNEL,
+  idolPicksEnabled: DEV_SERVER_CHANNEL,
+  avoidGroupCodesEnabled: DEV_SERVER_CHANNEL,
 } as const;
 
 /** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).

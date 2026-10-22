@@ -6,6 +6,7 @@
  * 캐시에 그 음식이 없으면 null(카드 없음). 상세 진입으로 목록 API 를 부르지 않는다(D3).
  */
 import { useQuery } from '@tanstack/react-query';
+import { FLAGS } from '../flags';
 import { useAppLanguage } from '../i18n/useAppLanguage';
 import { api, apiLang } from '../api/client';
 import { adaptIdolPicks, type IdolPicksWire, type IdolVideo } from '../api/idolPickAdapter';
@@ -24,5 +25,6 @@ export function useIdolPicks() {
 export function useIdolPickVideo(foodId: string): IdolVideo | null {
   const lang = useAppLanguage();
   const { data } = useQuery({ queryKey: idolPicksKey(lang), queryFn: fetchIdolPicks, enabled: false });
+  if (!FLAGS.idolPicksEnabled) return null; // KB-870: 운영 채널 = 카드 없음(떠 있는 리뷰 버튼은 카드 없을 때 동작)
   return data?.find((p) => p.foodId === foodId)?.video ?? null;
 }

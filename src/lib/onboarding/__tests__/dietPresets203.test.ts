@@ -2,6 +2,7 @@
  * P-203: 식이/종교 프리셋 — 정본 매핑 대조(전 카테고리 스냅샷+근거 포인트)·
  * 합집합(기존 보존)·스킵/플래그 배선 소스 잠금.
  */
+jest.mock('expo-updates', () => ({ channel: 'teamtest' })); // KB-870: dev 서버 채널 동작 고정(운영 채널 숨김은 prodHide870·prodFlagSurfaces436)
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } }));
 
 import { DIET_PRESETS, presetSubstanceCodes, unionPresetCodes } from '../dietPresets';

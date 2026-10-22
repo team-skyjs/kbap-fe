@@ -8,7 +8,8 @@
 import * as React from 'react';
 import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useFocusEffect, useIsFocused, useRouter, type Href } from 'expo-router';
+import { FLAGS } from '@/lib/flags';
+import { Redirect, useFocusEffect, useIsFocused, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/Pressable';
@@ -30,7 +31,11 @@ const GAP = 12;
 /** 셀 폭 = (W − 좌우 20·20 − 열 간격 12) / 2 — 375 = 161.5, 320 = 134 */
 export const cellWidth = (w: number) => (w - GUTTER * 2 - GAP) / 2;
 
-export default function IdolPicksScreen() {
+/** KB-870: 운영 채널(운영 서버 idol-picks 400) = 진입 0(모듈 상수로 고름 — 감싸는 컴포넌트 없음) */
+const GoneHome = () => <Redirect href="/" />;
+export default FLAGS.idolPicksEnabled ? IdolPicksScreen : GoneHome;
+
+function IdolPicksScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();

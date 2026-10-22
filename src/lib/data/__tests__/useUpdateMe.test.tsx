@@ -20,7 +20,7 @@ jest.mock('@/lib/api/client', () => ({ api: { get: jest.fn(), patch: jest.fn().m
 jest.mock('@/lib/auth/beAuth', () => ({ hasBeSession: jest.fn().mockResolvedValue(true) }));
 // KB-389 2차: 채널 목 — 기본 dev(1.1 헤더), prod 케이스만 플립(spice 송신은 채널 무관 문자열)
 const CHANNEL = { prod: false };
-jest.mock('@/lib/flags', () => ({ FLAGS: {}, isProdChannel: () => CHANNEL.prod }));
+jest.mock('@/lib/flags', () => ({ FLAGS: { avoidGroupCodesEnabled: true }, isProdChannel: () => CHANNEL.prod, isDevServerChannel: () => true })); // KB-870: dev 서버 채널(묶음 코드·리뷰 3.2)
 jest.mock('@/lib/onboarding/submit', () => ({
   loadLocalSpice: jest.fn().mockResolvedValue(null),
   SPICE_KEY: 'kbap.profile.spice.v1', // useMe가 submit에서 import (P-010 중복 해소)
