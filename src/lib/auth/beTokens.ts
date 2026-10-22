@@ -1,3 +1,4 @@
+import { suspendEngagementIdentity } from '../engagement/visitRuntime';
 /**
  * auth/beTokens.ts — BE 세션 토큰 저장 (KB-67).
  * P-322(KB-450) v2: access/refresh + 발급 환경(BE_BASE)을 **SecureStore 키 1개의
@@ -26,6 +27,7 @@ let cached: { access: string; refresh: string } | null | undefined; // undefined
  *  endSessionBoundary)가 bump, saveTokens가 쓰기 전후 재검증 + 자가 되돌림. */
 let sessionGen = 0;
 export function bumpSessionGen(): void {
+  suspendEngagementIdentity();
   sessionGen++;
   resetUnlockSession(sessionGen);
 }

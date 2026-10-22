@@ -11,6 +11,7 @@ import 'react-native-gesture-handler';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { Stack, useRouter, type Href } from 'expo-router';
+import { VisitTrackingHost } from '@/lib/engagement/VisitTrackingHost';
 import { useScreenTracking } from '@/lib/useScreenTracking';
 import { UnlockCelebrationHost } from '@/features/scan/UnlockCelebrationHost';
 import * as SplashScreen from 'expo-splash-screen';
@@ -229,6 +230,7 @@ export default function RootLayout() {
               {!splashVisible && <UnlockCelebrationHost />}
               {/* P-111(KB-269): 최소 지원 버전 하드 게이트 — 내비 전체 덮음, 페일 오픈 */}
               <VersionGateOverlay />
+              {!splashVisible && <VisitTrackingHost />}
               {/* P-123: 안드 사진 소스 시트 호스트 (iOS는 네이티브 시트 — 호스트 미사용) */}
               <PhotoSourceSheetHost />
               {/* P-339 ⑤(KB-494): 북마크 등 상단 다크 토스트 — 전 표면 공용 호스트 */}
