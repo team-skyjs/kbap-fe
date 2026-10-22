@@ -1,3 +1,10 @@
+## 2026-10-23 — KB-873 / P-526 첫 단위 foundation
+
+- 감사A/B/C·CSV·독립검토와develop4d38fb19대조,PR339/187보존. 이벤트사전·7단위계획·1248구문행pending추적대장작성.
+- schema2방문/가시delta/연속노출/scrollmilestone·summary순수집계기와어댑터whitelist/값검증. 화면runtime연결/계정reset실배선/실수신은후속단위,이번완료주장금지.
+- 12개기반회귀PASS:가림/배경/중복·세대·크기보정·동적목록·민감값배제·5분60fps집계·첫드래그. 타입/sweep검증. 최종전체/lint/CI근거는REPORTS에기록.
+- 기능·플래그·API·카피·native의존성변경0. 실기/수신/기기성능미검증. 배포0. KB873전체진행중,다음lifecycle배선.
+
 # kbap-fe Build Progress
 > 규칙: 한 번에 1개. [ ]→[~]→[x]. 각 화면 완료 시 목업 대조 + 커밋.
 > 목업 SSOT: Claude Design `43cc8ad0-38d8-4afa-a66f-a7412eae2a49` ("KLens Hi-Fi (Direction G)", hifi-*.jsx, hifi-g.css).

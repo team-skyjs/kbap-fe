@@ -1,3 +1,5 @@
+import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type EngagementEvent } from './engagement/schema';
+
 /**
  * analytics.ts — Amplitude 계측 어댑터 (P-083/KB-265). 화면 코드는 `track()`
  * 하나만 호출한다 — SDK 교체·키 주입·스키마 변경 전부 이 파일에서.
@@ -51,6 +53,7 @@
  */
 
 export const EVENTS = {
+  ...ENGAGEMENT_EVENTS,
   onboarding_step_view: 'onboarding_step_view',
   onboarding_step_complete: 'onboarding_step_complete',
   onboarding_step_skip: 'onboarding_step_skip',
@@ -137,6 +140,7 @@ export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
 
 /** 이벤트별 허용 prop 키 — CSV와 1:1. 밖의 키는 전송 전 드롭(PII 방어선). */
 const ALLOWED: Record<EventName, readonly string[]> = {
+  ...ENGAGEMENT_ALLOWED,
   onboarding_step_view: ['step'],
   onboarding_step_complete: ['step'],
   onboarding_step_skip: ['step'],
@@ -254,6 +258,7 @@ function ensureInit(): boolean {
 /** 허용 키만 통과 — 스키마 밖 prop(실수로 섞인 PII 포함)은 여기서 소멸. */
 export function sanitize(event: EventName, props?: Record<string, unknown>): Record<string, unknown> | undefined {
   if (!props) return undefined;
+  if (Object.hasOwn(ENGAGEMENT_EVENTS, event)) return sanitizeEngagement(event as EngagementEvent, props);
   const allowed = ALLOWED[event];
   return Object.fromEntries(Object.entries(props).filter(([k]) => allowed.includes(k)));
 }
