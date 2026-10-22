@@ -1,3 +1,10 @@
+## 2026-10-23 — KB-870 / P-527 기존 teamtest prod 리허설
+
+- 사용자 최신 승인으로 teamtest 전체를 prod BE/운영 제품 FLAGS로 전환. shared target 정본, build env·자동 workflow export/publish 정합, 잘못된 target/혼합번들 fail-closed.
+- production 제품 FLAGS와 동일·PF/Kpop/curation/회피6 OFF·리뷰1.1. development/local 기능·진단/데모광고 유지. 새버전/native빌드/submit/production발행 없음.
+- 새회귀 수정전RED·관련76testsPASS, tsc0, 양OS지문9ee/05ba 유지, EAS workflow CLI 유효성 PASS. 전체/번들/lint 결과와PR/CI/OTA 실제상태는REPORTS에기록.
+- root 검토 후 develop 정상 자동teamtest OTA 단독 발행, 사용자실기QA 후 OTA1 순서. KB873 후속PR342/가공식품339/타담당187 미포함.
+
 ## 2026-10-23 — KB-873 PR341 리뷰 P2 두 건 수정
 
 - 실제 route 파일 전수 → screenFromSegments → sanitizer 대조. canonical screen 4곳 교정, food/index 별칭 제거.

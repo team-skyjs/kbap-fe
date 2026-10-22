@@ -11,7 +11,7 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // FoodCards(padOddGrid) → components 배럴 → Btn 이 reanimated 를 끌어온다 — 그리드 테스트(gridOddBottom486)와 같은 목
-jest.mock('expo-updates', () => ({ channel: 'teamtest' })); // KB-870: dev 서버 채널 동작 고정(운영 채널 숨김은 prodHide870·prodFlagSurfaces436)
+jest.mock('expo-updates', () => ({ channel: 'development' })); // KB-870/P-527: 개발 기능 회귀. teamtest의 운영 숨김은 prodHide870에서 검사
 jest.mock('react-native-reanimated', () => {
   const { View, Pressable } = jest.requireActual('react-native');
   return {
