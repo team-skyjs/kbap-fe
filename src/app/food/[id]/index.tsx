@@ -30,7 +30,7 @@ import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { HeroGallery } from '@/features/food/HeroGallery';
 import { PILL_FADE_MS, useScrollAwarePill } from '@/features/food/scrollAwarePill';
-import { IdolVideoCard } from '@/features/food/IdolVideoCard';
+import { IDOL_CARD_BOTTOM_PAD, IdolVideoCard } from '@/features/food/IdolVideoCard';
 import { useIdolPickVideo } from '@/lib/data/useIdolPicks';
 import { useIsNewFood } from '@/lib/newFood';
 import { useIngredientImageChain } from '@/components/AvoidTile';
@@ -510,8 +510,9 @@ function Registered({
       {/* KB-836 V1: 대표 아이돌 영상 티저 — 목록 캐시에 이 음식이 있을 때만(없으면 래퍼·여백 0). 위험 요약·헤더 아래(안전 정보 위계 유지) */}
       {idolVideo && (
         /* KB-851: 카드 위치(스크롤 콘텐츠 기준) — 카드가 보이는 동안 리뷰 알약을 숨긴다. 래퍼는 스타일 없음(배치 무변) */
-        <View onLayout={(e) => onIdolLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)} testID="detail-idol-wrap">
-          <IdolVideoCard foodId={id} video={idolVideo} />
+        <View onLayout={(e) => onIdolLayout?.(e.nativeEvent.layout.y, Math.max(0, e.nativeEvent.layout.height - IDOL_CARD_BOTTOM_PAD))} testID="detail-idol-wrap">
+          {/* KB-855 E안: 배경 = 이 음식 사진(상단 히어로와 같은 이미지) · 높이 = 카드 아래 여백 뺀 카드 자체(KB-851 QA: 여백까지 세면 헤더 뒤로 숨은 뒤에도 "보임") */}
+          <IdolVideoCard foodId={id} video={idolVideo} photoUrl={food.photoUrl} />
         </View>
       )}
 
