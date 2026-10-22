@@ -10,7 +10,8 @@
  */
 import * as React from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SubHeader } from '@/components/SubHeader';
@@ -32,7 +33,11 @@ export const ITEM_PHOTO_RATIO = 300 / 335; // 스켈레톤 자리
 /** 지역 행 = 지역·주변 이름을 공백 2칸으로. 이름 안 공백은 U+00A0(줄바꿈 금지)이라 "Hongdae / | streets"처럼 이름 중간에서 꺾이지 않는다. */
 export const areaLine = (area: string, nearby: string[]): string => [area, ...nearby].map((n) => n.trim().replace(/\s+/g, '\u00A0')).join('  ');
 
-export default function CurationDetailScreen() {
+/** KB-870: 운영 채널(운영 서버에 큐레이션 API 없음) = 진입 0 — 홈 섹션을 숨겨도 남는 직접 경로까지 막는다(모듈 상수로 고름 — 감싸는 컴포넌트 없음) */
+const GoneHome = () => <Redirect href="/" />;
+export default FLAGS.curationEnabled ? CurationDetailScreen : GoneHome;
+
+function CurationDetailScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();

@@ -16,7 +16,7 @@ import renderer, { act } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } }));
-jest.mock('@/lib/flags', () => ({ FLAGS: { reviewsLiveEnabled: true } }));
+jest.mock('@/lib/flags', () => ({ FLAGS: { reviewsLiveEnabled: true }, isDevServerChannel: () => true })); // KB-870: dev 서버 채널(리뷰 조회 3.2)
 const mockGet = jest.fn();
 const mockPost = jest.fn();
 jest.mock('@/lib/api/client', () => {

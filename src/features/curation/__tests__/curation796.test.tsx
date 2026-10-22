@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+jest.mock('expo-updates', () => ({ channel: 'teamtest' })); // KB-870: dev 서버 채널 동작 고정(운영 채널 숨김은 prodHide870·prodFlagSurfaces436)
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k}:${JSON.stringify(o)}` : k) }), initReactI18next: { type: '3rdParty', init: () => {} } }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('react-native-reanimated', () => {
@@ -663,7 +664,7 @@ describe('KB-829 QA S3 지역 행 줄바꿈', () => {
 describe('배치·문구 잠금', () => {
   it('홈: 음식 레일 뒤·Safe picks 앞 슬롯에 큐레이션 · 모음 키 하드코딩 0', () => {
     const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8');
-    expect(home).toContain('afterRail={<><IdolPickBanner /><CurationSection /></>}'); // KB-836 D1: 배너 → 큐레이션
+    expect(home).toContain('afterRail={<>{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}</>}'); // KB-836 D1: 배너 → 큐레이션
     expect(home).toContain("queryClient.invalidateQueries({ queryKey: ['curations'] })"); // Codex #303 P2: 당겨서 새로고침에 포함
     const fx = fs.readFileSync('src/features/food/FoodExplorer.tsx', 'utf8');
     expect(fx.indexOf("{variant === 'embedded' && afterRail}")).toBeGreaterThan(fx.indexOf('testID="home-rail"'));

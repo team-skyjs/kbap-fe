@@ -11,7 +11,7 @@
  * BE `GET /api/diet-presets` 확정 시 이 상수를 서버 응답으로 스왑(API 형태 제안
  * 동일 — code+substances). 저장 모델 무변(평면 81종 — 카테고리는 저장 축 아님).
  */
-import { INGREDIENTS } from '@/lib/mocks/ingredients';
+import { BE_CODES, INGREDIENTS } from '@/lib/mocks/ingredients';
 
 export type PresetGroup = 'diet' | 'religion' | 'allergy';
 
@@ -61,7 +61,8 @@ function expandNums(nums: (number | [number, number])[]): number[] {
 
 /** 프리셋 → 회피 코드(UPPER_SNAKE — 와이어 값) 집합. 번호는 INGREDIENTS 1-based. */
 export function presetSubstanceCodes(preset: DietPreset): string[] {
-  return expandNums(preset.nums).map((n) => INGREDIENTS[n - 1].code);
+  // KB-870: 로컬 폴백도 와이어 허용 목록 안에서만 — 운영 채널은 KB-843 묶음 코드(85 MEAT·86 LAMB 등)를 빼고 고른다
+  return expandNums(preset.nums).map((n) => INGREDIENTS[n - 1].code).filter((c) => BE_CODES.has(c));
 }
 
 /** 복수 선택 = 합집합(발주 고정). base(기존 선택)와도 합집합 — 기존 삭제 금지(안전). */

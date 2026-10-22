@@ -806,9 +806,12 @@ export default function Scan() {
           </View>
         )}
         {/* KB-813 → KB-845 탭: Menu / Food photo(비활성) / Packaged food — 성분표도 Packaged food 활성(screen-5) */}
-        <View style={[styles.camModeTabs, { top: insets.top + 60 }]} pointerEvents="box-none">
-          <ScanModeTabs value={menu ? 'menu' : 'packaged'} onChange={setScanMode} tone="dark" />
-        </View>
+        {/* KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 모드 탭째 없음 → 메뉴 스캔만(main과 같음) */}
+        {FLAGS.processedFoodEnabled && (
+          <View style={[styles.camModeTabs, { top: insets.top + 60 }]} pointerEvents="box-none">
+            <ScanModeTabs value={menu ? 'menu' : 'packaged'} onChange={setScanMode} tone="dark" />
+          </View>
+        )}
         {o.debug ? <View style={[styles.camDebug, { top: insets.top + 116 }]}>{o.debug}</View> : null}
         {ImportingOverlay}
         {GateSheet}
@@ -1295,9 +1298,11 @@ export default function Scan() {
           <IconClose size={22} color={C.ink2} />
         </Pressable>
         {/* KB-813 모드 탭 — 시스템 카메라 런처(밝은 바탕) */}
-        <View style={[styles.camModeTabs, { top: insets.top + 56 }]}>
-          <ScanModeTabs value={scanMode} onChange={setScanMode} />
-        </View>
+        {FLAGS.processedFoodEnabled && (
+          <View style={[styles.camModeTabs, { top: insets.top + 56 }]}>
+            <ScanModeTabs value={scanMode} onChange={setScanMode} />
+          </View>
+        )}
         <View style={styles.launcherBody}>
           <IconScanLines size={44} color={C.ink3} />
           <Text style={styles.launcherTitle}>{t('scan.cameraTitle')}</Text>

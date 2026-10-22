@@ -12,7 +12,7 @@
 import { useMutation, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query';
 import i18n from '../i18n';
 import { api, ApiError } from '@/lib/api/client';
-import { REVIEW_READ_HEADERS } from './useFoodReviews';
+import { PROCESSED_REVIEW_HEADERS } from './useFoodReviews';
 import { buildReviewUpdate, type ReviewUpdateWire } from '@/lib/api/reviewAdapter';
 import type { Review, ReviewPage, User } from '@/lib/api/types';
 import { FLAGS } from '@/lib/flags';
@@ -122,7 +122,7 @@ export function useCreateProcessedReview() {
           ...(input.content ? { content: input.content } : {}),
           ...(input.imagePaths?.length ? { imagePaths: input.imagePaths } : {}),
         },
-        REVIEW_READ_HEADERS, // 엔드포인트가 3.2+ 매핑 — 버전 헤더 없으면 404
+        PROCESSED_REVIEW_HEADERS, // 엔드포인트가 3.2+ 매핑 — 버전 헤더 없으면 404(KB-870: 조회 헤더와 분리 — 채널 무관 3.2)
       );
     },
     onSuccess: () => {

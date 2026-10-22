@@ -42,15 +42,16 @@ export default function Food() {
     setPrevSeeAll(seeAllKey);
     if (seeAllKey) { rememberSegment('dishes'); setFoodSegmentState('dishes'); }
   }
-  const segRow = <FoodSegmentRow value={foodSegment} onChange={setFoodSegment} />;
+  // KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 세그먼트째 없음 → Dishes 고정(main과 같은 화면)
+  const segRow = FLAGS.processedFoodEnabled ? <FoodSegmentRow value={foodSegment} onChange={setFoodSegment} /> : null;
 
   return (
     <View style={styles.root}>
-      {foodSegment === 'packaged' ? (
+      {segRow && foodSegment === 'packaged' ? (
         <PackagedExplorer top={segRow} topPad={headerH} onScroll={onScroll} />
       ) : (
       <FoodExplorer
-        headTop={<View style={styles.segGap}>{segRow}</View>}
+        headTop={segRow ? <View style={styles.segGap}>{segRow}</View> : undefined}
         variant="screen"
         guest={isGuest}
         initialSaved={segment === 'saved'}
