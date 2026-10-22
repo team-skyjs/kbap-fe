@@ -141,6 +141,54 @@ describe('홈 섹션', () => {
     expect(byId(t, 'curation-banner-attribution-2')).toHaveLength(1); // 캡션은 있는 카드에만
     expect(byId(t, 'curation-banner-attribution-0')).toHaveLength(0);
   });
+  it('KB-861: 홈 배너 = 상세 장소 카드와 같은 부품 — 검정 제목 영역·흰 네모 화살표 박스 0 · 흰 chevron 24(박스 없음) · 제목·설명 흰 글자 · 흐림 띠 = 보이는 장 ± 1장', () => {
+    const RNx = jest.requireActual('react-native');
+    const home = fs.readFileSync('src/features/curation/CurationSection.tsx', 'utf8');
+    const detailSrc = fs.readFileSync('src/app/curations/[key].tsx', 'utf8');
+    expect(home).not.toMatch(/titleArea|bannerGo/);
+    expect(home).toContain('<BlurCaptionCard');
+    expect(detailSrc).toContain('<BlurCaptionCard'); // 두 화면이 같은 부품(새로 만들지 않음)
+    const shared = jest.requireActual('@/features/curation/BlurCaptionCard') as { blurBandOf: unknown };
+    const detailMod = jest.requireActual('@/app/curations/[key]') as { blurBandOf: unknown };
+    expect(detailMod.blurBandOf).toBe(shared.blurBandOf); // 흐림 띠 함수 = 같은 함수
+    mockIndex = q({ data: published });
+    const t = render(<CurationSection />);
+    expect(byId(t, 'curation-banner-0')).toHaveLength(1);
+    const arrow = t.root.findAll((n) => n.props?.testID === 'curation-banner-arrow-0' && typeof n.type === 'string')[0];
+    expect(RNx.StyleSheet.flatten(arrow.props.style).backgroundColor).toBeUndefined(); // 박스 없음
+    expect(RNx.StyleSheet.flatten(arrow.findAll((n) => n.props?.testID === 'chevron-right')[0].props.style).color).toBe('#FFFFFF');
+    const cap = t.root.findAll((n) => n.props?.testID === 'curation-banner-caption-0' && typeof n.type === 'string')[0];
+    const caps = cap.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string');
+    expect(caps.map((n) => n.props.children)).toEqual(['T sights', '10 places sights']); // 제목(이름 스타일) → 설명(지역 스타일)
+    expect(caps.map((n) => RNx.StyleSheet.flatten(n.props.style))).toEqual([
+      expect.objectContaining({ fontSize: 18, color: '#FFFFFF' }), // 이름 스타일(줄 높이는 배율 규칙 — 아래 큰 글씨 테스트)
+      expect.objectContaining({ fontSize: 13, color: '#FFFFFF' }),
+    ]);
+    // 흐림 띠: 카드·캡션을 잰 뒤 — 현재 장(0)과 옆(1)은 8띠, 두 장 너머(2)는 원본 + 스크림만
+    for (const i of [0, 1, 2]) {
+      act(() => t.root.findAll((n) => n.props?.testID === `curation-banner-${i}` && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 335, height: 300 } } }));
+      act(() => t.root.findAll((n) => n.props?.testID === `curation-banner-caption-${i}` && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout: { x: 0, y: 236, width: 335, height: 64 } } }));
+    }
+    const strips = (i: number) => t.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith(`curation-banner-blur-strip-${i}-`) && typeof n.type === 'string').length;
+    expect([strips(0), strips(1), strips(2)]).toEqual([8, 8, 0]);
+    expect(byId(t, 'curation-banner-attribution-2')).toHaveLength(1); // 출처 유지(사진 위 오른쪽 위)
+  });
+  it('KB-861: 큰 글씨(배율 1.3) = 홈 배너 제목·설명 고정 줄 높이 없음(글꼴 고유 — 넘침·잘림 0) · 작은 화면(SE 320) = 배너 폭 280', () => {
+    const RNx = jest.requireActual('react-native');
+    const spy = jest.spyOn(RNx, 'useWindowDimensions').mockReturnValue({ width: 320, height: 568, scale: 2, fontScale: 1.3 });
+    try {
+      mockIndex = q({ data: published });
+      const t = render(<CurationSection />);
+      const cap = t.root.findAll((n) => n.props?.testID === 'curation-banner-caption-0' && typeof n.type === 'string')[0];
+      const caps = cap.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string');
+      expect(caps.map((n) => RNx.StyleSheet.flatten(n.props.style).lineHeight)).toEqual([undefined, undefined]);
+      // 배너 폭 = 화면 − 좌우 20(280) — 캡션 줄은 이 폭 안에서 줄바꿈(가로 넘침 0: 캡션 텍스트 상자 flex 1·minWidth 0)
+      expect(t.root.findAll((n) => typeof n.type === 'string' && RNx.StyleSheet.flatten(n.props?.style)?.width === 280).length).toBeGreaterThan(0);
+      expect(cap.findAll((n) => typeof n.type === 'string' && RNx.StyleSheet.flatten(n.props?.style)?.flex === 1 && RNx.StyleSheet.flatten(n.props?.style)?.minWidth === 0)).toHaveLength(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
   it('배너 탭 = 해당 모음 상세 + home_card_click(section=curation, collection_key — food_id 아님)', () => {
     mockIndex = q({ data: published });
     const t = render(<CurationSection />);
@@ -280,7 +328,7 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     layoutOf('curation-item-1', { x: 0, y: 0, width: 335, height: 340 });
     layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 335, height: 104 });
     expect(RN.StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0].props.style).top).toBe(220);
-    expect(fs.readFileSync('src/app/curations/[key].tsx', 'utf8')).toContain("export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 9 : 45;");
+    expect(fs.readFileSync('src/features/curation/BlurCaptionCard.tsx', 'utf8') /* KB-861: 공용 모듈 */).toContain("export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 9 : 45;");
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     expect(pkg.dependencies['expo-blur']).toBeUndefined();
   });
