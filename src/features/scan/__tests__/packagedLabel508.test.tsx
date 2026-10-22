@@ -39,6 +39,8 @@ jest.mock('@/lib/api/client', () => {
   return { api: { post: (...a: unknown[]) => mockPost(...a), get: jest.fn() }, apiLang: () => 'en', ApiError: MockApiError };
 });
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+let mockRestrictions: { code: string }[] = [{ code: 'SHRIMP' }];
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '41', restrictions: mockRestrictions } }) })); // KB-865 ③: 결과 = 회피 1개 이상 회원(문장·리본) / 0개(주요 알레르기)
 const mockOcr = jest.fn();
 jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockOcr(...a) }));
 let mockGranted = true;
@@ -66,14 +68,17 @@ const RESULT = (over: object = {}) => ({
   analysisId: 'L1', state: 'LABEL_RESULT', labelSource: 'DECLARED',
   detections: [{ code: 'WHEAT', source: 'ALLERGEN_DECLARATION', evidence: '밀' }, { code: 'SHRIMP', source: 'RAW_MATERIALS', evidence: '새우' }],
   mayContain: [{ code: 'SOY', source: 'MAY_CONTAIN', evidence: '대두' }],
-  avoidance: [{ code: 'SHRIMP', match: 'DETECTED', matchedCodes: ['SHRIMP'], evidence: ['새우'] }], rawText: `${LABEL_P1}\n${LABEL_P2}`, charged: true, ...over,
+  avoidance: [{ code: 'SHRIMP', match: 'DETECTED', matchedCodes: ['SHRIMP'], evidence: ['새우'] }], rawText: `${LABEL_P1}\n${LABEL_P2}`, charged: true,
+  // KB-865 v4 — 판정 = 서버 verdict·matches
+  verdict: 'AVOID', avoidMatches: [{ code: 'SHRIMP', evidence: ['새우'] }], mayContainMatches: [], unclearIngredients: [], majorAllergens: ['WHEAT', 'SHRIMP'],
+  ingredients: { translated: 'Wheat flour, shrimp 10%, soybean oil', original: LABEL_P1 }, allergenStatement: { translated: null, original: '밀, 새우 함유' }, ...over,
 });
 
 const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
 const flagLabel = FLAGS.packagedLabelScan;
 const setFlag = (v: boolean) => { (FLAGS as { packagedLabelScan: boolean }).packagedLabelScan = v; };
-beforeEach(() => { qc = new QueryClient(); mockParams = {}; mockGranted = true; mockCanceled = false; mockUuid = 0; setFlag(true); });
+beforeEach(() => { qc = new QueryClient(); mockParams = {}; mockGranted = true; mockCanceled = false; mockUuid = 0; setFlag(true); mockRestrictions = [{ code: 'SHRIMP' }]; });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); setFlag(flagLabel); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -93,7 +98,8 @@ function mockCamera(o: ScanCamOpts) {
     </View>
   );
 }
-const flow = (startLabel = false) => render(<PackagedScanFlow mode="packaged" onMode={jest.fn()} onClose={jest.fn()} startLabel={startLabel}  renderCamera={mockCamera} />);
+const mockOnQuota = jest.fn();
+const flow = (startLabel = false) => render(<PackagedScanFlow mode="packaged" onMode={jest.fn()} onClose={jest.fn()} startLabel={startLabel} renderCamera={mockCamera} onQuota={mockOnQuota} />);
 const labelCalls = () => mockPost.mock.calls.filter((c) => c[0] === '/api/processed-foods/scan/label');
 /** 후보 없음까지(이름 스캔 NO_CANDIDATE A3) → 성분표 안내 */
 async function toHandoffFromNone(t: ReactTestRenderer) {
@@ -129,7 +135,7 @@ describe('어댑터·요청·오류', () => {
   });
 });
 
-describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', () => {
+describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → 결과 27~)', () => {
   const hint = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'cam-hint' && typeof n.type === 'string')[0]?.props.children as string | undefined;
   const shoot = async (t: ReactTestRenderer, text: string | null) => {
     mockOcr.mockResolvedValueOnce(text == null ? [] : [{ text }]);
@@ -137,40 +143,75 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
   };
   const close = (t: ReactTestRenderer, id: string) => act(() => t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress());
   const back = (t: ReactTestRenderer) => act(() => t.root.findAll((n) => typeof n.props?.onBack === 'function')[0].props.onBack());
+  const count = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'pscan-label-count' && typeof n.type === 'string')[0]?.props.children as string | undefined;
+  const joined = (t: ReactTestRenderer) => JSON.stringify(texts(t));
 
-  it('후보 없음 → 성분표 카메라 = 같은 analysisId(힌트 자리 = 같은 분석 문구) · 찍기 → 면 모으기 · 한 면 더 = 카메라(힌트 n/4) → 2면 → 분석 → 결과 · charged → 1회 + 프로필 재조회 · 계측', async () => {
+  it('후보 없음 → 성분표 = 같은 analysisId · 카메라(가이드 페이지 0 — Q2) → 면 검토(1/4) → Add = 카메라(힌트 n/4) → 2면 → 분석 → 결과(리본·회피 문장·성분·주의) · 프로필 재조회 · 계측', async () => {
     const inv = jest.spyOn(qc, 'invalidateQueries');
     const t = flow();
     await toHandoffFromNone(t);
     expect(ids(t)).toContain('cam-ingredient');
-    expect(hint(t)).toBe('packagedScan.sameAnalysis');
+    expect(hint(t)).toBe('default-hint'); // 차감·같은 분석 문구 0(README)
     await shoot(t, LABEL_P1);
     expect(ids(t)).toContain('pscan-label-pages');
-    expect(ids(t)).toContain('pscan-same-analysis');
-    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":1,"max":4}');
+    expect(count(t)).toBe('packagedScan.labelPhotosCount:{"count":1,"max":4}');
     await press(t, 'pscan-label-add');
     expect(ids(t)).toContain('cam-ingredient');
     expect(hint(t)).toBe('packagedScan.labelPagesCount:{"count":1,"max":4}');
     await shoot(t, LABEL_P2);
-    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":2,"max":4}');
-    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3' }));
+    expect(count(t)).toBe('packagedScan.labelPhotosCount:{"count":2,"max":4}');
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3', mayContain: [{ code: 'SOY', evidence: '대두' }] }));
     await press(t, 'pscan-label-analyze');
     expect(labelCalls()[0][1]).toEqual({ analysisId: 'A3', pages: [{ ocrText: LABEL_P1 }, { ocrText: LABEL_P2 }], lang: 'en' });
-    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-label-result', 'pf-det-WHEAT', 'pf-det-SHRIMP', 'pf-may-SOY', 'pf-avoid-SHRIMP', 'pf-raw']));
-    expect(ids(t)).not.toContain('pf-login-compare');
-    expect(texts(t)).toContain('packagedScan.scanUsed');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-label-result', 'pscan-result-badge-danger', 'pscan-result-avoid', 'pscan-result-ingredients', 'pscan-result-original', 'pscan-result-allergens', 'pscan-result-may', 'pscan-label-more']));
+    expect(ids(t)).not.toContain('pscan-result-major');
+    expect(texts(t)).toContain('packagedScan.resultAvoid:{"names":"L(SHRIMP)"}');
+    expect(texts(t)).toContain('Wheat flour, shrimp 10%, soybean oil');
+    expect(joined(t)).not.toMatch(/scanUsed|noScanUsed|labelFreeRetry|labelNoExtra/); // 차감 문구 0
     expect(inv).toHaveBeenCalledWith({ queryKey: ['me'] });
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_label_scan', { pages: 2, charged: true, result: 'ok' });
     expect(mockPush).not.toHaveBeenCalled();
   });
-  it('앞면 카메라 "성분표로 확인하기" = 새 분석(analysisId null) · 디자인 힌트(같은 분석 문구 0) · 반대 링크 = 앞면으로', async () => {
+  it('결과 문장 = 서버 verdict별(CAUTION 주의 재료 · SAFE_WITH_NOTE 불명확 · SAFE 1면/여러 면 · null 확인 못 함) · 리본 = 서버 verdict만', async () => {
+    const cases: [object, string, string | null][] = [
+      [{ verdict: 'CAUTION', avoidMatches: [], mayContainMatches: [{ code: 'MILK', evidence: ['우유'] }] }, 'packagedScan.resultCaution:{"names":"L(MILK)"}', 'caution'],
+      [{ verdict: 'SAFE_WITH_NOTE', avoidMatches: [], unclearIngredients: ['향료'] }, 'packagedScan.resultUnclear:{"items":"향료"}', 'safe'],
+      [{ verdict: 'SAFE', avoidMatches: [] }, 'packaged.noAvoidMatches', 'safe'],
+      [{ verdict: null, avoidMatches: [] }, 'packaged.notVerifiedBody', null],
+    ];
+    for (const [over, sentence, badge] of cases) {
+      const t = flow(true);
+      await shoot(t, LABEL_P1);
+      mockPost.mockResolvedValueOnce(RESULT(over));
+      await press(t, 'pscan-label-analyze');
+      expect(texts(t)).toContain(sentence);
+      const badges = ids(t).filter((i) => i.startsWith('pscan-result-badge-'));
+      expect(badges).toEqual(badge ? [`pscan-result-badge-${badge}`] : []);
+    }
+  });
+  it('회피 0개 회원(M0) = 주요 알레르기 문장 + "회피 재료 설정"(리본·회피 문장 0) · 주요 알레르기 null = 확인 불가(없음 단정 금지)', async () => {
+    mockRestrictions = [];
+    const t = flow(true);
+    await shoot(t, LABEL_P1);
+    mockPost.mockResolvedValueOnce(RESULT());
+    await press(t, 'pscan-label-analyze');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-result-major', 'pscan-result-set-avoid']));
+    expect(ids(t).some((i) => i.startsWith('pscan-result-badge-') || i === 'pscan-result-avoid')).toBe(false);
+    expect(joined(t)).toContain('packagedScan.resultMajorSet');
+    await press(t, 'pscan-result-set-avoid');
+    expect(mockPush).toHaveBeenCalledWith('/profile/restrictions');
+    const t2 = flow(true);
+    await shoot(t2, LABEL_P1);
+    mockPost.mockResolvedValueOnce(RESULT({ majorAllergens: null }));
+    await press(t2, 'pscan-label-analyze');
+    expect(texts(t2)).toContain('packaged.majorUnavailable');
+  });
+  it('앞면 카메라 "성분표로 확인하기" = 새 분석(analysisId null) · 반대 링크 = 앞면으로', async () => {
     const t = flow();
     expect(ids(t)).toContain('cam-package');
     await press(t, 'pscan-label-instead');
     expect(ids(t)).toContain('cam-ingredient');
-    expect(hint(t)).toBe('default-hint');
     await shoot(t, LABEL_P1);
-    expect(ids(t)).not.toContain('pscan-same-analysis');
     mockPost.mockResolvedValueOnce(RESULT());
     await press(t, 'pscan-label-analyze');
     expect(labelCalls()[0][1]).toMatchObject({ analysisId: null });
@@ -178,24 +219,21 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     await press(t2, 'pscan-front-instead');
     expect(ids(t2)).toContain('cam-package');
   });
-  it('상세 "성분표 직접 확인"(startLabel) = 성분표 카메라부터 · 새 분석 · 경로 /scan?mode=packaged&label=1 배선', async () => {
+  it('목록 "성분표 찍기"(startLabel) = 성분표 카메라부터 · 새 분석 · 경로 /scan?mode=packaged&label=1 배선', async () => {
     const t = flow(true);
     expect(ids(t)).toContain('cam-ingredient');
-    expect(hint(t)).toBe('default-hint');
     expect(ids(t)).not.toContain('cam-close'); // 첫 카메라 = 스캔 화면 닫기(scan.tsx X)
-    // KB-865 ②: 상세의 "성분표 직접 확인" 버튼은 제거(결정 4·시안 09) — 같은 진입은 목록 빈 상태(시안 04·47)의 "성분표 찍기"가 쓴다
     expect(fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8')).not.toContain('pf-label-scan');
     expect(fs.readFileSync('src/features/processedFood/PackagedExplorer.tsx', 'utf8')).toContain('router.navigate(`/scan?mode=packaged&label=1&t=${Date.now()}` as Href)');
     const scan = fs.readFileSync('src/app/scan.tsx', 'utf8');
     expect(scan).toContain("const labelEntry = scanParams.label === '1' && FLAGS.packagedLabelScan ? (scanParams.t ?? 'entry') : null;");
-    expect(scan).toContain('startLabel={labelEntry != null} renderCamera={cameraUi} focused={isFocused} />'); // Codex #318: 흰 상태바 = 보일 때만
+    expect(scan).toContain('startLabel={labelEntry != null}\n          renderCamera={cameraUi}\n          focused={isFocused}');
   });
-  it('결과에서 한 면 더 = 카메라(닫기 = 그 결과) → 찍기 = 같은 ID 재분석(면 누적) · charged false여도 이 분석에서 쓴 1회 유지 · 프로필 재조회 추가 0', async () => {
+  it('결과에서 한 면 더 = 카메라(닫기 = 그 결과) → 찍기 = 같은 ID 재분석(면 누적) · charged false = 프로필 재조회 추가 0', async () => {
     const t = flow(true);
     await shoot(t, LABEL_P1);
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L9' }));
     await press(t, 'pscan-label-analyze');
-    expect(texts(t)).toContain('packagedScan.labelFreeRetry');
     await press(t, 'pscan-label-more');
     expect(ids(t)).toContain('cam-ingredient');
     close(t, 'cam-close');
@@ -205,30 +243,59 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L9', charged: false }));
     await shoot(t, LABEL_P2);
     expect(labelCalls()[1][1]).toEqual({ analysisId: 'L9', pages: [{ ocrText: LABEL_P1 }, { ocrText: LABEL_P2 }], lang: 'en' });
-    expect(texts(t)).toContain('packagedScan.scanUsed');
+    expect(ids(t)).toContain('pscan-label-result');
     expect(inv).not.toHaveBeenCalled();
   });
-  it('같은 분석이 charged false = "추가 사용 없음" — 차감 단정 0', async () => {
-    const t = flow();
-    await toHandoffFromNone(t);
-    await shoot(t, LABEL_P1);
-    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3', charged: false }));
+  it('시안 25·50: 결과가 4면 = "사진 n장 보기" → 면 검토(다시 분석 안내 · Add 0) → 분석 = 같은 ID', async () => {
+    const t = flow(true);
+    const inject = async (text: string) => {
+      act(() => t.root.findAll((n) => n.props?.testID === 'pscan-label-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText(text));
+      await press(t, 'pscan-label-debug-add');
+    };
+    await inject('a');
+    for (const p of ['b', 'c', 'd']) {
+      await press(t, 'pscan-label-add');
+      await inject(p);
+    }
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L4' }));
     await press(t, 'pscan-label-analyze');
-    expect(texts(t)).toContain('packagedScan.labelNoExtra');
-    expect(texts(t)).not.toContain('packagedScan.scanUsed');
+    expect(ids(t)).not.toContain('pscan-label-more');
+    await press(t, 'pscan-result-review');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-label-pages', 'pscan-label-reanalyze', 'pscan-label-full']));
+    expect(ids(t)).not.toContain('pscan-label-add');
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L4', charged: false }));
+    await press(t, 'pscan-label-analyze');
+    expect(labelCalls()[1][1]).toMatchObject({ analysisId: 'L4' });
+    back(t); // 결과 → (SubHeader onBack = 완료) — 결과 화면 유지 확인만
   });
-  it('400 PFOOD-006 = 못 읽음 · 차감 0 · 다시 찍기 = 보낸 면 화면(분석 ID 유지 — Codex #315 R2) · 계측 result unreadable', async () => {
+  it('면 검토 "다시 찍기" = 마지막 면만 버리고 카메라(앞 면 유지)', async () => {
+    const t = flow(true);
+    await shoot(t, LABEL_P1);
+    await press(t, 'pscan-label-add');
+    await shoot(t, 'oops');
+    await press(t, 'pscan-label-retake');
+    expect(ids(t)).toContain('cam-ingredient');
+    expect(hint(t)).toBe('packagedScan.labelPagesCount:{"count":1,"max":4}');
+    await shoot(t, LABEL_P2);
+    mockPost.mockResolvedValueOnce(RESULT());
+    await press(t, 'pscan-label-analyze');
+    expect(labelCalls()[0][1]).toMatchObject({ pages: [{ ocrText: LABEL_P1 }, { ocrText: LABEL_P2 }] });
+  });
+  it('400 PFOOD-006 = 못 읽음(시안 29b, 차감 문구 0) · 다시 찍기 = 보낸 면 화면(분석 ID 유지 — Codex #315 R2) · 계측 result unreadable', async () => {
     const t = flow();
     await toHandoffFromNone(t);
     await shoot(t, '바코드 8801043');
     mockPost.mockRejectedValueOnce(new ApiError('x', 400, 'PFOOD-006'));
     await press(t, 'pscan-label-analyze');
     expect(ids(t)).toContain('pscan-error-unreadable');
-    expect(texts(t)).toContain('packagedScan.noScanUsed');
+    expect(texts(t)).toContain('packagedScan.err.unreadableTitle');
+    expect(joined(t)).not.toContain('noScanUsed');
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_label_scan', { pages: 1, charged: false, result: 'unreadable' });
     await press(t, 'pscan-retake');
     expect(ids(t)).toContain('pscan-label-pages');
-    expect(ids(t)).toContain('pscan-same-analysis');
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3' }));
+    await press(t, 'pscan-label-analyze');
+    expect(labelCalls()[1][1]).toMatchObject({ analysisId: 'A3' });
   });
   it('409 PFOOD-007(무료 재분석 초과) = 새로 분석 버튼 → analysisId null · 같은 면', async () => {
     const t = flow(true);
@@ -244,22 +311,33 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     expect(labelCalls()[2][1]).toEqual({ analysisId: null, clientRequestId: expect.any(String), pages: [{ ocrText: LABEL_P1 }, { ocrText: LABEL_P2 }], lang: 'en' });
     expect(ids(t)).toContain('pscan-label-result');
   });
-  it('글자 없는 면 = 서버 호출 0 · 못 읽음 → 다시 찍기 = 그 카메라 · 2면째 못 읽음 = 1면 유지(Codex #315 R2) · 결과에서 한 면 더 못 읽음 = 그 결과로', async () => {
+  it('Q4: 성분표 분석 한도(SCAN-004) = onQuota(scan.tsx 덮개) · 면 검토 그대로(면·분석 ID 유지) → 다시 분석 = 같은 면', async () => {
+    const t = flow();
+    await toHandoffFromNone(t);
+    await shoot(t, LABEL_P1);
+    mockPost.mockRejectedValueOnce(new ApiError('quota', 403, 'SCAN-004'));
+    await press(t, 'pscan-label-analyze');
+    expect(mockOnQuota).toHaveBeenCalledTimes(1);
+    expect(ids(t)).toContain('pscan-label-pages');
+    expect(count(t)).toBe('packagedScan.labelPhotosCount:{"count":1,"max":4}');
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3' }));
+    await press(t, 'pscan-label-analyze');
+    expect(labelCalls()[1][1]).toEqual({ analysisId: 'A3', pages: [{ ocrText: LABEL_P1 }], lang: 'en' });
+  });
+  it('글자 없는 면 = 서버 호출 0 · 못 읽음 → 다시 찍기 = 그 카메라 · 2면째 못 읽음 = 1면 유지 + "사진 보기" = 면 검토 · 결과에서 한 면 더 못 읽음 = 그 결과로', async () => {
     const t = flow();
     await toHandoffFromNone(t);
     await shoot(t, null);
     expect(labelCalls()).toHaveLength(0);
     expect(ids(t)).toContain('pscan-error-unreadable');
+    expect(ids(t)).not.toContain('pscan-review-photos'); // 모은 면 0
     await press(t, 'pscan-retake');
     expect(ids(t)).toContain('cam-ingredient');
-    expect(hint(t)).toBe('packagedScan.sameAnalysis');
     await shoot(t, LABEL_P1);
     await press(t, 'pscan-label-add');
     await shoot(t, null);
-    await press(t, 'pscan-retake');
-    expect(hint(t)).toBe('packagedScan.labelPagesCount:{"count":1,"max":4}');
-    close(t, 'cam-close');
-    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":1,"max":4}');
+    await press(t, 'pscan-review-photos');
+    expect(count(t)).toBe('packagedScan.labelPhotosCount:{"count":1,"max":4}');
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3' }));
     await press(t, 'pscan-label-analyze');
     expect(labelCalls()[0][1]).toMatchObject({ analysisId: 'A3', pages: [{ ocrText: LABEL_P1 }] });
@@ -270,7 +348,7 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     expect(ids(t)).toContain('pscan-label-result');
     expect(labelCalls()).toHaveLength(1);
   });
-  it('면 4장 = "한 면 더" 사라짐 · OCR 주입 디버그로 면 추가(카메라 위 작은 패널 — 개발·진단 채널)', async () => {
+  it('면 4장 = "한 면 더" 사라짐 · 한도 문구 · OCR 주입 디버그로 면 추가 · 뒤로 = 앞면 카메라(Codex #318)', async () => {
     const t = flow(true);
     const inject = async (text: string) => {
       act(() => t.root.findAll((n) => n.props?.testID === 'pscan-label-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText(text));
@@ -281,9 +359,9 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
       await press(t, 'pscan-label-add');
       await inject(p);
     }
-    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":4,"max":4}');
+    expect(count(t)).toBe('packagedScan.labelPhotosCount:{"count":4,"max":4}');
+    expect(ids(t)).toContain('pscan-label-full');
     expect(ids(t)).not.toContain('pscan-label-add');
-    // Codex #318: 4면이 찼으면 뒤로 = 성분표 카메라가 아니라 앞면 카메라(더 찍을 수 없는 카메라 진입 0)
     back(t);
     expect(ids(t)).toContain('cam-package');
     expect(ids(t)).not.toContain('cam-ingredient');
@@ -298,20 +376,21 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     const t2 = render(<PackagedScanFlow mode="packaged" onMode={jest.fn()} onClose={jest.fn()} startLabel renderCamera={capture} focused={false} />);
     expect(t2.root.findAll((n) => n.type === StatusBar)).toHaveLength(0);
   });
-  it('Codex #315: 전송 실패 뒤 다시 시도가 charged false = "추가 사용 없음" 단정 금지(첫 요청이 차감했을 수 있음 — 홈에서 확인)', async () => {
+  it('Codex #315: 전송 실패 → 다시 시도 = 같은 분석 ID · charged false여도 프로필 재조회(첫 요청이 차감했을 수 있음)', async () => {
     const t = flow();
     await toHandoffFromNone(t);
     await shoot(t, LABEL_P1);
     mockPost.mockRejectedValueOnce(new Error('timeout'));
     await press(t, 'pscan-label-analyze');
-    expect(texts(t)).toContain('packagedScan.chargeChecking');
+    expect(ids(t)).toContain('pscan-error-network');
+    const inv = jest.spyOn(qc, 'invalidateQueries');
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3', charged: false }));
     await press(t, 'pscan-retry');
     expect(labelCalls()[1][1]).toMatchObject({ analysisId: 'A3' });
-    expect(texts(t)).toContain('packagedScan.chargeSeeHome');
-    expect(texts(t)).not.toContain('packagedScan.labelNoExtra');
+    expect(inv).toHaveBeenCalledWith({ queryKey: ['me'] });
+    expect(ids(t)).toContain('pscan-label-result');
   });
-  it('Codex #315: 분석 대기 중 닫기(로딩 C X) = 모은 면 화면(면·분석 ID 유지) · 늦은 응답 무시 · 결과에서 한 면 더 OCR 중 닫기 = 그 카메라(늦은 OCR 무시)', async () => {
+  it('Codex #315: 분석 대기 중 닫기(로딩 C X) = 면 검토(면·분석 ID 유지) · 늦은 응답 무시 · 결과에서 한 면 더 OCR 중 닫기 = 그 카메라(늦은 OCR 무시)', async () => {
     const t = flow();
     await toHandoffFromNone(t);
     await shoot(t, LABEL_P1);
@@ -321,12 +400,12 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     expect(ids(t)).toContain('pscan-reading');
     close(t, 'scan-loading-close');
     expect(ids(t)).toContain('pscan-label-pages');
-    expect(ids(t)).toContain('pscan-same-analysis');
-    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":1,"max":4}');
+    expect(count(t)).toBe('packagedScan.labelPhotosCount:{"count":1,"max":4}');
     await act(async () => { release(RESULT({ analysisId: 'A3' })); await new Promise((r) => setTimeout(r, 0)); });
     expect(ids(t)).toContain('pscan-label-pages');
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3' }));
     await press(t, 'pscan-label-analyze');
+    expect(labelCalls()[1][1]).toMatchObject({ analysisId: 'A3' });
     await press(t, 'pscan-label-more');
     let ocrRelease!: (v: unknown) => void;
     mockOcr.mockReturnValueOnce(new Promise((r) => (ocrRelease = r)));
@@ -339,7 +418,7 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     expect(labelCalls()).toHaveLength(2);
     expect(ids(t)).toContain('cam-ingredient');
   });
-  it('#444 멱등 키: 새 분석 = clientRequestId · 전송 실패 재시도 = 같은 키 · 재전송 charged false여도 "1회 사용" · 같은 분석 = 키 없음', async () => {
+  it('#444 멱등 키: 새 분석 = clientRequestId · 전송 실패 재시도 = 같은 키 · 프로필 재조회 · 같은 분석 = 키 없음', async () => {
     const inv = jest.spyOn(qc, 'invalidateQueries');
     const t = flow(true);
     await shoot(t, LABEL_P1);
@@ -349,8 +428,6 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L7', charged: false }));
     await press(t, 'pscan-retry');
     expect(labelCalls()[1][1]).toMatchObject({ analysisId: null, clientRequestId: 'uuid-1' });
-    expect(texts(t)).toContain('packagedScan.scanUsed');
-    expect(texts(t)).not.toContain('packagedScan.chargeSeeHome');
     expect(inv).toHaveBeenCalledWith({ queryKey: ['me'] });
     await press(t, 'pscan-label-more');
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L7', charged: false }));
@@ -369,7 +446,7 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     await press(t, 'pscan-label-analyze');
     expect(labelCalls().map((c) => (c[1] as { clientRequestId?: string }).clientRequestId)).toEqual(['uuid-1', 'uuid-2']);
   });
-  it('QA Z5: 면 모으기 → 뒤로 → 카메라(힌트 n/4)에서 찍기·주입 = 이어 붙이기(덮어쓰기 0) · 분석 ID 유지', async () => {
+  it('QA Z5: 면 검토 → 뒤로 → 카메라(힌트 n/4)에서 찍기·주입 = 이어 붙이기(덮어쓰기 0) · 분석 ID 유지', async () => {
     const t = flow();
     await toHandoffFromNone(t);
     await shoot(t, LABEL_P1);
@@ -377,16 +454,16 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     expect(ids(t)).toContain('cam-ingredient');
     expect(hint(t)).toBe('packagedScan.labelPagesCount:{"count":1,"max":4}');
     await shoot(t, LABEL_P2);
-    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":2,"max":4}');
+    expect(count(t)).toBe('packagedScan.labelPhotosCount:{"count":2,"max":4}');
     back(t);
     act(() => t.root.findAll((n) => n.props?.testID === 'pscan-label-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('c'));
     await press(t, 'pscan-label-debug-add');
-    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":3,"max":4}');
+    expect(count(t)).toBe('packagedScan.labelPhotosCount:{"count":3,"max":4}');
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3' }));
     await press(t, 'pscan-label-analyze');
     expect(labelCalls()[0][1]).toMatchObject({ analysisId: 'A3', pages: [{ ocrText: LABEL_P1 }, { ocrText: LABEL_P2 }, { ocrText: 'c' }] });
   });
-  it('로딩 C: 성분표 읽는 중 = 찍은 사진 + 성분표 캡션 · 본문 없음(가공식품용 시간 문구 키 없음 — 새 추정치 금지)', async () => {
+  it('로딩 C(Q1 유지): 성분표 읽는 중 = 찍은 사진 + 성분표 캡션 · 본문 없음', async () => {
     const t = flow(true);
     mockOcr.mockReturnValueOnce(new Promise(() => {}));
     act(() => { void t.root.findAll((n) => n.props?.testID === 'pscan-label-capture' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
@@ -396,13 +473,18 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     expect(texts(t)).toEqual(expect.arrayContaining(['packagedScan.labelReading', 'scanCamera.capturedLabel']));
     expect(ids(t)).not.toContain('scan-stay-hint');
   });
-  it('플래그 off = 성분표 단계 = 기존 안내 페이지(촬영 버튼 비활성 + 곧 지원) · 카메라·주입 0', async () => {
+  it('플래그 off = 성분표 단계 = 기존 안내 페이지(곧 지원) · 카메라·주입 0 · 후보 없음 화면 = 이름 찾기만', async () => {
     setFlag(false);
     const t = flow(true);
     expect(ids(t)).toContain('pscan-label-soon');
     expect(ids(t)).not.toContain('cam-ingredient');
-    const btn = t.root.findAll((n) => n.props?.testID === 'pscan-label-capture' && typeof n.type === 'string')[0];
-    expect(btn.props.accessibilityState).toEqual({ disabled: true });
     expect(ids(t)).not.toContain('pscan-label-debug');
+    const t2 = flow();
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost.mockResolvedValueOnce({ analysisId: 'A3', state: 'NO_CANDIDATE', candidates: [] });
+    await press(t2, 'pscan-take-photo');
+    expect(ids(t2)).toContain('pscan-find-by-name');
+    expect(ids(t2)).not.toContain('pscan-to-label');
+    expect(texts(t2)).toContain('packagedScan.anotherBodyNameOnly');
   });
 });

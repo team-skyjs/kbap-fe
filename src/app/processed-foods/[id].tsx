@@ -31,8 +31,7 @@ import { RemoteImage } from '@/components/RemoteImage';
 import { RiskBadge } from '@/components/RiskBadge';
 import { Shimmer } from '@/components/Skeleton';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { IconLock } from '@/components/icons';
-import { color as C, font, riskTone, type RiskState } from '@/lib/theme';
+import { color as C, font } from '@/lib/theme';
 import { MessageErrorBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
@@ -41,119 +40,14 @@ import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { processedUnavailable, useProcessedDetail } from '@/lib/data/useProcessedFoods';
-import { packagedTypeKey, VERDICT_RISK, type LabelSource, type ProcessedFoodDetail, type ProcessedMayContain } from '@/lib/api/processedFoodAdapter';
+import { packagedTypeKey, VERDICT_RISK, type ProcessedFoodDetail } from '@/lib/api/processedFoodAdapter';
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
-import { FlameShape } from '@/components/FlameShape';
 import { PackagedReviews } from '@/features/processedFood/PackagedReviews';
 
 const GUTTER = 20;
 export const PHOTO_RATIO = 223 / 335; // 시안 사진 슬롯 335×223(원본 500×333 비율)
-export const RAW_CLAMP_LINES = 4;
-export const LABEL_SOURCE_KEY: Record<LabelSource, string> = {
-  DECLARED: 'packaged.labelDeclared',
-  INGREDIENTS_ONLY: 'packaged.labelIngredientsOnly',
-  NONE: 'packaged.labelNone',
-};
 /** 출처 고지 키 → 문구 키. 모르는 키도 자료 출처 문구는 항상(고지 3종 상시). */
 const IMAGE_CREDIT: Record<string, string> = { 'processedFood.image.haccp': 'packaged.imageHaccp', 'processedFood.image.off': 'packaged.imageOff' };
-
-// 상태 행 틴트 — 음식 상세 riskRow와 같은 값(theme riskTone: 붉은 틴트 = caution.bg, 노란 틴트 = danger.bg — 시안 인스턴스 이름 뒤바뀜을 그대로 둔 기존 매핑)
-const ROW_BG: Record<'danger' | 'caution' | 'unable', string> = { danger: riskTone.caution.bg, caution: riskTone.danger.bg, unable: riskTone.unable.bg };
-
-function StatusRow({ state, title, body, testID }: { state: Extract<RiskState, 'danger' | 'caution' | 'unable'>; title: string; body: string; testID: string }) {
-  return (
-    <View style={[s.row, { backgroundColor: ROW_BG[state] }]} testID={testID}>
-      <RiskBadge state={state} />
-      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-        <Text style={s.rowTitle}>{title}</Text>
-        <Text style={s.rowSub}>{body}</Text>
-      </View>
-    </View>
-  );
-}
-
-/** 원재료 원문 — 4줄을 넘을 때만 접기(같은 폭 숨김 측정 Text로 전체 줄 수 — KB-824 정확히 N줄 오판 방지). */
-export function RawText({ text }: { text: string }) {
-  const { t } = useTranslation();
-  const [expanded, setExpanded] = React.useState(false);
-  const [lines, setLines] = React.useState<number | null>(null);
-  const long = lines != null && lines > RAW_CLAMP_LINES;
-  return (
-    <View style={{ gap: 20 }}>
-      <View>
-        <Text style={s.raw} numberOfLines={expanded || (lines != null && !long) ? undefined : RAW_CLAMP_LINES} testID="pf-raw">{text}</Text>
-        <Text
-          style={[s.raw, s.measure]}
-          onTextLayout={(e) => setLines(e.nativeEvent.lines.length)}
-          accessible={false}
-          importantForAccessibility="no-hide-descendants"
-          accessibilityElementsHidden
-          pointerEvents="none"
-          testID="pf-raw-measure"
-        >
-          {text}
-        </Text>
-      </View>
-      {long && (
-        <Btn variant="ghost" onPress={() => setExpanded((v) => !v)} style={s.outlineBtn} testID="pf-raw-toggle">
-          {t(expanded ? 'packaged.showLess' : 'packaged.showAll')}
-        </Btn>
-      )}
-    </View>
-  );
-}
-
-/** 판정 섹션 — 상세와 성분표 분석 결과(P-508 PackagedScanFlow)가 같이 쓴다. mayContain = 성분표 분석만(함유 가능 — 검출 아님, 회색 칩) */
-export type VerdictData = Pick<ProcessedFoodDetail, 'labelSource' | 'detections' | 'avoidance'> & { mayContain?: ProcessedMayContain[] };
-export function Verdict({ d, onLogin }: { d: VerdictData; onLogin: () => void }) {
-  const { t } = useTranslation();
-  const found = (fromLabel: boolean, evidence: string) => t(fromLabel ? 'packaged.foundOnLabel' : 'packaged.foundInIngredients', { evidence });
-  return (
-    <View style={s.section} testID="pf-verdict">
-      <Text style={s.h2}>{t('packaged.detectedTitle')}</Text>
-      {/* labelSource별 상단 문구 — 필수(판독 근거를 먼저 말한다) */}
-      <Text style={s.notice} testID="pf-label-source">{t(LABEL_SOURCE_KEY[d.labelSource])}</Text>
-      {d.detections.map((x) => (
-        <StatusRow key={`det-${x.code}`} state="danger" title={t('packaged.detected', { name: restrictionLabel(x.code) })} body={found(x.fromLabel, x.evidence)} testID={`pf-det-${x.code}`} />
-      ))}
-      {/* 검출 0 = "없음"이 아니라 미확인 — 회색 */}
-      {d.detections.length === 0 && (
-        <StatusRow state="unable" title={t('packaged.notVerified')} body={t('packaged.notVerifiedBody')} testID="pf-none-detected" />
-      )}
-      {/* P-508: 함유 가능(같은 제조시설·혼입 표기) — 검출로 세지 않는 참고 정보라 판정 색이 아니라 회색 칩 */}
-      {!!d.mayContain?.length && (
-        <View style={s.mayBox} testID="pf-may-contain">
-          <Text style={s.mayTitle}>{t('packaged.mayContainTitle')}</Text>
-          <View style={s.chips}>
-            {d.mayContain.map((m) => (
-              <View key={m.code} style={s.chip} testID={`pf-may-${m.code}`}>
-                <Text style={s.chipText}>{restrictionLabel(m.code)}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-      {d.avoidance == null ? (
-        <Pressable style={s.lock} onPress={onLogin} accessibilityRole="button" testID="pf-login-compare">
-          <IconLock size={16} color={C.ink2} />
-          <Text style={s.lockText}>{t('packaged.loginToCompare')}</Text>
-          <Text style={s.lockCta}>{t('intro.signUp')}</Text>
-        </Pressable>
-      ) : d.avoidance.length > 0 ? (
-        <View style={s.section} testID="pf-my-avoid">
-          <Text style={s.h2}>{t('packaged.myAvoidTitle')}</Text>
-          {d.avoidance.map((a) =>
-            a.detected ? (
-              <StatusRow key={a.code} state="danger" title={t('packaged.detected', { name: restrictionLabel(a.code) })} body={a.evidence.length ? found(false, a.evidence.join(', ')) : t('packaged.detectedNoEvidence')} testID={`pf-avoid-${a.code}`} />
-            ) : (
-              <StatusRow key={a.code} state="unable" title={t('packaged.notVerifiedName', { name: restrictionLabel(a.code) })} body={t('packaged.notVerifiedBody')} testID={`pf-avoid-${a.code}`} />
-            ),
-          )}
-        </View>
-      ) : null}
-    </View>
-  );
-}
 
 /** KB-870(Codex #335): 운영 채널(운영 서버 processed-foods 404) = 직접 링크·공유 링크로 와도 상세 0(모듈 상수로 고름 — 감싸는 컴포넌트 없음) */
 const GoneHome = () => <Redirect href="/" />;
@@ -296,10 +190,6 @@ export function ProcessedFoodDetailScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string; scan?: string; charged?: string }>();
   const id = typeof params.id === 'string' ? params.id : undefined;
-  // KB-813: 스캔 확정에서 온 경우 = "스캔 결과" 띠. 차감 표시는 서버 confirm 응답의 charged(파라미터로 전달)만 — 추정 0
-  const fromScan = params.scan === '1';
-  const charged = params.charged === '1';
-  const chargeUnknown = params.charged === 'u'; // 앞선 확정 전송 실패 뒤 재확정 — 차감 여부를 단정하지 않는다(남은 횟수는 프로필에서)
   const q = useProcessedDetail(id);
   const guest = useIsGuest();
   const meQ = useMe();
@@ -378,17 +268,7 @@ export function ProcessedFoodDetailScreen() {
         }}
         testID="pf-detail"
       >
-        {fromScan && (
-          <View style={s.scanBanner} testID="pf-scan-result">
-            <View style={s.flameBox} pointerEvents="none">
-              <FlameShape scale={0.2} state={charged ? 'active' : 'empty'} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={s.scanTitle}>{t('packagedScan.resultTitle')}</Text>
-              <Text style={s.scanSub} testID="pf-scan-charge">{t(charged ? 'packagedScan.scanUsed' : chargeUnknown ? 'packagedScan.chargeSeeHome' : 'packagedScan.noScanUsed')}</Text>
-            </View>
-          </View>
-        )}
+        {/* KB-865 ③(시안 20): 스캔 확정 결과 = 일반 상세와 같은 화면 — "스캔 결과" 띠·불꽃·차감 문구 없음(README) */}
         {/* 시안 08: 사진 335×223 r16 #F7F8FA(상품 8 안쪽 contain) · 판정 리본 22×29 좌상단 x10 y0 그림자 없음(목록 카드와 같은 배지) */}
         <View style={s.photo}>
           {d.imageUrl ? (
@@ -482,27 +362,6 @@ const s = StyleSheet.create({
   disclaimer: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
   seeLess: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, justifyContent: 'center' },
   seeLessText: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
-  // 구 판정 부품(성분표 결과 — ③단계에서 교체)
-  section: { gap: 20 },
-  notice: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2, marginTop: -12 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 15, paddingVertical: 12, paddingHorizontal: 20, minHeight: 63, borderBottomWidth: 0.5, borderBottomColor: '#D5DFE7' },
-  rowTitle: { fontSize: 14, fontWeight: '600', color: C.ink },
-  rowSub: { fontSize: 13, fontWeight: '500', color: C.ink2, lineHeight: 18 },
-  lock: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 20, paddingVertical: 13, minHeight: 44, backgroundColor: C.surface2, borderBottomWidth: 0.5, borderBottomColor: '#D5DFE7' },
-  lockText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.ink2 },
-  lockCta: { fontSize: 13, fontWeight: '700', color: C.primaryText },
-  raw: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink },
-  measure: { position: 'absolute', left: 0, right: 0, opacity: 0 },
-  outlineBtn: { minHeight: 40, paddingVertical: 8 },
-  scanBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 8, backgroundColor: C.surface2 },
-  flameBox: { width: 24, height: 30, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
-  scanTitle: { fontFamily: font.bodySemi, fontSize: 14, lineHeight: 20, color: C.ink },
-  scanSub: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
   skelLine: { height: 14, borderRadius: 4 },
   skelRow: { height: 63, borderRadius: 4 },
-  mayBox: { gap: 8 },
-  mayTitle: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: C.surface2 },
-  chipText: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
 });

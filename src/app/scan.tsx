@@ -226,6 +226,10 @@ export default function Scan() {
   // P-255: 최선 노력 사전 확인 — 004만 즉시 잠금(fail() 미경유 = scan_complete 계측
   // 오염 0 — 스캔 시도가 아니다), 그 외 실패는 무시(최종 판정 = 스캔 단계 분기·시나리오 E).
   const quotaLockRef = useRef(false); // 선발급 잠금 판별 — 타 에러 화면 오복원 방지
+  // KB-865 ③(시안 21): 가공식품 확정이 한도(SCAN-004)에 걸림 = 기존 소진 화면을 **가공식품 흐름 위에** 띄운다 — 흐름(후보·선택)은 마운트 유지,
+  // 해제·나중에 = 같은 후보로 복귀(진입 플로우 문서). 잡고 있는 동안 프로필 잠금이 흐름을 갈아치우지 않게 ref로 막는다
+  const [packagedHold, setPackagedHold] = useState(false);
+  const packagedHoldRef = useRef(false);
   // P-384(KB-442): 프로필 쿼터(서버 정본)가 이미 소진이면 티켓 응답을 기다리지 않고 즉시 안내.
   // 티켓 요청은 그대로 보낸다 — 403 SCAN-004 경로 유지 + 프로필이 낡았으면(리뷰로 해금)
   // 발급 성공이 아래 복원 분기로 카메라를 되돌린다.
@@ -256,7 +260,7 @@ export default function Scan() {
   const canLockQuota = () => phaseRef.current === 'camera' || phaseRef.current === 'error';
   const lockFromProfile = useCallback(() => {
     const quota = quotaRef.current;
-    if (!canLockQuota() || !isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current) return;
+    if (!canLockQuota() || !isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current || packagedHoldRef.current) return;
     quotaLockRef.current = true;
     setError({ stage: 'quota', detail: 'profile scanRemaining 0' });
     setPhase('error');
@@ -1206,9 +1210,13 @@ export default function Scan() {
   }
 
   // ---- error ----
-  if (phase === 'error') {
+  // 가공식품 소진(packagedHold) = 아래 가공식품 분기가 흐름 위에 덮어 그린다(같은 트리 자리 — 흐름 상태 유지). 나중에 = 흐름으로 복귀
+  const quotaLater = packagedHold
+    ? () => { quotaLockRef.current = false; setError(null); setPhase('camera'); }
+    : () => router.back();
+  const renderError = () => {
     const stage = error?.stage ?? 'be';
-    return withPresenter(
+    return (
       <View style={[styles.root, styles.center]}>
         {Close}
         {GateSheet}
@@ -1231,13 +1239,13 @@ export default function Scan() {
               {/* KB-759: 해제됐는데 티켓 재발급 중/실패 — 광고·리뷰 CTA 대신 다시 시도(실패일 때만) + 나중에 */}
               {/* /review 3: 여는 중에도 같은 버튼을 busy로 유지(스피너·비활성) — 실패면 탭 가능 */}
               <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t(unlockState === 'ready' ? 'scan.startScanning' : 'common.retry')}</Btn>
-              <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
+              <Btn variant="ghost" onPress={quotaLater} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'quota' ? (
             <>
               {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight({unlocked}) → 새 티켓 → 카메라 복원(KB-759) */}
               <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (!hasObservedUnlockTransition()) void preflight({ unlocked: true }); }} onClose={() => router.back()} />
-              <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
+              <Btn variant="ghost" onPress={quotaLater} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (
             <>
@@ -1266,17 +1274,35 @@ export default function Scan() {
         )}
       </View>
     );
-  }
+  };
 
-  // ---- KB-813 가공식품 모드 — 카메라 단계에서만(결과·오류·쿼터 잠금은 위에서 먼저 처리돼 이 분기에 오지 않는다) ----
-  if (scanMode === 'packaged' && !offline) {
+  // ---- KB-813 가공식품 모드 — 카메라 단계(결과·오류·쿼터 잠금은 아래에서 먼저) · KB-865 ③: 확정 소진은 흐름 위 덮개 ----
+  if (scanMode === 'packaged' && !offline && (phase !== 'error' || packagedHold)) {
     return withPresenter(
       <View style={styles.camHost}>
         {cameraLayer}
-        <PackagedScanFlow key={labelEntry ?? 'flow'} mode={scanMode} onMode={setScanMode} onClose={() => router.back()} startLabel={labelEntry != null} renderCamera={cameraUi} focused={isFocused} />
+        <PackagedScanFlow
+          key={labelEntry ?? 'flow'}
+          mode={scanMode}
+          onMode={setScanMode}
+          onClose={() => router.back()}
+          startLabel={labelEntry != null}
+          renderCamera={cameraUi}
+          focused={isFocused}
+          onQuota={() => {
+            packagedHoldRef.current = true;
+            setPackagedHold(true);
+            quotaLockRef.current = true;
+            setError({ stage: 'quota', detail: 'packaged confirm SCAN-004' });
+            setPhase('error');
+          }}
+        />
+        {phase === 'error' && <View style={StyleSheet.absoluteFill} testID="pscan-quota-overlay">{renderError()}</View>}
       </View>,
     );
   }
+
+  if (phase === 'error') return withPresenter(renderError());
 
   // ---- camera (default) ----
   // P-046: 오프라인 = 전체 J4 (카메라·갤러리·샘플 진입로 전부 이 화면으로 대체 —
