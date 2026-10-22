@@ -1,6 +1,9 @@
 import { EngagementCollector } from '../collector';
 import { sanitizeEngagement, type Props, type RuntimeContext } from '../schema';
 import { sanitize } from '../../analytics';
+import { screenFromSegments } from '../../uiClick';
+import { readdirSync } from 'fs';
+import { join } from 'path';
 
 const runtime: RuntimeContext = { app_env: 'release', be_env: 'dev', channel: 'teamtest', app_version: '1.0.4', app_build: '45', os: 'ios', update_id: 'unknown', runtime_version: 'unknown' };
 function setup() {
@@ -10,7 +13,7 @@ function setup() {
   const advance = (ms: number) => { time += ms; };
   const visible = (foreground = true, focused = true, uncovered = true) => c.setVisibility({ foreground, focused, uncovered });
   const props = (event: string) => events.filter((x) => x.event === event).map((x) => x.props);
-  c.begin('food/[id]/index', 'navigation'); visible();
+  c.begin('food/[id]', 'navigation'); visible();
   return { c, events, advance, visible, props };
 }
 const geometry = { intersection: 100, target: 100, viewport: 100 };
@@ -34,8 +37,8 @@ test('redundant active callbacks do not postpone 15s checkpoints', () => {
 });
 test('same route content replacement/focus return gets a new visit ID; account reset drops prior buffers', () => {
   const { c, advance, props } = setup();
-  advance(200); c.begin('food/[id]/index', 'content_change'); advance(500); c.reset(); c.tick();
-  c.begin('food/[id]/index', 'navigation'); advance(300); c.end();
+  advance(200); c.begin('food/[id]', 'content_change'); advance(500); c.reset(); c.tick();
+  c.begin('food/[id]', 'navigation'); advance(300); c.end();
   expect(new Set(props('screen_visit_start').map((p) => p.screen_visit_id)).size).toBe(3);
   expect(props('screen_visible_time').map((p) => p.delta_ms)).toEqual([200, 300]);
 });
@@ -123,4 +126,49 @@ test('begin-drag before the first onScroll is counted once', () => {
   const { c, advance, props } = setup(); c.observe('body_1', 'body', 0, geometry);
   c.userScroll('body_1'); c.scroll('body_1', 'vertical', { ...sample, origin: 'user' });
   advance(15000); c.tick(); expect(props('screen_scroll_summary')[0].user_scrolls).toBe(1);
+});
+
+
+test('all current route files retain the canonical screenFromSegments output at the adapter boundary', () => {
+  const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return entry.name === '__tests__' ? [] : walk(path);
+    return entry.name.endsWith('.tsx') && !entry.name.startsWith('_') && !entry.name.startsWith('+') && entry.name !== 'states.tsx' ? [path] : [];
+  });
+  const routes = walk('src/app');
+  expect(routes.length).toBeGreaterThan(30);
+  for (const route of routes) {
+    const segments = route.replace(/^src\/app\//, '').replace(/\.tsx$/, '').split('/');
+    if (segments.at(-1) === 'index') segments.pop();
+    const screen = screenFromSegments(segments);
+    expect({ route, screen: sanitize('screen_visit_start', { screen })?.screen }).toEqual({ route, screen });
+  }
+  for (const screen of ['compose', 'post/[id]', 'onboarding/index', 'profile/feedback/index', 'food/private-id']) {
+    expect(sanitize('screen_visit_start', { screen })).not.toHaveProperty('screen');
+  }
+});
+
+test.each(['body', 'rail', 'photos', 'card', 'sheet', 'dialog'] as const)('area prefix must match %s in collector and sanitizer', (surface) => {
+  const { c, advance, events } = setup();
+  const areaEvents = ['screen_surface_impression', 'screen_surface_visible_time', 'screen_scroll_depth', 'screen_scroll_summary'] as const;
+  const id = `${surface}_1`;
+  for (const wrong of ['screen', 'body', 'rail', 'photos', 'card', 'sheet', 'dialog'] as const) {
+    if (wrong === surface) continue;
+    c.observe(id, wrong, 0, geometry);
+    c.scroll(id, 'vertical', sample);
+    for (const event of areaEvents) expect(sanitizeEngagement(event, { screen: 'scan', area_id: id, surface: wrong, depth: 25 })).toEqual({});
+  }
+  advance(1000); c.tick(); c.end();
+  expect(events.filter((e) => e.props.area_id)).toEqual([]);
+  expect(sanitizeEngagement('screen_surface_impression', { area_id: id, surface })).toEqual({ area_id: id, surface });
+});
+
+test('invalid re-registration cannot replace or flush an existing valid area', () => {
+  const { c, advance, events, props } = setup();
+  c.observe('card_1', 'card', 0, geometry);
+  advance(600); c.observe('card_1', 'body', 1, geometry);
+  expect(events.filter((e) => e.props.area_id)).toEqual([]);
+  advance(400); c.tick(); c.end();
+  expect(props('screen_surface_impression')).toMatchObject([{ area_id: 'card_1', surface: 'card', list_generation: 0 }]);
+  expect(props('screen_surface_visible_time')).toMatchObject([{ surface: 'card', list_generation: 0, delta_ms: 1000 }]);
 });

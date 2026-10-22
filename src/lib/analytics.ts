@@ -265,6 +265,8 @@ export function sanitize(event: EventName, props?: Record<string, unknown>): Rec
 
 export function track(event: EventName, props?: Record<string, unknown>): void {
   const clean = sanitize(event, props);
+  // Invalid schema2 areas are rejected as events, not forwarded with missing dimensions.
+  if (Object.hasOwn(ENGAGEMENT_EVENTS, event) && (!clean || !Object.keys(clean).length)) return;
   if (!ensureInit()) {
     if (__DEV__) console.log('[analytics:noop]', event, clean ?? {});
     return;

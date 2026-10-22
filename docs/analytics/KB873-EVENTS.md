@@ -15,7 +15,8 @@
 
 - 모든새이벤트: schema_version=2, screen(enum라우트패턴), source=navigation/content_change/unknown, screen_visit_id(프로세스내단기v숫자_순번). 실제ID/URL/쿼리미수집.
 - RuntimeContext: app_env development/release/unknown, be_env dev/prod/other/unknown, channel허용목록, app_version/build숫자버전, os, update_id(UUID/unknown), runtime_version(해시/unknown). 검증기는비밀원문·잘못된형식을드롭한다. 실제expo/native/env정보해석은후속연결단위,release를__DEV__만으로판단하지않음.
-- surface: screen/body/rail/photos/card/sheet/dialog; area_id는body_N/rail_N/photos_N/card_N/sheet_N/dialog_N. ID는UI등록소에서할당할단기숫자이고개인주문/분석서버ID사용금지. 공개entity id/section/source확장과안정된가상화매핑은후속연결전에정의한다.
+- screen은 기존 screenFromSegments의 canonical 패턴을 쓴다. community/compose, community/post/[id], onboarding, profile/feedback, food/[id]를 포함하며 index 별칭이나 실제 콘텐츠 ID는 허용하지 않는다. 현행 route 파일 전수를 실제 변환 함수와 대조하는 회귀가 있다.
+- surface: screen/body/rail/photos/card/sheet/dialog; area_id는body_N/rail_N/photos_N/card_N/sheet_N/dialog_N. 접두사는 surface와 반드시 같아야 하며 screen은 영역 등록에 쓰지 않는다. 잘못된 쌍은 collector에서 상태 변경 없이 거절하고 sanitizer에서 빈 결과로 반환하며 전송 어댑터가 해당 이벤트 전체를 폐기한다. ID는UI등록소에서할당할단기숫자이고개인주문/분석서버ID사용금지. 공개entity id/section/source확장과안정된가상화매핑은후속연결전에정의한다.
 - duration은주입한monotonic clock차이. Date.now는프로세스ID접두에만사용,시간계산에사용하지않음. 단위ms. delta음수/NaN방어. checkpoint기본15000ms이상. (visit,event,area,generation,sequence)단위dedup. 배경/가림진입은그직전delta만flush. 계정경계reset은미전송구간폐기.
 - 영역은intersection/min(target,viewport)>=0.5. viewport보다큰영역도관측가능. 가림을geometry만으로판별못하므로호출자가uncovered를명시해야함. 중앙집계기에는타이머0개,후속runtime관리자에공용tick스케줄러1개예정.
 - 스크롤본문도달률=min(100,(clamped offset+viewport)/content length*100),이동거리비율아님. 끝도달오차2layout units. content<=viewport이면milestone0. initial도달은origin=initial. 100이사용자완독을뜻하지않음.

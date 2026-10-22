@@ -8,7 +8,7 @@ export const ENGAGEMENT_EVENTS = {
   screen_scroll_summary: 'screen_scroll_summary',
 } as const;
 export type EngagementEvent = keyof typeof ENGAGEMENT_EVENTS;
-export const SCREENS = ['root', '(tabs)/index', '(tabs)/food', '(tabs)/community', '(tabs)/profile', 'scan', 'scan-order', 'search', 'idol-picks', 'curations/[key]', 'food/[id]', 'food/[id]/index', 'food/[id]/reviews', 'food/[id]/review', 'food/[id]/owner', 'profile/saved', 'profile/my-foods', 'profile/order/[id]', 'profile/reviews', 'profile/edit', 'profile/restrictions', 'profile/diet', 'profile/notifications', 'profile/feedback/index', 'profile/feedback/new', 'profile/feedback/[id]', 'profile/ranking', 'profile/legal', 'notifications', 'login', 'onboarding/index', 'delete-account', 'processed-foods/[id]', 'processed-foods/[id]/review', 'community/blocked', 'post/[id]', 'compose', 'unknown'] as const;
+export const SCREENS = ['root', '(tabs)/index', '(tabs)/food', '(tabs)/community', '(tabs)/profile', 'scan', 'scan-order', 'search', 'idol-picks', 'curations/[key]', 'food/[id]', 'food/[id]/reviews', 'food/[id]/review', 'food/[id]/owner', 'profile/saved', 'profile/my-foods', 'profile/order/[id]', 'profile/reviews', 'profile/edit', 'profile/restrictions', 'profile/diet', 'profile/notifications', 'profile/feedback', 'profile/feedback/new', 'profile/feedback/[id]', 'profile/ranking', 'profile/legal', 'notifications', 'login', 'onboarding', 'delete-account', 'processed-foods/[id]', 'processed-foods/[id]/review', 'community/blocked', 'community/post/[id]', 'community/compose', 'unknown'] as const;
 export type Screen = typeof SCREENS[number];
 export const SURFACES = ['screen', 'body', 'rail', 'photos', 'card', 'sheet', 'dialog'] as const;
 export type Surface = typeof SURFACES[number];
@@ -48,8 +48,14 @@ export const ENGAGEMENT_ALLOWED: Record<EngagementEvent, readonly string[]> = {
   screen_scroll_depth: [...COMMON, ...AREA, 'axis', 'origin', 'depth'],
   screen_scroll_summary: [...COMMON, ...AREA, 'axis', 'max_depth', 'max_offset', 'content_length', 'viewport', 'loaded_pages', 'max_position', 'has_more', 'user_scrolls', 'direction_changes'],
 };
+/** An area ID encodes its surface; screen itself is represented by the visit, never an area. */
+export function isValidAreaPair(id: unknown, surface: unknown): boolean {
+  return typeof id === 'string' && typeof surface === 'string' && surface !== 'screen'
+    && SURFACES.includes(surface as Surface) && new RegExp(`^${surface}_[0-9]+$`).test(id) && id.length <= 80;
+}
 /** IDs are client-local counters, never route params, server analysis IDs or user content. */
 export function sanitizeEngagement(event: EngagementEvent, props?: Record<string, unknown>): Props {
+  if (ENGAGEMENT_ALLOWED[event].includes('area_id') && !isValidAreaPair(props?.area_id, props?.surface)) return {};
   const result: Props = {};
   for (const key of ENGAGEMENT_ALLOWED[event]) {
     const value = props?.[key];

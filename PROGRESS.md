@@ -1,3 +1,9 @@
+## 2026-10-23 — KB-873 PR341 리뷰 P2 두 건 수정
+
+- 실제 route 파일 전수 → screenFromSegments → sanitizer 대조. canonical screen 4곳 교정, food/index 별칭 제거.
+- area_id 접두사/surface 검증 공용화. collector는 잘못된 등록을 상태 변경 전에 거절, sanitizer/SDK 경계는 이벤트 전체 폐기.
+- 수정 전 8개 회귀 실패, 수정 후 관련 40개 통과. 전체/타입/lint 결과는 REPORTS 기록. 실제 화면 연결·SDK 수신은 후속이며 전체 KB-873 미완료.
+
 ## 2026-10-23 — KB-873 / P-526 첫 단위 foundation
 
 - 감사A/B/C·CSV·독립검토와develop4d38fb19대조,PR339/187보존. 이벤트사전·7단위계획·1248구문행pending추적대장작성.

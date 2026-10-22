@@ -1,4 +1,4 @@
-import { type EngagementEvent, type Props, type RuntimeContext, type Screen, type Surface, type VisitSource, sanitizeEngagement } from './schema';
+import { type EngagementEvent, type Props, type RuntimeContext, type Screen, type Surface, type VisitSource, isValidAreaPair, sanitizeEngagement } from './schema';
 
 const BOOT = Date.now(); // opaque process-local ID prefix; durations use the injected monotonic clock only
 let serial = 0;
@@ -38,7 +38,10 @@ export class EngagementCollector {
   private get visible() { return !!this.visit && this.foreground && this.focused && this.uncovered; }
   private emit(event: EngagementEvent, props: Props = {}) {
     if (!this.visit) return;
-    try { this.send(event, sanitizeEngagement(event, { ...this.runtime, ...props, schema_version: 2, screen: this.visit.screen, source: this.visit.source, screen_visit_id: this.visit.id })); }
+    try {
+      const clean = sanitizeEngagement(event, { ...this.runtime, ...props, schema_version: 2, screen: this.visit.screen, source: this.visit.source, screen_visit_id: this.visit.id });
+      if (Object.keys(clean).length) this.send(event, clean);
+    }
     catch { /* analytics must not interrupt UI or the remaining collectors */ }
   }
   private areaProps(id: string, a: Area): Props { return { area_id: id, surface: a.surface, list_generation: a.generation }; }
@@ -71,8 +74,8 @@ export class EngagementCollector {
   }
   /** Rect inputs are areas, not lengths. Large surfaces use the smaller effective viewport. */
   observe(id: string, surface: Surface, generation: number, geometry: { intersection: number; target: number; viewport: number }) {
+    if (!isValidAreaPair(id, surface) || !Number.isSafeInteger(generation) || generation < 0) return;
     this.advance();
-    if (!/^(body|rail|photos|card|sheet|dialog)_[0-9]+$/.test(id) || !Number.isSafeInteger(generation) || generation < 0) return;
     let a = this.areas.get(id);
     if (a && (a.generation !== generation || a.surface !== surface)) { this.remove(id); a = undefined; }
     if (!a) { a = { surface, generation, visible: false, continuous: 0, impressed: false, delta: 0, sequence: 0, pendingScrolls: 0 }; this.areas.set(id, a); }
