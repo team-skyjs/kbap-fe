@@ -395,6 +395,11 @@ function Registered({
   id: string;
 }) {
   const isNew = useIsNewFood(food.publishedAt);
+  // 리뷰 0 본문 상자 — 첫 리뷰를 쓰고 돌아오면 같은 화면에서 사라진다: 높이 0을 보고해 하단 버튼이 옛 자리 기준으로 숨어 있지 않게(Codex #337)
+  const emptyCta = FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0;
+  useEffect(() => {
+    if (!emptyCta) onEmptyCtaLayout?.(0, 0);
+  }, [emptyCta, onEmptyCtaLayout]);
   const idolVideo = useIdolPickVideo(id); // KB-836 D3: 목록 쿼리 캐시만 — 상세 진입으로 목록 API 를 부르지 않는다
   // Codex #328: 카드가 사라지면(캐시 갱신·언어 전환·라우트 변경) 저장된 카드 위치를 비운다 — 빈 자리에서 알약이 계속 숨지 않게(높이 0 = 화면에 없음)
   useEffect(() => {
@@ -599,7 +604,7 @@ function Registered({
       )}
 
       {/* §1-7: 리뷰 섹션(4150:16940) — 디바이더 + 헤더 행 + D-2 카드 ×3 + More */}
-      {FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0 && (
+      {emptyCta && (
         <View style={styles.reviewSec} testID="review-empty-cta" onLayout={(e) => onEmptyCtaLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)}>
           <View style={styles.thickDivider} />
           <Text style={styles.rvBeFirst}>{t('detail.beFirstReview')}</Text>

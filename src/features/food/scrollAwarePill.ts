@@ -73,10 +73,15 @@ export function useScrollAwarePill(expect: { card: boolean; emptyCta: boolean } 
   // 음식이 뜬 뒤에야 대상 유무를 알므로 렌더마다 파생 — 기다릴 대상이 있으면 측정이 다 올 때까지 ready=false
   const waiting = expect.card || expect.emptyCta;
   const [gotAll, setGotAll] = React.useState(false);
-  const gotRef = React.useRef(false);
+  // Codex #337: 대상 집합이 바뀌면(첫 리뷰 뒤 빈 상자 사라짐 · 카드 캐시 생김/사라짐) 준비 상태를 다시 — 렌더 중 전이 비교(KB-603 문법)
+  const key = `${expect.card}|${expect.emptyCta}`;
+  const [prevKey, setPrevKey] = React.useState(key);
+  if (key !== prevKey) {
+    setPrevKey(key);
+    setGotAll(false);
+  }
   const ready = !waiting || gotAll;
   const expectRef = React.useRef(expect);
-  React.useEffect(() => { expectRef.current = expect; });
   const idle = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const active = React.useRef({ dragging: false, momentum: false });
   const [shown, setShown] = React.useState(true);
@@ -91,24 +96,35 @@ export function useScrollAwarePill(expect: { card: boolean; emptyCta: boolean } 
     st.current = next;
     setShown(next.shown);
   }, []);
+  // 판정 입력 = 지금 기대하는 대상의 사각형만 — 사라진 대상의 옛 사각형으로 숨지 않는다(Codex #337)
+  const view = React.useCallback((): PillScroll => {
+    const e = expectRef.current;
+    const c = scroll.current;
+    return { ...c, card: e.card ? c.card : null, emptyCta: e.emptyCta ? c.emptyCta : null };
+  }, []);
   // 기다리는 측정(띠·카드·빈 상자)이 다 오면 그때 처음으로 규칙대로(겹침 없으면 표시) 정한다
   const settle = React.useCallback(() => {
     const e = expectRef.current;
     const c = scroll.current;
     const all = !!c.band && (!e.card || c.card != null) && (!e.emptyCta || c.emptyCta != null);
-    if (all && !gotRef.current) {
-      gotRef.current = true;
+    if (all && !gotAll) {
       setGotAll(true);
-      apply(pillOnIdle(st.current, c)); // 첫 판정 = 멈춘 상태와 같이(겹침 없으면 표시)
+      apply(pillOnIdle(st.current, view())); // 첫 판정 = 멈춘 상태와 같이(겹침 없으면 표시)
       return;
     }
-    apply(pillOnScroll(st.current, c));
-  }, [apply]);
+    apply(pillOnScroll(st.current, view()));
+  }, [apply, view, gotAll]);
+  // 대상 집합 변경 = 사라진 대상의 측정값을 지우고 다시 판정(새로 생긴 대상은 그 측정이 올 때까지 ready=false)
+  React.useEffect(() => {
+    expectRef.current = { card: expect.card, emptyCta: expect.emptyCta };
+    scroll.current = { ...scroll.current, card: expect.card ? scroll.current.card : null, emptyCta: expect.emptyCta ? scroll.current.emptyCta : null };
+    settle();
+  }, [expect.card, expect.emptyCta]); // eslint-disable-line react-hooks/exhaustive-deps -- 대상 집합이 바뀔 때만(settle은 매 측정에서 따로 부른다)
   const clearIdle = () => { if (idle.current) { clearTimeout(idle.current); idle.current = null; } };
   const scheduleIdle = React.useCallback(() => {
     if (idle.current) clearTimeout(idle.current);
-    idle.current = setTimeout(() => { idle.current = null; apply(pillOnIdle(st.current, scroll.current)); }, PILL_IDLE_MS);
-  }, [apply]);
+    idle.current = setTimeout(() => { idle.current = null; apply(pillOnIdle(st.current, view())); }, PILL_IDLE_MS);
+  }, [apply, view]);
   React.useEffect(() => () => { if (idle.current) clearTimeout(idle.current); }, []);
   const read = (e: Ev) => {
     const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
@@ -117,10 +133,10 @@ export function useScrollAwarePill(expect: { card: boolean; emptyCta: boolean } 
   };
   const onScroll = React.useCallback((e: Ev) => {
     read(e);
-    apply(pillOnScroll(st.current, scroll.current));
+    apply(pillOnScroll(st.current, view()));
     // 끌기·관성 이벤트가 없는 스크롤(프로그램 이동 등)만 여기서 멈춤 판정 — 제스처 중엔 끝 이벤트가 맡는다
     if (!active.current.dragging && !active.current.momentum) scheduleIdle();
-  }, [apply, scheduleIdle]);
+  }, [apply, scheduleIdle, view]);
   const onScrollBeginDrag = React.useCallback(() => {
     clearIdle();
     active.current = { dragging: true, momentum: false };
@@ -140,12 +156,14 @@ export function useScrollAwarePill(expect: { card: boolean; emptyCta: boolean } 
   const onCardLayout = React.useCallback((y: number, h: number) => {
     scroll.current = { ...scroll.current, card: { y, h } };
     // 높이 0 = 카드가 사라짐(Codex #328) — 카드 때문에 숨어 있던 버튼을 멈춤과 같이 다시 보인다
-    if (h === 0) apply(pillOnIdle(st.current, scroll.current));
+    if (h === 0) apply(pillOnIdle(st.current, view()));
     else settle();
-  }, [settle, apply]);
+  }, [settle, apply, view]);
   const onEmptyCtaLayout = React.useCallback((y: number, h: number) => {
     scroll.current = { ...scroll.current, emptyCta: { y, h } };
-    settle();
-  }, [settle]);
+    // 높이 0 = 상자가 사라짐(첫 리뷰를 쓰고 돌아옴 — Codex #337) — 옛 자리 기준으로 계속 숨지 않게 멈춤과 같이 다시 판정
+    if (h === 0) apply(pillOnIdle(st.current, view()));
+    else settle();
+  }, [settle, apply, view]);
   return { shown: ready && (shown || reader), ready, onEmptyCtaLayout, onScroll, onScrollBeginDrag, onScrollEndDrag, onMomentumScrollBegin, onMomentumScrollEnd, onViewLayout, onContentSize, onCardLayout, onBand };
 }

@@ -100,6 +100,35 @@ describe('훅 — 첫 진입(KB-871 QA AP ①)', () => {
     act(() => { api.onViewLayout(700); api.onContentSize(3000); api.onBand(BAND); api.onCardLayout(600, 180); });
     expect([api.ready, api.shown]).toEqual([true, false]);
   });
+  it('Codex #337: 첫 리뷰를 쓰고 돌아와 빈 리뷰 상자가 사라지면(높이 0) 옛 자리로 숨어 있지 않고 다시 판정 = 표시', () => {
+    let t!: renderer.ReactTestRenderer;
+    act(() => { t = renderer.create(<Harness expect={{ card: false, emptyCta: true }} />); });
+    act(() => { api.onViewLayout(700); api.onContentSize(3000); api.onBand(BAND); api.onEmptyCtaLayout(200, 140); });
+    expect([api.ready, api.shown]).toEqual([true, false]); // 상자가 화면 안
+    act(() => { t.update(<Harness expect={{ card: false, emptyCta: false }} />); api.onEmptyCtaLayout(0, 0); });
+    expect([api.ready, api.shown]).toEqual([true, true]);
+  });
+  it('Codex #337 회귀: 대상 집합이 바뀌면 사라진 대상의 옛 사각형은 지운다(높이 0 보고가 없어도) · 새 대상은 측정까지 다시 숨김', () => {
+    let t!: renderer.ReactTestRenderer;
+    act(() => { t = renderer.create(<Harness expect={{ card: false, emptyCta: true }} />); });
+    act(() => { api.onViewLayout(700); api.onContentSize(3000); api.onBand(BAND); api.onEmptyCtaLayout(200, 140); });
+    expect([api.ready, api.shown]).toEqual([true, false]);
+    act(() => { t.update(<Harness expect={{ card: false, emptyCta: false }} />); }); // 첫 리뷰 뒤 — 상자 사라짐(레이아웃 보고 없음)
+    expect([api.ready, api.shown]).toEqual([true, true]);
+    act(() => { t.update(<Harness expect={{ card: true, emptyCta: false }} />); }); // 카드 캐시가 새로 생김 — 측정 전 = 숨김
+    expect([api.ready, api.shown]).toEqual([false, false]);
+    act(() => { api.onCardLayout(420, 180); });
+    expect([api.ready, api.shown]).toEqual([true, true]);
+  });
+  it('KB-871 ②: 카드가 버튼 띠 위쪽이면 표시 · 띠와 겹치면 숨김 · 카드가 사라지면(높이 0) 표시', () => {
+    act(() => { renderer.create(<Harness expect={{ card: true, emptyCta: false }} />); });
+    act(() => { api.onViewLayout(700); api.onContentSize(3000); api.onBand(BAND); api.onCardLayout(420, 180); });
+    expect(api.shown).toBe(true);
+    act(() => { api.onCardLayout(600, 180); });
+    expect(api.shown).toBe(false);
+    act(() => { api.onCardLayout(0, 0); });
+    expect(api.shown).toBe(true);
+  });
   it('대상 없는 음식 = 바로 표시(지금 동작 유지) · 음식이 뜬 뒤 대상이 생기면 그 측정까지 숨김', () => {
     let t!: renderer.ReactTestRenderer;
     act(() => { t = renderer.create(<Harness expect={{ card: false, emptyCta: false }} />); });
@@ -150,12 +179,4 @@ describe('훅', () => {
     expect(api.shown).toBe(true);
   });
 
-  it('KB-871 ②: 카드가 버튼 띠 위쪽이면 진입·멈춤 모두 표시 · 띠와 겹치면 숨김 · 카드가 사라지면(높이 0) 표시', () => {
-    act(() => { api.onCardLayout(420, 180); });
-    expect(api.shown).toBe(true);
-    act(() => { api.onCardLayout(600, 180); });
-    expect(api.shown).toBe(false);
-    act(() => { api.onCardLayout(0, 0); });
-    expect(api.shown).toBe(true);
-  });
 });

@@ -421,6 +421,7 @@ describe('P-228: Ask the owner 플로팅', () => {
     expect(src).toContain('opacity: !ready ? 0 : withTiming(shown ? 1 : 0'); // KB-871 QA AP: 첫 측정 전 = 애니메이션 없이 숨김
     expect(src).toContain('useScrollAwarePill({ card: idolExpected, emptyCta: emptyCtaExpected })');
     expect(src).toContain('testID="review-empty-cta" onLayout={(e) => onEmptyCtaLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)}');
+    expect(src).toContain('if (!emptyCta) onEmptyCtaLayout?.(0, 0);'); // Codex #337: 상자가 사라지면 높이 0 보고
     expect(src).not.toContain('onInsets');
   });
 
