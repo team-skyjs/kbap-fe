@@ -95,6 +95,10 @@ const q = (over: Partial<Q>): Q => ({ isPending: false, isError: false, refetch:
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
 // FlatList(2열)는 ListHeader/Empty 엘리먼트 prop이 트리에 실려 순환 참조 — 엘리먼트 prop은 버리고 렌더 트리만(prodFlagSurfaces436 문법)
 const REACT_EL = new Set<symbol>([Symbol.for('react.element'), Symbol.for('react.transitional.element')]);
+/** TanStack 알림은 setTimeout(0) 배치라 CI(느린 러너)에선 한 틱 대기로 부족하다 — 조건이 설 때까지 실제 타이머로 기다린다(메모 tanstack-notify-settimeout, PR #336 CI) */
+const until = async (cond: () => boolean, ticks = 50) => {
+  for (let i = 0; i < ticks && !cond(); i++) await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+};
 const text = (t: ReactTestRenderer) => {
   const seen = new WeakSet<object>();
   return JSON.stringify(t.toJSON(), (_k, v: unknown) => {
@@ -251,7 +255,7 @@ describe('Food 탭 세그먼트·목록', () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     mockGet.mockRejectedValueOnce(new ApiError('query required', 400, 'FOOD-003'));
     const t = render(<QueryClientProvider client={qc}><PackagedExplorer top={null} /></QueryClientProvider>);
-    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await until(() => ids(t).includes('packaged-guide'));
     expect(mockGet).toHaveBeenCalledTimes(1);
     expect(mockGet.mock.calls[0][0]).toBe('/api/processed-foods?size=20');
     expect(ids(t)).toContain('packaged-guide');
@@ -261,7 +265,7 @@ describe('Food 탭 세그먼트·목록', () => {
     const input = t.root.findAll((n) => n.props?.testID === 'packaged-search-input' && typeof n.props?.onChangeText === 'function')[0];
     act(() => input.props.onChangeText('우유'));
     await act(async () => { input.props.onSubmitEditing(); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await until(() => ids(t).includes('packaged-item-1711'));
     expect(ids(t)).toContain('packaged-item-1711');
     expect(ids(t)).toContain('img:https://h/1.jpg');
     expect(ids(t)).not.toContain('packaged-types'); // 구서버 = 검색 결과에도 칩 없음(type 무시 → 거른 척 방지)
@@ -270,14 +274,14 @@ describe('Food 탭 세그먼트·목록', () => {
     mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
     act(() => input.props.onChangeText('없는제품'));
     await act(async () => { input.props.onSubmitEditing(); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await until(() => ids(t).includes('packaged-empty'));
     expect(ids(t)).toContain('packaged-empty');
     // Codex #308 R2: 지우고 같은 검색어를 다시 제출해도 검색 1회로 센다(캐시 적중이어도)
     mockTrack.mockClear();
     act(() => t.root.findAll((n) => n.props?.testID === 'packaged-search-clear' && typeof n.props?.onPress === 'function')[0].props.onPress());
     act(() => input.props.onChangeText('우유'));
     await act(async () => { input.props.onSubmitEditing(); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await until(() => mockTrack.mock.calls.some((c) => c[0] === 'food_packaged_search'));
     expect(mockTrack.mock.calls.filter((c) => c[0] === 'food_packaged_search')).toHaveLength(1);
   });
   it('Codex #308 P2: 다음 페이지 실패 = 안내 + 다시 시도 · 실패 중 자동 재요청 0', async () => {
@@ -288,18 +292,18 @@ describe('Food 탭 세그먼트·목록', () => {
     const input = t.root.findAll((n) => n.props?.testID === 'packaged-search-input' && typeof n.props?.onChangeText === 'function')[0];
     act(() => input.props.onChangeText('우유'));
     await act(async () => { input.props.onSubmitEditing(); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await until(() => ids(t).includes('packaged-item-1'));
     mockGet.mockRejectedValueOnce(new ApiError('down', 503));
     const list = () => t.root.findAll((n) => n.props?.testID === 'packaged-list' && typeof n.props?.onEndReached === 'function')[0];
     await act(async () => { list().props.onEndReached(); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await until(() => ids(t).includes('packaged-more-retry'));
     expect(ids(t)).toContain('packaged-more-retry');
     const calls = mockGet.mock.calls.length;
     await act(async () => { list().props.onEndReached(); });
     expect(mockGet.mock.calls.length).toBe(calls); // 자동 재요청 없음
     mockGet.mockResolvedValueOnce({ items: [{ id: 2, productName: 'b', imageUrl: null }], hasNext: false, nextCursor: null });
     await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-more-retry' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await until(() => ids(t).includes('packaged-item-2'));
     expect(ids(t)).toContain('packaged-item-2');
     expect(ids(t)).not.toContain('packaged-more-retry');
   });
