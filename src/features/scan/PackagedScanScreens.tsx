@@ -27,7 +27,7 @@ import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
 const namesOf = (codes: string[]) => codes.map((c) => restrictionLabel(c)).join(', ');
 
 /** 시안 16 실측: 카드 335×168 r16 · 안쪽 12 · 사진 128×144 r12 #F7F8FA(상품 8 안쪽 contain) · 글자 열 x172 · 카드 사이 16 */
-export function CandidateCard({ item, selected, personalized, onPress, testID }: { item: ProcessedFoodSummary; selected: boolean; personalized: boolean; onPress: () => void; testID: string }) {
+export function CandidateCard({ item, selected, personalized, onPress, testID, disabled = false }: { item: ProcessedFoodSummary; selected: boolean; personalized: boolean; onPress: () => void; testID: string; disabled?: boolean }) {
   const { t } = useTranslation();
   const [failed, setFailed] = React.useState(false);
   const risk = personalized && item.verdict ? VERDICT_RISK[item.verdict] : null;
@@ -36,9 +36,9 @@ export function CandidateCard({ item, selected, personalized, onPress, testID }:
   return (
     <Pressable
       style={[sc.card, selected ? sc.cardOn : sc.cardOff]}
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
       accessibilityRole="radio"
-      accessibilityState={{ selected, checked: selected }}
+      accessibilityState={{ selected, checked: selected, disabled }}
       accessibilityLabel={[item.name, item.nameKo, item.maker, risk && t(`risk.${risk}`), contains].filter(Boolean).join(', ')}
       testID={testID}
       uiTarget="pscan-candidate"
@@ -64,24 +64,34 @@ export function CandidateCard({ item, selected, personalized, onPress, testID }:
 
 /** 후보·이름 찾기(16·19·45) — 제목 + 보조 줄 + (검색칸) + 카드 목록 + 확정 CTA + "None of these" 텍스트 동작 */
 export function CandidateScreen({
-  title, subtitle, note, search, items, selectedId, onSelect, onConfirm, onNone, onBack, personalized, busy, empty, testID,
+  title, subtitle, note, search, items, selectedId, onSelect, onConfirm, onNone, onBack, personalized, busy, empty, testID, onEndReached,
 }: {
   title: string; subtitle: string | null; note: string | null; search?: React.ReactNode; items: ProcessedFoodSummary[]; selectedId: string | null;
-  onSelect: (id: string) => void; onConfirm: () => void; onNone: (() => void) | null; onBack: () => void; personalized: boolean; busy: boolean; empty?: React.ReactNode; testID: string;
+  onSelect: (id: string) => void; onConfirm: () => void; onNone: (() => void) | null; onBack: () => void; personalized: boolean; busy: boolean; empty?: React.ReactNode; testID: string; onEndReached?: () => void;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const viewH = React.useRef(0);
   return (
     <View style={sc.root} testID={testID}>
       <SubHeader title={t('packagedScan.chooseTitle')} onBack={onBack} />
-      <ScrollView contentContainerStyle={sc.page} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={sc.page}
+        keyboardShouldPersistTaps="handled"
+        // 남은 높이가 화면 1.5개 이하면 다음 페이지 · 거른(reportNo 없는) 항목이 많아 화면을 못 채우면 스크롤이 없으니 내용 크기 변화로도 이어 조회
+        onScroll={onEndReached ? (e) => { const { layoutMeasurement: l, contentOffset: o, contentSize: c } = e.nativeEvent; if (o.y + l.height * 2.5 >= c.height) onEndReached(); } : undefined}
+        onLayout={(e) => { viewH.current = e.nativeEvent.layout.height; }}
+        onContentSizeChange={onEndReached ? (_w, h) => { if (viewH.current > 0 && h <= viewH.current * 2.5) onEndReached(); } : undefined}
+        scrollEventThrottle={onEndReached ? 200 : undefined}
+        testID={`${testID}-scroll`}
+      >
         <Text style={sc.h1} accessibilityRole="header">{title}</Text>
         {!!subtitle && <Text style={sc.sub}>{subtitle}</Text>}
         {!!note && <Text style={sc.body} testID="pscan-personal-note">{note}</Text>}
         {search}
         <View style={sc.list} accessibilityRole="radiogroup">
           {items.map((c) => (
-            <CandidateCard key={c.id} item={c} selected={selectedId === c.id} personalized={personalized} onPress={() => onSelect(c.id)} testID={`pscan-candidate-${c.id}`} />
+            <CandidateCard key={c.id} item={c} selected={selectedId === c.id} personalized={personalized} onPress={() => onSelect(c.id)} disabled={busy} testID={`pscan-candidate-${c.id}`} />
           ))}
         </View>
         {empty}
@@ -90,7 +100,8 @@ export function CandidateScreen({
         <Btn busy={busy} variant={selectedId ? 'primary' : 'off'} onPress={() => { if (selectedId) onConfirm(); }} testID="pscan-confirm">{t('packagedScan.confirmProduct')}</Btn>
         {onNone && (
           // 시안: 확인 CTA 다음 테두리 없는 텍스트 동작(README)
-          <Pressable style={sc.textAction} onPress={onNone} accessibilityRole="button" testID="pscan-none-of-these">
+          // Codex #339: 확정 대기 중 = 선택·거절 잠금(늦은 응답이 다른 선택을 덮지 않게)
+          <Pressable style={sc.textAction} onPress={busy ? undefined : onNone} disabled={busy} accessibilityRole="button" accessibilityState={{ disabled: busy }} testID="pscan-none-of-these">
             <Text style={sc.textActionLabel}>{t('packagedScan.noneOfThese')}</Text>
           </Pressable>
         )}
@@ -195,7 +206,9 @@ export function LabelResultScreen({ result, photoUri, pages, member, onAddSide, 
   const { t } = useTranslation();
   const lang = useAppLanguage(); // 구독으로(KB-695)
   const insets = useSafeAreaInsets();
-  const risk = member && result.verdict ? VERDICT_RISK[result.verdict] : null;
+  // Codex #339: verdict 없는 옛 응답(v4 이전 모양)이라도 서버가 확인한 회피 일치(avoidance DETECTED)는 숨기지 않는다 — 회피 문장·위험 리본
+  const legacyAvoid = result.verdict == null ? result.avoidance.filter((a) => a.detected).map((a) => a.code) : [];
+  const risk = !member ? null : result.verdict ? VERDICT_RISK[result.verdict] : legacyAvoid.length ? VERDICT_RISK.AVOID : null;
   const showTranslation = !(lang ?? '').startsWith('ko');
   const translated = showTranslation ? result.ingredients.translated : null;
   let avoid: string | null = null;
@@ -204,13 +217,16 @@ export function LabelResultScreen({ result, photoUri, pages, member, onAddSide, 
     else if (result.verdict === 'CAUTION') avoid = t('packagedScan.resultCaution', { names: namesOf(result.mayContainMatches.map((m) => m.code)) });
     else if (result.verdict === 'SAFE_WITH_NOTE') avoid = t('packagedScan.resultUnclear', { items: result.unclearIngredients.join(', ') });
     else if (result.verdict === 'SAFE') avoid = t(pages > 1 ? 'packagedScan.resultSafeAll' : 'packaged.noAvoidMatches');
+    else if (legacyAvoid.length) avoid = t('packagedScan.resultAvoid', { names: namesOf(legacyAvoid) });
     else avoid = t('packaged.notVerifiedBody');
   }
+  // 옛 응답 = majorAllergens 없음 → 서버 검출(detections) 코드로(#338과 같은 폴백) · 둘 다 없으면 확인 불가(없음 단정 0)
+  const majorCodes = result.majorAllergens ?? (result.detections.length ? [...new Set(result.detections.map((d) => d.code))] : null);
   const major = !member
-    ? result.majorAllergens == null
+    ? majorCodes == null
       ? t('packaged.majorUnavailable')
-      : result.majorAllergens.length
-        ? t('packagedScan.resultMajorSet', { contains: t('packaged.containsNames', { names: namesOf(result.majorAllergens) }) })
+      : majorCodes.length
+        ? t('packagedScan.resultMajorSet', { contains: t('packaged.containsNames', { names: namesOf(majorCodes) }) })
         : t(result.labelSource === 'NONE' ? 'packaged.majorUnavailable' : 'packaged.majorNoneFound')
     : null;
   const may = result.mayContain;

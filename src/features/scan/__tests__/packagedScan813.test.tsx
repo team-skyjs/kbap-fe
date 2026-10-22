@@ -182,6 +182,90 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(mockPush).toHaveBeenCalledWith('/processed-foods/11?scan=1&charged=1');
     expect(JSON.stringify(mockTrack.mock.calls)).not.toContain('바나나'); // 검색어 원문 계측 0
   });
+  it('Codex #339: "None of these" → 성분표 = 먼저 거절 확정(reportNo null, 차감 0) 뒤 같은 분석으로 · 서버가 이미 REJECTED·NO_CANDIDATE면 거절 호출 0', async () => {
+    const flags = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
+    const prevFlag = flags.FLAGS.packagedLabelScan;
+    flags.FLAGS.packagedLabelScan = true;
+    try {
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost
+      .mockResolvedValueOnce({ analysisId: 'A20', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
+      .mockResolvedValueOnce({ analysisId: 'A20', state: 'REJECTED', charged: false, product: null });
+    const t = flow();
+    await press(t, 'pscan-take-photo');
+    await press(t, 'pscan-none-of-these');
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    await press(t, 'pscan-to-label');
+    expect(mockPost.mock.calls[1]).toEqual(['/api/processed-foods/scan/confirm', { analysisId: 'A20', reportNo: null }, { headers: { 'X-API-Version': '3.2' } }]);
+    expect(ids(t)).toContain('cam-ingredient');
+    // 거절 실패(전송) = 오류 → 다시 시도 = 다시 거절 뒤 성분표
+    mockPost.mockReset();
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost
+      .mockResolvedValueOnce({ analysisId: 'A21', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
+      .mockRejectedValueOnce(new Error('Network request failed'))
+      .mockResolvedValueOnce({ analysisId: 'A21', state: 'REJECTED', charged: false, product: null });
+    const t2 = flow();
+    await press(t2, 'pscan-take-photo');
+    await press(t2, 'pscan-none-of-these');
+    await press(t2, 'pscan-to-label');
+    expect(ids(t2)).toContain('pscan-error-network');
+    await press(t2, 'pscan-retry');
+    expect(mockPost.mock.calls.map((c) => c[1])).toEqual([expect.anything(), { analysisId: 'A21', reportNo: null }, { analysisId: 'A21', reportNo: null }]);
+    expect(ids(t2)).toContain('cam-ingredient');
+    // NO_CANDIDATE = 이미 정리된 분석 → 거절 호출 없이 성분표
+    mockPost.mockReset();
+    mockOcr.mockResolvedValueOnce([{ text: 'xyz' }]);
+    mockPost.mockResolvedValueOnce({ analysisId: 'A22', state: 'NO_CANDIDATE', candidates: [] });
+    const t3 = flow();
+    await press(t3, 'pscan-take-photo');
+    await press(t3, 'pscan-to-label');
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    expect(ids(t3)).toContain('cam-ingredient');
+    } finally {
+      flags.FLAGS.packagedLabelScan = prevFlag;
+    }
+  });
+  it('Codex #339: 확정 대기 중 = 후보 카드·"None of these" 잠금(늦은 응답이 다른 선택을 덮지 않음) · 응답 뒤 = 고른 그 제품으로', async () => {
+    let release!: (v: unknown) => void;
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost
+      .mockResolvedValueOnce({ analysisId: 'A23', state: 'CANDIDATES', candidates: [cand(11, 'R1'), cand(12, 'R2')] })
+      .mockReturnValueOnce(new Promise((r) => (release = r)));
+    const t = flow();
+    await press(t, 'pscan-take-photo');
+    await press(t, 'pscan-candidate-11');
+    act(() => { void t.root.findAll((n) => n.props?.testID === 'pscan-confirm' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    const card12 = t.root.findAll((n) => n.props?.testID === 'pscan-candidate-12' && n.props?.accessibilityState)[0];
+    expect(card12.props.accessibilityState).toMatchObject({ disabled: true });
+    expect(t.root.findAll((n) => n.props?.testID === 'pscan-candidate-12' && n.props?.accessibilityRole === 'radio' && typeof n.props?.onPress === 'function')).toHaveLength(0); // 실제 Pressable
+    expect(t.root.findAll((n) => n.props?.testID === 'pscan-none-of-these' && typeof n.props?.onPress === 'function')).toHaveLength(0);
+    await act(async () => { release({ analysisId: 'A23', state: 'CONFIRMED', charged: true, product: DETAIL }); await new Promise((r) => setTimeout(r, 0)); });
+    expect(mockPost.mock.calls[1][1]).toEqual({ analysisId: 'A23', reportNo: 'R1' });
+    expect(mockPush).toHaveBeenCalledWith('/processed-foods/11?scan=1&charged=1');
+  });
+  it('Codex #339: 이름 찾기 = 20개 페이지 이어 받기(스크롤 끝 근처 · 화면을 못 채우면 내용 크기로)', async () => {
+    mockOcr.mockResolvedValueOnce([{ text: '바나나' }]);
+    mockPost.mockResolvedValueOnce({ analysisId: 'A24', state: 'CANDIDATES', candidates: [cand(11, 'R1')] });
+    mockGet
+      .mockResolvedValueOnce({ items: [{ id: 77, reportNo: 'R77', productName: 'a', imageUrl: null }], hasNext: true, nextCursor: 'C2' })
+      .mockResolvedValueOnce({ items: [{ id: 99, reportNo: 'R99', productName: 'b', imageUrl: null }], hasNext: false, nextCursor: null });
+    const t = flow();
+    await press(t, 'pscan-take-photo');
+    await press(t, 'pscan-none-of-these');
+    await press(t, 'pscan-find-by-name');
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(ids(t)).toContain('pscan-candidate-77');
+    const sv = t.root.findAll((n) => n.props?.testID === 'pscan-name-search-scroll' && typeof n.props?.onContentSizeChange === 'function')[0];
+    act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 800 } } }));
+    await act(async () => { sv.props.onContentSizeChange(390, 600); await new Promise((r) => setTimeout(r, 0)); });
+    expect(mockGet).toHaveBeenCalledTimes(2);
+    expect(mockGet.mock.calls[1][0]).toContain('C2');
+    expect(ids(t)).toContain('pscan-candidate-99');
+    // 다음 페이지 없음 = 더 부르지 않는다
+    await act(async () => { sv.props.onScroll({ nativeEvent: { layoutMeasurement: { height: 800 }, contentOffset: { y: 0 }, contentSize: { height: 600 } } }); });
+    expect(mockGet).toHaveBeenCalledTimes(2);
+  });
   it('후보 0개 = 시안 17(차감 문구 0) · 서버 REJECTED = 같은 화면 · 뒤로 = 앞 단계', async () => {
     mockOcr.mockResolvedValueOnce([{ text: 'xyz' }]);
     mockPost.mockResolvedValueOnce({ analysisId: 'A3', state: 'NO_CANDIDATE', candidates: [] });

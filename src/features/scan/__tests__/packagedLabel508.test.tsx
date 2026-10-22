@@ -177,7 +177,7 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
       [{ verdict: 'CAUTION', avoidMatches: [], mayContainMatches: [{ code: 'MILK', evidence: ['우유'] }] }, 'packagedScan.resultCaution:{"names":"L(MILK)"}', 'caution'],
       [{ verdict: 'SAFE_WITH_NOTE', avoidMatches: [], unclearIngredients: ['향료'] }, 'packagedScan.resultUnclear:{"items":"향료"}', 'safe'],
       [{ verdict: 'SAFE', avoidMatches: [] }, 'packaged.noAvoidMatches', 'safe'],
-      [{ verdict: null, avoidMatches: [] }, 'packaged.notVerifiedBody', null],
+      [{ verdict: null, avoidMatches: [], avoidance: [] }, 'packaged.notVerifiedBody', null], // 옛 응답 일치도 없음 = 확인 못 함
     ];
     for (const [over, sentence, badge] of cases) {
       const t = flow(true);
@@ -188,6 +188,23 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
       const badges = ids(t).filter((i) => i.startsWith('pscan-result-badge-'));
       expect(badges).toEqual(badge ? [`pscan-result-badge-${badge}`] : []);
     }
+  });
+  it('Codex #339: verdict 없는 옛 응답 = 서버 회피 일치(avoidance DETECTED) 숨김 0 — 회피 문장 + 위험 리본 · M0 = 검출 코드로 주요 알레르기', async () => {
+    const legacy = { verdict: undefined, avoidMatches: undefined, mayContainMatches: undefined, majorAllergens: undefined, ingredients: undefined };
+    const t = flow(true);
+    await shoot(t, LABEL_P1);
+    mockPost.mockResolvedValueOnce(RESULT(legacy));
+    await press(t, 'pscan-label-analyze');
+    expect(texts(t)).toContain('packagedScan.resultAvoid:{"names":"L(SHRIMP)"}');
+    expect(ids(t)).toContain('pscan-result-badge-danger');
+    expect(texts(t)).not.toContain('packaged.notVerifiedBody');
+    mockRestrictions = [];
+    const t2 = flow(true);
+    await shoot(t2, LABEL_P1);
+    mockPost.mockResolvedValueOnce(RESULT(legacy));
+    await press(t2, 'pscan-label-analyze');
+    expect(texts(t2).some((x) => x.startsWith('packagedScan.resultMajorSet') && x.includes('L(WHEAT), L(SHRIMP)'))).toBe(true);
+    expect(texts(t2)).not.toContain('packaged.majorUnavailable');
   });
   it('회피 0개 회원(M0) = 주요 알레르기 문장 + "회피 재료 설정"(리본·회피 문장 0) · 주요 알레르기 null = 확인 불가(없음 단정 금지)', async () => {
     mockRestrictions = [];
@@ -202,7 +219,7 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     expect(mockPush).toHaveBeenCalledWith('/profile/restrictions');
     const t2 = flow(true);
     await shoot(t2, LABEL_P1);
-    mockPost.mockResolvedValueOnce(RESULT({ majorAllergens: null }));
+    mockPost.mockResolvedValueOnce(RESULT({ majorAllergens: null, detections: [] })); // 검출도 없음 = 확인 불가
     await press(t2, 'pscan-label-analyze');
     expect(texts(t2)).toContain('packaged.majorUnavailable');
   });

@@ -124,6 +124,8 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   const goStep = (next: Step) => { reqSeq.current += 1; setStep(next); };
   // Codex #310 R2: 확정해 차감된 분석 — 상세에서 뒤로 와 같은 후보를 다시 고르면 서버는 멱등이라 charged false를 준다 → 이미 쓴 1회를 잊지 않는다
   const chargedIds = React.useRef(new Set<string>());
+  /** Codex #339: 서버가 NO_CANDIDATE·REJECTED로 둔 분석 — 성분표 API는 이 둘만 이어 받는다("None of these"는 로컬 화면 전환이라 성분표로 갈 때 거절 확정) */
+  const settledIds = React.useRef(new Set<string>());
 
   const runName = async (ocrText: string, photoUri: string | null = null) => {
     goStep({ kind: 'reading', photoUri });
@@ -134,6 +136,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       track(EVENTS.food_packaged_scan_name, { candidate_count: r.candidates.length });
       if (r.candidates.length) setStep({ kind: 'candidates', analysisId: r.analysisId, candidates: r.candidates, selectedId: null, ocrText });
       else {
+        settledIds.current.add(r.analysisId);
         track(EVENTS.food_packaged_scan_handoff, { from: 'none' });
         setStep({ kind: 'another', analysisId: r.analysisId, ocrText, from: 'none', back: { kind: 'capture' } });
       }
@@ -229,6 +232,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         if (my !== reqSeq.current) return; // 그 사이 뒤로 감 — 이동 0
         track(EVENTS.food_packaged_scan_confirm, { charged: r.charged, rejected: r.rejected });
         if (r.rejected || !r.product) {
+          settledIds.current.add(analysisId);
           track(EVENTS.food_packaged_scan_handoff, { from: 'rejected' });
           setStep({ kind: 'another', analysisId, ocrText: here.kind === 'candidates' || here.kind === 'nameSearch' ? here.ocrText : '', from: 'rejected', back: here });
           return;
@@ -249,7 +253,24 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       }
     });
 
-  const toLabel = (analysisId: string | null) => goStep({ kind: 'handoff', analysisId });
+  /** 성분표로 — 아직 후보 상태(CANDIDATES)인 분석은 먼저 거절 확정(reportNo null, 차감 0)해야 서버가 이어 받는다(Codex #339).
+   *  이름 찾기는 거절 전 분석으로 확정하므로 거절은 성분표를 고를 때만 */
+  const toLabel = (analysisId: string | null) => {
+    if (analysisId == null || settledIds.current.has(analysisId)) { goStep({ kind: 'handoff', analysisId }); return; }
+    const here = step;
+    void guard.run(async () => {
+      const my = reqSeq.current;
+      try {
+        await confirmProcessedScan(analysisId, null);
+        if (my !== reqSeq.current) return;
+        settledIds.current.add(analysisId);
+        goStep({ kind: 'handoff', analysisId });
+      } catch (e) {
+        if (my !== reqSeq.current) return;
+        setStep({ kind: 'error', failure: scanFailureOf(e), retry: () => { goStep(here); toLabel(analysisId); } });
+      }
+    });
+  };
   const labelEnabled = FLAGS.packagedLabelScan;
 
   // ── 화면 ──
@@ -487,10 +508,12 @@ function NameSearchStep({ initial, personalized, m0, busy, onConfirm, onNone, on
       title={t('packagedScan.findTitle')}
       subtitle={t('packagedScan.findSubtitle')}
       note={m0 ? t('packagedScan.personalNote') : null}
-      search={<NameSearchBox value={draft} onChange={setDraft} onSubmit={() => { setQuery(draft); setSelectedId(null); }} />}
+      search={<NameSearchBox value={draft} onChange={setDraft} onSubmit={() => { if (busy) return; setQuery(draft); setSelectedId(null); }} />}
       items={items}
       selectedId={selectedId}
       onSelect={setSelectedId}
+      // Codex #339: 20개씩 페이지 — 끝 근처에서 다음 페이지(목록 화면과 같은 가드)
+      onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage && !q.isFetchNextPageError) void q.fetchNextPage(); }}
       onConfirm={() => { if (sel?.reportNo) onConfirm(sel.reportNo); }}
       onNone={onNone}
       onBack={onBack}
