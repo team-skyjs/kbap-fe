@@ -1228,7 +1228,11 @@
     "photoUnavailable": "Фото нет",
     "openGalleryHint": "Открывает фото и описание",
     "nextPhoto": "Следующее фото",
-    "prevPhoto": "Предыдущее фото"
+    "prevPhoto": "Предыдущее фото",
+    "openInMaps": "Открыть на карте",
+    "mapGoogle": "Google Карты",
+    "mapKakao": "Kakao Map",
+    "mapNaver": "NAVER Map"
   },
   "packaged": {
     "segmentDishes": "Блюда",

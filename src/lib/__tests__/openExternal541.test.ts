@@ -18,7 +18,8 @@ jest.mock('@/components/topToastStore', () => ({
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { t: (k: string) => k } }));
 
 import { Linking } from 'react-native';
-import { openWebPage } from '../openExternal';
+// eslint-disable-next-line import/first -- jest.mock 뒤(기존 import 자리)
+import { openMapLink, openWebPage } from '../openExternal';
 
 const mockOpenURL = Linking.openURL as jest.Mock;
 
@@ -86,4 +87,29 @@ it('신규 키 states.linkFailed 10로케일', () => {
     expect(j.states.linkFailed).toBeTruthy();
   }
   expect((JSON.parse(read('src/lib/i18n/ko.json')) as { states: Record<string, string> }).states.linkFailed).toBe('링크를 열 수 없어요');
+});
+
+describe('KB-863 openMapLink — 지도 범용 링크는 OS로(인앱 브라우저 X — 지도 앱으로 넘어가야 한다)', () => {
+  const MAP = 'https://map.kakao.com/link/search/%EB%B6%81%EC%B4%8C';
+  it('성공 = Linking.openURL(인앱 브라우저 미사용) · 토스트 없음 · true', async () => {
+    await expect(openMapLink(MAP)).resolves.toBe(true);
+    expect(mockOpenURL).toHaveBeenCalledWith(MAP);
+    expect(mockOpenBrowser).not.toHaveBeenCalled();
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+  it('Codex #334: 앱 스킴 먼저 — 성공 = 그것만 · 실패(앱 없음) = https 폴백', async () => {
+    await expect(openMapLink(MAP, 'kakaomap://search?q=x')).resolves.toBe(true);
+    expect(mockOpenURL).toHaveBeenCalledTimes(1);
+    expect(mockOpenURL).toHaveBeenCalledWith('kakaomap://search?q=x');
+    mockOpenURL.mockClear();
+    mockOpenURL.mockRejectedValueOnce(new Error('no app'));
+    await expect(openMapLink(MAP, 'kakaomap://search?q=x')).resolves.toBe(true);
+    expect(mockOpenURL.mock.calls.map((c) => c[0])).toEqual(['kakaomap://search?q=x', MAP]);
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+  it('실패 = 조용히 넘기지 않고 토스트(states.linkFailed) + false', async () => {
+    mockOpenURL.mockRejectedValueOnce(new Error('Unable to open URL'));
+    await expect(openMapLink(MAP)).resolves.toBe(false);
+    expect(mockToast).toHaveBeenCalledWith('states.linkFailed', { error: true });
+  });
 });

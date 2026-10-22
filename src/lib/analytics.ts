@@ -120,6 +120,8 @@ export const EVENTS = {
   food_packaged_detail_view: 'food_packaged_detail_view', // KB-812 가공식품 상세 진입 — id·labelSource
   home_curation_gallery_open: 'home_curation_gallery_open', // KB-832 항목 카드 → 사진 갤러리 시트(발주명 curation_gallery_open → 도메인 규칙상 home_)
   home_curation_gallery_swipe: 'home_curation_gallery_swipe', // KB-832 갤러리 사진 넘김(도착 인덱스)
+  home_curation_map_open: 'home_curation_map_open', // KB-863 갤러리 사진 위 지도 버튼 탭(선택지 열림) — 모음 키·entry_id만(장소명 금지)
+  home_curation_map_select: 'home_curation_map_select', // KB-863 지도 선택 — provider(google|kakao|naver)
   scan_mode_select: 'scan_mode_select', // KB-813 스캔 모드 탭(menu|packaged)
   food_packaged_scan_name: 'food_packaged_scan_name', // KB-813 이름 스캔 결과(후보 수 — OCR 원문 금지)
   food_packaged_scan_confirm: 'food_packaged_scan_confirm', // KB-813 확정 — 서버 charged 그대로
@@ -185,6 +187,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   food_packaged_detail_view: ['product_id', 'label_source'],
   home_curation_gallery_open: ['collection_key', 'entry_id'],
   home_curation_gallery_swipe: ['collection_key', 'entry_id', 'index'],
+  home_curation_map_open: ['collection_key', 'entry_id'],
+  home_curation_map_select: ['collection_key', 'entry_id', 'provider'],
   scan_mode_select: ['mode'],
   food_packaged_scan_name: ['candidate_count'],
   food_packaged_scan_confirm: ['charged', 'rejected'],

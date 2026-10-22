@@ -1186,7 +1186,11 @@
     "photoUnavailable": "Photo unavailable",
     "openGalleryHint": "Opens photos and details",
     "nextPhoto": "Next photo",
-    "prevPhoto": "Previous photo"
+    "prevPhoto": "Previous photo",
+    "openInMaps": "Open in maps",
+    "mapGoogle": "Google Maps",
+    "mapKakao": "Kakao Map",
+    "mapNaver": "NAVER Map"
   },
   "packaged": {
     "segmentDishes": "Dishes",

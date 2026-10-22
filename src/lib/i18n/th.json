@@ -1190,7 +1190,11 @@
     "photoUnavailable": "ไม่มีรูปภาพ",
     "openGalleryHint": "เปิดรูปภาพและรายละเอียด",
     "nextPhoto": "รูปถัดไป",
-    "prevPhoto": "รูปก่อนหน้า"
+    "prevPhoto": "รูปก่อนหน้า",
+    "openInMaps": "เปิดในแผนที่",
+    "mapGoogle": "Google Maps",
+    "mapKakao": "Kakao Map",
+    "mapNaver": "NAVER Map"
   },
   "packaged": {
     "segmentDishes": "อาหาร",

@@ -30,6 +30,8 @@ export type CurationItem = {
   images: CurationImage[];
   externalUrl: string;
   nearby: string[];
+  /** KB-863/864: 한국어 이름(서버 새 필드) — 지도 검색어. 없음 = null(이름으로 검색) */
+  nameKo: string | null;
 };
 export type CurationImage = { url: string; attribution: string | null };
 export type CurationDetail = {
@@ -47,6 +49,8 @@ export type IndexWire = { state: string; fallbackUsed: boolean; collections: Car
 export type ItemWire = {
   entryId: string; position: number; name: string; area: string; introduction: string; recommendationReason: string;
   imageUrl: string; imageAttribution?: string | null; externalUrl: string; nearby?: string[] | null;
+  /** KB-864(서버 진행 중): 한국어 이름·지역 — 지도 검색어(areaKo는 아직 미사용) */
+  nameKo?: string | null; areaKo?: string | null;
   /** KB-833(서버 예정): 항목별 갤러리 사진 */
   images?: { url?: string | null; attribution?: string | null }[] | null;
 };
@@ -100,6 +104,7 @@ export function adaptCurationDetail(w: DetailWire): CurationDetail {
         images: galleryOf(it),
         externalUrl: it.externalUrl,
         nearby: (it.nearby ?? []).filter((n) => typeof n === 'string' && n.trim()),
+        nameKo: caption(it.nameKo),
       })),
   };
 }

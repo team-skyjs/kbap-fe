@@ -1190,7 +1190,11 @@
     "photoUnavailable": "Không có ảnh",
     "openGalleryHint": "Mở ảnh và thông tin",
     "nextPhoto": "Ảnh tiếp theo",
-    "prevPhoto": "Ảnh trước"
+    "prevPhoto": "Ảnh trước",
+    "openInMaps": "Mở trong bản đồ",
+    "mapGoogle": "Google Maps",
+    "mapKakao": "Kakao Map",
+    "mapNaver": "NAVER Map"
   },
   "packaged": {
     "segmentDishes": "Món ăn",

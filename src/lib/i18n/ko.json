@@ -1190,7 +1190,11 @@
     "photoUnavailable": "사진 없음",
     "openGalleryHint": "사진과 소개가 열려요",
     "nextPhoto": "다음 사진",
-    "prevPhoto": "이전 사진"
+    "prevPhoto": "이전 사진",
+    "openInMaps": "지도에서 열기",
+    "mapGoogle": "Google 지도",
+    "mapKakao": "카카오맵",
+    "mapNaver": "네이버 지도"
   },
   "packaged": {
     "segmentDishes": "요리",

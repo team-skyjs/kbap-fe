@@ -1190,7 +1190,11 @@
     "photoUnavailable": "写真なし",
     "openGalleryHint": "写真と紹介が開きます",
     "nextPhoto": "次の写真",
-    "prevPhoto": "前の写真"
+    "prevPhoto": "前の写真",
+    "openInMaps": "地図で開く",
+    "mapGoogle": "Google マップ",
+    "mapKakao": "Kakao Map",
+    "mapNaver": "NAVER Map"
   },
   "packaged": {
     "segmentDishes": "料理",

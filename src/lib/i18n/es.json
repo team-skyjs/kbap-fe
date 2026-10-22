@@ -1190,7 +1190,11 @@
     "photoUnavailable": "Foto no disponible",
     "openGalleryHint": "Abre las fotos y la información",
     "nextPhoto": "Foto siguiente",
-    "prevPhoto": "Foto anterior"
+    "prevPhoto": "Foto anterior",
+    "openInMaps": "Abrir en mapas",
+    "mapGoogle": "Google Maps",
+    "mapKakao": "Kakao Map",
+    "mapNaver": "NAVER Map"
   },
   "packaged": {
     "segmentDishes": "Platos",
