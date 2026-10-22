@@ -67,8 +67,8 @@ const DETAIL = { id: 11, reportNo: 'R1', productName: '새우깡', maker: '농�
 
 const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
-beforeEach(() => { qc = new QueryClient({ defaultOptions: { queries: { retry: false } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; });
-afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); });
+beforeEach(() => { qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; });
+afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); qc.clear(); jest.clearAllMocks(); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
 const press = async (t: ReactTestRenderer, id: string) => { await act(async () => { await t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); }); await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); };
