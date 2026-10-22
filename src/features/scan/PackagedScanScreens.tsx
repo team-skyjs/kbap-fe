@@ -187,7 +187,7 @@ export function LabelPhotosScreen({ photos, count, max, reanalyze, onRetake, onA
             ))}
           </View>
         )}
-        <Text style={sc.lead} testID={full ? 'pscan-label-full' : 'pscan-label-hint'}>{t(full ? 'packagedScan.labelMaxReached' : 'packagedScan.labelAddHint')}</Text>
+        <Text style={sc.lead} testID={full ? 'pscan-label-full' : 'pscan-label-hint'}>{full ? t('packagedScan.labelMaxReached', { max }) : t('packagedScan.labelAddHint')}</Text>
         <Btn variant="ghost" onPress={onRetake} testID="pscan-label-retake">{t('packagedScan.retakePhoto')}</Btn>
         {reanalyze && <Text style={sc.body} testID="pscan-label-reanalyze">{t('packagedScan.reanalyzeNote')}</Text>}
       </ScrollView>

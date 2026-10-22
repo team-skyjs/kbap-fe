@@ -394,6 +394,7 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     }
     expect(count(t)).toBe('packagedScan.labelPhotosCount:{"count":4,"max":4}');
     expect(ids(t)).toContain('pscan-label-full');
+    expect(texts(t)).toContain('packagedScan.labelMaxReached:{"max":4}'); // QA AR: 자리표시자 그대로 노출 0
     expect(ids(t)).not.toContain('pscan-label-add');
     back(t);
     expect(ids(t)).toContain('cam-package');
