@@ -146,9 +146,16 @@ export default function Scan() {
     setSeenLabelEntry(labelEntry);
     if (labelEntry) setScanModeState('packaged');
   }
+  // KB-865 ③(시안 21): 가공식품 확정이 한도(SCAN-004)에 걸림 = 기존 소진 화면을 **가공식품 흐름 위에** 띄운다 — 흐름(후보·선택)은 마운트 유지,
+  // 해제·나중에 = 같은 후보로 복귀(진입 플로우 문서). 잡고 있는 동안 프로필 잠금이 흐름을 갈아치우지 않게 ref로 막는다
+  const [packagedHold, setPackagedHold] = useState(false);
+  const packagedHoldRef = useRef(false);
   const setScanMode = (m: ScanMode) => {
     if (m === scanMode) return;
     track(EVENTS.scan_mode_select, { mode: m });
+    // Codex #339: 소진 덮개(packagedHold)는 가공식품 흐름에만 — 떠나면 해제(남으면 메뉴의 프로필 잠금·"나중에"가 가공식품 규칙을 탄다).
+    // 가공식품에 머무는 동안은 유지 — "나중에" 뒤 프로필 잠금이 방금 돌아간 흐름을 다시 덮지 않게
+    if (scanMode === 'packaged') { packagedHoldRef.current = false; setPackagedHold(false); }
     setScanModeState(m);
   };
   const reviewPrompt = useReviewPrompt(); // KB-730: 스캔 성공 2회 이상 — 결과 화면 일회성 모달 큐의 마지막 스텝
@@ -226,10 +233,6 @@ export default function Scan() {
   // P-255: 최선 노력 사전 확인 — 004만 즉시 잠금(fail() 미경유 = scan_complete 계측
   // 오염 0 — 스캔 시도가 아니다), 그 외 실패는 무시(최종 판정 = 스캔 단계 분기·시나리오 E).
   const quotaLockRef = useRef(false); // 선발급 잠금 판별 — 타 에러 화면 오복원 방지
-  // KB-865 ③(시안 21): 가공식품 확정이 한도(SCAN-004)에 걸림 = 기존 소진 화면을 **가공식품 흐름 위에** 띄운다 — 흐름(후보·선택)은 마운트 유지,
-  // 해제·나중에 = 같은 후보로 복귀(진입 플로우 문서). 잡고 있는 동안 프로필 잠금이 흐름을 갈아치우지 않게 ref로 막는다
-  const [packagedHold, setPackagedHold] = useState(false);
-  const packagedHoldRef = useRef(false);
   // P-384(KB-442): 프로필 쿼터(서버 정본)가 이미 소진이면 티켓 응답을 기다리지 않고 즉시 안내.
   // 티켓 요청은 그대로 보낸다 — 403 SCAN-004 경로 유지 + 프로필이 낡았으면(리뷰로 해금)
   // 발급 성공이 아래 복원 분기로 카메라를 되돌린다.
