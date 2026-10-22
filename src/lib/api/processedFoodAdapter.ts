@@ -3,14 +3,16 @@
  * (AGENTS.md 어댑터 격리 — 데이터 훅 useProcessedFoods는 조회·캐시만).
  * - 이미지 URL은 https로 올린다: HACCP 이미지가 `http://`로 오는데 iOS ATS·Android cleartext 기본 차단이라 릴리스 빌드에서
  *   전부 안 뜬다(같은 경로 https = 200 실측). 네이티브 설정 변경 없이 여기서 승격.
- * - 판정은 검출(detections)·회원 대조(avoidance: DETECTED|UNCONFIRMED)뿐 — "없음·안전"은 서버도 앱도 만들지 않는다.
- *   검출되지 않은 재료 = 미확인. 비회원 avoidance = null 그대로(빈 배열로 바꾸지 않는다 — "대조했는데 0"과 구별).
- * - unmapped(미매핑 원문 토큰)는 3.2에 아직 없다 — 서버 후속이 오면 그대로 쓰고, 없으면 빈 배열(노란 행 렌더 0).
+ * - KB-865 v4(서버 #457): 판정 = 서버 `verdict` + avoidMatches·mayContainMatches·unclearIngredients(회원) / majorAllergens·mayContain
+ *   (비회원·회피 0개). 앱은 판정을 만들지 않는다 — 모르는 verdict = null. detections·avoidance는 보조(구서버·성분표 화면).
+ * - unmapped는 서버가 폐기(항상 빈 배열) — 받지 않는다(Needs checking 경로 삭제).
  */
 
 export type LabelSource = 'DECLARED' | 'INGREDIENTS_ONLY' | 'NONE';
-/** 시안 유형 플레이스홀더 4종(Ramen = soup 아이콘, 나머지 = camera 아이콘 + 유형 글자). 매핑 안 되면 null(카메라 + 원문 유형). */
-export type PackagedType = 'snacks' | 'ramen' | 'bread' | 'drinks';
+/** KB-867(서버 #458) 유형 8종 — 목록 칩·요청 파라미터·플레이스홀더(RAMEN = 그릇, 나머지 = 카메라 + 유형 글자). 매핑 안 되면 null(카메라 + 원문 유형). */
+export const PACKAGED_TYPES = ['SNACKS', 'RAMEN', 'DRINKS', 'BREAD', 'ICE_CREAM', 'DAIRY', 'MEALS', 'SAUCES'] as const; // 칩 순서 = 시안 01(All 다음) + 나머지 4
+export type PackagedType = (typeof PACKAGED_TYPES)[number];
+export const packagedTypeKey = (t: PackagedType) => `packaged.type.${t.toLowerCase()}`;
 
 /** KB-865 v4 판정(서버가 내림 — 앱은 그대로 그린다). 비회원·회피 0개·구서버 = null(배지 없음). */
 export type ProcessedVerdict = 'AVOID' | 'CAUTION' | 'SAFE' | 'SAFE_WITH_NOTE';
@@ -31,6 +33,13 @@ export type ProcessedFoodSummary = {
 
 export type ProcessedDetection = { code: string; evidence: string; fromLabel: boolean };
 export type ProcessedAvoidance = { code: string; detected: boolean; evidence: string[] };
+/** v4 판정 근거 — 회피 코드 + 근거 원문(원재료·알레르기 표시 / 혼입 문장) */
+export type ProcessedMatch = { code: string; evidence: string[] };
+/** 비회원·회피 0개용 혼입 가능 판독 전체(회원 여부 무관, #457 mayContain) */
+export type ProcessedMayContain = { code: string; evidence: string };
+export type ProcessedAxis = { average: number | null; count: number };
+/** KB-869(#461): overall = 별점 평균 = taste. 축 없음 = null(숨김) */
+export type ProcessedReviewSummary = { overall: ProcessedAxis; taste: ProcessedAxis | null; spiciness: ProcessedAxis | null; sweetness: ProcessedAxis | null };
 
 export type ProcessedFoodDetail = ProcessedFoodSummary & {
   capacity: string | null;
@@ -41,11 +50,23 @@ export type ProcessedFoodDetail = ProcessedFoodSummary & {
   detections: ProcessedDetection[];
   /** 회원 대조 — 비회원 null */
   avoidance: ProcessedAvoidance[] | null;
-  unmapped: string[];
+  avoidMatches: ProcessedMatch[];
+  mayContainMatches: ProcessedMatch[];
+  mayContain: ProcessedMayContain[];
+  /** 내용 불명 원재료(서버 사전) — 한국어 원문 */
+  unclearIngredients: string[];
+  /** 비회원·회피 0개: 한국 표시 의무 주요 알레르기 중 포함된 코드 */
+  majorAllergens: string[];
+  /** 원재료 — 번역(#462, 요청 언어) 없으면 null(원문만). 원문 = rawMaterials */
+  ingredients: { translated: string | null; original: string | null };
+  /** 알레르기 표시란 — 번역 + 원문(DECLARED일 때만) */
+  allergenStatement: { translated: string | null; original: string } | null;
+  /** 출처 — HACCP | C002(#455) | 그 밖(문구 = HACCP 기본) */
+  sourceProvider: string;
   sourceAttributionKey: string;
   image: { url: string; attributionKey: string } | null;
-  /** KB-812 2차: 리뷰 요약(서버 3.2 #435) — 구서버(필드 없음) = null → 화면은 숨김 */
-  reviewSummary: { count: number; avgRating: number | null } | null;
+  /** 리뷰 요약 — 구서버(필드 없음) = null → 화면은 숨김 */
+  reviewSummary: ProcessedReviewSummary | null;
 };
 
 type SummaryWire = {
@@ -58,6 +79,7 @@ type SummaryWire = {
   nameKo?: string | null;
   rating?: { average?: number | null; count?: number | null } | null;
   verdict?: string | null;
+  type?: string | null;
 };
 export type SearchPageWire = { items: SummaryWire[]; hasNext: boolean; nextCursor?: string | null };
 export type DetailWire = SummaryWire & {
@@ -67,11 +89,21 @@ export type DetailWire = SummaryWire & {
   labelSource: string;
   detections: { code: string; source: string; evidence: string }[];
   avoidance?: { code: string; match: string; matchedCodes?: string[]; evidence?: string[] }[] | null;
-  unmapped?: string[] | null;
   source: { provider: string; attributionKey: string };
   image?: { url: string; source: string; attributionKey: string } | null;
-  reviewSummary?: { count: number; avgRating?: number | null } | null;
+  // 구 3.2 = {count, avgRating} · KB-869(#461) = {overall, taste, spiciness, sweetness} 각 {average, count}
+  reviewSummary?: { count?: number | null; avgRating?: number | null; overall?: AxisWire; taste?: AxisWire; spiciness?: AxisWire; sweetness?: AxisWire } | null;
+  // KB-865 v4(#457·#462) — 전부 optional
+  avoidMatches?: MatchWire[] | null;
+  mayContainMatches?: MatchWire[] | null;
+  mayContain?: { code: string; source?: string; evidence: string }[] | null;
+  unclearIngredients?: string[] | null;
+  majorAllergens?: string[] | null;
+  ingredients?: { translated?: string | null; original?: string | null } | null;
+  allergenStatement?: { translated?: string | null; original?: string | null } | null;
 };
+type AxisWire = { average?: number | null; count?: number | null } | null;
+type MatchWire = { code: string; evidence?: string[] | string | null };
 
 const blankToNull = (s: string | null | undefined): string | null => (s && s.trim() ? s.trim() : null);
 export const toHttps = (u: string | null | undefined): string | null => {
@@ -79,15 +111,18 @@ export const toHttps = (u: string | null | undefined): string | null => {
   return v ? v.replace(/^http:\/\//i, 'https://') : null;
 };
 
-/** 식품 유형 원문(한국어) → 시안 4종. 순서 중요: '면류'를 과자보다 먼저, '유음료'는 음료로. */
+/** 식품 유형 원문(한국어) → 유형(서버 `type`이 없을 때만 — 구서버 폴백). 순서 중요: '면류'를 과자보다 먼저, '유음료'는 음료로. */
 export function packagedTypeOf(foodType: string | null | undefined): PackagedType | null {
   const f = foodType ?? '';
-  if (/라면|면류|국수|냉면|당면/.test(f)) return 'ramen';
-  if (/빵|떡|케이크/.test(f)) return 'bread';
-  if (/음료|우유|유음료|두유|커피|주스|차$|발효유|탄산|생수/.test(f)) return 'drinks';
-  if (/과자|스낵|캔디|사탕|초콜릿|쿠키|비스킷|젤리|껌|빙과|아이스크림/.test(f)) return 'snacks';
+  if (/라면|면류|국수|냉면|당면/.test(f)) return 'RAMEN';
+  if (/빵|떡|케이크/.test(f)) return 'BREAD';
+  if (/음료|우유|유음료|두유|커피|주스|차$|발효유|탄산|생수/.test(f)) return 'DRINKS';
+  if (/과자|스낵|캔디|사탕|초콜릿|쿠키|비스킷|젤리|껌|빙과|아이스크림/.test(f)) return 'SNACKS';
   return null;
 }
+/** 서버 유형(대문자 8종) 우선 — 모르는 값은 원문 매핑으로 */
+const typeOf = (wire: string | null | undefined, foodType: string | null): PackagedType | null =>
+  (PACKAGED_TYPES as readonly string[]).includes(wire ?? '') ? (wire as PackagedType) : packagedTypeOf(foodType);
 
 const LABEL_SOURCES: LabelSource[] = ['DECLARED', 'INGREDIENTS_ONLY', 'NONE'];
 /** 모르는 값 = NONE(가장 보수적 — "성분 정보 없음, 직접 확인") */
@@ -107,7 +142,7 @@ export function adaptProcessedSummary(w: SummaryWire): ProcessedFoodSummary {
     name: w.productName,
     maker: blankToNull(w.maker),
     foodType,
-    type: packagedTypeOf(foodType),
+    type: typeOf(w.type, foodType),
     imageUrl: toHttps(w.imageUrl),
     nameKo: nameKo === w.productName.trim() ? null : nameKo,
     rating: ratingOf(w.rating),
@@ -123,23 +158,45 @@ const adaptDetections = (ds: DetailWire['detections'] | null | undefined): Proce
   (ds ?? []).map((d) => ({ code: d.code, evidence: d.evidence, fromLabel: d.source === 'ALLERGEN_DECLARATION' }));
 const adaptAvoidance = (as: NonNullable<DetailWire['avoidance']>): ProcessedAvoidance[] =>
   as.map((a) => ({ code: a.code, detected: a.match === 'DETECTED', evidence: a.evidence ?? [] }));
-const adaptUnmapped = (us: string[] | null | undefined): string[] => (us ?? []).map((u) => u.trim()).filter(Boolean);
+const adaptMatches = (ms: MatchWire[] | null | undefined): ProcessedMatch[] =>
+  (ms ?? []).map((m) => ({ code: m.code, evidence: (Array.isArray(m.evidence) ? m.evidence : m.evidence ? [m.evidence] : []).map((e) => e.trim()).filter(Boolean) }));
+const axisOf = (a: AxisWire | undefined): ProcessedAxis | null =>
+  a && typeof a.count === 'number' && a.count > 0 ? { average: typeof a.average === 'number' ? a.average : null, count: a.count } : null;
+/** 구 3.2({count, avgRating}) = overall·taste 하나(별점 평균 = taste) · 새 축 없음 */
+function reviewSummaryOf(w: DetailWire['reviewSummary']): ProcessedReviewSummary | null {
+  if (!w) return null;
+  if (w.overall !== undefined) {
+    const overall = { average: w.overall?.average ?? null, count: w.overall?.count ?? 0 };
+    return { overall, taste: axisOf(w.taste) ?? axisOf(w.overall), spiciness: axisOf(w.spiciness), sweetness: axisOf(w.sweetness) };
+  }
+  const overall = { average: w.avgRating ?? null, count: w.count ?? 0 };
+  return { overall, taste: overall.count > 0 ? overall : null, spiciness: null, sweetness: null };
+}
 
 export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
   const labelSource = labelSourceOf(w.labelSource);
+  const allergens = labelSource === 'DECLARED' ? blankToNull(w.allergenStatement?.original) ?? blankToNull(w.allergens) : null;
   return {
     ...adaptProcessedSummary(w),
     imageUrl: toHttps(w.image?.url ?? w.imageUrl),
     capacity: blankToNull(w.capacity),
     rawMaterials: blankToNull(w.rawMaterials),
-    allergens: labelSource === 'DECLARED' ? blankToNull(w.allergens) : null,
+    allergens,
     labelSource,
     detections: adaptDetections(w.detections),
     avoidance: w.avoidance == null ? null : adaptAvoidance(w.avoidance),
-    unmapped: adaptUnmapped(w.unmapped),
+    avoidMatches: adaptMatches(w.avoidMatches),
+    mayContainMatches: adaptMatches(w.mayContainMatches),
+    mayContain: (w.mayContain ?? []).map((m) => ({ code: m.code, evidence: m.evidence })),
+    unclearIngredients: (w.unclearIngredients ?? []).map((u) => u.trim()).filter(Boolean),
+    majorAllergens: w.majorAllergens ?? [],
+    // #462 전 = 원문만(번역 null). 원문은 서버 ingredients.original → 없으면 rawMaterials
+    ingredients: { translated: blankToNull(w.ingredients?.translated), original: blankToNull(w.ingredients?.original) ?? blankToNull(w.rawMaterials) },
+    allergenStatement: allergens ? { translated: blankToNull(w.allergenStatement?.translated), original: allergens } : null,
+    sourceProvider: w.source.provider,
     sourceAttributionKey: w.source.attributionKey,
     image: w.image?.url ? { url: toHttps(w.image.url) as string, attributionKey: w.image.attributionKey } : null,
-    reviewSummary: w.reviewSummary ? { count: w.reviewSummary.count ?? 0, avgRating: w.reviewSummary.avgRating ?? null } : null,
+    reviewSummary: reviewSummaryOf(w.reviewSummary),
   };
 }
 
@@ -169,14 +226,11 @@ export function adaptScanConfirm(w: ScanConfirmWire): ScanConfirmResult {
 }
 
 // ── KB-813 후속(P-508): 성분표 분석 S5 — POST /api/processed-foods/scan/label (서버 #442) ──
-/** 함유 가능(같은 제조시설·혼입) — 검출로 세지 않고 회피 대조에도 없는 참고 정보 */
-export type ProcessedMayContain = { code: string; evidence: string };
 /** 성분표 판독 결과. 제품이 정해지지 않았으니 상세 연결 없음. avoidance = 회원 대조(엔드포인트가 회원 전용이라 늘 배열). */
 export type LabelScanResult = {
   analysisId: string;
   labelSource: LabelSource;
   detections: ProcessedDetection[];
-  unmapped: string[];
   mayContain: ProcessedMayContain[];
   avoidance: ProcessedAvoidance[];
   rawText: string;
@@ -188,7 +242,6 @@ export type LabelScanWire = {
   state: string;
   labelSource: string;
   detections?: DetailWire['detections'] | null;
-  unmapped?: string[] | null;
   mayContain?: { code: string; source?: string; evidence: string }[] | null;
   avoidance?: DetailWire['avoidance'];
   rawText?: string | null;
@@ -199,7 +252,6 @@ export function adaptLabelScan(w: LabelScanWire): LabelScanResult {
     analysisId: w.analysisId,
     labelSource: labelSourceOf(w.labelSource),
     detections: adaptDetections(w.detections),
-    unmapped: adaptUnmapped(w.unmapped),
     mayContain: (w.mayContain ?? []).map((m) => ({ code: m.code, evidence: m.evidence })),
     avoidance: adaptAvoidance(w.avoidance ?? []),
     rawText: blankToNull(w.rawText) ?? '',

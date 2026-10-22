@@ -23,7 +23,7 @@ jest.mock('@/lib/api/client', () => {
   class MockApiError extends Error { status?: number; code?: string; constructor(m: string, s?: number, c?: string) { super(m); this.status = s; this.code = c; } }
   return { api: { get: (...a: unknown[]) => mockGet(...a), post: (...a: unknown[]) => mockPost(...a) }, apiLang: () => 'en', ApiError: MockApiError };
 });
-type RQ = { isPending: boolean; isError: boolean; data?: unknown; error?: unknown; hasNextPage?: boolean; isFetchingNextPage?: boolean; refetch: jest.Mock; fetchNextPage: jest.Mock };
+type RQ = { isPending: boolean; isError: boolean; data?: unknown; error?: unknown; hasNextPage?: boolean; isFetchingNextPage?: boolean; isFetchNextPageError?: boolean; refetch: jest.Mock; fetchNextPage: jest.Mock };
 let mockReviewsQ: RQ;
 jest.mock('@/lib/data/useFoodReviews', () => ({ ...jest.requireActual('@/lib/data/useFoodReviews'), useProcessedReviews: () => mockReviewsQ }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '41' } }) }));
@@ -127,21 +127,38 @@ describe('④ 상세 섹션', () => {
     expect(ids(t)).not.toContain('pf-reviews-summary');
     expect(ids(t)).toContain('pf-reviews-empty');
   });
-  it('요약 있음 = 별 평균·(수) · 카드는 대상 칩 숨김 · 내 리뷰 판별', () => {
-    mockReviewsQ = rq({ data: pageOf(2) });
-    const t = render(<PackagedReviews productId="1711" summary={{ count: 2, avgRating: 4.5 }} />);
-    expect(ids(t)).toContain('stars-4.5');
-    expect(JSON.stringify(t.toJSON())).toContain('4.5');
-    expect(t.root.findAll((n) => n.props?.testID === 'card-1' && typeof n.type === 'string')[0].props.accessibilityLabel).toBe('false|true');
+  const SUM = (avg: number, count: number, spicy: number | null = null, sweet: number | null = null) => ({
+    overall: { average: avg, count }, taste: { average: avg, count },
+    spiciness: spicy == null ? null : { average: spicy, count }, sweetness: sweet == null ? null : { average: sweet, count },
   });
-  it('3개 → 더 보기 → 받은 전부 → 다음 페이지', () => {
+  it('KB-865: 요약 = 음식 상세 RatingSummaryBox · 축 라벨 Taste·Spiciness·Sweetness(축 없으면 숨김) · 카드 대상 칩 숨김 · 내 리뷰 판별', () => {
+    mockReviewsQ = rq({ data: pageOf(2) });
+    const t = render(<PackagedReviews productId="1711" summary={SUM(4.5, 2, 4.2, 3.9)} />);
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-reviews-summary', 'rating-summary-box', 'axis-taste', 'axis-speed', 'axis-service']));
+    const json = JSON.stringify(t.toJSON());
+    expect(json).toContain('review.spiciness');
+    expect(json).toContain('review.sweetness');
+    expect(json).not.toContain('review.extrasSpeed');
+    expect(t.root.findAll((n) => n.props?.testID === 'card-1' && typeof n.type === 'string')[0].props.accessibilityLabel).toBe('false|true');
+    // 맵기·당도 미입력(#461 전) = 그 축만 숨김
+    const t2 = render(<PackagedReviews productId="1711" summary={SUM(4.5, 2)} />);
+    expect(ids(t2)).toContain('axis-taste');
+    expect(ids(t2)).not.toContain('axis-speed');
+    expect(ids(t2)).not.toContain('axis-service');
+  });
+  it('KB-865: Read reviews·더 보기 버튼 0 — 받은 전부 · 바닥 신호(loadMoreRef) = 다음 페이지 · 실패 중 자동 재요청 0 → 다시 시도', () => {
     mockReviewsQ = rq({ data: pageOf(5), hasNextPage: true });
-    const t = render(<PackagedReviews productId="1711" summary={{ count: 60, avgRating: 4 }} />);
-    expect(ids(t).filter((i) => i.startsWith('card-'))).toHaveLength(3);
-    expect(ids(t)).not.toContain('pf-reviews-load-more');
-    act(() => t.root.findAll((n) => n.props?.testID === 'pf-reviews-more' && typeof n.props.onPress === 'function')[0].props.onPress());
+    const ref: { current: (() => void) | null } = { current: null };
+    const t = render(<PackagedReviews productId="1711" summary={SUM(4, 60)} loadMoreRef={ref} />);
     expect(ids(t).filter((i) => i.startsWith('card-'))).toHaveLength(5);
-    act(() => t.root.findAll((n) => n.props?.testID === 'pf-reviews-load-more' && typeof n.props.onPress === 'function')[0].props.onPress());
+    expect(ids(t)).not.toContain('pf-reviews-more');
+    act(() => ref.current?.());
+    expect(mockReviewsQ.fetchNextPage).toHaveBeenCalledTimes(1);
+    mockReviewsQ = rq({ data: pageOf(5), hasNextPage: true, isFetchNextPageError: true });
+    const t3 = render(<PackagedReviews productId="1711" summary={null} loadMoreRef={ref} />);
+    act(() => ref.current?.());
+    expect(mockReviewsQ.fetchNextPage).not.toHaveBeenCalled();
+    act(() => t3.root.findAll((n) => n.props?.testID === 'pf-reviews-more-retry' && typeof n.props.onPress === 'function')[0].props.onPress());
     expect(mockReviewsQ.fetchNextPage).toHaveBeenCalledTimes(1);
   });
   it('로딩 = 스켈레톤 · 첫 페이지 실패 = 에러 블록(빈 상태 아님)', () => {

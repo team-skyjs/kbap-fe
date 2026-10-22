@@ -65,7 +65,7 @@ const LABEL_P2 = '알레르기 유발물질: 밀, 새우 함유\n이 제품은 �
 const RESULT = (over: object = {}) => ({
   analysisId: 'L1', state: 'LABEL_RESULT', labelSource: 'DECLARED',
   detections: [{ code: 'WHEAT', source: 'ALLERGEN_DECLARATION', evidence: '밀' }, { code: 'SHRIMP', source: 'RAW_MATERIALS', evidence: '새우' }],
-  unmapped: ['복합조미식품'], mayContain: [{ code: 'SOY', source: 'MAY_CONTAIN', evidence: '대두' }],
+  mayContain: [{ code: 'SOY', source: 'MAY_CONTAIN', evidence: '대두' }],
   avoidance: [{ code: 'SHRIMP', match: 'DETECTED', matchedCodes: ['SHRIMP'], evidence: ['새우'] }], rawText: `${LABEL_P1}\n${LABEL_P2}`, charged: true, ...over,
 });
 
@@ -156,7 +156,7 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3' }));
     await press(t, 'pscan-label-analyze');
     expect(labelCalls()[0][1]).toEqual({ analysisId: 'A3', pages: [{ ocrText: LABEL_P1 }, { ocrText: LABEL_P2 }], lang: 'en' });
-    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-label-result', 'pf-det-WHEAT', 'pf-det-SHRIMP', 'pf-unmapped-0', 'pf-may-SOY', 'pf-avoid-SHRIMP', 'pf-raw']));
+    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-label-result', 'pf-det-WHEAT', 'pf-det-SHRIMP', 'pf-may-SOY', 'pf-avoid-SHRIMP', 'pf-raw']));
     expect(ids(t)).not.toContain('pf-login-compare');
     expect(texts(t)).toContain('packagedScan.scanUsed');
     expect(inv).toHaveBeenCalledWith({ queryKey: ['me'] });
@@ -183,7 +183,9 @@ describe('흐름(KB-845 — 성분표 단계 = 공통 카메라 ingredient)', ()
     expect(ids(t)).toContain('cam-ingredient');
     expect(hint(t)).toBe('default-hint');
     expect(ids(t)).not.toContain('cam-close'); // 첫 카메라 = 스캔 화면 닫기(scan.tsx X)
-    expect(fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8')).toContain('router.navigate(`/scan?mode=packaged&label=1&t=${Date.now()}` as Href)');
+    // KB-865 ②: 상세의 "성분표 직접 확인" 버튼은 제거(결정 4·시안 09) — 같은 진입은 목록 빈 상태(시안 04·47)의 "성분표 찍기"가 쓴다
+    expect(fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8')).not.toContain('pf-label-scan');
+    expect(fs.readFileSync('src/features/processedFood/PackagedExplorer.tsx', 'utf8')).toContain('router.navigate(`/scan?mode=packaged&label=1&t=${Date.now()}` as Href)');
     const scan = fs.readFileSync('src/app/scan.tsx', 'utf8');
     expect(scan).toContain("const labelEntry = scanParams.label === '1' && FLAGS.packagedLabelScan ? (scanParams.t ?? 'entry') : null;");
     expect(scan).toContain('startLabel={labelEntry != null} renderCamera={cameraUi} focused={isFocused} />'); // Codex #318: 흰 상태바 = 보일 때만

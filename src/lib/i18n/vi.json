@@ -438,7 +438,9 @@
     "extrasSpeed": "Tốc độ phục vụ",
     "extrasService": "Thái độ phục vụ",
     "extrasTaste": "Hương vị",
-    "writeSoon": "Sắp mở đánh giá cho thực phẩm đóng gói. Nội dung bạn đã viết vẫn còn trên màn hình này."
+    "writeSoon": "Sắp mở đánh giá cho thực phẩm đóng gói. Nội dung bạn đã viết vẫn còn trên màn hình này.",
+    "spiciness": "Độ cay",
+    "sweetness": "Độ ngọt"
   },
   "translation": {
     "showTranslation": "Hiện bản dịch",
@@ -1224,8 +1226,6 @@
     "foundOnLabel": "Trên nhãn dị ứng: {{evidence}}",
     "foundInIngredients": "Trong danh sách thành phần: {{evidence}}",
     "detectedNoEvidence": "Tìm thấy trong dữ liệu thành phần.",
-    "needsChecking": "Cần kiểm tra",
-    "unmappedBody": "Không khớp được \"{{text}}\". Hãy tự kiểm tra.",
     "notVerified": "Chưa xác minh",
     "notVerifiedName": "Chưa xác minh: {{name}}",
     "notVerifiedBody": "Không khớp không có nghĩa là ăn được. Hãy kiểm tra bao bì.",
@@ -1254,9 +1254,35 @@
       "snacks": "Snack",
       "ramen": "Mì ramen",
       "bread": "Bánh mì",
-      "drinks": "Đồ uống"
+      "drinks": "Đồ uống",
+      "ice_cream": "Kem",
+      "dairy": "Sữa",
+      "meals": "Món ăn",
+      "sauces": "Nước sốt"
     },
-    "mayContainTitle": "Có thể chứa (cùng cơ sở sản xuất, lẫn chéo)"
+    "mayContainTitle": "Có thể chứa (cùng cơ sở sản xuất, lẫn chéo)",
+    "ingredientsHeading": "Thành phần",
+    "seeDetail": "Xem chi tiết",
+    "seeLess": "Thu gọn",
+    "ingredientsAndSource": "Thành phần và nguồn",
+    "yourAvoidList": "Danh sách cần tránh",
+    "noAvoidMatches": "Không có gì khớp với danh sách cần tránh hiện tại của bạn.",
+    "translationLabel": "Bản dịch tiếng Việt",
+    "sourceTitle": "Nguồn",
+    "sourceC002": "Dữ liệu: Bộ An toàn Thực phẩm và Dược phẩm, báo cáo sản xuất của Food Safety Korea",
+    "avoidMatchTitle": "Khớp với danh sách cần tránh",
+    "avoidMatchBody": "Có trong thành phần hoặc ghi chú dị ứng: {{names}}.",
+    "crossContactTitle": "Có thể nhiễm chéo",
+    "crossContactBody": "Nhãn ghi có thể chứa {{names}} từ cùng cơ sở sản xuất.",
+    "unclearTitle": "Thành phần không ghi rõ",
+    "unclearBody": "Không mô tả chi tiết: {{items}}. Không có gì khớp với danh sách cần tránh của bạn.",
+    "majorAllergensTitle": "Chất gây dị ứng chính",
+    "majorUnavailable": "Không có thông tin dị ứng cho sản phẩm này.",
+    "majorNoneFound": "Không tìm thấy chất gây dị ứng chính trong thành phần hoặc nhãn.",
+    "containsNames": "Chứa {{names}}",
+    "mayContainNames": "Có thể chứa {{names}}",
+    "signInToPersonalize": "Đăng nhập để cá nhân hóa",
+    "setAvoidIngredients": "Đặt nguyên liệu cần tránh"
   },
   "scanMode": {
     "menu": "Thực đơn",

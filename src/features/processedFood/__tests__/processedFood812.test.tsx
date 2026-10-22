@@ -45,7 +45,8 @@ jest.mock('@/components/RiskBadge', () => { const { View } = jest.requireActual(
 jest.mock('@/components/icons', () => ({ ...jest.requireActual('@/components/icons'), IconLock: () => null, IconCamera: () => null, IconTabFood: () => null, IconSearch: () => null, IconClose: () => null }));
 jest.mock('@/lib/onboarding/data', () => ({ restrictionLabel: (c: string) => `L(${c})` }));
 const mockBack = jest.fn();
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), back: mockBack, navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => ({ id: '1711' }), useSegments: () => [] }));
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: mockBack, navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => ({ id: '1711' }), useSegments: () => [], Redirect: () => null }));
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 const mockGet = jest.fn();
@@ -53,7 +54,10 @@ jest.mock('@/lib/api/client', () => {
   class MockApiError extends Error { status?: number; code?: string; constructor(m: string, s?: number, c?: string) { super(m); this.status = s; this.code = c; } }
   return { api: { get: (...a: unknown[]) => mockGet(...a) }, ApiError: MockApiError };
 });
-jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => true }));
+let mockGuest = true;
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest }));
+let mockMe: { id: string; restrictions: { code: string }[] } | undefined;
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockMe }) }));
 type Q = { isPending: boolean; isError: boolean; data?: unknown; error?: unknown; refetch: jest.Mock };
 let mockDetail: Q;
 jest.mock('@/lib/data/useProcessedFoods', () => ({ ...jest.requireActual('@/lib/data/useProcessedFoods'), useProcessedDetail: () => mockDetail }));
@@ -68,7 +72,7 @@ jest.mock('@/features/processedFood/PackagedReviews', () => {
 import { ApiError } from '@/lib/api/client';
 import { adaptProcessedDetail, adaptProcessedSummary, packagedTypeOf, toHttps, VERDICT_RISK, type DetailWire } from '@/lib/api/processedFoodAdapter';
 import { fetchProcessedDetail, fetchProcessedSearch } from '@/lib/data/useProcessedFoods';
-import { ProcessedFoodDetailScreen as Detail, LABEL_SOURCE_KEY } from '@/app/processed-foods/[id]'; // KB-870: 기본 내보내기 = 채널 게이트 — 화면 자체를 직접 렌더
+import { ProcessedFoodDetailScreen as Detail } from '@/app/processed-foods/[id]'; // KB-870: 기본 내보내기 = 채널 게이트 — 화면 자체를 직접 렌더
 import { FoodSegmentRow, PackagedExplorer } from '../PackagedExplorer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FLAGS } from '@/lib/flags';
@@ -89,7 +93,7 @@ const W1711: DetailWire = {
 };
 
 const trees: ReactTestRenderer[] = [];
-afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); });
+afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); mockGuest = true; mockMe = undefined; jest.requireMock('@/lib/i18n').default.language = 'en'; });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(el); }); trees.push(t); return t; };
 const q = (over: Partial<Q>): Q => ({ isPending: false, isError: false, refetch: jest.fn(), ...over });
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -119,14 +123,16 @@ describe('어댑터·요청', () => {
     expect(adaptProcessedSummary({ id: 1, productName: 'x', imageUrl: 'http://a/b.jpg' }).imageUrl).toBe('https://a/b.jpg');
     expect(adaptProcessedDetail(W1711).image?.url.startsWith('https://')).toBe(true);
   });
-  it('유형 4종 매핑(라면·빵·음료·과자) · 그 외 null(카메라 + 원문)', () => {
-    expect(['라면', '유탕면류', '빵류', '떡류', '유음료', '혼합음료', '과자', '캔디류', '김치', null].map((f) => packagedTypeOf(f))).toEqual(['ramen', 'ramen', 'bread', 'bread', 'drinks', 'drinks', 'snacks', 'snacks', null, null]);
+  it('유형: 서버 type(대문자 8종, KB-867) 우선 · 없거나 모르는 값 = 식품 유형 원문 매핑(4종) · 그 외 null', () => {
+    expect(['라면', '유탕면류', '빵류', '떡류', '유음료', '혼합음료', '과자', '캔디류', '김치', null].map((f) => packagedTypeOf(f))).toEqual(['RAMEN', 'RAMEN', 'BREAD', 'BREAD', 'DRINKS', 'DRINKS', 'SNACKS', 'SNACKS', null, null]);
+    expect(adaptProcessedSummary({ id: 1, productName: 'x', foodType: '과자', type: 'ICE_CREAM' }).type).toBe('ICE_CREAM');
+    expect(adaptProcessedSummary({ id: 1, productName: 'x', foodType: '과자', type: 'WHATEVER' }).type).toBe('SNACKS');
   });
   it('상세: 비회원 avoidance null 그대로(빈 배열 아님) · INGREDIENTS_ONLY면 알레르기 원문("알수없음") 숨김 · unmapped 없으면 [] · 모르는 labelSource = NONE', () => {
     const d = adaptProcessedDetail(W1711);
     expect(d.avoidance).toBeNull();
     expect(d.allergens).toBeNull();
-    expect(d.unmapped).toEqual([]);
+    expect('unmapped' in d).toBe(false); // 서버 폐기(#457) — 받지 않는다
     expect(d.detections.map((x) => x.code)).toEqual(['WHEAT', 'SOY', 'MILK', 'EGG']);
     expect(adaptProcessedDetail({ ...W1711, labelSource: 'WHATEVER' }).labelSource).toBe('NONE');
     expect(adaptProcessedDetail({ ...W1711, labelSource: 'DECLARED', allergens: '밀, 우유 함유' }).allergens).toBe('밀, 우유 함유');
@@ -140,97 +146,125 @@ describe('어댑터·요청', () => {
   });
 });
 
-describe('상세 판정', () => {
-  it('1711(INGREDIENTS_ONLY): 상단 문구 = 표시란 없음 · 검출 4 빨강 · Safe 배지 0 · 비회원 = 로그인 줄 1 · 사진 https + 출처 캡션', () => {
-    mockDetail = q({ data: adaptProcessedDetail(W1711) });
-    const t = render(<Detail />);
-    expect(t.root.findAll((n) => n.props?.testID === 'pf-label-source')[0].props.children).toBe('packaged.labelIngredientsOnly');
-    expect(['WHEAT', 'SOY', 'MILK', 'EGG'].every((c) => ids(t).includes(`pf-det-${c}`))).toBe(true);
-    expect(ids(t).filter((i) => i === 'badge-danger')).toHaveLength(4);
-    expect(ids(t).some((i) => i === 'badge-safe')).toBe(false);
-    expect(text(t)).not.toMatch(/risk\.safe|"Safe"/);
-    expect(ids(t)).toContain('pf-login-compare');
-    expect(ids(t)).not.toContain('pf-my-avoid');
-    expect(ids(t)).toContain('img:https://www.haccp.or.kr/fresh/prdimg/2007/20070156181583/20070156181583-1.jpg');
-    expect(ids(t)).toContain('pf-photo-credit');
-    expect(ids(t)).not.toContain('pf-allergens'); // "알수없음"을 표시하지 않음
+describe('상세 v4(시안 08~13·34~38·51·52)', () => {
+  // dev 10201(바나나맛우유) 실응답 모양 — 비회원 majorAllergens [MILK] · 내용 불명 합성착향료
+  const V4: DetailWire = {
+    ...W1711, id: 10201, productName: 'Banana Flavored Milk', nameKo: '바나나맛우유', maker: 'Binggrae', type: 'DRINKS',
+    verdict: null, avoidMatches: [], mayContainMatches: [], mayContain: [{ code: 'PEANUT', source: 'MAY_CONTAIN', evidence: '땅콩 혼입 가능' }],
+    unclearIngredients: ['합성착향료'], majorAllergens: ['MILK'], rawMaterials: '원유,정제수,백설탕',
+  };
+  const detail = (over: Partial<DetailWire> = {}) => { mockDetail = q({ data: adaptProcessedDetail({ ...V4, ...over }) }); return render(<Detail />); };
+  const member = () => { mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] }; };
+  const press = (t: ReactTestRenderer, id: string) => act(() => t.root.findAll((n) => n.props?.testID === id && typeof n.props.onPress === 'function')[0].props.onPress());
+
+  it('비회원(12): 주요 알레르기 함유 + 혼입 가능 · 가입 유도 = 게이트 · 리본 0 · 원재료 미리보기 + See detail · 처음엔 접힘', () => {
+    const t = detail();
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-major', 'pf-major-contains', 'pf-major-may', 'pf-sign-in', 'pf-ingredients-preview', 'pf-see-detail']));
+    expect(text(t)).toContain('packaged.containsNames:{\\"names\\":\\"L(MILK)\\"}');
+    expect(text(t)).toContain('packaged.mayContainNames:{\\"names\\":\\"L(PEANUT)\\"}');
+    expect(ids(t).some((i) => i.startsWith('badge-'))).toBe(false);
+    expect(ids(t)).not.toContain('pf-expanded');
+    press(t, 'pf-sign-in');
+    expect(ids(t)).toContain('gate-open');
   });
-  it('labelSource 3종 = 서로 다른 필수 문구 · NONE·검출 0 = "검출 없음"이 아니라 회색 미확인', () => {
-    expect(Object.keys(LABEL_SOURCE_KEY).sort()).toEqual(['DECLARED', 'INGREDIENTS_ONLY', 'NONE']);
-    expect(new Set(Object.values(LABEL_SOURCE_KEY)).size).toBe(3);
-    mockDetail = q({ data: adaptProcessedDetail({ ...W1711, labelSource: 'NONE', rawMaterials: null, detections: [] }) });
-    const t = render(<Detail />);
-    expect(t.root.findAll((n) => n.props?.testID === 'pf-label-source')[0].props.children).toBe('packaged.labelNone');
-    expect(ids(t)).toContain('pf-none-detected');
-    expect(ids(t)).toContain('badge-unable');
-    expect(ids(t)).toContain('pf-no-raw');
-    expect(text(t)).not.toMatch(/none detected|no allergens|안전/i);
+  it('회피 0개 회원(13): 같은 화면 + "피하는 재료 설정" → 회피 설정 화면', () => {
+    mockGuest = false; mockMe = { id: '41', restrictions: [] };
+    const t = detail();
+    expect(ids(t)).toContain('pf-set-avoid');
+    press(t, 'pf-set-avoid');
+    expect(mockPush).toHaveBeenCalledWith('/profile/restrictions');
   });
-  it('노란 "확인 필요" = 서버 unmapped[]가 있을 때만(3.2엔 없음 → 0)', () => {
-    mockDetail = q({ data: adaptProcessedDetail(W1711) });
-    expect(ids(render(<Detail />)).filter((i) => i.startsWith('pf-unmapped-'))).toHaveLength(0);
-    mockDetail = q({ data: adaptProcessedDetail({ ...W1711, unmapped: ['복합조미식품'] }) });
-    const t = render(<Detail />);
-    expect(ids(t)).toContain('pf-unmapped-0');
-    expect(ids(t)).toContain('badge-caution');
+  it('주요 알레르기 0개 = "없음" 단정 금지 — 판독 근거 없음(NONE) = 확인 불가 · 있으면 "찾지 못함"', () => {
+    expect(text(detail({ majorAllergens: [], labelSource: 'NONE' }))).toContain('packaged.majorUnavailable');
+    expect(text(detail({ majorAllergens: [] }))).toContain('packaged.majorNoneFound');
   });
-  it('회원: avoidance DETECTED = 빨강 · UNCONFIRMED = 회색 "미확인"(없음 아님) · 로그인 줄 0', () => {
-    mockDetail = q({ data: adaptProcessedDetail({ ...W1711, avoidance: [{ code: 'MILK', match: 'DETECTED', matchedCodes: ['MILK'], evidence: ['우유'] }, { code: 'PEANUT', match: 'UNCONFIRMED', matchedCodes: [], evidence: [] }] }) });
-    const t = render(<Detail />);
-    expect(ids(t)).toContain('pf-my-avoid');
-    expect(ids(t)).not.toContain('pf-login-compare');
-    expect(text(t)).toContain('packaged.notVerifiedName:{\\"name\\":\\"L(PEANUT)\\"}');
+  it('회원 SAFE(08): safe 리본 · 판정 문장 0 · 미리보기 + See detail → 제자리 펼침(Your avoid list·원재료·원문·출처) → See less + 계측(id만)', () => {
+    member();
+    const t = detail({ verdict: 'SAFE' });
+    expect(ids(t)).toContain('badge-safe');
+    expect(ids(t).some((i) => i.startsWith('pf-verdict-'))).toBe(false);
+    press(t, 'pf-see-detail');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-expanded', 'pf-your-avoid', 'pf-original', 'pf-source', 'pf-source-disclaimer', 'pf-see-less']));
+    expect(ids(t)).not.toContain('pf-see-detail');
+    expect(mockTrack).toHaveBeenCalledWith('food_packaged_detail_expand', { product_id: '10201', action: 'see_detail' });
+    press(t, 'pf-see-less');
+    expect(ids(t)).not.toContain('pf-expanded');
   });
-  it('출처 고지 3종은 항상 — 자료 출처 · 사진 출처(이미지 있을 때) · 제조사 무관/상표(이미지 없어도)', () => {
-    mockDetail = q({ data: adaptProcessedDetail(W1711) });
-    const t = render(<Detail />);
-    for (const k of ['packaged.sourceData1', 'packaged.sourceData2', 'packaged.imageHaccp', 'packaged.disclaimer']) expect(text(t)).toContain(k);
-    mockDetail = q({ data: adaptProcessedDetail({ ...W1711, image: null, imageUrl: null }) });
-    const t2 = render(<Detail />);
-    expect(ids(t2)).toContain('pf-source-disclaimer');
-    expect(text(t2)).toContain('packaged.sourceData1');
-    expect(ids(t2)).toContain('packaged-placeholder');
+  it('회원 AVOID(10)·CAUTION(11)·SAFE_WITH_NOTE(11b): 리본 + 판정 제목·문장(서버 matches) + Ingredients and source · 펼침엔 Your avoid list 0', () => {
+    member();
+    const a = detail({ verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: ['원유'] }] });
+    expect(ids(a)).toEqual(expect.arrayContaining(['badge-danger', 'pf-verdict-avoid', 'pf-ingredients-source']));
+    expect(text(a)).toContain('packaged.avoidMatchBody:{\\"names\\":\\"L(MILK)\\"}');
+    press(a, 'pf-ingredients-source');
+    expect(ids(a)).toContain('pf-expanded');
+    expect(ids(a)).not.toContain('pf-your-avoid');
+    const c = detail({ verdict: 'CAUTION', mayContainMatches: [{ code: 'PEANUT', evidence: ['같은 제조시설에서 땅콩을 사용'] }] });
+    expect(ids(c)).toEqual(expect.arrayContaining(['badge-caution', 'pf-verdict-caution']));
+    expect(text(c)).toContain('packaged.crossContactBody:{\\"names\\":\\"L(PEANUT)\\"}');
+    const n = detail({ verdict: 'SAFE_WITH_NOTE' });
+    expect(ids(n)).toEqual(expect.arrayContaining(['badge-safe', 'pf-verdict-safe_with_note']));
+    expect(text(n)).toContain('packaged.unclearBody:{\\"items\\":\\"합성착향료\\"}');
   });
-  it('KB-812 2차: 리뷰 섹션 = 출처 고지 아래 · 제품 id·서버 요약 전달 · 구서버(요약 없음) = null', () => {
-    mockDetail = q({ data: adaptProcessedDetail({ ...W1711, reviewSummary: { count: 2, avgRating: 4.5 } }) });
-    const t = render(<Detail />);
-    const order = ids(t);
-    expect(order.indexOf('pf-reviews-stub')).toBeGreaterThan(order.indexOf('pf-source'));
-    expect(mockReviewsProps).toHaveBeenLastCalledWith({ productId: '1711', summary: { count: 2, avgRating: 4.5 } });
-    mockDetail = q({ data: adaptProcessedDetail(W1711) });
-    render(<Detail />);
-    expect(mockReviewsProps).toHaveBeenLastCalledWith({ productId: '1711', summary: null });
+  it('회원인데 verdict null(원재료·표시 둘 다 없음) = 리본 없이 "확인 못 함"', () => {
+    member();
+    const t = detail({ verdict: null });
+    expect(ids(t)).toContain('pf-not-verified');
+    expect(ids(t).some((i) => i.startsWith('badge-'))).toBe(false);
   });
-  it('KB-812 2차(Codex #314 R2): 롤백 스위치 reviewsLiveEnabled off = 리뷰 섹션째 없음(빈 목록 위 서버 요약 모순 0)', () => {
-    const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { reviewsLiveEnabled: boolean } };
-    const live = FLAGS.reviewsLiveEnabled;
-    FLAGS.reviewsLiveEnabled = false;
-    try {
-      mockDetail = q({ data: adaptProcessedDetail({ ...W1711, reviewSummary: { count: 2, avgRating: 4.5 } }) });
-      expect(ids(render(<Detail />))).not.toContain('pf-reviews-stub');
-    } finally {
-      FLAGS.reviewsLiveEnabled = live;
-    }
+  it('원재료: 번역(#462) 있으면 번역 + 원문 · 번역 전 = 원문만 · 한국어 사용자 = 번역 줄 생략', () => {
+    const t = detail({ ingredients: { translated: 'Milk, water, sugar', original: '원유,정제수,백설탕' } });
+    expect(text(t)).toContain('Milk, water, sugar');
+    jest.requireMock('@/lib/i18n').default.language = 'ko';
+    const k = detail({ ingredients: { translated: 'Milk, water, sugar', original: '원유,정제수,백설탕' } });
+    expect(text(k)).not.toContain('Milk, water, sugar');
+    expect(text(k)).toContain('원유,정제수,백설탕');
   });
-  it('410 = 생산종료 · 404 = 없음 — 캐시가 있어도 이긴다(옛 판정 노출 0) · 503 = 다시 시도', () => {
-    mockDetail = q({ data: adaptProcessedDetail(W1711), isError: true, error: new ApiError('gone', 410, 'PFOOD-002') });
-    let t = render(<Detail />);
-    expect(ids(t)).toContain('pf-discontinued');
-    expect(ids(t)).not.toContain('pf-verdict');
-    mockDetail = q({ isError: true, error: new ApiError('nf', 404, 'PFOOD-001') });
-    t = render(<Detail />);
-    expect(ids(t)).toContain('pf-gone');
-    mockDetail = q({ isError: true, error: new ApiError('down', 503) });
-    t = render(<Detail />);
-    expect(ids(t)).toContain('pf-error');
-    act(() => t.root.findAll((n) => n.props?.testID === 'pf-retry' && typeof n.props?.onPress === 'function')[0].props.onPress());
-    expect(mockDetail.refetch).toHaveBeenCalled();
+  it('출처 = HACCP 두 줄 · C002(#455) = 품목제조보고 한 줄(사진 null = 유형 대체 그림)', () => {
+    const h = detail();
+    press(h, 'pf-see-detail');
+    expect(text(h)).toContain('packaged.sourceData1');
+    const c = detail({ source: { provider: 'C002', attributionKey: 'processedFood.source.c002' }, image: null, imageUrl: null });
+    press(c, 'pf-see-detail');
+    expect(ids(c)).toContain('pf-source-c002');
+    expect(text(c)).not.toContain('packaged.sourceData1');
+    expect(ids(c)).toContain('packaged-placeholder');
   });
-  it('성분표 직접 확인 버튼 = F2 전까지 플래그로 숨김 · 상세 진입 계측 1회(id·labelSource)', () => {
-    mockDetail = q({ data: adaptProcessedDetail(W1711) });
-    const t = render(<Detail />);
+  it('"Needs checking"(unmapped) 경로 0 · 성분표 직접 확인 버튼 0(결정 4) · 상세 진입 계측 1회', () => {
+    const t = detail();
+    expect(ids(t).some((i) => i.startsWith('pf-unmapped'))).toBe(false);
     expect(ids(t)).not.toContain('pf-label-scan');
-    expect(mockTrack).toHaveBeenCalledWith('food_packaged_detail_view', { product_id: '1711', label_source: 'INGREDIENTS_ONLY' });
+    expect(mockTrack.mock.calls.filter((c) => c[0] === 'food_packaged_detail_view')).toEqual([['food_packaged_detail_view', { product_id: '10201', label_source: 'INGREDIENTS_ONLY' }]]);
+    const src = fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8');
+    expect(src).not.toMatch(/needsChecking|unmappedBody/);
+  });
+  it('리뷰 섹션 = 펼침 아래 · 제품 id·서버 요약 · 롤백 스위치 off = 섹션째 없음', () => {
+    detail({ reviewSummary: { overall: { average: 4.3, count: 3 }, taste: { average: 4.3, count: 3 }, spiciness: { average: 4.2, count: 2 }, sweetness: null } });
+    expect(mockReviewsProps).toHaveBeenLastCalledWith(expect.objectContaining({ productId: '10201', summary: { overall: { average: 4.3, count: 3 }, taste: { average: 4.3, count: 3 }, spiciness: { average: 4.2, count: 2 }, sweetness: null } }));
+    const live = FLAGS.reviewsLiveEnabled;
+    (FLAGS as { reviewsLiveEnabled: boolean }).reviewsLiveEnabled = false;
+    try { expect(ids(detail())).not.toContain('pf-reviews-stub'); } finally { (FLAGS as { reviewsLiveEnabled: boolean }).reviewsLiveEnabled = live; }
+  });
+  it('구 요약({count, avgRating}) = overall·taste 하나 · 맵기·당도 null · 0건 = 축 null', () => {
+    expect(adaptProcessedDetail({ ...V4, reviewSummary: { count: 2, avgRating: 4.5 } }).reviewSummary).toEqual({ overall: { average: 4.5, count: 2 }, taste: { average: 4.5, count: 2 }, spiciness: null, sweetness: null });
+    expect(adaptProcessedDetail({ ...V4, reviewSummary: { count: 0, avgRating: null } }).reviewSummary?.taste).toBeNull();
+    expect(adaptProcessedDetail({ ...V4, reviewSummary: { overall: { average: 4, count: 5 }, spiciness: { average: 3, count: 0 } } }).reviewSummary?.spiciness).toBeNull();
+  });
+  it('mayContainMatches.evidence = 배열(#457) · 문자열이 와도 배열로', () => {
+    const d = adaptProcessedDetail({ ...V4, mayContainMatches: [{ code: 'PEANUT', evidence: ['a', ' '] }, { code: 'SOY', evidence: 'b' }] });
+    expect(d.mayContainMatches).toEqual([{ code: 'PEANUT', evidence: ['a'] }, { code: 'SOY', evidence: ['b'] }]);
+  });
+  it('410 = 생산종료 · 404 = 없음(공통 오류 화면 + 목록으로) — 캐시가 있어도 이긴다 · 503 = 공통 오류 + 다시 시도(시안 34·36·37)', () => {
+    mockDetail = q({ data: adaptProcessedDetail(V4), isError: true, error: new ApiError('gone', 410, 'PFOOD-002') });
+    const g = render(<Detail />);
+    expect(ids(g)).toContain('pf-discontinued');
+    expect(ids(g)).not.toContain('pf-detail');
+    press(g, 'pf-discontinued-action');
+    expect(mockBack).toHaveBeenCalled();
+    mockDetail = q({ isError: true, error: new ApiError('x', 404, 'PFOOD-001') });
+    expect(ids(render(<Detail />))).toContain('pf-gone');
+    mockDetail = q({ isError: true, error: new ApiError('down', 503) });
+    const e = render(<Detail />);
+    expect(ids(e)).toEqual(expect.arrayContaining(['pf-error', 'query-error-block']));
   });
 });
 
@@ -371,7 +405,7 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     const chip = (k: string) => t.root.findAll((n) => n.props?.testID === `packaged-type-${k}` && typeof n.props?.onPress === 'function')[0];
     await act(async () => { chip('snacks').props.onPress(); });
     await flush();
-    expect(mockGet.mock.calls[1][0]).toBe('/api/processed-foods?type=snacks&size=20');
+    expect(mockGet.mock.calls[1][0]).toBe('/api/processed-foods?type=SNACKS&size=20'); // KB-867: 대문자
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_type_select', { type: 'snacks' });
     expect(ids(t)).toContain('packaged-no-filter-match'); // 칩으로 0 = 시안 47
     await act(async () => { chip('all').props.onPress(); });
@@ -392,7 +426,7 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     act(() => input.props.onChangeText('바나나'));
     await act(async () => { input.props.onSubmitEditing(); });
     await flush();
-    expect(mockGet.mock.calls[2][0]).toBe(`/api/processed-foods?query=${encodeURIComponent('바나나')}&type=drinks&size=20`);
+    expect(mockGet.mock.calls[2][0]).toBe(`/api/processed-foods?query=${encodeURIComponent('바나나')}&type=DRINKS&size=20`);
     expect(text(t)).toContain('packaged.searchResults');
   });
 

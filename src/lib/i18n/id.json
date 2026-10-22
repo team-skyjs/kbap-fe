@@ -438,7 +438,9 @@
     "extrasSpeed": "Kecepatan penyajian",
     "extrasService": "Keramahan",
     "extrasTaste": "Rasa",
-    "writeSoon": "Ulasan untuk makanan kemasan akan segera dibuka. Tulisan Anda masih ada di layar ini."
+    "writeSoon": "Ulasan untuk makanan kemasan akan segera dibuka. Tulisan Anda masih ada di layar ini.",
+    "spiciness": "Pedas",
+    "sweetness": "Manis"
   },
   "translation": {
     "showTranslation": "Tampilkan terjemahan",
@@ -1224,8 +1226,6 @@
     "foundOnLabel": "Di label alergen: {{evidence}}",
     "foundInIngredients": "Di daftar bahan: {{evidence}}",
     "detectedNoEvidence": "Ditemukan di data bahan.",
-    "needsChecking": "Perlu dicek",
-    "unmappedBody": "\"{{text}}\" tidak dapat dicocokkan. Periksa sendiri.",
     "notVerified": "Belum terverifikasi",
     "notVerifiedName": "Belum terverifikasi: {{name}}",
     "notVerifiedBody": "Tidak ada kecocokan bukan berarti aman dimakan. Periksa kemasannya.",
@@ -1254,9 +1254,35 @@
       "snacks": "Camilan",
       "ramen": "Ramen",
       "bread": "Roti",
-      "drinks": "Minuman"
+      "drinks": "Minuman",
+      "ice_cream": "Es krim",
+      "dairy": "Produk susu",
+      "meals": "Makanan",
+      "sauces": "Saus"
     },
-    "mayContainTitle": "Mungkin mengandung (fasilitas sama, kontaminasi silang)"
+    "mayContainTitle": "Mungkin mengandung (fasilitas sama, kontaminasi silang)",
+    "ingredientsHeading": "Bahan",
+    "seeDetail": "Lihat detail",
+    "seeLess": "Lebih sedikit",
+    "ingredientsAndSource": "Bahan dan sumber",
+    "yourAvoidList": "Daftar hindari",
+    "noAvoidMatches": "Tidak ada yang cocok dengan daftar hindari kamu saat ini.",
+    "translationLabel": "Terjemahan bahasa Indonesia",
+    "sourceTitle": "Sumber",
+    "sourceC002": "Data: Kementerian Keamanan Pangan dan Obat Korea, laporan produksi Food Safety Korea",
+    "avoidMatchTitle": "Cocok dengan daftar hindari",
+    "avoidMatchBody": "Ditemukan di bahan atau pernyataan alergen: {{names}}.",
+    "crossContactTitle": "Kemungkinan kontaminasi silang",
+    "crossContactBody": "Label menyebut mungkin mengandung {{names}} dari fasilitas yang sama.",
+    "unclearTitle": "Bahan tidak dirinci",
+    "unclearBody": "Tidak dijelaskan rinci: {{items}}. Tidak ada yang cocok dengan daftar hindari kamu.",
+    "majorAllergensTitle": "Alergen utama",
+    "majorUnavailable": "Informasi alergen produk ini tidak tersedia.",
+    "majorNoneFound": "Tidak ditemukan alergen utama di bahan atau label.",
+    "containsNames": "Mengandung {{names}}",
+    "mayContainNames": "Mungkin mengandung {{names}}",
+    "signInToPersonalize": "Masuk untuk personalisasi",
+    "setAvoidIngredients": "Atur bahan yang dihindari"
   },
   "scanMode": {
     "menu": "Menu",

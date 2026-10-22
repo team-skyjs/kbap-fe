@@ -438,7 +438,9 @@
     "extrasSpeed": "ความเร็วในการเสิร์ฟ",
     "extrasService": "ความเป็นมิตร",
     "extrasTaste": "รสชาติ",
-    "writeSoon": "รีวิวอาหารบรรจุภัณฑ์จะเปิดเร็วๆ นี้ ข้อความที่คุณเขียนยังอยู่บนหน้าจอนี้"
+    "writeSoon": "รีวิวอาหารบรรจุภัณฑ์จะเปิดเร็วๆ นี้ ข้อความที่คุณเขียนยังอยู่บนหน้าจอนี้",
+    "spiciness": "ความเผ็ด",
+    "sweetness": "ความหวาน"
   },
   "translation": {
     "showTranslation": "แสดงคำแปล",
@@ -1224,8 +1226,6 @@
     "foundOnLabel": "บนฉลากสารก่อภูมิแพ้: {{evidence}}",
     "foundInIngredients": "ในรายการส่วนผสม: {{evidence}}",
     "detectedNoEvidence": "พบในข้อมูลส่วนผสม",
-    "needsChecking": "ต้องตรวจสอบ",
-    "unmappedBody": "จับคู่ \"{{text}}\" ไม่ได้ โปรดตรวจสอบเอง",
     "notVerified": "ยังไม่ยืนยัน",
     "notVerifiedName": "ยังไม่ยืนยัน: {{name}}",
     "notVerifiedBody": "การไม่พบไม่ได้แปลว่ากินได้ โปรดตรวจสอบบรรจุภัณฑ์",
@@ -1254,9 +1254,35 @@
       "snacks": "ขนม",
       "ramen": "ราเมง",
       "bread": "ขนมปัง",
-      "drinks": "เครื่องดื่ม"
+      "drinks": "เครื่องดื่ม",
+      "ice_cream": "ไอศกรีม",
+      "dairy": "ผลิตภัณฑ์นม",
+      "meals": "อาหารพร้อมทาน",
+      "sauces": "ซอส"
     },
-    "mayContainTitle": "อาจมีส่วนผสมของ (โรงงานเดียวกัน ปนเปื้อนข้าม)"
+    "mayContainTitle": "อาจมีส่วนผสมของ (โรงงานเดียวกัน ปนเปื้อนข้าม)",
+    "ingredientsHeading": "ส่วนผสม",
+    "seeDetail": "ดูรายละเอียด",
+    "seeLess": "ย่อ",
+    "ingredientsAndSource": "ส่วนผสมและแหล่งที่มา",
+    "yourAvoidList": "รายการที่ฉันหลีกเลี่ยง",
+    "noAvoidMatches": "ไม่พบรายการที่ตรงกับสิ่งที่คุณหลีกเลี่ยง",
+    "translationLabel": "คำแปลภาษาไทย",
+    "sourceTitle": "แหล่งที่มา",
+    "sourceC002": "ข้อมูล: กระทรวงความปลอดภัยอาหารและยาเกาหลี รายงานการผลิตของ Food Safety Korea",
+    "avoidMatchTitle": "พบสิ่งที่คุณหลีกเลี่ยง",
+    "avoidMatchBody": "พบในส่วนผสมหรือฉลากสารก่อภูมิแพ้: {{names}}",
+    "crossContactTitle": "อาจปนเปื้อนข้าม",
+    "crossContactBody": "ฉลากระบุว่าอาจมี {{names}} จากโรงงานเดียวกัน",
+    "unclearTitle": "ส่วนผสมที่ไม่ระบุรายละเอียด",
+    "unclearBody": "ไม่ได้ระบุรายละเอียด: {{items}} ไม่พบรายการที่ตรงกับสิ่งที่คุณหลีกเลี่ยง",
+    "majorAllergensTitle": "สารก่อภูมิแพ้หลัก",
+    "majorUnavailable": "ไม่มีข้อมูลสารก่อภูมิแพ้ของสินค้านี้",
+    "majorNoneFound": "ไม่พบสารก่อภูมิแพ้หลักในส่วนผสมหรือฉลาก",
+    "containsNames": "มี {{names}}",
+    "mayContainNames": "อาจมี {{names}}",
+    "signInToPersonalize": "เข้าสู่ระบบเพื่อดูตามเกณฑ์ของคุณ",
+    "setAvoidIngredients": "ตั้งค่าส่วนผสมที่หลีกเลี่ยง"
   },
   "scanMode": {
     "menu": "เมนู",

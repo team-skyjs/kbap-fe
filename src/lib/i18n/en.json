@@ -479,7 +479,9 @@
     "extrasSpeed": "Speed",
     "extrasService": "Service",
     "extrasTaste": "Taste",
-    "writeSoon": "Reviews for packaged foods are opening soon. What you wrote is still here on this screen."
+    "writeSoon": "Reviews for packaged foods are opening soon. What you wrote is still here on this screen.",
+    "spiciness": "Spiciness",
+    "sweetness": "Sweetness"
   },
   "translation": {
     "showTranslation": "Show translation",
@@ -1220,8 +1222,6 @@
     "foundOnLabel": "On the allergen label: {{evidence}}",
     "foundInIngredients": "In the ingredient list: {{evidence}}",
     "detectedNoEvidence": "Found in the ingredient data.",
-    "needsChecking": "Needs checking",
-    "unmappedBody": "\"{{text}}\" could not be matched. Check it yourself.",
     "notVerified": "Not verified",
     "notVerifiedName": "Not verified: {{name}}",
     "notVerifiedBody": "No match does not confirm suitability. Check the package.",
@@ -1250,9 +1250,35 @@
       "snacks": "Snacks",
       "ramen": "Ramen",
       "bread": "Bread",
-      "drinks": "Drinks"
+      "drinks": "Drinks",
+      "ice_cream": "Ice cream",
+      "dairy": "Dairy",
+      "meals": "Meals",
+      "sauces": "Sauces"
     },
-    "mayContainTitle": "May contain (same facility, cross-contact)"
+    "mayContainTitle": "May contain (same facility, cross-contact)",
+    "ingredientsHeading": "Ingredients",
+    "seeDetail": "See detail",
+    "seeLess": "See less",
+    "ingredientsAndSource": "Ingredients and source",
+    "yourAvoidList": "Your avoid list",
+    "noAvoidMatches": "No matches found for your current avoid list.",
+    "translationLabel": "English translation",
+    "sourceTitle": "Source",
+    "sourceC002": "Data: Ministry of Food and Drug Safety, Food Safety Korea product manufacturing reports",
+    "avoidMatchTitle": "Avoid-list matches",
+    "avoidMatchBody": "Listed in the ingredients or allergen statement: {{names}}.",
+    "crossContactTitle": "Possible cross-contact",
+    "crossContactBody": "The label says it may contain {{names}} from the same facility.",
+    "unclearTitle": "Unspecified ingredients",
+    "unclearBody": "Not described in detail: {{items}}. No matches were found for your avoid list.",
+    "majorAllergensTitle": "Major allergens",
+    "majorUnavailable": "Allergen information isn't available for this product.",
+    "majorNoneFound": "The ingredients and label list no major allergens.",
+    "containsNames": "Contains {{names}}",
+    "mayContainNames": "May contain {{names}}",
+    "signInToPersonalize": "Sign in to personalize",
+    "setAvoidIngredients": "Set avoid ingredients"
   },
   "scanMode": {
     "menu": "Menu",

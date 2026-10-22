@@ -438,7 +438,9 @@
     "extrasSpeed": "上菜速度",
     "extrasService": "服务态度",
     "extrasTaste": "味道",
-    "writeSoon": "包装食品评价即将开放。你写的内容仍保留在此页面。"
+    "writeSoon": "包装食品评价即将开放。你写的内容仍保留在此页面。",
+    "spiciness": "辣度",
+    "sweetness": "甜度"
   },
   "translation": {
     "showTranslation": "显示翻译",
@@ -1224,8 +1226,6 @@
     "foundOnLabel": "过敏原标识：{{evidence}}",
     "foundInIngredients": "配料表：{{evidence}}",
     "detectedNoEvidence": "在配料数据中找到。",
-    "needsChecking": "需要确认",
-    "unmappedBody": "无法匹配“{{text}}”，请自行确认。",
     "notVerified": "未确认",
     "notVerifiedName": "未确认：{{name}}",
     "notVerifiedBody": "未匹配不代表可以食用，请查看包装。",
@@ -1254,9 +1254,35 @@
       "snacks": "零食",
       "ramen": "拉面",
       "bread": "面包",
-      "drinks": "饮料"
+      "drinks": "饮料",
+      "ice_cream": "冰淇淋",
+      "dairy": "乳制品",
+      "meals": "便餐",
+      "sauces": "酱料"
     },
-    "mayContainTitle": "可能含有(同一生产设施、交叉接触)"
+    "mayContainTitle": "可能含有(同一生产设施、交叉接触)",
+    "ingredientsHeading": "配料",
+    "seeDetail": "查看详情",
+    "seeLess": "收起",
+    "ingredientsAndSource": "配料与来源",
+    "yourAvoidList": "我要避免的食材",
+    "noAvoidMatches": "没有找到与你当前避免清单匹配的食材。",
+    "translationLabel": "中文翻译",
+    "sourceTitle": "来源",
+    "sourceC002": "资料：韩国食品医药品安全处 食品安全国度 品目制造报告",
+    "avoidMatchTitle": "含有你要避免的食材",
+    "avoidMatchBody": "在配料或过敏原标示中发现：{{names}}。",
+    "crossContactTitle": "可能交叉接触",
+    "crossContactBody": "标签注明同一工厂可能混入{{names}}。",
+    "unclearTitle": "成分不明确的原料",
+    "unclearBody": "未详细说明的原料：{{items}}。未发现与你避免清单匹配的食材。",
+    "majorAllergensTitle": "主要过敏原",
+    "majorUnavailable": "无法确认该商品的过敏原信息。",
+    "majorNoneFound": "未在配料和标示中发现主要过敏原。",
+    "containsNames": "含{{names}}",
+    "mayContainNames": "可能含有{{names}}",
+    "signInToPersonalize": "登录后按我的标准查看",
+    "setAvoidIngredients": "设置要避免的食材"
   },
   "scanMode": {
     "menu": "菜单",
