@@ -42,7 +42,8 @@ jest.mock('@/lib/api/client', () => {
 });
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 let mockRestrictions: { code: string }[] = [{ code: 'SHRIMP' }];
-jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '41', restrictions: mockRestrictions } }) })); // KB-865: 판정 캐시 키 = 회피 코드 집합 · 0개 = 시안 45
+let mockProfileMissing = false; // 프로필 대기·실패(data 없음)
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockProfileMissing ? undefined : { id: '41', restrictions: mockRestrictions } }) })); // KB-865: 판정 캐시 키 = 회피 코드 집합 · 0개 = 시안 45
 const mockOcr = jest.fn();
 jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockOcr(...a) }));
 let mockGranted = true;
@@ -66,7 +67,7 @@ const DETAIL = { id: 11, reportNo: 'R1', productName: '새우깡', maker: '농�
 
 const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
-beforeEach(() => { qc = new QueryClient({ defaultOptions: { queries: { retry: false } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; });
+beforeEach(() => { qc = new QueryClient({ defaultOptions: { queries: { retry: false } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -310,6 +311,42 @@ describe('흐름(KB-865 ③ v4)', () => {
     await press(t, 'pscan-take-photo');
     expect(ids(t)).toEqual(expect.arrayContaining(['pscan-personal-note', 'pscan-contains-11']));
     expect(ids(t).some((i) => i.startsWith('pscan-verdict-'))).toBe(false);
+  });
+  it('Codex #339 R2: 프로필 대기·실패 = 서버 verdict 리본 그대로(주요 알레르기 경로로 강등 0) · 개인화 안내 0', async () => {
+    mockProfileMissing = true;
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost.mockResolvedValueOnce({ analysisId: 'A30', state: 'CANDIDATES', candidates: [{ ...cand(11, 'R1'), verdict: 'AVOID', majorAllergens: ['WHEAT'] }] });
+    const t = flow();
+    await press(t, 'pscan-take-photo');
+    expect(ids(t)).toContain('pscan-verdict-11');
+    expect(ids(t)).not.toContain('pscan-contains-11');
+    expect(ids(t)).not.toContain('pscan-personal-note');
+  });
+  it('Codex #339 R2: 이미 확정된 분석(상세에서 돌아와 None of these → 성분표) = 거절 응답이 확정 제품 → 새 성분표 분석(analysisId null)', async () => {
+    const flags = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
+    const prevFlag = flags.FLAGS.packagedLabelScan;
+    flags.FLAGS.packagedLabelScan = true;
+    try {
+      mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+      mockPost
+        .mockResolvedValueOnce({ analysisId: 'A31', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
+        .mockResolvedValueOnce({ analysisId: 'A31', state: 'CONFIRMED', charged: true, product: DETAIL })
+        .mockResolvedValueOnce({ analysisId: 'A31', state: 'CONFIRMED', charged: false, product: DETAIL }) // 멱등 — 거절 대신 확정 제품
+        .mockResolvedValueOnce({ analysisId: 'L31', state: 'LABEL_RESULT', labelSource: 'DECLARED', detections: [], mayContain: [], avoidance: [], rawText: 'x', charged: true, verdict: 'SAFE', avoidMatches: [], mayContainMatches: [], unclearIngredients: [], majorAllergens: [] });
+      const t = flow();
+      await press(t, 'pscan-take-photo');
+      await pick(t, 11);
+      await press(t, 'pscan-none-of-these'); // 상세에서 뒤로 와서
+      await press(t, 'pscan-to-label');
+      expect(ids(t)).toContain('cam-ingredient');
+      act(() => t.root.findAll((n) => n.props?.testID === 'pscan-label-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('원재료명: 밀'));
+      await press(t, 'pscan-label-debug-add');
+      await press(t, 'pscan-label-analyze');
+      expect(mockPost.mock.calls[3][0]).toBe('/api/processed-foods/scan/label');
+      expect(mockPost.mock.calls[3][1]).toMatchObject({ analysisId: null }); // 새 분석(멱등 키는 packagedLabel508)
+    } finally {
+      flags.FLAGS.packagedLabelScan = prevFlag;
+    }
   });
   it('회원 = 후보 리본(서버 verdict) · 모르는 verdict = 리본 0', async () => {
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);

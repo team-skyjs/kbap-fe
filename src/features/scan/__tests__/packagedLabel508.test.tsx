@@ -40,7 +40,8 @@ jest.mock('@/lib/api/client', () => {
 });
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 let mockRestrictions: { code: string }[] = [{ code: 'SHRIMP' }];
-jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '41', restrictions: mockRestrictions } }) })); // KB-865 ③: 결과 = 회피 1개 이상 회원(문장·리본) / 0개(주요 알레르기)
+let mockProfileMissing = false; // 프로필 대기·실패(data 없음)
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockProfileMissing ? undefined : { id: '41', restrictions: mockRestrictions } }) })); // KB-865 ③: 결과 = 회피 1개 이상 회원(문장·리본) / 0개(주요 알레르기)
 const mockOcr = jest.fn();
 jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockOcr(...a) }));
 let mockGranted = true;
@@ -78,7 +79,7 @@ const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
 const flagLabel = FLAGS.packagedLabelScan;
 const setFlag = (v: boolean) => { (FLAGS as { packagedLabelScan: boolean }).packagedLabelScan = v; };
-beforeEach(() => { qc = new QueryClient(); mockParams = {}; mockGranted = true; mockCanceled = false; mockUuid = 0; setFlag(true); mockRestrictions = [{ code: 'SHRIMP' }]; });
+beforeEach(() => { qc = new QueryClient(); mockParams = {}; mockGranted = true; mockCanceled = false; mockUuid = 0; setFlag(true); mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); setFlag(flagLabel); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -205,6 +206,21 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     await press(t2, 'pscan-label-analyze');
     expect(texts(t2).some((x) => x.startsWith('packagedScan.resultMajorSet') && x.includes('L(WHEAT), L(SHRIMP)'))).toBe(true);
     expect(texts(t2)).not.toContain('packaged.majorUnavailable');
+  });
+  it('Codex #339 R2: 프로필 대기·실패 = 서버 verdict 판정 그대로(리본·회피 문장) · verdict 없음 = 보수적 "확인 못 함"(주요 알레르기·회피 설정 경로 0)', async () => {
+    mockProfileMissing = true;
+    const t = flow(true);
+    await shoot(t, LABEL_P1);
+    mockPost.mockResolvedValueOnce(RESULT());
+    await press(t, 'pscan-label-analyze');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-result-badge-danger', 'pscan-result-avoid']));
+    expect(ids(t)).not.toContain('pscan-result-major');
+    const t2 = flow(true);
+    await shoot(t2, LABEL_P1);
+    mockPost.mockResolvedValueOnce(RESULT({ verdict: null, avoidance: [] }));
+    await press(t2, 'pscan-label-analyze');
+    expect(texts(t2)).toContain('packaged.notVerifiedBody');
+    expect(ids(t2)).not.toContain('pscan-result-set-avoid');
   });
   it('회피 0개 회원(M0) = 주요 알레르기 문장 + "회피 재료 설정"(리본·회피 문장 0) · 주요 알레르기 null = 확인 불가(없음 단정 금지)', async () => {
     mockRestrictions = [];

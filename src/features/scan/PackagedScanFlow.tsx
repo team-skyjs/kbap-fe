@@ -115,8 +115,10 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   const guest = useIsGuest();
   const { data: me } = useMe();
   // 판정 리본 = 회피 1개 이상 회원만(서버 프로필이 정본) · 회피 0개 = 후보 위 개인화 안내(시안 45)
-  const personalized = !guest && !!me && me.restrictions.length > 0;
   const m0 = !guest && !!me && me.restrictions.length === 0;
+  // Codex #339 R2(#338 R5와 같은 규칙): 서버 verdict는 회원 기준 계산 — 프로필 대기·실패여도 판정 경로(리본·회피 문장)로 그린다.
+  // 회피 0개로 **확인된** 회원만 주요 알레르기 경로. 프로필 미상 + verdict 없음 = 결과 화면의 보수적 "확인 못 함"
+  const personalized = !guest && !m0;
   const [step, setStep] = React.useState<Step>(() => (startLabel ? { kind: 'handoff', analysisId: null } : { kind: 'capture' }));
   const guard = useSubmitGuard(); // 촬영·확정 연타 1발(P-173)
   // Codex #310 P2: 뒤로가기 뒤에 도착한 응답은 버린다 — 요청마다 회차, 단계를 사용자가 바꾸면 회차가 올라 늦은 응답이 화면을 되돌리거나 이동시키지 않는다
@@ -261,8 +263,10 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     void guard.run(async () => {
       const my = reqSeq.current;
       try {
-        await confirmProcessedScan(analysisId, null);
+        const r = await confirmProcessedScan(analysisId, null);
         if (my !== reqSeq.current) return;
+        // 이미 확정된 분석(상세에서 돌아와 다시 고른 경우 — 멱등 확정이 그 제품을 돌려준다) = 이어 받을 수 없다 → 새 성분표 분석
+        if (!r.rejected && r.product) { goStep({ kind: 'handoff', analysisId: null }); return; }
         settledIds.current.add(analysisId);
         goStep({ kind: 'handoff', analysisId });
       } catch (e) {
