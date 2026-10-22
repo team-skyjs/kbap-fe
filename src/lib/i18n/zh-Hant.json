@@ -1373,7 +1373,7 @@
     "labelMaxReached": "已加入最多{{max}}張照片。如需替換請重新拍攝。",
     "labelAddHint": "如成分或過敏原標示延續到其他面，請再拍一面。",
     "reanalyzeNote": "將更新現有結果。",
-    "reviewPhotos_one": "查看照片",
+    "reviewPhotos_one": "查看{{count}}張照片",
     "reviewPhotos_other": "查看{{count}}張照片",
     "done": "完成",
     "resultAvoid": "與要避免的食材相符：{{names}}。",

@@ -1373,7 +1373,7 @@
     "labelMaxReached": "최대 {{max}}장을 모두 담았어요. 바꾸려면 다시 찍어 주세요.",
     "labelAddHint": "원재료나 알레르기 표시가 다른 면에 이어지면 한 면 더 찍어 주세요.",
     "reanalyzeNote": "기존 결과를 새로 고쳐요.",
-    "reviewPhotos_one": "사진 검토",
+    "reviewPhotos_one": "사진 {{count}}장 검토",
     "reviewPhotos_other": "사진 {{count}}장 검토",
     "done": "완료",
     "resultAvoid": "피하는 재료와 일치해요: {{names}}.",

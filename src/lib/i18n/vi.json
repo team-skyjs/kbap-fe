@@ -1373,7 +1373,7 @@
     "labelMaxReached": "Bạn đã thêm tối đa {{max}} ảnh. Chụp lại để thay thế.",
     "labelAddHint": "Thêm mặt khác nếu thành phần hoặc chất gây dị ứng tiếp tục ở mặt khác.",
     "reanalyzeNote": "Kết quả hiện tại sẽ được cập nhật.",
-    "reviewPhotos_one": "Xem lại ảnh",
+    "reviewPhotos_one": "Xem lại {{count}} ảnh",
     "reviewPhotos_other": "Xem lại {{count}} ảnh",
     "done": "Xong",
     "resultAvoid": "Khớp với danh sách cần tránh: {{names}}.",

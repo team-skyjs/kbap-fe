@@ -365,7 +365,8 @@ describe('모드 탭·상세 띠·배선', () => {
     const keys = [...flat(en.scanMode, 'scanMode.'), ...flat(en.packagedScan, 'packagedScan.')].sort();
     for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'es', 'id', 'ru', 'th', 'vi']) {
       const d = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8'));
-      expect([...flat(d.scanMode, 'scanMode.'), ...flat(d.packagedScan, 'packagedScan.')].sort()).toEqual(keys);
+      // ru 복수형 _few·_many = copy708 규칙(네 형태 같은 문구)이 따로 잠근다 — 키 집합 비교에선 뺀다
+      expect([...flat(d.scanMode, 'scanMode.'), ...flat(d.packagedScan, 'packagedScan.')].filter((k) => !/_(few|many)$/.test(k)).sort()).toEqual(keys);
       expect(JSON.stringify([d.scanMode, d.packagedScan])).not.toContain('·');
     }
   });

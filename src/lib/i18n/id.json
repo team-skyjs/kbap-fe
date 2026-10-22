@@ -1373,7 +1373,7 @@
     "labelMaxReached": "Kamu sudah menambah maksimal {{max}} foto. Foto ulang untuk menggantinya.",
     "labelAddHint": "Tambah sisi lain jika teks bahan atau alergen berlanjut di tempat lain.",
     "reanalyzeNote": "Ini memperbarui hasil yang ada.",
-    "reviewPhotos_one": "Tinjau foto",
+    "reviewPhotos_one": "Tinjau {{count}} foto",
     "reviewPhotos_other": "Tinjau {{count}} foto",
     "done": "Selesai",
     "resultAvoid": "Cocok dengan daftar hindari: {{names}}.",

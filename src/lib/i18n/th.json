@@ -1373,7 +1373,7 @@
     "labelMaxReached": "เพิ่มรูปครบ {{max}} รูปแล้ว ถ่ายใหม่เพื่อแทนที่",
     "labelAddHint": "ถ่ายอีกด้านหากข้อความส่วนผสมหรือสารก่อภูมิแพ้ต่อไปอีกด้าน",
     "reanalyzeNote": "จะอัปเดตผลเดิม",
-    "reviewPhotos_one": "ตรวจรูป",
+    "reviewPhotos_one": "ตรวจ {{count}} รูป",
     "reviewPhotos_other": "ตรวจ {{count}} รูป",
     "done": "เสร็จ",
     "resultAvoid": "ตรงกับรายการที่หลีกเลี่ยง: {{names}}",

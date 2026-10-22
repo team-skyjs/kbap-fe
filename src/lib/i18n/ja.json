@@ -1373,7 +1373,7 @@
     "labelMaxReached": "最大{{max}}枚まで追加しました。差し替えるには撮り直してください。",
     "labelAddHint": "原材料やアレルギー表示が別の面に続く場合は、もう1面撮ってください。",
     "reanalyzeNote": "既存の結果を更新します。",
-    "reviewPhotos_one": "写真を確認",
+    "reviewPhotos_one": "写真{{count}}枚を確認",
     "reviewPhotos_other": "写真{{count}}枚を確認",
     "done": "完了",
     "resultAvoid": "避けたい食材と一致: {{names}}。",
