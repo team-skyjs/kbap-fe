@@ -417,7 +417,8 @@ describe('P-228: Ask the owner 플로팅', () => {
     expect(src).toContain('shown={pill.shown}');
     expect(src).toContain('onLayout={(e) => pill.onInsets(e.nativeEvent.layout.height, insets.bottom)}'); // KB-851 QA ①: 헤더 높이·하단 안전 영역 = 보이는 영역
     expect(src).toContain('opacity: reduced ? (shown ? 1 : 0) : withTiming(shown ? 1 : 0, { duration: PILL_FADE_MS })');
-    expect(src).toContain('<View onLayout={(e) => onIdolLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)} testID="detail-idol-wrap">');
+    // KB-851 QA: 카드 높이 = 아래 여백(IDOL_CARD_BOTTOM_PAD) 뺀 카드 자체 — 여백까지 세면 헤더 뒤로 숨은 카드(아래끝 93 < 헤더 110)도 "보임"
+    expect(src).toContain('<View onLayout={(e) => onIdolLayout?.(e.nativeEvent.layout.y, Math.max(0, e.nativeEvent.layout.height - IDOL_CARD_BOTTOM_PAD))} testID="detail-idol-wrap">');
   });
 
   it('회원+등록 음식 = FixedBottom(아웃라인 Write + primary Ask) + 콘텐츠 바닥 여백', () => {

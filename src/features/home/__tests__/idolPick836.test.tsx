@@ -319,19 +319,40 @@ describe('상세 V1 카드', () => {
     expect(mockOpen).toHaveBeenCalledWith('https://example.com/v/1');
   });
 
-  it('role link · 라벨 = detail.idolVideo.a11y(플랫폼 없음) · 눌림 = CTA 색·오버레이만', () => {
+  it('role link · 라벨 = detail.idolVideo.a11y(플랫폼 없음) · 눌림 = 흰 오버레이만(KB-855 E: 버튼은 흰 알약 그대로)', () => {
     const t = render(<IdolVideoCard foodId="6" video={{ url: 'https://example.com/v/1', platform: 'tiktok' }} />);
     expect(t.root.find((n) => n.props.testID === 'idol-video-card' && n.props.accessibilityRole === 'link').props.accessibilityLabel).toBe('detail.idolVideo.a11y');
     expect(JSON.stringify(t.toJSON())).not.toMatch(/tiktok|youtube/i);
     expect(metrics(stylesWhen(t, 'idol-video-card', true))).toEqual(metrics(stylesWhen(t, 'idol-video-card', false)));
-    expect(stylesWhen(t, 'idol-video-card', true).some((s) => s.backgroundColor === '#BE460F')).toBe(true);
-    expect(stylesWhen(t, 'idol-video-card', false).some((s) => s.backgroundColor === '#BE460F')).toBe(false);
+    const overlay = (pressed: boolean) => stylesWhen(t, 'idol-video-card', pressed).find((s) => s.backgroundColor === 'rgba(255,255,255,0.12)')!;
+    expect(overlay(true).opacity).toBe(1);
+    expect(overlay(false).opacity).toBe(0);
+  });
+
+  it('KB-855 E안: 배경 = 음식 사진 + gray-1000 72% · radius 16 · 흰 라벨·제목 · 흰 알약(검정 글자) · 물음표 원형·부제 없음 · 사진 없음 = 단색 폴백', () => {
+    const v = { url: 'https://example.com/v/1', platform: 'youtube' as const };
+    const flat = (t: ReactTestRenderer, id: string) => StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0].props.style) as Record<string, unknown>;
+    const withPhoto = render(<IdolVideoCard foodId="6" video={v} photoUrl="https://cdn/food6.jpg" />);
+    expect(hostIds(withPhoto)).toContain('idol-video-photo');
+    expect(JSON.stringify(withPhoto.toJSON())).toContain('https://cdn/food6.jpg'); // 상세와 같은 음식 사진(새 아이돌 이미지 0)
+    expect(flat(withPhoto, 'idol-video-shade').backgroundColor).toBe('rgba(28,30,33,0.72)');
+    const card = StyleSheet.flatten(withPhoto.root.find((n) => n.props.testID === 'idol-video-card' && typeof n.props.style === 'object').props.style) as Record<string, unknown>;
+    expect(card).toMatchObject({ borderRadius: 16, overflow: 'hidden', backgroundColor: '#1C1E21' });
+    expect(flat(withPhoto, 'idol-video-cta')).toMatchObject({ backgroundColor: '#FFFFFF', borderRadius: 999, minHeight: 44 });
+    const s = JSON.stringify(withPhoto.toJSON());
+    expect(s).toContain('detail.idolVideo.label');
+    expect(s).toContain('detail.idolVideo.title');
+    expect(s).not.toContain('detail.idolVideo.sub'); // 부제 제거
+    const noPhoto = render(<IdolVideoCard foodId="6" video={v} photoUrl={null} />);
+    expect(hostIds(noPhoto)).not.toContain('idol-video-photo'); // 폴백 = 단색(gray-1000) 카드
+    press(noPhoto, 'idol-video-card');
+    expect(mockOpen).toHaveBeenCalledWith('https://example.com/v/1'); // 이동 동작 불변
   });
 
   it('상세 배치 잠금: profileHint 다음·디바이더 앞, 캐시 훅 값이 있을 때만 · source 화이트리스트 idol_pick', () => {
     const src = fs.readFileSync('src/app/food/[id]/index.tsx', 'utf8');
     expect(src).toContain('const idolVideo = useIdolPickVideo(id);');
-    const card = src.indexOf('<IdolVideoCard foodId={id} video={idolVideo} />'); // KB-851: 위치 보고 래퍼(스타일 없음) 안
+    const card = src.indexOf('<IdolVideoCard foodId={id} video={idolVideo} photoUrl={food.photoUrl} />'); // KB-851 위치 보고 래퍼 안 · KB-855 E: 음식 사진
     expect(card).toBeGreaterThan(src.indexOf("t('detail.addProfileHint')"));
     expect(card).toBeLessThan(src.indexOf('<View style={styles.thickDivider} />'));
     expect(src).toMatch(/\[[^\]]*'tag_sheet', 'idol_pick'\]\.includes\(src\)/); // KB-847: review_detail은 #288 되돌림으로 빠짐

@@ -96,3 +96,14 @@ it('KB-851 QA ②: 스크린리더 켜짐 = 항상 표시(아래로 스크롤·�
     sub.mockRestore();
   }
 });
+
+it('KB-851 QA(PR328 740b): 카드 아래 여백을 빼고 판정 — 카드 아래끝 93이 헤더(110) 뒤면 안 보임(여백 20까지 세면 113 = 보인다고 오판)', () => {
+  // 카드 모듈은 reanimated 그래프를 끌고 와 소스에서 값만 읽는다
+  const IDOL_CARD_BOTTOM_PAD = Number(/export const IDOL_CARD_BOTTOM_PAD = (\d+);/.exec(jest.requireActual('fs').readFileSync('src/features/food/IdolVideoCard.tsx', 'utf8'))![1]);
+  expect(IDOL_CARD_BOTTOM_PAD).toBe(20);
+  const y = 2000; // 스크롤 위치 · 카드(래퍼) 화면 기준 -55 ~ 113 = 콘텐츠 1945 ~ 2113
+  const wrapH = 168;
+  const base = { y, viewH: 812, contentH: 5000, top: 110, bottom: 34 };
+  expect(cardOnScreen({ ...base, card: { y: 1945, h: wrapH } })).toBe(true); // 여백 포함(수정 전) = 오판
+  expect(cardOnScreen({ ...base, card: { y: 1945, h: wrapH - IDOL_CARD_BOTTOM_PAD } })).toBe(false); // 카드 자체 아래끝 93 < 110
+});
