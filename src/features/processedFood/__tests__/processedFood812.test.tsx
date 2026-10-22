@@ -465,6 +465,15 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     expect(mockTrack).toHaveBeenLastCalledWith('food_packaged_type_select', { type: 'all' });
   });
 
+  it('Codex #336: SAFE_WITH_NOTE = safe 리본 + 스크린리더 단서(내용 불명) · 그냥 SAFE엔 단서 없음', async () => {
+    mockGet.mockResolvedValueOnce(V4([{ id: 10, productName: 'Choco Pie', imageUrl: null, verdict: 'SAFE_WITH_NOTE' }]));
+    const t = await mount();
+    const label = (id: string) => t.root.findAll((n) => n.props?.testID === `packaged-item-${id}` && typeof n.type === 'string')[0].props.accessibilityLabel as string;
+    expect(label('10')).toContain('risk.safe');
+    expect(label('10')).toContain('packaged.unclearNoteA11y');
+    expect(label('7')).not.toContain('packaged.unclearNoteA11y');
+  });
+
   it('어댑터: 모르는 verdict = null(앱이 SAFE를 만들지 않음) · SAFE_WITH_NOTE = safe 리본 · 구서버(필드 없음) = 전부 null', () => {
     expect(adaptProcessedSummary({ id: 1, productName: 'x', verdict: 'SAFEISH' }).verdict).toBeNull();
     expect(adaptProcessedSummary({ id: 1, productName: 'x', verdict: 'SAFE_WITH_NOTE' }).verdict).toBe('SAFE_WITH_NOTE');

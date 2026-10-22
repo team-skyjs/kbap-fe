@@ -1209,6 +1209,7 @@
     "showAllProducts": "Show all products",
     "noFilterMatchTitle": "No matches for your filters",
     "noFilterMatchBody": "Try another product name or show all products.",
+    "unclearNoteA11y": "some ingredients are unclear",
     "loadMoreFailed": "Couldn't load more products.",
     "detailTitle": "Product details",
     "labelDeclared": "Based on the allergen label on the package.",

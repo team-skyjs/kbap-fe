@@ -1213,6 +1213,7 @@
     "showAllProducts": "すべての商品を見る",
     "noFilterMatchTitle": "条件に合う商品がありません",
     "noFilterMatchBody": "別の商品名で探すか、すべての商品を見てください。",
+    "unclearNoteA11y": "内容がはっきりしない原材料があります",
     "loadMoreFailed": "これ以上の商品を読み込めませんでした。",
     "detailTitle": "商品情報",
     "labelDeclared": "パッケージのアレルギー表示に基づいています。",

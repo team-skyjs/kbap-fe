@@ -97,7 +97,8 @@ export function ProductCard({ item, width, onOpen }: { item: ProcessedFoodSummar
       style={[card.root, { width }]}
       onPress={onOpen}
       accessibilityRole="button"
-      accessibilityLabel={[item.name, item.nameKo, item.maker, risk && t(`risk.${risk}`), rating].filter(Boolean).join(', ')}
+      // SAFE_WITH_NOTE = 리본은 safe(결정 4·시안 11b "Safe for you + 한 줄 주의")지만 스크린리더엔 단서를 붙인다(Codex #336 — 조건 없는 safe로 읽히지 않게)
+      accessibilityLabel={[item.name, item.nameKo, item.maker, risk && t(`risk.${risk}`), item.verdict === 'SAFE_WITH_NOTE' && t('packaged.unclearNoteA11y'), rating].filter(Boolean).join(', ')}
       testID={`packaged-item-${item.id}`}
       uiTarget="packaged-item"
     >

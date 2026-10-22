@@ -1213,6 +1213,7 @@
     "showAllProducts": "전체 제품 보기",
     "noFilterMatchTitle": "조건에 맞는 제품이 없어요",
     "noFilterMatchBody": "다른 제품 이름으로 찾거나 전체 제품을 보세요.",
+    "unclearNoteA11y": "내용이 불분명한 원재료가 있어요",
     "loadMoreFailed": "제품을 더 불러오지 못했어요.",
     "detailTitle": "제품 정보",
     "labelDeclared": "제품의 알레르기 표시란 기준이에요.",

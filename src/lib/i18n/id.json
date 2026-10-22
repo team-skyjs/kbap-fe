@@ -1213,6 +1213,7 @@
     "showAllProducts": "Lihat semua produk",
     "noFilterMatchTitle": "Tidak ada produk yang cocok dengan filter",
     "noFilterMatchBody": "Coba nama produk lain atau lihat semua produk.",
+    "unclearNoteA11y": "beberapa bahan tidak jelas",
     "loadMoreFailed": "Tidak dapat memuat produk lainnya.",
     "detailTitle": "Detail produk",
     "labelDeclared": "Berdasarkan label alergen pada kemasan.",

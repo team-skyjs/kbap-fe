@@ -1213,6 +1213,7 @@
     "showAllProducts": "查看全部商品",
     "noFilterMatchTitle": "沒有符合條件的商品",
     "noFilterMatchBody": "換個商品名稱搜尋，或查看全部商品。",
+    "unclearNoteA11y": "部分原料成分不明確",
     "loadMoreFailed": "無法載入更多商品。",
     "detailTitle": "商品詳情",
     "labelDeclared": "依據包裝上的過敏原標示。",
