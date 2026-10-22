@@ -13,7 +13,7 @@
  * - OCR 주입(개발·진단 채널 전용): 시뮬엔 카메라 OCR이 없어 텍스트를 직접 넣는 디버그 입력.
  */
 import * as React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { BackHandler, ScrollView, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -121,6 +121,12 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   const personalized = !guest && !m0;
   const [step, setStep] = React.useState<Step>(() => (startLabel ? { kind: 'handoff', analysisId: null } : { kind: 'capture' }));
   const guard = useSubmitGuard(); // 촬영·확정 연타 1발(P-173)
+  // Codex #339: 확정·거절·분석 대기 중 하드웨어 뒤로 = 삼킨다 — 화면이 닫혀도 요청은 서버에서 확정·차감되고 늦은 응답이 상세로 이동시킨다
+  React.useEffect(() => {
+    if (!guard.busy) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, [guard.busy]);
   // Codex #310 P2: 뒤로가기 뒤에 도착한 응답은 버린다 — 요청마다 회차, 단계를 사용자가 바꾸면 회차가 올라 늦은 응답이 화면을 되돌리거나 이동시키지 않는다
   const reqSeq = React.useRef(0);
   const goStep = (next: Step) => { reqSeq.current += 1; setStep(next); };

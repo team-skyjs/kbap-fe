@@ -229,6 +229,9 @@ describe('흐름(KB-865 ③ v4)', () => {
   });
   it('Codex #339: 확정 대기 중 = 후보 카드·"None of these" 잠금(늦은 응답이 다른 선택을 덮지 않음) · 응답 뒤 = 고른 그 제품으로', async () => {
     let release!: (v: unknown) => void;
+    const RN = jest.requireActual<typeof import('react-native')>('react-native');
+    const backRemove = jest.fn();
+    const backSpy = jest.spyOn(RN.BackHandler, 'addEventListener').mockImplementation(() => ({ remove: backRemove }));
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
     mockPost
       .mockResolvedValueOnce({ analysisId: 'A23', state: 'CANDIDATES', candidates: [cand(11, 'R1'), cand(12, 'R2')] })
@@ -241,9 +244,26 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(card12.props.accessibilityState).toMatchObject({ disabled: true });
     expect(t.root.findAll((n) => n.props?.testID === 'pscan-candidate-12' && n.props?.accessibilityRole === 'radio' && typeof n.props?.onPress === 'function')).toHaveLength(0); // 실제 Pressable
     expect(t.root.findAll((n) => n.props?.testID === 'pscan-none-of-these' && typeof n.props?.onPress === 'function')).toHaveLength(0);
+    // 헤더 뒤로·하드웨어 뒤로도 잠금(Codex #339 R5) — 화면 그대로, 하드웨어 back은 삼킴(true)
+    act(() => t.root.findAll((n) => n.props?.title === 'packagedScan.chooseTitle' && typeof n.props?.onBack === 'function')[0].props.onBack()); // 헤더(SubHeader)
+    expect(ids(t)).toContain('pscan-candidates');
+    const hw = backSpy.mock.calls.at(-1)?.[1] as (() => boolean) | undefined;
+    expect(hw?.()).toBe(true);
     await act(async () => { release({ analysisId: 'A23', state: 'CONFIRMED', charged: true, product: DETAIL }); await new Promise((r) => setTimeout(r, 0)); });
+    expect(backRemove).toHaveBeenCalled(); // 대기 끝 = 하드웨어 back 원래대로
     expect(mockPost.mock.calls[1][1]).toEqual({ analysisId: 'A23', reportNo: 'R1' });
     expect(mockPush).toHaveBeenCalledWith('/processed-foods/11?scan=1&charged=1');
+    backSpy.mockRestore();
+  });
+  it('Codex #339 R5: SAFE_WITH_NOTE 후보 = 스크린리더에 불명확 단서(조건 없는 safe 0) · 리본은 safe', async () => {
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost.mockResolvedValueOnce({ analysisId: 'A25', state: 'CANDIDATES', candidates: [{ ...cand(11, 'R1'), verdict: 'SAFE_WITH_NOTE' }, { ...cand(12, 'R2'), verdict: 'SAFE' }] });
+    const t = flow();
+    await press(t, 'pscan-take-photo');
+    const label = (id: number) => t.root.findAll((n) => n.props?.testID === `pscan-candidate-${id}` && n.props?.accessibilityRole === 'radio')[0].props.accessibilityLabel as string;
+    expect(label(11)).toContain('risk.safe, packaged.unclearNoteA11y');
+    expect(label(12)).toContain('risk.safe');
+    expect(label(12)).not.toContain('packaged.unclearNoteA11y');
   });
   it('Codex #339: 이름 찾기 = 20개 페이지 이어 받기(스크롤 끝 근처 · 화면을 못 채우면 내용 크기로)', async () => {
     mockOcr.mockResolvedValueOnce([{ text: '바나나' }]);

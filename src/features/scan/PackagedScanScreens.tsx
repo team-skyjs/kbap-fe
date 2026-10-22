@@ -39,7 +39,8 @@ export function CandidateCard({ item, selected, personalized, onPress, testID, d
       onPress={disabled ? undefined : onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected, checked: selected, disabled }}
-      accessibilityLabel={[item.name, item.nameKo, item.maker, risk && t(`risk.${risk}`), contains].filter(Boolean).join(', ')}
+      // SAFE_WITH_NOTE = 리본은 safe지만 스크린리더엔 단서(ProductCard와 같은 규칙 — Codex #339)
+      accessibilityLabel={[item.name, item.nameKo, item.maker, risk && t(`risk.${risk}`), risk && item.verdict === 'SAFE_WITH_NOTE' && t('packaged.unclearNoteA11y'), contains].filter(Boolean).join(', ')}
       testID={testID}
       uiTarget="pscan-candidate"
     >
@@ -74,7 +75,8 @@ export function CandidateScreen({
   const viewH = React.useRef(0);
   return (
     <View style={sc.root} testID={testID}>
-      <SubHeader title={t('packagedScan.chooseTitle')} onBack={onBack} />
+      {/* Codex #339: 확정 대기 중 = 뒤로도 잠금(카드·None of these와 같은 이유 — 응답이 화면 밖에서 확정·이동) */}
+      <SubHeader title={t('packagedScan.chooseTitle')} onBack={busy ? () => {} : onBack} />
       <ScrollView
         contentContainerStyle={sc.page}
         keyboardShouldPersistTaps="handled"
