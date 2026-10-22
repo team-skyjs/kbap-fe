@@ -30,7 +30,7 @@ jest.mock('@/components/icons', () => ({ IconClose: () => null }));
 jest.mock('expo-linear-gradient', () => ({ LinearGradient: jest.requireActual('react-native').View }));
 
 /* eslint-disable import/first -- jest.mock 뒤 */
-import { ScanLoading, scanLineRange, fitPhotoBox, LOADING_PHOTO_H, SCAN_LINE_MS, SCAN_GLOW_H } from '../ScanLoading';
+import { ScanLoading, scanLineRange, fitPhotoBox, LOADING_PHOTO_H, SCAN_LINE_MS, SCAN_GLOW_H, SCAN_GLOW_REACH } from '../ScanLoading';
 /* eslint-enable import/first */
 
 const RN = jest.requireActual('react-native');
@@ -65,15 +65,30 @@ it('KB-853 사진 박스 = 원본 비율 contain(최대 영역 안) — 가로 =
   expect(boxOf(t).width / boxOf(t).height).toBeCloseTo(4032 / 3024, 1);
   // 선은 박스 안에서만: 왕복 끝(1) = 박스 바닥 − 3
   const line = RN.StyleSheet.flatten(host(t, 'scan-loading-line').props.style);
-  expect(line).toMatchObject({ bottom: 0, height: 3 });
-  expect(glowY(t)).toBe(0 - (SCAN_GLOW_H - 3)); // 시작 = 선이 박스 맨 위(0)
+  expect(line).toMatchObject({ top: SCAN_GLOW_REACH, height: 3 }); // 선 = 띠 가운데
+  expect(glowY(t)).toBe(0 - SCAN_GLOW_REACH); // 시작 = 선이 박스 맨 위(0)
 });
 
-it('KB-853 글로우 스윕(PR318 이전 그대로) = 띠 90 · 위로 퍼지는 트레일(투명 → 35%) + 바닥 선 3 빛 번짐 · 1.8s 왕복 무한 · 스피너 0 · 본문 = stayHint 자리', () => {
+it('KB-862 스캔 줄 = 사진 가로 전체(좌우 0 · 사진 박스 안) · 빛은 선 위아래 같은 높이(24)로 선에서 멀어질수록 옅게(대칭) · 선 3 빛 번짐 · 1.8s 왕복 무한 · 스피너 0 · 본문 = stayHint 자리', () => {
   const t = render(<ScanLoading title="T" body="B" photoUri="file:m.jpg" caption="C" onClose={jest.fn()} />);
-  layoutPhoto(t, 430);
-  expect(RN.StyleSheet.flatten(host(t, 'scan-loading-glow').props.style)).toMatchObject({ left: 14, right: 14, height: 90 });
-  expect(host(t, 'scan-loading-trail').props.colors).toEqual(['rgba(226,88,12,0)', 'rgba(226,88,12,0.35)']);
+  layoutPhoto(t, 430, { width: 4032, height: 3024 });
+  // 가로: 띠·선 = 좌우 0 → 너비 = 사진 박스 너비(335). 박스 안(overflow hidden · r12) — 둥근 모서리 클립 안쪽
+  const glow = RN.StyleSheet.flatten(host(t, 'scan-loading-glow').props.style);
+  expect(glow).toMatchObject({ left: 0, right: 0 });
+  expect(RN.StyleSheet.flatten(host(t, 'scan-loading-line').props.style)).toMatchObject({ left: 0, right: 0 });
+  expect(host(t, 'scan-loading-photo').findAll((n) => n.props?.testID === 'scan-loading-glow').length).toBeGreaterThan(0); // 사진 박스 자식
+  expect(RN.StyleSheet.flatten(host(t, 'scan-loading-photo').props.style)).toMatchObject({ width: 335, overflow: 'hidden', borderRadius: 12 });
+  // 세로: 위 빛 높이 = 아래 빛 높이 = 24, 선은 그 사이 · 색은 거울(선 쪽 35% → 바깥 0)
+  const up = RN.StyleSheet.flatten(host(t, 'scan-loading-trail-up').props.style);
+  const down = RN.StyleSheet.flatten(host(t, 'scan-loading-trail-down').props.style);
+  expect(up.height).toBe(SCAN_GLOW_REACH);
+  expect(down.height).toBe(up.height);
+  expect(SCAN_GLOW_REACH).toBe(24);
+  expect(glow.height).toBe(SCAN_GLOW_REACH * 2 + 3);
+  expect(down.top).toBe(SCAN_GLOW_REACH + 3);
+  expect(host(t, 'scan-loading-trail-up').props.colors).toEqual(['rgba(226,88,12,0)', 'rgba(226,88,12,0.35)']);
+  expect(host(t, 'scan-loading-trail-down').props.colors).toEqual([...host(t, 'scan-loading-trail-up').props.colors].reverse());
+  expect(SCAN_GLOW_H).toBeLessThan(251 / 4); // 짧은 빛 — 사진(가로 4:3 = 높이 251) 끝까지 번지지 않음
   const line = RN.StyleSheet.flatten(host(t, 'scan-loading-line').props.style);
   expect(line).toMatchObject({ height: 3, backgroundColor: '#E2580C', shadowColor: '#E2580C', shadowOpacity: 0.9, shadowRadius: 8 });
   expect(mockRepeat).toHaveBeenCalledWith(expect.anything(), -1, true);
@@ -87,7 +102,7 @@ it('모션 줄이기 = 스캔선 정지(박스 맨 위에 표시 유지) · 애�
   mockReduced = true;
   const t = render(<ScanLoading title="T" body="B" photoUri="file:m.jpg" caption="C" onClose={jest.fn()} />);
   layoutPhoto(t, 430);
-  expect(glowY(t)).toBe(-(SCAN_GLOW_H - 3));
+  expect(glowY(t)).toBe(-SCAN_GLOW_REACH);
   expect(host(t, 'scan-loading-line')).toBeTruthy();
   expect(mockRepeat).not.toHaveBeenCalled();
 });
