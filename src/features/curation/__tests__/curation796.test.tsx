@@ -45,8 +45,8 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, navigate: 
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 const mockOpen = jest.fn(async () => true);
-const mockOpenMap = jest.fn(async () => true);
-jest.mock('@/lib/openExternal', () => ({ openWebPage: (u: string) => mockOpen(u), openMapLink: (u: string) => mockOpenMap(u) }));
+const mockOpenMap = jest.fn(async (..._a: unknown[]) => true);
+jest.mock('@/lib/openExternal', () => ({ openWebPage: (u: string) => mockOpen(u), openMapLink: (u: string, app?: string | null) => (app === undefined ? mockOpenMap(u) : mockOpenMap(u, app)) }));
 const mockGet = jest.fn();
 jest.mock('@/lib/api/client', () => {
   class MockApiError extends Error { status?: number; code?: string; constructor(m: string, s?: number, c?: string) { super(m); this.status = s; this.code = c; } }
@@ -413,7 +413,8 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
         cancelButtonTintColor: DESTRUCTIVE, // Cancel = 빨강
       });
       act(() => cb(1));
-      expect(mockOpenMap).toHaveBeenLastCalledWith(`https://map.kakao.com/link/search/${encodeURIComponent('북촌 한옥마을 & 길')}`);
+      const enc = encodeURIComponent('북촌 한옥마을 & 길');
+      expect(mockOpenMap).toHaveBeenLastCalledWith(`https://map.kakao.com/link/search/${enc}`, `kakaomap://search?q=${enc}`); // 앱 스킴 먼저(Codex #334) · https 폴백
       expect(mockTrack).toHaveBeenCalledWith('home_curation_map_select', { collection_key: 'stations', entry_id: 'e1', provider: 'kakao' });
       expect(JSON.stringify(mockTrack.mock.calls)).not.toMatch(/Place 1|북촌/); // 장소명 계측 0
       mockOpenMap.mockClear();
@@ -438,8 +439,12 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       const textColor = (id: string) => RNm.StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0].findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string')[0].props.style).color;
       expect(['map-choice-google', 'map-choice-kakao', 'map-choice-naver'].map(textColor)).toEqual(['#1C1E21', '#1C1E21', '#1C1E21']);
       expect(textColor('map-choice-cancel')).toBe(DESTRUCTIVE);
+      // Codex #334: 래퍼(바깥·대화상자)는 접근성 요소 아님 → TalkBack이 각 지도·Cancel을 따로 잡는다
+      for (const id of ['map-choice-scrim', 'map-choice-dialog']) expect(t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0].props.accessible).toBe(false);
+      for (const id of ['map-choice-google', 'map-choice-kakao', 'map-choice-naver', 'map-choice-cancel']) expect(t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0].props.accessible).not.toBe(false);
       press(t, 'map-choice-naver');
-      expect(mockOpenMap).toHaveBeenLastCalledWith(`https://map.naver.com/p/search/${encodeURIComponent('북촌 한옥마을 & 길')}`);
+      const enc = encodeURIComponent('북촌 한옥마을 & 길');
+      expect(mockOpenMap).toHaveBeenLastCalledWith(`https://map.naver.com/p/search/${enc}`, `nmap://search?query=${enc}`);
     } finally {
       RNm.Platform.OS = prevOS;
     }

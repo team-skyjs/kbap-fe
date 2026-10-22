@@ -22,7 +22,7 @@ import { color as C, font } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
 import { openMapLink, openWebPage } from '@/lib/openExternal';
 import { IconMapPin } from '@/components/icons';
-import { mapQueryOf, mapSearchUrl, type MapProvider } from '@/lib/curation/mapLinks';
+import { mapAppUrl, mapQueryOf, mapSearchUrl, type MapProvider } from '@/lib/curation/mapLinks';
 import { MapChoiceDialog, showIosMapSheet } from '@/features/curation/MapChoice';
 import type { CurationItem } from '@/lib/data/useCurations';
 
@@ -100,7 +100,8 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
     setMapChoice(false);
     if (!item) return;
     track(EVENTS.home_curation_map_select, { collection_key: listKey, entry_id: item.id, provider: p });
-    void openMapLink(mapSearchUrl(p, mapQueryOf(item)));
+    const q = mapQueryOf(item);
+    void openMapLink(mapSearchUrl(p, q), mapAppUrl(p, q)); // Kakao·NAVER = 앱 스킴 먼저(Codex #334)
   };
   const openMaps = () => {
     if (!item) return;

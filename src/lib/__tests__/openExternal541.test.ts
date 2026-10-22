@@ -97,6 +97,16 @@ describe('KB-863 openMapLink — 지도 범용 링크는 OS로(인앱 브라우�
     expect(mockOpenBrowser).not.toHaveBeenCalled();
     expect(mockToast).not.toHaveBeenCalled();
   });
+  it('Codex #334: 앱 스킴 먼저 — 성공 = 그것만 · 실패(앱 없음) = https 폴백', async () => {
+    await expect(openMapLink(MAP, 'kakaomap://search?q=x')).resolves.toBe(true);
+    expect(mockOpenURL).toHaveBeenCalledTimes(1);
+    expect(mockOpenURL).toHaveBeenCalledWith('kakaomap://search?q=x');
+    mockOpenURL.mockClear();
+    mockOpenURL.mockRejectedValueOnce(new Error('no app'));
+    await expect(openMapLink(MAP, 'kakaomap://search?q=x')).resolves.toBe(true);
+    expect(mockOpenURL.mock.calls.map((c) => c[0])).toEqual(['kakaomap://search?q=x', MAP]);
+    expect(mockToast).not.toHaveBeenCalled();
+  });
   it('실패 = 조용히 넘기지 않고 토스트(states.linkFailed) + false', async () => {
     mockOpenURL.mockRejectedValueOnce(new Error('Unable to open URL'));
     await expect(openMapLink(MAP)).resolves.toBe(false);

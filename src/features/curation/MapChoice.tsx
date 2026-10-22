@@ -39,8 +39,9 @@ export function showIosMapSheet(t: TFn, placeName: string, onPick: (p: MapProvid
 export function MapChoiceDialog({ open, t, onPick, onClose }: { open: boolean; t: TFn; onPick: (p: MapProvider) => void; onClose: () => void }) {
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={st.scrim} onPress={onClose} testID="map-choice-scrim" /* 바깥 탭 = 닫기(실제 동작이라 계측 대상 — noTrack은 빈 인터셉터 전용, R7) */>
-        <Pressable style={st.dialog} onPress={() => {}} noTrack accessibilityRole="none" testID="map-choice-dialog">
+      {/* Codex #334: 바깥·대화상자 래퍼는 접근성 요소가 아니다 — TalkBack이 세 지도·Cancel을 하나씩 잡게(래퍼가 묶으면 활성화 = 닫힘) */}
+      <Pressable style={st.scrim} onPress={onClose} accessible={false} testID="map-choice-scrim" /* 바깥 탭 = 닫기(실제 동작이라 계측 대상 — noTrack은 빈 인터셉터 전용, R7) */>
+        <Pressable style={st.dialog} onPress={() => {}} noTrack accessible={false} testID="map-choice-dialog">
           <Text style={st.title} accessibilityRole="header">{t('curation.openInMaps')}</Text>
           <View style={st.items}>
             {MAP_PROVIDERS.map((p) => (
