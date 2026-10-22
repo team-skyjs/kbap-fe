@@ -295,15 +295,27 @@ it('KB-848: 리뷰 섹션 = 머리 토글만 · 평점 요약 박스(overall →
   expect(cards.every((c) => c.props.photoVariant === 'peek')).toBe(true);
 });
 
-it('KB-848 QA(AG3): 요약 박스 = 서버 집계 축만(Taste) — Speed·Service는 로드된 리뷰가 달라도 표시 0(상세·목록 같은 값)', () => {
+it('KB-857: 요약 박스 축 = 서버 집계만(Taste·Speed·Service) — 축 평균 없음 = 숨김 · KR only = sameNationality 값 · 목록도 같은 함수(같은 값)', () => {
   const { serverAxes } = jest.requireActual('@/features/review/RatingSummaryBox') as typeof import('@/features/review/RatingSummaryBox');
-  expect(serverAxes(4.5)).toEqual({ taste: 4.5, speed: null, service: null });
+  expect(serverAxes({ average: 4.5, count: 12 })).toEqual({ taste: 4.5, speed: null, service: null }); // 구 응답(축 필드 없음)
+  expect(serverAxes({ average: 4.5, count: 12, speedAverage: 4.2, serviceAverage: null })).toEqual({ taste: 4.5, speed: 4.2, service: null });
+  const { act } = jest.requireActual('react-test-renderer') as typeof import('react-test-renderer');
+  mockUseFoodDetail.mockReturnValue({
+    data: FOOD('safe', { overall: { average: 4.5, count: 12, speedAverage: 4.2, serviceAverage: null }, sameNationality: { average: 4.0, count: 3, speedAverage: 3.5, serviceAverage: 4.8 } }),
+    isLoading: false, error: null, refetch: jest.fn(),
+  });
   const tree = render(<FoodDetailScreen />);
-  const axes = tree.root.findAll((n) => typeof n.props?.testID === 'string' && /^axis-[a-z]+$/.test(n.props.testID) && typeof n.type === 'string').map((n) => n.props.testID);
-  expect(axes).toEqual(['axis-taste']);
+  const axes = () => tree.root.findAll((n) => typeof n.props?.testID === 'string' && /^axis-[a-z]+$/.test(n.props.testID) && typeof n.type === 'string').map((n) => n.props.testID);
+  const badge = (k: string) => JSON.stringify(tree.root.findAll((n) => n.props?.testID === `axis-${k}` && typeof n.type === 'string')[0].findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children));
+  expect(axes()).toEqual(['axis-taste', 'axis-speed']); // Service = null → 숨김
+  expect(badge('speed')).toContain('4.2');
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(axes()).toEqual(['axis-taste', 'axis-speed', 'axis-service']);
+  expect(badge('speed')).toContain('3.5');
+  expect(badge('service')).toContain('4.8');
   const list = jest.requireActual('fs').readFileSync('src/app/food/[id]/reviews.tsx', 'utf8') as string;
-  expect(list).toContain('const axisAverages = serverAxes(summaryAgg.average);'); // 목록도 같은 함수 = 같은 값
-  expect(list).not.toContain('servingSpeed');
+  expect(list).toContain('const axisAverages = serverAxes(summaryAgg);'); // 목록도 같은 함수·같은 집계 = 같은 값
+  expect(list).not.toContain('servingSpeed'); // 화면별 로드 리뷰 계산 0
 });
 
 it('KB-848: KR only ON + 같은 국적 0건 = 요약 박스 없음(P-360) · 전체 0건 = 리뷰 섹션째 없음', () => {

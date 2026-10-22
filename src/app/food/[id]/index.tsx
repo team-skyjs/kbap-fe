@@ -588,7 +588,7 @@ function Registered({
                 accessibilityHint={t('detail.readAll')}
                 testID="detail-rating-summary"
               >
-                <RatingSummaryBox overall={agg} sameNat={natOnly} axes={serverAxes(agg.average)} t={t} />
+                <RatingSummaryBox overall={agg} sameNat={natOnly} axes={serverAxes(agg)} t={t} />
               </Pressable>
             );
           })()}

@@ -99,6 +99,9 @@ export interface UserUpdate {
 export interface RatingAggregate {
   average: number | null; // 1–5, null if 0 reviews
   count: number;
+  /** KB-857: 서버 축 평균 — 없음(구 응답·값 있는 리뷰 0건) = null/생략 → 요약 박스에서 그 축 숨김 */
+  speedAverage?: number | null;
+  serviceAverage?: number | null;
 }
 
 /** List/home/recommend summary (personalized risk included). */

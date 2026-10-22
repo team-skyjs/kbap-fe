@@ -57,14 +57,14 @@ describe('P-360(KB-523) — KR only 평점 요약 같은 국적 전환(소스 �
     expect(rv).toContain('<RatingSummaryBox overall={summaryAgg} sameNat={sameNatOnly} axes={axisAverages} t={t} />');
     // KB-848: 박스·축 계산 = 공용 모듈(RatingSummaryBox) — 라벨 전환·Taste 축 토글 연동은 그쪽
     expect(read('src/features/review/RatingSummaryBox.tsx')).toContain("t(sameNat ? 'reviews.sameNationality' : 'reviews.overall').toUpperCase()");
-    expect(rv).toContain('const axisAverages = serverAxes(summaryAgg.average);'); // Taste 축 = 토글 연동(서버 집계만 — KB-848 AG3)
+    expect(rv).toContain('const axisAverages = serverAxes(summaryAgg);'); // 축 = 토글 연동 서버 집계(KB-848 AG3 · KB-857)
   });
 
   it('KB-848 상세 리뷰 섹션 — 머리 = 토글만, 요약 박스 = 토글 ON이면 sameNationality · 같은 국적 0건 = 박스 없음 · 탭 = 목록', () => {
     const fd = read('src/app/food/[id]/index.tsx');
     expect(fd).toContain('const agg = natOnly ? food.sameNationality : food.overall;');
     expect(fd).toContain('if (natOnly && agg.count === 0) return null;');
-    expect(fd).toContain('<RatingSummaryBox overall={agg} sameNat={natOnly} axes={serverAxes(agg.average)} t={t} />');
+    expect(fd).toContain('<RatingSummaryBox overall={agg} sameNat={natOnly} axes={serverAxes(agg)} t={t} />');
     expect(fd).not.toContain('rv-head-empty-spacer'); // 머리 행 별·점수 소멸(박스와 중복)
     expect(fd).not.toContain('rvHeadScore');
   });
