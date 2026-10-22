@@ -302,7 +302,8 @@ export function ProcessedFoodDetailScreen() {
   const chargeUnknown = params.charged === 'u'; // 앞선 확정 전송 실패 뒤 재확정 — 차감 여부를 단정하지 않는다(남은 횟수는 프로필에서)
   const q = useProcessedDetail(id);
   const guest = useIsGuest();
-  const { data: me } = useMe();
+  const meQ = useMe();
+  const me = meQ.data;
   const [gate, setGate] = React.useState(false);
   const [expanded, setExpanded] = React.useState(false); // 처음엔 접힘(예진 10/22 Q2)
   const loadMoreReviews = React.useRef<(() => void) | null>(null); // 리뷰 섹션이 채운다 — 바닥 근처 스크롤 = 다음 페이지(무한 스크롤, Read reviews 버튼 없음)
@@ -362,8 +363,11 @@ export function ProcessedFoodDetailScreen() {
     const m0 = !guest && !!me && me.restrictions.length === 0;
     const member = !guest && !!me && me.restrictions.length > 0;
     // 리본 = 회피 1개 이상 회원만(Codex #338 P1: 회피를 비운 직후 프로필이 먼저 갱신되면 옛 설정의 판정 캐시가 남아 있다 — M0·비회원 화면엔 판정 0)
-    const risk = member && d.verdict ? VERDICT_RISK[d.verdict] : null;
-    const verdictText = member && (d.verdict === 'AVOID' || d.verdict === 'CAUTION' || d.verdict === 'SAFE_WITH_NOTE');
+    // Codex #338 R5(커맨드 규칙): 서버가 회원 기준으로 계산해 보낸 verdict가 있으면 프로필 상태와 무관하게 그린다(비회원은 서버가 늘 null).
+    // 회피를 바꾼 직후의 옛 판정은 캐시 키(회피 코드·언어)가 막는다(R3) — 여기서 member로 다시 거르면 프로필이 늦을 때 판정이 통째로 빠진다
+    const hasVerdict = !guest && d.verdict != null;
+    const risk = hasVerdict && d.verdict ? VERDICT_RISK[d.verdict] : null;
+    const verdictText = hasVerdict && (d.verdict === 'AVOID' || d.verdict === 'CAUTION' || d.verdict === 'SAFE_WITH_NOTE');
     body = (
       <ScrollView
         contentContainerStyle={[s.pad, { paddingBottom: insets.bottom + 32 }]}
@@ -404,21 +408,32 @@ export function ProcessedFoodDetailScreen() {
           )}
         </View>
 
-        {guest || m0 ? (
+        {verdictText ? (
+          <VerdictText d={d} />
+        ) : hasVerdict ? null /* SAFE = 문장 없이 미리보기(시안 08) */ : !guest && !me ? (
+          // Codex #338: 로그인했는데 프로필 대기·실패 + verdict 없음 = 판정 영역을 비우지 않는다 — 대기 = 자리 스켈레톤, 실패 = 보수적 "확인 못 함"(주요 알레르기 있으면 함께)
+          meQ.isError ? (
+            <View style={s.block} testID="pf-profile-unavailable">
+              <Text style={s.h2}>{t('packaged.notVerified')}</Text>
+              <Text style={s.body}>{t('packaged.notVerifiedBody')}</Text>
+              {!!d.majorAllergens?.length && <Text style={s.body} testID="pf-profile-unavailable-major">{t('packaged.containsNames', { names: namesOf(d.majorAllergens) })}</Text>}
+            </View>
+          ) : (
+            <View testID="pf-profile-pending"><Shimmer style={s.skelRow} /></View>
+          )
+        ) : guest || m0 ? (
           <MajorAllergens d={d} guest={guest} onAction={() => (guest ? setGate(true) : router.push('/profile/restrictions' as Href))} />
-        ) : member && d.verdict == null ? (
+        ) : member ? (
           // 원재료·알레르기 표시가 둘 다 없는 제품 = 회원도 verdict null — 리본 없이 "확인 못 함"(#457)
           <View style={s.block} testID="pf-not-verified">
             <Text style={s.h2}>{t('packaged.notVerified')}</Text>
             <Text style={s.body}>{t('packaged.notVerifiedBody')}</Text>
           </View>
-        ) : verdictText ? (
-          <VerdictText d={d} />
         ) : null}
 
         {expanded ? (
           <>
-            <Expanded d={d} showTranslation={showTranslation} showAvoidList={member && d.verdict === 'SAFE'} />
+            <Expanded d={d} showTranslation={showTranslation} showAvoidList={hasVerdict && d.verdict === 'SAFE'} />
             <Pressable style={s.seeLess} onPress={() => toggle(false, 'see_less')} accessibilityRole="button" testID="pf-see-less">
               <Text style={s.seeLessText}>{t('packaged.seeLess')}</Text>
             </Pressable>

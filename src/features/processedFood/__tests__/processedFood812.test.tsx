@@ -57,7 +57,8 @@ jest.mock('@/lib/api/client', () => {
 let mockGuest = true;
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest }));
 let mockMe: { id: string; restrictions: { code: string }[] } | undefined;
-jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockMe }) }));
+let mockMeError = false;
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockMe, isError: mockMeError }) }));
 type Q = { isPending: boolean; isError: boolean; data?: unknown; error?: unknown; refetch: jest.Mock };
 let mockDetail: Q;
 jest.mock('@/lib/data/useProcessedFoods', () => ({ ...jest.requireActual('@/lib/data/useProcessedFoods'), useProcessedDetail: () => mockDetail }));
@@ -93,7 +94,7 @@ const W1711: DetailWire = {
 };
 
 const trees: ReactTestRenderer[] = [];
-afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); mockGuest = true; mockMe = undefined; jest.requireMock('@/lib/i18n').default.language = 'en'; });
+afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); mockGuest = true; mockMe = undefined; mockMeError = false; jest.requireMock('@/lib/i18n').default.language = 'en'; });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(el); }); trees.push(t); return t; };
 const q = (over: Partial<Q>): Q => ({ isPending: false, isError: false, refetch: jest.fn(), ...over });
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -185,9 +186,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(text(bare)).toContain('packaged.majorUnavailable');
     expect(text(bare)).not.toContain('packaged.majorNoneFound');
   });
-  it('Codex #338 P1: 리본은 회피 1개 이상 회원만 — 회피를 비운 직후(M0)·비회원은 옛 판정 캐시(SAFE)가 남아 있어도 리본 0', () => {
-    mockGuest = false; mockMe = { id: '41', restrictions: [] };
-    expect(ids(detail({ verdict: 'SAFE' })).some((i) => i.startsWith('badge-'))).toBe(false);
+  it('Codex #338: 비회원 = 서버 verdict가 와도 리본 0(비회원 화면) · 회피 설정 변경 뒤 옛 판정은 캐시 키(회피 코드·언어)가 막는다(R3·R4 테스트)', () => {
     mockGuest = true; mockMe = undefined;
     expect(ids(detail({ verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: [] }] })).some((i) => i.startsWith('badge-'))).toBe(false);
   });
@@ -262,6 +261,17 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(ids(c)).toContain('pf-source-c002');
     expect(text(c)).not.toContain('packaged.sourceData1');
     expect(ids(c)).toContain('packaged-placeholder');
+  });
+  it('Codex #338 R5: 프로필 대기 + verdict AVOID = 판정 그대로(리본·문장) · 대기 + verdict null = 자리 스켈레톤 · 프로필 실패 + verdict null = "확인 못 함"(주요 알레르기 함께)', () => {
+    mockGuest = false; mockMe = undefined;
+    const a = detail({ verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: [] }] });
+    expect(ids(a)).toEqual(expect.arrayContaining(['badge-danger', 'pf-verdict-avoid']));
+    expect(ids(a)).not.toContain('pf-profile-pending');
+    expect(ids(detail({ verdict: null }))).toContain('pf-profile-pending');
+    mockMeError = true;
+    const f = detail({ verdict: null, majorAllergens: ['MILK'] });
+    expect(ids(f)).toEqual(expect.arrayContaining(['pf-profile-unavailable', 'pf-profile-unavailable-major']));
+    expect(ids(f).some((i) => i.startsWith('badge-'))).toBe(false);
   });
   it('QA #338: 상세 사진 = 상세 전용 recyclingKey + 로드 전 투명(다른 제품 사진 비침 0) · 사진이 바뀌면 다시 마운트', () => {
     const src = fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8');
