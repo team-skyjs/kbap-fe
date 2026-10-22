@@ -1190,7 +1190,11 @@
     "photoUnavailable": "暂无照片",
     "openGalleryHint": "打开照片和介绍",
     "nextPhoto": "下一张照片",
-    "prevPhoto": "上一张照片"
+    "prevPhoto": "上一张照片",
+    "openInMaps": "在地图中打开",
+    "mapGoogle": "Google 地图",
+    "mapKakao": "Kakao Map",
+    "mapNaver": "NAVER Map"
   },
   "packaged": {
     "segmentDishes": "菜品",

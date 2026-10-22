@@ -71,3 +71,17 @@ export async function openStoreLink(url: string, opts?: { silent?: boolean }): P
     return false;
   }
 }
+
+/**
+ * KB-863 지도 앱 열기 — 범용(https) 링크를 **OS에 넘긴다**(인앱 브라우저 X: 그러면 지도 앱으로 넘어가지 않는다).
+ * 앱이 있으면 앱, 없으면 기본 브라우저. 실패(기본 브라우저 없음·제한)는 조용히 넘기지 않고 토스트(P-381 규칙).
+ */
+export async function openMapLink(url: string): Promise<boolean> {
+  try {
+    await Linking.openURL(url);
+    return true;
+  } catch {
+    showTopToast(i18n.t('states.linkFailed'), { error: true });
+    return false;
+  }
+}

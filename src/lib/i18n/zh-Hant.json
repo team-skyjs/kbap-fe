@@ -1190,7 +1190,11 @@
     "photoUnavailable": "暫無照片",
     "openGalleryHint": "開啟照片與介紹",
     "nextPhoto": "下一張照片",
-    "prevPhoto": "上一張照片"
+    "prevPhoto": "上一張照片",
+    "openInMaps": "在地圖中開啟",
+    "mapGoogle": "Google 地圖",
+    "mapKakao": "Kakao Map",
+    "mapNaver": "NAVER Map"
   },
   "packaged": {
     "segmentDishes": "菜色",

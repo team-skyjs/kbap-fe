@@ -29,7 +29,7 @@ jest.mock('react-native-gesture-handler', () => {
 });
 jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View {...p} /> }; });
 jest.mock('@/components/RemoteImage', () => { const { View } = jest.requireActual('react-native'); return { RemoteImage: (p: { uri: string; blurRadius?: number; style?: unknown; placeholder?: string; onLoad?: () => void; onError?: () => void }) => <View testID={p.blurRadius ? `blur:${p.uri}` : `img:${p.uri}`} style={p.style} {...({ blurRadius: p.blurRadius, placeholder: p.placeholder, onLoad: p.onLoad, onError: p.onError } as object)} /> }; });
-jest.mock('@/components/icons', () => { const { View } = jest.requireActual('react-native'); return { IconChevron: (p: { color?: string }) => <View testID="chevron-right" style={{ color: p.color }} />, IconArrowLeft: () => null, IconClose: () => null }; });
+jest.mock('@/components/icons', () => { const { View } = jest.requireActual('react-native'); return { IconChevron: (p: { color?: string }) => <View testID="chevron-right" style={{ color: p.color }} />, IconArrowLeft: () => null, IconClose: () => null, IconMapPin: () => <View testID="map-pin" /> }; });
 jest.mock('expo-linear-gradient', () => { const { View } = jest.requireActual('react-native'); return { LinearGradient: (p: object) => <View {...p} testID="card-shade" /> }; });
 jest.mock('@/components/SubHeader', () => { const { Text } = jest.requireActual('react-native'); return { SubHeader: (p: { title: string }) => <Text testID="subheader">{p.title}</Text> }; });
 jest.mock('@/components/Btn', () => {
@@ -45,7 +45,8 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, navigate: 
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 const mockOpen = jest.fn(async () => true);
-jest.mock('@/lib/openExternal', () => ({ openWebPage: (u: string) => mockOpen(u) }));
+const mockOpenMap = jest.fn(async () => true);
+jest.mock('@/lib/openExternal', () => ({ openWebPage: (u: string) => mockOpen(u), openMapLink: (u: string) => mockOpenMap(u) }));
 const mockGet = jest.fn();
 jest.mock('@/lib/api/client', () => {
   class MockApiError extends Error { status?: number; code?: string; constructor(m: string, s?: number, c?: string) { super(m); this.status = s; this.code = c; } }
@@ -76,7 +77,7 @@ const item = (p: number, extra: object = {}) => ({ entryId: `e${p}`, position: p
 const DETAIL_WIRE = {
   collectionKey: 'stations', title: 'Explore by subway', description: '10 stations', coverImageUrl: 'https://cdn/cover.jpg', coverImageAttribution: null, itemCount: 10, publishedRevision: 1, publishedAt: '2026-10-20T00:00:00Z',
   requestedLang: 'ko', resolvedLang: 'ko', fallbackUsed: false,
-  items: [item(2, { nearby: ['Hongdae streets', '  ', 'Forest Park'] }), item(1, { imageAttribution: 'Photo: KTO' }), ...[3, 4, 5, 6, 7, 8, 9, 10].map((p) => item(p))],
+  items: [item(2, { nearby: ['Hongdae streets', '  ', 'Forest Park'] }), item(1, { imageAttribution: 'Photo: KTO', nameKo: '북촌 한옥마을 & 길' }), ...[3, 4, 5, 6, 7, 8, 9, 10].map((p) => item(p))],
 };
 
 const trees: ReactTestRenderer[] = [];
@@ -377,6 +378,72 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       spy.mockRestore();
     }
   });
+  it('KB-863(v2 B): 지도 버튼 = 사진 오른쪽 아래 16 · 흰 원 48 · 지도 핀 · 라벨 "Open in maps" · Guide = 전체 너비 pill(48·radius full)', () => {
+    const RNm = jest.requireActual('react-native');
+    mockDetail = q({ data: detail });
+    const t = render(<CurationDetailScreen />);
+    press(t, 'curation-item-1');
+    const btn = t.root.findAll((n) => n.props?.testID === 'curation-gallery-map' && typeof n.type === 'string')[0];
+    expect(RNm.StyleSheet.flatten(btn.props.style)).toMatchObject({ position: 'absolute', right: 16, bottom: 16, width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFFFFF' });
+    expect(btn.props.accessibilityLabel).toBe('curation.openInMaps');
+    expect(btn.findAll((n) => n.props?.testID === 'map-pin').length).toBeGreaterThan(0);
+    const photo = t.root.findAll((n) => n.props?.testID === 'curation-gallery-photo' && typeof n.type === 'string')[0];
+    expect(photo.findAll((n) => n.props?.testID === 'curation-gallery-map').length).toBeGreaterThan(0); // 사진 위
+    const guide = t.root.findAll((n) => n.props?.testID === 'curation-gallery-guide' && n.props?.style != null)[0]; // Btn(공용) — 넘긴 스타일
+    expect(RNm.StyleSheet.flatten(guide.props.style)).toMatchObject({ minHeight: 48, borderRadius: 999 });
+  });
+  it('KB-863 iOS = 네이티브 액션 시트: 제목 "Open in maps" · 부제 장소명 · Google/Kakao/NAVER + Cancel · 이름 검정(tintColor)·Cancel 빨강(cancelButtonTintColor) → 고른 지도 범용 링크(nameKo 우선·인코딩) · 계측 entry_id만', () => {
+    const RNm = jest.requireActual('react-native');
+    const { DESTRUCTIVE } = jest.requireActual('@/components/ActionSheet') as { DESTRUCTIVE: string };
+    const sheet = jest.spyOn(RNm.ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation(() => {});
+    try {
+      mockDetail = q({ data: detail });
+      const t = render(<CurationDetailScreen />);
+      press(t, 'curation-item-1');
+      mockTrack.mockClear();
+      press(t, 'curation-gallery-map');
+      expect(mockTrack).toHaveBeenCalledWith('home_curation_map_open', { collection_key: 'stations', entry_id: 'e1' });
+      const [opts, cb] = sheet.mock.calls[0] as [Record<string, unknown>, (i: number) => void];
+      expect(opts).toEqual({
+        title: 'curation.openInMaps',
+        message: 'Place 1',
+        options: ['curation.mapGoogle', 'curation.mapKakao', 'curation.mapNaver', 'common.cancel'],
+        cancelButtonIndex: 3,
+        tintColor: '#1C1E21', // 지도 이름 = 검정(gray-1000)
+        cancelButtonTintColor: DESTRUCTIVE, // Cancel = 빨강
+      });
+      act(() => cb(1));
+      expect(mockOpenMap).toHaveBeenLastCalledWith(`https://map.kakao.com/link/search/${encodeURIComponent('북촌 한옥마을 & 길')}`);
+      expect(mockTrack).toHaveBeenCalledWith('home_curation_map_select', { collection_key: 'stations', entry_id: 'e1', provider: 'kakao' });
+      expect(JSON.stringify(mockTrack.mock.calls)).not.toMatch(/Place 1|북촌/); // 장소명 계측 0
+      mockOpenMap.mockClear();
+      act(() => cb(3)); // Cancel
+      expect(mockOpenMap).not.toHaveBeenCalled();
+    } finally {
+      sheet.mockRestore();
+    }
+  });
+  it('KB-863 Android = 앱 목록 대화상자: 제목 · 세 지도(검정) · Cancel(빨강) → NAVER 선택 = 범용 링크 · Cancel = 닫힘', () => {
+    const RNm = jest.requireActual('react-native');
+    const { DESTRUCTIVE } = jest.requireActual('@/components/ActionSheet') as { DESTRUCTIVE: string };
+    const prevOS = RNm.Platform.OS;
+    RNm.Platform.OS = 'android';
+    try {
+      mockDetail = q({ data: detail });
+      const t = render(<CurationDetailScreen />);
+      press(t, 'curation-item-1');
+      press(t, 'curation-gallery-map');
+      const dialog = t.root.findAll((n) => n.props?.testID === 'map-choice-dialog' && typeof n.type === 'string');
+      expect(dialog).toHaveLength(1);
+      const textColor = (id: string) => RNm.StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0].findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string')[0].props.style).color;
+      expect(['map-choice-google', 'map-choice-kakao', 'map-choice-naver'].map(textColor)).toEqual(['#1C1E21', '#1C1E21', '#1C1E21']);
+      expect(textColor('map-choice-cancel')).toBe(DESTRUCTIVE);
+      press(t, 'map-choice-naver');
+      expect(mockOpenMap).toHaveBeenLastCalledWith(`https://map.naver.com/p/search/${encodeURIComponent('북촌 한옥마을 & 길')}`);
+    } finally {
+      RNm.Platform.OS = prevOS;
+    }
+  });
   it('카드 탭 → 시트(1장 = 카운터 숨김 · 출처 = 그 사진 것) + home_curation_gallery_open · 닫기 → 시트 없음(목록 그대로)', () => {
     mockDetail = q({ data: detail });
     const t = render(<CurationDetailScreen />);
@@ -434,8 +501,8 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(counter()).toBe('1 / 3');
     expect(pagerA11y()).toBe('1 / 3');
     expect(byId(t, 'curation-gallery-credit')[0].props.children).toBe('Photo 0');
-    const { creditMaxWidth } = jest.requireActual('@/features/curation/CurationGallerySheet') as { creditMaxWidth: (w: number, c: number) => number };
-    // KB-852: 출처 = 사진 우하단 오버레이(본문 밖) — 1줄 · 우하단 12 · 점 줄과 안 겹치는 최대 폭 · 스크린리더는 사진 설명으로
+    const { creditMaxWidth } = jest.requireActual('@/features/curation/CurationGallerySheet') as { creditMaxWidth: (w: number) => number };
+    // KB-852 → KB-863(v2 B): 출처 = 사진 왼쪽 아래 오버레이(본문 밖) — 1줄 · 왼쪽 16 · 지도 버튼과 안 겹치는 최대 폭 · 스크린리더는 사진 설명으로
     const RNc = jest.requireActual('react-native');
     const sub = (id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0];
     const inside = (root: { findAll: (f: (n: { props?: { testID?: string } }) => boolean) => unknown[] }, id: string) => root.findAll((n) => n.props?.testID === id).length > 0;
@@ -444,12 +511,14 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(inside(bodyOf(), 'curation-gallery-credit')).toBe(false);
     const credit = byId(t, 'curation-gallery-credit')[0];
     expect(credit.props.numberOfLines).toBe(1);
-    expect(RNc.StyleSheet.flatten(credit.props.style)).toMatchObject({ position: 'absolute', right: 12, bottom: 12, color: '#FFFFFF' });
+    expect(RNc.StyleSheet.flatten(credit.props.style)).toMatchObject({ position: 'absolute', left: 16, bottom: 31, color: '#FFFFFF', textAlign: 'left' });
     const w0 = jest.requireActual('react-native').Dimensions.get('window').width;
     const maxW = RNc.StyleSheet.flatten(credit.props.style).maxWidth as number;
-    expect(maxW).toBe(creditMaxWidth(w0, 3));
-    expect(w0 - 12 - maxW).toBeGreaterThanOrEqual((w0 + (3 * 6 + 2 * 8)) / 2 + 8); // 출처 왼쪽 끝 ≥ 점 줄 오른쪽 끝 + 8
-    expect(creditMaxWidth(w0, 1)).toBe(w0 - 24); // 1장 = 점 없음 → 사진 폭 - 좌우 12
+    expect(maxW).toBe(creditMaxWidth(w0));
+    expect(creditMaxWidth(375)).toBe(273); // 시안 v2 B 실측
+    expect(16 + maxW).toBeLessThanOrEqual(w0 - 16 - 48 - 22); // 출처 오른쪽 끝 + 22 ≤ 지도 버튼 왼쪽 끝(겹침 0)
+    // 점 = 왼쪽 아래(출처 밑) · 지도 버튼 = 오른쪽 아래 16
+    expect(RNc.StyleSheet.flatten(byId(t, 'curation-gallery-dots')[0].props.style)).toMatchObject({ position: 'absolute', left: 16, bottom: 16 });
     const pagerLabel = () => t.root.findAll((n) => n.props?.testID === 'curation-gallery-pager' && typeof n.props?.onMomentumScrollEnd === 'function')[0].props.accessibilityLabel;
     expect(pagerLabel()).toMatch(/, Photo 0$/);
     // 본문 = 이름·지역·소개·Guide만 — 출처 유무로 본문 구성(=높이)이 바뀌지 않는다
