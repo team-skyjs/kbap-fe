@@ -324,6 +324,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     return (
       <MessagePage
         testID={step.from === 'none' ? 'pscan-none' : 'pscan-another'}
+        busy={guard.busy}
         headerTitle={t('packagedScan.title')}
         title={t('packagedScan.anotherTitle')}
         body={t(labelEnabled ? 'packagedScan.anotherBody' : 'packagedScan.anotherBodyNameOnly')}

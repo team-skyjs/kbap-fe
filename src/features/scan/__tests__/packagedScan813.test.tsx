@@ -255,6 +255,31 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(mockPush).toHaveBeenCalledWith('/processed-foods/11?scan=1&charged=1');
     backSpy.mockRestore();
   });
+  it('Codex #339 R6: 성분표 전 거절 확정 대기 중 = 이름으로 찾기·헤더 뒤로 잠금(서버가 REJECTED로 굳히는 사이 다른 길 0) → 응답 뒤 성분표', async () => {
+    const flags = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
+    const prevFlag = flags.FLAGS.packagedLabelScan;
+    flags.FLAGS.packagedLabelScan = true;
+    try {
+      let release!: (v: unknown) => void;
+      mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+      mockPost
+        .mockResolvedValueOnce({ analysisId: 'A26', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
+        .mockReturnValueOnce(new Promise((r) => (release = r)));
+      const t = flow();
+      await press(t, 'pscan-take-photo');
+      await press(t, 'pscan-none-of-these');
+      act(() => { t.root.findAll((n) => n.props?.testID === 'pscan-to-label' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+      await press(t, 'pscan-find-by-name');
+      act(() => t.root.findAll((n) => n.props?.title === 'packagedScan.title' && typeof n.props?.onBack === 'function')[0].props.onBack());
+      expect(ids(t)).toContain('pscan-another');
+      expect(ids(t)).not.toContain('pscan-name-search');
+      expect(mockTrack).not.toHaveBeenCalledWith('food_packaged_scan_find_by_name', expect.anything());
+      await act(async () => { release({ analysisId: 'A26', state: 'REJECTED', charged: false, product: null }); await new Promise((r) => setTimeout(r, 0)); });
+      expect(ids(t)).toContain('cam-ingredient');
+    } finally {
+      flags.FLAGS.packagedLabelScan = prevFlag;
+    }
+  });
   it('Codex #339 R5: SAFE_WITH_NOTE 후보 = 스크린리더에 불명확 단서(조건 없는 safe 0) · 리본은 safe', async () => {
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
     mockPost.mockResolvedValueOnce({ analysisId: 'A25', state: 'CANDIDATES', candidates: [{ ...cand(11, 'R1'), verdict: 'SAFE_WITH_NOTE' }, { ...cand(12, 'R2'), verdict: 'SAFE' }] });

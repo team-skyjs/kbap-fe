@@ -131,22 +131,23 @@ function SearchInput({ value, onChange, onSubmit, placeholder }: { value: string
 }
 
 /** 안내 페이지(17·18·29b·39) — 시안 실측: 아트 상자 335×148 r16 #F7F8FA(카메라 36) → 제목 28 bold(위 24) → 본문 16/26 gray-700(위 18) · 아래 버튼 48 둘(간격 8) */
-export function MessagePage({ headerTitle, title, body, primary, secondary, onBack, testID }: {
+/** busy = 이 화면에서 시작한 요청(성분표 전 거절 확정) 대기 — 다른 동작·뒤로 잠금, 보조 버튼에 스피너(Codex #339) */
+export function MessagePage({ headerTitle, title, body, primary, secondary, onBack, testID, busy = false }: {
   headerTitle: string; title: string; body: string; primary: { label: string; onPress: () => void; testID: string; busy?: boolean };
-  secondary: { label: string; onPress: () => void; testID: string } | null; onBack: () => void; testID: string;
+  secondary: { label: string; onPress: () => void; testID: string } | null; onBack: () => void; testID: string; busy?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={sc.root} testID={testID}>
-      <SubHeader title={headerTitle} onBack={onBack} />
+      <SubHeader title={headerTitle} onBack={busy ? () => {} : onBack} />
       <ScrollView contentContainerStyle={sc.page}>
         <View style={sc.art}><IconCamera size={36} color="#000000" /></View>
         <Text style={sc.h1Big} accessibilityRole="header">{title}</Text>
         <Text style={sc.lead}>{body}</Text>
       </ScrollView>
       <View style={[sc.bottom, { paddingBottom: insets.bottom + 12 }]}>
-        <Btn busy={primary.busy} onPress={primary.onPress} testID={primary.testID}>{primary.label}</Btn>
-        {secondary && <Btn variant="ghost" onPress={secondary.onPress} testID={secondary.testID}>{secondary.label}</Btn>}
+        <Btn busy={primary.busy} disabled={busy} onPress={busy ? () => {} : primary.onPress} testID={primary.testID}>{primary.label}</Btn>
+        {secondary && <Btn variant="ghost" busy={busy} onPress={busy ? () => {} : secondary.onPress} testID={secondary.testID}>{secondary.label}</Btn>}
       </View>
     </View>
   );
