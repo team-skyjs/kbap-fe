@@ -105,7 +105,7 @@ export function ProductCard({ item, width, onOpen, personalized = true }: { item
     >
       <View style={card.photo}>
         {item.imageUrl && !failed ? (
-          <RemoteImage uri={item.imageUrl} style={card.image} contentFit="contain" recyclingKey={`pf-${item.id}`} onError={() => setFailed(true)} />
+          <RemoteImage uri={item.imageUrl} style={card.image} contentFit="contain" recyclingKey={`pf-${item.id}`} hideUntilLoaded onError={() => setFailed(true)} />
         ) : (
           <PackagedPlaceholder type={item.type} foodType={item.foodType} style={StyleSheet.absoluteFill} />
         )}

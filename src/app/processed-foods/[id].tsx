@@ -388,7 +388,8 @@ export function ProcessedFoodDetailScreen() {
         {/* 시안 08: 사진 335×223 r16 #F7F8FA(상품 8 안쪽 contain) · 판정 리본 22×29 좌상단 x10 y0 그림자 없음(목록 카드와 같은 배지) */}
         <View style={s.photo}>
           {d.imageUrl ? (
-            <RemoteImage uri={d.imageUrl} style={s.photoImage} contentFit="contain" recyclingKey={`pf-${d.id}`} />
+            // QA #338: 다른 제품 사진이 잠깐 비치던 것 — 상세 전용 recyclingKey + 이번 사진이 뜰 때까지 투명(판정 화면에 엉뚱한 사진 0)
+            <RemoteImage key={d.imageUrl} uri={d.imageUrl} style={s.photoImage} contentFit="contain" recyclingKey={`pf-detail-${d.id}`} hideUntilLoaded />
           ) : (
             <PackagedPlaceholder type={d.type} foodType={d.foodType} style={StyleSheet.absoluteFill} />
           )}

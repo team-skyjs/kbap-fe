@@ -263,6 +263,10 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(text(c)).not.toContain('packaged.sourceData1');
     expect(ids(c)).toContain('packaged-placeholder');
   });
+  it('QA #338: 상세 사진 = 상세 전용 recyclingKey + 로드 전 투명(다른 제품 사진 비침 0) · 사진이 바뀌면 다시 마운트', () => {
+    const src = fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8');
+    expect(src).toContain('<RemoteImage key={d.imageUrl} uri={d.imageUrl} style={s.photoImage} contentFit="contain" recyclingKey={`pf-detail-${d.id}`} hideUntilLoaded />');
+  });
   it('"Needs checking"(unmapped) 경로 0 · 성분표 직접 확인 버튼 0(결정 4) · 상세 진입 계측 1회', () => {
     const t = detail();
     expect(ids(t).some((i) => i.startsWith('pf-unmapped'))).toBe(false);

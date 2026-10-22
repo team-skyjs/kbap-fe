@@ -19,3 +19,17 @@ it('기본 = Shimmer · placeholder none = 로딩 중에도 Shimmer 0', () => {
   expect(shimmers(<RemoteImage uri="https://cdn/a.jpg" />)).toBe(1);
   expect(shimmers(<RemoteImage uri="https://cdn/a.jpg" placeholder="none" />)).toBe(0);
 });
+
+it('KB-865(QA #338 다른 제품 사진 비침): hideUntilLoaded = 이번 소스 onLoad 전까지 이미지 투명 → 로드 뒤 표시 · 기본은 처음부터 보임', () => {
+  const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+  let t!: renderer.ReactTestRenderer;
+  act(() => { t = renderer.create(<RemoteImage uri="https://cdn/a.jpg" hideUntilLoaded />); });
+  const img = () => t.root.findAll((n) => n.props?.source?.uri === 'https://cdn/a.jpg' && typeof n.type === 'string')[0];
+  expect(StyleSheet.flatten(img().props.style).opacity).toBe(0);
+  act(() => img().props.onLoad());
+  expect(StyleSheet.flatten(img().props.style).opacity).toBeUndefined();
+  let d!: renderer.ReactTestRenderer;
+  act(() => { d = renderer.create(<RemoteImage uri="https://cdn/b.jpg" />); });
+  const plain = d.root.findAll((n) => n.props?.source?.uri === 'https://cdn/b.jpg' && typeof n.type === 'string')[0];
+  expect(StyleSheet.flatten(plain.props.style).opacity).toBeUndefined();
+});
