@@ -354,7 +354,8 @@ export function ProcessedFoodDetailScreen() {
     // G = 비회원 · M0 = 회피 0개 회원 · M = 회피 1개 이상(서버 프로필이 정본 — 로컬 판별 0)
     const m0 = !guest && !!me && me.restrictions.length === 0;
     const member = !guest && !!me && me.restrictions.length > 0;
-    const risk = d.verdict ? VERDICT_RISK[d.verdict] : null;
+    // 리본 = 회피 1개 이상 회원만(Codex #338 P1: 회피를 비운 직후 프로필이 먼저 갱신되면 옛 설정의 판정 캐시가 남아 있다 — M0·비회원 화면엔 판정 0)
+    const risk = member && d.verdict ? VERDICT_RISK[d.verdict] : null;
     const verdictText = member && (d.verdict === 'AVOID' || d.verdict === 'CAUTION' || d.verdict === 'SAFE_WITH_NOTE');
     body = (
       <ScrollView

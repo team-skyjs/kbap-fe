@@ -185,6 +185,12 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(text(bare)).toContain('packaged.majorUnavailable');
     expect(text(bare)).not.toContain('packaged.majorNoneFound');
   });
+  it('Codex #338 P1: 리본은 회피 1개 이상 회원만 — 회피를 비운 직후(M0)·비회원은 옛 판정 캐시(SAFE)가 남아 있어도 리본 0', () => {
+    mockGuest = false; mockMe = { id: '41', restrictions: [] };
+    expect(ids(detail({ verdict: 'SAFE' })).some((i) => i.startsWith('badge-'))).toBe(false);
+    mockGuest = true; mockMe = undefined;
+    expect(ids(detail({ verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: [] }] })).some((i) => i.startsWith('badge-'))).toBe(false);
+  });
   it('주요 알레르기 0개 = "없음" 단정 금지 — 판독 근거 없음(NONE) = 확인 불가 · 있으면 "찾지 못함"', () => {
     expect(text(detail({ majorAllergens: [], labelSource: 'NONE' }))).toContain('packaged.majorUnavailable');
     expect(text(detail({ majorAllergens: [] }))).toContain('packaged.majorNoneFound');
@@ -394,6 +400,7 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
   };
 
   it('둘러보기 성공 = Popular picks · 유형 칩 · 카드(판정 리본·한국어명·평점) — 서버 필드가 없으면 그 줄만 숨김', async () => {
+    mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] }; // 리본 = 회피 1개 이상 회원
     mockGet.mockResolvedValueOnce(V4());
     const t = await mount();
     expect(text(t)).toContain('packaged.popularPicks');
@@ -514,7 +521,15 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     expect(mockTrack).toHaveBeenLastCalledWith('food_packaged_type_select', { type: 'all' });
   });
 
+  it('Codex #338 P1: 목록 리본도 회피 1개 이상 회원만 — 회피 0개·비회원은 응답에 verdict가 남아 있어도 리본 0', async () => {
+    mockGuest = false; mockMe = { id: '41', restrictions: [] };
+    mockGet.mockResolvedValueOnce(V4());
+    const t = await mount();
+    expect(ids(t).some((i) => i.startsWith('badge-'))).toBe(false);
+  });
+
   it('Codex #336: SAFE_WITH_NOTE = safe 리본 + 스크린리더 단서(내용 불명) · 그냥 SAFE엔 단서 없음', async () => {
+    mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] };
     mockGet.mockResolvedValueOnce(V4([{ id: 10, productName: 'Choco Pie', imageUrl: null, verdict: 'SAFE_WITH_NOTE' }]));
     const t = await mount();
     const label = (id: string) => t.root.findAll((n) => n.props?.testID === `packaged-item-${id}` && typeof n.type === 'string')[0].props.accessibilityLabel as string;
