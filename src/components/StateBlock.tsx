@@ -56,6 +56,24 @@ export function ScreenCenterFill({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** KB-865(시안 36·37 = 공통 오류 화면 4003:12563 재사용): 재시도가 아닌 상태(없음·생산종료) — 같은 골격, 제목·본문·버튼만 호출측 문구 */
+export function MessageErrorBlock({ title, body, actionLabel, onAction, testID }: { title: string; body: string; actionLabel: string; onAction: () => void; testID: string }) {
+  return (
+    <View style={styles.errWrap} testID={testID}>
+      <View style={styles.errMark}>
+        <Svg width={18} height={18} viewBox="0 0 22 22">
+          <RiskGlyph state="caution" fill={C.primary} />
+        </Svg>
+      </View>
+      <Text style={styles.errTitle}>{title}</Text>
+      <Text style={styles.errBody}>{body}</Text>
+      <View style={{ alignSelf: 'stretch', marginTop: 10 }}>
+        <Btn testID={`${testID}-action`} variant="ghost" onPress={onAction}>{actionLabel}</Btn>
+      </View>
+    </View>
+  );
+}
+
 /** Icon tint color for each tone (pass to the icon's color prop). */
 const styles = StyleSheet.create({
   root: { alignItems: 'center', gap: 11, paddingHorizontal: 24, paddingVertical: 24, maxWidth: 320, alignSelf: 'center' },

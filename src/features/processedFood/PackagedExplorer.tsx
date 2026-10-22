@@ -17,12 +17,13 @@ import { Btn, Chip, Input, IconSearch, IconClose, IconCamera, IconTabFood, Overa
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { useMe } from '@/lib/data/useMe';
 import { RemoteImage } from '@/components/RemoteImage';
 import { Shimmer } from '@/components/Skeleton';
 import { color as C, font } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
 import { browseUnsupported, useProcessedSearch } from '@/lib/data/useProcessedFoods';
-import { VERDICT_RISK, type PackagedType, type ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
+import { PACKAGED_TYPES, packagedTypeKey, VERDICT_RISK, type PackagedType, type ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
 
 export type FoodSegment = 'dishes' | 'packaged';
 
@@ -54,11 +55,11 @@ export function FoodSegmentRow({ value, onChange }: { value: FoodSegment; onChan
 /** 유형 플레이스홀더(시안: Ramen = soup 아이콘, 나머지 = camera 아이콘 + 유형 글자) — 목록 썸네일·상세 사진 자리 공용. */
 export function PackagedPlaceholder({ type, foodType, style }: { type: PackagedType | null; foodType: string | null; style: object }) {
   const { t } = useTranslation();
-  const label = type ? t(`packaged.type.${type}`) : foodType;
+  const label = type ? t(packagedTypeKey(type)) : foodType;
   return (
     <View style={[ph.box, style]} testID="packaged-placeholder">
       {/* 시안 07(12371:70519) 실측: 바탕 #F2F3F6 · 라면 그릇 #D1D3D8 · 그 밖 카메라 #000000 · 유형 글자 #6A6F7C */}
-      {type === 'ramen' ? <IconTabFood size={24} color={C.inkDisabled} /> : <IconCamera size={24} color="#000000" />}
+      {type === 'RAMEN' ? <IconTabFood size={24} color={C.inkDisabled} /> : <IconCamera size={24} color="#000000" />}
       {!!label && <Text style={ph.label} numberOfLines={1}>{label}</Text>}
     </View>
   );
@@ -66,7 +67,7 @@ export function PackagedPlaceholder({ type, foodType, style }: { type: PackagedT
 
 export function ProductRow({ item, onOpen }: { item: ProcessedFoodSummary; onOpen: () => void }) {
   const { t } = useTranslation();
-  const typeLabel = item.type ? t(`packaged.type.${item.type}`) : item.foodType;
+  const typeLabel = item.type ? t(packagedTypeKey(item.type)) : item.foodType;
   return (
     <Pressable style={st.row} onPress={onOpen} accessibilityRole="button" accessibilityLabel={[item.name, item.maker].filter(Boolean).join(', ')} testID={`packaged-item-${item.id}`} uiTarget="packaged-item">
       {item.imageUrl ? (
@@ -83,14 +84,14 @@ export function ProductRow({ item, onOpen }: { item: ProcessedFoodSummary; onOpe
   );
 }
 
-const TYPES: PackagedType[] = ['snacks', 'ramen', 'drinks', 'bread']; // 시안 01 칩 순서(All 다음)
 
 /** v4 상품 카드(시안 01 12371:70305 — 2열 161.5 · 사진 161.5×176 r12 #F7F8FA, 상품은 8 안쪽 contain · 판정 리본 22×29 좌상단 x10 y0 그림자 없음
  *  → 제조사 → 표시명 → 한국어명 → 빈 별 18 + "4.7 (12)"). 판정·한국어명·평점은 서버 v4 필드가 있을 때만(없으면 줄째 숨김). */
-export function ProductCard({ item, width, onOpen }: { item: ProcessedFoodSummary; width: number; onOpen: () => void }) {
+export function ProductCard({ item, width, onOpen, personalized = true }: { item: ProcessedFoodSummary; width: number; onOpen: () => void; personalized?: boolean }) {
   const { t } = useTranslation();
   const [failed, setFailed] = React.useState(false);
-  const risk = item.verdict ? VERDICT_RISK[item.verdict] : null;
+  // 리본 = 회피 1개 이상 회원만(Codex #338 P1 — 회피를 비운 직후 남은 판정 캐시를 그리지 않는다)
+  const risk = personalized && item.verdict ? VERDICT_RISK[item.verdict] : null;
   const rating = item.rating ? `${item.rating.average.toFixed(1)} (${item.rating.count})` : null; // 스크린리더 라벨용
   return (
     <Pressable
@@ -104,15 +105,16 @@ export function ProductCard({ item, width, onOpen }: { item: ProcessedFoodSummar
     >
       <View style={card.photo}>
         {item.imageUrl && !failed ? (
-          <RemoteImage uri={item.imageUrl} style={card.image} contentFit="contain" recyclingKey={`pf-${item.id}`} onError={() => setFailed(true)} />
+          <RemoteImage uri={item.imageUrl} style={card.image} contentFit="contain" recyclingKey={`pf-${item.id}`} hideUntilLoaded onError={() => setFailed(true)} />
         ) : (
           <PackagedPlaceholder type={item.type} foodType={item.foodType} style={StyleSheet.absoluteFill} />
         )}
         {risk && <View style={card.badge}><RiskBadge state={risk} size={22} flat testID={`packaged-verdict-${item.id}`} /></View>}
       </View>
       {!!item.maker && <Text style={card.maker} numberOfLines={1}>{item.maker}</Text>}
-      <Text style={card.name} numberOfLines={2}>{item.name}</Text>
-      {!!item.nameKo && <Text style={card.nameKo} numberOfLines={1}>{item.nameKo}</Text>}
+      {/* QA AQ(큰 글씨): 한국어 이름이 글자 단위로 끊겨 '우'만 다음 줄로 — iOS는 어절 단위 줄바꿈(Android는 기본 단어 단위) */}
+      <Text style={card.name} numberOfLines={2} lineBreakStrategyIOS="hangul-word">{item.name}</Text>
+      {!!item.nameKo && <Text style={card.nameKo} numberOfLines={1} lineBreakStrategyIOS="hangul-word">{item.nameKo}</Text>}
       {item.rating && (
         <View testID={`packaged-rating-${item.id}`}>
           <OverallRating average={item.rating.average} count={item.rating.count} style={card.rating} />
@@ -148,6 +150,8 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   const [searchSeq, setSearchSeq] = React.useState(0); // 제출 회차 — 같은 검색어를 다시 제출해도 1회로 센다(Codex #308 R2)
   const [gate, setGate] = React.useState(false);
   const guest = useIsGuest();
+  const { data: me } = useMe();
+  const personalized = !guest && !!me && me.restrictions.length > 0;
   const inputRef = React.useRef<React.ComponentRef<typeof Input>>(null);
   // v4 판별 = 검색어 없는 둘러보기 1페이지의 성패(구서버 400). 확인 전·구서버 = 유형 칩 없음(구서버는 type을 무시해 거른 척이 된다)
   const browse = useProcessedSearch('');
@@ -175,7 +179,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   const changeSearch = () => { clear(); inputRef.current?.focus(); };
   const pickType = (next: PackagedType | null) => {
     setType(next);
-    track(EVENTS.food_packaged_type_select, { type: next ?? 'all' });
+    track(EVENTS.food_packaged_type_select, { type: next ? next.toLowerCase() : 'all' }); // 계측 값은 소문자 유지(1단계와 같은 값)
   };
 
   const header = (
@@ -205,7 +209,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
       {v4 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.chips} contentContainerStyle={st.chipsRow} testID="packaged-types">
           <Chip label={t('food.categories.all')} selected={type == null} onPress={() => pickType(null)} testID="packaged-type-all" />
-          {TYPES.map((k) => <Chip key={k} label={t(`packaged.type.${k}`)} selected={type === k} onPress={() => pickType(k)} testID={`packaged-type-${k}`} />)}
+          {PACKAGED_TYPES.map((k) => <Chip key={k} label={t(packagedTypeKey(k))} selected={type === k} onPress={() => pickType(k)} testID={`packaged-type-${k.toLowerCase()}`} />)}
         </ScrollView>
       )}
       {!legacyGuide && (items.length > 0 || q.isPending) && <Text style={st.heading} accessibilityRole="header">{t(term ? 'packaged.searchResults' : 'packaged.popularPicks')}</Text>}
@@ -253,7 +257,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
       numColumns={2}
       columnWrapperStyle={st.columns}
       keyExtractor={(it: ProcessedFoodSummary) => it.id}
-      renderItem={({ item }: { item: ProcessedFoodSummary }) => <ProductCard item={item} width={cardW} onOpen={() => router.push(`/processed-foods/${item.id}` as Href)} />}
+      renderItem={({ item }: { item: ProcessedFoodSummary }) => <ProductCard item={item} width={cardW} personalized={personalized} onOpen={() => router.push(`/processed-foods/${item.id}` as Href)} />}
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       ListFooterComponent={
@@ -340,7 +344,7 @@ const st = StyleSheet.create({
   noMatchBody: { fontFamily: font.body, fontSize: 16, lineHeight: 26, color: C.ink2, marginTop: 18 },
   noMatchActions: { gap: 8, marginTop: 24 },
   // 시안 empty(12338:37301): 유형 아트 335×150 r8 → 제목 → 본문
-  state: { paddingHorizontal: 20, gap: 16 },
+  state: { paddingHorizontal: 20, paddingTop: 16, gap: 16 }, // QA(10/22): 검색창과 안내 상자가 붙어 있었다 — 시안 04 아트 상자와 같은 16
   stateArt: { height: 150, borderRadius: 8 },
   stateTitle: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 28, color: C.ink, marginTop: 8 },
   stateBody: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink },

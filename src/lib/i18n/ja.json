@@ -438,7 +438,9 @@
     "extrasSpeed": "提供スピード",
     "extrasService": "接客",
     "extrasTaste": "味",
-    "writeSoon": "加工食品のレビューはまもなく投稿できるようになります。書いた内容はこの画面に残っています。"
+    "writeSoon": "加工食品のレビューはまもなく投稿できるようになります。書いた内容はこの画面に残っています。",
+    "spiciness": "辛さ",
+    "sweetness": "甘さ"
   },
   "translation": {
     "showTranslation": "翻訳を表示",
@@ -1224,8 +1226,6 @@
     "foundOnLabel": "アレルギー表示: {{evidence}}",
     "foundInIngredients": "原材料名: {{evidence}}",
     "detectedNoEvidence": "原材料データで見つかりました。",
-    "needsChecking": "要確認",
-    "unmappedBody": "「{{text}}」は照合できませんでした。直接確認してください。",
     "notVerified": "未確認",
     "notVerifiedName": "未確認: {{name}}",
     "notVerifiedBody": "一致しないことは食べられることを意味しません。パッケージを確認してください。",
@@ -1254,9 +1254,35 @@
       "snacks": "お菓子",
       "ramen": "ラーメン",
       "bread": "パン",
-      "drinks": "飲料"
+      "drinks": "飲料",
+      "ice_cream": "アイスクリーム",
+      "dairy": "乳製品",
+      "meals": "食事",
+      "sauces": "ソース"
     },
-    "mayContainTitle": "含む可能性あり(同じ製造施設、混入)"
+    "mayContainTitle": "含む可能性あり(同じ製造施設、混入)",
+    "ingredientsHeading": "原材料",
+    "seeDetail": "詳しく見る",
+    "seeLess": "閉じる",
+    "ingredientsAndSource": "原材料と出典",
+    "yourAvoidList": "避けたい食材",
+    "noAvoidMatches": "避けたい食材に一致するものは見つかりませんでした。",
+    "translationLabel": "日本語訳",
+    "sourceTitle": "出典",
+    "sourceC002": "データ: 食品医薬品安全処 食品安全ナラ 品目製造報告",
+    "avoidMatchTitle": "避けたい食材が含まれています",
+    "avoidMatchBody": "原材料またはアレルギー表示で見つかりました: {{names}}。",
+    "crossContactTitle": "混入の可能性",
+    "crossContactBody": "同じ製造施設で{{names}}が混入する可能性があると表示されています。",
+    "unclearTitle": "内容が不明な原材料",
+    "unclearBody": "詳しい記載がない原材料: {{items}}。避けたい食材との一致は見つかりませんでした。",
+    "majorAllergensTitle": "主要アレルゲン",
+    "majorUnavailable": "この商品のアレルギー情報は確認できません。",
+    "majorNoneFound": "原材料と表示から主要アレルゲンは見つかりませんでした。",
+    "containsNames": "{{names}}を含む",
+    "mayContainNames": "{{names}}混入の可能性",
+    "signInToPersonalize": "ログインして自分向けに見る",
+    "setAvoidIngredients": "避けたい食材を設定"
   },
   "scanMode": {
     "menu": "メニュー",

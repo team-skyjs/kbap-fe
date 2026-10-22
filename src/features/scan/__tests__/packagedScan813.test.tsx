@@ -40,6 +40,7 @@ jest.mock('@/lib/api/client', () => {
   return { api: { post: (...a: unknown[]) => mockPost(...a), get: jest.fn() }, apiLang: () => 'en', ApiError: MockApiError };
 });
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '41', restrictions: [{ code: 'SHRIMP' }] } }) })); // KB-865: 판정 캐시 키 = 회피 코드 집합
 const mockOcr = jest.fn();
 jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockOcr(...a) }));
 let mockGranted = true;
@@ -133,7 +134,7 @@ describe('흐름', () => {
     expect(mockPost.mock.calls[1]).toEqual(['/api/processed-foods/scan/confirm', { analysisId: 'A1', reportNo: 'R2' }, { headers: { 'X-API-Version': '3.2' } }]);
     expect(mockPush).toHaveBeenCalledWith('/processed-foods/11?scan=1&charged=1');
     expect(inv).toHaveBeenCalledWith({ queryKey: ['me'] });
-    expect(qc.getQueryData(['processedFoods', 'detail', '11', 'member'])).toMatchObject({ id: '11', name: '새우깡' });
+    expect(qc.getQueryData(['processedFoods', 'detail', '11', 'en|member:SHRIMP'])).toMatchObject({ id: '11', name: '새우깡' });
   });
   it('해당 없음 = 확정(reportNo null) → REJECTED → 성분표 안내(같은 분석 문구 O · 촬영 버튼 비활성 · 곧 지원) · 차감 0', async () => {
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
@@ -219,7 +220,7 @@ describe('흐름', () => {
   });
   it('상세: charged=u(차감 여부 미상) = 단정 없이 "남은 횟수는 홈에서"', () => {
     const { adaptProcessedDetail } = jest.requireActual('@/lib/api/processedFoodAdapter');
-    qc.setQueryData(['processedFoods', 'detail', '11', 'member'], adaptProcessedDetail(DETAIL));
+    qc.setQueryData(['processedFoods', 'detail', '11', 'en|member:SHRIMP'], adaptProcessedDetail(DETAIL));
     mockParams = { id: '11', scan: '1', charged: 'u' };
     const t = render(<Detail />);
     expect(t.root.findAll((n) => n.props?.testID === 'pf-scan-charge')[0].props.children).toBe('packagedScan.chargeSeeHome');
@@ -282,7 +283,7 @@ describe('모드 탭·상세 띠·배선', () => {
   });
   it('상세: 스캔에서 온 경우만 "스캔 결과" 띠 · charged=1 = 1회 사용(불꽃) · charged=0 = 사용 안 됨(꺼진 불꽃)', () => {
     const { adaptProcessedDetail } = jest.requireActual('@/lib/api/processedFoodAdapter');
-    qc.setQueryData(['processedFoods', 'detail', '11', 'member'], adaptProcessedDetail(DETAIL));
+    qc.setQueryData(['processedFoods', 'detail', '11', 'en|member:SHRIMP'], adaptProcessedDetail(DETAIL));
     mockParams = { id: '11', scan: '1', charged: '1' };
     let t = render(<Detail />);
     expect(ids(t)).toContain('pf-scan-result');

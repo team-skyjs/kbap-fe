@@ -483,7 +483,9 @@
     "extrasSpeed": "음식 나오는 속도",
     "extrasService": "친절도",
     "extrasTaste": "맛",
-    "writeSoon": "가공식품 리뷰는 곧 열려요. 작성한 내용은 이 화면에 그대로 있어요."
+    "writeSoon": "가공식품 리뷰는 곧 열려요. 작성한 내용은 이 화면에 그대로 있어요.",
+    "spiciness": "맵기",
+    "sweetness": "당도"
   },
   "translation": {
     "showTranslation": "번역 보기",
@@ -1224,8 +1226,6 @@
     "foundOnLabel": "알레르기 표시: {{evidence}}",
     "foundInIngredients": "원재료명: {{evidence}}",
     "detectedNoEvidence": "원재료 데이터에 들어 있어요.",
-    "needsChecking": "확인 필요",
-    "unmappedBody": "\"{{text}}\"은(는) 확인하지 못했어요. 직접 확인하세요.",
     "notVerified": "미확인",
     "notVerifiedName": "미확인: {{name}}",
     "notVerifiedBody": "찾지 못했다고 먹어도 된다는 뜻은 아니에요. 포장을 확인하세요.",
@@ -1254,9 +1254,35 @@
       "snacks": "과자",
       "ramen": "라면",
       "bread": "빵",
-      "drinks": "음료"
+      "drinks": "음료",
+      "ice_cream": "아이스크림",
+      "dairy": "유제품",
+      "meals": "간편식",
+      "sauces": "소스"
     },
-    "mayContainTitle": "함유 가능(같은 제조시설, 혼입)"
+    "mayContainTitle": "함유 가능(같은 제조시설, 혼입)",
+    "ingredientsHeading": "원재료",
+    "seeDetail": "자세히 보기",
+    "seeLess": "접기",
+    "ingredientsAndSource": "원재료와 출처",
+    "yourAvoidList": "내 피하는 재료",
+    "noAvoidMatches": "지금 피하는 재료와 일치하는 것이 없어요.",
+    "translationLabel": "번역",
+    "sourceTitle": "출처",
+    "sourceC002": "자료: 식품의약품안전처 식품안전나라 품목제조보고",
+    "avoidMatchTitle": "피하는 재료가 있어요",
+    "avoidMatchBody": "원재료나 알레르기 표시에 있어요: {{names}}.",
+    "crossContactTitle": "혼입 가능성",
+    "crossContactBody": "같은 제조시설에서 {{names}}이(가) 섞일 수 있다는 표기가 있어요.",
+    "unclearTitle": "내용이 불분명한 원재료",
+    "unclearBody": "자세한 내용이 없는 원재료: {{items}}. 피하는 재료와 일치하는 것은 없어요.",
+    "majorAllergensTitle": "주요 알레르기 성분",
+    "majorUnavailable": "이 제품은 알레르기 정보를 확인할 수 없어요.",
+    "majorNoneFound": "원재료와 표시에 주요 알레르기 성분 표기가 없어요.",
+    "containsNames": "{{names}} 함유",
+    "mayContainNames": "{{names}} 혼입 가능",
+    "signInToPersonalize": "로그인하고 내 기준으로 보기",
+    "setAvoidIngredients": "피하는 재료 설정하기"
   },
   "scanMode": {
     "menu": "메뉴판",

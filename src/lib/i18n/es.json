@@ -438,7 +438,9 @@
     "extrasSpeed": "Rapidez",
     "extrasService": "Atención",
     "extrasTaste": "Sabor",
-    "writeSoon": "Pronto podrás reseñar alimentos envasados. Lo que escribiste sigue en esta pantalla."
+    "writeSoon": "Pronto podrás reseñar alimentos envasados. Lo que escribiste sigue en esta pantalla.",
+    "spiciness": "Picante",
+    "sweetness": "Dulzor"
   },
   "translation": {
     "showTranslation": "Mostrar traducción",
@@ -1224,8 +1226,6 @@
     "foundOnLabel": "En la etiqueta de alérgenos: {{evidence}}",
     "foundInIngredients": "En la lista de ingredientes: {{evidence}}",
     "detectedNoEvidence": "Encontrado en los datos de ingredientes.",
-    "needsChecking": "Revisar",
-    "unmappedBody": "No se pudo identificar \"{{text}}\". Revísalo tú mismo.",
     "notVerified": "Sin verificar",
     "notVerifiedName": "Sin verificar: {{name}}",
     "notVerifiedBody": "Que no haya coincidencia no confirma que sea apto. Revisa el envase.",
@@ -1254,9 +1254,35 @@
       "snacks": "Snacks",
       "ramen": "Ramen",
       "bread": "Pan",
-      "drinks": "Bebidas"
+      "drinks": "Bebidas",
+      "ice_cream": "Helados",
+      "dairy": "Lácteos",
+      "meals": "Comidas",
+      "sauces": "Salsas"
     },
-    "mayContainTitle": "Puede contener (misma planta, contacto cruzado)"
+    "mayContainTitle": "Puede contener (misma planta, contacto cruzado)",
+    "ingredientsHeading": "Ingredientes",
+    "seeDetail": "Ver detalle",
+    "seeLess": "Ver menos",
+    "ingredientsAndSource": "Ingredientes y fuente",
+    "yourAvoidList": "Tu lista para evitar",
+    "noAvoidMatches": "No hay coincidencias con tu lista para evitar actual.",
+    "translationLabel": "Traducción al español",
+    "sourceTitle": "Fuente",
+    "sourceC002": "Datos: Ministerio de Seguridad de Alimentos y Medicamentos, informes de fabricación de Food Safety Korea",
+    "avoidMatchTitle": "Coincidencias con tu lista",
+    "avoidMatchBody": "Aparece en los ingredientes o en la declaración de alérgenos: {{names}}.",
+    "crossContactTitle": "Posible contaminación cruzada",
+    "crossContactBody": "La etiqueta indica que puede contener {{names}} de la misma planta.",
+    "unclearTitle": "Ingredientes no especificados",
+    "unclearBody": "Sin descripción detallada: {{items}}. No hay coincidencias con tu lista para evitar.",
+    "majorAllergensTitle": "Alérgenos principales",
+    "majorUnavailable": "No hay información de alérgenos para este producto.",
+    "majorNoneFound": "No se encontraron alérgenos principales en los ingredientes ni en la etiqueta.",
+    "containsNames": "Contiene {{names}}",
+    "mayContainNames": "Puede contener {{names}}",
+    "signInToPersonalize": "Inicia sesión para personalizar",
+    "setAvoidIngredients": "Elegir ingredientes a evitar"
   },
   "scanMode": {
     "menu": "Menú",

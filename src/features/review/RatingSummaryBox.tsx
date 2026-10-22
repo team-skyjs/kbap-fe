@@ -39,9 +39,12 @@ export function RatingSummaryBox({
   overall,
   sameNat = false,
   axes,
+  axisLabels,
   t,
 }: {
-  overall: RatingAggregate;
+  overall: Pick<RatingAggregate, 'average' | 'count'>;
+  /** KB-865: 가공식품 = 같은 박스, 축 라벨만 Spiciness·Sweetness(값은 speed·service 자리에 맵기·당도) */
+  axisLabels?: { speed: string; service: string };
   /** P-360: KR only ON — 라벨 = SAME NATIONALITY(값은 호출측이 sameNationality 전달) */
   sameNat?: boolean;
   axes: AxisAverages;
@@ -49,8 +52,8 @@ export function RatingSummaryBox({
 }) {
   const bars: [string, string, number][] = [
     ['taste', t('review.extrasTaste'), axes.taste],
-    ['speed', t('review.extrasSpeed'), axes.speed],
-    ['service', t('review.extrasService'), axes.service],
+    ['speed', axisLabels?.speed ?? t('review.extrasSpeed'), axes.speed],
+    ['service', axisLabels?.service ?? t('review.extrasService'), axes.service],
   ].flatMap(([key, label, v]) => (v != null ? [[key as string, label as string, v as number]] : []));
   const max = Math.max(...bars.map((b) => b[2]), 0);
   return (

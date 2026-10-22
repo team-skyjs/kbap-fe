@@ -7,7 +7,7 @@
  */
 import { api, ApiError } from '../api/client';
 import { adaptLabelScan, adaptScanConfirm, adaptScanName, type LabelScanResult, type LabelScanWire, type ScanConfirmResult, type ScanConfirmWire, type ScanNameResult, type ScanNameWire } from '../api/processedFoodAdapter';
-import { PROCESSED_FOOD_API_VERSION } from './useProcessedFoods';
+import { PROCESSED_FOOD_API_VERSION } from './processedFoodApiVersion';
 
 export const OCR_TEXT_MAX = 2000;
 const headers = { headers: { 'X-API-Version': PROCESSED_FOOD_API_VERSION } };
