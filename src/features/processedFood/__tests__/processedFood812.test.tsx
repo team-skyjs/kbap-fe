@@ -174,6 +174,17 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     press(t, 'pf-set-avoid');
     expect(mockPush).toHaveBeenCalledWith('/profile/restrictions');
   });
+  it('Codex #338 P1: majorAllergens 필드 없음(구서버·부분 배포) = 모름 — 검출 코드를 함유로(보수) · 검출도 없으면 "확인할 수 없음"(표기 없음 0)', () => {
+    const wire = { ...V4 } as Partial<DetailWire>;
+    delete wire.majorAllergens;
+    expect(adaptProcessedDetail(wire as DetailWire).majorAllergens).toBeNull();
+    const withDet = detail({ majorAllergens: undefined });
+    expect(text(withDet)).toContain('packaged.containsNames');
+    expect(text(withDet)).not.toContain('packaged.majorNoneFound');
+    const bare = detail({ majorAllergens: undefined, detections: [] });
+    expect(text(bare)).toContain('packaged.majorUnavailable');
+    expect(text(bare)).not.toContain('packaged.majorNoneFound');
+  });
   it('주요 알레르기 0개 = "없음" 단정 금지 — 판독 근거 없음(NONE) = 확인 불가 · 있으면 "찾지 못함"', () => {
     expect(text(detail({ majorAllergens: [], labelSource: 'NONE' }))).toContain('packaged.majorUnavailable');
     expect(text(detail({ majorAllergens: [] }))).toContain('packaged.majorNoneFound');

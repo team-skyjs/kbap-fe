@@ -259,15 +259,18 @@ function VerdictText({ d }: { d: ProcessedFoodDetail }) {
 /** 비회원·회피 0개(시안 12·13): 주요 알레르기(함유) + 혼입 가능(#457 mayContain) + 가입·설정 유도 */
 function MajorAllergens({ d, guest, onAction }: { d: ProcessedFoodDetail; guest: boolean; onAction: () => void }) {
   const { t } = useTranslation();
-  const none = d.majorAllergens.length === 0;
+  // 필드 없음(null) = 모름 → 보수적 폴백: 검출(detections) 코드를 함유로 · 그것도 없으면 "확인할 수 없음"(없음 단정 0, Codex #338 P1)
+  const contains = d.majorAllergens ?? (d.detections.length ? [...new Set(d.detections.map((x) => x.code))] : null);
+  const text =
+    contains == null ? t('packaged.majorUnavailable')
+    : contains.length > 0 ? t('packaged.containsNames', { names: namesOf(contains) })
+    : t(d.labelSource === 'NONE' ? 'packaged.majorUnavailable' : 'packaged.majorNoneFound');
   return (
     <View style={s.block} testID="pf-major">
       <Text style={s.h2}>{t('packaged.majorAllergensTitle')}</Text>
       <View>
         {/* 비어 있어도 "없음" 단정 금지 — 판독 근거가 없으면 확인 불가, 있으면 "찾지 못함" */}
-        <Text style={s.body} testID="pf-major-contains">
-          {none ? t(d.labelSource === 'NONE' ? 'packaged.majorUnavailable' : 'packaged.majorNoneFound') : t('packaged.containsNames', { names: namesOf(d.majorAllergens) })}
-        </Text>
+        <Text style={s.body} testID="pf-major-contains">{text}</Text>
         {d.mayContain.length > 0 && (
           <Text style={s.body} testID="pf-major-may">{t('packaged.mayContainNames', { names: namesOf(d.mayContain.map((m) => m.code)) })}</Text>
         )}

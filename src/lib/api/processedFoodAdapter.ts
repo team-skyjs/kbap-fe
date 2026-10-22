@@ -55,8 +55,8 @@ export type ProcessedFoodDetail = ProcessedFoodSummary & {
   mayContain: ProcessedMayContain[];
   /** 내용 불명 원재료(서버 사전) — 한국어 원문 */
   unclearIngredients: string[];
-  /** 비회원·회피 0개: 한국 표시 의무 주요 알레르기 중 포함된 코드 */
-  majorAllergens: string[];
+  /** 비회원·회피 0개: 한국 표시 의무 주요 알레르기 중 포함된 코드. **필드 없음(구서버·부분 배포) = null = 모름** — 빈 배열(서버가 확인한 0)과 구별(Codex #338 P1) */
+  majorAllergens: string[] | null;
   /** 원재료 — 번역(#462, 요청 언어) 없으면 null(원문만). 원문 = rawMaterials */
   ingredients: { translated: string | null; original: string | null };
   /** 알레르기 표시란 — 번역 + 원문(DECLARED일 때만) */
@@ -189,7 +189,7 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     mayContainMatches: adaptMatches(w.mayContainMatches),
     mayContain: (w.mayContain ?? []).map((m) => ({ code: m.code, evidence: m.evidence })),
     unclearIngredients: (w.unclearIngredients ?? []).map((u) => u.trim()).filter(Boolean),
-    majorAllergens: w.majorAllergens ?? [],
+    majorAllergens: w.majorAllergens == null ? null : w.majorAllergens,
     // #462 전 = 원문만(번역 null). 원문은 서버 ingredients.original → 없으면 rawMaterials
     ingredients: { translated: blankToNull(w.ingredients?.translated), original: blankToNull(w.ingredients?.original) ?? blankToNull(w.rawMaterials) },
     allergenStatement: allergens ? { translated: blankToNull(w.allergenStatement?.translated), original: allergens } : null,
