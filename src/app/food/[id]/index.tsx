@@ -125,7 +125,10 @@ export default function FoodDetailScreen() {
   // P-139: 플로팅 헤더 — 스크롤 임계 통과 시 솔리드+타이틀 페이드인
   const [solid, setSolid] = useState(false);
   // KB-851 → KB-871: 하단 리뷰 버튼 영역 — 아래로 스크롤 = 숨김 · 위로·제스처 끝 멈춤·맨 위/아래 = 표시 · 한 제스처 안 전환 1회 · K-pop 카드는 버튼 자리와 겹칠 때만 숨김
-  const pill = useScrollAwarePill();
+  // KB-871 QA AP: 겹침 대상(K-pop 카드 캐시 · 리뷰 0 본문 상자)이 있으면 측정 전까지 버튼을 애니메이션 없이 숨겨 둔다(진입 번쩍임 0)
+  const idolExpected = !!useIdolPickVideo(id ?? '');
+  const emptyCtaExpected = !!food && food.isRegistered && FLAGS.reviewsEnabled && !isGuest && !food.reviewSummaryMissing && food.overall.count === 0;
+  const pill = useScrollAwarePill({ card: idolExpected, emptyCta: emptyCtaExpected });
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setSolid(e.nativeEvent.contentOffset.y > HEADER_SOLID_Y);
     pill.onScroll(e);
@@ -226,6 +229,7 @@ export default function FoodDetailScreen() {
                 router={router}
                 id={id ?? ''}
                 onIdolLayout={pill.onCardLayout}
+                onEmptyCtaLayout={pill.onEmptyCtaLayout}
               />
             ) : (
               <View style={styles.body}>
@@ -241,6 +245,7 @@ export default function FoodDetailScreen() {
       {showBottomBar && (
         <RegisteredBottomBar
           shown={pill.shown}
+          ready={pill.ready}
           bottom={pillBottom}
           guest={isGuest}
           scanEntry={src === 'scan'}
@@ -300,6 +305,7 @@ const ING_CHIPS: IngChip[] = ['all', 'safe', 'danger', 'caution'];
 
 function RegisteredBottomBar({
   shown,
+  ready = true,
   bottom,
   t,
   onWrite,
@@ -309,6 +315,8 @@ function RegisteredBottomBar({
 }: {
   /** 표시 여부(useScrollAwarePill) — 숨김 = 아래로 미끄러지며 투명(스크린리더 포커스는 유지) */
   shown: boolean;
+  /** 첫 측정 전 = 애니메이션 없이 숨김(KB-871 QA AP — 진입 때 카드 위로 번쩍 보였다 사라짐) */
+  ready?: boolean;
   /** 화면 바닥에서 알약까지(안전 영역, 최소 12) */
   bottom: number;
   guest: boolean;
@@ -325,8 +333,8 @@ function RegisteredBottomBar({
   const hideY = rowH + bottom + 8; // 화면 밖까지
   // 표시·숨김 = 200ms 슬라이드 + 페이드(감속 곡선) · 모션 줄이기 = 슬라이드 없이 짧은 페이드만
   const anim = useAnimatedStyle(() => ({
-    opacity: withTiming(shown ? 1 : 0, { duration: reduced ? 120 : PILL_FADE_MS, easing: Easing.out(Easing.cubic) }),
-    transform: [{ translateY: reduced ? 0 : withTiming(shown ? 0 : hideY, { duration: PILL_FADE_MS, easing: Easing.out(Easing.cubic) }) }],
+    opacity: !ready ? 0 : withTiming(shown ? 1 : 0, { duration: reduced ? 120 : PILL_FADE_MS, easing: Easing.out(Easing.cubic) }),
+    transform: [{ translateY: reduced ? 0 : !ready ? hideY : withTiming(shown ? 0 : hideY, { duration: PILL_FADE_MS, easing: Easing.out(Easing.cubic) }) }],
   }));
   const write = FLAGS.reviewsEnabled && !(scanEntry && onAsk);
   if (!write && !onAsk) return null;
@@ -367,7 +375,10 @@ function Registered({
   id,
   setCoachOpen,
   onIdolLayout,
+  onEmptyCtaLayout,
 }: {
+  /** KB-871 QA ③: 리뷰 0 본문 "Write a review" 상자의 콘텐츠 y·높이(보이는 동안 하단 버튼 숨김) */
+  onEmptyCtaLayout?: (y: number, h: number) => void;
   /** KB-851: K-pop 카드의 콘텐츠 y·높이 보고(리뷰 알약 숨김 판정) */
   onIdolLayout?: (y: number, h: number) => void;
   setCoachOpen: (v: boolean) => void;
@@ -589,7 +600,7 @@ function Registered({
 
       {/* §1-7: 리뷰 섹션(4150:16940) — 디바이더 + 헤더 행 + D-2 카드 ×3 + More */}
       {FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0 && (
-        <View style={styles.reviewSec} testID="review-empty-cta">
+        <View style={styles.reviewSec} testID="review-empty-cta" onLayout={(e) => onEmptyCtaLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)}>
           <View style={styles.thickDivider} />
           <Text style={styles.rvBeFirst}>{t('detail.beFirstReview')}</Text>
           <View style={{ paddingHorizontal: 20 }}>

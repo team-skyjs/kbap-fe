@@ -417,7 +417,10 @@ describe('P-228: Ask the owner 플로팅', () => {
     expect(src).toContain('shown={pill.shown}');
     for (const h of ['onScrollBeginDrag={pill.onScrollBeginDrag}', 'onScrollEndDrag={pill.onScrollEndDrag}', 'onMomentumScrollBegin={pill.onMomentumScrollBegin}', 'onMomentumScrollEnd={pill.onMomentumScrollEnd}']) expect(src).toContain(h);
     expect(src).toContain('pill.onBand(h + pillBottom + 8)');
-    expect(src).toContain('transform: [{ translateY: reduced ? 0 : withTiming(shown ? 0 : hideY');
+    expect(src).toContain('transform: [{ translateY: reduced ? 0 : !ready ? hideY : withTiming(shown ? 0 : hideY');
+    expect(src).toContain('opacity: !ready ? 0 : withTiming(shown ? 1 : 0'); // KB-871 QA AP: 첫 측정 전 = 애니메이션 없이 숨김
+    expect(src).toContain('useScrollAwarePill({ card: idolExpected, emptyCta: emptyCtaExpected })');
+    expect(src).toContain('testID="review-empty-cta" onLayout={(e) => onEmptyCtaLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)}');
     expect(src).not.toContain('onInsets');
   });
 

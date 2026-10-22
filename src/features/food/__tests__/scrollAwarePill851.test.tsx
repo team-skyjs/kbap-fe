@@ -4,7 +4,7 @@
  */
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import { cardUnderPill, pillOnGestureStart, pillOnIdle, pillOnScroll, PILL_DIR_THRESHOLD, PILL_IDLE_MS, useScrollAwarePill, type PillScroll, type PillState } from '../scrollAwarePill';
+import { cardUnderPill, emptyCtaOnScreen, pillOnGestureStart, pillOnIdle, pillOnScroll, PILL_DIR_THRESHOLD, PILL_IDLE_MS, useScrollAwarePill, type PillScroll, type PillState } from '../scrollAwarePill';
 
 const BAND = 72; // 버튼 48 + 하단 여백 16 + 8
 const S = (y: number, card: PillScroll['card'] = null): PillScroll => ({ y, viewH: 700, contentH: 3000, card, band: BAND });
@@ -53,6 +53,62 @@ it('KB-871 ②: K-pop 카드는 버튼 띠(화면 아래 72)와 겹칠 때만 �
   expect(pillOnIdle(ST(true, 0), S(0, low)).shown).toBe(false);
   expect(cardUnderPill(S(200, low))).toBe(false); // 200 내리면 카드 400~580 — 띠 위로 지나감
   expect(cardUnderPill({ ...S(0, low), band: undefined })).toBe(false); // 띠 측정 전 = 카드 규칙 없음
+});
+
+it('KB-871 QA AP ②: 바닥·위 바운스(오버스크롤)의 이동은 방향 판정에서 뺀다 — 맨 아래 도달 직후 흐려졌다 다시 뜨는 깜빡임 0', () => {
+  // 콘텐츠 3000 · 화면 700 → 최대 y 2300. 관성으로 2300을 넘어 2340까지 갔다 돌아옴
+  let st = pillOnGestureStart(ST(true, 2300)); // 맨 아래(최대 y)에 막 도달
+  for (const y of [2320, 2340, 2325, 2310, 2300]) { st = pillOnScroll(st, S(y)); expect({ y, shown: st.shown }).toEqual({ y, shown: true }); }
+  expect(st.acc).toBe(0);
+  // 위 바운스(음수)도 같음
+  st = pillOnGestureStart(ST(true, 0));
+  for (const y of [-20, -40, -10, 0]) { st = pillOnScroll(st, S(y)); expect(st.shown).toBe(true); }
+  // 정상 구간 이동은 그대로 판정
+  st = pillOnGestureStart(ST(true, 1000));
+  st = pillOnScroll(st, S(1015));
+  expect(st.shown).toBe(false);
+});
+
+it('KB-871 QA ③: 본문 빈 리뷰 상자("Write a review")가 화면에 보이는 동안 = 숨김 · 화면 밖 = 일반 규칙', () => {
+  const cta = { y: 1500, h: 140 };
+  expect(emptyCtaOnScreen({ ...S(1000), emptyCta: cta })).toBe(true); // 화면 1000~1700 안
+  expect(pillOnScroll(ST(true, 1000), { ...S(1000), emptyCta: cta }).shown).toBe(false);
+  expect(pillOnIdle(ST(true, 1000), { ...S(1000), emptyCta: cta }).shown).toBe(false);
+  expect(emptyCtaOnScreen({ ...S(600), emptyCta: cta })).toBe(false); // 화면 600~1300 — 아직 아래
+  expect(pillOnIdle(ST(false, 600), { ...S(600), emptyCta: cta }).shown).toBe(true);
+});
+
+describe('훅 — 첫 진입(KB-871 QA AP ①)', () => {
+  let api!: ReturnType<typeof useScrollAwarePill>;
+  const keep = (a: ReturnType<typeof useScrollAwarePill>) => { api = a; };
+  function Probe({ ex, onApi }: { ex: { card: boolean; emptyCta: boolean }; onApi: typeof keep }) { onApi(useScrollAwarePill(ex)); return null; }
+  const Harness = ({ expect: ex }: { expect: { card: boolean; emptyCta: boolean } }) => <Probe ex={ex} onApi={keep} />;
+  it('겹침 대상(카드)이 있으면 띠·카드 측정 전까지 숨김(ready=false) → 겹치지 않으면 그때 표시', () => {
+    let t!: renderer.ReactTestRenderer;
+    act(() => { t = renderer.create(<Harness expect={{ card: true, emptyCta: false }} />); });
+    expect([api.ready, api.shown]).toEqual([false, false]);
+    act(() => { api.onViewLayout(700); api.onContentSize(3000); });
+    expect([api.ready, api.shown]).toEqual([false, false]); // 띠·카드 아직
+    act(() => { api.onBand(BAND); });
+    expect([api.ready, api.shown]).toEqual([false, false]); // 카드 아직
+    act(() => { api.onCardLayout(420, 180); });
+    expect([api.ready, api.shown]).toEqual([true, true]); // 카드 = 띠 위쪽 → 표시
+    act(() => t.unmount());
+  });
+  it('카드가 띠와 겹치는 자리면 측정 뒤에도 숨김(번쩍 보였다 사라짐 0)', () => {
+    act(() => { renderer.create(<Harness expect={{ card: true, emptyCta: false }} />); });
+    act(() => { api.onViewLayout(700); api.onContentSize(3000); api.onBand(BAND); api.onCardLayout(600, 180); });
+    expect([api.ready, api.shown]).toEqual([true, false]);
+  });
+  it('대상 없는 음식 = 바로 표시(지금 동작 유지) · 음식이 뜬 뒤 대상이 생기면 그 측정까지 숨김', () => {
+    let t!: renderer.ReactTestRenderer;
+    act(() => { t = renderer.create(<Harness expect={{ card: false, emptyCta: false }} />); });
+    expect([api.ready, api.shown]).toEqual([true, true]);
+    act(() => { t.update(<Harness expect={{ card: false, emptyCta: true }} />); });
+    expect([api.ready, api.shown]).toEqual([false, false]);
+    act(() => { api.onViewLayout(700); api.onContentSize(3000); api.onBand(BAND); api.onEmptyCtaLayout(2700, 140); });
+    expect([api.ready, api.shown]).toEqual([true, true]); // 상자는 화면 밖(아래)
+  });
 });
 
 describe('훅', () => {
