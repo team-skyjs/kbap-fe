@@ -159,10 +159,10 @@ describe('홈 섹션', () => {
     expect(RNx.StyleSheet.flatten(arrow.findAll((n) => n.props?.testID === 'chevron-right')[0].props.style).color).toBe('#FFFFFF');
     const cap = t.root.findAll((n) => n.props?.testID === 'curation-banner-caption-0' && typeof n.type === 'string')[0];
     const caps = cap.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string');
-    expect(caps.map((n) => n.props.children)).toEqual(['T sights', '10 places sights']); // 제목(이름 스타일) → 설명(지역 스타일)
+    expect(caps.map((n) => n.props.children)).toEqual(['10 places sights', 'T sights']); // 예진 결정: 홈 = 설명(위) → 제목(아래) — 기존 홈 순서
     expect(caps.map((n) => RNx.StyleSheet.flatten(n.props.style))).toEqual([
-      expect.objectContaining({ fontSize: 18, color: '#FFFFFF' }), // 이름 스타일(줄 높이는 배율 규칙 — 아래 큰 글씨 테스트)
-      expect.objectContaining({ fontSize: 13, color: '#FFFFFF' }),
+      expect.objectContaining({ fontSize: 13, color: '#FFFFFF' }), // 설명 = 지역 스타일
+      expect.objectContaining({ fontSize: 18, color: '#FFFFFF' }), // 제목 = 이름 스타일(줄 높이는 배율 규칙 — 아래 큰 글씨 테스트)
     ]);
     // 흐림 띠: 카드·캡션을 잰 뒤 — 현재 장(0)과 옆(1)은 8띠, 두 장 너머(2)는 원본 + 스크림만
     for (const i of [0, 1, 2]) {
@@ -172,6 +172,16 @@ describe('홈 섹션', () => {
     const strips = (i: number) => t.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith(`curation-banner-blur-strip-${i}-`) && typeof n.type === 'string').length;
     expect([strips(0), strips(1), strips(2)]).toEqual([8, 8, 0]);
     expect(byId(t, 'curation-banner-attribution-2')).toHaveLength(1); // 출처 유지(사진 위 오른쪽 위)
+  });
+  it('KB-861: 상세 장소 카드 글자 순서는 그대로 — 이름(위) → 지역(아래)(홈만 설명 위)', () => {
+    const detail = adaptCurationDetail(DETAIL_WIRE) as CurationDetail;
+    mockDetail = q({ data: detail });
+    const t = render(<CurationDetailScreen />);
+    const p = detail.items[0].position;
+    const cap = t.root.findAll((n) => n.props?.testID === `curation-item-caption-${p}` && typeof n.type === 'string')[0];
+    const texts = cap.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string').map((n) => n.props.children);
+    expect(texts[0]).toBe(detail.items[0].name);
+    expect(texts).toHaveLength(2);
   });
   it('KB-861: 큰 글씨(배율 1.3) = 홈 배너 제목·설명 고정 줄 높이 없음(글꼴 고유 — 넘침·잘림 0) · 작은 화면(SE 320) = 배너 폭 280', () => {
     const RNx = jest.requireActual('react-native');

@@ -32,6 +32,7 @@ export function BlurCaptionCard({
   testKey,
   uiTarget,
   overlay,
+  subtitleFirst = false,
 }: {
   photoUri: string | null;
   recyclingKey: string;
@@ -49,6 +50,8 @@ export function BlurCaptionCard({
   uiTarget?: string;
   /** 사진 위 추가 표시(예: 홈 배너 출처) — 터치·스크린리더 무관 장식 */
   overlay?: React.ReactNode;
+  /** 부제를 제목 위에(홈 배너 — 예진 결정 KB-861: 설명 위·제목 아래). 기본 = 제목 위(상세 장소 카드). 글자 스타일은 역할 그대로(제목 = 이름 · 부제 = 지역) */
+  subtitleFirst?: boolean;
 }) {
   const large = captionLargeText(useWindowDimensions().fontScale); // KB-846 QA: 큰 글씨 = 고정 줄 높이 없이(아래 잘림 0)
   const [cardH, setCardH] = React.useState<number | null>(null); // 블러 사본을 원본과 같은 높이로 정렬(큰 글씨면 카드가 자란다)
@@ -77,8 +80,9 @@ export function BlurCaptionCard({
       <View style={{ height: CARD_SPACER }} />
       <View style={styles.caption} onLayout={(e) => setCaptionTop(e.nativeEvent.layout.y)} testID={`${testPrefix}-caption-${testKey}`} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
         <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+          {subtitleFirst && <Text style={large ? styles.areaLarge : styles.area}>{subtitle}</Text>}
           <Text style={large ? styles.nameLarge : styles.name}>{title}</Text>
-          <Text style={large ? styles.areaLarge : styles.area}>{subtitle}</Text>
+          {!subtitleFirst && <Text style={large ? styles.areaLarge : styles.area}>{subtitle}</Text>}
         </View>
         <View style={styles.arrow} testID={`${testPrefix}-arrow-${testKey}`}>
           <IconChevron size={24} color="#FFFFFF" />
