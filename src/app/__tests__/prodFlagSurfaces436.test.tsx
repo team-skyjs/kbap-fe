@@ -195,9 +195,9 @@ it('④ 홈(prod) 섹션 — FoodExplorer 블록 + RECENTLY(행)+ 벨(notificati
   expect(s).toContain('home-recent-head'); // RECENTLY 섹션(라벨은 uppercase 렌더)
   expect(s).toContain('Kimbap'); // recent 행
   expect(tree.root.findAll((n) => n.props?.testID === 'header-bell').length).toBeGreaterThanOrEqual(1); // 알림 벨
-  // KB-870(P-524): 운영 서버에 없는 API 표면 0 — 큐레이션 섹션(404)·K-POP 배너(400)
-  expect(s).not.toContain('curation-section-marker');
-  expect(s).not.toContain('idol-banner-marker');
+  // KB-870(P-528): 승인한 큐레이션·K-pop 홈 진입점을 운영에서도 렌더한다.
+  expect(s).toContain('curation-section-marker');
+  expect(s).toContain('idol-banner-marker');
 });
 
 it('⑤⑥ 소스 감사 — 온보딩 ORDER 5스텝(프리셋 포함)·탭 4 스크린 + 스캔 진입·탭별 최상위 컴포넌트', () => {
