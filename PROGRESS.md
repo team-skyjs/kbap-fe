@@ -1,3 +1,9 @@
+## 2026-10-23 — KB-870 / P-528 OTA2 선택 공개
+
+- 사용자 3종 검수완료·공개 승인에 따라 curation/idolPicks/avoidGroupCodes만 ON. PF3종 OFF·공용 dev게이트/리뷰1.1·설정보존 유지. 기존 OFF 단계 이력은 아래 보존.
+- 관련 회귀는 수정 전 5failed RED, 변경 후 4suites/65tests/1snapshot PASS(exit0, worker 종료경고). 전체·타입·lint·양OS fingerprint/clear export 결과는 PR 및 REPORTS에 기록.
+- 콘텐츠 운영 게시/public GET 확인 전 develop 머지 금지(자동 teamtest OTA). 정상 PR/센터 검토 후 main 승격·승인된 OTA2, 무관342/339/187 제외. 새카피/native/API/DB 변경 없음.
+
 ## 2026-10-23 — KB-870 / P-527 기존 teamtest prod 리허설
 
 - 사용자 최신 승인으로 teamtest 전체를 prod BE/운영 제품 FLAGS로 전환. shared target 정본, build env·자동 workflow export/publish 정합, 잘못된 target/혼합번들 fail-closed.
