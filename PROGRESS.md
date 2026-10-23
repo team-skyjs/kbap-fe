@@ -1,3 +1,9 @@
+## 2026-10-23 — P-528 PR345 P1 선행조건 보완
+
+- c047f8bb CI PASS·자동Codex 완료/P1 comment4357327876. 큐레이션뿐 아니라 prod idol GET·catalog/profile PATCH를 develop 머지 전 조건으로 보완. 자동 재호출 없음.
+- 16:57:26 KST FE 공개GET: idol1.1 200/25건, catalog1.0 200/87행·6코드 존재. 과거 배포전400 기록과 분리. 기존10언어·이미지는 센터/서버 근거.
+- prod 회원 PATCH 왕복은 허가된 테스트회원/정상세션 입력 미확인으로 미실행·머지 차단 유지. 실사용계정/토큰/DB 변경0. 세부 절차 docs/release/KB870-OTA2.md.
+
 ## 2026-10-23 — KB-870 / P-528 OTA2 선택 공개
 
 - 사용자 3종 검수완료·공개 승인에 따라 curation/idolPicks/avoidGroupCodes만 ON. PF3종 OFF·공용 dev게이트/리뷰1.1·설정보존 유지. 기존 OFF 단계 이력은 아래 보존.
