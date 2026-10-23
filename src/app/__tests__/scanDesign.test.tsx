@@ -7,7 +7,7 @@
 import * as React from 'react';
 import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { BackHandler } from 'react-native';
+import { BackHandler, StyleSheet } from 'react-native';
 import * as fs from 'fs';
 import * as analytics from '@/lib/analytics';
 
@@ -71,13 +71,15 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 const mockFocused = { v: true }; // 라우트 포커스(useIsFocused) — 다른 화면이 위로 올라가면 false
+const mockTakePicture = jest.fn();
 const mockCamMounts = { n: 0 }; // CameraView 마운트 수 — 새 마운트 = 새 카메라 세션(KB-845 QA: Android 탭 전환 뒤 프리뷰 검정)
 jest.mock('expo-camera', () => {
   const React = jest.requireActual('react');
   const { View } = jest.requireActual('react-native');
   const CameraView = React.forwardRef(function MockCameraView(p: object, r: unknown) {
     React.useEffect(() => { mockCamMounts.n += 1; }, []);
-    return React.createElement(View, { ...p, ref: r });
+    React.useImperativeHandle(r, () => ({ takePictureAsync: (options: unknown) => mockTakePicture(options) }));
+    return React.createElement(View, p);
   });
   return { CameraView, useCameraPermissions: () => [{ granted: true }, jest.fn()] };
 });
@@ -161,6 +163,7 @@ const galleryBtn = (tree: ReactTestRenderer) =>
 beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 beforeEach(() => {
   jest.clearAllMocks();
+  mockTakePicture.mockResolvedValue({ uri: 'file:camera.jpg', width: 900, height: 1200 });
   mockLaunchLibrary.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] });
 });
 
@@ -299,21 +302,52 @@ it('P-222: 진행 화면 = 이탈 자제 안내 보조 한 줄(주 문구 유지
   expect(src).not.toContain('expo-keep-awake');
 });
 
-it('P-191: 갤러리 원본 로드 중 = 로딩 오버레이(scan.loadingPhoto), 완료 후 소멸', async () => {
-  let release!: (v: { canceled: boolean; assets?: { uri: string; width: number; height: number }[] }) => void;
-  mockLaunchLibrary.mockImplementation(() => new Promise((r) => (release = r)));
+it.each(['cancel', 'success', 'failure'] as const)('P-529: 갤러리 로딩은 화면 중앙·터치 통과, %s 후 소멸', async (outcome) => {
+  type Result = { canceled: boolean; assets?: { uri: string; width: number; height: number }[] };
+  let release!: (v: Result) => void;
+  let fail!: (e: Error) => void;
+  mockLaunchLibrary.mockImplementation(() => new Promise<Result>((resolve, reject) => { release = resolve; fail = reject; }));
   const tree = render(<Scan />);
-  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto')[0];
   await act(async () => {
-    void gallery.props.onPress();
+    void galleryBtn(tree).props.onPress();
     await Promise.resolve();
   });
-  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay').length).toBeGreaterThanOrEqual(1);
-  await act(async () => {
-    release({ canceled: true });
-    await new Promise((r) => setTimeout(r, 0));
+  const overlays = tree.root.findAll((n) => n.props?.testID === 'importing-overlay');
+  expect(overlays.length).toBeGreaterThanOrEqual(1);
+  const overlay = overlays[0];
+  expect(StyleSheet.flatten(overlay.props.style)).toMatchObject({
+    position: 'absolute', top: 0, right: 0, bottom: 0, left: 0,
+    alignItems: 'center', justifyContent: 'center',
   });
-  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay').length).toBe(0); // 취소 = 복구
+  expect(overlay.props.pointerEvents).toBe('none');
+  expect(texts(tree, 'scan.loadingPhoto')).toBeGreaterThan(0);
+  await act(async () => {
+    if (outcome === 'failure') fail(new Error('photo unavailable'));
+    else release(outcome === 'cancel' ? { canceled: true } : { canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay')).toHaveLength(0);
+  if (outcome === 'cancel') expect(galleryBtn(tree).props.disabled).toBe(false);
+  if (outcome === 'success') expect(tree.root.findAll((n) => n.props?.testID === 'recog-banner').length).toBeGreaterThan(0);
+});
+
+it('P-529: 촬영 대기·완료는 갤러리 가져오기 로딩을 표시하지 않는다', async () => {
+  let release!: (v: { uri: string; width: number; height: number }) => void;
+  mockTakePicture.mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }));
+  const tree = render(<Scan />);
+  await act(async () => {
+    tree.root.findAll((n) => n.props?.testID === 'scan-shutter' && typeof n.props?.onPress === 'function')[0].props.onPress();
+    await Promise.resolve();
+  });
+  expect(mockTakePicture).toHaveBeenCalledTimes(1);
+  expect(mockLaunchLibrary).not.toHaveBeenCalled();
+  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay')).toHaveLength(0);
+  await act(async () => {
+    release({ uri: 'file:camera.jpg', width: 900, height: 1200 });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay')).toHaveLength(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'recog-banner').length).toBeGreaterThan(0);
 });
 
 // KB-730: 스캔 성공 **2회째**에만 리뷰 유도 시트(결과 화면 진입 직후) — 1회째·3회째는 아님. 실패 경로는 onSuccess를 안 타므로 자동 제외

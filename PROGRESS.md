@@ -1,3 +1,9 @@
+## 2026-10-23 — P-529 / KB-854 갤러리 가져오기 중앙 배치
+
+- 사용자 사진1 지적: P191의 bottom120 로딩이 KB854 새 하단 줌/셔터와 겹침. 공용 importingOverlay를 화면전체 절대영역+가로세로중앙으로 최소수정, pointerEvents none·문구·스캔상태처리 무변.
+- 위치 회귀 수정전3fail RED. 관련25tests PASS·tsc0: 실제렌더 스타일의4변0/중앙·터치통과, 갤러리성공/취소/실패 후복구·촬영대기/완료시가져오기표시0. 네이티브양OS 좌표/작은화면/회전은미실행이며 단위렌더와구분.
+- 주문카드/위험도문구/API/플래그/native 변경0. PF운영OFF·리뷰1.1·BEprod유지. 정상PR/센터검토후develop, 추가productionOTA발행금지.
+
 ## 2026-10-23 — P-528 PR345 P1 선행조건 보완
 
 - c047f8bb CI PASS·자동Codex 완료/P1 comment4357327876. 큐레이션뿐 아니라 prod idol GET·catalog/profile PATCH를 develop 머지 전 조건으로 보완. 자동 재호출 없음.
