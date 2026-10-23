@@ -42,9 +42,29 @@ function isDiagnosticChannelInner(): boolean {
 }
 const DIAGNOSTIC_CHANNEL = isDiagnosticChannelInner();
 
+/** KB-812 2차(P-507): **dev 서버를 쓰는 채널**만 참 — development·teamtest(eas.json EXPO_PUBLIC_BE_BASE = dev.kbap.site).
+ *  진단 채널과 다르다: teamtest-prod는 진단은 보이지만 백엔드가 prod라 dev 서버에서만 켜진 기능(서버 플래그)은 거기서 막다른 길이다.
+ *  채널 부재는 진단과 같은 규칙(__DEV__일 때만 로컬). */
+function isDevServerChannelInner(): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const ch = (require('expo-updates') as { channel?: string | null }).channel;
+    if (ch == null || ch === '') return __DEV__;
+    return ch === 'teamtest' || ch === 'development';
+  } catch {
+    return __DEV__;
+  }
+}
+const DEV_SERVER_CHANNEL = isDevServerChannelInner();
+
 /** 채널 판별 단일 소스(P-114) — 함수형 export로 jest 목 주입 가능. */
 export function isDiagnosticChannel(): boolean {
   return DIAGNOSTIC_CHANNEL;
+}
+
+/** KB-870: dev 서버 채널(development·teamtest) — 운영 서버에 아직 없는 API의 헤더·표면 게이트 공용. */
+export function isDevServerChannel(): boolean {
+  return DEV_SERVER_CHANNEL;
 }
 
 export const FLAGS = {
@@ -159,6 +179,31 @@ export const FLAGS = {
    * off = 본문만(버튼 없음), 원문 렌더 무변.
    */
   contentTranslation: true,
+  /**
+   * P-508(KB-813 후속): 성분표 촬영·분석(서버 #442 `scan/label`) — 핸드오프 촬영 버튼·상세 "성분표 직접 확인"·결과 화면.
+   * **채널 게이트 의도(AGENTS.md 4항, 발주 P-508)**: development·teamtest(dev 서버 — #442 배포됨)만. teamtest-prod·production·preview는
+   * 운영 서버에 #442가 나간 뒤 이 줄을 true로(그 전엔 버튼이 404를 받는다). 꺼진 채널 = 핸드오프에 "곧 지원" 안내 + 비활성 버튼(기존).
+   */
+  packagedLabelScan: DEV_SERVER_CHANNEL,
+  /**
+   * KB-812 2차(P-507): 가공식품 상세 "리뷰 쓰기" 버튼. **채널 게이트 의도(AGENTS.md 4항, 커맨드 확인 10/21)**:
+   * 서버 PROCESSED_FOOD_REVIEW_WRITE_ENABLED가 켜진 채널만 — 지금은 dev 서버(#437)뿐이라 development·teamtest만.
+   * teamtest-prod·production·preview(운영 서버, 플래그 OFF)는 숨김 — 막다른 "곧 열려요" 버튼 방지. prod 서버 ON 뒤 이 줄을 true로 확장.
+   * (그 사이 서버가 꺼져 있으면 작성 화면이 403 PFOOD-005를 "곧 열려요" 안내로 받는다 — 차단 아님.) 리뷰 **읽기**·기존 리뷰 수정은 이 플래그와 무관.
+   */
+  packagedReviewWrite: DEV_SERVER_CHANNEL,
+  /**
+   * KB-870(P-524, 운영 OTA 1 — 감사 bridge/ops/2026-10-21-prod-ota-audit.md): **운영 서버에 아직 없는 API**를 부르는 표면.
+   * development·teamtest(dev 서버)만 켜고 production·preview·teamtest-prod(운영 서버)는 숨긴다. 서버 운영 릴리스 뒤(OTA 2) 각 줄을 true로.
+   * - curationEnabled: /api/curations/seoul(prod 404) — 홈 큐레이션 섹션·모음 상세(지도 버튼 포함)
+   * - processedFoodEnabled: /api/processed-foods(prod 404) — 음식 탭 Packaged 세그먼트·스캔 Packaged 탭
+   * - idolPicksEnabled: /api/foods/idol-picks(prod 400) — 홈 K-POP 배너·/idol-picks·음식 상세 K-pop 카드
+   * - avoidGroupCodesEnabled: 회피 묶음 6코드(KB-843 — prod 서버가 모름, 저장 400) — 선택 타일·와이어 허용 목록·로컬 프리셋 폴백
+   */
+  curationEnabled: DEV_SERVER_CHANNEL,
+  processedFoodEnabled: DEV_SERVER_CHANNEL,
+  idolPicksEnabled: DEV_SERVER_CHANNEL,
+  avoidGroupCodesEnabled: DEV_SERVER_CHANNEL,
 } as const;
 
 /** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).

@@ -79,7 +79,7 @@ jest.mock('expo-image', () => {
 });
 // KB-769: 스캔 결과 이탈 가드(useLeaveConfirm) — 포커스·내비 표면 + usePreventRemove 기록(scanDesign이 콜백을 흉내)
 jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), /* P-508: scan.tsx 진입 파라미터(mode·label) */
   useIsFocused: () => mockFocused.on,
   useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   // 실제처럼 콜백 정체성 기준 1회(렌더마다 재실행하면 포커스 의미가 사라진다)
@@ -437,7 +437,7 @@ describe('Codex #291 R11: one scan presenter for every phase', () => {
     const src = fs.readFileSync('src/app/scan.tsx', 'utf8') as string;
     expect(src.match(/<UnlockCelebration\b/g)).toHaveLength(1);
     const body = src.slice(src.indexOf('// ---- result ----'), src.indexOf('function ScanSweepOverlay'));
-    expect(body.match(/return withPresenter\(/g)).toHaveLength(6); // result · scanning · error · offline · system camera · camera
+    expect(body.match(/return withPresenter\(/g)).toHaveLength(7); // result · scanning · error · KB-813 packaged · offline · system camera · camera
   });
 });
 

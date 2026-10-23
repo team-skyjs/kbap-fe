@@ -48,7 +48,8 @@ jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t:
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '9', restrictions: [] } }) }));
-jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ data: [], isLoading: false, isError: false, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }) }));
+jest.mock('@/lib/data/useFoods', () => ({
+  usePrefetchOtherFoodSorts: () => {}, /* KB-830 */ useInfiniteFoods: () => ({ data: [], isLoading: false, isError: false, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }) }));
 jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }),
   useBookmarks: () => ({ data: [], hasNextPage: false, isFetchingNextPage: false, isFetching: false, fetchNextPage: jest.fn() }),
   useToggleBookmark: () => ({ mutate: jest.fn() }),
@@ -100,7 +101,7 @@ it('1-B 국기 배지 — 국적 있으면 아바타 우하단 렌더(장식 —
 });
 
 it('1-B 소스 잠금 — FlagEmoji = 국기 한정 이모지 예외 주석 + 흰 링 배지 스타일', () => {
-  const fc = require('fs').readFileSync('src/features/review/FeedCard.tsx', 'utf8') as string;
+  const fc = (jest.requireActual('fs') as typeof import('fs')).readFileSync('src/features/review/FeedCard.tsx', 'utf8') as string;
   expect(fc).toContain('국기 한정 헌법 이모지 예외');
   expect(fc).toMatch(/flagBadge: \{ position: 'absolute', right: -2, bottom: -2, width: 14, height: 14/);
 });

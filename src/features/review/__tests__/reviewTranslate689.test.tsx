@@ -94,7 +94,7 @@ beforeEach(() => {
   mockToast.mockReset();
 });
 
-it('상수 = 스펙 값(레퍼런스 픽셀 실측) — 번역 전 #1B95E0 · 번역 중/후 #536471 · 글자 12.5', () => {
+it('상수 = 스펙 값(레퍼런스 픽셀 실측) — 번역 전·후 #1B95E0(KB-777 B2-7) · 번역 중 #536471 · 글자 12.5', () => {
   expect(TRANSLATE_LABEL).toEqual({ idleColor: '#1B95E0', mutedColor: '#536471', fontSize: 12.5 });
 });
 
@@ -115,7 +115,7 @@ it('Codex #223 P2(2차): 터치 = **실제 레이아웃 상자 44**(hitSlop 없�
   // 위 확장 ≤ 두 카드의 실제 gap(숫자 8 직접 비교 금지 — 카드 gap을 줄이면 라벨 상자가 위 사진 터치를 덮는데 초록이 되는 것 방지)
   const fs = require('fs') as typeof import('fs');
   const gapOf = (file: string, styleKey: string) => Number(new RegExp(`\\b${styleKey}: \\{[^}]*\\bgap: (\\d+)`).exec(fs.readFileSync(file, 'utf8'))![1]);
-  for (const g of [gapOf('src/features/review/FeedCard.tsx', 'card'), gapOf('src/app/food/[id]/reviews.tsx', 'item')]) {
+  for (const g of [gapOf('src/features/review/FeedCard.tsx', 'card')]) { // KB-848: 목록도 FeedCard
     expect(box.paddingTop).toBeLessThanOrEqual(g);
   }
   // 상자 아래 끝이 래퍼 안: 래퍼 최소 높이 = padTop + 줄 + 간격 + 본문 한 줄(19)
@@ -169,13 +169,13 @@ it('번역 중 = 같은 자리 "Translating…" #536471 · 본문 원문 유지 
   });
 });
 
-it('번역 후 = 본문 교체 + "Translated from {영어}" #536471 → 누르면 원문 + "Show translation"', async () => {
+it('번역 후 = 본문 교체 + "Translated from {영어}" #1B95E0(KB-777 B2-7) → 누르면 원문 + "Show translation"', async () => {
   mockPost.mockResolvedValue(RES());
   const t = render(REVIEW());
   await press(t);
   expect(out(t)).toContain('정말 맛있는 국');
   expect(out(t)).not.toContain('Really good soup');
-  expect(labelText(t)).toEqual({ text: 'translation.translatedFrom:translation.lang.en', style: expect.objectContaining({ color: '#536471', fontSize: 12.5 }) });
+  expect(labelText(t)).toEqual({ text: 'translation.translatedFrom:translation.lang.en', style: expect.objectContaining({ color: '#1B95E0', fontSize: 12.5 }) });
   await press(t);
   expect(out(t)).toContain('Really good soup');
   expect(labelText(t).text).toBe('translation.showTranslation');
@@ -367,4 +367,22 @@ it('KB-703 ②: 어댑터 — 문자열만 그대로, 빈 값·없음·비문자
   expect(adaptReview({ ...base, language: null }).language).toBeNull();
   expect(adaptReview(base).language).toBeNull();
   expect(adaptReview({ ...base, language: 7 as unknown as string }).language).toBeNull();
+});
+
+// KB-777 B2-7: 번역 후 라벨(누르면 원문)도 버튼 단서 = X 블루 · 번역 중만 회색 · 상태가 바뀌어도 프레임(상자 스타일) 불변
+it('KB-777 B2-7: 상태별 색 — idle·translated = #1B95E0, loading = #536471 · 상자 스타일 동일', () => {
+  const { TranslateButton } = jest.requireActual('@/components/TranslateButton') as typeof import('@/components/TranslateButton');
+  const { StyleSheet } = require('react-native');
+  const look = (state: 'idle' | 'loading' | 'translated') => {
+    let tr!: ReactTestRenderer;
+    act(() => { tr = renderer.create(<TranslateButton state={state} source={null} onPress={() => {}} />); });
+    const btn = tr.root.findAll((n) => n.props?.testID === 'translate-btn' && typeof n.type === 'string')[0];
+    const label = btn.findAll((n) => typeof n.type === 'string' && n !== btn && n.props.style)[0];
+    const out = { color: StyleSheet.flatten(label.props.style).color, box: JSON.stringify(StyleSheet.flatten(btn.props.style)) };
+    act(() => tr.unmount());
+    return out;
+  };
+  const [idle, loading, done] = [look('idle'), look('loading'), look('translated')];
+  expect([idle.color, loading.color, done.color]).toEqual(['#1B95E0', '#536471', '#1B95E0']);
+  expect(new Set([idle.box, loading.box, done.box]).size).toBe(1);
 });

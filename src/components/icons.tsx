@@ -98,6 +98,20 @@ export const IconChevron = (p: IconProps) => styled(<D4ChevronRight size={p.size
 export const IconDownload = (p: IconProps) => styled(<D4Download size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 export const IconChevronDown = (p: IconProps) => styled(<D4ChevronDown size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 export const IconArrowLeft = (p: IconProps) => styled(<D4ChevronLeft size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
+/** KB-836 물음표 — 텍스트 "?" 대신(폰트마다 모양이 달라서). 기본 ink. */
+export const IconQuestion = ({ size = 24, color = C.ink, style }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" style={style}>
+    <Path d="M8.6 8.8a3.5 3.5 0 1 1 5 3.2c-1 .5-1.6 1.3-1.6 2.4v.6" stroke={color} strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <Circle cx={12} cy={19} r={1.7} fill={color} />
+  </Svg>
+);
+/** KB-836 재생 — 원 + 삼각형(플랫폼 로고 아님). 기본 ink. */
+export const IconPlay = ({ size = 24, color = C.ink, style }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" style={style}>
+    <Circle cx={12} cy={12} r={9.1} stroke={color} strokeWidth={1.8} fill="none" />
+    <Path d="M10 8.6v6.8l5.6-3.4z" fill={color} stroke={color} strokeWidth={1.2} strokeLinejoin="round" />
+  </Svg>
+);
 export const IconLogout = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="m16 17 5-5-5-5" />
@@ -150,6 +164,23 @@ export const IconGallery = (p: IconProps) => (
     <Rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
     <Circle cx="9" cy="9" r="2" />
     <Path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+  </Glyph>
+);
+/** KB-854 카메라 v2 B — 갤러리 진입(시안 로컬 SVG 그대로 — DS 갤러리 마스터 없음, 원 = 채움) */
+export const IconChoosePhoto = (p: IconProps) => (
+  <Glyph {...p}>
+    <Rect width="18" height="18" x="3" y="3" rx="3" />
+    <Circle cx="8.5" cy="8.5" r="1.5" fill={p.color ?? C.ink} stroke="none" />
+    <Path d="m21 15-5-5L5 21" />
+  </Glyph>
+);
+/** KB-854 카메라 전환 — DS refresh-ccw(9:967, Lucide) */
+export const IconRefreshCcw = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <Path d="M3 3v5h5" />
+    <Path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+    <Path d="M16 16h5v5" />
   </Glyph>
 );
 export const IconStar = (p: IconProps) => (

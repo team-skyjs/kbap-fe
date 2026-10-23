@@ -70,7 +70,8 @@ jest.mock('@/lib/data/useReviewMutations', () => ({
   useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
   useDeleteReview: () => ({ mutate: jest.fn() }),
 }));
-jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
+const mockModFlow = jest.fn((_p: { onEdit: (m: { id: string }) => void }) => null); // 편집 배선 단언용(props 기록)
+jest.mock('@/features/community/moderation', () => ({ ModerationFlow: (p: { onEdit: (m: { id: string }) => void }) => mockModFlow(p) }));
 const mockMe = jest.fn(() => ({ data: { id: '9', nationality: 'US' } as { id: string; nationality: string | null; scanQuota?: unknown } | undefined }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 })); // KB-499: 헤더 배지 = react-query 훅 — 이 스위트는 Provider 없이 렌더
@@ -129,6 +130,26 @@ it('카드 = P-169 문법 — 작성자·별점·서버 음식 카드·Helpful, 
   // P-196: 본인 리뷰(memberId 9 = me) Helpful = 카운트 표시 전용 — 탭 무반응
   act(() => tree.root.findAll((n) => n.props?.testID === 'helpful-r1' && typeof n.props?.onPress === 'function')[0].props.onPress());
   expect(mockToggle).not.toHaveBeenCalled();
+});
+
+it('KB-847(#288 revert): 리뷰 탭 = main 카드(FeedCard) — 리뷰 상세 경로 없음 · 가공식품 리뷰 칩 = 제품 상세 · ⋯ 수정 = 대상별 편집(KB-812 2차 유지)', () => {
+  const PKG = { ...REVIEW, id: 'r2', foodId: '', target: 'packaged', processedFoodId: '1711', foodName: '우유식빵', memberId: '5', author: { ...REVIEW.author, memberId: '5' } };
+  mockFeed.mockReturnValue({
+    data: { pages: [{ items: [REVIEW, PKG], hasNext: false, nextCursor: null }] },
+    isLoading: false, isError: false, error: null, refetch: jest.fn(),
+    hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+  });
+  const tree = render();
+  expect(tree.root.findAll((n) => n.props?.testID === 'review-card-r1')).toHaveLength(0); // #288 리뷰 탭 카드 소멸
+  act(() => tree.root.findAll((n) => n.props?.testID === 'feed-food-r2')[0].props.onPress());
+  expect(mockPush).toHaveBeenCalledWith('/processed-foods/1711');
+  expect(mockPush.mock.calls.some(([h]) => String(h).startsWith('/review/'))).toBe(false);
+  // Codex #321: ⋯ 수정 = 대상별 작성 화면(가공식품 = 제품 리뷰 편집 — 빈 foodId "/food//review" 0)
+  const onEdit = mockModFlow.mock.calls[mockModFlow.mock.calls.length - 1][0].onEdit;
+  act(() => onEdit({ id: 'r2' }));
+  expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/1711/review?reviewId=r2');
+  act(() => onEdit({ id: 'r1' }));
+  expect(mockPush).toHaveBeenLastCalledWith('/food/7/review?reviewId=r1');
 });
 
 it('P-196: 타인 리뷰 Helpful = 공용 버튼 경유 토글 · 본인 = 비활성(위 케이스)', () => {
@@ -412,4 +433,28 @@ describe('P-384(KB-442): 쿼터 넛지 카드 = 회원 && 잔여 0 && 미해금�
     mockMe.mockReturnValue({ data: { id: '9', nationality: 'US', scanQuota: Q(0, false) } });
     expect(nudge(render())).toBe(0);
   });
+});
+
+// KB-777 B3-7: 작은 화면 = 플로팅 "Write a review" 아이콘만 36 원형(본문 가림 축소), 라벨은 스크린리더 이름
+it('KB-777 B3-7: 작은 화면 판정(폭<360 또는 높이<700) · 기본 화면 = 라벨 필 · 작은 화면 = 36 원형 아이콘만 + 접근성 이름', () => {
+  const { isCompactFabScreen } = jest.requireActual('../ReviewFeed') as { isCompactFabScreen: (w: number, h: number) => boolean };
+  expect([isCompactFabScreen(360, 640), isCompactFabScreen(320, 800), isCompactFabScreen(375, 667), isCompactFabScreen(390, 844), isCompactFabScreen(360, 760)]).toEqual([true, true, true, false, false]);
+  const RN = jest.requireActual('react-native');
+  const big = render();
+  const fab = () => big.root.findAll((n) => n.props?.testID === 'feed-write-fab' && typeof n.type === 'string')[0];
+  expect(big.root.findAll((n) => n.props?.testID === 'feed-write-fab-label')).not.toHaveLength(0);
+  expect(fab().props.accessibilityLabel).toBe('reviews.writeReview');
+  const spy = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: 360, height: 640, scale: 2, fontScale: 1 });
+  const small = render();
+  const sfab = small.root.findAll((n) => n.props?.testID === 'feed-write-fab' && typeof n.type === 'string')[0];
+  expect(small.root.findAll((n) => n.props?.testID === 'feed-write-fab-label')).toHaveLength(0);
+  const st = RN.StyleSheet.flatten(sfab.props.style);
+  expect({ w: st.width, h: st.height, r: st.borderRadius }).toEqual({ w: 36, h: 36, r: 18 });
+  // Codex #306 P2: 터치 = 36 + hitSlop 4×2 = 44, hitSlop은 부모(화면) 안 — right 14·bottom 18 ≥ 4
+  const slop = sfab.props.hitSlop;
+  expect(36 + slop * 2).toBeGreaterThanOrEqual(44);
+  expect(st.right >= slop && st.bottom >= slop).toBe(true);
+  expect(fab().props.hitSlop).toBeUndefined(); // 일반 화면 필은 그대로
+  expect(sfab.props.accessibilityLabel).toBe('reviews.writeReview');
+  spy.mockRestore();
 });

@@ -7,17 +7,18 @@ it('A-FD — 헤드 24/18/27·타일 31% pt26(푸터 변형 pt8)·별점 행 gap
   expect(fd).toMatch(/ingTile: \{[^}]*paddingTop: 26/);
   expect(fd).toContain('ingTileWithFoot: { paddingTop: 8 }');
   expect(fd).toContain("ratingRowText: { fontSize: 13, fontWeight: '600', color: '#2F3137' }");
-  expect(fd).toMatch(/rvHead: \{[^}]*gap: 2, paddingHorizontal: 20, paddingTop: 20/);
+  expect(fd).toContain("rvHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 20, paddingTop: 20 }"); // KB-848: 토글만 오른쪽
   expect(fd).toMatch(/natToggleRow: \{[^}]*gap: 7/);
 });
 
 it('A-RL — body 20/8 gap9·summaryBox pv16 ph0 gap29·좌 149·축 gap6·트랙 8×46 #DCDEE3·토글 gap7', () => {
   const rl = read('src/app/food/[id]/reviews.tsx');
   expect(rl).toContain("body: { paddingHorizontal: 20, paddingTop: 8, gap: 9 }");
-  expect(rl).toMatch(/summaryBox: \{[^}]*paddingVertical: 16, paddingHorizontal: 0, gap: 29/);
-  expect(rl).toContain('summaryLeft: { flex: 1, minWidth: 96, maxWidth: 149, gap: 4'); // #105 P2
-  expect(rl).toContain("axisCol: { alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0 }"); // #105 3R
-  expect(rl).toMatch(/axisTrack: \{ width: 8, height: 46, borderRadius: 4, backgroundColor: '#DCDEE3'/);
+  const box = read('src/features/review/RatingSummaryBox.tsx'); // KB-848: 요약 박스 = 공용 모듈
+  expect(box).toMatch(/summaryBox: \{[^}]*paddingVertical: 16, paddingHorizontal: 0, gap: 29/);
+  expect(box).toContain('summaryLeft: { flex: 1, minWidth: 96, maxWidth: 149, gap: 4'); // #105 P2
+  expect(box).toContain("axisCol: { alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0 }"); // #105 3R
+  expect(box).toMatch(/axisTrack: \{ width: 8, height: 46, borderRadius: 4, backgroundColor: '#DCDEE3'/);
   expect(rl).toMatch(/filterToggle: \{[^}]*gap: 7/);
 });
 
@@ -27,7 +28,9 @@ it('A-RW — body pad20 gap20·캡션 슬롯 안 14/600 #778088·라벨 13/600·
   expect(rw).not.toContain('photoCap:'); // A-RW-05 → P-348 ③ 대체(캡션 소멸 — 아이콘만)
   expect(rw).toContain("label: { fontSize: 13, fontWeight: '600', color: '#778088' }");
   expect(rw).toMatch(/textarea: \{ minHeight: 132[^}]*borderColor: '#DCDEE3'[^}]*marginTop: -8/);
-  expect(rw).toMatch(/photoDel: \{[^}]*top: 6, right: 6[^}]*backgroundColor: '#D9D9D9'/);
+  // KB-777 A2-9: 보이는 원은 그대로 16 #D9D9D9 @ top6·right6 — 위치는 44 터치 상자(top0·right0·padding 6, 오른쪽 정렬)가 만든다
+  expect(rw).toMatch(/photoDelHit: \{ position: 'absolute', top: 0, right: 0, width: 44, height: 44, padding: 6, alignItems: 'flex-end' \}/);
+  expect(rw).toMatch(/photoDel: \{ width: 16, height: 16, borderRadius: 8, backgroundColor: '#D9D9D9'/);
   const rc = read('src/features/review/ReviewCellParts.tsx');
   expect(rc).toMatch(/pickerSheet: \{[^}]*borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, gap: 20/);
   expect(rc).toContain("pickerHeader: { alignItems: 'center' }");

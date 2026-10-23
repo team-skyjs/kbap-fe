@@ -1,3 +1,16 @@
+## 2026-10-23 — KB-873 PR341 리뷰 P2 두 건 수정
+
+- 실제 route 파일 전수 → screenFromSegments → sanitizer 대조. canonical screen 4곳 교정, food/index 별칭 제거.
+- area_id 접두사/surface 검증 공용화. collector는 잘못된 등록을 상태 변경 전에 거절, sanitizer/SDK 경계는 이벤트 전체 폐기.
+- 수정 전 8개 회귀 실패, 수정 후 관련 40개 통과. 전체/타입/lint 결과는 REPORTS 기록. 실제 화면 연결·SDK 수신은 후속이며 전체 KB-873 미완료.
+
+## 2026-10-23 — KB-873 / P-526 첫 단위 foundation
+
+- 감사A/B/C·CSV·독립검토와develop4d38fb19대조,PR339/187보존. 이벤트사전·7단위계획·1248구문행pending추적대장작성.
+- schema2방문/가시delta/연속노출/scrollmilestone·summary순수집계기와어댑터whitelist/값검증. 화면runtime연결/계정reset실배선/실수신은후속단위,이번완료주장금지.
+- 12개기반회귀PASS:가림/배경/중복·세대·크기보정·동적목록·민감값배제·5분60fps집계·첫드래그. 타입/sweep검증. 최종전체/lint/CI근거는REPORTS에기록.
+- 기능·플래그·API·카피·native의존성변경0. 실기/수신/기기성능미검증. 배포0. KB873전체진행중,다음lifecycle배선.
+
 # kbap-fe Build Progress
 > 규칙: 한 번에 1개. [ ]→[~]→[x]. 각 화면 완료 시 목업 대조 + 커밋.
 > 목업 SSOT: Claude Design `43cc8ad0-38d8-4afa-a66f-a7412eae2a49` ("KLens Hi-Fi (Direction G)", hifi-*.jsx, hifi-g.css).

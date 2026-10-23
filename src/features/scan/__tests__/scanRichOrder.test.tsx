@@ -57,7 +57,8 @@ function render(el: React.ReactElement): ReactTestRenderer {
   });
   return tree;
 }
-const flat = (tree: ReactTestRenderer) => JSON.stringify(tree.toJSON());
+// KB-777 B1-10: 사장님 카드 한국어는 어절 안에 단어 결합자(U+2060)가 들어간다 — 문구 비교는 결합자를 걷어 내고
+const flat = (tree: ReactTestRenderer) => JSON.stringify(tree.toJSON()).replace(/\u2060/g, '');
 const byId = (tree: ReactTestRenderer, id: string) =>
   tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function');
 

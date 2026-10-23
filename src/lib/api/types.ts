@@ -99,6 +99,9 @@ export interface UserUpdate {
 export interface RatingAggregate {
   average: number | null; // 1–5, null if 0 reviews
   count: number;
+  /** KB-857: 서버 축 평균 — 없음(구 응답·값 있는 리뷰 0건) = null/생략 → 요약 박스에서 그 축 숨김 */
+  speedAverage?: number | null;
+  serviceAverage?: number | null;
 }
 
 /** List/home/recommend summary (personalized risk included). */
@@ -226,6 +229,10 @@ export interface Review {
   servingSpeed?: number;
   staffKindness?: number;
   myLike?: boolean;
+  /** KB-812 2차: 리뷰 대상 — 서버 targetType PROCESSED_FOOD = 'packaged'(foodId '' · 이름·사진 = 제품), 그 밖·구응답 = 'food' */
+  target?: 'food' | 'packaged';
+  /** 가공식품 리뷰의 제품 id — target 'packaged'일 때만 */
+  processedFoodId?: string;
 }
 
 /* ---- response envelopes ---- */

@@ -1,3 +1,5 @@
+import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type EngagementEvent } from './engagement/schema';
+
 /**
  * analytics.ts — Amplitude 계측 어댑터 (P-083/KB-265). 화면 코드는 `track()`
  * 하나만 호출한다 — SDK 교체·키 주입·스키마 변경 전부 이 파일에서.
@@ -21,8 +23,10 @@
  * | scan_complete            | degraded, item_count, success,              |
  * |                          | fail_reason (P-220 5종: not_menu·ocr·      |
  * |                          | upload·network·server)                     |
- * | food_detail_view         | source (scan|list|search|home|other)       |
- * | review_submit            | (props 없음)                                |
+ * | food_detail_view         | source (scan|list|search|home|idol_pick|other) |
+ * | home_idol_pick_list_view      | count (KB-836 K-POP & K-FOOD 목록 포커스)     |
+ * | food_idol_video_open          | food_id, platform (youtube|tiktok), video_position — URL 금지 |
+ * | review_submit            | has_photos, photo_count, rating, target_type(food|packaged) |
  * | auth_login_success            | provider (APPLE|GOOGLE), is_new (bool),    |
  * |                              | entry (intro|gate_*|profile|other)         |
  * | auth_guest_enter              | (props 없음)                                |
@@ -49,6 +53,7 @@
  */
 
 export const EVENTS = {
+  ...ENGAGEMENT_EVENTS,
   onboarding_step_view: 'onboarding_step_view',
   onboarding_step_complete: 'onboarding_step_complete',
   onboarding_step_skip: 'onboarding_step_skip',
@@ -113,12 +118,29 @@ export const EVENTS = {
   home_section_view: 'home_section_view', // 홈 섹션 노출(50%↑ + 스크롤 정지, 홈 진입당 1회)
   home_card_view: 'home_card_view', // 홈 카드 노출(같은 규칙)
   home_card_click: 'home_card_click', // 홈 카드 클릭(섹션·위치) — 표시 이름 "홈컨텐츠_카드_클릭"
+  home_curation_link_click: 'home_curation_link_click', // KB-796(홈 큐레이션 도메인 home_) 큐레이션 항목 외부 링크(View guide) — 모음 키·위치만(URL 금지)
+  food_packaged_search: 'food_packaged_search', // KB-812 가공식품 검색(첫 페이지 도착 1회) — 검색어 원문 금지, 길이·결과 수만(발주명 packaged_search → 도메인 규칙상 food_)
+  food_packaged_detail_view: 'food_packaged_detail_view', // KB-812 가공식품 상세 진입 — id·labelSource
+  home_curation_gallery_open: 'home_curation_gallery_open', // KB-832 항목 카드 → 사진 갤러리 시트(발주명 curation_gallery_open → 도메인 규칙상 home_)
+  home_curation_gallery_swipe: 'home_curation_gallery_swipe', // KB-832 갤러리 사진 넘김(도착 인덱스)
+  home_curation_map_open: 'home_curation_map_open', // KB-863 갤러리 사진 위 지도 버튼 탭(선택지 열림) — 모음 키·entry_id만(장소명 금지)
+  home_curation_map_select: 'home_curation_map_select', // KB-863 지도 선택 — provider(google|kakao|naver)
+  scan_mode_select: 'scan_mode_select', // KB-813 스캔 모드 탭(menu|packaged)
+  food_packaged_scan_name: 'food_packaged_scan_name', // KB-813 이름 스캔 결과(후보 수 — OCR 원문 금지)
+  food_packaged_scan_confirm: 'food_packaged_scan_confirm', // KB-813 확정 — 서버 charged 그대로
+  food_packaged_scan_handoff: 'food_packaged_scan_handoff', // KB-813 성분표 안내 진입(from: none|rejected|capture)
+  home_idol_pick_list_view: 'home_idol_pick_list_view', // KB-836 K-POP & K-FOOD 목록 화면 포커스(음식 수) — 발주명 idol_pick_list_view → 도메인 규칙상 home_
+  food_idol_video_open: 'food_idol_video_open', // KB-836 발주명 idol_video_open → 도메인 규칙상 food_ · 상세 티저 카드 → 대표 영상 열기(platform 은 계측 전용 — 화면 비노출, URL 금지)
+  food_packaged_detail_expand: 'food_packaged_detail_expand', // KB-865 상세 원재료·출처 펼침/접기(action see_detail|ingredients_source|see_less) — 제품명 0, id만
+  food_packaged_type_select: 'food_packaged_type_select', // KB-865 v4 목록 유형 칩(all|snacks|ramen|drinks|bread)
+  food_packaged_label_scan: 'food_packaged_label_scan', // P-508 성분표 분석 결과(pages 1~4 · charged = 서버값 · result ok|unreadable|newAnalysis|expired|quota|network… — OCR 원문 금지)
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
 
 /** 이벤트별 허용 prop 키 — CSV와 1:1. 밖의 키는 전송 전 드롭(PII 방어선). */
 const ALLOWED: Record<EventName, readonly string[]> = {
+  ...ENGAGEMENT_ALLOWED,
   onboarding_step_view: ['step'],
   onboarding_step_complete: ['step'],
   onboarding_step_skip: ['step'],
@@ -127,7 +149,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   // ⚠️ not_menu(사용자 촬영 문제)와 ocr(우리 인식 실패)은 개선 투자처가 반대라 분리.
   scan_complete: ['degraded', 'item_count', 'success', 'fail_reason'], // P-144 확장
   food_detail_view: ['source', 'food_id'], // P-144: food_id 추가(카탈로그 id — PII 아님)
-  review_submit: ['has_photos', 'photo_count', 'rating'], // P-144 확장
+  review_submit: ['has_photos', 'photo_count', 'rating', 'target_type'], // P-144 확장 · KB-812 2차 target_type: food|packaged
   // P-389(KB-576): is_new = 서버 newMember(가입/재로그인 구분) · entry = 가입 유입 경로.
   // 실패·취소는 종전대로 미전송이라 전환율 분모는 auth_gate_view가 유지한다.
   auth_login_success: ['provider', 'is_new', 'entry'],
@@ -142,7 +164,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   // P-214 🔒: keyword = **카탈로그 매칭 시에만**(호출처 searchKeywordProps가 판정) —
   // 자유 텍스트는 matched:false + len_bucket만(알레르기·신념 추론 차단)
   search_query: ['keyword', 'result_count', 'matched', 'len_bucket'],
-  review_write_tap: ['source'],
+  review_write_tap: ['source', 'target_type'], // KB-812 2차 target_type: food|packaged(생략 = food — 음식 진입점은 무변)
   food_bookmark_toggle: ['on'],
   // P-389(KB-576): user_type = BE 토큰 유무(guest|registered) — 탭별 회원/게스트 분해용.
   app_tab_view: ['tab', 'user_type'], // home|food|reviews|community|profile — KB-429: community 슬롯 → reviews 교체(community 값은 구버전 이벤트 호환용 잔존)
@@ -160,17 +182,33 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   ad_reward_earned: ['placement', 'remaining', 'surface'],
   ad_consent_result: ['status', 'can_request_ads', 'gdpr_applies', 'personalized_consent'], // KB-774: boolean만(TC 문자열 원문 금지)
   // KB-784: screen = 라우트 패턴(예 food/[id] — 실제 id 없음) · target = testID 정규화(숫자·대문자 코드·비ASCII 토큰 → :v, lib/uiClick)
-  // section = popular|saved|food|safe|most_reviewed|recent|top_rated|guest_cta (KB-800: reviews → top_rated) · position = 섹션 안 0부터 · food_id = 카탈로그 id(PII 아님)
+  // section = popular|saved|food|safe|most_reviewed|recent|top_rated|guest_cta|curation|idol_pick (KB-800: reviews → top_rated · KB-796 curation · KB-836 idol_pick 배너 — 클릭에 id 없음) · position = 섹션 안 0부터 · food_id = 카탈로그 id(PII 아님)
   screen_view: ['screen'],
   ui_click: ['screen', 'target'],
   home_section_view: ['section'],
   home_card_view: ['section', 'position', 'food_id'],
-  home_card_click: ['section', 'position', 'food_id'],
+  home_card_click: ['section', 'position', 'food_id', 'collection_key'], // KB-796: section=curation이면 collection_key(서버 모음 키)
+  home_curation_link_click: ['collection_key', 'position'],
+  food_packaged_search: ['query_length', 'result_count'],
+  food_packaged_detail_view: ['product_id', 'label_source'],
+  home_curation_gallery_open: ['collection_key', 'entry_id'],
+  home_curation_gallery_swipe: ['collection_key', 'entry_id', 'index'],
+  home_curation_map_open: ['collection_key', 'entry_id'],
+  home_curation_map_select: ['collection_key', 'entry_id', 'provider'],
+  scan_mode_select: ['mode'],
+  food_packaged_scan_name: ['candidate_count'],
+  food_packaged_scan_confirm: ['charged', 'rejected'],
+  food_packaged_scan_handoff: ['from'],
+  home_idol_pick_list_view: ['count'],
+  food_idol_video_open: ['food_id', 'platform', 'video_position'],
+  food_packaged_label_scan: ['pages', 'charged', 'result'],
+  food_packaged_type_select: ['type'],
+  food_packaged_detail_expand: ['product_id', 'action'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open
   error_state_view: ['screen', 'kind', 'action'], // kind: error|offline|empty · action: view|retry
-  review_helpful_toggle: ['on', 'surface'],
+  review_helpful_toggle: ['on', 'surface', 'target_type'], // KB-812 2차 target_type: food|packaged
   review_translate_toggle: ['action', 'target', 'result'], // action: translate|original · target: review|post · result: ok|fail|same(KB-679 — 번역 시도 결과, original엔 없음 · KB-689 same = 원문 언어 == 요청 언어)
   push_primer_response: ['action', 'surface'], // accept|later · onboarding|scan
   push_pref_toggle: ['key', 'on'],
@@ -220,12 +258,15 @@ function ensureInit(): boolean {
 /** 허용 키만 통과 — 스키마 밖 prop(실수로 섞인 PII 포함)은 여기서 소멸. */
 export function sanitize(event: EventName, props?: Record<string, unknown>): Record<string, unknown> | undefined {
   if (!props) return undefined;
+  if (Object.hasOwn(ENGAGEMENT_EVENTS, event)) return sanitizeEngagement(event as EngagementEvent, props);
   const allowed = ALLOWED[event];
   return Object.fromEntries(Object.entries(props).filter(([k]) => allowed.includes(k)));
 }
 
 export function track(event: EventName, props?: Record<string, unknown>): void {
   const clean = sanitize(event, props);
+  // Invalid schema2 areas are rejected as events, not forwarded with missing dimensions.
+  if (Object.hasOwn(ENGAGEMENT_EVENTS, event) && (!clean || !Object.keys(clean).length)) return;
   if (!ensureInit()) {
     if (__DEV__) console.log('[analytics:noop]', event, clean ?? {});
     return;

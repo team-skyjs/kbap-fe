@@ -16,6 +16,7 @@ jest.mock('@/lib/flags', () => ({
       return mockFlagState.live;
     },
   },
+  isDevServerChannel: () => true, // KB-870: dev 서버 채널(리뷰 조회 3.2)
 }));
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -62,7 +63,7 @@ describe('목록 페처 — 플래그 스위칭', () => {
     mockFlagState.live = true;
     api.get.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
     await fetchFoodReviewsPage('7', '42', 'VN');
-    expect(api.get).toHaveBeenCalledWith('/api/reviews?lang=en&foodId=7&cursor=42&countryCode=VN'); // P-165(#144) 버전리스 + lang 필수
+    expect(api.get).toHaveBeenCalledWith('/api/reviews?lang=en&foodId=7&cursor=42&countryCode=VN', { headers: { 'X-API-Version': '3.2' } }); // P-165(#144) 버전리스 + lang 필수
   });
 });
 
@@ -79,7 +80,7 @@ describe('내 리뷰 페처 — 플래그 스위칭', () => {
       hasNext: false,
     });
     const mine = await fetchMyReviews();
-    expect(api.get).toHaveBeenCalledWith('/api/reviews/me?lang=en'); // P-165(#144) 버전리스 + lang 필수
+    expect(api.get).toHaveBeenCalledWith('/api/reviews/me?lang=en', { headers: { 'X-API-Version': '3.2' } }); // P-165(#144) 버전리스 + lang 필수
     expect(mine).toHaveLength(1);
     expect(mine[0].anonymized).toBe(true); // author null(탈퇴형) 방어 겸
   });
@@ -260,9 +261,9 @@ describe('P-179: 전역 리뷰 피드 페처', () => {
     mockFlagState.live = true;
     api.get.mockResolvedValue({ items: [], hasNext: false, nextCursor: null });
     await fetchGlobalReviewsPage(null);
-    expect(api.get).toHaveBeenCalledWith('/api/reviews?lang=en');
+    expect(api.get).toHaveBeenCalledWith('/api/reviews?lang=en', { headers: { 'X-API-Version': '3.2' } });
     await fetchGlobalReviewsPage('42');
-    expect(api.get).toHaveBeenLastCalledWith('/api/reviews?lang=en&cursor=42');
+    expect(api.get).toHaveBeenLastCalledWith('/api/reviews?lang=en&cursor=42', { headers: { 'X-API-Version': '3.2' } });
   });
 
   it('off(봉인) → 호출 0 · 빈 페이지(게이트는 화면 몫)', async () => {

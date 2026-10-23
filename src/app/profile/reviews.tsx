@@ -15,20 +15,20 @@
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { Redirect, useRouter, type Href } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
+import { reviewEditHref, reviewTargetHref } from '@/lib/review/reviewTarget';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
 import { SubHeader, IconFood } from '@/components';
 import { useMyReviews } from '@/lib/data/useMe';
-import { useFoods } from '@/lib/data/useFoods';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonMyReviews } from '@/components/Skeleton';
 import { FeedCard } from '@/features/review/FeedCard';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
-import { Alert } from 'react-native';
+import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import type { Review } from '@/lib/api/types';
 
 export default function MyReviews() {
@@ -42,23 +42,14 @@ function MyReviewsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { data: reviews, isLoading: reviewsLoading, error: reviewsError, refetch: refetchReviews } = useMyReviews(); // P-164
-  const { data: foods } = useFoods();
   // P-182: 수정/삭제는 셀 ⋮(항상 본인 화면) — ActionSheet 현 로직
   const deleteReview = useDeleteReview();
-  const foodMap = useMemo(() => new Map((foods ?? []).map((f) => [f.foodId, f])), [foods]); // KB-657: 이를 읽는 onMore보다 위(선언 전 접근 → 메모 폐기)
-  const confirmDelete = (rv: Review) => {
-    Alert.alert(t('editReview.deleteConfirmTitle'), t('editReview.deleteConfirmBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('editReview.delete'), style: 'destructive', onPress: () => deleteReview.mutate({ reviewId: rv.id, foodId: rv.foodId }) },
-    ]);
-  };
-  const onMore = (rv: Review) => {
-    Alert.alert(rv.foodName ?? foodMap.get(rv.foodId)?.name ?? t('myReviews.viewDish'), undefined, [
-      { text: t('editReview.title'), onPress: () => router.push(`/food/${rv.foodId}/review?reviewId=${rv.id}` as Href) }, // P-358
-      { text: t('editReview.delete'), style: 'destructive', onPress: () => confirmDelete(rv) },
-      { text: t('common.cancel'), style: 'cancel' },
-    ]);
-  };
+  // KB-777 B2-6: 본인 리뷰 ⋯ = 피드와 같은 공용 하단 시트(ModerationFlow mine — 수정·삭제, 삭제 = 위험색).
+  // 종전 OS Alert 3버튼(안드: 취소가 위·위험색 없음)이 피드 시트와 달랐다. 삭제 동작도 피드와 같다(시트에서 바로).
+  const [mod, setMod] = useState<ModTarget | null>(null);
+  const onMore = (rv: Review) =>
+    setMod({ type: 'review', id: rv.id, author: { id: rv.memberId ?? `rv-${rv.id}`, nickname: null, nationality: rv.authorNationality }, mine: true });
+  const byId = (id: string) => (reviews ?? []).find((r) => r.id === id);
 
   // P-336(9/8 예진): 위험 칩 필터 소멸 — 목록 = 전체(최신순). 시안 2200:21038 칩은 B(유지 이탈).
   const list = useMemo(() => {
@@ -100,7 +91,7 @@ function MyReviewsScreen() {
                   review={rv}
                   t={t}
                   mine
-                  onOpenFood={() => rv.foodId && router.push(`/food/${rv.foodId}?src=my_reviews` as Href)}
+                  onOpenFood={() => { const href = reviewTargetHref(rv, 'my_reviews'); if (href) router.push(href); }} /* KB-812 2차: 가공식품 = 제품 상세 */
                   onGuestHelpful={() => {}}
                   onMore={() => onMore(rv)}
                 />
@@ -116,6 +107,14 @@ function MyReviewsScreen() {
           <EmptyBlock label={t('myReviews.emptyTitle')} testID="myrev-empty" />
         </ScreenCenterFill>
       )}
+      {/* 열 때만 마운트(신고 뮤테이션 훅 등 — 닫힌 동안 비용 0) */}
+      {mod && <ModerationFlow
+        target={mod}
+        onClose={() => setMod(null)}
+        onEdit={(m) => { const rv = byId(m.id); const href = rv && reviewEditHref(rv); if (href) router.push(href); }} /* P-358 · KB-812 2차: 대상별 작성 화면 */
+        onDelete={(m) => { const rv = byId(m.id); if (rv) deleteReview.mutate({ reviewId: rv.id, foodId: rv.foodId }); }}
+        onBlocked={() => {}}
+      />}
     </View>
   );
 }

@@ -29,6 +29,7 @@ import { loadLocalSpice, SPICE_KEY } from '../onboarding/submit';
 import { spiceChoiceToWire } from '../api/spiceAdapter';
 import { MOCK_MY_REVIEWS, MOCK_USER } from '../mocks/me';
 import { toBeCode } from '../mocks/ingredients';
+import { REVIEW_READ_HEADERS } from './useFoodReviews';
 
 
 /** Codex #291 R4: request order, not completion order, feeds the unlock transition (an older false must not erase a newer true). */
@@ -78,7 +79,7 @@ export async function fetchMyReviews(): Promise<Review[]> {
   for (let page = 0; page < 20; page++) {
     // ponytail: 20페이지 안전 상한 — 초과분은 잘림(개인 리뷰 수백 건이면 그때 페이지네이션 UI)
     const res = adaptReviewPage(
-      await api.get<ReviewPageWire>(`/api/reviews/me?lang=${apiLang()}${cursor ? `&cursor=${cursor}` : ''}`),
+      await api.get<ReviewPageWire>(`/api/reviews/me?lang=${apiLang()}${cursor ? `&cursor=${cursor}` : ''}`, REVIEW_READ_HEADERS), // KB-812 2차: 3.2 = 가공식품 리뷰 포함
     );
     all.push(...res.items);
     if (!res.hasNext || !res.nextCursor) break;
@@ -129,11 +130,16 @@ export function useUpdateMe() {
       // P-060②: appLanguage 철거(BE 계약 삭제 확인) — 언어는 서버 무저장, 매 요청 lang
       if (patch.currency !== undefined) body.currency = patch.currency; // P-165(#145) — null = 미설정(국적 폴백)
       if (patch.restrictions !== undefined) {
-        // 와이어 경계: BE 표준 코드만 (KB-75) — unmapped 드롭+로그
+        // 와이어 경계: BE 표준 코드만 (KB-75) — unmapped 드롭+로그.
+        // KB-843(서버 백필 #448 짝): 단, **서버 프로필에 이미 있던 코드**는 앱이 몰라도 보존(서버가 목록을 통째로 교체 — 빼면 백필·새 코드가 지워진다).
+        // 레거시 잔재(ing:…)·서버에 없던 값만 드롭
+        const serverCodes = new Set((qc.getQueryData<User>(['me', i18n.language])?.restrictions ?? []).map((r) => r.code));
         body.avoidanceSubstanceCodes = patch.restrictions.flatMap((r) => {
           const be = toBeCode(r.code);
-          if (!be) console.log('[profile] dropping unmapped ingredient code:', r.code);
-          return be ? [be] : [];
+          if (be) return [be];
+          if (serverCodes.has(r.code)) return [r.code];
+          console.log('[profile] dropping unmapped ingredient code:', r.code);
+          return [];
         });
       }
       // P-243(BE #179): 식이 카테고리 — 풀 셋 교체(해제 실동작). 회피와 한 요청 가능.

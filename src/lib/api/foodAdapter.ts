@@ -54,7 +54,16 @@ export function adaptFoodImages(wire: unknown): string[] | undefined {
  *  average null(화면 '—'). */
 function aggFromRating(r: ReviewRatingWire | undefined): RatingAggregate {
   const count = r?.reviewCount ?? 0;
-  return { average: count > 0 && typeof r?.averageRating === 'number' ? r.averageRating : null, count };
+  // KB-857: 축 평균은 그 축 리뷰 수가 1 이상이고 숫자일 때만(null·Count 0·필드 없음 = null → 축 숨김)
+  const axis = (avg: number | null | undefined, n: number | undefined) => ((n ?? 0) > 0 && typeof avg === 'number' ? avg : null);
+  const speed = axis(r?.servingSpeedAverage, r?.servingSpeedCount);
+  const service = axis(r?.staffKindnessAverage, r?.staffKindnessCount);
+  return {
+    average: count > 0 && typeof r?.averageRating === 'number' ? r.averageRating : null,
+    count,
+    ...(speed != null ? { speedAverage: speed } : {}), // 없으면 키째 생략(구 응답과 같은 모양)
+    ...(service != null ? { serviceAverage: service } : {}),
+  };
 }
 
 /** P-107(KB-275, #121): 리뷰 요약 겸수신 — ① 신계약 중첩(스냅샷 8/3 정본

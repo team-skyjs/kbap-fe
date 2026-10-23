@@ -15,7 +15,6 @@ import * as React from 'react';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
-import { useReviewTime } from '@/lib/reviewTime';
 import { Txt as Text } from '@/components/Txt';
 import { TopToastHost } from '@/components/TopToast';
 import Animated from 'react-native-reanimated';
@@ -29,18 +28,11 @@ import {
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
-  Stars,
-  RankMedal,
-  Flag,
   QueryErrorBlock,
   Spinner,
-  IconProfile,
   IconBubbleEmpty,
-  IconPlus,
   IconCheck,
-  IconChevron,
   IconChevronDown,
-  IconMore,
   CardPhoto,
 } from '@/components';
 import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
@@ -50,12 +42,12 @@ import { useFoodDetail } from '@/lib/data/useFoods';
 import { useIsFoodHidden } from '@/lib/data/hiddenFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { IconLock } from '@/components/icons';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { HelpfulButton, ReviewBody, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { FeedCard } from '@/features/review/FeedCard';
+import { RatingSummaryBox, serverAxes } from '@/features/review/RatingSummaryBox';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
-import type { RatingAggregate, Review } from '@/lib/api/types';
+import type { Review } from '@/lib/api/types';
 
 
 export default function FoodReviews() {
@@ -118,18 +110,8 @@ function FoodReviewsScreen() {
   const summaryAgg = sameNatOnly ? sameNat : overall;
   // KB-431 §2-3: 축 평균 — Taste = 서버 overall / Speed·Service = 서버 축 집계 부재라
   // 로드된 리뷰(값 있는 것만) 클라 평균. 무데이터 축 = null(바 미표시).
-  const axisAverages = React.useMemo(() => {
-    const avg = (pick: (r: Review) => number | undefined) => {
-      const vals = all.map(pick).filter((v): v is number => typeof v === 'number' && v > 0);
-      return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-    };
-    return {
-      taste: summaryAgg.average, // P-360: 토글 ON = 같은 국적 평균(OFF = 현행 overall)
-      speed: avg((r) => r.servingSpeed),
-      service: avg((r) => r.staffKindness),
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reviewsQ.data, blockedIds, summaryAgg.average]); // Codex #30 P2 + P-360: 토글 전환 반영
+  // P-360: Taste = 토글 ON이면 같은 국적 평균(OFF = overall) · KB-848 AG3: 서버 집계 축만(상세 요약 박스와 같은 값)
+  const axisAverages = serverAxes(summaryAgg);
   // P-085: 내 리뷰 판별 = 서버 memberId (목 시절 내 리뷰 캐시 id 집합 폐기)
   const isMine = (r: Review) => r.memberId != null && r.memberId === me?.id;
   // P-095: 행 ⋯ → 공용 ModerationFlow (내 것 Edit/Delete·남 Report/Block)
@@ -246,10 +228,23 @@ function FoodReviewsScreen() {
                 <EmptyBlock label={t(sameNatOnly ? 'reviews.emptySameNat' : 'reviews.emptyBody')} testID="reviews-filter-empty" />
               </View>
             ) : (
-              <View style={{ gap: 12 }}>
-                {items.map((r) => (
-                  <ReviewItem key={r.id} review={r} t={t} mine={isMine(r)} foodId={id ?? ''} onMore={() => openMenu(r)} /* P-339 ②: 탈퇴 포함 전 카드 ⋯(신고만 — 차단은 플로우가 가드) */ />
-                ))}
+              <View>
+                {/* KB-848: 리뷰 탭과 같은 카드(FeedCard · peek) — 카드 자체 좌우 20·구분선이라 본문 패딩(20) 밖으로 꺼낸다. 자기 음식 칩은 숨김(상세 프리뷰와 같음) */}
+                <View style={styles.cards}>
+                  {items.map((r) => (
+                    <FeedCard
+                      key={r.id}
+                      review={r}
+                      t={t}
+                      mine={isMine(r)}
+                      photoVariant="peek"
+                      showFood={false} /* Codex #327: extras 줄(속도·서비스) = 카드 평점 축과 같은 값이라 붙이지 않는다 */
+                      onOpenFood={() => {}}
+                      onGuestHelpful={() => {}} /* 게스트 Helpful = 무동작(옛 목록 그대로 — 게이트 시트 없는 화면) */
+                      onMore={() => openMenu(r)} /* P-339 ②: 탈퇴 포함 전 카드 ⋯(신고만 — 차단은 플로우가 가드) */
+                    />
+                  ))}
+                </View>
                 {/* P-085: keyset 더보기 — hasNext일 때만 */}
                 {reviewsQ.hasNextPage && (
                   <Pressable
@@ -301,118 +296,6 @@ function FoodReviewsScreen() {
   );
 }
 
-type TFn = ReturnType<typeof useTranslation>['t'];
-
-/** KB-431 §2-3: 세로 바 1개 — 뱃지(최고값 강조) + 바(fill 높이 = 점수/5 × 46) + 라벨. */
-export function AxisBar({ label, value, top, testID }: { label: string; value: number; top: boolean; testID?: string }) {
-  const fillH = Math.max(0, Math.min(1, value / 5)) * 46;
-  return (
-    <View style={styles.axisCol} testID={testID}>
-      <View style={[styles.axisBadge, top ? styles.axisBadgeTop : styles.axisBadgeRest]}>
-        <Text style={[styles.axisBadgeText, top && { color: '#FFFFFF' }]}>{value.toFixed(1)}</Text>
-      </View>
-      <View style={styles.axisTrack}>
-        <View style={[styles.axisFill, { height: fillH }, top ? styles.axisFillTop : styles.axisFillRest]} testID={testID ? `${testID}-fill` : undefined} />
-      </View>
-      <Text style={styles.axisLbl} numberOfLines={2}>{label}</Text>
-    </View>
-  );
-}
-
-/** KB-431 §2-3: 평점 요약 박스(4150:16775). */
-function RatingSummaryBox({
-  overall,
-  sameNat = false,
-  axes,
-  t,
-}: {
-  overall: RatingAggregate;
-  /** P-360: KR only ON — 라벨 = SAME NATIONALITY(값은 호출측이 sameNationality 전달) */
-  sameNat?: boolean;
-  axes: { taste: number | null; speed: number | null; service: number | null };
-  t: TFn;
-}) {
-  const bars: [string, string, number][] = [
-    ['taste', t('review.extrasTaste'), axes.taste],
-    ['speed', t('review.extrasSpeed'), axes.speed],
-    ['service', t('review.extrasService'), axes.service],
-  ].flatMap(([key, label, v]) => (v != null ? [[key as string, label as string, v as number]] : []));
-  const max = Math.max(...bars.map((b) => b[2]), 0);
-  return (
-    <View style={styles.summaryBox} testID="rating-summary-box">
-      <View style={styles.summaryLeft}>
-        <Stars value={overall.average ?? 0} size={16} />
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-          <Text style={styles.bigScore}>{overall.average?.toFixed(1) ?? '—'}</Text>
-          <Text style={styles.bigScoreOf}>/ 5</Text>
-        </View>
-        <Text style={styles.overallLbl}>{t(sameNat ? 'reviews.sameNationality' : 'reviews.overall').toUpperCase()}</Text>
-      </View>
-      {bars.length > 0 && (
-        <View style={styles.summaryRight}>
-          {bars.map(([key, label, value]) => (
-            <AxisBar key={key} label={label} value={value} top={value === max} testID={`axis-${key}`} />
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
-
-function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TFn; mine: boolean; foodId: string; onMore?: () => void }) {
-  // P-085 author 방어 3케이스: ① author null(탈퇴)=익명 ② nickname null(미설정)
-  // → 국적 코드 폴백 ③ countryCode null(미보유) → 국기 대신 중립 아바타.
-  const anon = review.anonymized;
-  const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
-  const when = useReviewTime(review.createdAt, t); // KB-781 — 다음 표기 경계에 갱신
-
-  return (
-    /* P-182 ②: 카드 전체 탭 제거 — 요소별 액션만 */
-    <View style={styles.item} testID={`review-item-${review.id}`}>
-      <View style={styles.itemTop}>
-        <View style={styles.who}>
-          {anon || !review.authorNationality ? (
-            <View style={styles.anonAvatar}>
-              <IconProfile size={14} color={C.ink3} />
-            </View>
-          ) : (
-            <Flag code={review.authorNationality} size={20} />
-          )}
-          <Text style={styles.whoName} numberOfLines={1}>{name}</Text>
-          {/* P-353 ①(KB-515): 구 랭킹 필 폐기 — 피드와 동일 RankMedal 16 */}
-          {!anon && !!review.authorRankTier && <RankMedal level={review.author?.level ?? 1} size={16} />}
-        </View>
-        <View style={styles.itemTopRight}>
-          <Stars value={review.rating} size={14} />
-          {onMore && (
-            <Pressable testID="reviews-more" hitSlop={10} onPress={onMore}>
-              <IconMore size={16} color={C.ink3} />
-            </Pressable>
-          )}
-        </View>
-      </View>
-
-      {/* P-182 ②: 사진 = 공용 스트립+풀스크린 뷰어 */}
-      <ReviewPhotoStrip photos={review.photos ?? []} />
-      {/* 장소는 여기서 한 번만(KB-674 — 공용 ReviewPlaceLine, 태그 있을 때만). 아래에 장소 줄을 또 넣으면 2중 표시. */}
-      <ReviewPlaceLine place={review.place ?? null} />
-      <ReviewExtrasLine review={review} mine={mine} />
-
-      <ReviewBody review={review} t={t} />
-
-      <View style={styles.itemFoot}>
-        {/* KB-781: 7일 미만 상대 · 이상 = 날짜 + 연도(옛 "n주 전" 폐기) — 리뷰 카드 공용 규칙, 스크린리더 = 전체 날짜 */}
-        <Text style={styles.when} accessibilityLabel={when.a11y}>{when.label}</Text>
-        <View style={styles.itemFootRight}>
-          {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}
-          <HelpfulButton review={review} mine={mine} foodId={foodId} t={t} />
-        </View>
-      </View>
-    </View>
-  );
-}
-
-
 function Switch({ on }: { on: boolean }) {
   return (
     <View style={[styles.sw, on && styles.swOn]}>
@@ -442,22 +325,6 @@ const styles = StyleSheet.create({
   dishSub: { fontSize: 13, fontWeight: '400', color: C.ink3 },
 
   // KB-431 §2-3: 평점 요약 박스
-  summaryBox: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.sm, paddingVertical: 16, paddingHorizontal: 0, gap: 29 }, // A-RL-04
-  summaryLeft: { flex: 1, minWidth: 96, maxWidth: 149, gap: 4, justifyContent: 'center', alignItems: 'center' }, // A-RL-04(#105 P2: minWidth 96 = Stars 16×5+gap — 320폭에서 별 넘침 방지)
-  bigScore: { fontSize: 34, fontWeight: '700', color: C.ink, lineHeight: 42 },
-  bigScoreOf: { fontSize: 20, fontWeight: '400', color: C.inkMute },
-  overallLbl: { fontSize: 13, fontWeight: '500', color: C.ink3 },
-  axisCol: { alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0 }, // A-RL-05(#105 3R: 넘칠 때만 축소)
-  axisBadge: { width: 34, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  axisBadgeTop: { backgroundColor: '#2F3137' },
-  axisBadgeRest: { backgroundColor: C.inkDisabled },
-  axisBadgeText: { fontSize: 12, fontWeight: '600', color: '#2F3137' },
-  axisTrack: { width: 8, height: 46, borderRadius: 4, backgroundColor: '#DCDEE3', justifyContent: 'flex-end', overflow: 'hidden' }, // A-RL-06(fill 3위 색은 C-57)
-  axisFill: { width: 8, borderRadius: 4 },
-  axisFillTop: { backgroundColor: '#2F3137' },
-  axisFillRest: { backgroundColor: C.inkDisabled },
-  axisLbl: { fontSize: 10, fontWeight: '500', color: C.ink3, textAlign: 'center' }, // #105 3R: 축소 시 2줄 랩 중앙
-  summaryRight: { flexGrow: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', gap: 13, alignItems: 'flex-start', justifyContent: 'center' }, // P-343 2-B(#105 4R: 상단 정렬 — 트랙 46 고정이라 바닥 공유, 2줄 라벨만 아래로 확장)
 
   // KB-431 §2-4: 컨트롤 행
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
@@ -472,22 +339,8 @@ const styles = StyleSheet.create({
   knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', ...shadow.sh1 },
   knobOn: { alignSelf: 'flex-end' },
 
-  item: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 8, ...shadow.sh1 }, // gap ↔ 번역 라벨 padTop(TRANSLATE_LABEL_BOX) 묶임(유닛)
-  itemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  itemTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
-  itemPressed: { opacity: 0.75 },
-  itemFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  itemFootRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  likeMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  photoStrip: { flexDirection: 'row', gap: 8 },
-  photo: { width: 84, height: 84, borderRadius: 10, backgroundColor: C.surface2 },
   // P-158 ②: i18n 가변 길이 내성 — 이름만 말줄임(shrink), 필·별점은 고정폭(겹침 0)
-  who: { flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1, minWidth: 0, marginRight: 8 },
-  anonAvatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  whoName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink, flexShrink: 1 },
-  reviewBody: { fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 20 },
-  reviewBodyKo: { fontFamily: font.ko },
-  when: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
+  cards: { marginHorizontal: -20 }, // KB-848: FeedCard = 자체 좌우 20(리뷰 탭과 같은 폭)
   // P-085 keyset 더보기
   loadMore: { alignItems: 'center', paddingVertical: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12 },
   loadMoreText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },

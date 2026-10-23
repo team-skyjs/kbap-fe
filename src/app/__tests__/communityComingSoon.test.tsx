@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 jest.mock('@/lib/flags', () => ({
   FLAGS: { communityEnabled: false, reviewsEnabled: true },
   isProdChannel: () => true,
+  isDevServerChannel: () => true, // KB-870
 }));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const mockFlags = (jest.requireMock('@/lib/flags') as { FLAGS: { communityEnabled: boolean } }).FLAGS;

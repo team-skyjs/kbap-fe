@@ -81,7 +81,9 @@ jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/lib/data/useFoods', () => ({
   useFoodDetail: () => ({ data: { foodId: '7', name: 'Kimbap', nameKo: '김밥', risk: 'safe' } }),
 }));
-jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, isLoading: false, isFetching: false }) }));
+jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, isLoading: false, isFetching: false }), useProcessedReviews: () => ({ data: undefined, isLoading: false, isFetching: false }) }));
+// KB-812 2차: 작성 화면이 가공식품 모드용 상세 훅을 부른다(음식 모드 = id 없음·비활성)
+jest.mock('@/lib/data/useProcessedFoods', () => ({ useProcessedDetail: () => ({ data: undefined }), processedUnavailable: () => null }));
 jest.mock('@/lib/analytics', () => ({ EVENTS: {}, track: jest.fn() }));
 const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a), subscribeTopToast: () => () => {} }));
@@ -91,6 +93,8 @@ jest.mock('@/lib/data/useReviewMutations', () => {
   const actual = jest.requireActual('@/lib/data/useReviewMutations') as Record<string, unknown>;
   return {
     findCachedReview: actual.findCachedReview, // 실구현 — 시드 캐시 조회 검증
+    reviewWriteClosed: actual.reviewWriteClosed,
+    useCreateProcessedReview: () => ({ mutateAsync: jest.fn() }),
     useCreateReview: () => ({ mutateAsync: mockCreate }),
     useUpdateReview: () => ({ mutateAsync: mockUpdate, isPending: false }),
     useDeleteReview: () => ({ mutate: jest.fn() }),
@@ -176,7 +180,8 @@ it('⑤ ReviewEditSheet 소멸 — 컴포넌트·4표면 배선·전용 키 잔�
   for (const f of ['src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx', 'src/app/profile/reviews.tsx', 'src/features/community/ReviewFeed.tsx']) {
     const src = read(f);
     expect(src).not.toContain('ReviewEditSheet');
-    expect(src).toContain('reviewId='); // 편집 = 라우트 push
+    expect(src).toMatch(/reviewId=|reviewEditHref\(/); // 편집 = 라우트 push(KB-812 2차: 대상별 경로는 reviewEditHref)
+    if (!src.includes('reviewId=')) expect(read('src/lib/review/reviewTarget.ts')).toContain('/review?reviewId=${r.id}');
   }
   for (const loc of ['ko', 'en']) {
     const j = read(`src/lib/i18n/${loc}.json`);
@@ -343,4 +348,87 @@ it('KB-708 B: 고친 뒤 리뷰가 캐시에서 사라져 미도착 분기로 �
   expect(byId(tree, 'edit-loading').length + byId(tree, 'edit-not-found').length).toBeGreaterThan(0); // 미도착 분기
   expect(byId(tree, 'leave-confirm')).toHaveLength(0);
   expect(mockPrevent.on).toBe(false);
+});
+
+// ── KB-828 본문 최소 10자(trim 후 코드포인트) — 안내·버튼 비활성·비활성 탭 강조·REVIEW-005·수정 경로
+describe('KB-828 리뷰 본문 최소 10자', () => {
+  const { ApiError } = jest.requireActual('@/lib/api/client') as typeof import('@/lib/api/client');
+  const bodyInput = (t2: ReactTestRenderer) => t2.root.findAll((n) => n.props?.multiline === true && typeof n.props?.onChangeText === 'function')[0];
+  const host = (t2: ReactTestRenderer, id: string) => t2.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string');
+  const textOf = (t2: ReactTestRenderer, id: string) => host(t2, id).map((n) => n.props.children).join('');
+  const flat = (s: unknown): Record<string, unknown> => Object.assign({}, ...([] as unknown[]).concat(s as never).flat(Infinity).filter(Boolean));
+  const pickStar = (t2: ReactTestRenderer) => act(() => t2.root.findAll((n) => n.props?.hitSlop === 4 && typeof n.props?.onPress === 'function')[4].props.onPress());
+  beforeEach(() => { mockParams.reviewId = undefined; });
+
+  it('작성: 0자·9자 = 안내 + "{n}/10" + Post off(스크린리더 비활성 + 사유 힌트) · 공백만 = 0 · 10자 = 안내 사라지고 Post on', () => {
+    const tree = render(<ReviewCompose />);
+    pickStar(tree);
+    expect(textOf(tree, 'review-min-length')).toBe('review.minLength');
+    expect(byId(tree, 'review-min-count')).not.toHaveLength(0);
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('off');
+    expect(byId(tree, 'post-review')[0].props.accessibilityHint).toBe('review.minLength');
+    expect(host(tree, 'post-review')[0].props.accessibilityState).toMatchObject({ disabled: true });
+    act(() => bodyInput(tree).props.onChangeText('          ')); // 공백 10칸 = 0자
+    expect(byId(tree, 'review-min-length')).not.toHaveLength(0);
+    act(() => bodyInput(tree).props.onChangeText(' 123456789 ')); // trim 후 9
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('off');
+    act(() => bodyInput(tree).props.onChangeText('1234567890'));
+    expect(byId(tree, 'review-min-length')).toHaveLength(0);
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('primary');
+    expect(byId(tree, 'post-review')[0].props.accessibilityHint).toBeUndefined();
+  });
+
+  it('비활성 Post 탭 = 등록 0 · 토스트 0 · 안내가 색으로만 강조(크기·굵기 불변)', async () => {
+    const tree = render(<ReviewCompose />);
+    pickStar(tree);
+    act(() => bodyInput(tree).props.onChangeText('Tasty'));
+    const before = flat(host(tree, 'review-min-length')[0].props.style);
+    act(() => byId(tree, 'post-review-blocked')[0].props.onPress());
+    const after = flat(host(tree, 'review-min-length')[0].props.style);
+    expect(after.color).not.toBe(before.color);
+    for (const k of ['fontSize', 'fontWeight', 'lineHeight', 'flex']) expect(after[k]).toBe(before[k]);
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); }); // 버튼을 우회해 불러도 등록 0
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it('서버 400 REVIEW-005(클라 기준 통과한 본문) = 안내 표시·강조 + 스크린리더 사유 · 일반 실패 없음 · 입력 보존 · 그대로면 재제출 막음 → 고치면 풀림', async () => {
+    mockCreate.mockRejectedValueOnce(new ApiError('리뷰 본문은 10자 이상이어야 해요', 400, 'REVIEW-005'));
+    const tree = render(<ReviewCompose />);
+    pickStar(tree);
+    act(() => bodyInput(tree).props.onChangeText('Tasty food!'));
+    expect(byId(tree, 'review-min-length')).toHaveLength(0); // 11자 = 클라 통과
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(tree.toJSON())).not.toContain('review.postError');
+    expect(bodyInput(tree).props.value).toBe('Tasty food!');
+    expect(textOf(tree, 'review-min-length')).toBe('review.minLength'); // Codex #304: 본문이 10자 이상이어도 보인다
+    const fresh = render(<ReviewCompose />);
+    act(() => bodyInput(fresh).props.onChangeText('Tasty'));
+    expect(flat(host(tree, 'review-min-length')[0].props.style).color).not.toBe(flat(host(fresh, 'review-min-length')[0].props.style).color); // 강조색
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('off');
+    expect(byId(tree, 'post-review')[0].props.busy).toBe(false);
+    expect(byId(tree, 'post-review')[0].props.accessibilityHint).toBe('review.minLength');
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(mockCreate).toHaveBeenCalledTimes(1); // 같은 본문 재제출 0
+    act(() => bodyInput(tree).props.onChangeText('Tasty food!!'));
+    expect(byId(tree, 'review-min-length')).toHaveLength(0);
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('primary');
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it('수정: 본문 없던 리뷰(사진·별점만) = 저장 off + 안내 · 10자 채우면 저장 → changes.body = trim 본문', async () => {
+    mockParams.reviewId = 'r1';
+    queryClient.setQueryData(['me', 'reviews'], [{ ...(REVIEW as object), body: null }]);
+    const tree = render(<ReviewCompose />);
+    expect(byId(tree, 'review-min-length')).not.toHaveLength(0);
+    expect(byId(tree, 'post-review')[0].props.variant).toBe('off');
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(mockUpdate).not.toHaveBeenCalled();
+    act(() => bodyInput(tree).props.onChangeText('  Really good kimbap  '));
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    expect(mockUpdate.mock.calls[0][0].changes.body).toBe('Really good kimbap');
+  });
 });

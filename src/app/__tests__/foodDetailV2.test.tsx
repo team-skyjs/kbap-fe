@@ -55,10 +55,12 @@ jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
   return { LinearGradient: View };
 });
+const mockPush = jest.fn(); // KB-848: 요약 박스 탭 = 목록 이동 단언
+let mockParams: Record<string, string> = { id: '7' };
 jest.mock('expo-router', () => ({
   useSegments: () => [], // P-214: 계측 화면 식별(StateBlock·HelpfulButton)
-  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
-  useLocalSearchParams: () => ({ id: '7' }),
+  useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
+  useLocalSearchParams: () => mockParams,
   usePathname: () => '/',
   useFocusEffect: () => {},
 }));
@@ -84,6 +86,7 @@ jest.mock('@/lib/i18n', () => ({
 const mockIsGuest = jest.fn(() => false);
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockIsGuest() }));
 const mockUseFoodDetail = jest.fn();
+jest.mock('@/lib/data/useIdolPicks', () => ({ useIdolPickVideo: () => null })); // KB-836: 목록 캐시 구독(QueryClient 없음)
 jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => mockUseFoodDetail() }));
 const mockUseMe = jest.fn();
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockUseMe() }));
@@ -270,6 +273,61 @@ it('P-169→KB-431: 리뷰 브리프 — 프리뷰 3 제한(D-2 카드)·같은 
   expect(s).not.toContain('community.report');
 });
 
+const hostBox = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'rating-summary-box' && typeof n.type === 'string');
+it('KB-848: 리뷰 섹션 = 머리 토글만 · 평점 요약 박스(overall → KR only = sameNationality 전환) · 탭 = 전체 목록 · 미리보기 = 리뷰 탭 카드(peek)', () => {
+  const { act } = jest.requireActual('react-test-renderer') as typeof import('react-test-renderer');
+  const tree = render(<FoodDetailScreen />);
+  const box = () => hostBox(tree);
+  const boxText = () => JSON.stringify(box()[0]?.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children));
+  expect(box()).toHaveLength(1);
+  expect(boxText()).toContain('4.5'); // overall 4.5(12)
+  expect(boxText()).toContain('REVIEWS.OVERALL');
+  // 머리 행 = 토글만(별·점수 텍스트 없음)
+  const head = tree.root.findAll((n) => n.props?.testID === 'detail-nat-toggle')[0].parent!;
+  expect(head.findAll((n) => typeof n.props?.children === 'string' && /\(\d+\)/.test(n.props.children))).toHaveLength(0);
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(boxText()).toContain('4.0'); // sameNationality 4.0(3)
+  expect(boxText()).toContain('REVIEWS.SAMENATIONALITY');
+  mockPush.mockClear();
+  act(() => tree.root.findAll((n) => n.props?.testID === 'detail-rating-summary' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockPush).toHaveBeenCalledWith('/food/7/reviews');
+  const cards = tree.root.findAll((n) => n.props?.photoVariant !== undefined && n.props?.review != null);
+  expect(cards.length).toBeGreaterThan(0);
+  expect(cards.every((c) => c.props.photoVariant === 'peek')).toBe(true);
+});
+
+it('KB-857: 요약 박스 축 = 서버 집계만(Taste·Speed·Service) — 축 평균 없음 = 숨김 · KR only = sameNationality 값 · 목록도 같은 함수(같은 값)', () => {
+  const { serverAxes } = jest.requireActual('@/features/review/RatingSummaryBox') as typeof import('@/features/review/RatingSummaryBox');
+  expect(serverAxes({ average: 4.5, count: 12 })).toEqual({ taste: 4.5, speed: null, service: null }); // 구 응답(축 필드 없음)
+  expect(serverAxes({ average: 4.5, count: 12, speedAverage: 4.2, serviceAverage: null })).toEqual({ taste: 4.5, speed: 4.2, service: null });
+  const { act } = jest.requireActual('react-test-renderer') as typeof import('react-test-renderer');
+  mockUseFoodDetail.mockReturnValue({
+    data: FOOD('safe', { overall: { average: 4.5, count: 12, speedAverage: 4.2, serviceAverage: null }, sameNationality: { average: 4.0, count: 3, speedAverage: 3.5, serviceAverage: 4.8 } }),
+    isLoading: false, error: null, refetch: jest.fn(),
+  });
+  const tree = render(<FoodDetailScreen />);
+  const axes = () => tree.root.findAll((n) => typeof n.props?.testID === 'string' && /^axis-[a-z]+$/.test(n.props.testID) && typeof n.type === 'string').map((n) => n.props.testID);
+  const badge = (k: string) => JSON.stringify(tree.root.findAll((n) => n.props?.testID === `axis-${k}` && typeof n.type === 'string')[0].findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children));
+  expect(axes()).toEqual(['axis-taste', 'axis-speed']); // Service = null → 숨김
+  expect(badge('speed')).toContain('4.2');
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(axes()).toEqual(['axis-taste', 'axis-speed', 'axis-service']);
+  expect(badge('speed')).toContain('3.5');
+  expect(badge('service')).toContain('4.8');
+  const list = jest.requireActual('fs').readFileSync('src/app/food/[id]/reviews.tsx', 'utf8') as string;
+  expect(list).toContain('const axisAverages = serverAxes(summaryAgg);'); // 목록도 같은 함수·같은 집계 = 같은 값
+  expect(list).not.toContain('servingSpeed'); // 화면별 로드 리뷰 계산 0
+});
+
+it('KB-848: KR only ON + 같은 국적 0건 = 요약 박스 없음(P-360) · 전체 0건 = 리뷰 섹션째 없음', () => {
+  const { act } = jest.requireActual('react-test-renderer') as typeof import('react-test-renderer');
+  mockUseFoodDetail.mockReturnValue({ data: FOOD('safe', { sameNationality: { average: null, count: 0 } }), isLoading: false, error: null, refetch: jest.fn() });
+  const tree = render(<FoodDetailScreen />);
+  expect(hostBox(tree)).toHaveLength(1);
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(hostBox(tree)).toHaveLength(0);
+});
+
 it('P-182→P-186: 카드 전체 탭 제거 · ⋯ = 본인+타인(신고/차단), 익명(탈퇴)만 부재', () => {
   const tree = render(<FoodDetailScreen />);
   const rows = tree.root.findAll((n) => n.props?.testID === 'feed-r1');
@@ -339,29 +397,56 @@ describe('P-228: Ask the owner 플로팅', () => {
     expect(sub.props.numberOfLines).toBe(2);
   });
 
-  // KB-710(2): 큰 글자에서 좁은 Write만 두 줄로 접혀 두 버튼 키가 달랐다 — 둘 다 슬롯 높이를 채운다(줄은 슬롯을 가장 큰 쪽에 맞춤)
-  it('KB-710 하단 바 두 버튼 = 같은 높이 규칙 — 줄(row)은 슬롯을 늘리고(stretch) 두 버튼은 슬롯을 채움(flexGrow 1)', () => {
+  it('KB-871(예진 10/22): 하단 버튼 = 좌우 20 · 가로 전체 · 위 primary Write(흰 글자·흰 file-pen) + 아래 테두리 Ask(회원) · 높이 48 radius full · 바 배경 0', () => {
     const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
     const tree = render(<FoodDetailScreen />);
     const bar = byId(tree, 'detail-bottom-bar').find((n) => typeof n.type === 'string')!;
-    const barStyle = StyleSheet.flatten(bar.props.style) as { flexDirection?: string; alignItems?: string };
-    expect(barStyle.flexDirection).toBe('row');
-    expect(barStyle.alignItems ?? 'stretch').toBe('stretch');
-    for (const id of ['bottom-write', 'bottom-ask']) {
-      const btn = byId(tree, id).find((n) => typeof n.type !== 'string' && n.props?.style != null)!;
-      expect({ id, grow: (StyleSheet.flatten(btn.props.style) as { flexGrow?: number }).flexGrow }).toEqual({ id, grow: 1 });
+    const barStyle = StyleSheet.flatten(bar.props.style) as Record<string, unknown>;
+    expect(barStyle).toMatchObject({ position: 'absolute', left: 20, right: 20, gap: 8 });
+    expect(barStyle.backgroundColor).toBeUndefined();
+    expect(barStyle.flexDirection).toBeUndefined(); // 세로(두 줄) — 가로 반쪽 회귀 방지
+    expect(barStyle.justifyContent).toBeUndefined();
+    const st = (id: string) => StyleSheet.flatten(byId(tree, id).find((n) => typeof n.type === 'string')!.props.style) as Record<string, unknown>;
+    expect(st('bottom-write')).toMatchObject({ alignSelf: 'stretch', backgroundColor: '#FF7134', borderRadius: 999, minHeight: 48 });
+    expect(st('bottom-write').minWidth).toBeUndefined();
+    expect(st('bottom-ask')).toMatchObject({ alignSelf: 'stretch', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', borderRadius: 999, minHeight: 48 });
+    expect(byId(tree, 'bottom-write').find((n) => typeof n.type === 'string')!.findAll((n) => n.props?.color === '#FFFFFF').length).toBeGreaterThan(0); // 흰 file-pen
+    expect(bar.props.accessibilityElementsHidden).toBeUndefined(); // 숨김 상태에서도 스크린리더 포커스 유지
+    // 표시 규칙 배선(KB-871): 제스처 시작·끝·관성 · 버튼 띠 · 슬라이드+페이드(모션 줄이기 = 슬라이드 0)
+    const src = jest.requireActual('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
+    expect(src).toContain('shown={pill.shown}');
+    for (const h of ['onScrollBeginDrag={pill.onScrollBeginDrag}', 'onScrollEndDrag={pill.onScrollEndDrag}', 'onMomentumScrollBegin={pill.onMomentumScrollBegin}', 'onMomentumScrollEnd={pill.onMomentumScrollEnd}']) expect(src).toContain(h);
+    expect(src).toContain('pill.onBand(h + pillBottom + 8)');
+    expect(src).toContain('transform: [{ translateY: reduced ? 0 : !ready ? hideY : withTiming(shown ? 0 : hideY');
+    expect(src).toContain('opacity: !ready ? 0 : withTiming(shown ? 1 : 0'); // KB-871 QA AP: 첫 측정 전 = 애니메이션 없이 숨김
+    expect(src).toContain('useScrollAwarePill({ card: idolExpected, emptyCta: emptyCtaExpected })');
+    expect(src).toContain('testID="review-empty-cta" onLayout={(e) => onEmptyCtaLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)}');
+    expect(src).toContain('if (!emptyCta) onEmptyCtaLayout?.(0, 0);'); // Codex #337: 상자가 사라지면 높이 0 보고
+    expect(src).not.toContain('onInsets');
+  });
+
+  it('KB-871: 스캔 진입(P-353 — Write 없음) = Ask 한 줄이 primary 전체 너비', () => {
+    const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+    mockParams = { id: '7', src: 'scan' };
+    try {
+      const tree = render(<FoodDetailScreen />);
+      expect(byId(tree, 'bottom-write')).toHaveLength(0);
+      const ask = StyleSheet.flatten(byId(tree, 'bottom-ask').find((n) => typeof n.type === 'string')!.props.style) as Record<string, unknown>;
+      expect(ask).toMatchObject({ alignSelf: 'stretch', backgroundColor: '#FF7134', borderRadius: 999 });
+    } finally {
+      mockParams = { id: '7' };
     }
   });
 
-  it('회원+등록 음식 = FixedBottom(아웃라인 Write + primary Ask) + 콘텐츠 바닥 여백', () => {
+  it('회원+등록 음식 = 하단 두 줄(primary Write + 테두리 Ask) + 콘텐츠 바닥 여백', () => {
     const tree = render(<FoodDetailScreen />);
     expect(byId(tree, 'detail-bottom-bar').length).toBeGreaterThanOrEqual(1);
     expect(byId(tree, 'bottom-ask').length).toBeGreaterThanOrEqual(1);
     expect(byId(tree, 'bottom-write').length).toBeGreaterThanOrEqual(1);
     expect(flat(tree)).toContain('detail.askOwner');
     const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
-    // Codex #97 3R P2: 고정 107 예약 → onLayout 실측 파생(fitLabel 2줄 시 바닥 가림 방지)
-    expect(src).toContain('paddingBottom: showBottomBar ? (barH || 107) + 12 : 40');
+    // Codex #97 3R P2 → KB-851: 알약 줄 실높이 + 바닥 여백 + 16(마지막 리뷰 가림 방지)
+    expect(src).toContain('paddingBottom: showBottomBar ? (barH || 48) + pillBottom + 16 : 40');
     // 라벨 4곳 = FixedBottom 1 + caution 타일 풋터 + 미등록 본문 CTA + 재료 시트(P-306)
     expect(src.match(/detail\.askOwner/g)?.length).toBe(4);
   });
@@ -372,7 +457,7 @@ describe('P-228: Ask the owner 플로팅', () => {
     act(() => bar.props.onLayout({ nativeEvent: { layout: { height: 131 } } }));
     const sv = tree.root.findAll((n) => Array.isArray(n.props?.contentContainerStyle))[0];
     const pad = Object.assign({}, ...sv.props.contentContainerStyle.filter(Boolean)) as { paddingBottom?: number };
-    expect(pad.paddingBottom).toBe(143); // 131 + 12
+    expect(pad.paddingBottom).toBe(159); // 알약 줄 131 + 바닥 12(안전 영역 0 → 최소 12) + 16
   });
 
   it('게스트 = Ask 미노출(회피 프로필 없어 질문 조립 무의미) — Write primary 단독', () => {
@@ -796,6 +881,15 @@ describe('KB-599 재료 타일 — 함의 회피 근거 문구', () => {
     expect(flat(tree)).toContain('detail.avoidImplied');
   });
 
+  it('KB-843: 새 묶음(육류·견과류·갑각류·연체류) 회피로 걸린 재료 = "피하는 재료 {묶음}에 포함돼요"(묶음 코드가 카탈로그에 있어야 보인다)', () => {
+    for (const [code, name, by] of [['BEEF', 'Beef', 'MEAT'], ['PEANUT', 'Peanut', 'NUTS'], ['SHRIMP', 'Shrimp', 'CRUSTACEAN'], ['SQUID', 'Squid', 'MOLLUSK'], ['BROTH', 'Broth', 'MEAT_BROTH']] as const) {
+      withIngs([{ code, name, percentage: 40, risk: 'danger', note: null, impliedBy: by }]);
+      const tree = render(<FoodDetailScreen />);
+      expect(implied(tree, code).length).toBeGreaterThan(0);
+      act(() => tree.unmount());
+    }
+  });
+
   it('직접 매치(impliedBy 없음) = 문구 없음', () => {
     withIngs([{ code: 'SHRIMP', name: 'Shrimp', percentage: 30, risk: 'danger', note: null, impliedBy: null }]);
     expect(implied(render(<FoodDetailScreen />), 'SHRIMP')).toHaveLength(0);
@@ -811,4 +905,11 @@ describe('KB-599 재료 타일 — 함의 회피 근거 문구', () => {
     withIngs([{ code: 'SALTED_SHRIMP', name: 'Salted shrimp', percentage: 40, risk: 'danger', note: null, impliedBy: 'SHRIMP' }]);
     expect(implied(render(<FoodDetailScreen />), 'SALTED_SHRIMP')).toHaveLength(0);
   });
+});
+
+it('Codex #327: 목록 카드에 extras 줄 없음 — 속도·서비스는 FeedCard 평점 축에만(같은 값 두 번 표시 0)', () => {
+  const fs = jest.requireActual('fs') as typeof import('fs');
+  expect(fs.readFileSync('src/app/food/[id]/reviews.tsx', 'utf8')).not.toContain('ReviewExtrasLine');
+  expect(fs.readFileSync('src/app/food/[id]/reviews.tsx', 'utf8')).not.toMatch(/showExtras/);
+  expect(fs.readFileSync('src/features/review/FeedCard.tsx', 'utf8')).not.toContain('ReviewExtrasLine');
 });

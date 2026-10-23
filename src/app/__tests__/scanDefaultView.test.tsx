@@ -77,7 +77,7 @@ jest.mock('expo-image', () => {
 });
 // KB-769: 스캔 결과 이탈 가드(useLeaveConfirm) — 포커스·내비 표면 + usePreventRemove 기록(scanDesign이 콜백을 흉내)
 jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), /* P-508: scan.tsx 진입 파라미터(mode·label) */
   useIsFocused: () => true,
   useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   useFocusEffect: (cb: () => void) => cb(), // P-255: 진입 선발급 훅 목
@@ -147,7 +147,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
 it('P-138⑤(예진 8/6, P-071 대체): 스캔 완료 기본 = List — Photo는 세그 전환으로', async () => {
   const tree = render(<Scan />);
   // P-062①: 샘플 폐기 — 갤러리 경로(OCR mock→실 segmentMenu)로 결과 진입
-  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function');
+  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto' && typeof n.props?.onPress === 'function');
   expect(gallery.length).toBeGreaterThanOrEqual(1);
   await act(async () => {
     await gallery[0].props.onPress();

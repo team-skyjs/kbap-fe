@@ -10,6 +10,7 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 // P-137: 플래그 게터 목 — 케이스별로 autolaunch 변형 토글
 let mockAuto = false;
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
+jest.mock('expo-updates', () => ({ channel: 'teamtest' })); // KB-870: dev 서버 채널 동작 고정(운영 채널 숨김은 prodHide870·prodFlagSurfaces436)
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({
     name: (c: string) => (require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients')).ingredientLabel(c),
@@ -24,6 +25,7 @@ jest.mock('@/lib/flags', () => ({
     return mockAuto;
   },
   isProdChannel: () => false,
+  isDevServerChannel: () => true, // KB-870
 }));
 
 jest.mock('react-native-reanimated', () => {
@@ -98,7 +100,7 @@ jest.mock('expo-linear-gradient', () => {
 });
 // KB-769: 스캔 결과 이탈 가드(useLeaveConfirm) — 포커스·내비 표면 + usePreventRemove 기록(scanDesign이 콜백을 흉내)
 jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), /* P-508: scan.tsx 진입 파라미터(mode·label) */
   useIsFocused: () => true,
   useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   useFocusEffect: (cb: () => void) => cb(), // P-255: 진입 선발급 훅 목

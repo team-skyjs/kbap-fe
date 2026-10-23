@@ -74,6 +74,20 @@ export function Star({
   );
 }
 
+/** 음식 목록 카드(Top rated)의 종합 평점 줄 — 채운 별 14 + 평균(14/700) + (개수)(12/700). KB-865: 가공식품 카드도 같은 표시(예진 10/22 "기존 별 그대로").
+ *  평균 null = 빈 별 + 대시. */
+export function OverallRating({ average, count, numTestID, style }: { average: number | null; count: number; numTestID?: string; style?: object }) {
+  return (
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, height: 18 }, style]}>
+      <Star size={14} fillPct={average == null ? 0 : 100} />
+      <Txt style={{ fontSize: 14, fontWeight: '700', color: average == null ? C.inkMute : C.ink }} testID={numTestID}>
+        {average == null ? '\u2014' : average.toFixed(1)}
+      </Txt>
+      <Txt style={{ fontSize: 12, fontWeight: '700', color: C.ink2 }}>({count})</Txt>
+    </View>
+  );
+}
+
 /** A row of 5 stars rendering a 0–5 rating with fractional fill. */
 export function Stars({
   value,

@@ -12,10 +12,10 @@
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Modal, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,12 +23,15 @@ import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
 import { ingredientLabel, isCatalogIngredient } from '@/lib/mocks/ingredients';
-import { RiskMark, RiskBadge, CardPhoto, Chip, NewBadge, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft } from '@/components';
+import { RiskMark, RiskBadge, CardPhoto, Chip, NewBadge, Star, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { HeroGallery } from '@/features/food/HeroGallery';
+import { PILL_FADE_MS, useScrollAwarePill } from '@/features/food/scrollAwarePill';
+import { IDOL_CARD_BOTTOM_PAD, IdolVideoCard } from '@/features/food/IdolVideoCard';
+import { useIdolPickVideo } from '@/lib/data/useIdolPicks';
 import { useIsNewFood } from '@/lib/newFood';
 import { useIngredientImageChain } from '@/components/AvoidTile';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
@@ -37,11 +40,12 @@ import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { FeedCard } from '@/features/review/FeedCard';
+import { RatingSummaryBox, serverAxes } from '@/features/review/RatingSummaryBox';
 import { FeedAd } from '@/features/ads/FeedAd';
 import { withFeedAds } from '@/lib/ads/feedSlots';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { IconFood, IconLock, IconStar } from '@/components/icons';
+import { IconEdit, IconFood, IconLock } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -51,7 +55,7 @@ import { SpicePeppers } from '@/components/SpicePeppers';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import type { FoodDetail, IngredientRisk, Review } from '@/lib/api/types';
+import type { FoodDetail, IngredientRisk } from '@/lib/api/types';
 import { useFoodHiddenReason } from '@/lib/data/hiddenFoods';
 
 const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2, safe: 3 };
@@ -88,7 +92,7 @@ export default function FoodDetailScreen() {
   const { id, price, src } = useLocalSearchParams<{ id: string; price?: string; src?: string }>();
   // P-083: 상세 진입 계측 — 진입 경로 1회
   useEffect(() => {
-    const source = src && ['scan', 'list', 'search', 'home', 'saved', 'my_reviews', 'feed', 'tag_sheet'].includes(src) ? src : 'other';
+    const source = src && ['scan', 'list', 'search', 'home', 'saved', 'my_reviews', 'feed', 'tag_sheet', 'idol_pick'].includes(src) ? src : 'other'; // KB-847: review_detail 제거(#288 되돌림) · idol_pick 유지(#313)
     track(EVENTS.food_detail_view, { source, food_id: id ?? '' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -120,8 +124,15 @@ export default function FoodDetailScreen() {
 
   // P-139: 플로팅 헤더 — 스크롤 임계 통과 시 솔리드+타이틀 페이드인
   const [solid, setSolid] = useState(false);
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
+  // KB-851 → KB-871: 하단 리뷰 버튼 영역 — 아래로 스크롤 = 숨김 · 위로·제스처 끝 멈춤·맨 위/아래 = 표시 · 한 제스처 안 전환 1회 · K-pop 카드는 버튼 자리와 겹칠 때만 숨김
+  // KB-871 QA AP: 겹침 대상(K-pop 카드 캐시 · 리뷰 0 본문 상자)이 있으면 측정 전까지 버튼을 애니메이션 없이 숨겨 둔다(진입 번쩍임 0)
+  const idolExpected = !!useIdolPickVideo(id ?? '');
+  const emptyCtaExpected = !!food && food.isRegistered && FLAGS.reviewsEnabled && !isGuest && !food.reviewSummaryMissing && food.overall.count === 0;
+  const pill = useScrollAwarePill({ card: idolExpected, emptyCta: emptyCtaExpected });
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setSolid(e.nativeEvent.contentOffset.y > HEADER_SOLID_Y);
+    pill.onScroll(e);
+  };
   const solidFade = useAnimatedStyle(() => ({ opacity: withTiming(solid ? 1 : 0, { duration: 180 }) }));
 
   // 북마크 — 게스트=게이트 시트, 회원=BE 토글 (KB-142: 낙관적+실패 롤백, 무변)
@@ -145,15 +156,27 @@ export default function FoodDetailScreen() {
     });
   };
 
-  // KB-431 §1-8 FixedBottom — 등록 음식만(미등록은 본문 CTA 현행 유지)
+  // KB-431 §1-8 → KB-851 떠 있는 알약 — 등록 음식만(미등록은 본문 CTA 현행 유지)
   const showBottomBar = !!food && food.isRegistered;
-  // Codex #97 3R P2: fitLabel 2줄(es 등)이면 바 실높이가 고정 예약(107)을 초과해
-  // 콘텐츠 끝을 가림 — onLayout 실측으로 스크롤 하단 여백 파생(측정 전 폴백 107).
+  // Codex #97 3R P2 → KB-851: 알약 줄 실높이(큰 글씨·긴 번역이면 커짐) + 바닥 여백만큼 콘텐츠 하단 여백 — 마지막 리뷰를 가리지 않게(측정 전 폴백 48)
   const [barH, setBarH] = useState(0);
+  const pillBottom = Math.max(insets.bottom, 12);
 
   return (
     <View style={styles.root}>
-      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 107) + 12 : 40 }, (error || hidden) && !food ? { flexGrow: 1 } : null]}>
+      <ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={pill.onScrollBeginDrag}
+        onScrollEndDrag={pill.onScrollEndDrag}
+        onMomentumScrollBegin={pill.onMomentumScrollBegin}
+        onMomentumScrollEnd={pill.onMomentumScrollEnd}
+        onLayout={(e) => pill.onViewLayout(e.nativeEvent.layout.height)}
+        onContentSizeChange={(_w, h) => pill.onContentSize(h)}
+        contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 48) + pillBottom + 16 : 40 }, (error || hidden) && !food ? { flexGrow: 1 } : null]}
+        testID="detail-scroll"
+      >
         {/* KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**(FOOD-001)이면 에러 블록 대신 조용한 안내.
             QueryErrorBlock을 쓰면 안 되는 이유 셋 — ① 재시도가 **영원히 실패**해 버튼이 함정이 된다
             ② 안전 판정 글리프(RiskGlyph caution)가 붙어 음식 자체에 대한 판정처럼 읽힌다(헌법 III)
@@ -205,6 +228,8 @@ export default function FoodDetailScreen() {
                 t={t}
                 router={router}
                 id={id ?? ''}
+                onIdolLayout={pill.onCardLayout}
+                onEmptyCtaLayout={pill.onEmptyCtaLayout}
               />
             ) : (
               <View style={styles.body}>
@@ -215,14 +240,16 @@ export default function FoodDetailScreen() {
         )}
       </ScrollView>
 
-      {/* §1-8: FixedBottom(4150:16963) — 아웃라인 Write + primary Ask(회원) /
-          게스트·Ask 부재 시 Write primary 단독. */}
+      {/* §1-8 → KB-851 → KB-871(예진 10/22): 하단 고정 · 가로 전체(좌우 화면 여백 20) — 위 = primary Write(흰 글자·흰 file-pen),
+          회원은 아래에 테두리 Ask 한 줄 더 · 스캔 진입(Ask 단독) = primary 한 줄. 표시 규칙 = useScrollAwarePill(영역 전체) */}
       {showBottomBar && (
         <RegisteredBottomBar
+          shown={pill.shown}
+          ready={pill.ready}
+          bottom={pillBottom}
           guest={isGuest}
           scanEntry={src === 'scan'}
-          onHeight={setBarH}
-          insetsBottom={insets.bottom}
+          onHeight={(h) => { setBarH(h); pill.onBand(h + pillBottom + 8); }}
           t={t}
           onWrite={() => {
             // P-392(KB-584): 자격 게이트 폐기 — 회원이면 스캔 여부 무관(BE #274: reviewEligible 항상 true)
@@ -277,51 +304,60 @@ type IngChip = 'all' | 'safe' | 'danger' | 'caution';
 const ING_CHIPS: IngChip[] = ['all', 'safe', 'danger', 'caution'];
 
 function RegisteredBottomBar({
-  guest,
-  insetsBottom,
+  shown,
+  ready = true,
+  bottom,
   t,
   onWrite,
   onAsk,
   scanEntry = false,
   onHeight,
 }: {
+  /** 표시 여부(useScrollAwarePill) — 숨김 = 아래로 미끄러지며 투명(스크린리더 포커스는 유지) */
+  shown: boolean;
+  /** 첫 측정 전 = 애니메이션 없이 숨김(KB-871 QA AP — 진입 때 카드 위로 번쩍 보였다 사라짐) */
+  ready?: boolean;
+  /** 화면 바닥에서 알약까지(안전 영역, 최소 12) */
+  bottom: number;
   guest: boolean;
-  insetsBottom: number;
   t: TFn;
   onWrite: () => void;
   onAsk?: () => void;
-  /** P-353 ②(KB-515): 스캔 진입 = Write 미렌더·Ask 전폭(스캔한 음식이라 리뷰 유도 대신 문의 단독) */
+  /** P-353 ②(KB-515): 스캔 진입 = Write 미렌더·Ask 단독(스캔한 음식이라 리뷰 유도 대신 문의 단독) */
   scanEntry?: boolean;
-  /** Codex #97 3R P2: 실높이 보고 — 스크롤 하단 여백 파생용(fitLabel 2줄 대응) */
+  /** 알약 줄 실높이 보고 — 스크롤 하단 여백 파생(큰 글씨·긴 번역 대응) */
   onHeight?: (h: number) => void;
 }) {
-  // P-334 2R: 시안 비율 3:5는 ≥360 전제 — 좁은 폭(<360)에선 1:1로 라벨 공간 확보(i18n 절단 방지)
-  const narrow = useWindowDimensions().width < 360;
+  const reduced = useReducedMotion();
+  const [rowH, setRowH] = useState(48);
+  const hideY = rowH + bottom + 8; // 화면 밖까지
+  // 표시·숨김 = 200ms 슬라이드 + 페이드(감속 곡선) · 모션 줄이기 = 슬라이드 없이 짧은 페이드만
+  const anim = useAnimatedStyle(() => ({
+    opacity: !ready ? 0 : withTiming(shown ? 1 : 0, { duration: reduced ? 120 : PILL_FADE_MS, easing: Easing.out(Easing.cubic) }),
+    transform: [{ translateY: reduced ? 0 : !ready ? hideY : withTiming(shown ? 0 : hideY, { duration: PILL_FADE_MS, easing: Easing.out(Easing.cubic) }) }],
+  }));
+  const write = FLAGS.reviewsEnabled && !(scanEntry && onAsk);
+  if (!write && !onAsk) return null;
   return (
-    <View
-      style={[styles.bottomBar, { paddingBottom: insetsBottom + 10 }]}
-      onLayout={(e) => onHeight?.(e.nativeEvent.layout.height)}
+    <Animated.View
+      style={[styles.pillRow, { bottom }, anim]}
+      pointerEvents={shown ? 'box-none' : 'none'}
+      onLayout={(e) => { const h = e.nativeEvent.layout.height; setRowH(h); onHeight?.(h); }}
       testID="detail-bottom-bar"
     >
-      {FLAGS.reviewsEnabled && !(scanEntry && onAsk) && (
-        <View style={onAsk ? { flex: narrow ? 1 : 3 } : { flex: 1 }} testID="bottom-write-slot">{/* P-334: flex 3/5(P-329 판정 문법) */}
-          {/* KB-710(2): 두 버튼 높이 맞춤 — 큰 글자에서 좁은 Write만 두 줄로 접혀 키가 달랐다. 줄(row)은 슬롯을 가장 큰 쪽에
-              맞춰 늘리니 버튼이 슬롯을 채우면 같은 높이(기본 크기 = 둘 다 48 그대로) */}
-          <Btn variant={onAsk ? 'ghost' : 'primary'} fitLabel onPress={onWrite} testID="bottom-write" style={styles.bottomBtnFill}>
-            {t('reviews.writeReview')}
-          </Btn>
-        </View>
+      {write && (
+        <Pressable style={styles.pillPrimary} onPress={onWrite} accessibilityRole="button" testID="bottom-write">
+          <IconEdit size={20} color="#FFFFFF" />
+          <Text style={styles.pillPrimaryText}>{t('reviews.writeReview')}</Text>
+        </Pressable>
       )}
       {onAsk && (
-        <View style={{ flex: scanEntry ? 1 : narrow ? 1 : 5 }} testID="bottom-ask-slot">{/* P-334: 시안 = 라벨 단독(말풍선 아이콘 제거) · P-353 ②: 스캔 진입 = 전폭 */}
-          <Btn fitLabel onPress={onAsk} testID="bottom-ask" style={styles.bottomBtnFill}>
-            {t('detail.askOwner')}
-          </Btn>
-        </View>
+        // 회원 = Write 아래 테두리 한 줄 · 스캔 진입(Write 없음) = primary 한 줄(P-353)
+        <Pressable style={write ? styles.pillOutline : styles.pillPrimary} onPress={onAsk} accessibilityRole="button" testID="bottom-ask">
+          <Text style={write ? styles.pillOutlineText : styles.pillPrimaryText}>{t('detail.askOwner')}</Text>
+        </Pressable>
       )}
-      {/* reviewsEnabled off + guest(Ask 없음) = 빈 바 방지 — 둘 다 없으면 렌더 안 함 */}
-      {!FLAGS.reviewsEnabled && !onAsk && <View />}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -338,7 +374,13 @@ function Registered({
   router,
   id,
   setCoachOpen,
+  onIdolLayout,
+  onEmptyCtaLayout,
 }: {
+  /** KB-871 QA ③: 리뷰 0 본문 "Write a review" 상자의 콘텐츠 y·높이(보이는 동안 하단 버튼 숨김) */
+  onEmptyCtaLayout?: (y: number, h: number) => void;
+  /** KB-851: K-pop 카드의 콘텐츠 y·높이 보고(리뷰 알약 숨김 판정) */
+  onIdolLayout?: (y: number, h: number) => void;
   setCoachOpen: (v: boolean) => void;
   guest: boolean;
   food: FoodDetail;
@@ -353,6 +395,16 @@ function Registered({
   id: string;
 }) {
   const isNew = useIsNewFood(food.publishedAt);
+  // 리뷰 0 본문 상자 — 첫 리뷰를 쓰고 돌아오면 같은 화면에서 사라진다: 높이 0을 보고해 하단 버튼이 옛 자리 기준으로 숨어 있지 않게(Codex #337)
+  const emptyCta = FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0;
+  useEffect(() => {
+    if (!emptyCta) onEmptyCtaLayout?.(0, 0);
+  }, [emptyCta, onEmptyCtaLayout]);
+  const idolVideo = useIdolPickVideo(id); // KB-836 D3: 목록 쿼리 캐시만 — 상세 진입으로 목록 API 를 부르지 않는다
+  // Codex #328: 카드가 사라지면(캐시 갱신·언어 전환·라우트 변경) 저장된 카드 위치를 비운다 — 빈 자리에서 알약이 계속 숨지 않게(높이 0 = 화면에 없음)
+  useEffect(() => {
+    if (!idolVideo) onIdolLayout?.(0, 0);
+  }, [idolVideo, onIdolLayout]);
   const writeReview = (source: 'detail') => {
     // P-392(KB-584): 자격 게이트 폐기 — 게스트 게이트(AuthGateSheet)는 그대로
     track(EVENTS.review_write_tap, { source });
@@ -476,6 +528,15 @@ function Registered({
 
       {!guest && !hasRestrictions && <Text style={styles.profileHint}>{t('detail.addProfileHint')}</Text>}
 
+      {/* KB-836 V1: 대표 아이돌 영상 티저 — 목록 캐시에 이 음식이 있을 때만(없으면 래퍼·여백 0). 위험 요약·헤더 아래(안전 정보 위계 유지) */}
+      {idolVideo && (
+        /* KB-851: 카드 위치(스크롤 콘텐츠 기준) — 카드가 보이는 동안 리뷰 알약을 숨긴다. 래퍼는 스타일 없음(배치 무변) */
+        <View onLayout={(e) => onIdolLayout?.(e.nativeEvent.layout.y, Math.max(0, e.nativeEvent.layout.height - IDOL_CARD_BOTTOM_PAD))} testID="detail-idol-wrap">
+          {/* KB-855 E안: 배경 = 이 음식 사진(상단 히어로와 같은 이미지) · 높이 = 카드 아래 여백 뺀 카드 자체(KB-851 QA: 여백까지 세면 헤더 뒤로 숨은 뒤에도 "보임") */}
+          <IdolVideoCard foodId={id} video={idolVideo} photoUrl={food.photoUrl} />
+        </View>
+      )}
+
       {/* §1-4: 섹션 디바이더 — 8px 회색 띠(4095:1793) */}
       {ingredients.length > 0 && (
         <>
@@ -543,8 +604,8 @@ function Registered({
       )}
 
       {/* §1-7: 리뷰 섹션(4150:16940) — 디바이더 + 헤더 행 + D-2 카드 ×3 + More */}
-      {FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0 && (
-        <View style={styles.reviewSec} testID="review-empty-cta">
+      {emptyCta && (
+        <View style={styles.reviewSec} testID="review-empty-cta" onLayout={(e) => onEmptyCtaLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)}>
           <View style={styles.thickDivider} />
           <Text style={styles.rvBeFirst}>{t('detail.beFirstReview')}</Text>
           <View style={{ paddingHorizontal: 20 }}>
@@ -557,32 +618,34 @@ function Registered({
       {FLAGS.reviewsEnabled && !food.reviewSummaryMissing && food.overall.count > 0 && (
         <View testID="review-brief">
           <View style={styles.thickDivider} />
-          <View style={styles.rvHead}>
-            {/* P-360(KB-523): KR only ON = 같은 국적 집계 즉시 전환(서버 요약은 이미 손에),
-                같은 국적 0건 = 별·점수 미렌더(토글 우측 유지 — 빈 spacer) */}
-            {(() => {
-              const agg = natOnly ? food.sameNationality : food.overall;
-              if (natOnly && agg.count === 0) return <View style={{ flex: 1 }} testID="rv-head-empty-spacer" />;
-              return (
-                <>
-                  <Stars value={agg.average ?? 0} size={16} />
-                  <Text style={[styles.rvHeadScore, { flex: 1 }]}>
-                    {agg.average?.toFixed(1) ?? '—'} ({agg.count})
-                  </Text>
-                </>
-              );
-            })()}
-            {/* 9/5 예진 판정(Q12) → P-323: "{국가} only" 토글 = 서버 countryCode 필터.
-                게스트·국적 null(구계정) = 미렌더(국적 미상 — 필터 무의미, 게이트 아님). */}
-            {!guest && nationality && (
+          {/* KB-848: 섹션 머리 = KR only 토글만(오른쪽) — 별·점수는 아래 요약 박스가 맡는다(중복 제거).
+              9/5 예진 판정(Q12) → P-323: "{국가} only" 토글 = 서버 countryCode 필터. 게스트·국적 null(구계정) = 머리 행 없음 */}
+          {!guest && nationality ? (
+            <View style={styles.rvHead}>
               <Pressable style={styles.natToggleRow} onPress={() => setNatOnly((v) => !v)} testID="detail-nat-toggle">
                 <View style={[styles.sw, natOnly && styles.swOn]}>
                   <View style={[styles.knob, natOnly && styles.knobOn]} />
                 </View>
                 <Text style={styles.natToggleLabel}>{t('reviews.countryOnly', { code: nationality })}</Text>
               </Pressable>
-            )}
-          </View>
+            </View>
+          ) : null}
+          {/* KB-848: 평점 요약 박스(리뷰 전체 목록과 공용) — P-360: KR only ON = 같은 국적 집계 · 같은 국적 0건 = 박스 없음. 탭 = 리뷰 전체 목록 */}
+          {(() => {
+            const agg = natOnly ? food.sameNationality : food.overall;
+            if (natOnly && agg.count === 0) return null;
+            return (
+              <Pressable
+                style={[styles.rvSummary, !(!guest && nationality) && styles.rvSummaryTop]}
+                onPress={() => router.push(`/food/${id}/reviews` as Href)}
+                accessibilityRole="button"
+                accessibilityHint={t('detail.readAll')}
+                testID="detail-rating-summary"
+              >
+                <RatingSummaryBox overall={agg} sameNat={natOnly} axes={serverAxes(agg)} t={t} />
+              </Pressable>
+            );
+          })()}
           {/* 9/5 예진 판정(Q10): 같은 국적 병기 줄 제거(시안 부재) */}
 
           {/* P-323: 토글 쿼리 로딩 = 스켈레톤(공백 금지) · 실패 = 에러 표면(P-007 false-empty
@@ -613,6 +676,7 @@ function Registered({
               key={row.key}
               review={row.item}
               t={t}
+              photoVariant="peek" /* KB-848: 리뷰 탭과 같은 카드 */
               mine={row.item.memberId != null && row.item.memberId === myId}
               showFood={false} /* 자기 자신 음식 칩 무의미 */
               /* P-339 ② 2R: 탈퇴 리뷰도 ⋯(신고만) — showMore 게이트 잔존 제거 */
@@ -822,8 +886,9 @@ const styles = StyleSheet.create({
 
   // §1-7: 리뷰 섹션
   reviewSec: { gap: 14, paddingBottom: 8 },
-  rvHead: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 20, paddingTop: 20 }, // A-FD-10(별↔점수 2)
-  rvHeadScore: { fontSize: 13, fontWeight: '600', color: '#2F3137' }, // A-FD-10
+  rvHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 20, paddingTop: 20 }, // KB-848: 토글만 — 오른쪽 정렬
+  rvSummary: { paddingHorizontal: 20, paddingTop: 12 }, // KB-848: 요약 박스(토글 아래)
+  rvSummaryTop: { paddingTop: 20 }, // 토글 없는 경우(게스트·국적 미상) = 디바이더 아래 20
   // Q12: "{국가} only" 토글(시안 Button/Toggle md 44×24)
   natToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 0 }, // A-FD-10
   natToggleLabel: { fontSize: 14, fontWeight: '500', color: C.ink },
@@ -841,8 +906,12 @@ const styles = StyleSheet.create({
   disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 17, paddingHorizontal: 20 },
 
   // §1-8: FixedBottom
-  bottomBtnFill: { flexGrow: 1 }, // KB-710(2): 슬롯 높이 채움(옆 버튼과 같은 높이)
-  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
+  // KB-871(예진 10/22): 하단 고정 · 좌우 = 화면 여백 20 · 가로 전체 알약(높이 48 radius full) 세로 간격 8 — primary(흰 글자·흰 file-pen) / 테두리(gray-300)
+  pillRow: { position: 'absolute', left: 20, right: 20, gap: 8 },
+  pillPrimary: { alignSelf: 'stretch', minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, backgroundColor: C.primary },
+  pillPrimaryText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: '#FFFFFF', textAlign: 'center' },
+  pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
+  pillOutlineText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink, textAlign: 'center' },
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },

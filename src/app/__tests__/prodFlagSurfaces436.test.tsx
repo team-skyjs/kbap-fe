@@ -9,6 +9,9 @@ import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // ⚠️ 최상단: flags.ts 로드 전에 채널이 production으로 보여야 한다(모듈 로드 시 계산)
+// KB-870: 마커로 목 — production 채널에서 홈에 렌더되면 안 된다(④)
+jest.mock('@/features/curation/CurationSection', () => { const { View } = jest.requireActual('react-native'); return { CurationSection: () => <View testID="curation-section-marker" /> }; });
+jest.mock('@/features/home/IdolPickBanner', () => { const { View } = jest.requireActual('react-native'); return { IdolPickBanner: () => <View testID="idol-banner-marker" /> }; });
 jest.mock('expo-updates', () => ({ channel: 'production' }));
 
 jest.mock('react-native-reanimated', () => {
@@ -101,6 +104,7 @@ jest.mock('@/lib/data/useMe', () => ({
   useMyReviews: () => ({ data: [] }),
 }));
 jest.mock('@/lib/data/useFoods', () => ({
+  usePrefetchOtherFoodSorts: () => {}, // KB-830
   useInfiniteFoods: () => ({ data: [{ foodId: '1', name: 'Food 1', nameKo: '음식 1', photoUrl: null, risk: 'safe', overall: { average: 4, count: 2 }, popularityRank: 1 }], isLoading: false, isError: false, error: null, refetch: jest.fn(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }),
   useFoods: () => ({ data: [] }),
 }));
@@ -191,6 +195,9 @@ it('④ 홈(prod) 섹션 — FoodExplorer 블록 + RECENTLY(행)+ 벨(notificati
   expect(s).toContain('home-recent-head'); // RECENTLY 섹션(라벨은 uppercase 렌더)
   expect(s).toContain('Kimbap'); // recent 행
   expect(tree.root.findAll((n) => n.props?.testID === 'header-bell').length).toBeGreaterThanOrEqual(1); // 알림 벨
+  // KB-870(P-524): 운영 서버에 없는 API 표면 0 — 큐레이션 섹션(404)·K-POP 배너(400)
+  expect(s).not.toContain('curation-section-marker');
+  expect(s).not.toContain('idol-banner-marker');
 });
 
 it('⑤⑥ 소스 감사 — 온보딩 ORDER 5스텝(프리셋 포함)·탭 4 스크린 + 스캔 진입·탭별 최상위 컴포넌트', () => {

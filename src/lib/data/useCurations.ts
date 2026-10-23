@@ -1,0 +1,47 @@
+/**
+ * useCurations (KB-796, P-480-R2) — 서울·부산 큐레이션. dev Swagger `/api/curations/seoul`(카드 3장) ·
+ * `/api/curations/seoul/{key}`(모음 상세). 둘 다 `X-API-Version`·`lang` 필수(이 오퍼레이션은 1.0 이상에서 응답).
+ *
+ * 와이어 → 앱 모델 변환은 lib/api/curationAdapter(어댑터 격리). 이 파일은 요청·캐시만.
+ * - 홈 카드: state가 PUBLISHED이고 카드가 **정확히 3장**일 때만 보인다. 최초 공개 전·하나라도 내림 = UNPUBLISHED + 빈 카드 →
+ *   섹션 자체를 숨긴다(1~2장 부분 노출 금지). 503(CURATION-006)은 미게시와 다른 **조회 실패**다.
+ * - 카드 순서·키는 응답 그대로(세 번째 모음이 restaurants → busan으로 바뀔 예정 — 키 하드코딩 금지).
+ * - 사진 출처 캡션은 표시 의무가 있을 때만 문자열(어댑터가 빈 값을 null로) → 있을 때만 그린다.
+ * - 상세 404(CURATION-001) = 공개되지 않은 모음(빈 상태 "더 이상 볼 수 없어요"), 503 = 조회 실패(다시 시도).
+ */
+import { useQuery } from '@tanstack/react-query';
+import { api, apiLang, ApiError } from '../api/client';
+import { adaptCurationDetail, adaptCurationIndex, type CurationDetail, type CurationIndex, type DetailWire, type IndexWire } from '../api/curationAdapter';
+import { useAppLanguage } from '../i18n/useAppLanguage';
+
+export const CURATION_API_VERSION = '1.0';
+// 앱 모델은 어댑터가 정본 — 화면은 여기서 함께 가져간다
+export { CURATION_CARD_COUNT, type CurationCard, type CurationDetail, type CurationIndex, type CurationItem } from '../api/curationAdapter';
+const headers = { headers: { 'X-API-Version': CURATION_API_VERSION } };
+
+export async function fetchCurationIndex(): Promise<CurationIndex> {
+  return adaptCurationIndex(await api.get<IndexWire>(`/api/curations/seoul?lang=${apiLang()}`, headers));
+}
+export async function fetchCurationDetail(key: string): Promise<CurationDetail> {
+  return adaptCurationDetail(await api.get<DetailWire>(`/api/curations/seoul/${encodeURIComponent(key)}?lang=${apiLang()}`, headers));
+}
+
+/** 404 CURATION-001(또는 404) = 공개되지 않은 모음 — 재시도로 바뀌지 않는 상태. */
+export function isCurationUnavailable(e: unknown): boolean {
+  return e instanceof ApiError && (e.code === 'CURATION-001' || e.status === 404);
+}
+
+export function useCurationIndex() {
+  const lang = useAppLanguage(); // 구독 — 언어 전환 시 재조회(KB-695)
+  return useQuery({ queryKey: ['curations', 'seoul', lang], queryFn: fetchCurationIndex, retry: false });
+}
+
+export function useCurationDetail(key: string | undefined) {
+  const lang = useAppLanguage();
+  return useQuery({
+    queryKey: ['curations', 'seoul', key, lang],
+    queryFn: () => fetchCurationDetail(key as string),
+    enabled: !!key,
+    retry: false,
+  });
+}

@@ -37,6 +37,11 @@ export interface AvoidedIngredientWire {
 export interface ReviewRatingWire {
   averageRating?: number | null;
   reviewCount?: number;
+  /** KB-857(서버 #453): 축 평균(소수 1자리 · 값 있는 리뷰 0건 = null)·축 리뷰 수. 구 응답 = 필드 없음 */
+  servingSpeedAverage?: number | null;
+  servingSpeedCount?: number;
+  staffKindnessAverage?: number | null;
+  staffKindnessCount?: number;
 }
 
 /** 음식 상세 리뷰 요약 묶음 — 8/3 스냅샷 → P-235: blur 소멸(8/19).

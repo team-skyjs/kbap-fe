@@ -10,6 +10,7 @@ import { ProgressDots } from '@/components/ProgressDots';
 import { Pressable } from '@/components/Pressable';
 
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
+jest.mock('expo-updates', () => ({ channel: 'teamtest' })); // KB-870: dev 서버 채널 동작 고정(운영 채널 숨김은 prodHide870·prodFlagSurfaces436)
 jest.mock('@/lib/data/useDietPresets', () => {
   // P-208: 프리셋 서버 훅 표면 목 — 상수 폴백 형태(react-query 무의존)
   const { DIET_PRESETS, presetSubstanceCodes } = jest.requireActual('@/lib/onboarding/dietPresets');
@@ -294,11 +295,11 @@ it('KB-433: 추천 행(pad16 r8) + 2열 그리드 타일·검색 시 핀 숨김�
 });
 
 /* ---- P-134: 회피 타일 그리드 · 맵기 레일/배지 ---- */
-it('P-134 회피: 81종 타일+폴백 약어·카운트/Clear', async () => {
+it('P-134 회피: 87종 타일+폴백 약어·카운트/Clear', async () => {
   mockDraft = { consented: true, step: 'restrictions', nickname: '', nationality: 'US', language: 'en', restrictions: ['EGG'], spice: 'MEDIUM', updatedAt: '' };
   const tree = await render();
   const tiles = new Set(tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('avoid-') && n.props.testID !== 'avoid-clear').map((n) => n.props.testID as string));
-  expect(tiles.size).toBe(81); // 실카탈로그 전량 (시안 30종 아님 — composite/host 중복은 Set으로)
+  expect(tiles.size).toBe(87); // 실카탈로그 전량(KB-843 +6: 견과류·갑각류·연체류·육류·양고기·고기 육수) (시안 30종 아님 — composite/host 중복은 Set으로)
   const egg = tree.root.findAll((n) => n.props?.testID === 'avoid-EGG')[0];
   // P-188: 약어는 로드 **실패시에만** — 체인 소진(onError) 후 노출, 로딩 중엔 스켈레톤
   expect(egg.findAll((c) => c.props?.testID?.startsWith?.('avtile-skel-')).length).toBeGreaterThanOrEqual(1);

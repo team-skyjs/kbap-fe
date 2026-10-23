@@ -11,8 +11,16 @@ import type { ReviewPage } from '@/lib/api/types';
 import { api, apiLang } from '@/lib/api/client';
 import { trackReadyFood } from './hiddenFoods';
 import { adaptReviewPage, type ReviewPageWire } from '@/lib/api/reviewAdapter';
-import { FLAGS } from '@/lib/flags';
+import { FLAGS, isDevServerChannel } from '@/lib/flags';
 import { mockFoodReviews } from '@/lib/mocks/reviews';
+import { PROCESSED_FOOD_API_VERSION } from './processedFoodApiVersion';
+
+/** KB-812 2차(서버 #435): 리뷰 **조회**는 3.2 — 이 버전부터 피드·내 리뷰에 가공식품 리뷰가 섞이고 응답에 targetType·processedFood가 온다
+ *  (3.1 이하 = 음식 리뷰만). 파라미터·정렬은 두 버전 동일(서버 매핑 실측). 쓰기(작성·수정·삭제·좋아요)는 1.0+ 그대로. */
+/** KB-870(P-524): 운영 서버는 아직 3.2 리뷰 매핑이 없어 400(감사 실측) — dev 서버 채널만 3.2, 운영 채널은 헤더 없음(1.0, main과 같음). */
+export const REVIEW_READ_HEADERS = isDevServerChannel() ? { headers: { 'X-API-Version': PROCESSED_FOOD_API_VERSION } } : undefined;
+/** 가공식품 리뷰 엔드포인트(/api/processed-foods/{id}/reviews)는 3.2+에만 매핑 — 채널 무관 3.2 고정(헤더 없으면 404). */
+export const PROCESSED_REVIEW_HEADERS = { headers: { 'X-API-Version': PROCESSED_FOOD_API_VERSION } };
 
 /** 훅 밖 분리 — 플래그 스위칭 유닛 잠금용 (P-086). */
 export async function fetchFoodReviewsPage(
@@ -37,7 +45,7 @@ export async function fetchFoodReviewsPage(
   // KB-626(#185 2R): 서버 `listReviews`는 foodId가 있으면 `getReadyFood`를 탄다 — FOOD-001 = 음식이 숨겨졌다.
   // 받은 자리에서 숨김 신호를 세운다: 상세 본문의 캐시된 판정이 **상세 재조회를 기다리지 않고** 가려진다.
   return trackReadyFood(foodId, async () =>
-    adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`)),
+    adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`, REVIEW_READ_HEADERS)),
   );
 }
 
@@ -72,7 +80,7 @@ export async function fetchGlobalReviewsPage(cursor: string | null, filters: Glo
   const max = filters.maxRating ?? null;
   if (min != null && (max == null || min <= max)) q.set('minRating', String(min));
   if (max != null && (min == null || min <= max)) q.set('maxRating', String(max));
-  const fetchPage = async () => adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
+  const fetchPage = async () => adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`, REVIEW_READ_HEADERS));
   // foodId 필터가 있으면 서버 `listReviews`가 `getReadyFood`를 탄다 = FOOD-001 원천(#185 5R). 현재 화면 호출자는
   // 안 넘기지만 계약상 열려 있으므로 같은 부기 경로로.
   return filters.foodId ? trackReadyFood(filters.foodId, fetchPage) : fetchPage();
@@ -104,5 +112,28 @@ export function useFoodReviews(foodId: string, countryCode?: string | null) {
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasNext ? last.nextCursor : undefined),
     enabled: !!foodId,
+  });
+}
+
+/* ---- KB-812 2차: 가공식품 리뷰 목록 — GET /api/processed-foods/{id}/reviews?lang=&cursor= (3.2, 비회원 허용, 최신순 50건 keyset) ---- */
+
+/** 키 프리픽스 ['processedFoods','reviews'] — 리뷰 뮤테이션 무효화·좋아요 낙관 반영이 프리픽스로 잡는다(useReviewMutations) */
+export const processedReviewsKey = (processedFoodId: string) => ['processedFoods', 'reviews', processedFoodId] as const;
+
+export async function fetchProcessedReviewsPage(processedFoodId: string, cursor: string | null): Promise<ReviewPage> {
+  if (!FLAGS.reviewsLiveEnabled) return { items: [], hasNext: false, nextCursor: null };
+  const c = cursor ? `&cursor=${encodeURIComponent(cursor)}` : '';
+  return adaptReviewPage(
+    await api.get<ReviewPageWire>(`/api/processed-foods/${encodeURIComponent(processedFoodId)}/reviews?lang=${apiLang()}${c}`, PROCESSED_REVIEW_HEADERS),
+  );
+}
+
+export function useProcessedReviews(processedFoodId: string) {
+  return useInfiniteQuery({
+    queryKey: processedReviewsKey(processedFoodId),
+    queryFn: ({ pageParam }) => fetchProcessedReviewsPage(processedFoodId, pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => (last.hasNext ? last.nextCursor : undefined),
+    enabled: !!processedFoodId,
   });
 }

@@ -66,7 +66,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
 const flat = (t2: ReactTestRenderer) => JSON.stringify(t2.toJSON());
 
 it('디테일 라우트 소멸 — review/[id] 파일 부재(2depth 전환)', () => {
-  expect(require('fs').existsSync('src/app/review/[id].tsx')).toBe(false);
+  expect((jest.requireActual('fs') as typeof import('fs')).existsSync('src/app/review/[id].tsx')).toBe(false);
 });
 
 it('ExpandableBody — 3줄을 넘으면 See more, 탭 = 전문 펼침(See less), 재탭 = 접기', () => {
@@ -154,7 +154,7 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
     const surfaces: [string, 'card' | 'button'][] = [
       ['src/features/community/ReviewFeed.tsx', 'card'],
       ['src/app/food/[id]/index.tsx', 'card'],
-      ['src/app/food/[id]/reviews.tsx', 'button'],
+      ['src/app/food/[id]/reviews.tsx', 'card'], // KB-848: 목록 = FeedCard 경유
       ['src/app/profile/reviews.tsx', 'card'], // KB-434 D-6: 내 리뷰 = FeedCard 경유
     ];
     for (const [f, via] of surfaces) {
@@ -256,7 +256,9 @@ describe('KB-817 리뷰 탭 peek', () => {
     const card = fs.readFileSync('src/features/review/FeedCard.tsx', 'utf8');
     expect(card).toContain("photoVariant = 'tiles'");
     expect(card).toContain("toggleColor={photoVariant === 'peek' ? INK_TITLE : undefined}");
-    for (const f of ['src/app/food/[id]/index.tsx', 'src/app/profile/reviews.tsx']) expect(fs.readFileSync(f, 'utf8')).not.toContain('photoVariant');
+    // KB-848: 음식 상세 미리보기·리뷰 전체 목록도 리뷰 탭과 같은 peek · 내 리뷰는 tiles 그대로
+    for (const f of ['src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx']) expect(fs.readFileSync(f, 'utf8')).toContain('photoVariant="peek"');
+    expect(fs.readFileSync('src/app/profile/reviews.tsx', 'utf8')).not.toContain('photoVariant');
   });
 });
 
@@ -316,6 +318,28 @@ describe('KB-824 See more = 전체 줄 수가 3을 넘을 때만', () => {
     expect(toggle(tree)).toBeDefined();
     measure(tree, 3); // 회전·글꼴 축소로 3줄에 들어감
     expect(toggle(tree)).toBeUndefined();
+  });
+  it('KB-777: 앱을 켠 채 글씨 크기 변경(fontScale 전이) = 측정 Text 새로 마운트 + 줄 수 다시 잼 → 커진 글씨로 4줄 넘으면 See more · 펼침 상태 유지', () => {
+    const RN = jest.requireActual('react-native');
+    const spy = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 1 });
+    const tree = render(<ExpandableBody body="three lines at 1x" t={t} />);
+    measure(tree, 3);
+    expect(toggle(tree)).toBeUndefined();
+    const before = tree.root.findAll((x) => x.props?.testID === 'body-measure' && typeof x.type === 'string')[0];
+    spy.mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 1.3 });
+    act(() => tree.update(<ExpandableBody body="three lines at 1x" t={t} />));
+    const after = tree.root.findAll((x) => x.props?.testID === 'body-measure' && typeof x.type === 'string')[0];
+    expect(after).not.toBe(before); // 새 인스턴스 = 새 onTextLayout
+    expect(visible(tree).props.numberOfLines).toBe(3); // 재측정 전 = 접힌 채(높이 점프 0)
+    measure(tree, 5);
+    expect(toggle(tree)).toBeDefined();
+    act(() => toggle(tree).props.onPress());
+    spy.mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 1 });
+    act(() => tree.update(<ExpandableBody body="three lines at 1x" t={t} />));
+    measure(tree, 4);
+    expect(visible(tree).props.numberOfLines).toBeUndefined(); // 펼친 채 유지
+    expect(flat(tree)).toContain('reviews.seeLess');
+    spy.mockRestore();
   });
   it('측정 Text = 보이지 않고 스크린리더·터치 0', () => {
     const { StyleSheet } = jest.requireActual('react-native');

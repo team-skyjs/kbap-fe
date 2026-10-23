@@ -27,6 +27,7 @@ import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { FLAGS } from '@/lib/flags';
+import { BE_CODES } from '@/lib/mocks/ingredients';
 
 export default function EditRestrictions() {
   const router = useRouter();
@@ -43,16 +44,21 @@ export default function EditRestrictions() {
   // P-243: 시트 초기 표시 = 서버 정본(me.dietCategories) — me 도착 후 seeding(아래 effect)
   // P-214: 변경 폭(delta)·경로(via) 계측 재료 — 시딩 시점 개수가 기준선
   // 서버값 1회 시딩 — effect(빈 선택이 한 프레임 먼저 그려짐)가 아니라 렌더 중(React 공식 "이전 값 비교" 패턴)
+  // KB-843(서버 백필 #448 짝): 서버 프로필의 **앱이 모르는 코드**(새 서버 코드·백필)는 화면에 그리지 않고(타일·개수 0) 저장 때 그대로 되돌려 보낸다 —
+  // 서버는 목록을 통째로 교체하므로 빼면 지워진다. 전부 해제(Clear)로도 지우지 않는다(보이지 않는 값 — 과회피 쪽이 안전)
+  const known = (codes: string[]) => codes.filter((c) => BE_CODES.has(c));
+  const hidden = (me?.restrictions ?? []).map((r) => r.code).filter((c) => !BE_CODES.has(c));
   if (me && !seed) {
-    setSeed({ initialCount: me.restrictions.length });
-    setSel(me.restrictions.map((r) => r.code));
+    const seedCodes = known(me.restrictions.map((r) => r.code));
+    setSeed({ initialCount: seedCodes.length });
+    setSel(seedCodes);
   }
 
   const toggle = (code: string) => setSel((s) => (s.includes(code) ? s.filter((c) => c !== code) : [...s, code]));
   const isGuest = useIsGuest();
   const { busy: saving, run: runSave } = useSubmitGuard(); // P-173: 저장 연타 봉쇄 — KB-604: 게스트 return보다 위(순수 로컬 훅, 부수효과 0)
   // KB-776(QA B3-3): 미저장 이탈 확인 — 게스트 return보다 위(훅 순서). 기준 = 서버 정본(me.restrictions), 순서 무관 비교
-  const base = me?.restrictions.map((r) => r.code) ?? [];
+  const base = known(me?.restrictions.map((r) => r.code) ?? []); // 보이는 코드끼리 비교(숨은 코드는 늘 그대로 보낸다)
   const dirty = !isGuest && seed != null && (sel.length !== base.length || sel.some((c) => !base.includes(c)));
   const leave = useLeaveConfirm(dirty, saving);
 
@@ -72,7 +78,7 @@ export default function EditRestrictions() {
       () =>
         new Promise<void>((resolve) => {
           update.mutate(
-            { restrictions: sel.map((code) => ({ kind: 'allergy' as const, code })) },
+            { restrictions: [...sel, ...hidden.filter((c) => !sel.includes(c))].map((code) => ({ kind: 'allergy' as const, code })) },
             {
               onSuccess: () => {
                 setUserProps({ user_info_avoid_count: sel.length }); // P-144: CSV 트리거(프로필 수정 시 갱신)

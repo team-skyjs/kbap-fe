@@ -85,7 +85,7 @@ it('② 스캔 결과 크롬 — 인식 배너·언더라인 탭·컨트롤 행(
   expect(src).toContain('testID="scan-safe-toggle"'); // P-354: 무동작 프로필 토글 → Safe only(실동작)
   expect(src).toContain('testID="scan-sort"');
   // §1-2/§1-3 현행 유지(예진 판정) — 인식 중 스윕·AuthGateSheet 무변
-  expect(src).toContain('ScanSweepOverlay');
+  expect(src).toContain('<ScanLoading'); // KB-845: 스캔 중 = 로딩 C(사진 안 스캔선 1개) — 구 스윕 오버레이 대체
   expect(src).toContain('<AuthGateSheet context="scan"');
   // P-285: 다시찍기(camera_restart) 복원 · ScanProfileBar는 계속 미사용(9/5 판정)
   expect(src).toContain('testID="retake"');

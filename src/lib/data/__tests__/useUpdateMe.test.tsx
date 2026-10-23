@@ -20,7 +20,7 @@ jest.mock('@/lib/api/client', () => ({ api: { get: jest.fn(), patch: jest.fn().m
 jest.mock('@/lib/auth/beAuth', () => ({ hasBeSession: jest.fn().mockResolvedValue(true) }));
 // KB-389 2차: 채널 목 — 기본 dev(1.1 헤더), prod 케이스만 플립(spice 송신은 채널 무관 문자열)
 const CHANNEL = { prod: false };
-jest.mock('@/lib/flags', () => ({ FLAGS: {}, isProdChannel: () => CHANNEL.prod }));
+jest.mock('@/lib/flags', () => ({ FLAGS: { avoidGroupCodesEnabled: true }, isProdChannel: () => CHANNEL.prod, isDevServerChannel: () => true })); // KB-870: dev 서버 채널(묶음 코드·리뷰 3.2)
 jest.mock('@/lib/onboarding/submit', () => ({
   loadLocalSpice: jest.fn().mockResolvedValue(null),
   SPICE_KEY: 'kbap.profile.spice.v1', // useMe가 submit에서 import (P-010 중복 해소)
@@ -168,6 +168,15 @@ it('P-243(BE #179): dietCategories 패치 → 풀 셋 전송 · 빈 배열(전�
   const body = (api.patch as jest.Mock).mock.calls.at(-1)![1] as Record<string, unknown>;
   expect(body.dietCategories).toEqual(['VEGAN']);
   expect(body.avoidanceSubstanceCodes).toEqual(['EGG']);
+});
+
+it('KB-843(서버 백필 #448 짝): 서버 프로필에 있던 앱이 모르는 코드(FUTURE_X) = 보존해 다시 보낸다 · 서버에 없던 미지 값·레거시 잔재 = 드롭', async () => {
+  const qc = seededClient();
+  const lang = (jest.requireActual('@/lib/i18n') as { default: { language: string } }).default.language;
+  qc.setQueryData(['me', lang], { restrictions: [{ kind: 'allergy', code: 'EGG' }, { kind: 'allergy', code: 'FUTURE_X' }] });
+  await runMutation(qc, { restrictions: [{ kind: 'allergy', code: 'EGG' }, { kind: 'allergy', code: 'FUTURE_X' }, { kind: 'allergy', code: 'BOGUS_Y' }, { kind: 'allergy', code: 'ing:unknown-thing' }, { kind: 'allergy', code: 'ing:cheese' }] });
+  const body = (api.patch as jest.Mock).mock.calls.at(-1)![1] as Record<string, unknown>;
+  expect(body.avoidanceSubstanceCodes).toEqual(['EGG', 'FUTURE_X', 'CHEESE']);
 });
 
 it('P-165(#145): currency 패치 → PATCH body 포함 · null(해제)도 전송(국적 폴백 복귀)', async () => {

@@ -1,0 +1,286 @@
+/**
+ * 큐레이션 항목 사진 갤러리 바텀시트 (KB-832, D-29 v5 Gallery 12344:30633~31193).
+ * - 화면 위 64부터 바닥까지(시안 375×812 = 높이 748), 사진 영역 = 시트의 68%(시안 510) 가로 스와이프 페이저(네이티브 페이징 스냅, 양방향, 장수 가변).
+ * - 사진 하단 가운데 점 인디케이터(KB-846 — 1장이면 숨김·스와이프 없음) · 이름 · 지역 · 소개 최대 4줄 · 현재 사진의 출처(없으면 숨김) · Outline Guide.
+ * - KB-846: 닫기 = 그래버(위 가운데 바)를 아래로 끌기(시트 높이 25% 또는 속도 임계) · 배경 탭 · 뒤로가기. X 버튼 없음.
+ *   아래 텍스트 영역은 스크롤 없이 고정 — 시트 높이 = 콘텐츠(짧은 화면·큰 글씨면 사진이 줄어 Guide가 늘 보인다).
+ * - Guide = 인앱 브라우저(openWebPage) — 시트는 닫지 않는다(돌아오면 같은 사진·같은 시트). 닫기 = 목록 그대로(스크롤 유지 — 화면은 언마운트되지 않음).
+ * - 사진 0장 = 플레이스홀더 1장.
+ * 접근성: 열리면 그래버(닫기 버튼 역할 — 스크린리더 활성화로 닫힘)에 포커스, 페이저에 이전/다음 사진 대체 액션, 시트 escape 제스처 = 닫기.
+ */
+import * as React from 'react';
+import { AccessibilityInfo, findNodeHandle, FlatList, Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Txt as Text } from '@/components/Txt';
+import { Btn } from '@/components/Btn';
+import { Pressable } from '@/components/Pressable';
+import { RemoteImage } from '@/components/RemoteImage';
+import { color as C, font } from '@/lib/theme';
+import { EVENTS, track } from '@/lib/analytics';
+import { openMapLink, openWebPage } from '@/lib/openExternal';
+import { IconMapPin } from '@/components/icons';
+import { mapAppUrl, mapQueryOf, mapSearchUrl, type MapProvider } from '@/lib/curation/mapLinks';
+import { MapChoiceDialog, showIosMapSheet } from '@/features/curation/MapChoice';
+import type { CurationItem } from '@/lib/data/useCurations';
+
+export const SHEET_TOP = 64;
+export const PHOTO_SHARE = 510 / 748; // 시안: 사진 510 / 시트 748
+/** 끌어 닫기 임계(KB-846) — 시트 높이의 25% 이상 또는 아래로 빠르게(속도 px/s) */
+export const DISMISS_SHARE = 0.25;
+export const DISMISS_VELOCITY = 1000;
+export const INTRO_MAX_LINES = 4;
+/** 짧은 화면에서 사진이 줄어드는 하한 — 그 아래로는 본문이 스크롤로 넘친다(Codex #316) */
+export const PHOTO_MIN_H = 160;
+/** 사진 영역 높이 — 본문 고유 높이(content)가 아직 없으면 기본값, 있으면 남는 자리(하한 160·상한 기본값) */
+/** KB-852: 출처 오버레이 최대 폭 — 우하단 12에서 왼쪽으로, 하단 가운데 점 줄(지름 6 · 간격 8)과 8 띄운다. 1장(점 없음) = 사진 폭 - 좌우 12 */
+/** KB-863(D-29 Map links v2 B, 12371:48462): 사진 아래 왼쪽 = 출처(위)·점(아래), 오른쪽 아래 = 흰 원형 지도 버튼 48 — 인셋 16 */
+export const PHOTO_INSET = 16;
+export const MAP_BTN = 48;
+/** 출처 최대 폭 = 사진 폭 − 왼쪽 16 − 지도 버튼(48 + 오른쪽 16) − 사이 22(시안 273 @375) — 버튼과 겹침 0 */
+export const creditMaxWidth = (width: number): number => Math.max(0, width - PHOTO_INSET - (MAP_BTN + PHOTO_INSET) - 22);
+
+export const photoBoxHeight = (photoH: number, sheetMax: number, bodyContent: number): number =>
+  bodyContent > 0 ? Math.max(PHOTO_MIN_H, Math.min(photoH, sheetMax - bodyContent)) : photoH;
+export const shouldDismiss = (translationY: number, velocityY: number, sheetH: number): boolean =>
+  translationY >= sheetH * DISMISS_SHARE || (velocityY >= DISMISS_VELOCITY && translationY > 0);
+
+export function CurationGallerySheet({ item, listKey, area, onClose }: { item: CurationItem | null; listKey: string; area: string; onClose: () => void }) {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const [index, setIndex] = React.useState(0);
+  const listRef = React.useRef<FlatList<CurationItem['images'][number] | null>>(null);
+  const grabRef = React.useRef<View>(null);
+  const [pagerH, setPagerH] = React.useState<number | null>(null); // 짧은 화면·큰 글씨에서 사진 영역이 줄면 실제 높이로 페이지를 맞춘다
+  // 끌어 닫기 — 콜백은 JS 스레드(runOnJS(true), 레포 제스처 관례 — HomeQuotaBadge). 공유값 .get()/.set()(컴파일러 호환)
+  const dragY = useSharedValue(0);
+  const sheetMeasured = useSharedValue(0);
+  // Codex #316: 본문이 시트 최대 높이를 넘는 극단(짧은 화면 + 큰 글씨 + 여러 줄 이름)에서만 스크롤 — 평소엔 고정(스크롤·바운스 0)
+  const [bodyBox, setBodyBox] = React.useState({ view: 0, content: 0 });
+  const bodyOverflows = bodyBox.content > bodyBox.view + 1; // 실제 시트 높이(콘텐츠 맞춤) — 제스처 콜백에서 읽는다(ref면 렌더 중 읽기로 잡힘)
+
+  // 다른 항목으로 열리면 첫 사진부터(렌더 중 전이 비교 — KB-603)
+  const itemKey = item?.id ?? null;
+  const [prevKey, setPrevKey] = React.useState(itemKey);
+  if (itemKey !== prevKey) {
+    setPrevKey(itemKey);
+    setIndex(0);
+  }
+
+  const sheetH = height - SHEET_TOP; // 최대 높이(시트는 콘텐츠에 맞춰 이보다 작을 수 있다)
+  const photoH = Math.round(sheetH * PHOTO_SHARE);
+  // Codex #317: 사진이 먼저 줄어든다 — 사진 높이 = 시트 최대 − 본문 고유 높이(160 ~ 기본 68%). 본문은 사진이 160에 닿은 뒤에야 눌려 스크롤이 켜진다
+  //(둘 다 flexShrink면 레이아웃이 부족분을 나눠 사진이 남았는데도 본문이 스크롤됐다)
+  const photoBoxH = photoBoxHeight(photoH, sheetH, bodyBox.content);
+  const pageH = pagerH ?? photoBoxH;
+  const images = item ? (item.images.length ? item.images : [null]) : [];
+  const count = images.length;
+  const current = images[index] ?? null;
+
+  const go = (i: number) => {
+    const next = Math.max(0, Math.min(count - 1, i));
+    if (next === index) return;
+    listRef.current?.scrollToIndex({ index: next, animated: true });
+    setIndex(next);
+    if (item) track(EVENTS.home_curation_gallery_swipe, { collection_key: listKey, entry_id: item.id, index: next });
+  };
+  const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const i = Math.round(e.nativeEvent.contentOffset.x / width);
+    if (i !== index && i >= 0 && i < count) {
+      setIndex(i);
+      if (item) track(EVENTS.home_curation_gallery_swipe, { collection_key: listKey, entry_id: item.id, index: i });
+    }
+  };
+  // KB-863 지도 열기 — iOS 네이티브 시트 · Android 앱 목록 대화상자 → 고른 지도의 범용 검색 링크(nameKo 우선). 계측 = entry_id만(장소명 금지)
+  const [mapChoice, setMapChoice] = React.useState(false);
+  const pickMap = (p: MapProvider) => {
+    setMapChoice(false);
+    if (!item) return;
+    track(EVENTS.home_curation_map_select, { collection_key: listKey, entry_id: item.id, provider: p });
+    const q = mapQueryOf(item);
+    void openMapLink(mapSearchUrl(p, q), mapAppUrl(p, q)); // Kakao·NAVER = 앱 스킴 먼저(Codex #334)
+  };
+  const openMaps = () => {
+    if (!item) return;
+    track(EVENTS.home_curation_map_open, { collection_key: listKey, entry_id: item.id });
+    if (Platform.OS === 'ios') showIosMapSheet(t, item.name, pickMap);
+    else setMapChoice(true);
+  };
+  const openGuide = () => {
+    if (!item) return;
+    track(EVENTS.home_curation_link_click, { collection_key: listKey, position: item.position });
+    void openWebPage(item.externalUrl); // 시트 유지 — 브라우저에서 돌아오면 같은 자리
+  };
+  const onShow = () => {
+    dragY.set(0);
+    const node = findNodeHandle(grabRef.current);
+    if (node) AccessibilityInfo.setAccessibilityFocus(node);
+  };
+  // 세로 끌기는 그래버 띠(사진 위쪽)에서만 시작 — 사진 캐러셀의 가로 스와이프와 겹치지 않는다(가로로 먼저 움직이면 실패)
+  const drag = Gesture.Pan()
+    .runOnJS(true)
+    .activeOffsetY(8)
+    .failOffsetX([-12, 12])
+    .onUpdate((e) => dragY.set(Math.max(0, e.translationY)))
+    .onEnd((e, success) => {
+      if (success && shouldDismiss(e.translationY, e.velocityY, sheetMeasured.get() || sheetH)) onClose();
+      else dragY.set(withSpring(0, { damping: 20, stiffness: 220 }));
+    })
+    .onFinalize((_e, success) => {
+      if (!success) dragY.set(withSpring(0, { damping: 20, stiffness: 220 })); // 취소(OS 끼어들기) = 제자리
+    });
+  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: dragY.get() }] }));
+
+  return (
+    <Modal visible={!!item} transparent animationType="slide" onRequestClose={onClose} onShow={onShow} statusBarTranslucent>
+      {/* Modal은 루트 GestureHandlerRootView 밖(Android) — 자체 루트 필수(community/compose 같은 이유) */}
+      <GestureHandlerRootView style={st.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessible={false} testID="curation-gallery-backdrop" />
+        {item && (
+          <Animated.View
+            style={[st.sheet, { maxHeight: sheetH }, sheetStyle]}
+            onLayout={(e) => sheetMeasured.set(e.nativeEvent.layout.height)}
+            testID="curation-gallery"
+            accessibilityViewIsModal
+            onAccessibilityEscape={onClose}
+          >
+            <View style={{ height: photoBoxH }} onLayout={(e) => setPagerH(Math.round(e.nativeEvent.layout.height))} testID="curation-gallery-photo">
+              <FlatList
+                ref={listRef}
+                data={images}
+                horizontal
+                pagingEnabled
+                scrollEnabled={count > 1}
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(img, i) => img?.url ?? `none-${i}`}
+                getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+                onMomentumScrollEnd={onMomentumEnd}
+                accessible /* Codex #322: 1장도 읽힘 — 사진 설명(이름, 출처). 그래버(닫기)는 형제라 가려지지 않는다 */
+                accessibilityRole={count > 1 ? 'adjustable' : 'image'}
+                accessibilityLabel={current?.attribution ? `${item.name}, ${current.attribution}` : item.name} /* KB-852: 출처 = 사진 설명에 포함(오버레이 글자는 스크린리더 무음) */
+                accessibilityValue={count > 1 ? { text: `${index + 1} / ${count}` } : undefined}
+                accessibilityActions={count > 1 ? [{ name: 'increment', label: t('curation.nextPhoto') }, { name: 'decrement', label: t('curation.prevPhoto') }] : undefined}
+                onAccessibilityAction={(e) => go(e.nativeEvent.actionName === 'increment' ? index + 1 : index - 1)}
+                testID="curation-gallery-pager"
+                renderItem={({ item: img }) => (
+                  <View style={{ width, height: pageH }}>
+                    {img ? (
+                      <RemoteImage uri={img.url} style={st.fill} recyclingKey={img.url} />
+                    ) : (
+                      <View style={[st.fill, st.noPhoto]} testID="curation-gallery-nophoto">
+                        <Text style={st.noPhotoText}>{t('curation.photoUnavailable')}</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              />
+              {/* 그래버 띠 — 아래로 끌면 닫힘. 스크린리더 = "닫기" 버튼(활성화로 닫힘), 눈으로 탭하면 아무 일 없음(끌기 전용) */}
+              <GestureDetector gesture={drag}>
+                <View
+                  ref={grabRef}
+                  style={st.grabZone}
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.close')}
+                  accessibilityActions={[{ name: 'activate' }]}
+                  onAccessibilityAction={(e) => { if (e.nativeEvent.actionName === 'activate') onClose(); }}
+                  testID="curation-gallery-grabber"
+                >
+                  <View style={st.handle} />
+                </View>
+              </GestureDetector>
+              {/* KB-852 → KB-863(v2 B): 출처 = 사진 왼쪽 아래 오버레이(흰 글자 + 은은한 그림자, 1줄 말줄임 — 지도 버튼과 겹침 0). 출처 없는 사진 = 없음 */}
+              {!!current?.attribution && (
+                <Text
+                  style={[st.credit, { maxWidth: creditMaxWidth(width) }]}
+                  numberOfLines={1}
+                  pointerEvents="none"
+                  accessible={false}
+                  importantForAccessibility="no"
+                  testID="curation-gallery-credit"
+                >
+                  {current.attribution}
+                </Text>
+              )}
+              {/* KB-846: 숫자 카운터 → 점(Expedia). 1장이면 숨김 · 스크린리더 값은 페이저의 "n / 3" */}
+              {count > 1 && (
+                <View style={st.dots} pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden testID="curation-gallery-dots">
+                  {images.map((img, i) => (
+                    <View key={img?.url ?? `dot-${i}`} style={[st.dot, i === index ? st.dotOn : st.dotOff]} testID={i === index ? 'curation-gallery-dot-on' : 'curation-gallery-dot'} />
+                  ))}
+                </View>
+              )}
+              {/* KB-863(v2 B): 흰 원형 지도 버튼 48 — 사진 오른쪽 아래 16 · 지도 핀. 누르면 지도 선택 */}
+              <Pressable
+                style={st.mapBtn}
+                onPress={openMaps}
+                accessibilityRole="button"
+                accessibilityLabel={t('curation.openInMaps')}
+                testID="curation-gallery-map"
+              >
+                <IconMapPin size={24} color={C.ink} />
+              </Pressable>
+            </View>
+            {/* KB-846: 본문 고정(스크롤·바운스 없음) — 소개 최대 4줄. 짧은 화면·큰 글씨는 위 사진 영역이 줄어(flexShrink) Guide가 가려지지 않는다 */}
+            <ScrollView
+              style={st.bodyScroll}
+              contentContainerStyle={[st.body, { paddingBottom: Math.max(insets.bottom, 16) }]}
+              scrollEnabled={bodyOverflows}
+              bounces={false}
+              alwaysBounceVertical={false}
+              overScrollMode="never"
+              showsVerticalScrollIndicator={bodyOverflows}
+              onLayout={(e) => { const view = e.nativeEvent.layout.height; setBodyBox((b) => (b.view === view ? b : { ...b, view })); }}
+              onContentSizeChange={(_w, content) => setBodyBox((b) => (b.content === content ? b : { ...b, content }))}
+              testID="curation-gallery-body"
+            >
+              <Text style={st.name} accessibilityRole="header">{item.name}</Text>
+              <Text style={st.area}>{area}</Text>
+              <Text style={st.intro} numberOfLines={INTRO_MAX_LINES} testID="curation-gallery-intro">{item.introduction}</Text>
+              <Btn
+                variant="ghost"
+                onPress={openGuide}
+                style={st.guide}
+                accessibilityLabel={t('curation.viewGuideA11y', { name: item.name })}
+                accessibilityHint={t('curation.viewGuideHint')}
+                testID="curation-gallery-guide"
+              >
+                {t('curation.guide')}
+              </Btn>
+            </ScrollView>
+          </Animated.View>
+        )}
+        {Platform.OS !== 'ios' && <MapChoiceDialog open={mapChoice} t={t} onPick={pickMap} onClose={() => setMapChoice(false)} />}
+      </GestureHandlerRootView>
+    </Modal>
+  );
+}
+
+// 시안 실측(2x PNG): 시트 top 64 · 위 모서리 24 · 핸들 36×4(위 12) · 본문 pad 20, 사진→이름 16, 이후 8 간격 · 이름 24 bold · 지역 13 gray-700 · 소개 15/21 · Guide 48 pill (KB-863 v2 B — 출처·점 왼쪽 아래 · 지도 버튼 오른쪽 아래)
+// KB-846: 점 인디케이터 = 사진 하단 가운데(아래 16) · 지름 6 · 간격 8 · 활성 흰 · 비활성 흰 40% · 그래버 띠 = 사진 위쪽 전폭 44(끌기 시작 영역)
+const st = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.32)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: C.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
+  fill: { width: '100%', height: '100%', backgroundColor: C.surface2 },
+  noPhoto: { backgroundColor: C.hair, alignItems: 'center', justifyContent: 'center' },
+  noPhotoText: { fontFamily: font.body, fontSize: 13, lineHeight: 20, color: C.ink2 },
+  handle: { position: 'absolute', top: 12, alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.line2 }, // 그래버 띠 안(띠 기준 위 12 = 시트 기준 그대로)
+  grabZone: { position: 'absolute', top: 0, left: 0, right: 0, height: 44 },
+  bodyScroll: { flexGrow: 0, flexShrink: 1 },
+  dots: { position: 'absolute', left: PHOTO_INSET, bottom: 16, flexDirection: 'row', gap: 8 }, // KB-863 v2 B: 왼쪽 아래(출처 밑)
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  dotOn: { backgroundColor: C.card },
+  dotOff: { backgroundColor: C.card, opacity: 0.4 },
+  body: { paddingHorizontal: 20, paddingTop: 16, gap: 8 },
+  name: { fontFamily: font.bodyBold, fontSize: 24, lineHeight: 32, color: C.ink },
+  area: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
+  intro: { fontFamily: font.body, fontSize: 15, lineHeight: 21, color: C.ink },
+  // KB-852: 사진 우하단 오버레이 — caption 13 흰(gray-00) + 은은한 그림자(밝은 사진에서도 읽힘)
+  // KB-863 v2 B: 출처 = 왼쪽 16 · 위끝 = 사진 바닥 − 49(줄 18 → 바닥 위 31 — 점 줄 위)
+  credit: { position: 'absolute', left: PHOTO_INSET, bottom: 31, fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.card, textAlign: 'left', textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  mapBtn: { position: 'absolute', right: PHOTO_INSET, bottom: PHOTO_INSET, width: MAP_BTN, height: MAP_BTN, borderRadius: MAP_BTN / 2, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, // gray-00
+  guide: { minHeight: 48, borderRadius: 999, paddingVertical: 8, marginTop: 4 }, // KB-863 v2 B: 전체 너비 pill(335×48, radius full)
+});

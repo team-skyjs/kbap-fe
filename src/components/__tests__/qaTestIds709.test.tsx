@@ -25,7 +25,7 @@ describe('화면별 testID 존재(소스 잠금)', () => {
   const read = (p: string) => readFileSync(p, 'utf8');
   it.each([
     ['src/features/food/FoodExplorer.tsx', ['testID="food-sort-sheet"']],
-    ['src/app/food/[id]/reviews.tsx', ['testID="reviews-sort-sheet"', 'testID={`review-item-${review.id}`}', 'testID="reviews-load-more"']],
+    ['src/app/food/[id]/reviews.tsx', ['testID="reviews-sort-sheet"', '<FeedCard', 'testID="reviews-load-more"']],
     ['src/features/community/ReviewFeed.tsx', ['testID="feed-sort-sheet"']],
     ['src/app/food/[id]/owner.tsx', ['testID="owner-done"']],
     ['src/app/delete-account.tsx', ['testID="delete-agree"', 'testID="delete-cancel"', 'testID="delete-confirm"']],

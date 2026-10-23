@@ -16,7 +16,7 @@ import renderer, { act } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } }));
-jest.mock('@/lib/flags', () => ({ FLAGS: { reviewsLiveEnabled: true } }));
+jest.mock('@/lib/flags', () => ({ FLAGS: { reviewsLiveEnabled: true }, isDevServerChannel: () => true })); // KB-870: dev 서버 채널(리뷰 조회 3.2)
 const mockGet = jest.fn();
 const mockPost = jest.fn();
 jest.mock('@/lib/api/client', () => {
@@ -144,7 +144,7 @@ describe('원천 4곳 — 018 = 숨김 신호(updating) · 에러 표면 0', () 
   it('② 리뷰 목록(foodId) 018 → updating · 다시 던진다', async () => {
     mockGet.mockRejectedValueOnce(updating());
     await expect(fetchFoodReviewsPage('7', null)).rejects.toBeInstanceOf(ApiError);
-    expect(mockGet).toHaveBeenCalledWith(expect.stringContaining('foodId=7')); // 대조: 실제 경로
+    expect(mockGet).toHaveBeenCalledWith(expect.stringContaining('foodId=7'), { headers: { 'X-API-Version': '3.2' } }); // 대조: 실제 경로 · KB-812 2차 리뷰 조회 3.2
     expect(reason()).toBe('updating');
   });
 

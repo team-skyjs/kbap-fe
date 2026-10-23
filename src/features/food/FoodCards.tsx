@@ -12,7 +12,7 @@ import { Txt as Text } from '@/components/Txt';
 import { color as C, riskTextStrong, shadow, type RiskState } from '@/lib/theme';
 import { Btn, CardPhoto, NewBadge, RiskBadge, IconChevron } from '@/components';
 import { useIsNewFood } from '@/lib/newFood';
-import { BookmarkStar, Star, Stars } from '@/components/Stars';
+import { BookmarkStar, OverallRating, Stars } from '@/components/Stars';
 import { FLAGS } from '@/lib/flags';
 import type { FoodCard, TopRatedFood } from '@/lib/api/types';
 
@@ -186,13 +186,7 @@ export function TopRatedRow({
               </Text>
             )}
           </View>
-          <View style={styles.trOverall}>
-            <Star size={14} fillPct={food.overallRating == null ? 0 : 100} />
-            <Text style={food.overallRating == null ? styles.trOverallNone : styles.trOverallNum} testID="top-rated-overall">
-              {food.overallRating == null ? '\u2014' : food.overallRating.toFixed(1)}
-            </Text>
-            <Text style={styles.trCount}>({food.overall.count})</Text>
-          </View>
+          <OverallRating average={food.overallRating ?? null} count={food.overall.count} numTestID="top-rated-overall" style={styles.trOverall} />
           <View style={styles.trDetails}>
             {details.map(([label, v]) => (
               <View key={label} style={styles.trLine}>
@@ -256,10 +250,7 @@ const styles = StyleSheet.create({
 
   // KB-800 TopRatedRow (02_designer_spec)
   trBody: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  trOverall: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, height: 18 },
-  trOverallNum: { fontSize: 14, fontWeight: '700', color: C.ink },
-  trOverallNone: { fontSize: 14, fontWeight: '700', color: C.inkMute },
-  trCount: { fontSize: 12, fontWeight: '700', color: C.ink2 },
+  trOverall: { marginTop: 6 },
   trDetails: { marginTop: 6, gap: 4 },
   trLine: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 16 },
   trLabel: { flex: 1, minWidth: 0, fontSize: 12, fontWeight: '500', lineHeight: 16, color: C.ink2 },

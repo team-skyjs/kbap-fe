@@ -15,6 +15,7 @@
  * 프로필 사진과 동일 규약. 기존 사진 유지 시 URL→path 역변환(imageUrlToPath).
  */
 import type { Review, ReviewAuthor, ReviewPage } from './types';
+import { toHttps } from './processedFoodAdapter';
 
 /* ---- wire shapes (스냅샷 기준) ---- */
 
@@ -58,6 +59,10 @@ export interface ReviewWire {
   place?: { name?: string | null; address?: string | null; latitude?: number | null; longitude?: number | null; source?: string | null; placeId?: string | null } | null;
   /** KB-702(서버) → KB-703 ②: 리뷰 본문 언어 = 앱 언어 코드(clampLang 집합) · 판별 못 하면 null · 구서버엔 필드 없음. */
   language?: string | null;
+  /** KB-812 2차(서버 #435, 3.2 응답만): 리뷰 대상 — 구응답·3.1 이하엔 없음(= FOOD) */
+  targetType?: 'FOOD' | 'PROCESSED_FOOD' | string;
+  /** 가공식품 리뷰에만 — 음식 리뷰에선 필드 자체가 생략 */
+  processedFood?: { processedFoodId: number; reportNo?: string; productName: string; maker?: string | null; imageUrl?: string | null } | null;
 }
 
 export interface ReviewPageWire {
@@ -94,9 +99,12 @@ export function adaptReview(wire: ReviewWire): Review {
   // P-165(#144): foodId·memberId 정본 = 중첩(food/author), 최상위는 구응답 폴백
   const foodId = wire.food?.foodId ?? wire.foodId;
   const memberId = wire.author?.memberId ?? wire.memberId;
+  // KB-812 2차: 가공식품 리뷰 = 대상 칩이 제품을 그린다(이름·사진·부제 = 제조사). 요약 없이 PROCESSED_FOOD만 오면 대상 미상이라 음식 축 그대로(링크 없음)
+  const pf = wire.targetType === 'PROCESSED_FOOD' ? wire.processedFood ?? null : null;
   return {
     id: String(wire.reviewId),
-    foodId: foodId != null ? String(foodId) : '',
+    ...(pf ? { target: 'packaged' as const, processedFoodId: String(pf.processedFoodId) } : { target: 'food' as const }),
+    foodId: !pf && foodId != null ? String(foodId) : '',
     rating: wire.rating,
     body: wire.content ?? null,
     createdAt: wire.createdAt,
@@ -104,8 +112,8 @@ export function adaptReview(wire: ReviewWire): Review {
     memberId: memberId != null ? String(memberId) : undefined,
     author,
     // P-165: 서버 해석 음식 이름·썸네일(내 리뷰 화면 우선 소스) — 부재 시 화면이 캐시 폴백
-    foodName: wire.food?.name ?? null,
-    foodImageUrl: wire.food?.imageUrl ?? null,
+    foodName: pf ? pf.productName : wire.food?.name ?? null,
+    foodImageUrl: pf ? toHttps(pf.imageUrl) : wire.food?.imageUrl ?? null,
     // 파생 — 기존 화면 호환 축. P-181: 탈퇴 판정 = authorWithdrawn **서버 정본 우선**,
     // 필드 부재(구 응답)만 author==null 폴백. 렌더(익명)는 무변.
     authorNationality: author?.nationality ?? null,

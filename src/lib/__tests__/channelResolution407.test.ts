@@ -46,6 +46,30 @@ describe('채널 해석표 — 실제 flags.ts', () => {
   });
 });
 
+describe('KB-812 2차·P-508 — packagedReviewWrite·packagedLabelScan = dev 서버 채널만(서버 기능이 켜진 곳)', () => {
+  it.each([
+    // channel,        __DEV__, write
+    ['development', false, true],
+    ['teamtest', false, true],
+    ['teamtest-prod', true, false], // 진단 채널이지만 백엔드 prod(쓰기 OFF) — 막다른 버튼 금지
+    ['preview', true, false],
+    ['production', true, false],
+    ['', true, true], // dev client(Metro) — 로컬
+    ['', false, false],
+    [undefined, false, false],
+  ])('%s (__DEV__=%s) → %s', (channel, dev, write) => {
+    const f = flagsFor(channel as string | null | undefined, dev as boolean);
+    expect(f.FLAGS.packagedReviewWrite).toBe(write);
+    expect(f.FLAGS.packagedLabelScan).toBe(write); // P-508: 성분표 분석(서버 #442)도 dev 서버에만 배포 — 같은 채널 축
+  });
+  it('eas.json — 쓰기 버튼 채널은 전부 dev 서버, 숨김 채널은 dev 서버가 아니다', () => {
+    const build = JSON.parse(fs.readFileSync('eas.json', 'utf8')).build as Record<string, { channel?: string; env?: Record<string, string> }>;
+    const base = (ch: string) => Object.values(build).find((p) => p.channel === ch)?.env?.EXPO_PUBLIC_BE_BASE;
+    for (const ch of ['teamtest']) expect(base(ch)).toContain('dev.');
+    for (const ch of ['teamtest-prod', 'preview', 'production']) expect(base(ch)).not.toContain('dev.');
+  });
+});
+
 describe('KB-691 — 채널 부재(빈 문자열·null·모듈 없음)는 __DEV__일 때만 진단 채널', () => {
   // 실측: 시뮬레이터 dev client(Metro)에서 ExpoUpdates.channel = "" (expo-updates 56.0.19 AppController.swift:79
   // `requestHeaders["expo-channel-name"] ?? ""`). 릴리스 번들은 EAS 프로필이 전부 채널을 박으므로 부재 = 비정상 → 끈다.

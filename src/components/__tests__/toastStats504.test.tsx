@@ -9,6 +9,6 @@ it('① 토스트(P-346으로 대체) — 최상단 오버레이·box-none 유�
 });
 
 it('② summaryRight = 우측 영역 중앙(justifyContent center, gap 13 유지) — 있는 축만 렌더', () => {
-  const rl = read('src/app/food/[id]/reviews.tsx');
+  const rl = read('src/features/review/RatingSummaryBox.tsx'); // KB-848: 공용 모듈
   expect(rl).toMatch(/summaryRight: \{ flexGrow: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', gap: 13, alignItems: 'flex-start', justifyContent: 'center'/); // 4R: 기준선 상단 공유
 });
