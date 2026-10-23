@@ -76,6 +76,10 @@ jest.mock('react-native-safe-area-context', () => ({
 const mockFocused = { v: true }; // 라우트 포커스(useIsFocused) — 다른 화면이 위로 올라가면 false
 const mockTakePicture = jest.fn();
 const mockPreview = { color: '#000000' };
+const mockPermission = { granted: true, canAskAgain: true };
+const mockRequestPermission = jest.fn().mockResolvedValue({ granted: true });
+const mockOpenSettings = jest.fn();
+jest.mock('@/lib/openExternal', () => ({ openAppSettings: () => mockOpenSettings() }));
 const mockCamMounts = { n: 0 }; // CameraView 마운트 수 — 새 마운트 = 새 카메라 세션(KB-845 QA: Android 탭 전환 뒤 프리뷰 검정)
 jest.mock('expo-camera', () => {
   const React = jest.requireActual('react');
@@ -85,7 +89,7 @@ jest.mock('expo-camera', () => {
     React.useImperativeHandle(r, () => ({ takePictureAsync: (options: unknown) => mockTakePicture(options) }));
     return React.createElement(View, { ...p, style: [(p as { style?: unknown }).style, { backgroundColor: mockPreview.color }] });
   });
-  return { CameraView, useCameraPermissions: () => [{ granted: true }, jest.fn()] };
+  return { CameraView, useCameraPermissions: () => [mockPermission, mockRequestPermission] };
 });
 const mockLaunchLibrary = jest.fn();
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: (o: unknown) => mockLaunchLibrary(o) }));
@@ -171,6 +175,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockRemoveGuards.length = 0;
   mockPreview.color = '#000000';
+  mockPermission.granted = true; mockPermission.canAskAgain = true;
   mockTakePicture.mockResolvedValue({ uri: 'file:camera.jpg', width: 900, height: 1200 });
   mockLaunchLibrary.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] });
 });
@@ -424,6 +429,27 @@ it.each(['cancel', 'success', 'failure'] as const)('P-529: importing pending 동
       expect(mockBack).toHaveBeenCalledTimes(1);
     }
   } finally { act(() => tree.unmount()); client.clear(); spy.mockRestore(); }
+});
+
+it.each([true, false])('P-529: 권한 안내 canAskAgain=%s도 가져오기 중 잠기고 취소 후 복구', async (canAskAgain) => {
+  mockPermission.granted = false; mockPermission.canAskAgain = canAskAgain;
+  let release!: (v: { canceled: boolean }) => void;
+  mockLaunchLibrary.mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }));
+  const tree = render(<Scan />);
+  const id = canAskAgain ? 'scan-perm-grant' : 'scan-perm-settings';
+  const button = () => tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
+  const oldPress = button().props.onPress as () => void;
+  mockRequestPermission.mockClear(); mockOpenSettings.mockClear();
+  try {
+    await act(async () => { galleryBtn(tree).props.onPress(); await Promise.resolve(); });
+    expect(button().props.disabled).toBe(true);
+    act(() => oldPress());
+    expect(mockRequestPermission).not.toHaveBeenCalled(); expect(mockOpenSettings).not.toHaveBeenCalled();
+    await act(async () => { release({ canceled: true }); await Promise.resolve(); });
+    expect(button().props.disabled).toBe(false);
+    await act(async () => oldPress());
+    expect(canAskAgain ? mockRequestPermission : mockOpenSettings).toHaveBeenCalledTimes(1);
+  } finally { act(() => tree.unmount()); }
 });
 
 it('P-529: 촬영 대기·완료는 갤러리 가져오기 로딩을 표시하지 않는다', async () => {

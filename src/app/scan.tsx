@@ -213,8 +213,9 @@ export default function Scan() {
   // P-131: 줌 — 핀치+프리셋 상호 동기 (0~1 상대값, cameraZoom 순수 로직)
   const [zoom, setZoom] = useState(0);
   const pinchBase = useSharedValue(0);
-  const onPinchStart = useCallback(() => { if (importingRef.current) return; pinchBase.set(zoom); }, [pinchBase, zoom]);
-  const onPinchUpdate = useCallback((event: { scale: number }) => { if (importingRef.current) return; setZoom(pinchToZoom(pinchBase.get(), event.scale)); }, [pinchBase]);
+  const importingGestureLock = useSharedValue(false);
+  const onPinchStart = useCallback(() => { if (importingGestureLock.get()) return; pinchBase.set(zoom); }, [importingGestureLock, pinchBase, zoom]);
+  const onPinchUpdate = useCallback((event: { scale: number }) => { if (importingGestureLock.get()) return; setZoom(pinchToZoom(pinchBase.get(), event.scale)); }, [importingGestureLock, pinchBase]);
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   // P-250: SCAN-004(무료 소진) — "리뷰 작성하기" = 리뷰 픽커(P-245 자격 UX) 직결
   const [quotaPicker, setQuotaPicker] = useState(false);
@@ -621,6 +622,7 @@ export default function Scan() {
     if (isGuest) return setGateOpen(true);
     capturingRef.current = true;
     setCapturing(true);
+    importingGestureLock.set(true);
     importingRef.current = true; // 리렌더 전 연속 입력도 차단
     setImporting(true); // P-191: 픽커 복귀~원본 준비(iCloud 다운로드 수 초) 구간 표시
     setError(null);
@@ -642,6 +644,7 @@ export default function Scan() {
       capturingRef.current = false;
       setCapturing(false);
       importingRef.current = false;
+      importingGestureLock.set(false);
       setImporting(false);
     }
   }
@@ -783,7 +786,7 @@ export default function Scan() {
               <View style={styles.permAlert}>
                 <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
                 <Text style={[styles.permAlertBody, { marginBottom: 13 }]}>{t('scan.permissionSettingsBody')}</Text>
-                <Btn testID="scan-perm-settings" onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
+                <Btn testID="scan-perm-settings" disabled={importing} onPress={() => { if (importingRef.current) return; track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
                   {t('photo.openSettings')}
                 </Btn>
               </View>
@@ -795,7 +798,7 @@ export default function Scan() {
               <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
               <View style={{ width: '100%', maxWidth: 280 }}>
                 {/* P-214: 권한 퍼널 — 요청 후 결과(grant|deny) 구분 */}
-                <Btn testID="scan-perm-grant" onPress={() => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))}>
+                <Btn testID="scan-perm-grant" disabled={importing} onPress={() => { if (importingRef.current) return; void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' })); }}>
                   {t('scan.grant')}
                 </Btn>
               </View>

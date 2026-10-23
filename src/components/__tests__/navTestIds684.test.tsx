@@ -45,7 +45,7 @@ describe('소스 잠금 — testID가 그 핸들러를 가진 요소에', () => 
     ['src/components/StickyHeader.tsx', /onPress=\{onBack\}[^>]*testID="header-back"/, 1],
     ['src/components/StickyHeader.tsx', /onPress=\{onSearch\}[^>]*testID="header-search"/, 1],
     ['src/components/StickyHeader.tsx', /onPress=\{onSignIn\}[^>]*testID="header-signin"/, 1],
-    ['src/app/scan.tsx', /onPress=\{\(\) => router\.back\(\)\}[^>]*testID="scan-close"/g, 2], // 커스텀 카메라 · 시스템 카메라 런처
+    ['src/app/scan.tsx', /onPress=\{closeCamera\}[^>]*testID="scan-close"/g, 2], // 커스텀 카메라 · 시스템 카메라 런처
     ['src/app/food/[id]/owner.tsx', /onPress=\{\(\) => router\.back\(\)\}[^>]*testID="owner-close"/, 1],
   ])('%s — %s', (file, re, count) => {
     const hits = read(file).match(re instanceof RegExp && re.global ? re : new RegExp(re.source, 'g')) ?? [];
