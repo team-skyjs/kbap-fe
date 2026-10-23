@@ -4,7 +4,7 @@
  * 와이어 경계(toBeCode)는 어떤 선택 가능 코드도 정본 밖 값을 내보내면 안 된다.
  */
 import { BE_CODES, INGREDIENTS, toBeCode, ingredientLabel } from '../ingredients';
-jest.mock('expo-updates', () => ({ channel: 'teamtest' })); // KB-870: dev 서버 채널 동작 고정(운영 채널 숨김은 prodHide870·prodFlagSurfaces436)
+jest.mock('expo-updates', () => ({ channel: 'development' })); // KB-870/P-527: 개발 기능 회귀. teamtest의 운영 숨김은 prodHide870에서 검사
 
 // BE 정본 (2026-07-13 전달분 — avoidance_substance.code 전체)
 const CANONICAL = new Set([

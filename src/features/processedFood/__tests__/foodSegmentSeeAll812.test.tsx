@@ -3,7 +3,7 @@ import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 let mockParams: Record<string, string> = {};
-jest.mock('expo-updates', () => ({ channel: 'teamtest' })); // KB-870: dev 서버 채널 동작 고정(운영 채널 숨김은 prodHide870·prodFlagSurfaces436)
+jest.mock('expo-updates', () => ({ channel: 'development' })); // KB-870/P-527: 개발 기능 회귀. teamtest의 운영 숨김은 prodHide870에서 검사
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }), useLocalSearchParams: () => mockParams }));
 jest.mock('@/components', () => {
   const { View } = jest.requireActual('react-native');
