@@ -34,7 +34,7 @@ jest.mock('react-native-reanimated', () => {
     ZoomOut: chain(),
     FadeInDown: chain(),
     default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
+    useSharedValue: (v: unknown) => ({ value: v, get() { return this.value; }, set(next: unknown) { this.value = next; } }),
     useAnimatedStyle: () => ({}),
     useAnimatedScrollHandler: () => () => {},
     useReducedMotion: () => true,

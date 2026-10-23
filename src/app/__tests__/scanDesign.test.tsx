@@ -7,7 +7,9 @@
 import * as React from 'react';
 import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { BackHandler } from 'react-native';
+import { BackHandler, StyleSheet } from 'react-native';
+import { color as C } from '@/lib/theme';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as fs from 'fs';
 import * as analytics from '@/lib/analytics';
 
@@ -42,7 +44,7 @@ jest.mock('react-native-reanimated', () => {
     ZoomIn: chain(),
     ZoomOut: chain(),
     default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
+    useSharedValue: (v: unknown) => ({ value: v, get() { return this.value; }, set(next: unknown) { this.value = next; } }),
     useAnimatedStyle: () => ({}),
     useAnimatedScrollHandler: () => () => {},
     useReducedMotion: () => false,
@@ -54,6 +56,7 @@ jest.mock('react-native-reanimated', () => {
   };
 });
 // P-064: ScanResultOverlay가 gesture-handler 사용 — 표면 mock
+const mockPinch: { start?: () => void; update?: (e: { scale: number }) => void } = {};
 jest.mock('react-native-gesture-handler', () => {
   const { View } = require('react-native');
   const chain = () => {
@@ -63,7 +66,7 @@ jest.mock('react-native-gesture-handler', () => {
   };
   return {
     GestureDetector: ({ children }: { children: unknown }) => children,
-    Gesture: { Pinch: chain, Pan: chain, Tap: chain, Race: () => ({}), Simultaneous: () => ({}) },
+    Gesture: { Pinch: () => { const b = chain(); b.onStart = (cb: unknown) => { mockPinch.start = cb as () => void; return b; }; b.onUpdate = (cb: unknown) => { mockPinch.update = cb as typeof mockPinch.update; return b; }; return b; }, Pan: chain, Tap: chain, Race: () => ({}), Simultaneous: () => ({}) },
     GestureHandlerRootView: View,
   };
 });
@@ -71,15 +74,22 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 const mockFocused = { v: true }; // 라우트 포커스(useIsFocused) — 다른 화면이 위로 올라가면 false
+const mockTakePicture = jest.fn();
+const mockPreview = { color: '#000000' };
+const mockPermission = { granted: true, canAskAgain: true };
+const mockRequestPermission = jest.fn().mockResolvedValue({ granted: true });
+const mockOpenSettings = jest.fn();
+jest.mock('@/lib/openExternal', () => ({ openAppSettings: () => mockOpenSettings() }));
 const mockCamMounts = { n: 0 }; // CameraView 마운트 수 — 새 마운트 = 새 카메라 세션(KB-845 QA: Android 탭 전환 뒤 프리뷰 검정)
 jest.mock('expo-camera', () => {
   const React = jest.requireActual('react');
   const { View } = jest.requireActual('react-native');
   const CameraView = React.forwardRef(function MockCameraView(p: object, r: unknown) {
     React.useEffect(() => { mockCamMounts.n += 1; }, []);
-    return React.createElement(View, { ...p, ref: r });
+    React.useImperativeHandle(r, () => ({ takePictureAsync: (options: unknown) => mockTakePicture(options) }));
+    return React.createElement(View, { ...p, style: [(p as { style?: unknown }).style, { backgroundColor: mockPreview.color }] });
   });
-  return { CameraView, useCameraPermissions: () => [{ granted: true }, jest.fn()] };
+  return { CameraView, useCameraPermissions: () => [mockPermission, mockRequestPermission] };
 });
 const mockLaunchLibrary = jest.fn();
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: (o: unknown) => mockLaunchLibrary(o) }));
@@ -93,15 +103,17 @@ jest.mock('expo-linear-gradient', () => {
   return { LinearGradient: View };
 });
 // KB-769: 스캔 결과 이탈 가드(useLeaveConfirm) — 포커스·내비 표면 + usePreventRemove 기록(scanDesign이 콜백을 흉내)
-jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
+const mockRemoveGuards: { on: boolean; cb: unknown }[] = [];
+jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { mockRemoveGuards.push({ on, cb }); (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
 jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), /* P-508: scan.tsx 진입 파라미터(mode·label) */
   useIsFocused: () => mockFocused.v,
   useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   useFocusEffect: (cb: () => void) => cb(), // P-255: 진입 선발급 훅 목
-  useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }), // KB-789: push 공유 목(상세 이동 단언)
+  useRouter: () => ({ push: mockPush, back: mockBack, replace: jest.fn() }), // KB-789: push 공유 목(상세 이동 단언)
   usePathname: () => '/scan',
 }));
 const mockPush = jest.fn();
+const mockBack = jest.fn();
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
   initReactI18next: { type: '3rdParty', init: () => {} },
@@ -161,6 +173,10 @@ const galleryBtn = (tree: ReactTestRenderer) =>
 beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 beforeEach(() => {
   jest.clearAllMocks();
+  mockRemoveGuards.length = 0;
+  mockPreview.color = '#000000';
+  mockPermission.granted = true; mockPermission.canAskAgain = true;
+  mockTakePicture.mockResolvedValue({ uri: 'file:camera.jpg', width: 900, height: 1200 });
   mockLaunchLibrary.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] });
 });
 
@@ -299,21 +315,160 @@ it('P-222: 진행 화면 = 이탈 자제 안내 보조 한 줄(주 문구 유지
   expect(src).not.toContain('expo-keep-awake');
 });
 
-it('P-191: 갤러리 원본 로드 중 = 로딩 오버레이(scan.loadingPhoto), 완료 후 소멸', async () => {
-  let release!: (v: { canceled: boolean; assets?: { uri: string; width: number; height: number }[] }) => void;
-  mockLaunchLibrary.mockImplementation(() => new Promise((r) => (release = r)));
+it.each(['cancel', 'success', 'failure'] as const)('P-529: 갤러리 로딩은 화면 중앙·앱 배경터치 차단, %s 후 소멸', async (outcome) => {
+  type Result = { canceled: boolean; assets?: { uri: string; width: number; height: number }[] };
+  let release!: (v: Result) => void;
+  let fail!: (e: Error) => void;
+  mockLaunchLibrary.mockImplementation(() => new Promise<Result>((resolve, reject) => { release = resolve; fail = reject; }));
   const tree = render(<Scan />);
-  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto')[0];
   await act(async () => {
-    void gallery.props.onPress();
+    void galleryBtn(tree).props.onPress();
     await Promise.resolve();
   });
-  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay').length).toBeGreaterThanOrEqual(1);
-  await act(async () => {
-    release({ canceled: true });
-    await new Promise((r) => setTimeout(r, 0));
+  const overlays = tree.root.findAll((n) => n.props?.testID === 'importing-overlay');
+  expect(overlays.length).toBeGreaterThanOrEqual(1);
+  const overlay = overlays[0];
+  expect(StyleSheet.flatten(overlay.props.style)).toMatchObject({
+    position: 'absolute', top: 0, right: 0, bottom: 0, left: 0,
+    alignItems: 'center', justifyContent: 'center',
   });
-  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay').length).toBe(0); // 취소 = 복구
+  expect(overlay.props.pointerEvents).toBe('auto');
+  expect(overlay.props.accessibilityRole).toBe('progressbar');
+  expect(overlay.props.accessibilityState).toEqual({ busy: true });
+  expect(texts(tree, 'scan.loadingPhoto')).toBeGreaterThan(0);
+  await act(async () => {
+    if (outcome === 'failure') fail(new Error('photo unavailable'));
+    else release(outcome === 'cancel' ? { canceled: true } : { canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay')).toHaveLength(0);
+  if (outcome === 'cancel') expect(galleryBtn(tree).props.disabled).toBe(false);
+  if (outcome === 'success') expect(tree.root.findAll((n) => n.props?.testID === 'recog-banner').length).toBeGreaterThan(0);
+});
+
+// 불투명 다크 플레이트는 프리뷰 색과 무관하게 같은 대비를 유지한다.
+const luminance = (hex: string) => {
+  const full = hex.length === 4 ? hex.slice(1).split('').map((c) => c + c).join('') : hex.slice(1);
+  const rgb = [0, 2, 4].map((at) => Number.parseInt(full.slice(at, at + 2), 16) / 255).map((v) => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+};
+it.each(['#FFFFFF', '#000000'])('P-529: 프리뷰 %s에서도 중앙 로딩 문구/스피너 대비 확보', async (preview) => {
+  mockPreview.color = preview;
+  let release!: (v: { canceled: boolean }) => void;
+  mockLaunchLibrary.mockImplementation(() => new Promise((resolve) => { release = resolve; }));
+  const tree = render(<Scan />);
+  await act(async () => { void galleryBtn(tree).props.onPress(); await Promise.resolve(); });
+  const plate = tree.root.findAll((n) => n.props?.testID === 'importing-status')[0];
+  expect(plate).toBeDefined();
+  const style = StyleSheet.flatten(plate.props.style);
+  expect(style.backgroundColor).toMatch(/^#[0-9a-f]{6}$/i); // 완전 불투명: 프리뷰 밝기 영향 0
+  expect(style.opacity ?? 1).toBe(1);
+  const actual = style.backgroundColor; // 두 프리뷰 모두 불투명 플레이트가 같은 색으로 덮는다
+  expect(tree.root.findAll((n) => n.props?.facing && StyleSheet.flatten(n.props.style)?.backgroundColor === preview).length).toBeGreaterThan(0);
+  expect(style.maxWidth).toBe('90%');
+  expect(plate.findAll((n) => n.props?.size === 'small' && n.props?.color === '#fff').length).toBeGreaterThan(0);
+  const mask = tree.root.findAll((n) => n.props?.testID === 'importing-overlay')[0];
+  expect(StyleSheet.flatten(mask.props.style).backgroundColor).toBeUndefined();
+  expect(StyleSheet.flatten(mask.props.style).opacity ?? 1).toBe(1);
+  const text = plate.findAll((n) => n.props?.children === 'scan.loadingPhoto')[0];
+  const white = StyleSheet.flatten(text.props.style).color;
+  expect((luminance(white) + 0.05) / (luminance(actual) + 0.05)).toBeGreaterThanOrEqual(4.5);
+  expect(actual).toBe(C.ink);
+  await act(async () => { release({ canceled: true }); await new Promise((resolve) => setTimeout(resolve, 0)); });
+});
+
+it.each(['cancel', 'success', 'failure'] as const)('P-529: importing pending 동안 앱 입력/이탈 차단, %s 후 복구', async (outcome) => {
+  type Result = { canceled: boolean; assets?: { uri: string; width: number; height: number }[] };
+  let release!: (v: Result) => void; let fail!: (e: Error) => void;
+  const handlers = new Set<() => boolean>();
+  const spy = jest.spyOn(BackHandler, 'addEventListener').mockImplementation(((_e: string, h: () => boolean) => { handlers.add(h); return { remove: () => handlers.delete(h) }; }) as unknown as typeof BackHandler.addEventListener);
+  mockLaunchLibrary.mockImplementation(() => new Promise<Result>((resolve, reject) => { release = resolve; fail = reject; }));
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } } });
+  const tree = render(<QueryClientProvider client={client}><Scan /></QueryClientProvider>);
+  const press = (id: string) => tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress as () => void;
+  const old = { gallery: galleryBtn(tree).props.onPress as () => void, shutter: press('scan-shutter'), zoom: press('zoom-x2'), flip: press('scan-flip'), close: press('scan-close'), mode: press('scan-mode-packaged'), pinchStart: mockPinch.start!, pinchUpdate: mockPinch.update! };
+  try {
+    await act(async () => { old.gallery(); await Promise.resolve(); });
+    // disabled 렌더를 우회한 오래된 콜백도 ref 가드로 막혀야 한다.
+    act(() => { old.gallery(); old.shutter(); old.zoom(); old.flip(); old.close(); old.mode(); old.pinchStart(); old.pinchUpdate({ scale: 2 }); });
+    expect(mockLaunchLibrary).toHaveBeenCalledTimes(1);
+    expect(mockTakePicture).not.toHaveBeenCalled(); expect(mockBack).not.toHaveBeenCalled();
+    expect(tree.root.findAll((n) => n.props?.facing === 'back' && n.props?.zoom === 0).length).toBeGreaterThan(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-menu' && n.props?.accessibilityState?.selected).length).toBeGreaterThan(0);
+    for (const id of ['scan-gallery', 'scan-shutter', 'zoom-x2', 'scan-flip', 'scan-close', 'scan-mode-packaged']) {
+      const button = tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
+      expect(button.props.disabled).toBe(true);
+    }
+    expect([...handlers].some((h) => h())).toBe(true);
+    const removal = mockRemoveGuards.slice(-2).find((g) => g.on)!;
+    expect(removal).toBeDefined();
+    const dispatch = jest.fn();
+    const globalNav = globalThis as { __navDispatch?: (a: unknown) => void };
+    globalNav.__navDispatch = dispatch;
+    act(() => (removal.cb as (e: { data: { action: unknown } }) => void)({ data: { action: { type: 'GO_BACK' } } }));
+    expect(dispatch).not.toHaveBeenCalled();
+    delete globalNav.__navDispatch;
+    const tabs = tree.root.findAll((n) => n.props?.testID === 'scan-mode-tabs-scroll');
+    expect(tabs.length).toBeGreaterThan(0);
+    expect(tabs.every((n) => n.props.scrollEnabled === false)).toBe(true);
+    await act(async () => {
+      if (outcome === 'failure') fail(new Error('photo unavailable'));
+      else release(outcome === 'cancel' ? { canceled: true } : { canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay')).toHaveLength(0);
+    expect([...handlers].some((h) => h())).toBe(false);
+    expect(mockRemoveGuards.slice(-2).some((g) => g.on)).toBe(false);
+    if (outcome === 'cancel') {
+      act(() => { old.zoom(); old.flip(); old.close(); old.mode(); });
+      expect(mockBack).toHaveBeenCalledTimes(1);
+      expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-packaged' && n.props?.accessibilityState?.selected).length).toBeGreaterThan(0);
+      expect(tree.root.findAll((n) => n.props?.facing === 'front' && n.props?.zoom > 0).length).toBeGreaterThan(0);
+    } else {
+      act(() => press(outcome === 'success' ? 'result-back' : 'scan-close')());
+      expect(mockBack).toHaveBeenCalledTimes(1);
+    }
+  } finally { act(() => tree.unmount()); client.clear(); spy.mockRestore(); }
+});
+
+it.each([true, false])('P-529: 권한 안내 canAskAgain=%s도 가져오기 중 잠기고 취소 후 복구', async (canAskAgain) => {
+  mockPermission.granted = false; mockPermission.canAskAgain = canAskAgain;
+  let release!: (v: { canceled: boolean }) => void;
+  mockLaunchLibrary.mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }));
+  const tree = render(<Scan />);
+  const id = canAskAgain ? 'scan-perm-grant' : 'scan-perm-settings';
+  const button = () => tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
+  const oldPress = button().props.onPress as () => void;
+  mockRequestPermission.mockClear(); mockOpenSettings.mockClear();
+  try {
+    await act(async () => { galleryBtn(tree).props.onPress(); await Promise.resolve(); });
+    expect(button().props.disabled).toBe(true);
+    act(() => oldPress());
+    expect(mockRequestPermission).not.toHaveBeenCalled(); expect(mockOpenSettings).not.toHaveBeenCalled();
+    await act(async () => { release({ canceled: true }); await Promise.resolve(); });
+    expect(button().props.disabled).toBe(false);
+    await act(async () => oldPress());
+    expect(canAskAgain ? mockRequestPermission : mockOpenSettings).toHaveBeenCalledTimes(1);
+  } finally { act(() => tree.unmount()); }
+});
+
+it('P-529: 촬영 대기·완료는 갤러리 가져오기 로딩을 표시하지 않는다', async () => {
+  let release!: (v: { uri: string; width: number; height: number }) => void;
+  mockTakePicture.mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }));
+  const tree = render(<Scan />);
+  await act(async () => {
+    tree.root.findAll((n) => n.props?.testID === 'scan-shutter' && typeof n.props?.onPress === 'function')[0].props.onPress();
+    await Promise.resolve();
+  });
+  expect(mockTakePicture).toHaveBeenCalledTimes(1);
+  expect(mockLaunchLibrary).not.toHaveBeenCalled();
+  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay')).toHaveLength(0);
+  await act(async () => {
+    release({ uri: 'file:camera.jpg', width: 900, height: 1200 });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay')).toHaveLength(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'recog-banner').length).toBeGreaterThan(0);
 });
 
 // KB-730: 스캔 성공 **2회째**에만 리뷰 유도 시트(결과 화면 진입 직후) — 1회째·3회째는 아님. 실패 경로는 onSuccess를 안 타므로 자동 제외

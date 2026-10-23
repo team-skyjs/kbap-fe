@@ -19,7 +19,7 @@ const MODES: ScanMode[] = ['menu', 'food', 'packaged'];
 export const activeTabOffset = (tab: { x: number; w: number }, viewW: number, contentW: number): number =>
   Math.max(0, Math.min(contentW - viewW, Math.round(tab.x + tab.w / 2 - viewW / 2)));
 
-export function ScanModeTabs({ value, onChange, tone = 'light' }: { value: ScanMode; onChange: (m: ScanMode) => void; tone?: 'light' | 'dark' }) {
+export function ScanModeTabs({ value, onChange, tone = 'light', disabled = false }: { value: ScanMode; onChange: (m: ScanMode) => void; tone?: 'light' | 'dark'; disabled?: boolean }) {
   const { t } = useTranslation();
   const dark = tone === 'dark';
   const third = useWindowDimensions().width / 3;
@@ -39,10 +39,10 @@ export function ScanModeTabs({ value, onChange, tone = 'light' }: { value: ScanM
       <Pressable
         key={m}
         style={dark ? [st.tabDark, { minWidth: third }] : st.tab}
-        onPress={soon ? undefined : () => onChange(m)}
-        disabled={soon}
+        onPress={soon ? undefined : () => { if (!disabled) onChange(m); }}
+        disabled={soon || disabled}
         accessibilityRole="tab"
-        accessibilityState={{ selected: on, disabled: soon }}
+        accessibilityState={{ selected: on, disabled: soon || disabled }}
         accessibilityHint={soon ? t('scanMode.soon') : undefined}
         testID={`scan-mode-${m}`}
         onLayout={dark ? (e) => { const { x, width } = e.nativeEvent.layout; setTabBox((b) => (b[m]?.x === x && b[m]?.w === width ? b : { ...b, [m]: { x, w: width } })); } : undefined}
@@ -64,6 +64,7 @@ export function ScanModeTabs({ value, onChange, tone = 'light' }: { value: ScanM
         <ScrollView
           ref={scrollRef}
           horizontal
+          scrollEnabled={!disabled}
           showsHorizontalScrollIndicator={false}
           bounces={false}
           contentContainerStyle={st.rowDark}
