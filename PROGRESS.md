@@ -1,3 +1,9 @@
+## 2026-10-23 — P-529 P2 대비·가져오기 중 앱 입력 잠금 보완
+
+- 사용자 추가요구로 importing 동안 줌/전환/닫기/모드/링크/핀치·앱뒤로 입력 차단. 기존 갤러리/셔터 capturingRef에 더해 importingRef 동기가드, disabled/접근성 상태, 투명 터치mask, usePreventRemove·AndroidBackHandler 적용. 네이티브 사진선택기 취소는 변경하지 않음, finally로 성공/취소/실패 뒤 해제.
+- 자동리뷰 P2 4358094336: 중앙 로딩묶음만 불투명C.ink 플레이트, 흰문구/스피너대비16.71:1. 전체프리뷰는가리지않음. 새카피/플래그/API/native 변경0.
+- 이전구현실행 새회귀8fail RED. 밝은/어두운프리뷰·stale handler 직접호출·갤러리1회/촬영0·카메라/줌/모드/라우트불변·뒤로가드 및 복구 검증. 관련/전체 결과와미실행네이티브범위는 PR/REPORTS에기록. 자동리뷰재호출·추가production발행0.
+
 ## 2026-10-23 — P-529 / KB-854 갤러리 가져오기 중앙 배치
 
 - 사용자 사진1 지적: P191의 bottom120 로딩이 KB854 새 하단 줌/셔터와 겹침. 공용 importingOverlay를 화면전체 절대영역+가로세로중앙으로 최소수정, pointerEvents none·문구·스캔상태처리 무변.
