@@ -17,6 +17,7 @@
  */
 import * as React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -91,10 +92,10 @@ export default function OrderDetailScreen() {
           setCameraDenied(true);
           return;
         }
-        const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+        const res = await launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
         uri = !res.canceled && res.assets?.[0]?.uri ? res.assets[0].uri : null;
       } else {
-        const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+        const res = await launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
         uri = !res.canceled && res.assets?.[0]?.uri ? res.assets[0].uri : null;
       }
       if (!uri) return;

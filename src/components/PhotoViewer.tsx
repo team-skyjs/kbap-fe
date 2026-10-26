@@ -10,7 +10,8 @@
  * GestureHandlerRootView(P-337 문법).
  */
 import * as React from 'react';
-import { Modal, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';

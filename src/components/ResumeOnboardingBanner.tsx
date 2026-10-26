@@ -7,7 +7,8 @@
  * never returns.
  */
 import { useEffect, useState } from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';

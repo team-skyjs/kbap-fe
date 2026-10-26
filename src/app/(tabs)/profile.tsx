@@ -11,7 +11,8 @@
 import { RemoteImage } from '@/components/RemoteImage';
 import { airbridge } from '@/lib/airbridge';
 import { useState } from 'react';
-import { Alert, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { Alert } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { SAFETY_NOTICE_URL } from '@/lib/legalText';
 import { openAppSettings, openWebPage } from '@/lib/openExternal';

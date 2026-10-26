@@ -4,7 +4,8 @@
  * 시안 문법: 라운드 26 카드 · "계속 쓰기"(ghost) + "그만두기"(dangerGhost, 보더 버튼 프레임 — P-175). 문구 키 = common.leaveTitle·leaveBody·keepWriting·discard(KB-708: 네 화면 공용 — 'post' 낱말 없는 중립 제목).
  */
 import * as React from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { useNavigation } from 'expo-router';
 // expo-router가 번들한 react-navigation의 usePreventRemove — 공개 export가 없어 빌드 경로로(네이티브 스택의 스와이프·하드웨어 뒤로까지 막는 API는 이것뿐)
 import { usePreventRemove } from 'expo-router/build/react-navigation/core';

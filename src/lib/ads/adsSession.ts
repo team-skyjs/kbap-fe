@@ -16,6 +16,7 @@ import { EVENTS, track } from '@/lib/analytics';
 import { isProdChannel } from '@/lib/flags';
 import { setMetaTrackingEnabled } from '@/lib/metaSdk';
 import { getAdsSdk, type AdsSdk } from './sdk';
+import { withOcclusion } from '@/lib/engagement/occlusion';
 
 export type AdsState = 'idle' | 'running' | 'ready' | 'unavailable';
 
@@ -91,13 +92,13 @@ export async function initAds(): Promise<void> {
         console.log('[ads] consent requestInfoUpdate options', JSON.stringify(debug));
         const updated = await AdsConsent.requestInfoUpdate(debug);
         console.log('[ads] consent requestInfoUpdate result', JSON.stringify(updated));
-        const shown = await AdsConsent.loadAndShowConsentFormIfRequired();
+        const shown = await withOcclusion(() => AdsConsent.loadAndShowConsentFormIfRequired()); // KB-873 ②a: 동의 폼 = 가림
         console.log('[ads] consent form result', JSON.stringify(shown));
       } catch (e) {
         console.warn('[ads] consent gather failed (debug)', String(e));
       }
     } else {
-      await AdsConsent.gatherConsent().catch(() => undefined);
+      await withOcclusion(() => AdsConsent.gatherConsent()).catch(() => undefined);
     }
     const info = await AdsConsent.getConsentInfo();
     if (debug) console.log('[ads] consent info', JSON.stringify(info));
@@ -121,7 +122,7 @@ export async function showPrivacyOptions(): Promise<void> {
   const sdk = getAdsSdk();
   if (!sdk) return;
   try {
-    const info = await sdk.AdsConsent.showPrivacyOptionsForm();
+    const info = await withOcclusion(() => sdk.AdsConsent.showPrivacyOptionsForm());
     privacyOptionsRequired = info.privacyOptionsRequirementStatus === sdk.AdsConsentPrivacyOptionsRequirementStatus.REQUIRED;
     notify();
   } catch {

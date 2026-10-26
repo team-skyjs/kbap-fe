@@ -17,7 +17,9 @@
 import * as React from 'react';
 import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
 import { RemoteImage } from '@/components/RemoteImage';
-import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
+import { launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR, useKeyboardLift } from '@/lib/keyboardAvoid';
 import Animated from 'react-native-reanimated';
@@ -26,7 +28,6 @@ import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, primaryTint, primaryTint2, accentTint, radius, shadow } from '@/lib/theme';
@@ -106,7 +107,7 @@ export default function CommunityCompose() {
 
   const pickPhotos = async () => {
     if (photos.length >= PHOTO_MAX) return;
-    const res = await ImagePicker.launchImageLibraryAsync({
+    const res = await launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.8,
       allowsMultipleSelection: true,
