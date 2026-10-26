@@ -135,6 +135,8 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   const chargedIds = React.useRef(new Set<string>());
   /** Codex #339: 서버가 NO_CANDIDATE·REJECTED로 둔 분석 — 성분표 API는 이 둘만 이어 받는다("None of these"는 로컬 화면 전환이라 성분표로 갈 때 거절 확정) */
   const settledIds = React.useRef(new Set<string>());
+  /** 확정 성공(CONFIRMED)한 분석 — 성분표는 이어 받지 않는다 → 성분표로 가면 새 분석(Codex #339: NO_CANDIDATE로 정리됐다가 이름 찾기로 확정된 경우 포함) */
+  const confirmedIds = React.useRef(new Set<string>());
 
   const runName = async (ocrText: string, photoUri: string | null = null) => {
     goStep({ kind: 'reading', photoUri });
@@ -249,6 +251,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         // 남은 횟수 = 서버 프로필 재조회(로컬 차감 0) — 차감됐거나 차감 여부를 모를 때
         if (r.charged || chargeUnknown) void qc.invalidateQueries({ queryKey: ['me'] });
         qc.setQueryData(['processedFoods', 'detail', r.product.id, verdictKey], r.product);
+        confirmedIds.current.add(analysisId);
         if (r.charged) chargedIds.current.add(analysisId);
         const charge = r.charged || chargedIds.current.has(analysisId) ? '1' : chargeUnknown ? 'u' : '0';
         router.push(`/processed-foods/${r.product.id}?scan=1&charged=${charge}` as Href);
@@ -265,6 +268,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   /** 성분표로 — 아직 후보 상태(CANDIDATES)인 분석은 먼저 거절 확정(reportNo null, 차감 0)해야 서버가 이어 받는다(Codex #339).
    *  이름 찾기는 거절 전 분석으로 확정하므로 거절은 성분표를 고를 때만 */
   const toLabel = (analysisId: string | null) => {
+    if (analysisId != null && confirmedIds.current.has(analysisId)) { goStep({ kind: 'handoff', analysisId: null }); return; }
     if (analysisId == null || settledIds.current.has(analysisId)) { goStep({ kind: 'handoff', analysisId }); return; }
     const here = step;
     void guard.run(async () => {
@@ -273,7 +277,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         const r = await confirmProcessedScan(analysisId, null);
         if (my !== reqSeq.current) return;
         // 이미 확정된 분석(상세에서 돌아와 다시 고른 경우 — 멱등 확정이 그 제품을 돌려준다) = 이어 받을 수 없다 → 새 성분표 분석
-        if (!r.rejected && r.product) { goStep({ kind: 'handoff', analysisId: null }); return; }
+        if (!r.rejected && r.product) { confirmedIds.current.add(analysisId); goStep({ kind: 'handoff', analysisId: null }); return; }
         settledIds.current.add(analysisId);
         goStep({ kind: 'handoff', analysisId });
       } catch (e) {

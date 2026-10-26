@@ -367,6 +367,35 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(ids(t)).not.toContain('pscan-contains-11');
     expect(ids(t)).not.toContain('pscan-personal-note');
   });
+  it('Codex #339 R8: NO_CANDIDATE → 이름으로 찾기 확정 → 돌아와 성분표 = 확정된 분석은 이어 받지 않음 → 새 성분표 분석(analysisId null · 거절 호출 0)', async () => {
+    const flags = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
+    const prevFlag = flags.FLAGS.packagedLabelScan;
+    flags.FLAGS.packagedLabelScan = true;
+    try {
+      mockOcr.mockResolvedValueOnce([{ text: '바나나맛우유' }]);
+      mockPost
+        .mockResolvedValueOnce({ analysisId: 'A50', state: 'NO_CANDIDATE', candidates: [] })
+        .mockResolvedValueOnce({ analysisId: 'A50', state: 'CONFIRMED', charged: true, product: DETAIL })
+        .mockResolvedValueOnce({ analysisId: 'L50', state: 'LABEL_RESULT', labelSource: 'DECLARED', detections: [], mayContain: [], avoidance: [], rawText: 'x', charged: true, verdict: 'SAFE', avoidMatches: [], mayContainMatches: [], unclearIngredients: [], majorAllergens: [] });
+      mockGet.mockResolvedValueOnce({ items: [{ id: 77, reportNo: 'R77', productName: 'a', imageUrl: null }], hasNext: false, nextCursor: null });
+      const t = flow();
+      await press(t, 'pscan-take-photo');
+      await press(t, 'pscan-find-by-name');
+      await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+      await pick(t, 77);
+      expect(mockPost.mock.calls[1][1]).toEqual({ analysisId: 'A50', reportNo: 'R77' });
+      await press(t, 'pscan-none-of-these'); // 상세에서 돌아와 이름 찾기의 "None of these" = 성분표
+      expect(ids(t)).toContain('cam-ingredient');
+      act(() => t.root.findAll((n) => n.props?.testID === 'pscan-label-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('원재료명: 밀'));
+      await press(t, 'pscan-label-debug-add');
+      await press(t, 'pscan-label-analyze');
+      expect(mockPost).toHaveBeenCalledTimes(3); // 거절 확정 호출 0
+      expect(mockPost.mock.calls[2][0]).toBe('/api/processed-foods/scan/label');
+      expect(mockPost.mock.calls[2][1]).toMatchObject({ analysisId: null });
+    } finally {
+      flags.FLAGS.packagedLabelScan = prevFlag;
+    }
+  });
   it('Codex #339 R2: 이미 확정된 분석(상세에서 돌아와 None of these → 성분표) = 거절 응답이 확정 제품 → 새 성분표 분석(analysisId null)', async () => {
     const flags = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
     const prevFlag = flags.FLAGS.packagedLabelScan;
@@ -376,7 +405,6 @@ describe('흐름(KB-865 ③ v4)', () => {
       mockPost
         .mockResolvedValueOnce({ analysisId: 'A31', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
         .mockResolvedValueOnce({ analysisId: 'A31', state: 'CONFIRMED', charged: true, product: DETAIL })
-        .mockResolvedValueOnce({ analysisId: 'A31', state: 'CONFIRMED', charged: false, product: DETAIL }) // 멱등 — 거절 대신 확정 제품
         .mockResolvedValueOnce({ analysisId: 'L31', state: 'LABEL_RESULT', labelSource: 'DECLARED', detections: [], mayContain: [], avoidance: [], rawText: 'x', charged: true, verdict: 'SAFE', avoidMatches: [], mayContainMatches: [], unclearIngredients: [], majorAllergens: [] });
       const t = flow();
       await press(t, 'pscan-take-photo');
@@ -387,8 +415,10 @@ describe('흐름(KB-865 ③ v4)', () => {
       act(() => t.root.findAll((n) => n.props?.testID === 'pscan-label-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('원재료명: 밀'));
       await press(t, 'pscan-label-debug-add');
       await press(t, 'pscan-label-analyze');
-      expect(mockPost.mock.calls[3][0]).toBe('/api/processed-foods/scan/label');
-      expect(mockPost.mock.calls[3][1]).toMatchObject({ analysisId: null }); // 새 분석(멱등 키는 packagedLabel508)
+      // R8: 이 화면에서 확정한 분석은 거절 호출 없이 바로 새 분석(거절 응답이 확정 제품인 경로는 확정 응답을 잃은 경우 대비로 유지)
+      expect(mockPost).toHaveBeenCalledTimes(3);
+      expect(mockPost.mock.calls[2][0]).toBe('/api/processed-foods/scan/label');
+      expect(mockPost.mock.calls[2][1]).toMatchObject({ analysisId: null }); // 새 분석(멱등 키는 packagedLabel508)
     } finally {
       flags.FLAGS.packagedLabelScan = prevFlag;
     }
