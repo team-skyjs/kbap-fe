@@ -26,6 +26,7 @@ import { classifyAdRewardError, useClaimAdReward, type AdRewardFailure } from '@
 import type { AdsSdk } from '@/lib/ads/sdk';
 import { useAdsSdk } from '@/lib/ads/adsSession';
 import { adUnitId } from '@/lib/ads/units';
+import { useOcclusion } from '@/lib/engagement/occlusion';
 
 const PLACEMENT = 'scan_unlock_rewarded';
 
@@ -66,6 +67,7 @@ function useRewardedUnlock(sdk: AdsSdk, initial: RewardsInit, onUnlocked: () => 
   const unitId = adUnitId(PLACEMENT);
   const ad = sdk.useRewardedAd({ adUnitId: unitId, autoLoad: true });
   const { status, earnedReward, show, load, impression, clicked } = ad;
+  useOcclusion(status === 'showing'); // KB-873 ②a: 전면 보상형 광고 = 화면 가림
   const claim = useClaimAdReward();
   React.useLayoutEffect(() => {
     if (status === 'showing') return beginRewardedPresentation();

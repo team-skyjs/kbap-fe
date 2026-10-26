@@ -8,7 +8,8 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';

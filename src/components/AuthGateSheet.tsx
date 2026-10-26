@@ -5,7 +5,8 @@
  * 로그인 성공 시 보던 맥락으로 복귀한다 (guest-access-policy §0-3).
  */
 import * as React from 'react';
-import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useBottomInset } from '@/lib/useBottomInset';

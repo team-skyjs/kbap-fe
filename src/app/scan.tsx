@@ -21,7 +21,9 @@ import { currentGen } from '@/lib/auth/beTokens';
  */
 import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
 import { useCallback, useEffect, useRef, useState, useLayoutEffect, useSyncExternalStore, type ReactElement } from 'react';
-import { ActivityIndicator, Alert, AppState, BackHandler, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, AppState, BackHandler, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
+import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { Pressable } from '@/components/Pressable';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
@@ -639,7 +641,7 @@ export default function Scan() {
     setError(null);
     if (menu) track(EVENTS.scan_start, { source: 'gallery' }); // P-144
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
+      const result = await launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: false,
         selectionLimit: 1,
@@ -683,7 +685,7 @@ export default function Scan() {
         return;
       }
       track(EVENTS.scan_start, { source: 'camera' }); // P-144 (시스템 카메라도 camera)
-      const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+      const res = await launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
       if (res.canceled || !res.assets?.length) return; // 취소 → 런처 복귀(무동작)
       const a = res.assets[0];
       await scanImage({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });

@@ -5,7 +5,8 @@
  * 노출: AsyncStorage 1회 플래그 · 재열람 = 스캔 결과/상세의 RiskMark 탭(마크 데모 대체).
  */
 import * as React from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';

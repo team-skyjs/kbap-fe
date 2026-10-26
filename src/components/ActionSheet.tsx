@@ -13,7 +13,8 @@
  * "시스템 기능 호출=시스템 UI(프로필 사진 시트), 콘텐츠 액션=이 컴포넌트" 구분.
  */
 import type { ReactNode } from 'react';
-import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useBottomInset } from '@/lib/useBottomInset';
