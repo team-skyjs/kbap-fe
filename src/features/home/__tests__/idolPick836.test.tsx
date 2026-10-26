@@ -11,7 +11,7 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // FoodCards(padOddGrid) → components 배럴 → Btn 이 reanimated 를 끌어온다 — 그리드 테스트(gridOddBottom486)와 같은 목
-jest.mock('expo-updates', () => ({ channel: 'teamtest' })); // KB-870: dev 서버 채널 동작 고정(운영 채널 숨김은 prodHide870·prodFlagSurfaces436)
+jest.mock('expo-updates', () => ({ channel: 'development' })); // KB-870/P-527: 개발 기능 회귀. teamtest의 운영 숨김은 prodHide870에서 검사
 jest.mock('react-native-reanimated', () => {
   const { View, Pressable } = jest.requireActual('react-native');
   return {
@@ -395,9 +395,9 @@ describe('문구 (12키 × 10로케일)', () => {
   it('ko·en = 01_copy_list 갱신본', () => {
     const ko = require('@/lib/i18n/ko.json');
     const en = require('@/lib/i18n/en.json');
-    // KB-856 v2: 제목·버튼 교체, sub 삭제, ko 제목 "먹은" 뒤 \n(단어 중간 끊김 방지)
-    expect(ko.home.idolPick).toEqual({ label: 'K-POP & K-FOOD', title: 'K-POP 아이돌이 먹은\n음식, 궁금하지 않아요?', seeAll: '둘러보기', bannerA11y: 'K-POP 아이돌이 먹은 음식 목록 보기' });
-    expect(en.home.idolPick).toEqual({ label: 'K-POP & K-FOOD', title: 'Curious what K-pop\nidols ate?', seeAll: 'Explore', bannerA11y: 'View the dishes tried by K-pop idols' });
+    // KB-856 v2: 제목·버튼 교체, sub 삭제, ko 제목 "먹는" 뒤 \n(단어 중간 끊김 방지)
+    expect(ko.home.idolPick).toEqual({ label: 'K-POP & K-FOOD', title: 'K-POP 아이돌이 먹는\n음식, 궁금하지 않아요?', seeAll: '둘러보기', bannerA11y: 'K-POP 아이돌이 먹는 음식 목록 보기' });
+    expect(en.home.idolPick).toEqual({ label: 'K-POP & K-FOOD', title: 'Curious what K-pop\nidols eat?', seeAll: 'Explore', bannerA11y: 'View the dishes K-pop idols eat' });
     expect(ko.detail.idolVideo.title).toBe('이 음식, 어떤 아이돌이 먹었을까?');
     expect(en.detail.idolVideo.cta).toBe('Watch to find out');
   });

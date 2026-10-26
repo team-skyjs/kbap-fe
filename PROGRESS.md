@@ -1,3 +1,35 @@
+## 2026-10-23 — P-528 PR345 P1 선행조건 보완
+
+- c047f8bb CI PASS·자동Codex 완료/P1 comment4357327876. 큐레이션뿐 아니라 prod idol GET·catalog/profile PATCH를 develop 머지 전 조건으로 보완. 자동 재호출 없음.
+- 16:57:26 KST FE 공개GET: idol1.1 200/25건, catalog1.0 200/87행·6코드 존재. 과거 배포전400 기록과 분리. 기존10언어·이미지는 센터/서버 근거.
+- prod 회원 PATCH 왕복은 허가된 테스트회원/정상세션 입력 미확인으로 미실행·머지 차단 유지. 실사용계정/토큰/DB 변경0. 세부 절차 docs/release/KB870-OTA2.md.
+
+## 2026-10-23 — KB-870 / P-528 OTA2 선택 공개
+
+- 사용자 3종 검수완료·공개 승인에 따라 curation/idolPicks/avoidGroupCodes만 ON. PF3종 OFF·공용 dev게이트/리뷰1.1·설정보존 유지. 기존 OFF 단계 이력은 아래 보존.
+- 관련 회귀 수정 전5failed RED→65tests PASS, 기존 홈 OFF 기대를 ON 렌더 단언으로 갱신. 최종342suites/3182tests/7snapshots PASS(exit0,75.399s, worker 종료경고), tsc0·변경줄lint3파일 새문제0. 양OS 지문9ee/05ba 동일·clear 실행HBC 각각prod1/dev0.
+- 콘텐츠 운영 게시/public GET 확인 전 develop 머지 금지(자동 teamtest OTA). 정상 PR/센터 검토 후 main 승격·승인된 OTA2, 무관342/339/187 제외. 새카피/native/API/DB 변경 없음.
+
+## 2026-10-23 — KB-870 / P-527 기존 teamtest prod 리허설
+
+- 사용자 최신 승인으로 teamtest 전체를 prod BE/운영 제품 FLAGS로 전환. shared target 정본, build env·자동 workflow export/publish 정합, 잘못된 target/혼합번들 fail-closed.
+- production 제품 FLAGS와 동일·PF/Kpop/curation/회피6 OFF·리뷰1.1. development/local 기능·진단/데모광고 유지. 새버전/native빌드/submit/production발행 없음.
+- 새회귀 수정전RED·관련76testsPASS, tsc0, 양OS지문9ee/05ba 유지, EAS workflow CLI 유효성 PASS. 전체/번들/lint 결과와PR/CI/OTA 실제상태는REPORTS에기록.
+- root 검토 후 develop 정상 자동teamtest OTA 단독 발행, 사용자실기QA 후 OTA1 순서. KB873 후속PR342/가공식품339/타담당187 미포함.
+
+## 2026-10-23 — KB-873 PR341 리뷰 P2 두 건 수정
+
+- 실제 route 파일 전수 → screenFromSegments → sanitizer 대조. canonical screen 4곳 교정, food/index 별칭 제거.
+- area_id 접두사/surface 검증 공용화. collector는 잘못된 등록을 상태 변경 전에 거절, sanitizer/SDK 경계는 이벤트 전체 폐기.
+- 수정 전 8개 회귀 실패, 수정 후 관련 40개 통과. 전체/타입/lint 결과는 REPORTS 기록. 실제 화면 연결·SDK 수신은 후속이며 전체 KB-873 미완료.
+
+## 2026-10-23 — KB-873 / P-526 첫 단위 foundation
+
+- 감사A/B/C·CSV·독립검토와develop4d38fb19대조,PR339/187보존. 이벤트사전·7단위계획·1248구문행pending추적대장작성.
+- schema2방문/가시delta/연속노출/scrollmilestone·summary순수집계기와어댑터whitelist/값검증. 화면runtime연결/계정reset실배선/실수신은후속단위,이번완료주장금지.
+- 12개기반회귀PASS:가림/배경/중복·세대·크기보정·동적목록·민감값배제·5분60fps집계·첫드래그. 타입/sweep검증. 최종전체/lint/CI근거는REPORTS에기록.
+- 기능·플래그·API·카피·native의존성변경0. 실기/수신/기기성능미검증. 배포0. KB873전체진행중,다음lifecycle배선.
+
 ## 2026-10-23 — KB-865 / P-523 ③ Codex 인수
 
 - 기존 PR339와 backup 098cb1b8을 대조하고 독립 지속 worktree에서 FF 통합. 거절 요청 중 MessagePage의 이름 찾기·뒤로가기 잠금 유지.

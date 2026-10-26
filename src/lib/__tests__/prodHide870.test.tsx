@@ -1,7 +1,7 @@
 /**
- * KB-870(P-524) — 운영 OTA 1 숨김. expo-updates channel 목 → flags.ts·리뷰 헤더·회피 카탈로그 **모듈 실계산**(개별 플래그 목 0).
- * production(운영 서버) = 큐레이션·가공식품·K-POP·회피 묶음 6코드 0 + 리뷰 조회 헤더 없음(기본 1.1) /
- * teamtest(dev 서버) = 전부 그대로(동작 무변). 가공식품 리뷰 엔드포인트는 채널 무관 3.2.
+ * KB-870 OTA2 — 승인한 3종 공개와 PF/리뷰 경계. expo-updates channel 목 → flags.ts·리뷰 헤더·회피 카탈로그 **모듈 실계산**(개별 플래그 목 0).
+ * production(운영 서버) = 큐레이션·K-pop·회피6 ON, PF3종 OFF + 리뷰 조회 헤더 없음(기본 1.1) /
+ * teamtest = 사용자 승인 prod 리허설, development = dev 기능 유지. 가공식품 리뷰 엔드포인트는 채널 무관 3.2.
  */
 import * as fs from 'fs';
 
@@ -30,44 +30,48 @@ function load(channel: string) {
 
 describe('production 채널(운영 서버)', () => {
   const m = load('production');
-  it('플래그 4종 꺼짐(기존 dev 전용 2종과 같은 게이트)', () => {
+  it('승인한 3종만 ON · PF3종 OFF · 공용 dev 서버 게이트 OFF', () => {
     const F = m.flags.FLAGS;
-    expect([F.curationEnabled, F.processedFoodEnabled, F.idolPicksEnabled, F.avoidGroupCodesEnabled]).toEqual([false, false, false, false]);
+    expect([F.curationEnabled, F.processedFoodEnabled, F.idolPicksEnabled, F.avoidGroupCodesEnabled]).toEqual([true, false, true, true]);
     expect([F.packagedLabelScan, F.packagedReviewWrite]).toEqual([false, false]);
+    expect(m.flags.isDevServerChannel()).toBe(false);
   });
-  it('리뷰 조회 = 버전 헤더 없음(클라 기본 1.1 — prod 3.2는 400) · 가공식품 리뷰 엔드포인트는 3.2 고정', () => {
+  it('리뷰 조회 = 버전 헤더 없음(운영 기본 1.1 유지) · 가공식품 리뷰 엔드포인트는 3.2 고정', () => {
     expect(m.reviews.REVIEW_READ_HEADERS).toBeUndefined();
     expect(m.reviews.PROCESSED_REVIEW_HEADERS).toEqual({ headers: { 'X-API-Version': '3.2' } });
   });
-  it('회피 묶음 6코드 = 와이어 허용 목록·타일 섹션·레거시 매핑·로컬 프리셋 폴백 전부 0(배열 위치는 무변)', () => {
-    for (const c of GROUP) expect(m.ing.BE_CODES.has(c)).toBe(false);
-    expect(m.ing.BE_CODES.size).toBe(81);
-    expect(m.ing.INGREDIENT_SECTIONS.flatMap((s) => s.codes).filter((c) => GROUP.includes(c))).toEqual([]);
-    expect(m.ing.INGREDIENT_SECTIONS.flatMap((s) => s.codes)).toHaveLength(81);
-    expect(m.ing.toBeCode('ing:lamb')).toBeNull();
-    expect(m.ing.toBeCode('NUTS')).toBeNull();
+  it('회피6 와이어·타일·레거시·프리셋 활성화 및 기존 1기반 배열 보존', () => {
+    for (const c of GROUP) expect(m.ing.BE_CODES.has(c)).toBe(true);
+    expect(m.ing.BE_CODES.size).toBe(87);
+    expect(m.ing.INGREDIENT_SECTIONS.flatMap((s) => s.codes).filter((c) => GROUP.includes(c)).sort()).toEqual([...GROUP].sort());
+    expect(m.ing.INGREDIENT_SECTIONS.flatMap((s) => s.codes)).toHaveLength(87);
+    expect(m.ing.toBeCode('ing:lamb')).toBe('LAMB');
+    expect(m.ing.toBeCode('NUTS')).toBe('NUTS');
     expect(m.ing.INGREDIENTS).toHaveLength(87); // 프리셋 1-기반 위치 참조 보존
     const vegan = m.presets.DIET_PRESETS.find((p) => p.id === 'VEGAN')!;
     const shell = m.presets.DIET_PRESETS.find((p) => p.id === 'SHELLFISH_ALLERGY')!;
-    expect(m.presets.presetSubstanceCodes(vegan).filter((c) => GROUP.includes(c))).toEqual([]);
-    expect(m.presets.presetSubstanceCodes(shell).filter((c) => GROUP.includes(c))).toEqual([]);
+    expect(m.presets.presetSubstanceCodes(vegan).filter((c) => GROUP.includes(c))).toEqual(['MEAT', 'LAMB']);
+    expect(m.presets.presetSubstanceCodes(shell).filter((c) => GROUP.includes(c))).toEqual(['CRUSTACEAN', 'MOLLUSK']);
+    const nuts = m.presets.DIET_PRESETS.find((p) => p.id === 'NUT_ALLERGY')!;
+    expect(m.presets.presetSubstanceCodes(nuts)).not.toContain('NUTS');
     expect(m.presets.presetSubstanceCodes(vegan)).toContain('BEEF'); // 나머지는 그대로
   });
 });
 
 // P-524 후속(커맨드 10/22): 운영 서버를 쓰는 채널 전부 명시 — production만으론 preview·teamtest-prod가 같은 게이트인지 잠기지 않는다
-describe.each(['preview', 'teamtest-prod'])('%s 채널(운영 서버) = production과 같은 숨김', (channel) => {
+describe.each(['preview', 'teamtest-prod'])('%s 채널(운영 서버) = production과 같은 선택 공개', (channel) => {
   const m = load(channel);
-  it('플래그 4종 꺼짐 · 리뷰 조회 헤더 없음 · 묶음 6코드 0', () => {
+  it('3종 ON/PF3종 OFF · 리뷰1.1 · 묶음6 노출', () => {
     const F = m.flags.FLAGS;
-    expect([F.curationEnabled, F.processedFoodEnabled, F.idolPicksEnabled, F.avoidGroupCodesEnabled]).toEqual([false, false, false, false]);
+    expect([F.curationEnabled, F.processedFoodEnabled, F.idolPicksEnabled, F.avoidGroupCodesEnabled]).toEqual([true, false, true, true]);
     expect(m.reviews.REVIEW_READ_HEADERS).toBeUndefined();
-    for (const c of GROUP) expect(m.ing.BE_CODES.has(c)).toBe(false);
+    expect([F.packagedLabelScan, F.packagedReviewWrite, m.flags.isDevServerChannel()]).toEqual([false, false, false]);
+    for (const c of GROUP) expect(m.ing.BE_CODES.has(c)).toBe(true);
   });
 });
 
-describe('teamtest 채널(dev 서버) — 동작 무변', () => {
-  const m = load('teamtest');
+describe('development 채널(dev 서버) — 동작 무변', () => {
+  const m = load('development');
   it('플래그 4종 켜짐 · 리뷰 조회 3.2 · 묶음 6코드 노출(87)', () => {
     const F = m.flags.FLAGS;
     expect([F.curationEnabled, F.processedFoodEnabled, F.idolPicksEnabled, F.avoidGroupCodesEnabled]).toEqual([true, true, true, true]);
@@ -76,6 +80,17 @@ describe('teamtest 채널(dev 서버) — 동작 무변', () => {
     expect(m.ing.INGREDIENT_SECTIONS.flatMap((s) => s.codes)).toHaveLength(87);
     expect(m.ing.toBeCode('ing:lamb')).toBe('LAMB');
     expect(m.presets.presetSubstanceCodes(m.presets.DIET_PRESETS.find((p) => p.id === 'VEGAN')!)).toEqual(expect.arrayContaining(['MEAT', 'LAMB']));
+  });
+});
+
+describe('teamtest 채널 — 기존 설치본 prod 리허설', () => {
+  const current = load('teamtest'); const production = load('production');
+  it('전체 제품 FLAGS가 production과 같고 진단 정책은 유지한다', () => {
+    expect(current.flags.FLAGS).toEqual(production.flags.FLAGS);
+    expect(current.flags.isDiagnosticChannel()).toBe(true);
+    expect(current.flags.isProdChannel()).toBe(false);
+    expect(current.reviews.REVIEW_READ_HEADERS).toBeUndefined();
+    for (const code of GROUP) expect(current.ing.BE_CODES.has(code)).toBe(true);
   });
 });
 
