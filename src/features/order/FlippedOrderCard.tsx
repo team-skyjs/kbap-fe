@@ -12,7 +12,8 @@
  */
 import { OrderDoneInterstitial, type InterstitialController } from '@/features/ads/OrderDoneInterstitial';
 import * as React from 'react';
-import { Modal, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { EVENTS, track } from '@/lib/analytics';
 import { airbridge } from '@/lib/airbridge';

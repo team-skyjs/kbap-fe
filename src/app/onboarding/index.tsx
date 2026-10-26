@@ -14,7 +14,8 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useMemo, useEffect, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
-import { BackHandler, Keyboard, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { BackHandler, Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import Animated, {

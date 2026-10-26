@@ -7,7 +7,9 @@
  * P-387 규약: 완료 안내는 **응답 성공 후에만**. 실패면 본문·사진을 유지하고 재시도.
  */
 import * as React from 'react';
-import { Alert, Image, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert } from '@/lib/engagement/occlusionSurfaces';
+import { launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
@@ -71,7 +73,7 @@ export default function FeedbackComposeScreen() {
           return;
         }
       }
-      const res = await ImagePicker.launchImageLibraryAsync({
+      const res = await launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.8,
         allowsMultipleSelection: true,

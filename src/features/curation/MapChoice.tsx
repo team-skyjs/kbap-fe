@@ -5,7 +5,8 @@
  * 예진 결정: 시안의 주황 지도 이름·검정 Cancel을 뒤집는다(이름 검정 · Cancel 빨강). 빨강 = 앱 destructive 토큰(위험도 빨강과 구분 — ActionSheet 규칙).
  */
 import * as React from 'react';
-import { ActionSheetIOS, Modal, StyleSheet, View } from 'react-native';
+import { ActionSheetIOS, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { DESTRUCTIVE } from '@/components/ActionSheet';

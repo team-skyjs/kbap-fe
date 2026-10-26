@@ -214,6 +214,7 @@ it('권한 거부 → P-122 설정 딥링크 분기(Alert) 재사용, 흐름 불
     'scan.permissionTitle',
     'scan.permissionSettingsBody',
     expect.arrayContaining([expect.objectContaining({ text: 'photo.openSettings' })]),
+    expect.objectContaining({ onDismiss: expect.any(Function) }), // KB-873 ②a: 가림 래퍼 = 닫힘 해제 경로
   );
   // 런처 유지 — 재시도 가능
   expect(tree.root.findAll((n) => n.props?.testID === 'sys-capture-wrap').length).toBeGreaterThanOrEqual(1);

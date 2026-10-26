@@ -12,7 +12,8 @@
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, withTiming } from 'react-native-reanimated';

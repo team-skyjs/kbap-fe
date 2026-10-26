@@ -7,7 +7,8 @@
  * 마크 금지, §지도 딥링크 로고 조사) · 딥링크 실패(미설치) 시 웹 폴백.
  */
 import * as React from 'react';
-import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';

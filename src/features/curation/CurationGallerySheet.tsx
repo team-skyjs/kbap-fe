@@ -9,7 +9,8 @@
  * 접근성: 열리면 그래버(닫기 버튼 역할 — 스크린리더 활성화로 닫힘)에 포커스, 페이저에 이전/다음 사진 대체 액션, 시트 escape 제스처 = 닫기.
  */
 import * as React from 'react';
-import { AccessibilityInfo, findNodeHandle, FlatList, Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { AccessibilityInfo, findNodeHandle, FlatList, Platform, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
