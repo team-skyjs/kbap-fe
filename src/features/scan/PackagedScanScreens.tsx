@@ -203,19 +203,21 @@ export function LabelPhotosScreen({ photos, count, max, reanalyze, onRetake, onA
 }
 
 /** 성분표 결과(27·28·29·41·44·48) — 판정은 서버 verdict·matches만(앱 판정 0). member = 회피 1개 이상 회원 */
-export function LabelResultScreen({ result, photoUri, pages, member, onAddSide, onReview, onSetAvoid, onDone, max }: {
-  result: LabelScanResult; photoUri: string | null; pages: number; member: boolean; onAddSide: () => void; onReview: () => void; onSetAvoid: () => void; onDone: () => void; max: number;
+/** stale = 결과 뒤 판정 기준(회피·언어)이 바뀜 — 옛 verdict는 개인 판정으로 쓰지 않는다: 리본 0 · "확인 못 함" · 면 검토(같은 분석 다시 분석)로 */
+export function LabelResultScreen({ result, photoUri, pages, member, stale = false, onAddSide, onReview, onSetAvoid, onDone, max }: {
+  result: LabelScanResult; photoUri: string | null; pages: number; member: boolean; stale?: boolean; onAddSide: () => void; onReview: () => void; onSetAvoid: () => void; onDone: () => void; max: number;
 }) {
   const { t } = useTranslation();
   const lang = useAppLanguage(); // 구독으로(KB-695)
   const insets = useSafeAreaInsets();
   // Codex #339: verdict 없는 옛 응답(v4 이전 모양)이라도 서버가 확인한 회피 일치(avoidance DETECTED)는 숨기지 않는다 — 회피 문장·위험 리본
   const legacyAvoid = result.verdict == null ? result.avoidance.filter((a) => a.detected).map((a) => a.code) : [];
-  const risk = !member ? null : result.verdict ? VERDICT_RISK[result.verdict] : legacyAvoid.length ? VERDICT_RISK.AVOID : null;
+  const risk = !member || stale ? null : result.verdict ? VERDICT_RISK[result.verdict] : legacyAvoid.length ? VERDICT_RISK.AVOID : null;
   const showTranslation = !(lang ?? '').startsWith('ko');
   const translated = showTranslation ? result.ingredients.translated : null;
   let avoid: string | null = null;
-  if (member) {
+  if (member && stale) avoid = t('packaged.notVerifiedBody');
+  else if (member) {
     if (result.verdict === 'AVOID') avoid = t('packagedScan.resultAvoid', { names: namesOf(result.avoidMatches.map((m) => m.code)) });
     else if (result.verdict === 'CAUTION') avoid = t('packagedScan.resultCaution', { names: namesOf(result.mayContainMatches.map((m) => m.code)) });
     else if (result.verdict === 'SAFE_WITH_NOTE') avoid = t('packagedScan.resultUnclear', { items: result.unclearIngredients.join(', ') });
@@ -271,7 +273,7 @@ export function LabelResultScreen({ result, photoUri, pages, member, onAddSide, 
       <View style={[sc.bottom, { paddingBottom: insets.bottom + 12 }]}>
         {!member ? (
           <Btn variant="ghost" onPress={onSetAvoid} testID="pscan-result-set-avoid">{t('packaged.setAvoidIngredients')}</Btn>
-        ) : pages >= max ? (
+        ) : stale || pages >= max ? (
           <Btn variant="ghost" onPress={onReview} testID="pscan-result-review">{t('packagedScan.reviewPhotos', { count: pages })}</Btn>
         ) : (
           <Btn variant="ghost" onPress={onAddSide} testID="pscan-label-more">{t('packagedScan.labelAddPage')}</Btn>

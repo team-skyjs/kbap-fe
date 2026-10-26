@@ -222,6 +222,28 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     expect(texts(t2)).toContain('packaged.notVerifiedBody');
     expect(ids(t2)).not.toContain('pscan-result-set-avoid');
   });
+  it('Codex #339 R7: 결과 뒤 회피를 설정하고 돌아옴 = 옛 verdict를 개인 판정으로 안 씀(리본 0 · 확인 못 함) → 사진 검토에서 같은 분석 다시 분석 → 새 판정', async () => {
+    mockRestrictions = [];
+    const el = () => <PackagedScanFlow mode="packaged" onMode={jest.fn()} onClose={jest.fn()} startLabel renderCamera={mockCamera} onQuota={mockOnQuota} />;
+    const t = render(el());
+    await shoot(t, LABEL_P1);
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L40', verdict: 'SAFE', avoidMatches: [], avoidance: [] })); // 회피 0개 때 계산
+    await press(t, 'pscan-label-analyze');
+    expect(ids(t)).toContain('pscan-result-major');
+    await press(t, 'pscan-result-set-avoid');
+    mockRestrictions = [{ code: 'SHRIMP' }]; // 회피 저장 뒤 돌아옴
+    act(() => { t.update(<QueryClientProvider client={qc}>{el()}</QueryClientProvider>); }); // 새 요소 = 실제 재렌더(프로필 갱신)
+    expect(ids(t)).toContain('pscan-result-avoid');
+    expect(ids(t).some((i) => i.startsWith('pscan-result-badge-'))).toBe(false);
+    expect(texts(t)).toContain('packaged.notVerifiedBody');
+    expect(texts(t)).not.toContain('packaged.noAvoidMatches');
+    await press(t, 'pscan-result-review');
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L40' })); // 새 기준 = AVOID(SHRIMP)
+    await press(t, 'pscan-label-analyze');
+    expect(labelCalls()[1][1]).toMatchObject({ analysisId: 'L40' });
+    expect(ids(t)).toContain('pscan-result-badge-danger');
+    expect(texts(t)).toContain('packagedScan.resultAvoid:{"names":"L(SHRIMP)"}');
+  });
   it('회피 0개 회원(M0) = 주요 알레르기 문장 + "회피 재료 설정"(리본·회피 문장 0) · 주요 알레르기 null = 확인 불가(없음 단정 금지)', async () => {
     mockRestrictions = [];
     const t = flow(true);

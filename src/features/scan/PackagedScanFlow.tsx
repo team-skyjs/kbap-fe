@@ -80,7 +80,8 @@ type Step =
   | { kind: 'error'; failure: ScanFailure; retry: (() => void) | null; chargeUnknown?: boolean; labelBack?: Step };
 
 /** used·chargeUnknown = 이 분석의 차감 상태(문구는 v4에서 없앴지만 프로필 재조회 판단에 쓴다) */
-type LabelResultStep = { kind: 'labelResult'; result: LabelScanResult; pages: string[]; photos: (string | null)[]; used: boolean; chargeUnknown: boolean };
+/** verdictKey = 결과를 받을 때의 판정 기준(언어·회피 코드) — 회피를 바꾸고 돌아오면 옛 verdict를 개인 판정으로 보이지 않는다(Codex #339) */
+type LabelResultStep = { kind: 'labelResult'; result: LabelScanResult; pages: string[]; photos: (string | null)[]; used: boolean; chargeUnknown: boolean; verdictKey: string };
 
 /** 카메라 자리 — renderCamera를 **이 컴포넌트의 렌더**에서 부른다. 흐름 컴포넌트가 렌더 중 직접 부르면 ref를 읽는 콜백을 렌더 중 함수 호출에
  *  넘기는 것으로 잡혀(react-hooks/refs) 컴파일러가 흐름 전체를 건너뛴다 — 콜백은 props로만 건넨다 */
@@ -217,7 +218,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       if (r.charged || chargeUnknown || fresh) void qc.invalidateQueries({ queryKey: ['me'] }); // 남은 횟수 = 서버 재조회
       if (r.charged || fresh) chargedIds.current.add(r.analysisId);
       const used = chargedIds.current.has(r.analysisId);
-      setStep({ kind: 'labelResult', result: r, pages, photos, used, chargeUnknown: chargeUnknown && !used });
+      setStep({ kind: 'labelResult', result: r, pages, photos, used, chargeUnknown: chargeUnknown && !used, verdictKey });
     } catch (e) {
       if (my !== reqSeq.current) return;
       const failure = scanFailureOf(e);
@@ -431,6 +432,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         pages={pages.length}
         max={LABEL_PAGES_MAX}
         member={personalized}
+        stale={step.verdictKey !== verdictKey}
         onAddSide={() => goStep({ kind: 'handoff', analysisId: result.analysisId, pages, photos, from: step })}
         onReview={() => goStep({ kind: 'labelPages', analysisId: result.analysisId, pages, photos, from: step })}
         onSetAvoid={() => router.push('/profile/restrictions' as Href)}
