@@ -1296,8 +1296,6 @@
     "reading": "正在读取包装…",
     "whichTitle": "你的是哪一款？",
     "noneTitle": "没有匹配的商品",
-    "usedOnSuccess": "分析成功时会使用 1 次扫描。",
-    "noScanUsed": "未使用扫描次数。",
     "noneBody": "请拍摄背面的配料表继续。",
     "checkMaker": "请确认制造商和口味。",
     "scanLabel": "拍摄配料表",
@@ -1306,8 +1304,6 @@
     "labelHeadline": "请拍摄背面的配料表",
     "labelBody": "请让完整的配料表清晰可见。需要时可以添加更多照片。",
     "labelBox": "配料表",
-    "sameAnalysis": "将沿用同一次分析，不会额外扣除扫描次数。",
-    "successOnly": "仅在分析成功时使用 1 次扫描。",
     "labelSoon": "配料表分析即将支持。",
     "labelCta": "拍摄配料表",
     "captureHeadline": "请拍摄包装正面",
@@ -1317,7 +1313,6 @@
     "takePhoto": "拍照",
     "retake": "重新拍摄",
     "resultTitle": "扫描结果",
-    "scanUsed": "已使用 1 次扫描。",
     "err": {
       "networkTitle": "无法连接",
       "networkBody": "请检查网络后重试。",
@@ -1334,10 +1329,8 @@
       "unreadableTitle": "没能读取配料表",
       "unreadableBody": "请让配料清晰可见后重新拍摄。",
       "newAnalysisTitle": "请重新分析",
-      "newAnalysisBody": "此分析无法再添加照片。重新分析成功时会使用 1 次扫描。"
+      "newAnalysisBody": "此分析无法再添加照片。请重新分析。"
     },
-    "chargeChecking": "正在确认是否使用了扫描次数。",
-    "chargeSeeHome": "请在首页查看剩余扫描次数。",
     "debugLabel": "OCR 文本(仅限测试)",
     "debugPlaceholder": "每行输入一行包装文字",
     "debugRun": "使用此文本",
@@ -1346,9 +1339,7 @@
     "labelPagesCount": "照片 {{count}}/{{max}} 张",
     "labelAddPage": "再拍一面",
     "labelAnalyze": "分析配料表",
-    "labelNoExtra": "本次分析没有额外使用扫描次数。",
     "labelRawTitle": "识别出的文字",
-    "labelFreeRetry": "30 分钟内最多可再分析 3 次，不额外使用扫描次数。",
     "newAnalysisCta": "重新分析",
     "debugLabelPlaceholder": "配料表一面的文字",
     "debugAddPage": "作为一面添加",
@@ -1380,7 +1371,10 @@
     "resultCaution": "同工厂标示中提到：{{names}}。",
     "resultUnclear": "未发现一致的食材。未详细说明的原料：{{items}}。",
     "resultSafeAll": "你添加的所有照片中均未发现一致的食材。",
-    "resultMajorSet": "{{contains}}。设置要避免的食材后可查看个人结果。"
+    "resultMajorSet": "{{contains}}。设置要避免的食材后可查看个人结果。",
+    "freeFor_one": "加工食品扫描免费，还剩{{count}}分钟",
+    "freeFor_other": "加工食品扫描免费，还剩{{count}}分钟",
+    "freeStarted": "接下来1小时内，加工食品扫描免费。"
   },
   "scanCamera": {
     "title": "扫描",

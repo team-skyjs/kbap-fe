@@ -13,7 +13,7 @@
  * - OCR 주입(개발·진단 채널 전용): 시뮬엔 카메라 OCR이 없어 텍스트를 직접 넣는 디버그 입력.
  */
 import * as React from 'react';
-import { BackHandler, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, BackHandler, ScrollView, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +34,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { CandidateScreen, LabelPhotosScreen, LabelResultScreen, MessagePage, NameSearchBox } from './PackagedScanScreens';
+import { PackagedFreeLine, applyFreeUntil } from './packagedFreeHour';
 import { confirmProcessedScan, LABEL_PAGES_MAX, scanFailureOf, scanProcessedLabel, scanProcessedName, type ScanFailure } from '@/lib/data/useProcessedScan';
 import type { LabelScanResult, ScanCandidate } from '@/lib/api/processedFoodAdapter';
 import type { ScanMode } from './ScanModeTabs';
@@ -46,8 +47,10 @@ export type ScanCamOpts = {
   kind: ScanCamKind;
   /** 셔터·Photos(라이브러리) 결과 — 크롭본 */
   onShot: (photo: ScanPhoto) => void | Promise<void>;
-  /** 안내 힌트 대체(같은 분석 진입 = sameAnalysis · 모은 면 = n/4) */
+  /** 안내 힌트 대체(모은 면 = n/4) */
   hint?: string;
+  /** KB-877: 힌트 위 한 줄(가공식품 무료 남은 분) — 아무것도 안 그리면 자리 0 */
+  notice?: React.ReactNode;
   /** 아래 링크(메뉴 = 라이브러리 · 가공식품 ↔ 성분표 전환) — 없으면 같은 높이 빈 자리 */
   link?: { label: string; onPress: () => void; testID: string } | null;
   /** 닫기 X — 없으면 스캔 화면 닫기, 있으면 직전 단계로(한 면 더 찍기 등) */
@@ -81,7 +84,7 @@ type Step =
 
 /** used·chargeUnknown = 이 분석의 차감 상태(문구는 v4에서 없앴지만 프로필 재조회 판단에 쓴다) */
 /** verdictKey = 결과를 받을 때의 판정 기준(언어·회피 코드) — 회피를 바꾸고 돌아오면 옛 verdict를 개인 판정으로 보이지 않는다(Codex #339) */
-type LabelResultStep = { kind: 'labelResult'; result: LabelScanResult; pages: string[]; photos: (string | null)[]; used: boolean; chargeUnknown: boolean; verdictKey: string };
+type LabelResultStep = { kind: 'labelResult'; result: LabelScanResult; pages: string[]; photos: (string | null)[]; used: boolean; chargeUnknown: boolean; verdictKey: string; freeStarted: boolean };
 
 /** 카메라 자리 — renderCamera를 **이 컴포넌트의 렌더**에서 부른다. 흐름 컴포넌트가 렌더 중 직접 부르면 ref를 읽는 콜백을 렌더 중 함수 호출에
  *  넘기는 것으로 잡혀(react-hooks/refs) 컴파일러가 흐름 전체를 건너뛴다 — 콜백은 props로만 건넨다 */
@@ -112,6 +115,12 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   const { t } = useTranslation();
   const router = useRouter();
   const qc = useQueryClient();
+  // KB-877: 무료 창(freeUntil)은 서버 프로필이 정본 — 흐름 진입·포그라운드 복귀 때 다시 읽는다(창 계산은 앱이 하지 않는다)
+  React.useEffect(() => {
+    void qc.invalidateQueries({ queryKey: ['me'] });
+    const sub = AppState.addEventListener('change', (s) => { if (s === 'active') void qc.invalidateQueries({ queryKey: ['me'] }); });
+    return () => sub.remove();
+  }, [qc]);
   const verdictKey = useVerdictKey(); // 확정 응답을 상세 캐시에 심을 때 상세 키와 같은 판정 기준(Codex #338 R3)
   const guest = useIsGuest();
   const { data: me } = useMe();
@@ -220,7 +229,9 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       if (r.charged || chargeUnknown || fresh) void qc.invalidateQueries({ queryKey: ['me'] }); // 남은 횟수 = 서버 재조회
       if (r.charged || fresh) chargedIds.current.add(r.analysisId);
       const used = chargedIds.current.has(r.analysisId);
-      setStep({ kind: 'labelResult', result: r, pages, photos, used, chargeUnknown: chargeUnknown && !used, verdictKey });
+      applyFreeUntil(qc, r.freeUntil); // KB-877: 응답의 창을 바로 표시(프로필 재조회 전)
+      // 첫 차감 성공 = 이번 호출이 차감했고 창이 열림 — 창 안의 무료 분석엔 안 보인다
+      setStep({ kind: 'labelResult', result: r, pages, photos, used, chargeUnknown: chargeUnknown && !used, verdictKey, freeStarted: r.charged && r.freeUntil != null });
     } catch (e) {
       if (my !== reqSeq.current) return;
       const failure = scanFailureOf(e);
@@ -242,6 +253,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         const r = await confirmProcessedScan(analysisId, reportNo);
         if (my !== reqSeq.current) return; // 그 사이 뒤로 감 — 이동 0
         track(EVENTS.food_packaged_scan_confirm, { charged: r.charged, rejected: r.rejected });
+        applyFreeUntil(qc, r.freeUntil); // KB-877
         if (r.rejected || !r.product) {
           settledIds.current.add(analysisId);
           track(EVENTS.food_packaged_scan_handoff, { from: 'rejected' });
@@ -254,7 +266,8 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         confirmedIds.current.add(analysisId);
         if (r.charged) chargedIds.current.add(analysisId);
         const charge = r.charged || chargedIds.current.has(analysisId) ? '1' : chargeUnknown ? 'u' : '0';
-        router.push(`/processed-foods/${r.product.id}?scan=1&charged=${charge}` as Href);
+        // KB-877: 이번 확정이 차감했고 창이 열림 = 상세에 "다음 1시간 무료" 한 줄(창 안 무료 확정엔 0)
+        router.push(`/processed-foods/${r.product.id}?scan=1&charged=${charge}${r.charged && r.freeUntil ? '&free=1' : ''}` as Href);
       } catch (e) {
         if (my !== reqSeq.current) return;
         const failure = scanFailureOf(e);
@@ -307,6 +320,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     return (
       <CandidateScreen
         testID="pscan-candidates"
+        banner={<PackagedFreeLine />}
         title={t('packagedScan.matchTitle')}
         subtitle={t('packagedScan.possibleMatches', { count: step.candidates.length })}
         note={m0 ? t('packagedScan.personalNote') : null}
@@ -381,6 +395,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
             render={renderCamera}
             o={{
             kind: 'ingredient',
+            notice: <PackagedFreeLine style={st.camFree} />,
             // 모은 면이 있으면 n/4(QA Z5) · 그 밖 디자인 힌트(차감 문구 없음 — README)
             hint: pages.length ? t('packagedScan.labelPagesCount', { count: pages.length, max: LABEL_PAGES_MAX }) : undefined,
             onShot: (photo: ScanPhoto) => onLabelShot(cam, photo),
@@ -413,6 +428,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     const retake = () => goStep({ kind: 'handoff', analysisId, pages: pages.slice(0, -1), photos: photos.slice(0, -1), from }); // 마지막 면을 다시 찍는다
     return (
       <LabelPhotosScreen
+        banner={<PackagedFreeLine />}
         photos={photos}
         count={pages.length}
         max={LABEL_PAGES_MAX}
@@ -437,6 +453,8 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         max={LABEL_PAGES_MAX}
         member={personalized}
         stale={step.verdictKey !== verdictKey}
+        freeStarted={step.freeStarted}
+        banner={<PackagedFreeLine />}
         onAddSide={() => goStep({ kind: 'handoff', analysisId: result.analysisId, pages, photos, from: step })}
         onReview={() => goStep({ kind: 'labelPages', analysisId: result.analysisId, pages, photos, from: step })}
         onSetAvoid={() => router.push('/profile/restrictions' as Href)}
@@ -491,6 +509,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         render={renderCamera}
         o={{
         kind: 'package',
+        notice: <PackagedFreeLine style={st.camFree} />,
         onShot: onFrontShot,
         link: labelEnabled
           ? { label: t('packagedScan.labelInstead'), onPress: () => { track(EVENTS.food_packaged_scan_handoff, { from: 'capture' }); goStep({ kind: 'handoff', analysisId: null }); }, testID: 'pscan-label-instead' }
@@ -522,6 +541,7 @@ function NameSearchStep({ initial, personalized, m0, busy, onConfirm, onNone, on
   return (
     <CandidateScreen
       testID="pscan-name-search"
+      banner={<PackagedFreeLine />}
       title={t('packagedScan.findTitle')}
       subtitle={t('packagedScan.findSubtitle')}
       note={m0 ? t('packagedScan.personalNote') : null}
@@ -558,6 +578,7 @@ function FrontDebug({ onRun }: { onRun: (text: string) => void }) {
 // 시안 실측(2x): 본문 좌우 20 · 안내 eyebrow 15 primary · 제목 28 bold · 본문 15/22 · 촬영 상자 335×264 r24 #2F3137(아이콘 + 18 semibold 흰 글자)
 // · 아웃라인 40 · 하단 고정 버튼 · 후보 시트 = 어두운 띠 200 위 흰 시트 r24
 const st = StyleSheet.create({
+  camFree: { color: C.surface, textAlign: 'center' }, // KB-877: 카메라 어두운 바 위(힌트와 같은 흰 글자)
   root: { flex: 1, backgroundColor: C.card },
   page: { paddingHorizontal: 20, paddingTop: 24, gap: 20 },
   eyebrow: { fontFamily: font.body, fontSize: 15, lineHeight: 20, color: C.primary },

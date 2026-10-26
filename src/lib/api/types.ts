@@ -70,6 +70,8 @@ export interface User {
   scanQuota?: ScanQuota | null;
   /** KB-739/KB-740: 보상형 광고 적립 — 서버 정본. null = 구서버(필드 부재) → 광고 해제 경로 숨김. remaining 0 = 해제됨(n/3 카드 안 그림) */
   adRewards?: AdRewards | null;
+  /** KB-877: 가공식품 1시간 무료 창 끝(ISO, 서버 정본) — null·부재 = 창 없음. 창은 앱이 계산하지 않는다(server-truth) */
+  packagedFreeUntil?: string | null;
 }
 
 export interface AdRewards {

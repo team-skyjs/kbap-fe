@@ -79,7 +79,7 @@ jest.mock('expo-image', () => {
 });
 // KB-769: 스캔 결과 이탈 가드(useLeaveConfirm) — 포커스·내비 표면 + usePreventRemove 기록(scanDesign이 콜백을 흉내)
 jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
-jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), /* P-508: scan.tsx 진입 파라미터(mode·label) */
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => mockSearch.v, /* P-508: scan.tsx 진입 파라미터(mode·label) */
   useIsFocused: () => mockFocused.on,
   useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   // 실제처럼 콜백 정체성 기준 1회(렌더마다 재실행하면 포커스 의미가 사라진다)
@@ -107,6 +107,7 @@ jest.mock('@/lib/scan/ocr', () => ({
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
 const mockProbe: { offline: boolean } = { offline: false };
 const mockCamGranted = { on: false };
+const mockSearch: { v: Record<string, string> } = { v: {} }; // KB-877: /scan?mode=packaged 진입
 const mockFocused = { on: true };
 jest.mock('@/lib/data/useFoods', () => ({
   useInfiniteFoods: () => (mockProbe.offline ? { isError: true, error: new Error('NETWORK: request failed'), refetch: jest.fn() } : { isError: false, error: null, refetch: jest.fn() }),
@@ -167,6 +168,7 @@ beforeEach(async () => {
   resetUnlockSession(currentGen());
   mockIsGuest.mockReturnValue(false);
   mockCamGranted.on = false;
+  mockSearch.v = {};
   mockAds.reset(); mockUuid = 0;
   _resetAdsSessionForTest(); _resetAdsSdkForTest();
   qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -506,5 +508,28 @@ it('Codex #339: 가공식품 확정 소진 덮개 → 나중에 → 메뉴로 �
     FLAGS.packagedLabelScan = prev.label;
     FLAGS.processedFoodEnabled = prev.pf;
     mockPost.mockReset();
+  }
+});
+
+it('KB-877: 가공식품으로 바로 진입(/scan?mode=packaged) + 프로필 남은 0 + 티켓 SCAN-004 = 미리 잠그지 않음(서버 1시간 무료 창이면 통과 — 확정·성분표 응답이 정한다) → 메뉴로 바꾸면 평소처럼 잠금', async () => {
+  const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean; processedFoodEnabled: boolean } };
+  const prev = { label: FLAGS.packagedLabelScan, pf: FLAGS.processedFoodEnabled };
+  FLAGS.packagedLabelScan = true;
+  FLAGS.processedFoodEnabled = true;
+  try {
+    mockCamGranted.on = true;
+    mockSearch.v = { mode: 'packaged' };
+    mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
+    mockUseMe.mockReturnValue(me(3)); // scanQuota 소진(remaining 0)
+    const tree = render();
+    await flush();
+    expect(quotaShown(tree)).toBe(false);
+    expect(tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input').length).toBeGreaterThan(0); // 가공식품 카메라(흐름) 그대로
+    await act(async () => { tree.root.findAll((n) => n.props?.testID === 'scan-mode-menu' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    await flush();
+    expect(quotaShown(tree)).toBe(true); // 메뉴판 = 기존 프로필 잠금
+  } finally {
+    FLAGS.packagedLabelScan = prev.label;
+    FLAGS.processedFoodEnabled = prev.pf;
   }
 });

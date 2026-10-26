@@ -1296,8 +1296,6 @@
     "reading": "Đang đọc bao bì…",
     "whichTitle": "Sản phẩm của bạn là cái nào?",
     "noneTitle": "Không có sản phẩm khớp",
-    "usedOnSuccess": "Dùng 1 lượt quét khi phân tích thành công.",
-    "noScanUsed": "Chưa dùng lượt quét nào.",
     "noneBody": "Hãy chụp nhãn thành phần ở mặt sau để tiếp tục.",
     "checkMaker": "Kiểm tra nhà sản xuất và hương vị.",
     "scanLabel": "Quét nhãn thành phần",
@@ -1306,8 +1304,6 @@
     "labelHeadline": "Chụp nhãn mặt sau",
     "labelBody": "Hãy để toàn bộ danh sách thành phần rõ nét. Bạn có thể thêm ảnh nếu cần.",
     "labelBox": "Nhãn thành phần",
-    "sameAnalysis": "Tiếp tục cùng lần phân tích, không trừ thêm lượt quét.",
-    "successOnly": "Chỉ phân tích thành công mới dùng 1 lượt quét.",
     "labelSoon": "Phân tích nhãn thành phần sắp được hỗ trợ.",
     "labelCta": "Chụp nhãn thành phần",
     "captureHeadline": "Chụp mặt trước bao bì",
@@ -1317,7 +1313,6 @@
     "takePhoto": "Chụp ảnh",
     "retake": "Chụp lại",
     "resultTitle": "Kết quả quét",
-    "scanUsed": "Đã dùng 1 lượt quét.",
     "err": {
       "networkTitle": "Không kết nối được",
       "networkBody": "Hãy kiểm tra kết nối rồi thử lại.",
@@ -1334,10 +1329,8 @@
       "unreadableTitle": "Không đọc được nhãn",
       "unreadableBody": "Hãy chụp lại sao cho danh sách thành phần rõ nét.",
       "newAnalysisTitle": "Hãy bắt đầu phân tích mới",
-      "newAnalysisBody": "Không thể thêm ảnh vào phân tích này. Phân tích mới sẽ dùng 1 lượt quét khi thành công."
+      "newAnalysisBody": "Không thể thêm ảnh vào lần phân tích này. Hãy bắt đầu phân tích mới."
     },
-    "chargeChecking": "Đang kiểm tra xem đã dùng lượt quét chưa.",
-    "chargeSeeHome": "Xem số lượt quét còn lại ở màn hình chính.",
     "debugLabel": "Văn bản OCR (chỉ để thử)",
     "debugPlaceholder": "Mỗi dòng một dòng chữ trên bao bì",
     "debugRun": "Dùng văn bản này",
@@ -1346,9 +1339,7 @@
     "labelPagesCount": "Ảnh: {{count}}/{{max}}",
     "labelAddPage": "Chụp thêm một mặt",
     "labelAnalyze": "Phân tích nhãn",
-    "labelNoExtra": "Phân tích này không dùng thêm lượt quét.",
     "labelRawTitle": "Chữ đọc được trên nhãn",
-    "labelFreeRetry": "Trong 30 phút, bạn có thể phân tích lại tối đa 3 lần mà không dùng thêm lượt quét.",
     "newAnalysisCta": "Phân tích mới",
     "debugLabelPlaceholder": "Chữ của một mặt nhãn",
     "debugAddPage": "Thêm làm một mặt",
@@ -1380,7 +1371,10 @@
     "resultCaution": "Ghi chú cơ sở sản xuất chung có nêu: {{names}}.",
     "resultUnclear": "Không có gì khớp. Không mô tả chi tiết: {{items}}.",
     "resultSafeAll": "Không có gì khớp trong tất cả ảnh nhãn bạn thêm.",
-    "resultMajorSet": "{{contains}}. Đặt nguyên liệu cần tránh để xem kết quả riêng."
+    "resultMajorSet": "{{contains}}. Đặt nguyên liệu cần tránh để xem kết quả riêng.",
+    "freeFor_one": "Quét thực phẩm đóng gói miễn phí còn {{count}} phút",
+    "freeFor_other": "Quét thực phẩm đóng gói miễn phí còn {{count}} phút",
+    "freeStarted": "Các lần quét thực phẩm đóng gói tiếp theo miễn phí trong 1 giờ."
   },
   "scanCamera": {
     "title": "Quét",

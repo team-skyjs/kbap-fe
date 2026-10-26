@@ -1296,8 +1296,6 @@
     "reading": "Leyendo el envase…",
     "whichTitle": "¿Cuál es tu producto?",
     "noneTitle": "No hay productos que coincidan",
-    "usedOnSuccess": "Se usa 1 escaneo cuando el análisis tiene éxito.",
-    "noScanUsed": "No se usaron escaneos.",
     "noneBody": "Fotografía la etiqueta de ingredientes del reverso para continuar.",
     "checkMaker": "Revisa el fabricante y el sabor.",
     "scanLabel": "Escanear etiqueta de ingredientes",
@@ -1306,8 +1304,6 @@
     "labelHeadline": "Fotografía la etiqueta trasera",
     "labelBody": "Que se vea nítida toda la lista de ingredientes. Puedes añadir más fotos si hace falta.",
     "labelBox": "Etiqueta de ingredientes",
-    "sameAnalysis": "Continúa el mismo análisis sin gastar otro escaneo.",
-    "successOnly": "Solo un análisis exitoso usa 1 escaneo.",
     "labelSoon": "El análisis de etiquetas de ingredientes llegará pronto.",
     "labelCta": "Fotografiar etiqueta de ingredientes",
     "captureHeadline": "Fotografía el frente del envase",
@@ -1317,7 +1313,6 @@
     "takePhoto": "Tomar foto",
     "retake": "Volver a tomar la foto",
     "resultTitle": "Resultado del escaneo",
-    "scanUsed": "Se usó 1 escaneo.",
     "err": {
       "networkTitle": "No se pudo conectar",
       "networkBody": "Revisa tu conexión e inténtalo de nuevo.",
@@ -1334,10 +1329,8 @@
       "unreadableTitle": "No pudimos leer la etiqueta",
       "unreadableBody": "Vuelve a tomar la foto con la lista de ingredientes nítida.",
       "newAnalysisTitle": "Empieza un nuevo análisis",
-      "newAnalysisBody": "No se pueden añadir más fotos a este análisis. Un análisis nuevo usa 1 escaneo si sale bien."
+      "newAnalysisBody": "No puedes añadir más fotos a este análisis. Empieza uno nuevo."
     },
-    "chargeChecking": "Estamos comprobando si se usó un escaneo.",
-    "chargeSeeHome": "Consulta los escaneos restantes en la pantalla de inicio.",
     "debugLabel": "Texto OCR (solo pruebas)",
     "debugPlaceholder": "Una línea del envase por fila",
     "debugRun": "Usar este texto",
@@ -1346,9 +1339,7 @@
     "labelPagesCount": "Fotos: {{count}} de {{max}}",
     "labelAddPage": "Fotografiar otro lado",
     "labelAnalyze": "Analizar etiqueta",
-    "labelNoExtra": "Este análisis no usó escaneos adicionales.",
     "labelRawTitle": "Texto leído",
-    "labelFreeRetry": "Durante 30 minutos puedes volver a analizar hasta 3 veces sin usar escaneos extra.",
     "newAnalysisCta": "Nuevo análisis",
     "debugLabelPlaceholder": "Texto de un lado de la etiqueta",
     "debugAddPage": "Añadir como un lado",
@@ -1380,7 +1371,10 @@
     "resultCaution": "Una declaración de planta compartida menciona: {{names}}.",
     "resultUnclear": "Sin coincidencias. Sin descripción detallada: {{items}}.",
     "resultSafeAll": "Sin coincidencias en todas las fotos de etiqueta que añadiste.",
-    "resultMajorSet": "{{contains}}. Elige ingredientes a evitar para ver un resultado personal."
+    "resultMajorSet": "{{contains}}. Elige ingredientes a evitar para ver un resultado personal.",
+    "freeFor_one": "Escaneos de envasados gratis por {{count}} min",
+    "freeFor_other": "Escaneos de envasados gratis por {{count}} min",
+    "freeStarted": "Tus próximos escaneos de envasados son gratis durante 1 hora."
   },
   "scanCamera": {
     "title": "Escanear",

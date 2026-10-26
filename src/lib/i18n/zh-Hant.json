@@ -1296,8 +1296,6 @@
     "reading": "正在讀取包裝…",
     "whichTitle": "你的是哪一款？",
     "noneTitle": "沒有符合的商品",
-    "usedOnSuccess": "分析成功時會使用 1 次掃描。",
-    "noScanUsed": "未使用掃描次數。",
     "noneBody": "請拍攝背面的原料表繼續。",
     "checkMaker": "請確認製造商和口味。",
     "scanLabel": "拍攝原料表",
@@ -1306,8 +1304,6 @@
     "labelHeadline": "請拍攝背面的原料表",
     "labelBody": "請讓完整的原料表清楚可見。需要時可以新增更多照片。",
     "labelBox": "原料表",
-    "sameAnalysis": "將延續同一次分析，不會額外扣除掃描次數。",
-    "successOnly": "只有分析成功時才會使用 1 次掃描。",
     "labelSoon": "原料表分析即將支援。",
     "labelCta": "拍攝原料表",
     "captureHeadline": "請拍攝包裝正面",
@@ -1317,7 +1313,6 @@
     "takePhoto": "拍照",
     "retake": "重新拍攝",
     "resultTitle": "掃描結果",
-    "scanUsed": "已使用 1 次掃描。",
     "err": {
       "networkTitle": "無法連線",
       "networkBody": "請檢查網路後再試一次。",
@@ -1334,10 +1329,8 @@
       "unreadableTitle": "沒能讀取成分表",
       "unreadableBody": "請讓原料清楚可見後重新拍攝。",
       "newAnalysisTitle": "請重新分析",
-      "newAnalysisBody": "此分析無法再新增照片。重新分析成功時會使用 1 次掃描。"
+      "newAnalysisBody": "此分析無法再新增照片。請重新分析。"
     },
-    "chargeChecking": "正在確認是否使用了掃描次數。",
-    "chargeSeeHome": "請在首頁查看剩餘掃描次數。",
     "debugLabel": "OCR 文字(僅限測試)",
     "debugPlaceholder": "每行輸入一行包裝文字",
     "debugRun": "使用這段文字",
@@ -1346,9 +1339,7 @@
     "labelPagesCount": "照片 {{count}}/{{max}} 張",
     "labelAddPage": "再拍一面",
     "labelAnalyze": "分析成分表",
-    "labelNoExtra": "這次分析沒有額外使用掃描次數。",
     "labelRawTitle": "辨識出的文字",
-    "labelFreeRetry": "30 分鐘內最多可再分析 3 次，不額外使用掃描次數。",
     "newAnalysisCta": "重新分析",
     "debugLabelPlaceholder": "成分表一面的文字",
     "debugAddPage": "作為一面新增",
@@ -1380,7 +1371,10 @@
     "resultCaution": "同工廠標示中提到：{{names}}。",
     "resultUnclear": "未發現相符的食材。未詳細說明的原料：{{items}}。",
     "resultSafeAll": "你加入的所有照片中均未發現相符的食材。",
-    "resultMajorSet": "{{contains}}。設定要避免的食材後可查看個人結果。"
+    "resultMajorSet": "{{contains}}。設定要避免的食材後可查看個人結果。",
+    "freeFor_one": "加工食品掃描免費，還剩{{count}}分鐘",
+    "freeFor_other": "加工食品掃描免費，還剩{{count}}分鐘",
+    "freeStarted": "接下來1小時內，加工食品掃描免費。"
   },
   "scanCamera": {
     "title": "掃描",

@@ -1296,8 +1296,6 @@
     "reading": "パッケージを読み取っています…",
     "whichTitle": "どの商品ですか？",
     "noneTitle": "一致する商品がありません",
-    "usedOnSuccess": "分析に成功するとスキャンを1回使います。",
-    "noScanUsed": "スキャンは使われていません。",
     "noneBody": "裏面の成分表を撮影して続けてください。",
     "checkMaker": "メーカーと味を確認してください。",
     "scanLabel": "成分表を撮影",
@@ -1306,8 +1304,6 @@
     "labelHeadline": "裏面の成分表を撮影してください",
     "labelBody": "原材料の一覧全体がはっきり写るように撮影してください。必要なら写真を追加できます。",
     "labelBox": "成分表",
-    "sameAnalysis": "同じ分析で続けます。追加でスキャンは使いません。",
-    "successOnly": "分析に成功したときだけスキャンを1回使います。",
     "labelSoon": "成分表の分析はまもなく対応します。",
     "labelCta": "成分表を撮影",
     "captureHeadline": "パッケージの表面を撮影してください",
@@ -1317,7 +1313,6 @@
     "takePhoto": "写真を撮る",
     "retake": "もう一度撮影",
     "resultTitle": "スキャン結果",
-    "scanUsed": "スキャンを1回使いました。",
     "err": {
       "networkTitle": "接続できませんでした",
       "networkBody": "接続を確認してもう一度お試しください。",
@@ -1334,10 +1329,8 @@
       "unreadableTitle": "成分表示を読み取れませんでした",
       "unreadableBody": "原材料名がはっきり写るように撮り直してください。",
       "newAnalysisTitle": "新しく分析してください",
-      "newAnalysisBody": "この分析には写真を追加できません。新しく分析すると、成功時にスキャンが1回使われます。"
+      "newAnalysisBody": "この分析には写真を追加できません。新しく分析してください。"
     },
-    "chargeChecking": "スキャンが使われたか確認しています。",
-    "chargeSeeHome": "残りのスキャン回数はホーム画面で確認してください。",
     "debugLabel": "OCRテキスト(テスト用)",
     "debugPlaceholder": "パッケージの文字を1行ずつ入力",
     "debugRun": "このテキストで進む",
@@ -1346,9 +1339,7 @@
     "labelPagesCount": "写真 {{count}}/{{max}}枚",
     "labelAddPage": "もう一面撮る",
     "labelAnalyze": "成分表示を分析",
-    "labelNoExtra": "この分析でスキャンは追加で使われていません。",
     "labelRawTitle": "読み取った文字",
-    "labelFreeRetry": "30分以内なら3回までスキャンを追加で使わずに再分析できます。",
     "newAnalysisCta": "新しく分析する",
     "debugLabelPlaceholder": "成分表示1面分の文字",
     "debugAddPage": "1面として追加",
@@ -1380,7 +1371,10 @@
     "resultCaution": "同じ製造施設の表示に記載: {{names}}。",
     "resultUnclear": "一致はありません。詳しい記載がない原材料: {{items}}。",
     "resultSafeAll": "追加したすべての写真で一致はありません。",
-    "resultMajorSet": "{{contains}}。避けたい食材を設定すると、自分向けの結果を見られます。"
+    "resultMajorSet": "{{contains}}。避けたい食材を設定すると、自分向けの結果を見られます。",
+    "freeFor_one": "加工食品スキャン無料 残り{{count}}分",
+    "freeFor_other": "加工食品スキャン無料 残り{{count}}分",
+    "freeStarted": "この後1時間、加工食品のスキャンは無料です。"
   },
   "scanCamera": {
     "title": "スキャン",

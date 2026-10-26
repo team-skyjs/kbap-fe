@@ -65,10 +65,10 @@ export function CandidateCard({ item, selected, personalized, onPress, testID, d
 
 /** 후보·이름 찾기(16·19·45) — 제목 + 보조 줄 + (검색칸) + 카드 목록 + 확정 CTA + "None of these" 텍스트 동작 */
 export function CandidateScreen({
-  title, subtitle, note, search, items, selectedId, onSelect, onConfirm, onNone, onBack, personalized, busy, empty, testID, onEndReached,
+  title, subtitle, note, search, items, selectedId, onSelect, onConfirm, onNone, onBack, personalized, busy, empty, testID, onEndReached, banner,
 }: {
   title: string; subtitle: string | null; note: string | null; search?: React.ReactNode; items: ProcessedFoodSummary[]; selectedId: string | null;
-  onSelect: (id: string) => void; onConfirm: () => void; onNone: (() => void) | null; onBack: () => void; personalized: boolean; busy: boolean; empty?: React.ReactNode; testID: string; onEndReached?: () => void;
+  onSelect: (id: string) => void; onConfirm: () => void; onNone: (() => void) | null; onBack: () => void; personalized: boolean; busy: boolean; empty?: React.ReactNode; testID: string; onEndReached?: () => void; banner?: React.ReactNode;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -87,6 +87,7 @@ export function CandidateScreen({
         scrollEventThrottle={onEndReached ? 200 : undefined}
         testID={`${testID}-scroll`}
       >
+        {banner}
         <Text style={sc.h1} accessibilityRole="header">{title}</Text>
         {!!subtitle && <Text style={sc.sub}>{subtitle}</Text>}
         {!!note && <Text style={sc.body} testID="pscan-personal-note">{note}</Text>}
@@ -171,8 +172,8 @@ function PhotoSlot({ uri, label, style, children }: { uri: string | null; label:
 }
 
 /** 성분표 면 검토(24 = 1면 · 25 = 4면 한도 · 50 = 다시 분석 안내) — 큰 칸 = 첫 면, 아래 Side 2~4 */
-export function LabelPhotosScreen({ photos, count, max, reanalyze, onRetake, onAdd, onAnalyze, onBack, busy }: {
-  photos: (string | null)[]; count: number; max: number; reanalyze: boolean; onRetake: () => void; onAdd: (() => void) | null; onAnalyze: () => void; onBack: () => void; busy: boolean;
+export function LabelPhotosScreen({ photos, count, max, reanalyze, onRetake, onAdd, onAnalyze, onBack, busy, banner }: {
+  photos: (string | null)[]; count: number; max: number; reanalyze: boolean; onRetake: () => void; onAdd: (() => void) | null; onAnalyze: () => void; onBack: () => void; busy: boolean; banner?: React.ReactNode;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -181,6 +182,7 @@ export function LabelPhotosScreen({ photos, count, max, reanalyze, onRetake, onA
     <View style={sc.root} testID="pscan-label-pages">
       <SubHeader title={t('packagedScan.labelPhotosTitle')} onBack={onBack} />
       <ScrollView contentContainerStyle={sc.page}>
+        {banner}
         <Text style={sc.h1} accessibilityRole="header" testID="pscan-label-count">{t('packagedScan.labelPhotosCount', { count, max })}</Text>
         <PhotoSlot uri={photos[0] ?? null} label={t('packagedScan.labelBox')} style={sc.mainSlot} />
         {count > 1 && (
@@ -204,8 +206,8 @@ export function LabelPhotosScreen({ photos, count, max, reanalyze, onRetake, onA
 
 /** 성분표 결과(27·28·29·41·44·48) — 판정은 서버 verdict·matches만(앱 판정 0). member = 회피 1개 이상 회원 */
 /** stale = 결과 뒤 판정 기준(회피·언어)이 바뀜 — 옛 verdict는 개인 판정으로 쓰지 않는다: 리본 0 · "확인 못 함" · 면 검토(같은 분석 다시 분석)로 */
-export function LabelResultScreen({ result, photoUri, pages, member, stale = false, onAddSide, onReview, onSetAvoid, onDone, max }: {
-  result: LabelScanResult; photoUri: string | null; pages: number; member: boolean; stale?: boolean; onAddSide: () => void; onReview: () => void; onSetAvoid: () => void; onDone: () => void; max: number;
+export function LabelResultScreen({ result, photoUri, pages, member, stale = false, freeStarted = false, banner, onAddSide, onReview, onSetAvoid, onDone, max }: {
+  result: LabelScanResult; photoUri: string | null; pages: number; member: boolean; stale?: boolean; freeStarted?: boolean; banner?: React.ReactNode; onAddSide: () => void; onReview: () => void; onSetAvoid: () => void; onDone: () => void; max: number;
 }) {
   const { t } = useTranslation();
   const lang = useAppLanguage(); // 구독으로(KB-695)
@@ -239,6 +241,8 @@ export function LabelResultScreen({ result, photoUri, pages, member, stale = fal
     <View style={sc.root} testID="pscan-label-result">
       <SubHeader title={t('packagedScan.resultTitle')} onBack={onDone} />
       <ScrollView contentContainerStyle={[sc.page, { gap: 24 }]}>
+        {/* KB-877: 이번 분석이 차감하며 창을 열었으면 안내 한 줄, 아니면 남은 분(창 안이면) */}
+        {freeStarted ? <Text style={sc.freeStarted} testID="pscan-free-started">{t('packagedScan.freeStarted')}</Text> : banner}
         <PhotoSlot uri={photoUri} label={t('packagedScan.labelBox')} style={sc.resultSlot}>
           {risk && <View style={sc.badge}><RiskBadge state={risk} size={22} flat testID={`pscan-result-badge-${risk}`} /></View>}
         </PhotoSlot>
@@ -294,6 +298,7 @@ function Section({ title, children, testID }: { title: string; children: React.R
 }
 
 const sc = StyleSheet.create({
+  freeStarted: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 20, color: C.primaryText }, // KB-877
   root: { flex: 1, backgroundColor: C.card },
   page: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24, gap: 16 },
   h1: { fontFamily: font.bodyBold, fontSize: 22, lineHeight: 28, color: C.ink },

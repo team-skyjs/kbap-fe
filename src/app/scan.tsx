@@ -149,6 +149,9 @@ export default function Scan() {
   // P-508: 가공식품 상세 "성분표 직접 확인" = /scan?mode=packaged&label=1 — 가공식품 모드 + 성분표 안내부터(새 분석)
   const scanParams = useLocalSearchParams<{ mode?: string; label?: string; t?: string }>();
   const [scanMode, setScanModeState] = useState<ScanMode>(() => (scanParams.mode === 'packaged' && FLAGS.packagedLabelScan ? 'packaged' : 'menu'));
+  // KB-877: 잠금 콜백(메모)이 읽는 현재 모드 — phaseRef와 같은 동기화
+  const scanModeRef = useRef(scanMode);
+  useLayoutEffect(() => { scanModeRef.current = scanMode; });
   // Codex #315 R2: 성분표 진입 토큰 — 이미 열린 /scan으로 돌아와도(navigate 재사용) 토큰이 바뀌면 가공식품 모드 + **새 플로우**(key)로 새 분석부터.
   // 렌더 중 이전값 비교(KB-603 — 값 키 effect는 A→B→A를 놓친다)
   const labelEntry = scanParams.label === '1' && FLAGS.packagedLabelScan ? (scanParams.t ?? 'entry') : null;
@@ -276,7 +279,8 @@ export default function Scan() {
   const canLockQuota = () => phaseRef.current === 'camera' || phaseRef.current === 'error';
   const lockFromProfile = useCallback(() => {
     const quota = quotaRef.current;
-    if (!canLockQuota() || !isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current || packagedHoldRef.current) return;
+    // KB-877: 가공식품 모드 = 미리 잠그지 않는다 — 서버 1시간 무료 창이면 남은 0이어도 통과하므로 확정·성분표 응답(SCAN-004 → 덮개)이 정한다
+    if (!canLockQuota() || !isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current || packagedHoldRef.current || scanModeRef.current === 'packaged') return;
     quotaLockRef.current = true;
     setError({ stage: 'quota', detail: 'profile scanRemaining 0' });
     setPhase('error');
@@ -285,7 +289,7 @@ export default function Scan() {
   // 카메라 단계에서만 — 스캔 중·결과 화면은 끊지 않는다.
   useEffect(() => {
     if (phase === 'camera' && !isGuest && scanV2Enabled()) lockFromProfile();
-  }, [phase, me?.scanQuota, isGuest, lockFromProfile]);
+  }, [phase, me?.scanQuota, isGuest, lockFromProfile, scanMode]); // KB-877: 가공식품 → 메뉴 전환 때 다시 판정
   // KB-759(QA 로그 판독): 해제 응답 뒤 preflight가 쥔 quota는 프로필 재조회 전의 **옛 스냅샷**(소진)일 수 있고, 복원이 티켓 200에만
   // 기대고 있었다(실패는 catch가 조용히 삼킴 → 제한 화면에 광고 버튼만 사라진 채 잔류). `unlocked` = 서버가 scanUnlocked:true를 돌려준 직후:
   // ① 옛 스냅샷은 반증 처리(재잠금 0) — 서버가 정본 ② 티켓 성공이면 잠금 ref와 무관하게 카메라 ③ 티켓 실패(비-004 포함)는 '다시 시도' 상태로 노출.
@@ -338,7 +342,7 @@ export default function Scan() {
       }
       if (code === 'SCAN-004') {
         preTicket.current = null;
-        if (!canLockQuota()) return;
+        if (!canLockQuota() || scanModeRef.current === 'packaged') return; // KB-877: 가공식품은 서버 응답이 정한다(메뉴로 돌아가면 프로필 잠금이 다시 판정)
         quotaLockRef.current = true;
         setError({ stage: 'quota', detail: 'preflight SCAN-004' });
         setPhase('error'); // 카메라 미표시 — 즉시 쿼터 잠금(P-250 quota UI 재사용)
@@ -843,9 +847,10 @@ export default function Scan() {
         {GateSheet}
 
         {/* 흐름 안내 한 줄(성분표 n/4 · 같은 분석) — 아래 바 바로 위 */}
-        {hint ? (
+        {hint || o.notice ? (
           <View style={[styles.camHintWrap, { bottom: camBarH + 12 }]} pointerEvents="none">
-            <Text style={styles.camHint} testID="scan-cam-hint">{hint}</Text>
+            {o.notice /* KB-877: 가공식품 무료 남은 분(없으면 null) */}
+            {hint ? <Text style={styles.camHint} testID="scan-cam-hint">{hint}</Text> : null}
           </View>
         ) : null}
         {/* KB-854: 아래 단색 바 — 1x·2x 칩 → 갤러리 · 셔터 · 전환(아이콘 터치 52) → 링크(가공식품 "성분표로" / 성분표 "앞면으로" — 메뉴는 자리만) */}

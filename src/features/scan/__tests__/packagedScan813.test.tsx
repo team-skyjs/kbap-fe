@@ -42,8 +42,9 @@ jest.mock('@/lib/api/client', () => {
 });
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 let mockRestrictions: { code: string }[] = [{ code: 'SHRIMP' }];
-let mockProfileMissing = false; // 프로필 대기·실패(data 없음)
-jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockProfileMissing ? undefined : { id: '41', restrictions: mockRestrictions } }) })); // KB-865: 판정 캐시 키 = 회피 코드 집합 · 0개 = 시안 45
+let mockProfileMissing = false;
+let mockFreeUntil: string | null = null; // KB-877: 서버 무료 창 끝 // 프로필 대기·실패(data 없음)
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockProfileMissing ? undefined : { id: '41', restrictions: mockRestrictions, packagedFreeUntil: mockFreeUntil } }) })); // KB-865: 판정 캐시 키 = 회피 코드 집합 · 0개 = 시안 45
 const mockOcr = jest.fn();
 jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockOcr(...a) }));
 let mockGranted = true;
@@ -67,7 +68,7 @@ const DETAIL = { id: 11, reportNo: 'R1', productName: '새우깡', maker: '농�
 
 const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
-beforeEach(() => { qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; });
+beforeEach(() => { qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; mockFreeUntil = null; });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); qc.clear(); jest.clearAllMocks(); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -82,6 +83,7 @@ function mockCamera(o: ScanCamOpts) {
       <Pressable testID={o.kind === 'package' ? 'pscan-take-photo' : 'pscan-label-capture'} onPress={() => o.onShot(mockShot)} />
       {o.link && <Pressable testID={o.link.testID} onPress={o.link.onPress} />}
       {o.onClose && <Pressable testID="cam-close" onPress={o.onClose} />}
+      {o.notice}
       {o.debug}
     </View>
   );
@@ -523,6 +525,70 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_handoff', { from: 'unreadable' });
     await press(t, 'pscan-retake');
     expect(ids(t)).toContain('cam-package');
+  });
+});
+
+describe('KB-877 가공식품 1시간 무료 창(서버 freeUntil)', () => {
+  const FREE = '2026-10-27T04:00:00.000Z';
+  it('확정이 차감하며 창을 엶(charged + freeUntil) = 상세 &free=1 · 응답 창을 프로필 캐시에 즉시 반영 · 창 안 무료 확정(charged false) = free 0', async () => {
+    qc.setQueryData(['me', 'en'], { id: '41', restrictions: [], packagedFreeUntil: null });
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost
+      .mockResolvedValueOnce({ analysisId: 'F1', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
+      .mockResolvedValueOnce({ analysisId: 'F1', state: 'CONFIRMED', charged: true, product: DETAIL, freeUntil: FREE });
+    const t = flow();
+    await press(t, 'pscan-take-photo');
+    await pick(t, 11);
+    expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/11?scan=1&charged=1&free=1');
+    expect(qc.getQueryData(['me', 'en'])).toMatchObject({ packagedFreeUntil: FREE });
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost
+      .mockResolvedValueOnce({ analysisId: 'F2', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
+      .mockResolvedValueOnce({ analysisId: 'F2', state: 'CONFIRMED', charged: false, product: DETAIL, freeUntil: FREE }); // 창 안 = 무료
+    const t2 = flow();
+    await press(t2, 'pscan-take-photo');
+    await pick(t2, 11);
+    expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/11?scan=1&charged=0');
+  });
+  it('흐름 진입 = 프로필 다시 읽기 · 포그라운드 복귀 = 다시 읽기(창은 서버 값만)', () => {
+    const { AppState } = jest.requireActual<typeof import('react-native')>('react-native');
+    // spyOn+mockRestore는 RN 목의 반환값을 잃어 다음 테스트 정리(remove)를 깨뜨린다 → 원본을 감싸 그대로 통과시키고 finally에서 되돌림
+    const handlers: ((s: string) => void)[] = [];
+    const orig = AppState.addEventListener;
+    AppState.addEventListener = ((e: 'change', h: (s: string) => void) => { handlers.push(h); return orig.call(AppState, e, h as never); }) as typeof AppState.addEventListener;
+    try {
+      const inv = jest.spyOn(qc, 'invalidateQueries');
+      flow();
+      expect(inv).toHaveBeenCalledWith({ queryKey: ['me'] });
+      const n = inv.mock.calls.length;
+      act(() => handlers.forEach((h) => h('active')));
+      expect(inv.mock.calls.length).toBeGreaterThan(n);
+    } finally {
+      AppState.addEventListener = orig;
+    }
+  });
+  it('상세: 스캔 확정 + free=1 = "다음 1시간 무료" 한 줄 · free 없음(창 안 무료 확정·일반 진입) = 0', () => {
+    const { adaptProcessedDetail } = jest.requireActual('@/lib/api/processedFoodAdapter');
+    qc.setQueryData(['processedFoods', 'detail', '11', 'en|member:SHRIMP'], adaptProcessedDetail(DETAIL));
+    mockParams = { id: '11', scan: '1', charged: '1', free: '1' };
+    const t = render(<Detail />);
+    expect(ids(t)).toContain('pf-free-started');
+    expect(texts(t)).toContain('packagedScan.freeStarted');
+    mockParams = { id: '11', scan: '1', charged: '0' };
+    expect(ids(render(<Detail />))).not.toContain('pf-free-started');
+    mockParams = { id: '11', free: '1' }; // 스캔 밖 진입 = 무시
+    expect(ids(render(<Detail />))).not.toContain('pf-free-started');
+  });
+  it('남은 분 = 앞면 카메라·후보 화면에 한 줄(창 있을 때만)', async () => {
+    mockFreeUntil = new Date(Date.now() + 42 * 60_000 + 30_000).toISOString();
+    const t = flow();
+    expect(texts(t)).toContain('packagedScan.freeFor:{"count":43}');
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost.mockResolvedValueOnce({ analysisId: 'F3', state: 'CANDIDATES', candidates: [cand(11, 'R1')] });
+    await press(t, 'pscan-take-photo');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-candidates', 'pscan-free-line']));
+    mockFreeUntil = null;
+    expect(ids(flow())).not.toContain('pscan-free-line');
   });
 });
 

@@ -16,7 +16,7 @@ const PLURAL_BASES = ['search.resultCount', 'scan.freeLeft', 'saved.count', 'myF
   // KB-777(QA B1-8·A2-3 "1 items"·"1 reviews"): 셀 수 있는 명사 문구 10개
   'community.viewReplies', 'scan.resultTitle', 'scan.resultsSub', 'scan.viewOrder', 'order.headerSub', 'reviews.subtitle', 'ranking.reviewsDetail', 'ranking.diversityDetail', 'ranking.scansDetail', 'detail.allUsers',
   'ranking.ptsTo',
-  'packagedScan.possibleMatches', 'packagedScan.reviewPhotos'] // KB-865 ③: 후보 n개 · 사진 n장 보기 / KB-777 B3-6: 남은 점수; // KB-765: 광고 n편 보기 · KB-781: 작성 시각
+  'packagedScan.possibleMatches', 'packagedScan.reviewPhotos', 'packagedScan.freeFor'] // KB-865 ③: 후보 n개 · 사진 n장 보기 / KB-777 B3-6: 남은 점수; // KB-765: 광고 n편 보기 · KB-781: 작성 시각
 const get = (l: string, path: string): string | undefined => {
   const [sec, key] = path.split('.');
   return (load(l) as unknown as Record<string, Record<string, string>>)[sec]?.[key];
