@@ -67,7 +67,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 jest.mock('expo-camera', () => {
   const { View } = require('react-native');
-  return { CameraView: View, useCameraPermissions: () => [{ granted: false }, jest.fn()] };
+  return { CameraView: View, useCameraPermissions: () => [{ granted: mockCamGranted.on }, jest.fn()] }; // 기본 거부 — 가공식품 흐름 테스트만 허용
 });
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] }),
@@ -106,6 +106,7 @@ jest.mock('@/lib/scan/ocr', () => ({
 }));
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
 const mockProbe: { offline: boolean } = { offline: false };
+const mockCamGranted = { on: false };
 const mockFocused = { on: true };
 jest.mock('@/lib/data/useFoods', () => ({
   useInfiniteFoods: () => (mockProbe.offline ? { isError: true, error: new Error('NETWORK: request failed'), refetch: jest.fn() } : { isError: false, error: null, refetch: jest.fn() }),
@@ -165,6 +166,7 @@ beforeEach(async () => {
   jest.clearAllMocks();
   resetUnlockSession(currentGen());
   mockIsGuest.mockReturnValue(false);
+  mockCamGranted.on = false;
   mockAds.reset(); mockUuid = 0;
   _resetAdsSessionForTest(); _resetAdsSdkForTest();
   qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -464,4 +466,45 @@ it('Codex #291 R12 P2: a stale focus preflight returning SCAN-004 after the unlo
   expect(quotaShown(tree)).toBe(false); // unlock retry reopened the camera
   await act(async () => { rejectFocus(new ApiError('quota', 403, 'SCAN-004')); }); await flush();
   expect(quotaShown(tree)).toBe(false); // the superseded focus result is ignored
+});
+
+it('Codex #339: 가공식품 확정 소진 덮개 → 나중에 → 메뉴로 전환 = 가공식품 잡기 해제 — 메뉴 카메라에서 프로필 소진이 오면 평소처럼 잠근다', async () => {
+  const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean; processedFoodEnabled: boolean } };
+  const prev = { label: FLAGS.packagedLabelScan, pf: FLAGS.processedFoodEnabled };
+  FLAGS.packagedLabelScan = true;
+  FLAGS.processedFoodEnabled = true; // 모드 탭
+  try {
+    mockCamGranted.on = true;
+    mockIssue.mockResolvedValue('t-ok');
+    const live = { data: { restrictions: [{ code: 'SHRIMP' }], scanQuota: QUOTA(2), adRewards: { count: 0, forUnlock: 3, remaining: 3 } } };
+    mockUseMe.mockReturnValue(live);
+    mockPost.mockImplementation((url: string) => {
+      if (url.endsWith('/scan/name')) return Promise.resolve({ analysisId: 'A1', state: 'CANDIDATES', candidates: [{ id: 11, reportNo: 'R1', productName: 'P11', imageUrl: null }] });
+      if (url.endsWith('/scan/confirm')) return Promise.reject(new ApiError('quota', 403, 'SCAN-004'));
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+    const tree = render();
+    await flush();
+    const press = async (id: string) => { await act(async () => { await tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); }); await flush(); };
+    await press('scan-mode-packaged');
+    act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
+    await press('pscan-ocr-debug-run');
+    await press('pscan-candidate-11');
+    await press('pscan-confirm');
+    expect(tree.root.findAll((n) => n.props?.testID === 'pscan-quota-overlay').length).toBeGreaterThan(0);
+    await press('scan-quota-later');
+    act(() => tree.root.findAll((n) => typeof n.props?.onBack === 'function')[0].props.onBack()); // 후보 → 앞면 카메라
+    await flush();
+    await press('scan-mode-menu');
+    expect(quotaShown(tree)).toBe(false);
+    // 메뉴 카메라 중 프로필 재조회로 소진 도착(Codex #159 경로) = 잠금 — 가공식품 잡기가 남아 있으면 조용히 막혔다
+    mockUseMe.mockReturnValue({ data: { ...live.data, scanQuota: QUOTA(0) } });
+    act(() => { tree.update(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>); });
+    await flush();
+    expect(quotaShown(tree)).toBe(true);
+  } finally {
+    FLAGS.packagedLabelScan = prev.label;
+    FLAGS.processedFoodEnabled = prev.pf;
+    mockPost.mockReset();
+  }
 });

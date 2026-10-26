@@ -135,6 +135,15 @@ jest.mock('@/lib/data/useFoods', () => ({
   useFoodDetail: () => ({ data: undefined, isLoading: false, error: null, refetch: jest.fn() }),
 }));
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+jest.mock('@/features/scan/UnlockCelebration', () => ({ ...jest.requireActual('@/features/scan/UnlockCelebration'), UnlockCelebration: () => null })); // 소진 화면의 축하 연출 = 이 파일 범위 밖(reanimated 목에 set 없음)
+// KB-865 ③ Q4: 가공식품 이름 스캔·확정 = 표면 목(한도 덮개 회귀)
+const mockScanName = jest.fn();
+const mockConfirm = jest.fn();
+jest.mock('@/lib/data/useProcessedScan', () => ({
+  ...jest.requireActual('@/lib/data/useProcessedScan'),
+  scanProcessedName: (...a: unknown[]) => mockScanName(...a),
+  confirmProcessedScan: (...a: unknown[]) => mockConfirm(...a),
+}));
 jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: { restrictions: [{ kind: 'allergy', code: 'EGG' }] } }),
   useMyReviews: () => ({ data: [] }),
@@ -746,5 +755,31 @@ describe('KB-845 공통 카메라', () => {
       mockFocused.v = true;
       FLAGS.packagedLabelScan = prev;
     }
+  });
+  it('KB-865 ③ Q4: 가공식품 확정 한도 = 흐름 위 소진 덮개(흐름 언마운트 0 · 후보·선택 유지) → 나중에 = 같은 후보 화면 · 카메라 재마운트 0', async () => {
+    const { ApiError } = jest.requireActual('@/lib/api/client');
+    const cand = { id: '11', reportNo: 'R1', name: 'P11', nameKo: null, maker: null, foodType: null, type: null, imageUrl: null, verdict: null, majorAllergens: null };
+    mockScanName.mockResolvedValueOnce({ analysisId: 'A1', state: 'CANDIDATES', candidates: [cand] });
+    mockConfirm.mockRejectedValueOnce(new ApiError('quota', 403, 'SCAN-004'));
+    const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
+    const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
+    await pressId(tree, 'scan-mode-packaged');
+    // 촬영 대역 = 카메라 위 OCR 주입 패널(개발·진단 채널 — 같은 runName 경로)
+    act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
+    await pressId(tree, 'pscan-ocr-debug-run');
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(byId(tree, 'pscan-candidates').length).toBeGreaterThan(0);
+    await pressId(tree, 'pscan-candidate-11');
+    const flowNode = tree.root.findAll((n) => n.props?.testID === 'pscan-candidates')[0];
+    const before = mockCamMounts.n;
+    await pressId(tree, 'pscan-confirm');
+    expect(mockConfirm).toHaveBeenCalledWith('A1', 'R1');
+    expect(byId(tree, 'pscan-quota-overlay').length).toBeGreaterThan(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'pscan-candidates')[0]).toBe(flowNode); // 같은 인스턴스 = 상태 유지
+    await pressId(tree, 'scan-quota-later');
+    expect(byId(tree, 'pscan-quota-overlay')).toHaveLength(0);
+    const card = tree.root.findAll((n) => n.props?.testID === 'pscan-candidate-11' && n.props?.accessibilityState)[0];
+    expect(card.props.accessibilityState).toMatchObject({ selected: true });
+    expect(mockCamMounts.n).toBe(before);
   });
 });

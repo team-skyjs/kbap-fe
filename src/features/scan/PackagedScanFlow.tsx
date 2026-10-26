@@ -13,29 +13,29 @@
  * - OCR 주입(개발·진단 채널 전용): 시뮬엔 카메라 OCR이 없어 텍스트를 직접 넣는 디버그 입력.
  */
 import * as React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { BackHandler, ScrollView, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Crypto from 'expo-crypto';
 import { useQueryClient } from '@tanstack/react-query';
 import { SubHeader } from '@/components/SubHeader';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
-import { Input } from '@/components';
-import { FlameShape } from '@/components/FlameShape';
+import { Input, Spinner } from '@/components';
 import { color as C, font } from '@/lib/theme';
 import { FLAGS, isDiagnosticChannel } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { apiLang } from '@/lib/api/client';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
-import { useVerdictKey } from '@/lib/data/useProcessedFoods';
+import { useProcessedSearch, useVerdictKey } from '@/lib/data/useProcessedFoods';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { useMe } from '@/lib/data/useMe';
+import { QueryErrorBlock } from '@/components/StateBlock';
+import { CandidateScreen, LabelPhotosScreen, LabelResultScreen, MessagePage, NameSearchBox } from './PackagedScanScreens';
 import { confirmProcessedScan, LABEL_PAGES_MAX, scanFailureOf, scanProcessedLabel, scanProcessedName, type ScanFailure } from '@/lib/data/useProcessedScan';
 import type { LabelScanResult, ScanCandidate } from '@/lib/api/processedFoodAdapter';
-import { RawText, Verdict } from '@/app/processed-foods/[id]';
-import { ProductRow } from '@/features/processedFood/PackagedExplorer';
 import type { ScanMode } from './ScanModeTabs';
 import { ScanLoading } from './ScanLoading';
 
@@ -60,23 +60,28 @@ export type ScanCamOpts = {
 
 type Step =
   | { kind: 'capture' }
-  /** back = 뒤로 갈 단계(Codex #315: 성분표 읽기·분석 중 뒤로 = 모은 면·분석 ID를 지키며 직전 단계로 — 앞면 촬영으로 초기화 금지) · photoUri = 로딩 C에 보일 찍은 사진 */
+  /** back = 뒤로 갈 단계(Codex #315: 성분표 읽기·분석 중 뒤로 = 모은 면·분석 ID를 지키며 직전 단계로 — 앞면 촬영으로 초기화 금지) · photoUri = 로딩에 보일 찍은 사진 */
   | { kind: 'reading'; label?: boolean; back?: Step; photoUri?: string | null }
-  | { kind: 'candidates'; analysisId: string; candidates: ScanCandidate[] }
-  | { kind: 'none'; analysisId: string }
-  /** analysisId = 이름 스캔에서 이어 붙일 분석(후보 없음·해당 없음) · null = 새 분석(촬영 화면·상세에서 바로) */
-  /** pages = 면 모으기에서 뒤로 왔을 때 이미 모은 면(QA Z5: 다시 찍으면 덮지 않고 이어 붙인다 — 분석 ID와 면이 어긋나지 않게) */
-  /** KB-845: 성분표 카메라. from = 결과에서 "한 면 더"(찍으면 그 분석으로 바로 재분석, 닫기 = 그 결과로) */
-  | { kind: 'handoff'; analysisId: string | null; pages?: string[]; from?: LabelResultStep }
-  /** 성분표 면 모으기 — 분석 전(면 1~4) */
-  | { kind: 'labelPages'; analysisId: string | null; pages: string[] }
-  /** used = 이 분석에서 차감된 적 있음(이번 charged 또는 앞선 성공) — 결과 도착 때 정해 둔다(렌더 중 ref 읽기 금지).
-   *  chargeUnknown = 앞선 전송 실패 뒤 재시도로 받은 결과(첫 요청이 차감했을 수 있음) — "추가 사용 없음"을 단정하지 않는다(Codex #315) */
+  /** KB-865 ③(시안 16·45): 후보 — 탭 = 선택(테두리), 확정 CTA = 그 후보로 확정 */
+  | { kind: 'candidates'; analysisId: string; candidates: ScanCandidate[]; selectedId: string | null; ocrText: string }
+  /** 시안 17·39: 후보 없음·"None of these" — 이름으로 찾기 / 성분표 찍기(같은 분석, 추가 차감 0) */
+  | { kind: 'another'; analysisId: string; ocrText: string; from: 'none' | 'rejected'; back: Step }
+  /** 시안 18: 앞면 글자를 하나도 못 읽음 — 다시 찍기 / 성분표 찍기(새 분석) */
+  | { kind: 'frontUnreadable' }
+  /** 시안 19: 이름으로 찾기(스캔 맥락) — 읽은 글자로 채운 검색, 고르면 같은 분석으로 확정(후보 밖 선택 허용 — 진입 플로우 ②) */
+  | { kind: 'nameSearch'; analysisId: string; ocrText: string; back: Step }
+  /** analysisId = 이름 스캔에서 이어 붙일 분석(후보 없음·해당 없음) · null = 새 분석(촬영 화면·목록 빈 상태에서 바로) ·
+   *  pages·photos = 이미 모은 면(QA Z5: 이어 붙인다) · from = 결과에서 "한 면 더"(찍으면 그 분석으로 바로 재분석) */
+  | { kind: 'handoff'; analysisId: string | null; pages?: string[]; photos?: (string | null)[]; from?: LabelResultStep }
+  /** 성분표 면 검토(시안 24·25·50) — 분석 전(면 1~4) · from = 결과에서 다시 검토(50: 기존 결과를 갱신, 추가 차감 0) */
+  | { kind: 'labelPages'; analysisId: string | null; pages: string[]; photos: (string | null)[]; from?: LabelResultStep }
   | LabelResultStep
-  /** labelBack = 성분표 경로의 "다시 찍기" 목적지(Codex #315 R2: 2면째 이후 못 읽음 = 모은 면·분석 ID·결과를 지킨다 — 처음으로 초기화 금지) */
+  /** labelBack = 성분표 경로의 "다시 찍기" 목적지(Codex #315 R2) */
   | { kind: 'error'; failure: ScanFailure; retry: (() => void) | null; chargeUnknown?: boolean; labelBack?: Step };
 
-type LabelResultStep = { kind: 'labelResult'; result: LabelScanResult; pages: string[]; used: boolean; chargeUnknown: boolean };
+/** used·chargeUnknown = 이 분석의 차감 상태(문구는 v4에서 없앴지만 프로필 재조회 판단에 쓴다) */
+/** verdictKey = 결과를 받을 때의 판정 기준(언어·회피 코드) — 회피를 바꾸고 돌아오면 옛 verdict를 개인 판정으로 보이지 않는다(Codex #339) */
+type LabelResultStep = { kind: 'labelResult'; result: LabelScanResult; pages: string[]; photos: (string | null)[]; used: boolean; chargeUnknown: boolean; verdictKey: string };
 
 /** 카메라 자리 — renderCamera를 **이 컴포넌트의 렌더**에서 부른다. 흐름 컴포넌트가 렌더 중 직접 부르면 ref를 읽는 콜백을 렌더 중 함수 호출에
  *  넘기는 것으로 잡혀(react-hooks/refs) 컴파일러가 흐름 전체를 건너뛴다 — 콜백은 props로만 건넨다 */
@@ -86,17 +91,6 @@ export function CameraSlot({ o, render }: { o: ScanCamOpts; render: (o: ScanCamO
 
 /** 디버그 OCR 주입 노출 — 개발 번들·진단 채널(dev·teamtest)만, 스토어 채널 0 */
 export const showOcrDebug = (): boolean => __DEV__ || isDiagnosticChannel();
-
-function ScanCount({ text, testID }: { text: string; testID: string }) {
-  return (
-    <View style={st.countRow} testID={testID}>
-      <View style={st.flameBox} pointerEvents="none">
-        <FlameShape scale={0.2} state="active" />
-      </View>
-      <Text style={st.countText}>{text}</Text>
-    </View>
-  );
-}
 
 /** startLabel = 상세 "성분표 직접 확인"(/scan?mode=packaged&label=1) — 새 분석으로 성분표 안내부터 */
 /** 성분표 한 면 OCR 주입(개발·진단 채널 전용 — 시뮬엔 카메라 OCR이 없다). 면 하나 = 입력 한 번 */
@@ -113,22 +107,37 @@ function LabelDebug({ onAdd }: { onAdd: (text: string) => void }) {
   );
 }
 
-/** focused = 스캔 화면이 보이는 중(Codex #318: 위에 다른 화면이 열리면 카메라의 흰 상태바를 거둔다 — 메뉴 카메라 lightBar와 같은 조건) */
-export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, focused = true }: { mode: ScanMode; onMode: (m: ScanMode) => void; onClose: () => void; startLabel?: boolean; renderCamera: (o: ScanCamOpts) => React.ReactElement; focused?: boolean }) {
+/** focused = 스캔 화면이 보이는 중(Codex #318) · onQuota = 확정이 한도에 걸림(KB-865 ③ 시안 21 — scan.tsx가 기존 소진 화면을 이 흐름 위에 띄운다, 흐름 상태 유지) */
+export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, focused = true, onQuota }: { mode: ScanMode; onMode: (m: ScanMode) => void; onClose: () => void; startLabel?: boolean; renderCamera: (o: ScanCamOpts) => React.ReactElement; focused?: boolean; onQuota?: () => void }) {
   const { t } = useTranslation();
   const router = useRouter();
   const qc = useQueryClient();
   const verdictKey = useVerdictKey(); // 확정 응답을 상세 캐시에 심을 때 상세 키와 같은 판정 기준(Codex #338 R3)
-  const insets = useSafeAreaInsets();
+  const guest = useIsGuest();
+  const { data: me } = useMe();
+  // 판정 리본 = 회피 1개 이상 회원만(서버 프로필이 정본) · 회피 0개 = 후보 위 개인화 안내(시안 45)
+  const m0 = !guest && !!me && me.restrictions.length === 0;
+  // Codex #339 R2(#338 R5와 같은 규칙): 서버 verdict는 회원 기준 계산 — 프로필 대기·실패여도 판정 경로(리본·회피 문장)로 그린다.
+  // 회피 0개로 **확인된** 회원만 주요 알레르기 경로. 프로필 미상 + verdict 없음 = 결과 화면의 보수적 "확인 못 함"
+  const personalized = !guest && !m0;
   const [step, setStep] = React.useState<Step>(() => (startLabel ? { kind: 'handoff', analysisId: null } : { kind: 'capture' }));
   const guard = useSubmitGuard(); // 촬영·확정 연타 1발(P-173)
+  // Codex #339: 확정·거절·분석 대기 중 하드웨어 뒤로 = 삼킨다 — 화면이 닫혀도 요청은 서버에서 확정·차감되고 늦은 응답이 상세로 이동시킨다
+  React.useEffect(() => {
+    if (!guard.busy) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, [guard.busy]);
   // Codex #310 P2: 뒤로가기 뒤에 도착한 응답은 버린다 — 요청마다 회차, 단계를 사용자가 바꾸면 회차가 올라 늦은 응답이 화면을 되돌리거나 이동시키지 않는다
   const reqSeq = React.useRef(0);
   const goStep = (next: Step) => { reqSeq.current += 1; setStep(next); };
   // Codex #310 R2: 확정해 차감된 분석 — 상세에서 뒤로 와 같은 후보를 다시 고르면 서버는 멱등이라 charged false를 준다 → 이미 쓴 1회를 잊지 않는다
   const chargedIds = React.useRef(new Set<string>());
+  /** Codex #339: 서버가 NO_CANDIDATE·REJECTED로 둔 분석 — 성분표 API는 이 둘만 이어 받는다("None of these"는 로컬 화면 전환이라 성분표로 갈 때 거절 확정) */
+  const settledIds = React.useRef(new Set<string>());
+  /** 확정 성공(CONFIRMED)한 분석 — 성분표는 이어 받지 않는다 → 성분표로 가면 새 분석(Codex #339: NO_CANDIDATE로 정리됐다가 이름 찾기로 확정된 경우 포함) */
+  const confirmedIds = React.useRef(new Set<string>());
 
-  const lastLabelPhoto = React.useRef<string | null>(null); // 성분표 분석 로딩에 보일 마지막 면 사진(주입 면은 사진 없음)
   const runName = async (ocrText: string, photoUri: string | null = null) => {
     goStep({ kind: 'reading', photoUri });
     const my = reqSeq.current;
@@ -136,14 +145,19 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       const r = await scanProcessedName(ocrText, apiLang());
       if (my !== reqSeq.current) return; // 그 사이 뒤로 감
       track(EVENTS.food_packaged_scan_name, { candidate_count: r.candidates.length });
-      setStep(r.candidates.length ? { kind: 'candidates', analysisId: r.analysisId, candidates: r.candidates } : { kind: 'none', analysisId: r.analysisId });
+      if (r.candidates.length) setStep({ kind: 'candidates', analysisId: r.analysisId, candidates: r.candidates, selectedId: null, ocrText });
+      else {
+        settledIds.current.add(r.analysisId);
+        track(EVENTS.food_packaged_scan_handoff, { from: 'none' });
+        setStep({ kind: 'another', analysisId: r.analysisId, ocrText, from: 'none', back: { kind: 'capture' } });
+      }
     } catch (e) {
       if (my !== reqSeq.current) return;
       setStep({ kind: 'error', failure: scanFailureOf(e), retry: () => void runName(ocrText, photoUri) });
     }
   };
 
-  /** KB-845: 공통 카메라가 넘긴 사진 → 로딩 C(그 사진) → 온디바이스 OCR. OCR 중 뒤로 감 = null(늦은 결과 버림), 글자 없음 = ''. */
+  /** KB-845: 공통 카메라가 넘긴 사진 → 로딩(그 사진) → 온디바이스 OCR. OCR 중 뒤로 감 = null(늦은 결과 버림), 글자 없음 = ''. */
   const readText = async (photo: ScanPhoto, label: boolean, back: Step): Promise<string | null> => {
     goStep({ kind: 'reading', label, back, photoUri: photo.uri });
     const my = reqSeq.current;
@@ -161,26 +175,28 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     const text = await readText(photo, false, { kind: 'capture' });
     if (text == null) return;
     if (!text.trim()) {
-      // 글자를 못 읽음 = 서버 호출 없이 후보 없음과 같은 길(차감 0) — 분석 ID가 없으니 새 분석 문맥
-      setStep({ kind: 'handoff', analysisId: null });
+      // 시안 18: 글자를 못 읽음 = 서버 호출 없이(차감 0) 다시 찍기 / 성분표 찍기
+      track(EVENTS.food_packaged_scan_handoff, { from: 'unreadable' });
+      setStep({ kind: 'frontUnreadable' });
       return;
     }
     await runName(text, photo.uri);
   };
 
   // ── P-508 성분표 ──
-  /** 성분표 카메라의 한 면 — 결과에서 왔으면(from) 같은 분석으로 바로 재분석, 아니면 면 모으기에 이어 붙임(QA Z5 — 덮어쓰기 0, 상한 4).
-   *  글자를 못 읽은 면은 서버에 보내지 않고 "못 읽음"(차감 0) → 다시 찍기 = 이 카메라 그대로 */
+  /** 성분표 카메라의 한 면 — 결과에서 왔으면(from) 같은 분석으로 바로 재분석, 아니면 면 검토에 이어 붙임(QA Z5 — 덮어쓰기 0, 상한 4).
+   *  글자를 못 읽은 면은 서버에 보내지 않고 "못 읽음"(시안 29b, 차감 0) */
   const addLabelText = async (cam: Extract<Step, { kind: 'handoff' }>, text: string, photoUri: string | null) => {
     const pages = cam.pages ?? [];
+    const photos = cam.photos ?? pages.map(() => null);
     if (!text.trim()) {
       setStep({ kind: 'error', failure: 'unreadable', retry: null, labelBack: cam });
       return;
     }
-    lastLabelPhoto.current = photoUri;
     const next = [...pages, text].slice(0, LABEL_PAGES_MAX);
-    if (cam.from) await runLabel(cam.from.result.analysisId, next, { chargeUnknown: cam.from.chargeUnknown, back: cam.from, photoUri });
-    else setStep({ kind: 'labelPages', analysisId: cam.analysisId, pages: next });
+    const nextPhotos = [...photos, photoUri].slice(0, LABEL_PAGES_MAX);
+    if (cam.from) await runLabel(cam.from.result.analysisId, next, nextPhotos, { chargeUnknown: cam.from.chargeUnknown, back: cam.from });
+    else setStep({ kind: 'labelPages', analysisId: cam.analysisId, pages: next, photos: nextPhotos });
   };
   const onLabelShot = async (cam: Extract<Step, { kind: 'handoff' }>, photo: ScanPhoto) => {
     const text = await readText(photo, true, cam);
@@ -189,37 +205,37 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   };
 
   /** analysisId null = 새 분석(성공 1회) · 있음 = 같은 분석(이어 붙이기·재분석 — 서버 규칙 안에서 차감 0).
-   *  가드 없는 본체 — 촬영 뒤 이어 부르는 경로(면 추가 재분석)가 같은 가드 안에서 쓴다.
-   *  requestKey(서버 #444 clientRequestId) = 새 분석의 멱등 키 — 없으면 새로 만들고, **전송 실패 재시도만 같은 키**를 넘긴다
-   *  (면이 바뀌는 경로 = 키 없이 불러 새 키). 같은 키·같은 원문 재전송 = 서버가 같은 분석을 charged=false로 돌려준다. */
-  const runLabel = async (analysisId: string | null, pages: string[], opts: { chargeUnknown?: boolean; back?: Step; requestKey?: string; photoUri?: string | null } = {}): Promise<void> => {
-      const { chargeUnknown = false, back = { kind: 'labelPages', analysisId, pages } } = opts;
-      const requestKey = analysisId == null ? (opts.requestKey ?? Crypto.randomUUID()) : undefined;
-      goStep({ kind: 'reading', label: true, back, photoUri: opts.photoUri ?? lastLabelPhoto.current });
-      const my = reqSeq.current;
-      try {
-        const r = await scanProcessedLabel(analysisId, pages, apiLang(), requestKey);
-        if (my !== reqSeq.current) return;
-        track(EVENTS.food_packaged_label_scan, { pages: pages.length, charged: r.charged, result: 'ok' });
-        // 새 분석의 성공 = 그 분석이 정확히 1회 차감(이번 응답이든, 응답을 잃은 첫 요청이든 — 같은 키 재전송은 charged=false로 온다)
-        const fresh = analysisId == null;
-        if (r.charged || chargeUnknown || fresh) void qc.invalidateQueries({ queryKey: ['me'] }); // 남은 횟수 = 서버 재조회
-        if (r.charged || fresh) chargedIds.current.add(r.analysisId);
-        const used = chargedIds.current.has(r.analysisId);
-        setStep({ kind: 'labelResult', result: r, pages, used, chargeUnknown: chargeUnknown && !used });
-      } catch (e) {
-        if (my !== reqSeq.current) return;
-        const failure = scanFailureOf(e);
-        track(EVENTS.food_packaged_label_scan, { pages: pages.length, charged: false, result: failure });
-        // 전송 실패 = 서버가 처리했을 수 있다 → 다시 시도는 **같은 요청**(같은 분석 ID, 새 분석이면 같은 멱등 키) — 이중 차감 0.
-        // 오류 화면의 "확인 중"은 응답을 받기 전까지만(재시도 결과가 정한다)
-        const unknown = chargeUnknown || failure === 'network';
-        setStep({ kind: 'error', failure, chargeUnknown: unknown, labelBack: back, retry: failure === 'network' ? () => void analyzeLabel(analysisId, pages, { chargeUnknown: unknown, back, requestKey }) : failure === 'newAnalysis' ? () => void analyzeLabel(null, pages) : null });
-      }
+   *  requestKey(서버 #444 clientRequestId) = 새 분석의 멱등 키 — **전송 실패 재시도만 같은 키**(면이 바뀌면 새 키). */
+  const runLabel = async (analysisId: string | null, pages: string[], photos: (string | null)[], opts: { chargeUnknown?: boolean; back?: Step; requestKey?: string } = {}): Promise<void> => {
+    const { chargeUnknown = false, back = { kind: 'labelPages', analysisId, pages, photos } } = opts;
+    const requestKey = analysisId == null ? (opts.requestKey ?? Crypto.randomUUID()) : undefined;
+    goStep({ kind: 'reading', label: true, back, photoUri: [...photos].reverse().find((u) => !!u) ?? null });
+    const my = reqSeq.current;
+    try {
+      const r = await scanProcessedLabel(analysisId, pages, apiLang(), requestKey);
+      if (my !== reqSeq.current) return;
+      track(EVENTS.food_packaged_label_scan, { pages: pages.length, charged: r.charged, result: 'ok' });
+      // 새 분석의 성공 = 그 분석이 정확히 1회 차감(이번 응답이든, 응답을 잃은 첫 요청이든 — 같은 키 재전송은 charged=false로 온다)
+      const fresh = analysisId == null;
+      if (r.charged || chargeUnknown || fresh) void qc.invalidateQueries({ queryKey: ['me'] }); // 남은 횟수 = 서버 재조회
+      if (r.charged || fresh) chargedIds.current.add(r.analysisId);
+      const used = chargedIds.current.has(r.analysisId);
+      setStep({ kind: 'labelResult', result: r, pages, photos, used, chargeUnknown: chargeUnknown && !used, verdictKey });
+    } catch (e) {
+      if (my !== reqSeq.current) return;
+      const failure = scanFailureOf(e);
+      track(EVENTS.food_packaged_label_scan, { pages: pages.length, charged: false, result: failure });
+      if (failure === 'quota') { setStep(back); onQuota?.(); return; }
+      // 전송 실패 = 서버가 처리했을 수 있다 → 다시 시도는 **같은 요청**(같은 분석 ID, 새 분석이면 같은 멱등 키) — 이중 차감 0
+      const unknown = chargeUnknown || failure === 'network';
+      setStep({ kind: 'error', failure, chargeUnknown: unknown, labelBack: back, retry: failure === 'network' ? () => void analyzeLabel(analysisId, pages, photos, { chargeUnknown: unknown, back, requestKey }) : failure === 'newAnalysis' ? () => void analyzeLabel(null, pages, photos) : null });
+    }
   };
-  const analyzeLabel = (analysisId: string | null, pages: string[], opts: { chargeUnknown?: boolean; back?: Step; requestKey?: string; photoUri?: string | null } = {}) => guard.run(() => runLabel(analysisId, pages, opts));
-  /** chargeUnknown = 앞선 확정이 전송 실패(서버는 커밋했을 수 있음) — 재확정이 charged false여도 "사용 안 됨"이라 단정하지 않는다 */
-  const confirm = (analysisId: string, reportNo: string | null, chargeUnknown = false) =>
+  const analyzeLabel = (analysisId: string | null, pages: string[], photos: (string | null)[], opts: { chargeUnknown?: boolean; back?: Step; requestKey?: string } = {}) => guard.run(() => runLabel(analysisId, pages, photos, opts));
+
+  /** reportNo = 고른 후보(또는 이름 찾기 항목) · chargeUnknown = 앞선 확정이 전송 실패 — 재확정이 charged false여도 "사용 안 됨"이라 단정하지 않는다.
+   *  here = 확정 시도 화면(한도에 걸리면 그 화면 그대로 — 시안 21: 해제·나중에 뒤 같은 후보로 복귀) */
+  const confirm = (analysisId: string, reportNo: string, here: Step, chargeUnknown = false) =>
     guard.run(async () => {
       const my = reqSeq.current;
       try {
@@ -227,35 +243,54 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         if (my !== reqSeq.current) return; // 그 사이 뒤로 감 — 이동 0
         track(EVENTS.food_packaged_scan_confirm, { charged: r.charged, rejected: r.rejected });
         if (r.rejected || !r.product) {
+          settledIds.current.add(analysisId);
           track(EVENTS.food_packaged_scan_handoff, { from: 'rejected' });
-          setStep({ kind: 'handoff', analysisId });
+          setStep({ kind: 'another', analysisId, ocrText: here.kind === 'candidates' || here.kind === 'nameSearch' ? here.ocrText : '', from: 'rejected', back: here });
           return;
         }
         // 남은 횟수 = 서버 프로필 재조회(로컬 차감 0) — 차감됐거나 차감 여부를 모를 때
         if (r.charged || chargeUnknown) void qc.invalidateQueries({ queryKey: ['me'] });
         qc.setQueryData(['processedFoods', 'detail', r.product.id, verdictKey], r.product);
+        confirmedIds.current.add(analysisId);
         if (r.charged) chargedIds.current.add(analysisId);
         const charge = r.charged || chargedIds.current.has(analysisId) ? '1' : chargeUnknown ? 'u' : '0';
         router.push(`/processed-foods/${r.product.id}?scan=1&charged=${charge}` as Href);
       } catch (e) {
         if (my !== reqSeq.current) return;
         const failure = scanFailureOf(e);
+        if (failure === 'quota') { onQuota?.(); return; } // 시안 21 — 화면(후보·선택)은 그대로
         // 전송 실패(응답 없음)는 서버가 확정·차감을 커밋했을 수 있다 → 차감 여부 미상, 같은 analysisId 재확정(멱등)으로 서버 값을 받는다
         const unknown = chargeUnknown || failure === 'network';
-        setStep({ kind: 'error', failure, chargeUnknown: unknown, retry: () => void confirm(analysisId, reportNo, unknown) });
+        setStep({ kind: 'error', failure, chargeUnknown: unknown, retry: () => void confirm(analysisId, reportNo, here, unknown) });
       }
     });
 
-  const toHandoffFromNone = (analysisId: string) => {
-    track(EVENTS.food_packaged_scan_handoff, { from: 'none' });
-    setStep({ kind: 'handoff', analysisId });
+  /** 성분표로 — 아직 후보 상태(CANDIDATES)인 분석은 먼저 거절 확정(reportNo null, 차감 0)해야 서버가 이어 받는다(Codex #339).
+   *  이름 찾기는 거절 전 분석으로 확정하므로 거절은 성분표를 고를 때만 */
+  const toLabel = (analysisId: string | null) => {
+    if (analysisId != null && confirmedIds.current.has(analysisId)) { goStep({ kind: 'handoff', analysisId: null }); return; }
+    if (analysisId == null || settledIds.current.has(analysisId)) { goStep({ kind: 'handoff', analysisId }); return; }
+    const here = step;
+    void guard.run(async () => {
+      const my = reqSeq.current;
+      try {
+        const r = await confirmProcessedScan(analysisId, null);
+        if (my !== reqSeq.current) return;
+        // 이미 확정된 분석(상세에서 돌아와 다시 고른 경우 — 멱등 확정이 그 제품을 돌려준다) = 이어 받을 수 없다 → 새 성분표 분석
+        if (!r.rejected && r.product) { confirmedIds.current.add(analysisId); goStep({ kind: 'handoff', analysisId: null }); return; }
+        settledIds.current.add(analysisId);
+        goStep({ kind: 'handoff', analysisId });
+      } catch (e) {
+        if (my !== reqSeq.current) return;
+        setStep({ kind: 'error', failure: scanFailureOf(e), retry: () => { goStep(here); toLabel(analysisId); } });
+      }
+    });
   };
+  const labelEnabled = FLAGS.packagedLabelScan;
 
   // ── 화면 ──
-  // KB-845 공통 카메라 — 상태바 흰 글자(어두운 화면). 메뉴판은 scan.tsx lightBar가 맡는다. 카메라는 <CameraSlot>로(렌더 중 직접 호출 금지 — react-hooks/refs)
-
   if (step.kind === 'reading') {
-    // KB-845 로딩 C — 앞면·성분표 공통(본문 = 가공식품용 기존 시간 문구 키가 없어 생략 · 새 추정치 금지)
+    // 시안 26 대신 공통 로딩(ScanLoading — KB-862, 커맨드 10/22 Q1 (a))
     return (
       <ScanLoading
         title={t(step.label ? 'packagedScan.labelReading' : 'packagedScan.reading')}
@@ -267,41 +302,78 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     );
   }
 
-  if (step.kind === 'candidates' || step.kind === 'none') {
-    const none = step.kind === 'none';
+  if (step.kind === 'candidates') {
+    const sel = step.candidates.find((c) => c.id === step.selectedId) ?? null;
     return (
-      <View style={st.root} testID={none ? 'pscan-none' : 'pscan-candidates'}>
-        <SubHeader title={t('packagedScan.chooseTitle')} onBack={() => goStep({ kind: 'capture' })} />
-        <View style={st.darkBand} />
-        <View style={[st.sheet, { flex: 1 }]}>
-          <ScrollView contentContainerStyle={{ gap: 16, paddingBottom: 24 }}>
-            <Text style={st.h1} accessibilityRole="header">{t(none ? 'packagedScan.noneTitle' : 'packagedScan.whichTitle')}</Text>
-            <ScanCount text={t(none ? 'packagedScan.noScanUsed' : 'packagedScan.usedOnSuccess')} testID="pscan-count" />
-            <Text style={st.body}>{t(none ? 'packagedScan.noneBody' : 'packagedScan.checkMaker')}</Text>
-            {!none && (
-              <View style={{ marginHorizontal: -20 }}>
-                {step.candidates.map((c) => (
-                  <ProductRow key={c.reportNo} item={c} onOpen={() => void confirm(step.analysisId, c.reportNo)} />
-                ))}
-              </View>
-            )}
-          </ScrollView>
-        </View>
-        <View style={[st.bottom, { paddingBottom: insets.bottom + 12 }]}>
-          {none ? (
-            <Btn onPress={() => toHandoffFromNone(step.analysisId)} testID="pscan-to-label">{t('packagedScan.scanLabel')}</Btn>
-          ) : (
-            <Btn busy={guard.busy} onPress={() => void confirm(step.analysisId, null)} testID="pscan-none-of-these">{t('packagedScan.noneOfThese')}</Btn>
-          )}
-        </View>
-      </View>
+      <CandidateScreen
+        testID="pscan-candidates"
+        title={t('packagedScan.matchTitle')}
+        subtitle={t('packagedScan.possibleMatches', { count: step.candidates.length })}
+        note={m0 ? t('packagedScan.personalNote') : null}
+        items={step.candidates}
+        selectedId={step.selectedId}
+        onSelect={(id) => setStep({ ...step, selectedId: id })}
+        onConfirm={() => { if (sel) void confirm(step.analysisId, sel.reportNo, step); }}
+        onNone={() => {
+          track(EVENTS.food_packaged_scan_handoff, { from: 'rejected' });
+          goStep({ kind: 'another', analysisId: step.analysisId, ocrText: step.ocrText, from: 'rejected', back: step });
+        }}
+        onBack={() => goStep({ kind: 'capture' })}
+        personalized={personalized}
+        busy={guard.busy}
+      />
+    );
+  }
+
+  if (step.kind === 'another') {
+    return (
+      <MessagePage
+        testID={step.from === 'none' ? 'pscan-none' : 'pscan-another'}
+        busy={guard.busy}
+        headerTitle={t('packagedScan.title')}
+        title={t('packagedScan.anotherTitle')}
+        body={t(labelEnabled ? 'packagedScan.anotherBody' : 'packagedScan.anotherBodyNameOnly')}
+        primary={{ label: t('packagedScan.findByName'), testID: 'pscan-find-by-name', onPress: () => { track(EVENTS.food_packaged_scan_find_by_name, { from: step.from }); goStep({ kind: 'nameSearch', analysisId: step.analysisId, ocrText: step.ocrText, back: step }); } }}
+        secondary={labelEnabled ? { label: t('packaged.scanIngredientLabel'), testID: 'pscan-to-label', onPress: () => toLabel(step.analysisId) } : null}
+        onBack={() => goStep(step.back)}
+      />
+    );
+  }
+
+  if (step.kind === 'frontUnreadable') {
+    return (
+      <MessagePage
+        testID="pscan-front-unreadable"
+        headerTitle={t('packagedScan.title')}
+        title={t('packagedScan.frontUnreadableTitle')}
+        body={t(labelEnabled ? 'packagedScan.frontUnreadableBody' : 'packagedScan.frontUnreadableBodyNoLabel')}
+        primary={{ label: t('packagedScan.retakePhoto'), testID: 'pscan-retake', onPress: () => goStep({ kind: 'capture' }) }}
+        secondary={labelEnabled ? { label: t('packaged.scanIngredientLabel'), testID: 'pscan-to-label', onPress: () => toLabel(null) } : null}
+        onBack={() => goStep({ kind: 'capture' })}
+      />
+    );
+  }
+
+  if (step.kind === 'nameSearch') {
+    return (
+      <NameSearchStep
+        key={step.analysisId}
+        initial={step.ocrText.split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 2).join(' ')}
+        personalized={personalized}
+        m0={m0}
+        busy={guard.busy}
+        onConfirm={(reportNo) => void confirm(step.analysisId, reportNo, step)}
+        onNone={labelEnabled ? () => toLabel(step.analysisId) : null}
+        onBack={() => goStep(step.back)}
+      />
     );
   }
 
   if (step.kind === 'handoff') {
     const cam = step;
-    if (FLAGS.packagedLabelScan) {
+    if (labelEnabled) {
       const pages = cam.pages ?? [];
+      const photos = cam.photos ?? pages.map(() => null);
       return (
         <>
           {focused && <StatusBar style="light" />}
@@ -309,105 +381,101 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
             render={renderCamera}
             o={{
             kind: 'ingredient',
-            // 모은 면이 있으면 n/4(QA Z5) · 같은 분석 진입(후보 없음·해당 없음)이면 차감 안내(P-510 승인 — 디자인 힌트 자리) · 그 밖 디자인 힌트
-            hint: pages.length ? t('packagedScan.labelPagesCount', { count: pages.length, max: LABEL_PAGES_MAX }) : cam.analysisId != null ? t('packagedScan.sameAnalysis') : undefined,
+            // 모은 면이 있으면 n/4(QA Z5) · 그 밖 디자인 힌트(차감 문구 없음 — README)
+            hint: pages.length ? t('packagedScan.labelPagesCount', { count: pages.length, max: LABEL_PAGES_MAX }) : undefined,
             onShot: (photo: ScanPhoto) => onLabelShot(cam, photo),
             link: { label: t('scanCamera.frontLink'), onPress: () => goStep({ kind: 'capture' }), testID: 'pscan-front-instead' },
-            onClose: cam.from ? () => goStep(cam.from as LabelResultStep) : pages.length ? () => goStep({ kind: 'labelPages', analysisId: cam.analysisId, pages }) : undefined,
+            onClose: cam.from ? () => goStep(cam.from as LabelResultStep) : pages.length ? () => goStep({ kind: 'labelPages', analysisId: cam.analysisId, pages, photos }) : undefined,
             debug: pages.length < LABEL_PAGES_MAX ? <LabelDebug onAdd={(text) => void addLabelText(cam, text, null)} /> : null,
-            // Codex #318: 4면이 찬 채 뒤로 와도 더 찍지 못한다(찍은 면이 잘려 사라지던 것) — 힌트 4/4 · 닫기 = 면 화면
+            // Codex #318: 4면이 찬 채 뒤로 와도 더 찍지 못한다 — 힌트 4/4 · 닫기 = 면 화면
             shootDisabled: pages.length >= LABEL_PAGES_MAX,
             }}
           />
         </>
       );
     }
-    // 성분표 분석 꺼진 채널 = 기존 안내 페이지(촬영 버튼 비활성 + "곧 지원") — 앞면 카메라의 성분표 링크도 숨겨 대개 여기 오지 않는다
+    // 성분표 분석 꺼진 채널 = 진입 버튼이 없어 대개 오지 않는다 — 와도 안내 + 비활성(기존)
     return (
       <View style={st.root} testID="pscan-handoff">
         <SubHeader title={t('packagedScan.labelTitle')} onBack={() => goStep({ kind: 'capture' })} />
         <ScrollView contentContainerStyle={st.page}>
           <Text style={st.h1}>{t('packagedScan.labelHeadline')}</Text>
           <Text style={st.body}>{t('packagedScan.labelBody')}</Text>
-          {/* "같은 분석으로 이어가요"는 후보 없음·해당 없음에서 온 경우만(README 진입별 표) */}
-          {cam.analysisId != null && <ScanCount text={t('packagedScan.sameAnalysis')} testID="pscan-same-analysis" />}
-          <Text style={st.muted}>{t('packagedScan.successOnly')}</Text>
           <Text style={st.muted} testID="pscan-label-soon">{t('packagedScan.labelSoon')}</Text>
         </ScrollView>
-        <View style={[st.bottom, { paddingBottom: insets.bottom + 12 }]}>
-          <Btn variant="off" testID="pscan-label-capture">{t('packagedScan.labelCta')}</Btn>
-        </View>
       </View>
     );
   }
 
   if (step.kind === 'labelPages') {
-    const { analysisId, pages } = step;
+    const { analysisId, pages, photos, from } = step;
     const full = pages.length >= LABEL_PAGES_MAX;
+    const retake = () => goStep({ kind: 'handoff', analysisId, pages: pages.slice(0, -1), photos: photos.slice(0, -1), from }); // 마지막 면을 다시 찍는다
     return (
-      <View style={st.root} testID="pscan-label-pages">
-        {/* Codex #318: 성분표 카메라는 면 < 4일 때만 — 4면이 찼으면 뒤로 = 성분표 단계를 떠나 앞면 카메라(더 찍을 수 없는 카메라로 가지 않는다) */}
-        <SubHeader title={t('packagedScan.labelTitle')} onBack={() => goStep(full ? { kind: 'capture' } : { kind: 'handoff', analysisId, pages })} />
-        <ScrollView contentContainerStyle={st.page}>
-          <Text style={st.h1}>{t('packagedScan.labelPagesTitle')}</Text>
-          <Text style={st.body} testID="pscan-label-count">{t('packagedScan.labelPagesCount', { count: pages.length, max: LABEL_PAGES_MAX })}</Text>
-          {analysisId != null && <ScanCount text={t('packagedScan.sameAnalysis')} testID="pscan-same-analysis" />}
-          <Text style={st.muted}>{t('packagedScan.successOnly')}</Text>
-          {!full && <Btn variant="ghost" onPress={() => goStep({ kind: 'handoff', analysisId, pages })} style={st.outline} testID="pscan-label-add">{t('packagedScan.labelAddPage')}</Btn>}
-        </ScrollView>
-        <View style={[st.bottom, { paddingBottom: insets.bottom + 12 }]}>
-          <Btn busy={guard.busy} onPress={() => void analyzeLabel(analysisId, pages)} testID="pscan-label-analyze">{t('packagedScan.labelAnalyze')}</Btn>
-        </View>
-      </View>
+      <LabelPhotosScreen
+        photos={photos}
+        count={pages.length}
+        max={LABEL_PAGES_MAX}
+        reanalyze={!!from}
+        onRetake={retake}
+        onAdd={full ? null : () => goStep({ kind: 'handoff', analysisId, pages, photos, from })}
+        onAnalyze={() => (from ? void analyzeLabel(from.result.analysisId, pages, photos, { chargeUnknown: from.chargeUnknown, back: step }) : void analyzeLabel(analysisId, pages, photos))}
+        // Codex #318: 4면이 찼으면 뒤로 = 성분표 단계를 떠나 앞면 카메라 · 결과에서 왔으면 그 결과로
+        onBack={() => goStep(from ? from : full ? { kind: 'capture' } : { kind: 'handoff', analysisId, pages, photos })}
+        busy={guard.busy}
+      />
     );
   }
 
   if (step.kind === 'labelResult') {
-    const { result, pages, used, chargeUnknown } = step;
+    const { result, pages, photos } = step;
     return (
-      <View style={st.root} testID="pscan-label-result">
-        <SubHeader title={t('packagedScan.resultTitle')} onBack={onClose} />
-        <ScrollView contentContainerStyle={[st.page, { paddingBottom: 24 }]}>
-          <ScanCount text={t(used ? 'packagedScan.scanUsed' : chargeUnknown ? 'packagedScan.chargeSeeHome' : 'packagedScan.labelNoExtra')} testID="pscan-label-charge" />
-          {/* 상세 판정 섹션 그대로(검출 빨강·미매핑 노랑·미확인 회색·labelSource 문구·회피 대조) + 함유 가능 칩. 제품이 정해지지 않아 상세 링크 없음 */}
-          <Verdict d={result} onLogin={() => {}} />
-          {!!result.rawText && (
-            <View style={{ gap: 12 }}>
-              <Text style={st.h2}>{t('packagedScan.labelRawTitle')}</Text>
-              <RawText text={result.rawText} />
-            </View>
-          )}
-          {pages.length < LABEL_PAGES_MAX && (
-            <>
-              <Btn variant="ghost" onPress={() => goStep({ kind: 'handoff', analysisId: result.analysisId, pages, from: step })} style={st.outline} testID="pscan-label-more">{t('packagedScan.labelAddPage')}</Btn>
-              <Text style={st.muted}>{t('packagedScan.labelFreeRetry')}</Text>
-            </>
-          )}
-        </ScrollView>
-        <View style={[st.bottom, { paddingBottom: insets.bottom + 12 }]}>
-          <Btn onPress={onClose} testID="pscan-label-done">{t('common.close')}</Btn>
-        </View>
-      </View>
+      <LabelResultScreen
+        result={result}
+        photoUri={[...photos].reverse().find((u) => !!u) ?? null}
+        pages={pages.length}
+        max={LABEL_PAGES_MAX}
+        member={personalized}
+        stale={step.verdictKey !== verdictKey}
+        onAddSide={() => goStep({ kind: 'handoff', analysisId: result.analysisId, pages, photos, from: step })}
+        onReview={() => goStep({ kind: 'labelPages', analysisId: result.analysisId, pages, photos, from: step })}
+        onSetAvoid={() => router.push('/profile/restrictions' as Href)}
+        onDone={onClose}
+      />
     );
   }
 
   if (step.kind === 'error') {
     const f = step.failure;
+    if (f === 'unreadable' && step.labelBack) {
+      // 시안 29b: 성분표 못 읽음 — 다시 찍기 = 같은 카메라(모은 면 유지) · 면 검토 = 모은 면이 있을 때
+      const back = step.labelBack;
+      const hasPages = back.kind === 'handoff' && (back.pages?.length ?? 0) > 0;
+      return (
+        <MessagePage
+          testID="pscan-error-unreadable"
+          headerTitle={t('packagedScan.labelTitle')}
+          title={t('packagedScan.err.unreadableTitle')}
+          body={t('packagedScan.err.unreadableBody')}
+          primary={{ label: t('packagedScan.retakePhoto'), testID: 'pscan-retake', onPress: () => goStep(back) }}
+          secondary={hasPages && back.kind === 'handoff' ? { label: t('packagedScan.reviewPhotos', { count: back.pages?.length ?? 0 }), testID: 'pscan-review-photos', onPress: () => goStep({ kind: 'labelPages', analysisId: back.analysisId, pages: back.pages ?? [], photos: back.photos ?? [], from: back.from }) } : null}
+          onBack={() => goStep(back)}
+        />
+      );
+    }
     return (
       <View style={st.root} testID={`pscan-error-${f}`}>
         <SubHeader title={t('packagedScan.title')} onBack={() => goStep({ kind: 'capture' })} />
         <View style={[st.page, { gap: 16 }]}>
           <Text style={st.h1}>{t(`packagedScan.err.${f}Title`)}</Text>
-          {/* 이름 스캔·서버가 거절한 확정 = 차감 없음(계약). 확정 전송 실패 = 차감 여부 미상 — 단정하지 않고 "확인 중" */}
-          <ScanCount text={t(step.chargeUnknown ? 'packagedScan.chargeChecking' : 'packagedScan.noScanUsed')} testID="pscan-error-count" />
+          {/* 확정 전송 실패 = 차감 여부 미상 — 단정하지 않는다(문구는 응답 후 결과가 정한다) */}
           <Text style={st.body}>{t(`packagedScan.err.${f}Body`)}</Text>
           {f === 'network' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-retry">{t('common.tryAgain')}</Btn>}
-          {/* P-508: 409 PFOOD-007 = 이 분석엔 더 못 붙임 → 새 분석(성공 1회 — 버튼 위 본문이 알린다) */}
+          {/* P-508: 409 PFOOD-007 = 이 분석엔 더 못 붙임 → 새 분석(성공 1회 — 본문이 알린다) */}
           {f === 'newAnalysis' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-new-analysis">{t('packagedScan.newAnalysisCta')}</Btn>}
           {f === 'quota' ? (
             <Btn variant="ghost" onPress={onClose} testID="pscan-close">{t('common.close')}</Btn>
           ) : (
-            // 성분표 경로 = 직전 단계(모은 면·분석 ID·결과 유지 — 서버 400은 이전 결과를 지우지 않는다) · 그 밖 = 앞면 촬영
             <Btn variant="ghost" onPress={() => goStep(step.labelBack ?? { kind: 'capture' })} testID="pscan-retake">{t('packagedScan.retake')}</Btn>
           )}
         </View>
@@ -424,13 +492,52 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         o={{
         kind: 'package',
         onShot: onFrontShot,
-        link: FLAGS.packagedLabelScan
+        link: labelEnabled
           ? { label: t('packagedScan.labelInstead'), onPress: () => { track(EVENTS.food_packaged_scan_handoff, { from: 'capture' }); goStep({ kind: 'handoff', analysisId: null }); }, testID: 'pscan-label-instead' }
           : null,
         debug: <FrontDebug onRun={(text) => void runName(text)} />,
         }}
       />
     </>
+  );
+}
+
+/** 시안 19: 이름으로 찾기(스캔 맥락) — 읽은 글자(앞 두 줄)로 채운 목록 검색 · 고르면 같은 분석으로 확정 · reportNo 없는 항목은 고를 수 없다 */
+function NameSearchStep({ initial, personalized, m0, busy, onConfirm, onNone, onBack }: {
+  initial: string; personalized: boolean; m0: boolean; busy: boolean; onConfirm: (reportNo: string) => void; onNone: (() => void) | null; onBack: () => void;
+}) {
+  const { t } = useTranslation();
+  const [draft, setDraft] = React.useState(initial);
+  const [query, setQuery] = React.useState(initial);
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const q = useProcessedSearch(query);
+  const items = (q.data ?? []).filter((it) => !!it.reportNo);
+  const tracked = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!q.isSuccess || tracked.current === query) return;
+    tracked.current = query;
+    track(EVENTS.food_packaged_search, { query_length: Array.from(query.trim()).length, result_count: items.length }); // 검색어 원문 0
+  }, [q.isSuccess, query, items.length]);
+  const sel = items.find((it) => it.id === selectedId) ?? null;
+  return (
+    <CandidateScreen
+      testID="pscan-name-search"
+      title={t('packagedScan.findTitle')}
+      subtitle={t('packagedScan.findSubtitle')}
+      note={m0 ? t('packagedScan.personalNote') : null}
+      search={<NameSearchBox value={draft} onChange={setDraft} onSubmit={() => { if (busy) return; setQuery(draft); setSelectedId(null); }} />}
+      items={items}
+      selectedId={selectedId}
+      onSelect={setSelectedId}
+      // Codex #339: 20개씩 페이지 — 끝 근처에서 다음 페이지(목록 화면과 같은 가드)
+      onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage && !q.isFetchNextPageError) void q.fetchNextPage(); }}
+      onConfirm={() => { if (sel?.reportNo) onConfirm(sel.reportNo); }}
+      onNone={onNone}
+      onBack={onBack}
+      personalized={personalized}
+      busy={busy}
+      empty={q.isPending && query.trim() ? <View style={st.searchState} testID="pscan-name-search-loading"><Spinner /></View> : q.isError ? <QueryErrorBlock error={q.error} onRetry={() => void q.refetch()} /> : !items.length && query.trim() ? <Text style={st.muted} testID="pscan-name-search-empty">{t('packaged.emptyTitle')}</Text> : null}
+    />
   );
 }
 
@@ -470,4 +577,5 @@ const st = StyleSheet.create({
   countText: { flex: 1, fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink2 },
   debug: { gap: 8, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: C.line, borderStyle: 'dashed' },
   debugInput: { minHeight: 72, textAlignVertical: 'top' },
+  searchState: { paddingVertical: 24, alignItems: 'center' },
 });

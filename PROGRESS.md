@@ -42,6 +42,14 @@
 - 12개기반회귀PASS:가림/배경/중복·세대·크기보정·동적목록·민감값배제·5분60fps집계·첫드래그. 타입/sweep검증. 최종전체/lint/CI근거는REPORTS에기록.
 - 기능·플래그·API·카피·native의존성변경0. 실기/수신/기기성능미검증. 배포0. KB873전체진행중,다음lifecycle배선.
 
+## 2026-10-23 — KB-865 / P-523 ③ Codex 인수
+
+- 기존 PR339와 backup 098cb1b8을 대조하고 독립 지속 worktree에서 FF 통합. 거절 요청 중 MessagePage의 이름 찾기·뒤로가기 잠금 유지.
+- busy 전달 제거 시813 회귀 정상 exit1, 복원 후29/29 정상 exit0. 테스트 QueryClient query/mutation GC 타이머와 cache teardown 정리(단언 변경0).
+- tsc exit0, compiler sweep 새 항목0, changed lint13파일 새 문제0. 지문 ios9ee06892/android05ba070d 유지. 전체 Jest 결과는 인수 보고·PR에 기록.
+- QA 최신 후보 재확인(4면 숫자·확정/거절 잠금·모드 이탈quota hold·큰글씨·VoiceOver) 대기. AR6 미확인, AR4 최신dev 차이 비교 필요. K112~115 승인 대기.
+- 기기·8088 점유 보존, 새 라우트/카피0. 직접 merge/OTA 없음. ④는③ 검토·머지·teamtest OTA 확인 후 착수.
+
 # kbap-fe Build Progress
 > 규칙: 한 번에 1개. [ ]→[~]→[x]. 각 화면 완료 시 목업 대조 + 커밋.
 > 목업 SSOT: Claude Design `43cc8ad0-38d8-4afa-a66f-a7412eae2a49` ("KLens Hi-Fi (Direction G)", hifi-*.jsx, hifi-g.css).
