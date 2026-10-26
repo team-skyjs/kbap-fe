@@ -12,16 +12,15 @@ export function Modal(props: ModalProps) {
   return <RNModal {...props} />;
 }
 
-/** RN Alert와 같음 + 떠 있는 동안 가림. 버튼 누름·Android 바깥 닫힘(onDismiss) = 해제 */
+/** RN Alert와 같음 + 떠 있는 동안 가림. 버튼 누름·Android 바깥 닫힘(onDismiss) = 해제.
+ *  버튼은 1개 이상 필수(타입) — 버튼 없는 Alert는 RN이 하드코딩 "OK"를 그려 번역 밖이 되고 해제 지점도 없다(Codex #348) */
 export const Alert = {
-  alert(title: string, message?: string, buttons?: AlertButton[], options?: AlertOptions): void {
+  alert(title: string, message: string | undefined, buttons: [AlertButton, ...AlertButton[]], options?: AlertOptions): void {
     const release = pushOcclusion();
-    // ponytail: 버튼 없는 Alert는 RN 기본 "OK" 하나를 명시로 둔다(해제 지점이 필요) — 현재 호출부는 전부 버튼을 넘긴다
-    const list = buttons?.length ? buttons : [{ text: 'OK' }];
     RNAlert.alert(
       title,
       message,
-      list.map((b) => {
+      buttons.map((b) => {
         const press = b.onPress as ((value?: unknown) => void) | undefined; // RN 타입 = 함수 유니온(prompt용 login 형) — 값은 그대로 통과만
         return { ...b, onPress: (value?: unknown) => { release(); press?.(value); } };
       }),

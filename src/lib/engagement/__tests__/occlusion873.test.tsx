@@ -106,6 +106,12 @@ describe('덮개 래퍼', () => {
     expect(isOccluded()).toBe(false);
     spy.mockRestore();
   });
+  it('Codex #348: 버튼 1개 이상 필수(비지 않은 튜플 타입) · 하드코딩 "OK" 대체 버튼 0 — 버튼 없는 Alert는 번역 밖 문구·해제 지점 없음', () => {
+    // 테스트 파일은 tsconfig exclude라 @ts-expect-error로는 못 잠근다 → 래퍼 소스를 직접 잠금
+    const src = fs.readFileSync(path.join('src', 'lib', 'engagement', 'occlusionSurfaces.tsx'), 'utf8');
+    expect(src).toContain('buttons: [AlertButton, ...AlertButton[]]');
+    expect(src).not.toMatch(/text:\s*['"]OK['"]/);
+  });
   it('사진 선택기·카메라 = 시스템 화면이 떠 있는 동안 가림 · 취소·결과 뒤 해제 · 옵션 그대로 전달', async () => {
     let done!: (v: unknown) => void;
     mockLaunchLibrary.mockReturnValueOnce(new Promise((r) => (done = r)));
