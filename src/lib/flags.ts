@@ -1,3 +1,5 @@
+import teamtestTarget from './teamtest-target.json';
+
 /**
  * flags.ts — feature flags for MVP scope switches. Flip a flag to restore the
  * UI; the code behind each flag is intentionally NOT deleted.
@@ -42,7 +44,8 @@ function isDiagnosticChannelInner(): boolean {
 }
 const DIAGNOSTIC_CHANNEL = isDiagnosticChannelInner();
 
-/** KB-812 2차(P-507): **dev 서버를 쓰는 채널**만 참 — development·teamtest(eas.json EXPO_PUBLIC_BE_BASE = dev.kbap.site).
+/** KB-870/P-527: development는 dev 기능 유지. teamtest는 명시 target에 따라 제품 게이트를 선택한다.
+ *  10/23 사용자 승인: 기존 teamtest 설치본 전체를 prod 리허설로 전환. 채널/진단/광고 정책은 무변.
  *  진단 채널과 다르다: teamtest-prod는 진단은 보이지만 백엔드가 prod라 dev 서버에서만 켜진 기능(서버 플래그)은 거기서 막다른 길이다.
  *  채널 부재는 진단과 같은 규칙(__DEV__일 때만 로컬). */
 function isDevServerChannelInner(): boolean {
@@ -50,7 +53,8 @@ function isDevServerChannelInner(): boolean {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const ch = (require('expo-updates') as { channel?: string | null }).channel;
     if (ch == null || ch === '') return __DEV__;
-    return ch === 'teamtest' || ch === 'development';
+    if (ch === 'teamtest') return teamtestTarget.backend === 'dev';
+    return ch === 'development';
   } catch {
     return __DEV__;
   }
@@ -62,7 +66,7 @@ export function isDiagnosticChannel(): boolean {
   return DIAGNOSTIC_CHANNEL;
 }
 
-/** KB-870: dev 서버 채널(development·teamtest) — 운영 서버에 아직 없는 API의 헤더·표면 게이트 공용. */
+/** KB-870: 개발 기능 허용 채널 — teamtest는 공유 target 정본을 따른다. API 헤더와 표면에 같은 게이트 사용. */
 export function isDevServerChannel(): boolean {
   return DEV_SERVER_CHANNEL;
 }
@@ -193,17 +197,14 @@ export const FLAGS = {
    */
   packagedReviewWrite: DEV_SERVER_CHANNEL,
   /**
-   * KB-870(P-524, 운영 OTA 1 — 감사 bridge/ops/2026-10-21-prod-ota-audit.md): **운영 서버에 아직 없는 API**를 부르는 표면.
-   * development·teamtest(dev 서버)만 켜고 production·preview·teamtest-prod(운영 서버)는 숨긴다. 서버 운영 릴리스 뒤(OTA 2) 각 줄을 true로.
-   * - curationEnabled: /api/curations/seoul(prod 404) — 홈 큐레이션 섹션·모음 상세(지도 버튼 포함)
-   * - processedFoodEnabled: /api/processed-foods(prod 404) — 음식 탭 Packaged 세그먼트·스캔 Packaged 탭
-   * - idolPicksEnabled: /api/foods/idol-picks(prod 400) — 홈 K-POP 배너·/idol-picks·음식 상세 K-pop 카드
-   * - avoidGroupCodesEnabled: 회피 묶음 6코드(KB-843 — prod 서버가 모름, 저장 400) — 선택 타일·와이어 허용 목록·로컬 프리셋 폴백
+   * KB-870/P-528 OTA2 채널 게이트 의도: 사용자 검수·공개 승인으로 큐레이션·K-pop·회피6만 전 채널 공개.
+   * 운영 큐레이션 게시/GET·idol GET·회피 catalog/profile PATCH 왕복 확인 뒤 develop 머지/발행한다.
+   * PF3종과 리뷰 버전은 DEV_SERVER_CHANNEL에 유지한다. 공용 dev 게이트를 켜지 않는다.
    */
-  curationEnabled: DEV_SERVER_CHANNEL,
+  curationEnabled: true,
   processedFoodEnabled: DEV_SERVER_CHANNEL,
-  idolPicksEnabled: DEV_SERVER_CHANNEL,
-  avoidGroupCodesEnabled: DEV_SERVER_CHANNEL,
+  idolPicksEnabled: true,
+  avoidGroupCodesEnabled: true,
 } as const;
 
 /** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).

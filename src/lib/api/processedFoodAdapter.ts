@@ -29,6 +29,10 @@ export type ProcessedFoodSummary = {
   /** v4 평점 — 구서버·리뷰 0 = null(줄 숨김) */
   rating: { average: number; count: number } | null;
   verdict: ProcessedVerdict | null;
+  /** 비회원·회피 0개 후보 줄 "Contains …"(시안 45) — 목록·후보 응답에 없으면 null(줄 숨김) */
+  majorAllergens: string[] | null;
+  /** 품목보고번호 — 스캔 "이름으로 찾기"에서 고른 제품을 확정할 때(후보 밖 선택 — 진입 플로우 ②). 없으면 null(그 항목은 확정 불가) */
+  reportNo: string | null;
 };
 
 export type ProcessedDetection = { code: string; evidence: string; fromLabel: boolean };
@@ -80,6 +84,10 @@ type SummaryWire = {
   rating?: { average?: number | null; count?: number | null } | null;
   verdict?: string | null;
   type?: string | null;
+  /** KB-867(#458): 요청 언어 표시명 — 번역 전엔 원문. 없으면 productName */
+  name?: string | null;
+  majorAllergens?: string[] | null;
+  reportNo?: string | number | null;
 };
 export type SearchPageWire = { items: SummaryWire[]; hasNext: boolean; nextCursor?: string | null };
 export type DetailWire = SummaryWire & {
@@ -137,16 +145,19 @@ const ratingOf = (r: SummaryWire['rating']): ProcessedFoodSummary['rating'] =>
 export function adaptProcessedSummary(w: SummaryWire): ProcessedFoodSummary {
   const foodType = blankToNull(w.foodType);
   const nameKo = blankToNull(w.nameKo);
+  const name = blankToNull(w.name) ?? w.productName;
   return {
     id: String(w.id),
-    name: w.productName,
+    name,
     maker: blankToNull(w.maker),
     foodType,
     type: typeOf(w.type, foodType),
     imageUrl: toHttps(w.imageUrl),
-    nameKo: nameKo === w.productName.trim() ? null : nameKo,
+    nameKo: nameKo === name.trim() ? null : nameKo,
     rating: ratingOf(w.rating),
     verdict: verdictOf(w.verdict),
+    majorAllergens: w.majorAllergens == null ? null : w.majorAllergens,
+    reportNo: w.reportNo == null || w.reportNo === '' ? null : String(w.reportNo),
   };
 }
 
@@ -229,6 +240,14 @@ export function adaptScanConfirm(w: ScanConfirmWire): ScanConfirmResult {
 /** 성분표 판독 결과. 제품이 정해지지 않았으니 상세 연결 없음. avoidance = 회원 대조(엔드포인트가 회원 전용이라 늘 배열). */
 export type LabelScanResult = {
   analysisId: string;
+  /** KB-865 v4(#457) — 상세와 같은 판정 필드(구서버 = null/빈 배열 → 구 판정 부품으로) */
+  verdict: ProcessedVerdict | null;
+  avoidMatches: ProcessedMatch[];
+  mayContainMatches: ProcessedMatch[];
+  unclearIngredients: string[];
+  majorAllergens: string[] | null;
+  ingredients: { translated: string | null; original: string | null };
+  allergenStatement: { translated: string | null; original: string } | null;
   labelSource: LabelSource;
   detections: ProcessedDetection[];
   mayContain: ProcessedMayContain[];
@@ -246,10 +265,27 @@ export type LabelScanWire = {
   avoidance?: DetailWire['avoidance'];
   rawText?: string | null;
   charged?: boolean | null;
+  verdict?: string | null;
+  avoidMatches?: MatchWire[] | null;
+  mayContainMatches?: MatchWire[] | null;
+  unclearIngredients?: string[] | null;
+  majorAllergens?: string[] | null;
+  ingredients?: { translated?: string | null; original?: string | null } | null;
+  allergenStatement?: { translated?: string | null; original?: string | null } | null;
 };
 export function adaptLabelScan(w: LabelScanWire): LabelScanResult {
+  const rawText = blankToNull(w.rawText);
+  const allergenOriginal = blankToNull(w.allergenStatement?.original);
   return {
     analysisId: w.analysisId,
+    verdict: verdictOf(w.verdict),
+    avoidMatches: adaptMatches(w.avoidMatches),
+    mayContainMatches: adaptMatches(w.mayContainMatches),
+    unclearIngredients: (w.unclearIngredients ?? []).map((u) => u.trim()).filter(Boolean),
+    majorAllergens: w.majorAllergens == null ? null : w.majorAllergens,
+    // 원문 = 서버 ingredients.original → 없으면 읽은 원문(rawText)
+    ingredients: { translated: blankToNull(w.ingredients?.translated), original: blankToNull(w.ingredients?.original) ?? rawText },
+    allergenStatement: allergenOriginal ? { translated: blankToNull(w.allergenStatement?.translated), original: allergenOriginal } : null,
     labelSource: labelSourceOf(w.labelSource),
     detections: adaptDetections(w.detections),
     mayContain: (w.mayContain ?? []).map((m) => ({ code: m.code, evidence: m.evidence })),

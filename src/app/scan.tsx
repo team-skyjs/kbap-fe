@@ -27,6 +27,7 @@ import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } fr
 import { StatusBar } from 'expo-status-bar';
 import { Txt as Text } from '@/components/Txt';
 import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { usePreventRemove } from 'expo-router/build/react-navigation/core';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { EVENTS, track } from '@/lib/analytics';
@@ -134,6 +135,16 @@ export default function Scan() {
   const hasR = (me?.restrictions.length ?? 0) > 0;
 
   const [phase, setPhase] = useState<Phase>('camera');
+  const importingRef = useRef(false);
+  const [importing, setImporting] = useState(false);
+  // 앱 라우트 이탈만 막는다. 별도 네이티브 사진 선택기의 취소는 그대로 허용한다.
+  usePreventRemove(importing, () => {});
+  useEffect(() => {
+    if (!importing) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => importingRef.current);
+    return () => sub.remove();
+  }, [importing]);
+  const closeCamera = () => { if (!importingRef.current) router.back(); };
   // KB-813: 촬영 모드 — 메뉴판(기본·현행 흐름 그대로) / 음식 사진(자리만) / 가공식품(PackagedScanFlow)
   // P-508: 가공식품 상세 "성분표 직접 확인" = /scan?mode=packaged&label=1 — 가공식품 모드 + 성분표 안내부터(새 분석)
   const scanParams = useLocalSearchParams<{ mode?: string; label?: string; t?: string }>();
@@ -146,9 +157,17 @@ export default function Scan() {
     setSeenLabelEntry(labelEntry);
     if (labelEntry) setScanModeState('packaged');
   }
+  // KB-865 ③(시안 21): 가공식품 확정이 한도(SCAN-004)에 걸림 = 기존 소진 화면을 **가공식품 흐름 위에** 띄운다 — 흐름(후보·선택)은 마운트 유지,
+  // 해제·나중에 = 같은 후보로 복귀(진입 플로우 문서). 잡고 있는 동안 프로필 잠금이 흐름을 갈아치우지 않게 ref로 막는다
+  const [packagedHold, setPackagedHold] = useState(false);
+  const packagedHoldRef = useRef(false);
   const setScanMode = (m: ScanMode) => {
+    if (importingRef.current) return;
     if (m === scanMode) return;
     track(EVENTS.scan_mode_select, { mode: m });
+    // Codex #339: 소진 덮개(packagedHold)는 가공식품 흐름에만 — 떠나면 해제(남으면 메뉴의 프로필 잠금·"나중에"가 가공식품 규칙을 탄다).
+    // 가공식품에 머무는 동안은 유지 — "나중에" 뒤 프로필 잠금이 방금 돌아간 흐름을 다시 덮지 않게
+    if (scanMode === 'packaged') { packagedHoldRef.current = false; setPackagedHold(false); }
     setScanModeState(m);
   };
   const reviewPrompt = useReviewPrompt(); // KB-730: 스캔 성공 2회 이상 — 결과 화면 일회성 모달 큐의 마지막 스텝
@@ -201,8 +220,9 @@ export default function Scan() {
   // P-131: 줌 — 핀치+프리셋 상호 동기 (0~1 상대값, cameraZoom 순수 로직)
   const [zoom, setZoom] = useState(0);
   const pinchBase = useSharedValue(0);
-  const onPinchStart = useCallback(() => { pinchBase.set(zoom); }, [pinchBase, zoom]);
-  const onPinchUpdate = useCallback((event: { scale: number }) => { setZoom(pinchToZoom(pinchBase.get(), event.scale)); }, [pinchBase]);
+  const importingGestureLock = useSharedValue(false);
+  const onPinchStart = useCallback(() => { if (importingGestureLock.get()) return; pinchBase.set(zoom); }, [importingGestureLock, pinchBase, zoom]);
+  const onPinchUpdate = useCallback((event: { scale: number }) => { if (importingGestureLock.get()) return; setZoom(pinchToZoom(pinchBase.get(), event.scale)); }, [importingGestureLock, pinchBase]);
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   // P-250: SCAN-004(무료 소진) — "리뷰 작성하기" = 리뷰 픽커(P-245 자격 UX) 직결
   const [quotaPicker, setQuotaPicker] = useState(false);
@@ -256,7 +276,7 @@ export default function Scan() {
   const canLockQuota = () => phaseRef.current === 'camera' || phaseRef.current === 'error';
   const lockFromProfile = useCallback(() => {
     const quota = quotaRef.current;
-    if (!canLockQuota() || !isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current) return;
+    if (!canLockQuota() || !isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current || packagedHoldRef.current) return;
     quotaLockRef.current = true;
     setError({ stage: 'quota', detail: 'profile scanRemaining 0' });
     setPhase('error');
@@ -398,13 +418,14 @@ export default function Scan() {
   // **ref 동기 가드**(진입 즉시 검사·세트)가 실차단, state는 시각적 disable 전용.
   const capturingRef = useRef(false);
   const [capturing, setCapturing] = useState(false);
-  const [importing, setImporting] = useState(false); // P-191: 갤러리 원본 로드 구간
   // P-191: 픽커 닫힘~원본 준비 사이 무표시 구간(예진 실기 — "멈췄나?") — 스피너 오버레이.
   // "Reading the menu..."(scanning 페이즈)와 구분되는 선행 단계 표시.
   const ImportingOverlay = importing ? (
-    <View style={styles.importingOverlay} pointerEvents="none" testID="importing-overlay">
-      <ActivityIndicator size="small" color="#fff" />
-      <Text style={styles.statusText}>{t('scan.loadingPhoto')}</Text>
+    <View style={styles.importingOverlay} pointerEvents="auto" accessible accessibilityRole="progressbar" accessibilityLabel={t('scan.loadingPhoto')} accessibilityState={{ busy: true }} testID="importing-overlay">
+      <View style={styles.importingStatus} testID="importing-status">
+        <ActivityIndicator size="small" color="#fff" />
+        <Text style={styles.statusText}>{t('scan.loadingPhoto')}</Text>
+      </View>
     </View>
   ) : null;
   // P-038(KB-212): 빈 프로필 넛지 — 세션 억제 플래그를 마운트 시점에 읽는다
@@ -608,6 +629,8 @@ export default function Scan() {
     if (isGuest) return setGateOpen(true);
     capturingRef.current = true;
     setCapturing(true);
+    importingGestureLock.set(true);
+    importingRef.current = true; // 리렌더 전 연속 입력도 차단
     setImporting(true); // P-191: 픽커 복귀~원본 준비(iCloud 다운로드 수 초) 구간 표시
     setError(null);
     if (menu) track(EVENTS.scan_start, { source: 'gallery' }); // P-144
@@ -627,6 +650,8 @@ export default function Scan() {
     } finally {
       capturingRef.current = false;
       setCapturing(false);
+      importingRef.current = false;
+      importingGestureLock.set(false);
       setImporting(false);
     }
   }
@@ -700,7 +725,7 @@ export default function Scan() {
 
   // KB-845: 카메라 = 시안 X(24, 흰색, (20,60) — 배경 원 없음) · 그 밖(오류·오프라인 밝은 바탕) = 기존 어두운 원(흰 X가 보이게)
   const closeBtn = (cam: boolean) => (
-    <Pressable style={[cam ? styles.camClose : styles.close, { top: insets.top + (cam ? 16 : 8) }]} onPress={() => router.back()} hitSlop={cam ? 10 : 8} accessibilityLabel={t('common.close')} testID="scan-close">
+    <Pressable style={[cam ? styles.camClose : styles.close, { top: insets.top + (cam ? 16 : 8) }]} onPress={closeCamera} disabled={importing} hitSlop={cam ? 10 : 8} accessibilityLabel={t('common.close')} testID="scan-close">
       <Animated.View style={uiRotate}>
         <IconClose size={cam ? 24 : 22} color="#fff" />
       </Animated.View>
@@ -726,6 +751,7 @@ export default function Scan() {
         {/* P-131: 핀치 줌 — runOnJS(true)로 JS 스레드 콜백(워클릿 0, P-065 교훈 준수) */}
         <GestureDetector
           gesture={Gesture.Pinch()
+            .enabled(!importing)
             .runOnJS(true)
             .onStart(onPinchStart)
             .onUpdate(onPinchUpdate)}
@@ -767,7 +793,7 @@ export default function Scan() {
               <View style={styles.permAlert}>
                 <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
                 <Text style={[styles.permAlertBody, { marginBottom: 13 }]}>{t('scan.permissionSettingsBody')}</Text>
-                <Btn testID="scan-perm-settings" onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
+                <Btn testID="scan-perm-settings" disabled={importing} onPress={() => { if (importingRef.current) return; track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
                   {t('photo.openSettings')}
                 </Btn>
               </View>
@@ -779,7 +805,7 @@ export default function Scan() {
               <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
               <View style={{ width: '100%', maxWidth: 280 }}>
                 {/* P-214: 권한 퍼널 — 요청 후 결과(grant|deny) 구분 */}
-                <Btn testID="scan-perm-grant" onPress={() => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))}>
+                <Btn testID="scan-perm-grant" disabled={importing} onPress={() => { if (importingRef.current) return; void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' })); }}>
                   {t('scan.grant')}
                 </Btn>
               </View>
@@ -794,7 +820,7 @@ export default function Scan() {
           <Text style={styles.camTitle}>{t('scanCamera.title')}</Text>
         </View>
         {o.onClose ? (
-          <Pressable style={[styles.close, { top: insets.top + 16 }]} onPress={o.onClose} hitSlop={10} accessibilityLabel={t('common.close')} testID="scan-close-step">
+          <Pressable style={[styles.close, { top: insets.top + 16 }]} onPress={() => { if (!importingRef.current) o.onClose?.(); }} disabled={importing} hitSlop={10} accessibilityLabel={t('common.close')} testID="scan-close-step">
             <IconClose size={24} color={C.surface} />
           </Pressable>
         ) : (
@@ -809,7 +835,7 @@ export default function Scan() {
         {/* KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 모드 탭째 없음 → 메뉴 스캔만(main과 같음) */}
         {FLAGS.processedFoodEnabled && (
           <View style={[styles.camModeTabs, { top: insets.top + 60 }]} pointerEvents="box-none">
-            <ScanModeTabs value={menu ? 'menu' : 'packaged'} onChange={setScanMode} tone="dark" />
+            <ScanModeTabs value={menu ? 'menu' : 'packaged'} onChange={setScanMode} disabled={importing} tone="dark" />
           </View>
         )}
         {o.debug ? <View style={[styles.camDebug, { top: insets.top + 116 }]}>{o.debug}</View> : null}
@@ -829,7 +855,7 @@ export default function Scan() {
             {(['x1', 'x2'] as CamZoomPreset[]).map((pKey) => {
               const on = activePreset(zoom) === pKey;
               return (
-                <Pressable key={pKey} style={[styles.zoomPill, on && styles.zoomPillOn]} onPress={() => setZoom(CAM_ZOOM_PRESETS[pKey])} disabled={!granted} hitSlop={6} testID={`zoom-${pKey}`}>
+                <Pressable key={pKey} style={[styles.zoomPill, on && styles.zoomPillOn]} onPress={() => { if (!importingRef.current) setZoom(CAM_ZOOM_PRESETS[pKey]); }} disabled={!granted || importing} hitSlop={6} testID={`zoom-${pKey}`}>
                   <Animated.View style={uiRotate}>
                     <Text style={[styles.zoomPillText, on && styles.zoomPillTextOn]}>{pKey === 'x1' ? '1x' : '2x'}</Text>
                   </Animated.View>
@@ -851,7 +877,7 @@ export default function Scan() {
               <View style={styles.shutterSpacer} />
             )}
             {granted ? (
-              <Pressable testID="scan-flip" style={styles.camIconBtn} onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))} accessibilityRole="button" accessibilityLabel={t('scanCamera.switchCamera')}>
+              <Pressable testID="scan-flip" style={styles.camIconBtn} onPress={() => { if (!importingRef.current) setFacing((f) => (f === 'back' ? 'front' : 'back')); }} disabled={importing} accessibilityRole="button" accessibilityLabel={t('scanCamera.switchCamera')}>
                 <Animated.View style={uiRotate}>
                   <IconRefreshCcw size={28} color={C.surface} />
                 </Animated.View>
@@ -861,7 +887,7 @@ export default function Scan() {
             )}
           </View>
           {o.link ? (
-            <Pressable onPress={o.link.onPress} hitSlop={8} accessibilityRole="button" testID={o.link.testID} style={styles.camLink}>
+            <Pressable onPress={() => { if (!importingRef.current) o.link?.onPress(); }} disabled={importing} hitSlop={8} accessibilityRole="button" testID={o.link.testID} style={styles.camLink}>
               <Text style={styles.camLinkText}>{o.link.label}</Text>
             </Pressable>
           ) : (
@@ -1206,9 +1232,13 @@ export default function Scan() {
   }
 
   // ---- error ----
-  if (phase === 'error') {
+  // 가공식품 소진(packagedHold) = 아래 가공식품 분기가 흐름 위에 덮어 그린다(같은 트리 자리 — 흐름 상태 유지). 나중에 = 흐름으로 복귀
+  const quotaLater = packagedHold
+    ? () => { quotaLockRef.current = false; setError(null); setPhase('camera'); }
+    : () => router.back();
+  const renderError = () => {
     const stage = error?.stage ?? 'be';
-    return withPresenter(
+    return (
       <View style={[styles.root, styles.center]}>
         {Close}
         {GateSheet}
@@ -1231,13 +1261,13 @@ export default function Scan() {
               {/* KB-759: 해제됐는데 티켓 재발급 중/실패 — 광고·리뷰 CTA 대신 다시 시도(실패일 때만) + 나중에 */}
               {/* /review 3: 여는 중에도 같은 버튼을 busy로 유지(스피너·비활성) — 실패면 탭 가능 */}
               <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t(unlockState === 'ready' ? 'scan.startScanning' : 'common.retry')}</Btn>
-              <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
+              <Btn variant="ghost" onPress={quotaLater} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'quota' ? (
             <>
               {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight({unlocked}) → 새 티켓 → 카메라 복원(KB-759) */}
               <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (!hasObservedUnlockTransition()) void preflight({ unlocked: true }); }} onClose={() => router.back()} />
-              <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
+              <Btn variant="ghost" onPress={quotaLater} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (
             <>
@@ -1266,17 +1296,35 @@ export default function Scan() {
         )}
       </View>
     );
-  }
+  };
 
-  // ---- KB-813 가공식품 모드 — 카메라 단계에서만(결과·오류·쿼터 잠금은 위에서 먼저 처리돼 이 분기에 오지 않는다) ----
-  if (scanMode === 'packaged' && !offline) {
+  // ---- KB-813 가공식품 모드 — 카메라 단계(결과·오류·쿼터 잠금은 아래에서 먼저) · KB-865 ③: 확정 소진은 흐름 위 덮개 ----
+  if (scanMode === 'packaged' && !offline && (phase !== 'error' || packagedHold)) {
     return withPresenter(
       <View style={styles.camHost}>
         {cameraLayer}
-        <PackagedScanFlow key={labelEntry ?? 'flow'} mode={scanMode} onMode={setScanMode} onClose={() => router.back()} startLabel={labelEntry != null} renderCamera={cameraUi} focused={isFocused} />
+        <PackagedScanFlow
+          key={labelEntry ?? 'flow'}
+          mode={scanMode}
+          onMode={setScanMode}
+          onClose={() => router.back()}
+          startLabel={labelEntry != null}
+          renderCamera={cameraUi}
+          focused={isFocused}
+          onQuota={() => {
+            packagedHoldRef.current = true;
+            setPackagedHold(true);
+            quotaLockRef.current = true;
+            setError({ stage: 'quota', detail: 'packaged confirm SCAN-004' });
+            setPhase('error');
+          }}
+        />
+        {phase === 'error' && <View style={StyleSheet.absoluteFill} testID="pscan-quota-overlay">{renderError()}</View>}
       </View>,
     );
   }
+
+  if (phase === 'error') return withPresenter(renderError());
 
   // ---- camera (default) ----
   // P-046: 오프라인 = 전체 J4 (카메라·갤러리·샘플 진입로 전부 이 화면으로 대체 —
@@ -1294,13 +1342,13 @@ export default function Scan() {
   if (FLAGS.systemCamera) {
     return withPresenter(
       <View style={styles.launcherRoot}>
-        <Pressable style={[styles.close, { top: insets.top + 8, backgroundColor: C.surface2 }]} onPress={() => router.back()} hitSlop={8} testID="scan-close">
+        <Pressable style={[styles.close, { top: insets.top + 8, backgroundColor: C.surface2 }]} onPress={closeCamera} disabled={importing} hitSlop={8} testID="scan-close">
           <IconClose size={22} color={C.ink2} />
         </Pressable>
         {/* KB-813 모드 탭 — 시스템 카메라 런처(밝은 바탕) */}
         {FLAGS.processedFoodEnabled && (
           <View style={[styles.camModeTabs, { top: insets.top + 56 }]}>
-            <ScanModeTabs value={scanMode} onChange={setScanMode} />
+            <ScanModeTabs value={scanMode} onChange={setScanMode} disabled={importing} />
           </View>
         )}
         <View style={styles.launcherBody}>
@@ -1502,8 +1550,9 @@ const styles = StyleSheet.create({
   shutterSpacer: { width: 72, height: 72 },
   // P-222: 주 문구를 밀어내지 않는 보조 톤(작게·흐리게)
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
-  // P-191: 갤러리 원본 로드 오버레이 — scanning 캡션과 동일 톤, 화면 하단 중앙
-  importingOverlay: { position: 'absolute', left: 0, right: 0, bottom: 120, alignItems: 'center', gap: 8, zIndex: 20 },
+  // P-529(KB-854): 공용 화면 전체 중앙 — 하단 줌/셔터와 겹치지 않는다.
+  importingOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', zIndex: 20 },
+  importingStatus: { maxWidth: '90%', backgroundColor: C.ink, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', gap: 8 },
   errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primary, textTransform: 'uppercase' }, // Codex #44 2차: 다크 배경 = 원색이 대비 우위(primaryText는 흰 바탕용)
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
   degradedNote: { fontFamily: font.body, fontSize: 12, color: '#fbbf24', textAlign: 'center' },
