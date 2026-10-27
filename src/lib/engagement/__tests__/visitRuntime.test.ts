@@ -16,7 +16,9 @@ test('root/unsettled/unknown routes wait, nested active leaf only and route para
   expect(activeVisitRoute(undefined)).toBeNull();
   expect(activeVisitRoute({ routes: [{ name: '(tabs)' }] })).toBeNull();
   expect(activeVisitRoute({ routes: [{ name: 'private/actual-id' }] })).toBeNull();
-  const tab = activeVisitRoute({ routes: [{ name: '(tabs)', state: { index: 1, routes: [{ name: 'index' }, { name: 'profile' }] } }] });
+  // QA AV: 키 없는 라우트 = 정착 전(stale) 상태 → 대기. 실제 라우터는 '__root' 래퍼 안에 키 붙은 스택
+  expect(activeVisitRoute({ routes: [{ name: '(tabs)', state: { index: 1, routes: [{ name: 'index' }, { name: 'profile' }] } }] })).toBeNull();
+  const tab = activeVisitRoute({ routes: [{ name: '__root', key: 'r', state: { routes: [{ name: '(tabs)', key: 't', state: { index: 1, routes: [{ name: 'index', key: 'i' }, { name: 'profile', key: 'p' }] } }] } }] });
   expect(tab?.screen).toBe('(tabs)/profile');
   const { runtime, events } = setup();
   runtime.focus(activeVisitRoute(state('private-food-id')));

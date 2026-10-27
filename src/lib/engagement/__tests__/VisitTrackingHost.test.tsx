@@ -7,7 +7,9 @@ let mockState: unknown;
 let mockResolved = false;
 let mockHolding = false;
 jest.mock('@/lib/analytics', () => ({ track: (...args: unknown[]) => mockTrack(...args) }));
-jest.mock('expo-router', () => ({ useRootNavigationState: () => mockState }));
+// 실제 expo-router 57 모양: 컨테이너 ref(state 이벤트) + 루트 상태 = '__root' 래퍼 안에 앱 스택(QA AV — 합성 상태가 이 둘을 가려 0건을 놓쳤다)
+const mockNav = { isReady: () => true, getRootState: () => mockState, addListener: (_e: string, _cb: (e: { data: { state: unknown } }) => void) => () => {} };
+jest.mock('expo-router', () => ({ useNavigationContainerRef: () => mockNav }));
 jest.mock('@/lib/data/config', () => ({ BE_BASE: 'https://prod.kbap.site' }));
 jest.mock('@/lib/deeplink', () => ({
   subscribeEntryResolved: () => () => {}, isEntryResolved: () => mockResolved, hasPendingDeeplink: () => mockHolding,
@@ -19,7 +21,7 @@ import { VisitTrackingHost } from '../VisitTrackingHost';
 
 beforeEach(() => {
   mockTrack.mockClear(); mockResolved = false; mockHolding = false;
-  mockState = { routes: [{ name: 'food/[id]/index', key: 'detail', params: { id: 'sensitive-id' } }] };
+  mockState = { routes: [{ name: '__root', key: 'root', state: { routes: [{ name: 'food/[id]/index', key: 'detail', params: { id: 'sensitive-id' } }] } }] };
 });
 
 test('entry/deeplink hold, foreground and StrictMode replay produce one settled visit; listener cleans up', async () => {
