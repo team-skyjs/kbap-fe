@@ -29,6 +29,12 @@
 - 새회귀 수정전RED·관련76testsPASS, tsc0, 양OS지문9ee/05ba 유지, EAS workflow CLI 유효성 PASS. 전체/번들/lint 결과와PR/CI/OTA 실제상태는REPORTS에기록.
 - root 검토 후 develop 정상 자동teamtest OTA 단독 발행, 사용자실기QA 후 OTA1 순서. KB873 후속PR342/가공식품339/타담당187 미포함.
 
+## 2026-10-23 — KB-873 lifecycle ① 실제 방문 연결
+
+- 기반 PR341 merge10e16bef 후속. active leaf/content 교체·entry/deeplink·foreground·계정경계·실제 환경 context 연결. 기존 screen_view/4탭 의미 보존.
+- 새 screen_visit_start만 실제 배선. 가림 전수 연결 전 visible-time OFF·타이머0. 다음 lifecycle② 가림/scheduler, 화면별 영역/스크롤·실수신 계속 필요. 전체 완료 아님.
+- 테스트/CI/PR 증거는 REPORTS, 범위·한계는 docs/analytics/KB873-LIFECYCLE.md. release 후보에는 이 미완료 후속을 포함하지 않음.
+
 ## 2026-10-23 — KB-873 PR341 리뷰 P2 두 건 수정
 
 - 실제 route 파일 전수 → screenFromSegments → sanitizer 대조. canonical screen 4곳 교정, food/index 별칭 제거.

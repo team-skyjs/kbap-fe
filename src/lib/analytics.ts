@@ -1,3 +1,4 @@
+import { resumeEngagementIdentity, suspendEngagementIdentity } from './engagement/visitRuntime';
 import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type EngagementEvent } from './engagement/schema';
 
 /**
@@ -304,14 +305,21 @@ export function setUserProps(props: Partial<Record<UserPropKey, string | number 
  * KB-732: 회원 식별 — `members/me` 응답의 회원 번호(문자열)로 setUserId. 호출 지점 = fetchMe 성공 한 곳(로그인 직후·세션 복원 공통).
  * 화면 코드에서 부르지 않는다.
  */
+let engagementMemberId: string | null = null;
 export function setAnalyticsUser(memberId: string): void {
+  if (engagementMemberId === memberId) { resumeEngagementIdentity(); return; }
+  suspendEngagementIdentity();
   if (!ensureInit()) {
+    engagementMemberId = memberId;
     if (__DEV__) console.log('[analytics:noop] setUserId (set)');
+    resumeEngagementIdentity();
     return;
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
   amp.setUserId(memberId);
+  engagementMemberId = memberId;
+  resumeEngagementIdentity();
 }
 
 /**
@@ -321,13 +329,17 @@ export function setAnalyticsUser(memberId: string): void {
  * (잃는 것 = 같은 기기 두 계정 연결뿐).
  */
 export function resetAnalyticsIdentity(): void {
+  engagementMemberId = null;
+  suspendEngagementIdentity();
   if (!ensureInit()) {
     if (__DEV__) console.log('[analytics:noop] reset');
+    resumeEngagementIdentity();
     return;
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
   amp.reset();
+  resumeEngagementIdentity();
 }
 
 /**
