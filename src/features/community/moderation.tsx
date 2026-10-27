@@ -10,7 +10,8 @@
  * - 전부 공용 ActionSheet('context' 변형) 경유 — 글·댓글·대댓글 동일 배선.
  */
 import * as React from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { KeyboardDismissBar } from '@/components';
 import { useKeyboardLift } from '@/lib/keyboardAvoid';

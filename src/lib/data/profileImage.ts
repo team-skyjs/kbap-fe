@@ -10,7 +10,9 @@
  * 실패 정책(할 일 5): throw 로 정직하게 표면화 — 호출 화면이 에러 표시 후
  * 사진 없이 진행 가능해야 한다 (가입/수정 자체를 막지 않음).
  */
-import { ActionSheetIOS, Alert, Platform } from 'react-native';
+import { ActionSheetIOS, Platform } from 'react-native';
+import { Alert } from '@/lib/engagement/occlusionSurfaces';
+import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '@/lib/api/scanImage';
 import { PROFILE_IMAGE_DEFAULT_PATH } from '@/lib/api/memberAdapter';
@@ -34,7 +36,7 @@ export interface PickedImage {
 
 /** 갤러리에서 1장 선택 (1:1 크롭). null = 사용자가 취소. */
 export async function pickProfileImage(): Promise<PickedImage | null> {
-  const res = await ImagePicker.launchImageLibraryAsync({
+  const res = await launchImageLibraryAsync({
     mediaTypes: ['images'],
     allowsEditing: true, // 1:1 크롭 시트 — 아바타는 원형 렌더
     aspect: [1, 1],
@@ -99,7 +101,7 @@ export function choosePhotoSource(labels: PhotoSheetLabels): Promise<PhotoSource
 export async function captureProfileImage(): Promise<PickedImage | null> {
   const perm = await ImagePicker.requestCameraPermissionsAsync();
   if (!perm.granted) throw new Error('CAMERA_PERMISSION');
-  const res = await ImagePicker.launchCameraAsync({
+  const res = await launchCameraAsync({
     mediaTypes: ['images'],
     allowsEditing: true,
     aspect: [1, 1],

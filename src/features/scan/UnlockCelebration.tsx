@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { AccessibilityInfo, AppState, Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, AppState, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';

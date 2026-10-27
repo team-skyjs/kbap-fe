@@ -12,7 +12,9 @@
 // 플래그가 런타임 값(원격 컨피그·A/B 등)이 되는 순간 훅 순서가 깨진다. 소진 발주(KB-603~)에서
 // early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
 import { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { Alert, Platform, ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
+import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import { TopToastHost } from '@/components/TopToast';
@@ -189,11 +191,11 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
           ]);
           return;
         }
-        const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+        const res = await launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
         if (!res.canceled && res.assets?.length) setPhotos((cur) => addReviewPhotos(cur, res.assets.map((a) => a.uri)));
         return;
       }
-      const res = await ImagePicker.launchImageLibraryAsync({
+      const res = await launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.8,
         allowsMultipleSelection: true,

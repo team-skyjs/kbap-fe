@@ -10,7 +10,8 @@
  * 후속: community/tagSheets.tsx의 SheetShell 복사본(라운드 26 · 스크림 0.45)과 합치기 — 스타일이 달라 범위 밖.
  */
 import * as React from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { shadow } from '@/lib/theme';

@@ -7,7 +7,8 @@
  */
 import * as React from 'react';
 import { blockUnlockPresentation } from './unlockCelebrationStore';
-import { ActivityIndicator, Platform, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
