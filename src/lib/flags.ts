@@ -190,6 +190,12 @@ export const FLAGS = {
    */
   packagedLabelScan: DEV_SERVER_CHANNEL,
   /**
+   * KB-873 lifecycle ②b: 화면 체류 송신(screen_visible_time — 보임 = 앱 앞·덮개 0·방문 중, 공용 1초 틱·15초 checkpoint).
+   * **채널 게이트 의도(커맨드 10/27)**: dev 서버 채널만 명시 허용(development·teamtest-dev). teamtest-prod·production·preview OFF —
+   * 양 OS Amplitude 실수신(③) 확인 전. OFF = 방문 시작만(②a 이전과 같음), 타이머 0.
+   */
+  engagementDwell: DEV_SERVER_CHANNEL,
+  /**
    * KB-812 2차(P-507): 가공식품 상세 "리뷰 쓰기" 버튼. **채널 게이트 의도(AGENTS.md 4항, 커맨드 확인 10/21)**:
    * 서버 PROCESSED_FOOD_REVIEW_WRITE_ENABLED가 켜진 채널만 — 지금은 dev 서버(#437)뿐이라 development·teamtest만.
    * teamtest-prod·production·preview(운영 서버, 플래그 OFF)는 숨김 — 막다른 "곧 열려요" 버튼 방지. prod 서버 ON 뒤 이 줄을 true로 확장.

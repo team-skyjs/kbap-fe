@@ -9,6 +9,8 @@ import { hasPendingDeeplink, isEntryResolved, subscribeEntryResolved } from '@/l
 import { runtimeContext } from './runtimeContext';
 import { activeVisitRoute, type RouteState } from './visitRoute';
 import { installVisitRuntime, VisitRuntime } from './visitRuntime';
+import { isOccluded, subscribeOcclusion } from './occlusion';
+import { FLAGS } from '@/lib/flags';
 
 /** One app-root owner. Mounted after splash; route/deeplink settlement still gates every focus update. */
 export function VisitTrackingHost() {
@@ -41,12 +43,14 @@ export function VisitTrackingHost() {
       nativeVersion: native?.ios?.appVersion,
       nativeBuild: Platform.OS === 'ios' ? native?.ios?.buildNumber : native?.android?.versionCode,
       updateId: Updates.updateId, runtimeVersion: Updates.runtimeVersion,
-    }));
+    }), { dwell: FLAGS.engagementDwell }); // KB-873 ②b: 체류 = dev 채널만(teamtest·production OFF — 실수신 ③ 확인 전)
     owner.current = next;
     const uninstall = installVisitRuntime(next);
     next.setForeground(AppState.currentState === 'active');
+    next.setOccluded(isOccluded());
+    const offOcclusion = subscribeOcclusion(() => next.setOccluded(isOccluded()));
     const sub = AppState.addEventListener('change', (value) => next.setForeground(value === 'active'));
-    return () => { sub.remove(); uninstall(); if (owner.current === next) owner.current = null; };
+    return () => { offOcclusion(); sub.remove(); uninstall(); if (owner.current === next) owner.current = null; };
   }, []);
   React.useEffect(() => {
     const next = owner.current;
