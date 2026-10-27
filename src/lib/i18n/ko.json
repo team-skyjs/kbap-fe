@@ -1372,8 +1372,8 @@
     "resultUnclear": "일치하는 재료는 없어요. 자세한 내용이 없는 원재료: {{items}}.",
     "resultSafeAll": "담은 성분표 사진 전부에서 일치하는 재료가 없어요.",
     "resultMajorSet": "{{contains}}. 피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요.",
-    "freeFor_one": "가공식품 스캔 무료 {{count}}분 남음",
-    "freeFor_other": "가공식품 스캔 무료 {{count}}분 남음",
+    "freeFor_one": "가공식품 무료 스캔 시간이 {{count}}분 남았어요",
+    "freeFor_other": "가공식품 무료 스캔 시간이 {{count}}분 남았어요",
     "freeStarted": "다음 가공식품 스캔은 1시간 동안 무료예요."
   },
   "scanCamera": {

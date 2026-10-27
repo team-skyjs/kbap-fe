@@ -95,6 +95,12 @@ describe('문구 잠금(K112)', () => {
     expect(en.filter(scope).filter(([, v]) => /\b(uses?|used)\b[^.]*\bscans?\b|\bscans?\b[^.]*\b(used|charged?)\b|no extra scan/i.test(v))).toEqual([]);
     expect(ko.filter(scope).filter(([, v]) => /스캔\s*1회|차감|사용돼요|사용되지\s*않/.test(v))).toEqual([]);
   });
+  it('Codex #349 P1: KB-877 신규 ko 문구 = 해요체(명사형 "남음" 금지) · 남은 시간 줄은 확정문 그대로(_one = _other)', () => {
+    const ps = load('ko').packagedScan as Record<string, unknown>;
+    expect(ps.freeFor_one).toBe('가공식품 무료 스캔 시간이 {{count}}분 남았어요');
+    expect(ps.freeFor_other).toBe(ps.freeFor_one);
+    for (const v of [ps.freeFor_one, ps.freeStarted, (ps.err as Record<string, unknown>).newAnalysisBody]) expect(String(v)).toMatch(/요\.?$/);
+  });
   it('err.newAnalysisBody = 카피 검토 확정문(en·ko) · 10언어 전부 차감 표현 없는 새 문구', () => {
     expect(load('ko').packagedScan.err).toMatchObject({ newAnalysisBody: '이 분석에는 사진을 더 추가할 수 없어요. 새로 분석해 주세요.' });
     expect(load('en').packagedScan.err).toMatchObject({ newAnalysisBody: "You can't add more photos to this analysis. Please start a new one." });
