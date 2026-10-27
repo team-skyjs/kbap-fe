@@ -15,6 +15,7 @@ import { reportProfileContractDrift } from '../sentry';
 import type { AdRewards, Ranking, RestrictionKind, ScanQuota, User } from './types';
 import type { SpiceChoice } from '@/lib/spice';
 import { wireToSpiceChoice } from './spiceAdapter';
+import { isoOrNull } from './processedFoodAdapter';
 
 export interface RankingSummaryWire {
   tier: string;
@@ -60,6 +61,8 @@ export interface MyProfileWire {
   adRewardCount?: number;
   adRewardsForUnlock?: number;
   adRewardRemainingForUnlock?: number;
+  /** KB-877: 가공식품 1시간 무료 창 끝(ISO) — 창 없음 = null */
+  freeUntil?: string | null;
 }
 
 /** P-384(KB-442): 쿼터 정규화. scanUnlocked 부재 = 구서버 → null(판별 불가 — 클라가 막지 않는다,
@@ -192,5 +195,6 @@ export function adaptProfile(wire: MyProfileWire, localSpice: SpiceChoice | null
     dietCategories: Array.isArray(wire.dietCategories) ? wire.dietCategories : [],
     scanQuota: adaptScanQuota(wire),
     adRewards: adaptAdRewards(wire), // KB-739
+    packagedFreeUntil: isoOrNull(wire.freeUntil), // KB-877
   };
 }

@@ -114,6 +114,8 @@ type AxisWire = { average?: number | null; count?: number | null } | null;
 type MatchWire = { code: string; evidence?: string[] | string | null };
 
 const blankToNull = (s: string | null | undefined): string | null => (s && s.trim() ? s.trim() : null);
+/** KB-877: 서버 무료 창 끝 시각(ISO) — 해석 못 하는 값 = 창 없음(null). 창 계산은 서버만 한다 */
+export const isoOrNull = (s: string | null | undefined): string | null => (s && Number.isFinite(Date.parse(s)) ? s : null);
 export const toHttps = (u: string | null | undefined): string | null => {
   const v = blankToNull(u);
   return v ? v.replace(/^http:\/\//i, 'https://') : null;
@@ -215,11 +217,12 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
 export type ScanCandidate = ProcessedFoodSummary & { reportNo: string };
 export type ScanNameResult = { analysisId: string; candidates: ScanCandidate[]; expiresAt: string | null };
 /** 확정 결과 — charged = 이번 호출에서 서버가 1회 차감했는지(표시는 이 값만 — 로컬 추정 금지) */
-export type ScanConfirmResult = { analysisId: string; rejected: boolean; charged: boolean; product: ProcessedFoodDetail | null };
+/** freeUntil(KB-877) = 가공식품 1시간 무료 창 끝(서버 정본) — null = 창 없음 */
+export type ScanConfirmResult = { analysisId: string; rejected: boolean; charged: boolean; product: ProcessedFoodDetail | null; freeUntil: string | null };
 
 type CandidateWire = SummaryWire & { reportNo: string };
 export type ScanNameWire = { analysisId: string; state: string; candidates?: CandidateWire[] | null; expiresAt?: string | null };
-export type ScanConfirmWire = { analysisId: string; state: string; charged?: boolean | null; product?: DetailWire | null };
+export type ScanConfirmWire = { analysisId: string; state: string; charged?: boolean | null; product?: DetailWire | null; freeUntil?: string | null };
 
 /** NO_CANDIDATE면 후보 0 — 서버 state가 정본(후보가 와도 state가 NO_CANDIDATE면 쓰지 않는다). 최대 5. */
 export function adaptScanName(w: ScanNameWire): ScanNameResult {
@@ -233,7 +236,7 @@ export function adaptScanName(w: ScanNameWire): ScanNameResult {
 /** charged는 true일 때만 true(없음·null = 차감 없음으로 보지 않고 "표시 안 함" — 호출측은 true만 차감 표시) */
 export function adaptScanConfirm(w: ScanConfirmWire): ScanConfirmResult {
   const rejected = w.state === 'REJECTED' || !w.product;
-  return { analysisId: w.analysisId, rejected, charged: w.charged === true, product: !rejected && w.product ? adaptProcessedDetail(w.product) : null };
+  return { analysisId: w.analysisId, rejected, charged: w.charged === true, product: !rejected && w.product ? adaptProcessedDetail(w.product) : null, freeUntil: isoOrNull(w.freeUntil) };
 }
 
 // ── KB-813 후속(P-508): 성분표 분석 S5 — POST /api/processed-foods/scan/label (서버 #442) ──
@@ -255,6 +258,8 @@ export type LabelScanResult = {
   rawText: string;
   /** 이번 호출에서 서버가 1회 차감했는지 — true일 때만 차감 표시(로컬 추정 0) */
   charged: boolean;
+  /** KB-877: 가공식품 1시간 무료 창 끝(서버 정본) — null = 창 없음 */
+  freeUntil: string | null;
 };
 export type LabelScanWire = {
   analysisId: string;
@@ -272,6 +277,7 @@ export type LabelScanWire = {
   majorAllergens?: string[] | null;
   ingredients?: { translated?: string | null; original?: string | null } | null;
   allergenStatement?: { translated?: string | null; original?: string | null } | null;
+  freeUntil?: string | null;
 };
 export function adaptLabelScan(w: LabelScanWire): LabelScanResult {
   const rawText = blankToNull(w.rawText);
@@ -292,5 +298,6 @@ export function adaptLabelScan(w: LabelScanWire): LabelScanResult {
     avoidance: adaptAvoidance(w.avoidance ?? []),
     rawText: blankToNull(w.rawText) ?? '',
     charged: w.charged === true,
+    freeUntil: isoOrNull(w.freeUntil),
   };
 }

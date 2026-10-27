@@ -1296,8 +1296,6 @@
     "reading": "Membaca kemasan…",
     "whichTitle": "Produk mana yang kamu punya?",
     "noneTitle": "Tidak ada produk yang cocok",
-    "usedOnSuccess": "1 pindaian dipakai jika analisis berhasil.",
-    "noScanUsed": "Tidak ada pindaian yang dipakai.",
     "noneBody": "Foto label bahan di bagian belakang untuk melanjutkan.",
     "checkMaker": "Periksa produsen dan rasanya.",
     "scanLabel": "Pindai label bahan",
@@ -1306,8 +1304,6 @@
     "labelHeadline": "Foto label belakang",
     "labelBody": "Pastikan seluruh daftar bahan terlihat jelas. Kamu bisa menambah foto jika perlu.",
     "labelBox": "Label bahan",
-    "sameAnalysis": "Lanjutkan analisis yang sama tanpa potongan pindaian tambahan.",
-    "successOnly": "Hanya analisis yang berhasil yang memakai 1 pindaian.",
     "labelSoon": "Analisis label bahan segera hadir.",
     "labelCta": "Foto label bahan",
     "captureHeadline": "Foto bagian depan kemasan",
@@ -1317,7 +1313,6 @@
     "takePhoto": "Ambil foto",
     "retake": "Foto ulang",
     "resultTitle": "Hasil pindaian",
-    "scanUsed": "1 pindaian dipakai.",
     "err": {
       "networkTitle": "Tidak dapat terhubung",
       "networkBody": "Periksa koneksi lalu coba lagi.",
@@ -1334,10 +1329,8 @@
       "unreadableTitle": "Label tidak terbaca",
       "unreadableBody": "Foto ulang dengan daftar bahan terlihat jelas.",
       "newAnalysisTitle": "Mulai analisis baru",
-      "newAnalysisBody": "Analisis ini tidak bisa ditambah foto. Analisis baru memakai 1 pindaian jika berhasil."
+      "newAnalysisBody": "Tidak bisa menambah foto lagi ke analisis ini. Silakan mulai analisis baru."
     },
-    "chargeChecking": "Kami sedang memeriksa apakah pindaian terpakai.",
-    "chargeSeeHome": "Cek sisa pindaian di layar beranda.",
     "debugLabel": "Teks OCR (khusus uji)",
     "debugPlaceholder": "Satu baris teks kemasan per baris",
     "debugRun": "Pakai teks ini",
@@ -1346,9 +1339,7 @@
     "labelPagesCount": "Foto: {{count}} dari {{max}}",
     "labelAddPage": "Foto sisi lain",
     "labelAnalyze": "Analisis label",
-    "labelNoExtra": "Analisis ini tidak memakai pindaian tambahan.",
     "labelRawTitle": "Teks yang terbaca",
-    "labelFreeRetry": "Dalam 30 menit, Anda bisa menganalisis ulang hingga 3 kali tanpa pindaian tambahan.",
     "newAnalysisCta": "Mulai analisis baru",
     "debugLabelPlaceholder": "Teks satu sisi label",
     "debugAddPage": "Tambahkan sebagai satu sisi",
@@ -1380,7 +1371,10 @@
     "resultCaution": "Pernyataan fasilitas bersama menyebut: {{names}}.",
     "resultUnclear": "Tidak ada yang cocok. Tidak dijelaskan rinci: {{items}}.",
     "resultSafeAll": "Tidak ada yang cocok di semua foto label yang kamu tambahkan.",
-    "resultMajorSet": "{{contains}}. Atur bahan yang dihindari untuk hasil pribadi."
+    "resultMajorSet": "{{contains}}. Atur bahan yang dihindari untuk hasil pribadi.",
+    "freeFor_one": "Pindai produk kemasan gratis {{count}} menit lagi",
+    "freeFor_other": "Pindai produk kemasan gratis {{count}} menit lagi",
+    "freeStarted": "Pindai produk kemasan berikutnya gratis selama 1 jam."
   },
   "scanCamera": {
     "title": "Pindai",

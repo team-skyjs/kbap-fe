@@ -40,8 +40,9 @@ jest.mock('@/lib/api/client', () => {
 });
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 let mockRestrictions: { code: string }[] = [{ code: 'SHRIMP' }];
-let mockProfileMissing = false; // 프로필 대기·실패(data 없음)
-jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockProfileMissing ? undefined : { id: '41', restrictions: mockRestrictions } }) })); // KB-865 ③: 결과 = 회피 1개 이상 회원(문장·리본) / 0개(주요 알레르기)
+let mockProfileMissing = false;
+let mockFreeUntil: string | null = null; // KB-877: 서버 무료 창 끝 // 프로필 대기·실패(data 없음)
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockProfileMissing ? undefined : { id: '41', restrictions: mockRestrictions, packagedFreeUntil: mockFreeUntil } }) })); // KB-865 ③: 결과 = 회피 1개 이상 회원(문장·리본) / 0개(주요 알레르기)
 const mockOcr = jest.fn();
 jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockOcr(...a) }));
 let mockGranted = true;
@@ -79,7 +80,7 @@ const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
 const flagLabel = FLAGS.packagedLabelScan;
 const setFlag = (v: boolean) => { (FLAGS as { packagedLabelScan: boolean }).packagedLabelScan = v; };
-beforeEach(() => { qc = new QueryClient(); mockParams = {}; mockGranted = true; mockCanceled = false; mockUuid = 0; setFlag(true); mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; });
+beforeEach(() => { qc = new QueryClient(); mockParams = {}; mockGranted = true; mockCanceled = false; mockUuid = 0; setFlag(true); mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; mockFreeUntil = null; });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); setFlag(flagLabel); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -95,6 +96,7 @@ function mockCamera(o: ScanCamOpts) {
       <Pressable testID={o.kind === 'package' ? 'pscan-take-photo' : 'pscan-label-capture'} onPress={() => o.onShot(mockShot)} />
       {o.link && <Pressable testID={o.link.testID} onPress={o.link.onPress} />}
       {o.onClose && <Pressable testID="cam-close" onPress={o.onClose} />}
+      {o.notice}
       {o.debug}
     </View>
   );
@@ -243,6 +245,22 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     expect(labelCalls()[1][1]).toMatchObject({ analysisId: 'L40' });
     expect(ids(t)).toContain('pscan-result-badge-danger');
     expect(texts(t)).toContain('packagedScan.resultAvoid:{"names":"L(SHRIMP)"}');
+  });
+  it('KB-877: 성분표 분석이 차감하며 창을 엶 = 결과에 "다음 1시간 무료" 한 줄 · 창 안 무료 분석(charged false) = 그 줄 0, 남은 분 줄', async () => {
+    const FREE = new Date(Date.now() + 59 * 60_000 + 30_000).toISOString();
+    const t = flow(true);
+    await shoot(t, LABEL_P1);
+    mockPost.mockResolvedValueOnce(RESULT({ charged: true, freeUntil: FREE }));
+    await press(t, 'pscan-label-analyze');
+    expect(ids(t)).toContain('pscan-free-started');
+    expect(texts(t)).toContain('packagedScan.freeStarted');
+    mockFreeUntil = FREE; // 프로필도 창을 안다
+    const t2 = flow(true);
+    await shoot(t2, LABEL_P1);
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L2', charged: false, freeUntil: FREE }));
+    await press(t2, 'pscan-label-analyze');
+    expect(ids(t2)).not.toContain('pscan-free-started');
+    expect(texts(t2)).toContain('packagedScan.freeFor:{"count":60}');
   });
   it('회피 0개 회원(M0) = 주요 알레르기 문장 + "회피 재료 설정"(리본·회피 문장 0) · 주요 알레르기 null = 확인 불가(없음 단정 금지)', async () => {
     mockRestrictions = [];

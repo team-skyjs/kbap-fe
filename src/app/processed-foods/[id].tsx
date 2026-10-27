@@ -188,7 +188,8 @@ export function ProcessedFoodDetailScreen() {
   const lang = useAppLanguage(); // 구독으로(KB-695 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 굳힌다)
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id?: string; scan?: string; charged?: string }>();
+  const params = useLocalSearchParams<{ id?: string; scan?: string; charged?: string; free?: string }>();
+  const freeStarted = params.scan === '1' && params.free === '1'; // KB-877: 이 확정이 차감하며 1시간 무료 창을 열었다(스캔 흐름이 응답으로 판단해 넘김)
   const id = typeof params.id === 'string' ? params.id : undefined;
   const q = useProcessedDetail(id);
   const guest = useIsGuest();
@@ -286,6 +287,7 @@ export function ProcessedFoodDetailScreen() {
           {(!!d.nameKo || !!d.type || !!d.foodType) && (
             <Text style={s.meta}>{[d.nameKo, d.type ? t(packagedTypeKey(d.type)) : d.foodType].filter(Boolean).join(' | ')}</Text>
           )}
+          {freeStarted && <Text style={s.freeStarted} testID="pf-free-started">{t('packagedScan.freeStarted')}</Text>}
         </View>
 
         {verdictText ? (
@@ -354,6 +356,7 @@ const s = StyleSheet.create({
   maker: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
   name: { fontFamily: font.bodyBold, fontSize: 28, lineHeight: 34, color: C.ink },
   meta: { fontFamily: font.body, fontSize: 15, lineHeight: 20, color: C.ink2 },
+  freeStarted: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 20, color: C.primaryText, marginTop: 8 }, // KB-877
   block: { gap: 10 },
   h2: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 26, color: C.ink },
   body: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink },

@@ -1292,8 +1292,6 @@
     "reading": "Reading the package…",
     "whichTitle": "Which product is yours?",
     "noneTitle": "No matching products",
-    "usedOnSuccess": "1 scan is used when analysis succeeds.",
-    "noScanUsed": "No scans used.",
     "noneBody": "Photograph the ingredient label on the back to continue.",
     "checkMaker": "Check the manufacturer and flavor.",
     "scanLabel": "Scan ingredient label",
@@ -1302,8 +1300,6 @@
     "labelHeadline": "Photograph the back label",
     "labelBody": "Keep the full ingredient list in focus. You can add more photos if needed.",
     "labelBox": "Ingredient label",
-    "sameAnalysis": "Continue the same analysis with no extra scan charge.",
-    "successOnly": "Only a successful analysis uses 1 scan.",
     "labelSoon": "Ingredient label analysis is coming soon.",
     "labelCta": "Photograph ingredient label",
     "captureHeadline": "Photograph the front of the package",
@@ -1313,7 +1309,6 @@
     "takePhoto": "Take photo",
     "retake": "Take the photo again",
     "resultTitle": "Scan result",
-    "scanUsed": "1 scan used.",
     "err": {
       "networkTitle": "Couldn't connect",
       "networkBody": "Check your connection and try again.",
@@ -1330,10 +1325,8 @@
       "unreadableTitle": "We couldn't read the label",
       "unreadableBody": "Keep the ingredient list in focus and take the photo again.",
       "newAnalysisTitle": "Start a new analysis",
-      "newAnalysisBody": "This analysis can't take more photos. A new analysis uses 1 scan when it succeeds."
+      "newAnalysisBody": "You can't add more photos to this analysis. Please start a new one."
     },
-    "chargeChecking": "We're checking whether a scan was used.",
-    "chargeSeeHome": "Check your remaining scans on the home screen.",
     "debugLabel": "OCR text (test only)",
     "debugPlaceholder": "One line per row of the package text",
     "debugRun": "Use this text",
@@ -1342,9 +1335,7 @@
     "labelPagesCount": "Photos: {{count}} of {{max}}",
     "labelAddPage": "Photograph another side",
     "labelAnalyze": "Analyze label",
-    "labelNoExtra": "No extra scan used for this analysis.",
     "labelRawTitle": "Label text",
-    "labelFreeRetry": "Within 30 minutes you can re-analyze this label up to 3 times with no extra scan.",
     "newAnalysisCta": "Start a new analysis",
     "debugLabelPlaceholder": "Text of one side of the label",
     "debugAddPage": "Add as one side",
@@ -1376,7 +1367,10 @@
     "resultCaution": "A shared-facility statement mentions: {{names}}.",
     "resultUnclear": "No matches found. Not described in detail: {{items}}.",
     "resultSafeAll": "No matches found across all the label photos you added.",
-    "resultMajorSet": "{{contains}}. Set your avoid ingredients to see a personal result."
+    "resultMajorSet": "{{contains}}. Set your avoid ingredients to see a personal result.",
+    "freeFor_one": "Free packaged scans for {{count}} min",
+    "freeFor_other": "Free packaged scans for {{count}} min",
+    "freeStarted": "Your next packaged scans are free for 1 hour."
   },
   "scanCamera": {
     "title": "Scan",
