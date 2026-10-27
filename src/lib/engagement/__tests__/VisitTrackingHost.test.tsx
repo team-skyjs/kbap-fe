@@ -18,9 +18,12 @@ jest.mock('expo-constants', () => ({ __esModule: true, default: { platform: { io
 jest.mock('expo-updates', () => ({ channel: 'production', updateId: null, runtimeVersion: '9ee06892b67f66f1ea72c0bc5725eb853442df11' }));
 // eslint-disable-next-line import/first
 import { VisitTrackingHost } from '../VisitTrackingHost';
+// eslint-disable-next-line import/first
+import { resumeEngagementIdentity } from '../visitRuntime';
 
 beforeEach(() => {
   mockTrack.mockClear(); mockResolved = false; mockHolding = false;
+  resumeEngagementIdentity(); // 부팅 기본 = 식별 미정 — 이 유닛은 식별 확정 뒤의 진입·보류만 본다
   mockState = { routes: [{ name: '__root', key: 'root', state: { routes: [{ name: 'food/[id]/index', key: 'detail', params: { id: 'sensitive-id' } }] } }] };
 });
 

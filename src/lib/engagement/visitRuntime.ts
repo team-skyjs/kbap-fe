@@ -30,7 +30,9 @@ export class VisitRuntime {
 }
 
 let runtime: VisitRuntime | null = null;
-let identitySuspended = false;
+// Codex #342: 부팅 = 식별 미정(pending)으로 시작. 저장된 세션의 프로필이 스플래시 뒤에 오면, 그 전에 익명으로 첫 방문을 보내고
+// setAnalyticsUser가 정지→재개하며 같은 화면을 한 번 더 보냈다. 손님 부팅은 initSessionFromStorage가, 회원은 setAnalyticsUser가 재개한다
+let identitySuspended = true;
 export function installVisitRuntime(next: VisitRuntime): () => void {
   runtime?.dispose(); runtime = next;
   if (identitySuspended) next.suspendIdentity();

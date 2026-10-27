@@ -15,6 +15,7 @@ import { api, ApiError, setAuthTokenProvider, setOnMemberMissing, setOnUnauthori
 import { track } from '@/lib/net/inflight';
 import { clearStaleAnalyticsIdentity, resetAnalyticsIdentity } from '@/lib/analytics';
 import { clearAirbridgeUser } from '@/lib/airbridge';
+import { resumeEngagementIdentity } from '@/lib/engagement/visitRuntime';
 import { queryClient } from '@/lib/queryClient';
 import { bumpSessionGen, clearTokens, currentGen, loadTokens, revertTokensIf, saveTokens } from './beTokens';
 import { getSessionState, initSessionState, setSessionState } from './useSession';
@@ -272,6 +273,7 @@ export function initSessionFromStorage(): Promise<void> {
         /* 계측만 포기 */
       }
       clearAirbridgeUser(); // KB-783: 세션 없는 부팅 = 이전 회원 귀속 잔재 정리(재설치·만료 — 같은 자리)
+      resumeEngagementIdentity(); // KB-873: 손님 부팅 = 식별 확정(익명) — 방문 계측 시작. 저장된 세션이면 프로필(setAnalyticsUser)이 재개
     }
     return initSessionState(has);
   });

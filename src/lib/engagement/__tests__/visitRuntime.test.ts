@@ -48,6 +48,7 @@ test('inactive background waits for focus, return to same active leaf does not d
 });
 
 test('identity boundary discards current visit and waits until SDK identity settlement; no elapsed-time emission yet', () => {
+  resumeEngagementIdentity(); // 부팅 기본 = 식별 미정(Codex #342) — 이 유닛은 식별 확정 뒤의 경계만 본다
   const { runtime, events } = setup(); const uninstall = installVisitRuntime(runtime);
   try {
     runtime.focus(activeVisitRoute(state('A')));
