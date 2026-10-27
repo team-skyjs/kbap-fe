@@ -28,6 +28,8 @@ export function initSentry(): void {
     // 함수형 옵션만 걸러내고 전 키를 네이티브 dict로 관통(wrapper.js initNativeSdk)
     // → cocoa 8.58(b21 포함)이 파싱. JS-only — 재빌드 불요·OTA 가능.
     ...({ enableAppHangTrackingV2: true } as object),
+    // KB-884(10/27 예진): 기본 2초 → 4초 — iOS 키보드 표시 중 2.4~3.2초 행(REACT-NATIVE-D 9건/4명). RN 7.11 타입 노출 키, 같은 initNativeSdk 관통 → JS-only, 재빌드 불요·OTA 가능
+    appHangTimeoutInterval: 4,
   });
 }
 
