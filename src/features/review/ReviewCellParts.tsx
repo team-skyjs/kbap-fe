@@ -366,8 +366,7 @@ const EXTRA_AXES: { key: keyof ReviewExtras; labelKey: string; Icon: typeof Icon
 
 /** Codex #31 P2: 세부 별 행 폭 적응 — 기본 32/16(=224pt)이 협폭(320 폰·편집 모달)에서
  *  넘침: 가용폭에 맞춰 gap 축소(최소 8) → 그래도 넘치면 별 스케일 다운(시안 비율 유지). */
-export function fitExtrasStars(availW: number): { size: number; gap: number } {
-  const BASE = { size: 32, gap: 16 };
+export function fitExtrasStars(availW: number, BASE = { size: 32, gap: 16 }): { size: number; gap: number } {
   if (availW <= 0 || BASE.size * 5 + BASE.gap * 4 <= availW) return BASE;
   const gap = Math.max(8, Math.floor((availW - BASE.size * 5) / 4));
   if (BASE.size * 5 + gap * 4 <= availW) return { size: BASE.size, gap };
@@ -383,31 +382,59 @@ export function ExtrasRater({
   onChange: (next: ReviewExtras) => void;
   t: TFn;
 }) {
-  const [starW, setStarW] = React.useState(0);
   if (!FLAGS.reviewExtrasEnabled) return null;
+  return <StarAxisRater axes={EXTRA_AXES} values={extras} onChange={onChange} t={t} />;
+}
+
+/** KB-865 ④(시안 32): 가공식품 맵기·당도 — 같은 행 문법(라벨 + 작은 별 5, 재탭 = 해제), 별 28 gap 12 · 거터 = 본문 패딩 */
+export const PACKAGED_TASTE_AXES = [
+  { key: 'spiciness', labelKey: 'review.spiciness' },
+  { key: 'sweetness', labelKey: 'review.sweetness' },
+] as const;
+const PACKAGED_STARS = { size: 28, gap: 12 };
+
+/** 축별 작은 별 행(1~5 선택 · 같은 별 재탭 = null) — 음식 세부 별점(ExtrasRater)·가공식품 맵기·당도 공용 */
+export function StarAxisRater<K extends string>({
+  axes,
+  values,
+  onChange,
+  t,
+  packaged = false,
+}: {
+  axes: readonly { key: K; labelKey: string }[];
+  values: Record<K, number | null>;
+  onChange: (next: Record<K, number | null>) => void;
+  t: TFn;
+  packaged?: boolean;
+}) {
+  const [starW, setStarW] = React.useState(0);
   // KB-432 §2-4(4150:16482): 2행 mx39 gap18 — 라벨 13/500 + 수치 13/600 / 별 32 gap 16(빈 stroke 2)
-  const { size, gap } = fitExtrasStars(starW);
+  const { size, gap } = fitExtrasStars(starW, packaged ? PACKAGED_STARS : undefined);
+  const tid = packaged ? 'taste' : 'extras'; // 음식 testID 무변
   return (
-    <View style={styles.extrasBox} testID="review-extras">
-      {EXTRA_AXES.map(({ key, labelKey }) => (
-        <View key={key} style={styles.extrasRow} testID={`extras-row-${key}`}>
+    <View style={[styles.extrasBox, packaged && styles.extrasBoxPackaged]} testID={packaged ? 'review-taste' : 'review-extras'}>
+      {axes.map(({ key, labelKey }) => (
+        <View key={key} style={styles.extrasRow} testID={`${tid}-row-${key}`}>
           <View style={styles.extrasLabelWrap}>
             <Text style={styles.extrasLabel} numberOfLines={1}>{t(labelKey)}</Text>
-            {extras[key] != null && <Text style={styles.extrasValue}>{extras[key]}</Text>}
+            {!packaged && values[key] != null && <Text style={styles.extrasValue}>{values[key]}</Text>}
           </View>
           <View
             style={{ flexDirection: 'row', gap, flexShrink: 1 }}
             onLayout={(e) => setStarW((cur) => (cur === 0 ? e.nativeEvent.layout.width : cur))}
-            testID={`extras-stars-${key}`}
+            testID={`${tid}-stars-${key}`}
           >
             {[1, 2, 3, 4, 5].map((n) => (
               <Pressable
                 key={n}
                 hitSlop={5}
-                testID={`extras-${key}-${n}`}
-                onPress={() => onChange({ ...extras, [key]: extras[key] === n ? null : n })} // 재탭 = 해제
+                testID={`${tid}-${key}-${n}`}
+                {...(packaged // 음식 세부 별점은 무변(KB-865 ④ 범위 밖)
+                  ? { accessibilityRole: 'button' as const, accessibilityLabel: t('review.tasteStarA11y', { axis: t(labelKey), count: n }), accessibilityState: { selected: values[key] === n } }
+                  : {})}
+                onPress={() => onChange({ ...values, [key]: values[key] === n ? null : n })} // 재탭 = 해제
               >
-                <Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} />
+                <Star size={size} fillPct={(values[key] ?? 0) >= n ? 100 : 0} />
               </Pressable>
             ))}
           </View>
@@ -499,6 +526,7 @@ const styles = StyleSheet.create({
   // P-202: 3축 섹션(작성·수정 공용) + 셀 축약 — 기본 스타일(디자이너 폴리시 전)
   // KB-432 §2-4: 카드 박스 소멸 — mx 39 플랫 2행
   extrasBox: { gap: 18, marginHorizontal: 20 }, // P-348 ⑦: 39는 ko/id 라벨+별 5개 공존 불가(i18n 예외)
+  extrasBoxPackaged: { marginHorizontal: 0 }, // KB-865 ④ 시안 32: 라벨 = 본문 거터(20)
   extrasRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   extrasLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 }, // A-RW-04 → P-348 ⑦: 라벨 고정(별 행이 축소)
   extrasLabel: { fontSize: 13, fontWeight: '500', color: C.ink2 },

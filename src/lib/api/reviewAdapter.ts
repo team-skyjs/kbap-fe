@@ -38,6 +38,8 @@ export interface ReviewFoodWire {
 export interface ReviewWire {
   servingSpeed?: number;
   staffKindness?: number;
+  spiciness?: number | null; // KB-869: 가공식품만 1~5, 미입력·음식 = null
+  sweetness?: number | null;
   reviewId: number;
   /** P-165: 계약에서 소멸 — 구응답 방어 폴백으로만 유지. 정본은 food.foodId. */
   foodId?: number;
@@ -74,6 +76,9 @@ export interface ReviewPageWire {
 export interface ReviewUpdateWire {
   servingSpeed?: number;
   staffKindness?: number;
+  /** KB-865 ④: 가공식품만 — 키 생략 = 서버 기존 값 유지, null = 비움(0 금지 — 400) */
+  spiciness?: number | null;
+  sweetness?: number | null;
   rating: number;
   content?: string;
   imagePaths?: string[];
@@ -93,6 +98,9 @@ function adaptAuthor(wire: ReviewAuthorWire | null | undefined): ReviewAuthor | 
     level: wire.level,
   };
 }
+
+/** KB-865 ④: 1~5 정수만 값 — 그 밖(부재·null·0·범위 밖) = 미입력 */
+export const tasteAxis = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 5 ? v : null);
 
 export function adaptReview(wire: ReviewWire): Review {
   const author = adaptAuthor(wire.author);
@@ -130,6 +138,8 @@ export function adaptReview(wire: ReviewWire): Review {
     // P-236: 2축(0 = 평가 안 함) — 누락 = 0과 동일 취급
     servingSpeed: wire.servingSpeed ?? 0,
     staffKindness: wire.staffKindness ?? 0,
+    spiciness: tasteAxis(wire.spiciness),
+    sweetness: tasteAxis(wire.sweetness),
     // P-201: 장소 — name 없으면 무태그. MANUAL = 좌표 null(딥링크는 이름 검색 폴백)
     place: wire.place?.name
       ? {
@@ -185,7 +195,7 @@ function placeWire(p: ReviewPlaceLike): NonNullable<ReviewUpdateWire['place']> {
  */
 export function buildReviewUpdate(
   current: { rating: number; body: string | null; photos?: string[]; place?: ReviewPlaceLike | null; servingSpeed?: number; staffKindness?: number },
-  changes: { rating?: number; body?: string | null; place?: ReviewPlaceLike | null; servingSpeed?: number; staffKindness?: number; photos?: string[] },
+  changes: { rating?: number; body?: string | null; place?: ReviewPlaceLike | null; servingSpeed?: number; staffKindness?: number; photos?: string[]; spiciness?: number | null; sweetness?: number | null },
 ): ReviewUpdateWire {
   const body = (changes.body !== undefined ? changes.body : current.body)?.trim() ?? '';
   const place = changes.place !== undefined ? changes.place : (current.place ?? null);
@@ -198,5 +208,8 @@ export function buildReviewUpdate(
     // P-358: 편집 화면이 슬롯 순서대로 확정한 paths(changes.photos) 우선 — 미전달 = 현행 보존
     imagePaths: (changes.photos ?? current.photos ?? []).map(imageUrlToPath), // 항상 전송 — 사진 소실 방지
     ...(place ? { place: placeWire(place) } : {}), // null = 해제 → 생략
+    // KB-865 ④: 맵기·당도는 넘겨받을 때만(가공식품 편집) — 값 또는 null(비움). 음식 편집 = 키 없음(서버 기존 값 유지)
+    ...(changes.spiciness !== undefined ? { spiciness: tasteAxis(changes.spiciness) } : {}),
+    ...(changes.sweetness !== undefined ? { sweetness: tasteAxis(changes.sweetness) } : {}),
   };
 }

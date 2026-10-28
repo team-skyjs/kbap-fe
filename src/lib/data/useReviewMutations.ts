@@ -13,7 +13,7 @@ import { useMutation, useQueryClient, type InfiniteData, type QueryClient } from
 import i18n from '../i18n';
 import { api, ApiError } from '@/lib/api/client';
 import { PROCESSED_REVIEW_HEADERS } from './useFoodReviews';
-import { buildReviewUpdate, type ReviewUpdateWire } from '@/lib/api/reviewAdapter';
+import { buildReviewUpdate, tasteAxis, type ReviewUpdateWire } from '@/lib/api/reviewAdapter';
 import type { Review, ReviewPage, User } from '@/lib/api/types';
 import { FLAGS } from '@/lib/flags';
 import { trackReadyFood } from './hiddenFoods';
@@ -112,7 +112,7 @@ export function useCreateReview() {
 export function useCreateProcessedReview() {
   const invalidate = useInvalidateReviews();
   return useMutation({
-    mutationFn: async (input: { processedFoodId: string; rating: number; content?: string; imagePaths?: string[] }) => {
+    mutationFn: async (input: { processedFoodId: string; rating: number; content?: string; imagePaths?: string[]; spiciness?: number | null; sweetness?: number | null }) => {
       // 봉인(롤백 스위치 off) = 저장할 곳이 없다 — 성공으로 끝내면 완료 모달·계측이 뜨고 글이 사라진다(Codex #314). 실패로 끝내 화면이 글을 쥐고 있게
       if (!FLAGS.reviewsLiveEnabled) throw new Error('packaged reviews need live reviews');
       await api.post(
@@ -121,6 +121,9 @@ export function useCreateProcessedReview() {
           rating: input.rating,
           ...(input.content ? { content: input.content } : {}),
           ...(input.imagePaths?.length ? { imagePaths: input.imagePaths } : {}),
+          // KB-865 ④: 미입력 = 키 생략(서버 null) — 0·null 송신 0
+          ...(tasteAxis(input.spiciness) != null ? { spiciness: input.spiciness } : {}),
+          ...(tasteAxis(input.sweetness) != null ? { sweetness: input.sweetness } : {}),
         },
         PROCESSED_REVIEW_HEADERS, // 엔드포인트가 3.2+ 매핑 — 버전 헤더 없으면 404(KB-870: 조회 헤더와 분리 — 채널 무관 3.2)
       );
@@ -142,7 +145,7 @@ export function useUpdateReview() {
       reviewId: string;
       foodId: string;
       current: { rating: number; body: string | null; photos?: string[]; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null; servingSpeed?: number; staffKindness?: number };
-      changes: { rating?: number; body?: string | null; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null; extras?: ReviewExtras; photos?: string[] };
+      changes: { rating?: number; body?: string | null; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null; extras?: ReviewExtras; photos?: string[]; spiciness?: number | null; sweetness?: number | null };
     }) => {
       if (!FLAGS.reviewsLiveEnabled) {
         const body = (input.changes.body !== undefined ? input.changes.body : input.current.body)?.trim() || null;

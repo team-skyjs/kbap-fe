@@ -230,6 +230,9 @@ export interface Review {
   /** P-236(KB-347): 2축 평가 — 0 = 평가 안 함(구 리뷰 전부 0). */
   servingSpeed?: number;
   staffKindness?: number;
+  /** KB-865 ④(KB-869): 가공식품 맵기·당도 1~5 — null = 미입력·음식 리뷰·구서버 */
+  spiciness?: number | null;
+  sweetness?: number | null;
   myLike?: boolean;
   /** KB-812 2차: 리뷰 대상 — 서버 targetType PROCESSED_FOOD = 'packaged'(foodId '' · 이름·사진 = 제품), 그 밖·구응답 = 'food' */
   target?: 'food' | 'packaged';

@@ -440,7 +440,9 @@
     "extrasTaste": "Hương vị",
     "writeSoon": "Sắp mở đánh giá cho thực phẩm đóng gói. Nội dung bạn đã viết vẫn còn trên màn hình này.",
     "spiciness": "Độ cay",
-    "sweetness": "Độ ngọt"
+    "sweetness": "Độ ngọt",
+    "tasteOptional": "Độ cay và độ ngọt không bắt buộc.",
+    "tasteStarA11y": "{{axis}} {{count}} trên 5"
   },
   "translation": {
     "showTranslation": "Hiện bản dịch",
@@ -476,6 +478,7 @@
     "showOriginal": "Xem bản gốc",
     "translatedFrom": "Dịch từ {{lang}}",
     "anonymous": "Người dùng đã rời đi",
+    "you": "Bạn",
     "today": "Hôm nay",
     "daysAgo": "{{count}} ngày trước",
     "weeksAgo": "{{count}} tuần trước",

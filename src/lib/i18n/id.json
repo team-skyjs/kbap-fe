@@ -440,7 +440,9 @@
     "extrasTaste": "Rasa",
     "writeSoon": "Ulasan untuk makanan kemasan akan segera dibuka. Tulisan Anda masih ada di layar ini.",
     "spiciness": "Pedas",
-    "sweetness": "Manis"
+    "sweetness": "Manis",
+    "tasteOptional": "Pedas dan manis bersifat opsional.",
+    "tasteStarA11y": "{{axis}} {{count}} dari 5"
   },
   "translation": {
     "showTranslation": "Tampilkan terjemahan",
@@ -476,6 +478,7 @@
     "showOriginal": "Tampilkan asli",
     "translatedFrom": "Diterjemahkan dari {{lang}}",
     "anonymous": "Pengguna terhapus",
+    "you": "Anda",
     "today": "Hari ini",
     "daysAgo": "{{count}} hari lalu",
     "weeksAgo": "{{count}} minggu lalu",

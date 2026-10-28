@@ -485,7 +485,9 @@
     "extrasTaste": "맛",
     "writeSoon": "가공식품 리뷰는 곧 열려요. 작성한 내용은 이 화면에 그대로 있어요.",
     "spiciness": "맵기",
-    "sweetness": "당도"
+    "sweetness": "당도",
+    "tasteOptional": "맵기와 당도는 선택이에요.",
+    "tasteStarA11y": "{{axis}} 5점 중 {{count}}점"
   },
   "translation": {
     "showTranslation": "번역 보기",
@@ -521,6 +523,7 @@
     "showOriginal": "원문 보기",
     "translatedFrom": "{{lang}}에서 번역됨",
     "anonymous": "탈퇴한 유저",
+    "you": "나",
     "today": "오늘",
     "daysAgo": "{{count}}일 전",
     "weeksAgo": "{{count}}주 전",

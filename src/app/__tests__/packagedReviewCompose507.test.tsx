@@ -5,6 +5,7 @@
  * ③ 403 PFOOD-005(서버 쓰기 OFF) = "곧 열려요" 중립 안내 · 일반 실패 문구 0 · 입력 보존 · 완료 모달 0
  * ④ 410 PFOOD-002 = 음식 "없음"과 같은 중립 안내
  * ⑤ 수정 = 같은 PATCH(장소 null) — 경로 /processed-foods/{id}/review?reviewId=
+ * ⑥~⑧ KB-865 ④(시안 32): 맵기·당도 작은 별 2행 — 선택·재탭 해제·작성 요청 값 · 편집 프리필·비움(null) · 음식 화면엔 없음
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
@@ -158,7 +159,7 @@ it('① 대상 카드 = 제품 이름·제조사 · 세부 별점(extras)·장�
 it('② 등록 = 가공식품 작성만(processedFoodId·별·본문·사진) · 음식 작성 0 · 계측 target_type packaged · airbridge 0 · 완료 모달', async () => {
   const t = render(<PackagedReviewCompose />);
   await fillAndPost(t);
-  expect(mockCreatePf).toHaveBeenCalledWith({ processedFoodId: '1711', rating: 4, content: BODY, imagePaths: [] });
+  expect(mockCreatePf).toHaveBeenCalledWith({ processedFoodId: '1711', rating: 4, content: BODY, imagePaths: [], spiciness: null, sweetness: null }); // KB-865 ④: 미입력 = null(어댑터가 키 생략)
   expect(mockCreateFood).not.toHaveBeenCalled();
   expect(mockTrack).toHaveBeenCalledWith('review_submit', { has_photos: false, photo_count: 0, rating: 4, target_type: 'packaged' });
   expect(mockRate).not.toHaveBeenCalled();
@@ -199,4 +200,47 @@ it('⑤ 수정 = 캐시의 가공식품 리뷰 프리필 → 같은 PATCH(장소
   expect(arg.reviewId).toBe('p9');
   expect(arg.changes).toMatchObject({ place: null, rating: 3 });
   expect(mockCreatePf).not.toHaveBeenCalled();
+});
+
+const taste = (t: ReactTestRenderer, axis: 'spiciness' | 'sweetness', n: number) => act(() => byId(t, `taste-${axis}-${n}`)[0].props.onPress());
+const filled = (t: ReactTestRenderer, axis: string) =>
+  [1, 2, 3, 4, 5].filter((n) => byId(t, `taste-${axis}-${n}`)[0].findAll((x) => x.props?.fillPct === 100).length > 0).length;
+
+it('⑥ KB-865 ④ 맵기·당도 2행 + 선택 안내 — 탭 = 그 값까지 채움 · 같은 별 재탭 = 미입력 · 작성 요청에 값', async () => {
+  const t = render(<PackagedReviewCompose />);
+  expect(byId(t, 'taste-row-spiciness').length).toBeGreaterThan(0);
+  expect(byId(t, 'taste-row-sweetness').length).toBeGreaterThan(0);
+  expect(flat(t)).toContain('review.tasteOptional');
+  expect(byId(t, 'taste-spiciness-3')[0].props.accessibilityLabel).toBe('review.tasteStarA11y');
+  taste(t, 'spiciness', 3);
+  expect(filled(t, 'spiciness')).toBe(3);
+  taste(t, 'spiciness', 3); // 재탭 = 해제
+  expect(filled(t, 'spiciness')).toBe(0);
+  taste(t, 'spiciness', 2);
+  taste(t, 'sweetness', 5);
+  await fillAndPost(t);
+  expect(mockCreatePf).toHaveBeenCalledWith(expect.objectContaining({ spiciness: 2, sweetness: 5 }));
+});
+
+it('⑦ 편집 = 기존 맵기·당도 프리필(null = 빈 별) · 비우면 PATCH changes에 null(비움) — 0 송신 없음', async () => {
+  mockParams.reviewId = 'p9';
+  queryClient.setQueryData(['me', 'reviews'], [{
+    id: 'p9', foodId: '', target: 'packaged', processedFoodId: '1711', rating: 3, body: 'Too salty for me', createdAt: '2026-10-21',
+    photos: [], place: null, servingSpeed: 0, staffKindness: 0, spiciness: 4, sweetness: null, authorNationality: 'US', authorRankTier: null, anonymized: false,
+  }]);
+  const t = render(<PackagedReviewCompose />);
+  expect(filled(t, 'spiciness')).toBe(4);
+  expect(filled(t, 'sweetness')).toBe(0);
+  taste(t, 'spiciness', 4); // 비움
+  taste(t, 'sweetness', 1);
+  await act(async () => { byId(t, 'post-review')[0].props.onPress(); });
+  const arg = mockUpdate.mock.calls[0][0] as { changes: Record<string, unknown> };
+  expect(arg.changes).toMatchObject({ spiciness: null, sweetness: 1 });
+});
+
+it('⑧ 맵기·당도만 바꿔도 이탈 확인이 걸린다(변경 있음)', () => {
+  const t = render(<PackagedReviewCompose />);
+  expect(mockPrevent.on).toBe(false);
+  taste(t, 'sweetness', 2);
+  expect(mockPrevent.on).toBe(true);
 });
