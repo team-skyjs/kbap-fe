@@ -440,7 +440,9 @@
     "extrasTaste": "味",
     "writeSoon": "加工食品のレビューはまもなく投稿できるようになります。書いた内容はこの画面に残っています。",
     "spiciness": "辛さ",
-    "sweetness": "甘さ"
+    "sweetness": "甘さ",
+    "tasteOptional": "辛さと甘さの評価は任意です。",
+    "tasteStarA11y": "{{axis}} 5段階中{{count}}"
   },
   "translation": {
     "showTranslation": "翻訳を表示",
@@ -476,6 +478,7 @@
     "showOriginal": "原文を表示",
     "translatedFrom": "{{lang}}から翻訳",
     "anonymous": "退会したユーザー",
+    "you": "あなた",
     "today": "今日",
     "daysAgo": "{{count}}日前",
     "weeksAgo": "{{count}}週間前",

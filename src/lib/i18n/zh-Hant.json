@@ -440,7 +440,9 @@
     "extrasTaste": "味道",
     "writeSoon": "包裝食品評價即將開放。你寫的內容仍保留在此頁面。",
     "spiciness": "辣度",
-    "sweetness": "甜度"
+    "sweetness": "甜度",
+    "tasteOptional": "辣度和甜度為選填項目。",
+    "tasteStarA11y": "{{axis}} {{count}}/5"
   },
   "translation": {
     "showTranslation": "顯示翻譯",
@@ -476,6 +478,7 @@
     "showOriginal": "顯示原文",
     "translatedFrom": "從{{lang}}翻譯",
     "anonymous": "已註銷用戶",
+    "you": "我",
     "today": "今天",
     "daysAgo": "{{count}}天前",
     "weeksAgo": "{{count}} 週前",

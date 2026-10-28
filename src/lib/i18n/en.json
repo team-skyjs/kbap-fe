@@ -481,7 +481,9 @@
     "extrasTaste": "Taste",
     "writeSoon": "Reviews for packaged foods are opening soon. What you wrote is still here on this screen.",
     "spiciness": "Spiciness",
-    "sweetness": "Sweetness"
+    "sweetness": "Sweetness",
+    "tasteOptional": "Spiciness and sweetness are optional.",
+    "tasteStarA11y": "{{axis}} {{count}} of 5"
   },
   "translation": {
     "showTranslation": "Show translation",
@@ -517,6 +519,7 @@
     "showOriginal": "Show original",
     "translatedFrom": "Translated from {{lang}}",
     "anonymous": "Deleted user",
+    "you": "You",
     "today": "Today",
     "daysAgo": "{{count}}d ago",
     "weeksAgo": "{{count}}w ago",

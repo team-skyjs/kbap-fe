@@ -456,7 +456,9 @@
     "extrasTaste": "Вкус",
     "writeSoon": "Отзывы об упакованных продуктах скоро откроются. Ваш текст сохранён на этом экране.",
     "spiciness": "Острота",
-    "sweetness": "Сладость"
+    "sweetness": "Сладость",
+    "tasteOptional": "Острота и сладость указываются по желанию.",
+    "tasteStarA11y": "{{axis}}: {{count}} из 5"
   },
   "translation": {
     "showTranslation": "Показать перевод",
@@ -494,6 +496,7 @@
     "showOriginal": "Оригинал",
     "translatedFrom": "Перевод с языка: {{lang}}",
     "anonymous": "Удалённый пользователь",
+    "you": "Вы",
     "today": "Сегодня",
     "daysAgo": "{{count}} дн. назад",
     "weeksAgo": "{{count}} нед. назад",

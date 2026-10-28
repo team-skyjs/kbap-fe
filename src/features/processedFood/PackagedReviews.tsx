@@ -5,6 +5,7 @@
  *   축 라벨만 Taste·Spiciness·Sweetness(KB-869 #461 — overall = 별점 평균 = taste, 축 없음 = 숨김). 요약 null(구서버)·0건 = 박스 없음.
  * - 목록: 받은 페이지 전부 · 화면이 바닥 근처에 오면 다음 페이지(loadMoreRef — 상세 ScrollView가 부른다, 서버 50건 keyset).
  *   다음 페이지 실패 = 안내 + 다시 시도(자동 재요청 멈춤).
+ * - KB-865 ④(시안 31·46): 요약 아래 헤더 행 'Reviews' + 우측 텍스트 링크 'Write a review'(구 하단 ghost 버튼 대체) · 빈 별 + `평균 (건수)` 행(요약 0건·null = 행 없음).
  * - 쓰기 버튼 = FLAGS.packagedReviewWrite(서버 쓰기 플래그가 켜진 채널만) — 게스트 게이트·403 안내는 작성 화면 몫(음식과 같음).
  * - 신고 입력은 ModerationFlow 모달 안(음식 상세와 같은 예외 사유 — reviewKeyboard700).
  */
@@ -14,6 +15,8 @@ import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
+import { Pressable } from '@/components/Pressable';
+import { Star } from '@/components';
 import { Shimmer } from '@/components/Skeleton';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
@@ -74,6 +77,7 @@ export function PackagedReviews({ productId, summary, loadMoreRef }: { productId
           review={r}
           t={t}
           mine={mine}
+          youAsName /* 시안 46 */
           showFood={false} /* 자기 자신 대상 칩 무의미 — 음식 상세와 같음 */
           onOpenFood={() => {}}
           onGuestHelpful={() => setGate(true)}
@@ -104,16 +108,26 @@ export function PackagedReviews({ productId, summary, loadMoreRef }: { productId
           />
         </View>
       )}
+      {/* KB-865 ④ 시안 31: 헤더 행 — 쓰기 링크는 서버 쓰기 플래그 + 롤백 스위치(reviewsLiveEnabled off = 쓰기 경로 없음, Codex #314) */}
+      <View style={s.head}>
+        <Text style={s.heading} accessibilityRole="header">{t('reviews.headerTitle')}</Text>
+        {FLAGS.packagedReviewWrite && FLAGS.reviewsLiveEnabled && (
+          <Pressable onPress={write} hitSlop={12} accessibilityRole="button" testID="pf-write-review">
+            <Text style={s.writeLink}>{t('reviews.writeReview')}</Text>
+          </Pressable>
+        )}
+      </View>
+      {summary != null && summary.overall.count > 0 && summary.overall.average != null && (
+        <View style={s.countRow} testID="pf-reviews-count">
+          <Star size={16} fillPct={0} />
+          <Text style={s.countText}>{`${summary.overall.average.toFixed(1)} (${summary.overall.count})`}</Text>
+        </View>
+      )}
       {list}
       {q.isFetchingNextPage && <View style={s.btnRow}><Shimmer style={s.skelCard} /></View>}
       {q.isFetchNextPageError && (
         <View style={s.btnRow}>
           <Btn variant="ghost" onPress={() => void q.fetchNextPage()} testID="pf-reviews-more-retry">{t('common.tryAgain')}</Btn>
-        </View>
-      )}
-      {FLAGS.packagedReviewWrite && FLAGS.reviewsLiveEnabled && ( /* 롤백 스위치(reviewsLiveEnabled off) = 가공식품 쓰기 경로 없음 — 버튼째 숨김(Codex #314) */
-        <View style={s.btnRow}>
-          <Btn variant="ghost" onPress={write} testID="pf-write-review">{t('reviews.writeReview')}</Btn>
         </View>
       )}
       <ModerationFlow
@@ -133,6 +147,12 @@ const s = StyleSheet.create({
   root: { marginHorizontal: -20, gap: 0 },
   // 시안 08: 버튼 아래 16 · 박스 335 #F7F8FA(음식 상세와 같은 부품) → 카드 목록
   summary: { paddingHorizontal: 20, paddingBottom: 8 },
+  // 시안 31: 요약 아래 16 · 헤더 18/700 + 링크 15 ink2 · 빈 별 16 + 14 ink3 · 카드 위 8
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 20, paddingTop: 16 },
+  heading: { flexShrink: 1, fontSize: 18, fontWeight: '700', color: C.ink },
+  writeLink: { fontSize: 15, fontWeight: '400', color: C.ink2 },
+  countRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
+  countText: { fontSize: 14, fontWeight: '400', color: C.ink3 },
   beFirst: { fontSize: 14, fontWeight: '600', color: C.ink2, textAlign: 'center', paddingTop: 16 },
   btnRow: { paddingHorizontal: 20, paddingTop: 16 },
   skel: { paddingHorizontal: 20, paddingTop: 16, gap: 12 },

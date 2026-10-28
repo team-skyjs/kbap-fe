@@ -46,6 +46,7 @@ export function FeedCard({
   showMore = true,
   showFood = true,
   photoVariant = 'tiles',
+  youAsName = false,
 }: {
   review: Review;
   t: TFn;
@@ -59,10 +60,12 @@ export function FeedCard({
   showFood?: boolean;
   /** KB-817: 리뷰 탭만 'peek'(사진 가로 스냅 + See more 잉크색). 홈·음식 상세·내 리뷰 = 'tiles' 불변 */
   photoVariant?: 'tiles' | 'peek';
+  /** KB-865 ④(시안 46): 내 리뷰 = 닉네임 자리에 'You' — 가공식품 상세만 켠다(그 밖 표면 무변) */
+  youAsName?: boolean;
 }) {
   const fontScale = useWindowDimensions().fontScale; // KB-777: 글꼴 배율 전이 = 칩 재측정
   const anon = review.anonymized;
-  const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
+  const name = anon ? t('reviews.anonymous') : youAsName && mine ? t('reviews.you') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
   const when = useReviewTime(review.createdAt, t);
   return (
     <View style={styles.card} testID={`feed-${review.id}`}>

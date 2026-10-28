@@ -158,3 +158,19 @@ describe('P-181(BE #152): 탈퇴 판정 = authorWithdrawn 서버 정본', () => 
     expect(adaptReview({ ...base, author: AUTHOR }).anonymized).toBe(false);
   });
 });
+
+describe('KB-865 ④ 맵기·당도(가공식품)', () => {
+  it('조회: 1~5 정수만 값 · 부재(구서버)·null·0·범위 밖·소수 = null', () => {
+    expect(adaptReview({ ...WIRE, spiciness: 3, sweetness: 5 })).toMatchObject({ spiciness: 3, sweetness: 5 });
+    expect(adaptReview(WIRE)).toMatchObject({ spiciness: null, sweetness: null });
+    for (const bad of [null, 0, 6, 2.5]) expect(adaptReview({ ...WIRE, spiciness: bad }).spiciness).toBeNull();
+  });
+  it('PATCH: 넘기면 값·비움(null) 그대로, 0은 null로 · 안 넘기면(음식 편집) 키 없음 = 서버 기존 값 유지', () => {
+    const cur = { rating: 4, body: 'b', photos: [] };
+    expect(buildReviewUpdate(cur, { spiciness: 2, sweetness: null })).toMatchObject({ spiciness: 2, sweetness: null });
+    expect(buildReviewUpdate(cur, { spiciness: 0 })).toMatchObject({ spiciness: null });
+    const food = buildReviewUpdate(cur, { body: 'x' });
+    expect('spiciness' in food).toBe(false);
+    expect('sweetness' in food).toBe(false);
+  });
+});

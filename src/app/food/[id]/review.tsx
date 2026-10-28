@@ -45,7 +45,7 @@ import { airbridge } from '@/lib/airbridge';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, reviewBodyLength, reviewPhotoKey, REVIEW_MAX_PHOTOS, REVIEW_MIN_BODY, uploadReviewImages, type ReviewPhoto } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
-import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
+import { ExtrasRater, PACKAGED_TASTE_AXES, PlacePickerSheet, StarAxisRater, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { openAppSettings } from '@/lib/openExternal';
 import { useUploadAbort } from '@/lib/useUploadAbort';
@@ -59,10 +59,14 @@ const MAX = 1000; // P-085: 계약 확정값 (구 500)
 // 커서가 위쪽이면 화면 밖으로 밀리므로 무동작. 캐럿 좌표를 얻게 되면 이 상한 대신 그 줄로 맞출 것.
 const SHRINK_FOLLOW_MAX = 120;
 
-/** KB-708: 이탈 확인 비교용 — 화면이 들고 있는 작성 값 한 벌(별·본문·사진·장소·세부 별점) */
-function draftKey(rating: number, body: string, photos: unknown[], place: unknown, extras: unknown): string {
-  return JSON.stringify([rating, body, photos, place, extras]);
+/** KB-708: 이탈 확인 비교용 — 화면이 들고 있는 작성 값 한 벌(별·본문·사진·장소·세부 별점·맵기/당도) */
+function draftKey(rating: number, body: string, photos: unknown[], place: unknown, extras: unknown, taste: unknown): string {
+  return JSON.stringify([rating, body, photos, place, extras, taste]);
 }
+
+/** KB-865 ④: 가공식품 맵기·당도(1~5 선택, null = 미입력) */
+type PackagedTaste = { spiciness: number | null; sweetness: number | null };
+const EMPTY_TASTE: PackagedTaste = { spiciness: null, sweetness: null };
 
 export default function ReviewCompose() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
@@ -108,6 +112,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   const [placeSheet, setPlaceSheet] = useState(false);
   // P-202: 3축(속도·친절·찾아가기 — 선택) — 전송은 계약 후(buildReviewExtras), 우선 로컬 보관
   const [extras, setExtras] = useState<ReviewExtras>(EMPTY_EXTRAS);
+  const [taste, setTaste] = useState<PackagedTaste>(EMPTY_TASTE);
   const isGuest = useIsGuest();
   const createReview = useCreateReview();
   const createProcessedReview = useCreateProcessedReview();
@@ -117,7 +122,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   // P-358: 프리필 — 리뷰 도착 시 1회(별·본문·extras·place·사진 = 원격 슬롯)
   const prefilledRef = useRef(false);
   // KB-708: 이탈 확인의 기준 = 화면이 처음 가진 값(작성 = 빈 값, 수정 = 프리필 직후) — 지금 값과 다르면 "변경 있음"
-  const [baseline, setBaseline] = useState(() => draftKey(0, '', [], null, EMPTY_EXTRAS));
+  const [baseline, setBaseline] = useState(() => draftKey(0, '', [], null, EMPTY_EXTRAS, EMPTY_TASTE));
   useEffect(() => {
     if (!editing || !editReviewData || prefilledRef.current) return;
     prefilledRef.current = true;
@@ -127,13 +132,15 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
       extras: extrasFromReview(editReviewData),
       place: editReviewData.place ?? null,
       photos: (editReviewData.photos ?? []).map((url) => ({ kind: 'remote' as const, url })),
+      taste: { spiciness: editReviewData.spiciness ?? null, sweetness: editReviewData.sweetness ?? null }, // null(미입력·구서버) = 빈 별
     };
     setRating(pre.rating);
     setBody(pre.body);
     setExtras(pre.extras);
     setPlace(pre.place);
     setPhotos(pre.photos);
-    setBaseline(draftKey(pre.rating, pre.body, pre.photos, pre.place, pre.extras));
+    setTaste(pre.taste);
+    setBaseline(draftKey(pre.rating, pre.body, pre.photos, pre.place, pre.extras, pre.taste));
   }, [editing, editReviewData]);
   // KB-708: 변경이 있을 때만 이탈 확인 — 뒤로 가기 버튼·스와이프 뒤로·Android 하드웨어 뒤로 전부(usePreventRemove = 네이티브 스택 제스처까지).
   // 등록 성공(완료 모달)·저장 성공(복귀) 뒤에는 막지 않는다.
@@ -149,7 +156,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   // #236 /review B: 막는 조건 ⊆ 확인 창이 렌더되는 조건 — 게스트(세션 만료)·수정 미도착 분기는 아래 early return이라 모달이 없다.
   // 거기서 막으면 뒤로·게이트 "둘러보기"가 전부 무반응 = 나갈 길이 로그인뿐. 폼이 보이는 분기에서만 막는다.
   const formShown = !isGuest && !(editing && !editReviewData);
-  const leave = useLeaveConfirm(formShown && draftKey(rating, body, photos, place, extras) !== baseline && !submitted, posting);
+  const leave = useLeaveConfirm(formShown && draftKey(rating, body, photos, place, extras, taste) !== baseline && !submitted, posting);
   // KB-828: 본문 10자 미만 = Post 비활성 + 안내. 비활성 버튼 탭·서버 REVIEW-005 = 같은 안내를 강조(색만 — 프레임 불변)
   const bodyLen = reviewBodyLength(body);
   const bodyShort = bodyLen < REVIEW_MIN_BODY;
@@ -235,7 +242,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
             reviewId: reviewId ?? '',
             foodId: id ?? '',
             current: editReviewData,
-            changes: { rating, body: body.trim() || null, place, extras, photos: imagePaths }, // place 해제 = null 명시
+            changes: { rating, body: body.trim() || null, place, extras, photos: imagePaths, ...(packaged ? taste : {}) }, // place 해제 = null 명시 · KB-865 ④ 맵기·당도 해제 = null(비움)
           });
           // 저장 성공 = 복귀 + 상단 토스트(완료 모달 아님 — P-358). KB-708: 이탈 확인 해제 뒤 복귀(저장한 변경을 "버릴까요?"로 묻지 않게)
           showTopToast(t('editReview.savedToast'));
@@ -243,7 +250,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
           return;
         }
         if (packaged) {
-          await createProcessedReview.mutateAsync({ processedFoodId: id ?? '', rating, content: body.trim() || undefined, imagePaths });
+          await createProcessedReview.mutateAsync({ processedFoodId: id ?? '', rating, content: body.trim() || undefined, imagePaths, ...taste });
         } else {
           await createReview.mutateAsync({
             foodId: id ?? '',
@@ -486,6 +493,13 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
         {/* P-202: 확장 별점 3축 — 쿠팡이츠식 별도 섹션(선택), 찾아가기 = 장소 태그 연동 */}
         {/* KB-812 2차: 가공식품 = 식당 축(서빙 속도·직원 친절) 없음 — 서버도 0으로 저장 */}
         {!packaged && <ExtrasRater extras={extras} onChange={setExtras} t={t} />}
+        {/* KB-865 ④(시안 32): 가공식품 = 맵기·당도 작은 별 2행(선택, 재탭 = 해제) + 선택 안내 1줄 */}
+        {packaged && (
+          <View style={styles.tasteBlock}>
+            <StarAxisRater packaged axes={PACKAGED_TASTE_AXES} values={taste} onChange={setTaste} t={t} />
+            <Text style={styles.tasteNote} testID="review-taste-optional">{t('review.tasteOptional')}</Text>
+          </View>
+        )}
 
         {/* body — onLayout: 블록 하단 = 커서 하단 프록시(성장 시 재발화) */}
         {/* A-RW-03(KB-486): 사진 블록 = 텍스트 영역 위 */}
@@ -707,6 +721,8 @@ const styles = StyleSheet.create({
   foodKo: { fontSize: 13, fontWeight: '400', color: C.ink3 },
 
   block: { gap: 12 },
+  tasteBlock: { gap: 16 }, // KB-865 ④ 시안 32: 당도 행 → 안내 1줄
+  tasteNote: { fontSize: 13, fontWeight: '500', color: C.ink2 },
   label: { fontSize: 13, fontWeight: '600', color: '#778088' }, // A-RW-07
   // §2-3: 별 48 gap 11 + 수치 18/600 #4B4F58
   starPick: { flexDirection: 'row', gap: 11, justifyContent: 'center', marginTop: 4 },

@@ -440,7 +440,9 @@
     "extrasTaste": "รสชาติ",
     "writeSoon": "รีวิวอาหารบรรจุภัณฑ์จะเปิดเร็วๆ นี้ ข้อความที่คุณเขียนยังอยู่บนหน้าจอนี้",
     "spiciness": "ความเผ็ด",
-    "sweetness": "ความหวาน"
+    "sweetness": "ความหวาน",
+    "tasteOptional": "ความเผ็ดและความหวานไม่บังคับ",
+    "tasteStarA11y": "{{axis}} {{count}} จาก 5"
   },
   "translation": {
     "showTranslation": "แสดงคำแปล",
@@ -476,6 +478,7 @@
     "showOriginal": "แสดงต้นฉบับ",
     "translatedFrom": "แปลจาก {{lang}}",
     "anonymous": "ผู้ใช้ที่ลบบัญชีแล้ว",
+    "you": "คุณ",
     "today": "วันนี้",
     "daysAgo": "{{count}} วันที่แล้ว",
     "weeksAgo": "{{count}} สัปดาห์ที่แล้ว",

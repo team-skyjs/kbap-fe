@@ -440,7 +440,9 @@
     "extrasTaste": "Sabor",
     "writeSoon": "Pronto podrás reseñar alimentos envasados. Lo que escribiste sigue en esta pantalla.",
     "spiciness": "Picante",
-    "sweetness": "Dulzor"
+    "sweetness": "Dulzor",
+    "tasteOptional": "El picante y el dulzor son opcionales.",
+    "tasteStarA11y": "{{axis}}: {{count}} de 5"
   },
   "translation": {
     "showTranslation": "Mostrar traducción",
@@ -476,6 +478,7 @@
     "showOriginal": "Ver original",
     "translatedFrom": "Traducido del {{lang}}",
     "anonymous": "Usuario eliminado",
+    "you": "Tú",
     "today": "Hoy",
     "daysAgo": "hace {{count}} d",
     "weeksAgo": "hace {{count}} sem",

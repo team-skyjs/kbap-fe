@@ -31,14 +31,14 @@ const mockDelete = jest.fn();
 jest.mock('@/lib/data/useReviewMutations', () => ({ ...jest.requireActual('@/lib/data/useReviewMutations'), useDeleteReview: () => ({ mutate: (...a: unknown[]) => mockDelete(...a) }) }));
 jest.mock('@/features/review/FeedCard', () => {
   const { View } = jest.requireActual('react-native');
-  return { FeedCard: (p: { review: { id: string }; showFood: boolean; mine: boolean }) => <View testID={`card-${p.review.id}`} accessibilityLabel={`${p.showFood}|${p.mine}`} /> };
+  return { FeedCard: (p: { review: { id: string }; showFood: boolean; mine: boolean; youAsName?: boolean }) => <View testID={`card-${p.review.id}`} accessibilityLabel={`${p.showFood}|${p.mine}`} accessibilityHint={String(p.youAsName)} /> };
 });
 let mockModProps: { onEdit: (m: { id: string }) => void; onDelete: (m: { id: string }) => void } | null = null;
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: (p: never) => { mockModProps = p; return null; } }));
 jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
 jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View {...p} /> }; });
 jest.mock('@/components/StateBlock', () => { const { View } = jest.requireActual('react-native'); return { QueryErrorBlock: () => <View testID="qeb" /> }; });
-jest.mock('@/components', () => { const { View } = jest.requireActual('react-native'); return { Stars: (p: { value: number }) => <View testID={`stars-${p.value}`} /> }; });
+jest.mock('@/components', () => { const { View } = jest.requireActual('react-native'); return { Stars: (p: { value: number }) => <View testID={`stars-${p.value}`} />, Star: (p: { fillPct: number }) => <View testID={`star-${p.fillPct}`} /> }; });
 jest.mock('@/components/Btn', () => {
   const { Pressable, Text } = jest.requireActual('react-native');
   return { Btn: (p: { testID: string; onPress?: () => void; children?: React.ReactNode }) => <Pressable testID={p.testID} onPress={p.onPress}><Text>{p.children}</Text></Pressable> };
@@ -115,6 +115,16 @@ describe('③ 요청', () => {
     (FLAGS as { reviewsLiveEnabled: boolean }).reviewsLiveEnabled = live;
     expect(reviewWriteClosed(new ApiError('x', 403, 'REVIEW-004'))).toBe(false);
   });
+  it('KB-865 ④ 작성 요청 맵기·당도 = 1~5만 실림 · 미입력(null·undefined)·0·범위 밖 = 키 생략(서버 400 방지)', async () => {
+    mockPost.mockResolvedValue({});
+    let run!: (v: { processedFoodId: string; rating: number; content?: string; spiciness?: number | null; sweetness?: number | null }) => Promise<unknown>;
+    function Probe() { run = useCreateProcessedReview().mutateAsync; return null; }
+    render(<QueryClientProvider client={new QueryClient()}><Probe /></QueryClientProvider>);
+    await act(async () => { await run({ processedFoodId: '1711', rating: 4, content: 'crunchy and salty', spiciness: 3, sweetness: null }); });
+    expect(mockPost).toHaveBeenLastCalledWith('/api/processed-foods/1711/reviews', { rating: 4, content: 'crunchy and salty', spiciness: 3 }, V32);
+    await act(async () => { await run({ processedFoodId: '1711', rating: 4, content: 'crunchy and salty', spiciness: 0, sweetness: 6 }); });
+    expect(mockPost).toHaveBeenLastCalledWith('/api/processed-foods/1711/reviews', { rating: 4, content: 'crunchy and salty' }, V32);
+  });
 });
 
 describe('④ 상세 섹션', () => {
@@ -160,6 +170,18 @@ describe('④ 상세 섹션', () => {
     expect(mockReviewsQ.fetchNextPage).not.toHaveBeenCalled();
     act(() => t3.root.findAll((n) => n.props?.testID === 'pf-reviews-more-retry' && typeof n.props.onPress === 'function')[0].props.onPress());
     expect(mockReviewsQ.fetchNextPage).toHaveBeenCalledTimes(1);
+  });
+  it('KB-865 ④ 시안 31·46: 헤더 Reviews + 쓰기 텍스트 링크 · 빈 별 + "평균 (건수)" 행(0건·null·평균 없음 = 없음) · 내 리뷰 = You 표시 켬', () => {
+    mockReviewsQ = rq({ data: pageOf(2) });
+    const t = render(<PackagedReviews productId="1711" summary={SUM(4.66, 12)} />);
+    const json = JSON.stringify(t.toJSON());
+    expect(json).toContain('reviews.headerTitle');
+    expect(json).toContain('4.7 (12)');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-reviews-count', 'star-0']));
+    expect(t.root.findAll((n) => n.props?.testID === 'card-1' && typeof n.type === 'string')[0].props.accessibilityHint).toBe('true');
+    expect(ids(render(<PackagedReviews productId="1711" summary={null} />))).not.toContain('pf-reviews-count');
+    expect(ids(render(<PackagedReviews productId="1711" summary={SUM(0, 0)} />))).not.toContain('pf-reviews-count');
+    expect(ids(render(<PackagedReviews productId="1711" summary={{ ...SUM(4, 3), overall: { average: null, count: 3 } } as never} />))).not.toContain('pf-reviews-count');
   });
   it('로딩 = 스켈레톤 · 첫 페이지 실패 = 에러 블록(빈 상태 아님)', () => {
     mockReviewsQ = rq({ isPending: true });

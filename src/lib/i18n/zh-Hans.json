@@ -440,7 +440,9 @@
     "extrasTaste": "味道",
     "writeSoon": "包装食品评价即将开放。你写的内容仍保留在此页面。",
     "spiciness": "辣度",
-    "sweetness": "甜度"
+    "sweetness": "甜度",
+    "tasteOptional": "辣度和甜度为选填项。",
+    "tasteStarA11y": "{{axis}} {{count}}/5"
   },
   "translation": {
     "showTranslation": "显示翻译",
@@ -476,6 +478,7 @@
     "showOriginal": "显示原文",
     "translatedFrom": "译自{{lang}}",
     "anonymous": "已注销用户",
+    "you": "我",
     "today": "今天",
     "daysAgo": "{{count}}天前",
     "weeksAgo": "{{count}} 周前",
