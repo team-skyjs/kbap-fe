@@ -25,7 +25,9 @@ it('커서 추종 가시 높이 — 두 플랫폼 KAV로 줄어든 뷰포트 그
 
 it('메인 별점 5개 testID = review-star-{1..5} · 세부(Taste/Speed/Service)는 기존 extras-{axis}-{n} 유지', () => {
   expect(src).toContain('testID={`review-star-${i}`}');
-  expect(fs.readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8')).toContain('testID={`extras-${key}-${n}`}');
+  const parts = fs.readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8');
+  expect(parts).toContain('testID={`${tid}-${key}-${n}`}'); // KB-865 ④: 공용 행 — 음식 = extras-, 가공식품 맵기·당도 = taste-
+  expect(parts).toContain("const tid = packaged ? 'taste' : 'extras';");
 });
 
 // ── KB-700 범위 추가(QA: 프로필 편집도 같은 비침) — "입력창이 있는 화면은 iOS KAV(padding)" 를 **전수 스캔**으로 잠근다.
