@@ -32,8 +32,12 @@ export default function FeedbackComposeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   // KB-739: 설정 "광고 신고" 진입 = 본문 프리필(Apple 2.5.18 신고 창구). 프리필만 있는 상태는 '비어 있음'으로 본다(이탈 확인 0)
-  const { prefill } = useLocalSearchParams<{ prefill?: string }>();
-  const initialBody = prefill === 'ad' ? t('ads.reportPrefill') : '';
+  // KB-814 F3: 가공식품 리뷰 '사진 삭제 요청' = 제품명·리뷰 id 한 줄 프리필(초기값만 — 서버 계약 무변)
+  const { prefill, product, reviewId } = useLocalSearchParams<{ prefill?: string; product?: string; reviewId?: string }>();
+  const initialBody =
+    prefill === 'ad' ? t('ads.reportPrefill')
+    : prefill === 'photoRemoval' ? t('ugc.photoRemovalPrefill', { product: product ?? '', reviewId: reviewId ?? '' })
+    : '';
   const [body, setBody] = React.useState(initialBody);
   const [photos, setPhotos] = React.useState<string[]>([]);
   const [importing, setImporting] = React.useState(false);

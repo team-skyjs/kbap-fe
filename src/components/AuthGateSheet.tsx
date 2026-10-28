@@ -18,7 +18,7 @@ import { IconLock } from '@/components/icons';
 import { EVENTS, track } from '@/lib/analytics';
 
 // P-258: 'reviews'(읽기 차단 시절 유물 — P-235 게스트 열람 개방으로 소멸) → 'helpful'
-export type GateContext = 'risk' | 'helpful' | 'writeReview' | 'scan' | 'profile' | 'save';
+export type GateContext = 'risk' | 'helpful' | 'writeReview' | 'scan' | 'profile' | 'save' | 'photoRemoval'; // KB-814: 가공식품 리뷰 사진 삭제 요청
 
 /**
  * P-213: auth_gate_view trigger — 게이트 시트는 게스트 전환 퍼널의 단일 관문이라
@@ -33,6 +33,7 @@ const CONTEXT_TRIGGER: Record<GateContext, GateTrigger> = {
   scan: 'scan',
   risk: 'risk',
   profile: 'profile',
+  photoRemoval: 'review',
 };
 
 const COPY: Record<GateContext, { title: string; sub: string }> = {
@@ -42,6 +43,7 @@ const COPY: Record<GateContext, { title: string; sub: string }> = {
   scan: { title: 'gate.scanTitle', sub: 'gate.scanSub' },
   profile: { title: 'gate.profileTitle', sub: 'gate.profileSub' },
   save: { title: 'gate.saveTitle', sub: 'gate.saveSub' },
+  photoRemoval: { title: 'gate.photoRemovalTitle', sub: 'gate.photoRemovalSub' },
 };
 
 export function AuthGateSheet({

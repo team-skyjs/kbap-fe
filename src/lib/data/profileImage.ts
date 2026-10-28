@@ -66,6 +66,8 @@ export interface PhotoSheetLabels {
   /** 있으면 iOS 시트에 destructive 삭제 옵션 노출 (안드는 화면의 기존 삭제 링크가 담당) */
   remove?: string;
   cancel: string;
+  /** KB-814: 촬영 행 강조 — 안드 시트만(iOS 네이티브 시트는 행 강조가 없어 첫 항목 = 촬영으로 둔다) */
+  emphasizeCamera?: boolean;
 }
 
 /**

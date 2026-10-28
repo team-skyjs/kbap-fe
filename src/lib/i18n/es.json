@@ -62,6 +62,8 @@
     "profileSub": "Regístrate para guardar lo que evitas, seguir tus escaneos y construir tu ranking.",
     "saveTitle": "Guarda los platos que quieras probar",
     "saveSub": "Regístrate para guardar platos y crear tu propia lista de comida segura.",
+    "photoRemovalTitle": "Solicita eliminar una foto",
+    "photoRemovalSub": "Regístrate para pedir que eliminemos una foto de una reseña.",
     "keepBrowsing": "Seguir explorando"
   },
   "lock": {
@@ -1400,5 +1402,13 @@
     "label": "K-POP & K-FOOD",
     "cardA11y": "Ver detalles de {{name}}",
     "empty": "No hay platos disponibles por ahora."
+  },
+  "ugc": {
+    "consentTitle": "Sube solo fotos que hayas tomado tú",
+    "consentNoStock": "No se pueden subir imágenes de tiendas en línea ni de búsquedas.",
+    "consentRemoval": "Las fotos con problemas de derechos pueden eliminarse.",
+    "consentAgree": "Entendido, elegir fotos",
+    "photoRemovalRequest": "Solicitar eliminar foto",
+    "photoRemovalPrefill": "Solicitud de eliminar foto: {{product}} reseña {{reviewId}}"
   }
 }

@@ -62,6 +62,8 @@
     "profileSub": "註冊即可儲存忌口食材、追蹤掃描紀錄並累積你的排名。",
     "saveTitle": "收藏你想嘗試的菜色",
     "saveSub": "註冊後即可收藏菜色，打造屬於你的安心美食清單。",
+    "photoRemovalTitle": "申請刪除照片",
+    "photoRemovalSub": "註冊後即可申請刪除評價中的照片。",
     "keepBrowsing": "繼續瀏覽"
   },
   "lock": {
@@ -1400,5 +1402,13 @@
     "label": "K-POP & K-FOOD",
     "cardA11y": "{{name}}，查看菜色詳情",
     "empty": "目前沒有可查看的菜色。"
+  },
+  "ugc": {
+    "consentTitle": "請只上傳你親自拍攝的照片",
+    "consentNoStock": "不能上傳來自購物網站或搜尋結果的圖片。",
+    "consentRemoval": "有權利問題的照片可能會被刪除。",
+    "consentAgree": "知道了，去選擇",
+    "photoRemovalRequest": "申請刪除照片",
+    "photoRemovalPrefill": "申請刪除照片: {{product}} 評價 {{reviewId}}"
   }
 }

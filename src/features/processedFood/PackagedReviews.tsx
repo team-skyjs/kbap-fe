@@ -19,7 +19,9 @@ import { Pressable } from '@/components/Pressable';
 import { Star } from '@/components';
 import { Shimmer } from '@/components/Skeleton';
 import { QueryErrorBlock } from '@/components/StateBlock';
-import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { photoRemovalHref } from '@/lib/review/reviewTarget';
 import { color as C } from '@/lib/theme';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
@@ -38,7 +40,8 @@ export function PackagedReviews({ productId, summary, loadMoreRef }: { productId
   const { data: me } = useMe();
   const deleteReview = useDeleteReview();
   const [mod, setMod] = React.useState<ModTarget | null>(null);
-  const [gate, setGate] = React.useState(false);
+  const [gate, setGate] = React.useState<GateContext | null>(null);
+  const isGuest = useIsGuest();
   const items = q.data?.pages.flatMap((p) => p.items) ?? [];
   const { hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = q;
   // 바닥 근처 = 다음 페이지 — 실패 중엔 멈춘다(수동 다시 시도만, Codex #308 문법)
@@ -80,7 +83,7 @@ export function PackagedReviews({ productId, summary, loadMoreRef }: { productId
           youAsName /* 시안 46 */
           showFood={false} /* 자기 자신 대상 칩 무의미 — 음식 상세와 같음 */
           onOpenFood={() => {}}
-          onGuestHelpful={() => setGate(true)}
+          onGuestHelpful={() => setGate('helpful')}
           onMore={() =>
             setMod({
               type: 'review',
@@ -136,8 +139,14 @@ export function PackagedReviews({ productId, summary, loadMoreRef }: { productId
         onEdit={(m) => router.push(`/processed-foods/${productId}/review?reviewId=${m.id}` as Href)}
         onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: '' })} /* 무효화가 ['processedFoods'] 리뷰·상세 프리픽스를 잡는다 */
         onBlocked={() => void q.refetch()}
+        onPhotoRemoval={(m) => { // KB-814 F3: 남의 가공식품 리뷰 — 게스트 = 로그인 게이트
+          if (isGuest) { setGate('photoRemoval'); return; }
+          const rv = items.find((r) => r.id === m.id);
+          const href = rv && photoRemovalHref(rv);
+          if (href) router.push(href);
+        }}
       />
-      <AuthGateSheet context="helpful" open={gate} onClose={() => setGate(false)} />
+      <AuthGateSheet context={gate ?? 'helpful'} open={gate != null} onClose={() => setGate(null)} />
     </View>
   );
 }

@@ -62,6 +62,8 @@
     "profileSub": "가입하면 기피 성분 저장, 스캔 기록, 랭킹 쌓기가 가능해요.",
     "saveTitle": "먹어보고 싶은 음식을 저장하세요",
     "saveSub": "가입하면 음식을 북마크해서 나만의 안심 리스트를 만들 수 있어요.",
+    "photoRemovalTitle": "사진 삭제를 요청해 주세요",
+    "photoRemovalSub": "가입하면 리뷰 사진의 삭제를 요청할 수 있어요.",
     "keepBrowsing": "계속 둘러보기"
   },
   "lock": {
@@ -1400,5 +1402,13 @@
     "label": "K-POP & K-FOOD",
     "cardA11y": "{{name}}, 음식 상세 보기",
     "empty": "지금은 볼 수 있는 음식이 없어요."
+  },
+  "ugc": {
+    "consentTitle": "직접 촬영한 사진만 올려 주세요",
+    "consentNoStock": "쇼핑몰이나 검색에서 찾은 이미지는 올릴 수 없어요.",
+    "consentRemoval": "권리 문제가 있는 사진은 삭제될 수 있어요.",
+    "consentAgree": "확인하고 선택",
+    "photoRemovalRequest": "사진 삭제 요청",
+    "photoRemovalPrefill": "사진 삭제 요청: {{product}} 리뷰 {{reviewId}}"
   }
 }

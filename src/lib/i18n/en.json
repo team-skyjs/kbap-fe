@@ -58,6 +58,8 @@
     "profileSub": "Sign up to save what you avoid, track scans and build your ranking.",
     "saveTitle": "Save dishes you want to try",
     "saveSub": "Sign up to bookmark dishes for later.",
+    "photoRemovalTitle": "Request a photo removal",
+    "photoRemovalSub": "Sign up to ask us to remove a review photo.",
     "keepBrowsing": "Keep browsing"
   },
   "lock": {
@@ -1396,5 +1398,13 @@
     "label": "K-POP & K-FOOD",
     "cardA11y": "View details for {{name}}",
     "empty": "No dishes available right now."
+  },
+  "ugc": {
+    "consentTitle": "Only upload photos you took yourself",
+    "consentNoStock": "Images from shopping sites or web searches can't be uploaded.",
+    "consentRemoval": "Photos with rights issues may be removed.",
+    "consentAgree": "Got it, choose photos",
+    "photoRemovalRequest": "Request photo removal",
+    "photoRemovalPrefill": "Photo removal request: {{product}} review {{reviewId}}"
   }
 }

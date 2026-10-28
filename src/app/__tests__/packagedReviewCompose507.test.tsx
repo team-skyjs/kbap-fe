@@ -5,6 +5,7 @@
  * ③ 403 PFOOD-005(서버 쓰기 OFF) = "곧 열려요" 중립 안내 · 일반 실패 문구 0 · 입력 보존 · 완료 모달 0
  * ④ 410 PFOOD-002 = 음식 "없음"과 같은 중립 안내
  * ⑤ 수정 = 같은 PATCH(장소 null) — 경로 /processed-foods/{id}/review?reviewId=
+ * ⑨~⑪ KB-814 F3: 촬영 강조 · 갤러리 = 동의 1회 뒤에만(기기 기억) · 취소 = 사진 없이 계속
  * ⑥~⑧ KB-865 ④(시안 32): 맵기·당도 작은 별 2행 — 선택·재탭 해제·작성 요청 값 · 편집 프리필·비움(null) · 음식 화면엔 없음
  */
 import * as React from 'react';
@@ -108,13 +109,18 @@ jest.mock('@/lib/review/reviewPhotos', () => {
   return { ...actual, uploadReviewImages: async (uris: string[]) => uris.map((u) => `up/${u}`) };
 });
 jest.mock('@/lib/data/profileImage', () => ({ choosePhotoSource: jest.fn(async () => 'gallery') }));
-jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), requestCameraPermissionsAsync: jest.fn() }));
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), launchCameraAsync: jest.fn(), requestCameraPermissionsAsync: jest.fn() }));
 
 /* eslint-disable import/first -- jest.mock 뒤 */
 import { ApiError } from '@/lib/api/client';
 import { queryClient } from '@/lib/queryClient';
 import PackagedReviewCompose from '../processed-foods/[id]/review';
 import { FLAGS } from '@/lib/flags';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { choosePhotoSource } from '@/lib/data/profileImage';
+import { PhotoConsentSheet } from '@/components/PhotoConsentSheet';
+import { PACKAGED_PHOTO_CONSENT_KEY, resetPackagedPhotoConsentForTest } from '@/lib/review/packagedPhotoConsent';
 /* eslint-enable import/first */
 
 // KB-870: 이 경로는 가공식품 채널 게이트(processedFoodEnabled) 뒤 — 작성 화면 자체를 보는 스위트라 켠다(운영 채널 차단은 prodHide870)
@@ -243,4 +249,59 @@ it('⑧ 맵기·당도만 바꿔도 이탈 확인이 걸린다(변경 있음)', 
   expect(mockPrevent.on).toBe(false);
   taste(t, 'sweetness', 2);
   expect(mockPrevent.on).toBe(true);
+});
+
+describe('KB-814 F3 사진 출처', () => {
+  const lib = ImagePicker.launchImageLibraryAsync as jest.Mock;
+  const cam = ImagePicker.launchCameraAsync as jest.Mock;
+  const source = choosePhotoSource as jest.Mock;
+  beforeEach(async () => {
+    resetPackagedPhotoConsentForTest();
+    await AsyncStorage.clear();
+    lib.mockResolvedValue({ canceled: true });
+    cam.mockResolvedValue({ canceled: true });
+    (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
+  });
+  const tapAdd = async (t: ReactTestRenderer) => { await act(async () => { byId(t, 'photo-add')[0].props.onPress(); }); };
+  const sheet = (t: ReactTestRenderer) => t.root.findByType(PhotoConsentSheet);
+
+  it('⑨ 시트 = 촬영 강조(첫 항목) · 촬영 = 동의 없이 카메라', async () => {
+    source.mockResolvedValueOnce('camera');
+    const t = render(<PackagedReviewCompose />);
+    await tapAdd(t);
+    expect(source.mock.calls[0][0]).toMatchObject({ camera: 'photo.take', gallery: 'photo.gallery', emphasizeCamera: true });
+    expect(cam).toHaveBeenCalledTimes(1);
+    expect(sheet(t).props.open).toBe(false);
+  });
+
+  it('⑩ 갤러리 = 동의 전엔 안 열림 → 동의 → 시트가 닫힌 뒤 열림 · 기기 저장 · 다음엔 묻지 않음', async () => {
+    source.mockResolvedValue('gallery');
+    const t = render(<PackagedReviewCompose />);
+    await tapAdd(t);
+    expect(sheet(t).props.open).toBe(true);
+    expect(lib).not.toHaveBeenCalled();
+    await act(async () => { byId(t, 'photo-consent-agree')[0].props.onPress(); });
+    expect(sheet(t).props.open).toBe(false);
+    expect(lib).not.toHaveBeenCalled(); // iOS: 완전히 닫힌 뒤(onDismiss)에만
+    await act(async () => { sheet(t).props.onClosed(); });
+    expect(lib).toHaveBeenCalledTimes(1);
+    expect(await AsyncStorage.getItem(PACKAGED_PHOTO_CONSENT_KEY)).toBe('1');
+    resetPackagedPhotoConsentForTest(); // 재실행 흉내 — 디스크 기억으로 판정
+    await tapAdd(t);
+    expect(sheet(t).props.open).toBe(false);
+    expect(lib).toHaveBeenCalledTimes(2);
+  });
+
+  it('⑪ 취소 = 시트만 닫힘 · 갤러리 0 · 저장 0 · 작성은 계속(등록 가능)', async () => {
+    source.mockResolvedValueOnce('gallery');
+    const t = render(<PackagedReviewCompose />);
+    await tapAdd(t);
+    await act(async () => { byId(t, 'photo-consent-cancel')[0].props.onPress(); });
+    await act(async () => { sheet(t).props.onClosed(); });
+    expect(sheet(t).props.open).toBe(false);
+    expect(lib).not.toHaveBeenCalled();
+    expect(await AsyncStorage.getItem(PACKAGED_PHOTO_CONSENT_KEY)).toBeNull();
+    await fillAndPost(t);
+    expect(mockCreatePf).toHaveBeenCalledWith(expect.objectContaining({ imagePaths: [] }));
+  });
 });

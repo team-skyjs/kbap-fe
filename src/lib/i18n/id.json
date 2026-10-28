@@ -62,6 +62,8 @@
     "profileSub": "Daftar untuk menyimpan pantangan Anda, melacak pindaian, dan membangun peringkat Anda.",
     "saveTitle": "Simpan hidangan yang ingin kamu coba",
     "saveSub": "Daftar untuk menandai hidangan dan membuat daftar makanan aman versimu.",
+    "photoRemovalTitle": "Minta penghapusan foto",
+    "photoRemovalSub": "Daftar untuk meminta penghapusan foto ulasan.",
     "keepBrowsing": "Lanjut menjelajah"
   },
   "lock": {
@@ -1400,5 +1402,13 @@
     "label": "K-POP & K-FOOD",
     "cardA11y": "Lihat detail {{name}}",
     "empty": "Belum ada hidangan yang tersedia saat ini."
+  },
+  "ugc": {
+    "consentTitle": "Unggah hanya foto yang kamu ambil sendiri",
+    "consentNoStock": "Gambar dari situs belanja atau hasil pencarian tidak bisa diunggah.",
+    "consentRemoval": "Foto yang bermasalah hak ciptanya bisa dihapus.",
+    "consentAgree": "Mengerti, pilih foto",
+    "photoRemovalRequest": "Minta hapus foto",
+    "photoRemovalPrefill": "Permintaan hapus foto: {{product}} ulasan {{reviewId}}"
   }
 }

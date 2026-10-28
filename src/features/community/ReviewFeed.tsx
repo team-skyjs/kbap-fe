@@ -36,7 +36,7 @@ import { isScanQuotaExhausted } from '@/lib/api/memberAdapter';
 import { useUnreadCount } from '@/lib/data/useNotifications';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
-import { reviewEditHref, reviewTargetHref } from '@/lib/review/reviewTarget';
+import { isPackagedReview, photoRemovalHref, reviewEditHref, reviewTargetHref } from '@/lib/review/reviewTarget';
 import type { FoodTagRef } from '@/lib/community/types';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900(D-1 Chip과 동일 명시값)
@@ -275,6 +275,13 @@ export function ReviewFeed() {
           if (r) deleteReview.mutate({ reviewId: r.id, foodId: r.foodId });
         }}
         onBlocked={() => void feed.refetch()}
+        // KB-814 F3: 가공식품 리뷰만 '사진 삭제 요청'(음식 리뷰 무변) — 게스트 = 로그인 게이트
+        onPhotoRemoval={mod && isPackagedReview(reviews.find((r) => r.id === mod.id) ?? {}) ? (m) => {
+          if (isGuest) { setGateOpen('photoRemoval'); return; }
+          const rv = reviews.find((r) => r.id === m.id);
+          const href = rv && photoRemovalHref(rv);
+          if (href) router.push(href);
+        } : undefined}
       />
       {/* P-237: 소팅 시트 — 공용 ActionSheet 재사용(5종·현재값 표시) */}
       <ActionSheet

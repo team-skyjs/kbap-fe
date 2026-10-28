@@ -53,6 +53,8 @@ import { isUploadAborted } from '@/lib/api/uploadAbort';
 import { useReviewPrompt } from '@/lib/useReviewPrompt';
 import { useOneShotQueue } from '@/lib/oneShotQueue';
 import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
+import { PhotoConsentSheet } from '@/components/PhotoConsentSheet';
+import { grantPackagedPhotoConsent, hasPackagedPhotoConsent } from '@/lib/review/packagedPhotoConsent';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
 // ponytail: 이모지·예측 바 전환(+44~53pt)만 줄어든 만큼 내린다 — 키보드가 통째로 다시 올라오는 큰 축소(앱 복귀 등 ~300pt)는
@@ -176,16 +178,12 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   // 문법·라벨 키 재사용, remove 없음). "파일 선택"은 expo-document-picker 네이티브
   // 의존 = 비범위(TODO — 다음 네이티브 빌드).
   // P-375(KB-539): 제목만 리뷰 전용 키 — photo.sheetTitle은 "프로필 사진"이라 오문구였다.
-  const pickPhoto = async () => {
+  // KB-814 F3: 가공식품 = 촬영 권장(촬영 행 강조) · 갤러리는 '직접 촬영한 사진만' 동의 1회 뒤에만(동의 전 갤러리 열림 0)
+  const [consentOpen, setConsentOpen] = useState(false);
+  const consentAgreedRef = useRef(false); // 동의 → 시트가 완전히 닫힌 뒤 갤러리(닫힘 직후 present = iOS 프리즈)
+  const importPhotos = async (src: 'camera' | 'gallery') => {
     const remaining = REVIEW_MAX_PHOTOS - photos.length;
     if (remaining <= 0) return;
-    const src = await choosePhotoSource({
-      title: t('review.photoSheetTitle'),
-      camera: t('photo.take'),
-      gallery: t('photo.gallery'),
-      cancel: t('common.cancel'),
-    });
-    if (!src) return; // 취소
     setPhotoImporting(true);
     try {
       if (src === 'camera') {
@@ -219,6 +217,28 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
     } finally {
       setPhotoImporting(false);
     }
+  };
+
+  const pickPhoto = async () => {
+    if (REVIEW_MAX_PHOTOS - photos.length <= 0) return;
+    const src = await choosePhotoSource({
+      title: t('review.photoSheetTitle'),
+      camera: t('photo.take'),
+      gallery: t('photo.gallery'),
+      cancel: t('common.cancel'),
+      ...(packaged ? { emphasizeCamera: true } : {}),
+    });
+    if (!src || src === 'remove') return; // 취소
+    if (packaged && src === 'gallery' && !(await hasPackagedPhotoConsent())) {
+      setConsentOpen(true);
+      return;
+    }
+    await importPhotos(src);
+  };
+  const onConsentClosed = () => {
+    if (!consentAgreedRef.current) return;
+    consentAgreedRef.current = false;
+    void importPhotos('gallery');
   };
 
   // P-085(KB-73): 사진 presigned 업로드(purpose REVIEW, 전송=path) → POST /reviews.
@@ -657,6 +677,19 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
       {/* P-168 ②: 완료 = P-162 주문 완료 모달 문법(화면 전환 없이) — 확인 = 상세 복귀 */}
       {/* KB-708: 작성 중 이탈 확인(커뮤니티 글쓰기와 같은 컴포넌트·문구) */}
       <LeaveConfirmModal {...leave.modal} />
+      {packaged && (
+        <PhotoConsentSheet
+          open={consentOpen}
+          onAnswer={(agreed) => {
+            if (agreed) {
+              consentAgreedRef.current = true;
+              void grantPackagedPhotoConsent();
+            }
+            setConsentOpen(false); // 취소 = 시트만 닫힘(사진 없이 작성 계속)
+          }}
+          onClosed={onConsentClosed}
+        />
+      )}
       <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} onShow={reviewPrompt.onShow} onClosed={reviewPrompt.onClosed} disabled={reviewPrompt.answered} />
       {/* KB-730: Done = 모달 표시만 접고(submitted 유지) iOS는 onDismiss(완전히 닫힌 뒤)에서 유도 시트 큐 — dismiss 직후 present = 프리즈(#236 2R) */}
       <Modal

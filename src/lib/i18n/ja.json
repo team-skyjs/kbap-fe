@@ -62,6 +62,8 @@
     "profileSub": "登録すると、避ける食材の保存、スキャン履歴の確認、ランキング作りができます。",
     "saveTitle": "気になる料理を保存しよう",
     "saveSub": "登録すると料理をブックマークして、自分だけの安心リストが作れます。",
+    "photoRemovalTitle": "写真の削除をリクエスト",
+    "photoRemovalSub": "登録すると、レビュー写真の削除をリクエストできます。",
     "keepBrowsing": "このまま見て回る"
   },
   "lock": {
@@ -1400,5 +1402,13 @@
     "label": "K-POP & K-FOOD",
     "cardA11y": "{{name}}、料理の詳細を見る",
     "empty": "今は見られる料理がありません。"
+  },
+  "ugc": {
+    "consentTitle": "ご自身で撮影した写真のみアップロードしてください",
+    "consentNoStock": "通販サイトや検索で見つけた画像はアップロードできません。",
+    "consentRemoval": "権利上の問題がある写真は削除されることがあります。",
+    "consentAgree": "確認して選ぶ",
+    "photoRemovalRequest": "写真の削除をリクエスト",
+    "photoRemovalPrefill": "写真の削除リクエスト: {{product}} レビュー {{reviewId}}"
   }
 }

@@ -21,6 +21,8 @@ export interface PhotoSheetLabels {
   gallery: string;
   remove?: string; // 있으면 destructive 삭제 행 — 커스텀 사진 보유 시에만(호출측 판단)
   cancel: string;
+  /** KB-814: 가공식품 리뷰 = 촬영 권장 — 촬영 행 강조(색만) */
+  emphasizeCamera?: boolean;
 }
 export type PhotoSheetChoice = 'camera' | 'gallery' | 'remove' | null;
 
@@ -72,7 +74,7 @@ export function PhotoSourceSheetHost() {
       open
       title={L.title}
       items={[
-        { key: 'camera', label: L.camera, icon: <IconCamera size={17} color={C.ink2} />, onPress: () => settle(req, 'camera') },
+        { key: 'camera', label: L.camera, emphasis: L.emphasizeCamera, icon: <IconCamera size={17} color={L.emphasizeCamera ? C.primary : C.ink2} />, onPress: () => settle(req, 'camera') },
         { key: 'gallery', label: L.gallery, icon: <IconGallery size={17} color={C.ink2} />, onPress: () => settle(req, 'gallery') },
         ...(L.remove
           ? [{ key: 'remove', label: L.remove, destructive: true, icon: <IconTrash size={17} color={DESTRUCTIVE} />, onPress: () => settle(req, 'remove') }]
