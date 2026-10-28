@@ -48,10 +48,11 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 let mockRouteId = '12';
+let mockQuery: Record<string, string> = {}; // KB-814: 작성 화면 프리필 쿼리
 jest.mock('expo-router', () => ({
   useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }), // KB-708 이탈 확인
   useRouter: () => ({ push: mockPush, back: mockBack, replace: jest.fn() }),
-  useLocalSearchParams: () => ({ id: mockRouteId }),
+  useLocalSearchParams: () => ({ id: mockRouteId, ...mockQuery }),
   useSegments: () => [],
   usePathname: () => '/',
   // 포커스 이펙트: 기본은 마운트 시 포커스(정리 함수 = 이탈). 이탈 시나리오는 테스트에서 직접 호출한다.
@@ -130,6 +131,7 @@ const idleList = (flat: unknown[]) => ({
 beforeEach(() => {
   jest.clearAllMocks();
   mockRouteId = '12';
+  mockQuery = {};
   mockListState = idleList([ITEM]);
   mockSubmit.mockResolvedValue({ id: '12' });
 });
@@ -598,4 +600,16 @@ it('KB-708 전송 실패로 끝나면 다시 막음 → 뒤로 = 확인 창(내�
   expect(mockPrevent.on).toBe(true);
   await act(async () => { mockPrevent.cb!({ data: { action: { type: 'GO_BACK' } } }); });
   expect(r.root.findAllByProps({ testID: 'leave-confirm' }).length).toBeGreaterThan(0);
+});
+
+it('KB-814 F3: 사진 삭제 요청 진입(prefill=photoRemoval) = 본문 초기값 한 줄 · 프리필 없으면 빈 본문', async () => {
+  mockQuery = { prefill: 'photoRemoval', product: 'Banana Milk', reviewId: '77' };
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  const body = () => r.root.findAllByType(TextInput).find((n) => n.props.testID === 'feedback-body')!.props.value;
+  expect(body()).toBe('ugc.photoRemovalPrefill');
+  act(() => r.unmount());
+  mockQuery = {};
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  expect(body()).toBe('');
 });

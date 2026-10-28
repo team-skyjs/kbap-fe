@@ -265,3 +265,25 @@ it('Codex #161 3R: 다른 대상의 신고가 진행 중이어도 이 대상은 
   expect(tree.root.findAll((n) => n.props?.testID === 'report-submit')[0].props.busy).toBe(true); // B 자신은 진행 중
   await act(async () => { settles.forEach((r) => r()); await Promise.resolve(); });
 });
+
+describe('KB-814 F3 사진 삭제 요청 행', () => {
+  const renderWith = (target: ModTarget, onPhotoRemoval?: jest.Mock) => {
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<ModerationFlow target={target} onClose={jest.fn()} onEdit={jest.fn()} onDelete={jest.fn()} onBlocked={jest.fn()} onPhotoRemoval={onPhotoRemoval} />);
+    });
+    return tree;
+  };
+  it('콜백을 넘긴 남의 리뷰 = 신고와 함께 행 노출 · 탭 = 콜백(대상 그대로)', () => {
+    const cb = jest.fn();
+    const tree = renderWith(OTHER, cb);
+    expect(flat(tree)).toContain('community.report');
+    expect(flat(tree)).toContain('ugc.photoRemovalRequest');
+    tapItem(tree, 'ugc.photoRemovalRequest');
+    expect(cb).toHaveBeenCalledWith(OTHER);
+  });
+  it('내 리뷰(수정·삭제만) · 콜백 없음(음식 리뷰 등) = 행 없음', () => {
+    expect(flat(renderWith(MINE, jest.fn()))).not.toContain('ugc.photoRemovalRequest');
+    expect(flat(renderWith(OTHER))).not.toContain('ugc.photoRemovalRequest');
+  });
+});

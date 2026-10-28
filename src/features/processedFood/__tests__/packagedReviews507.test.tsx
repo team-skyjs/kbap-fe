@@ -33,9 +33,11 @@ jest.mock('@/features/review/FeedCard', () => {
   const { View } = jest.requireActual('react-native');
   return { FeedCard: (p: { review: { id: string }; showFood: boolean; mine: boolean; youAsName?: boolean }) => <View testID={`card-${p.review.id}`} accessibilityLabel={`${p.showFood}|${p.mine}`} accessibilityHint={String(p.youAsName)} /> };
 });
-let mockModProps: { onEdit: (m: { id: string }) => void; onDelete: (m: { id: string }) => void } | null = null;
+let mockModProps: { onEdit: (m: { id: string }) => void; onDelete: (m: { id: string }) => void; onPhotoRemoval?: (m: { id: string }) => void } | null = null;
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: (p: never) => { mockModProps = p; return null; } }));
-jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
+jest.mock('@/components/AuthGateSheet', () => { const { View } = jest.requireActual('react-native'); return { AuthGateSheet: (p: { open: boolean; context: string }) => (p.open ? <View testID={`gate-${p.context}`} /> : null) }; });
+let mockGuest = false;
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest }));
 jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View {...p} /> }; });
 jest.mock('@/components/StateBlock', () => { const { View } = jest.requireActual('react-native'); return { QueryErrorBlock: () => <View testID="qeb" /> }; });
 jest.mock('@/components', () => { const { View } = jest.requireActual('react-native'); return { Stars: (p: { value: number }) => <View testID={`stars-${p.value}`} />, Star: (p: { fillPct: number }) => <View testID={`star-${p.fillPct}`} /> }; });
@@ -207,5 +209,22 @@ describe('④ 상세 섹션', () => {
     expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/1711/review?reviewId=r9');
     act(() => mockModProps?.onDelete({ id: 'r9' }));
     expect(mockDelete).toHaveBeenCalledWith({ reviewId: 'r9', foodId: '' });
+  });
+});
+
+describe('KB-814 F3 사진 삭제 요청', () => {
+  afterEach(() => { mockGuest = false; });
+  const pf = () => ({ pages: [{ items: [adaptReview({ ...BASE, reviewId: 7, targetType: 'PROCESSED_FOOD', processedFood: { processedFoodId: 1711, productName: 'Banana Milk' } })], hasNext: false }] });
+  it('회원 = 문의 화면(제품명·리뷰 id 프리필) · 게스트 = 로그인 게이트(이동 0)', () => {
+    mockReviewsQ = rq({ data: pf() });
+    render(<PackagedReviews productId="1711" summary={null} />);
+    act(() => mockModProps?.onPhotoRemoval?.({ id: '7' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/profile/feedback/new?prefill=photoRemoval&reviewId=7&product=Banana%20Milk');
+    mockPush.mockClear();
+    mockGuest = true;
+    const t = render(<PackagedReviews productId="1711" summary={null} />);
+    act(() => mockModProps?.onPhotoRemoval?.({ id: '7' }));
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(ids(t)).toContain('gate-photoRemoval');
   });
 });

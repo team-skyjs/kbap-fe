@@ -62,6 +62,8 @@
     "profileSub": "Đăng ký để lưu những thứ bạn tránh, theo dõi lịch sử quét và xây dựng thứ hạng của bạn.",
     "saveTitle": "Lưu những món bạn muốn thử",
     "saveSub": "Đăng ký để đánh dấu món ăn và tạo danh sách món an toàn của riêng bạn.",
+    "photoRemovalTitle": "Yêu cầu xóa ảnh",
+    "photoRemovalSub": "Đăng ký để gửi yêu cầu xóa ảnh trong đánh giá.",
     "keepBrowsing": "Tiếp tục xem"
   },
   "lock": {
@@ -1400,5 +1402,13 @@
     "label": "K-POP & K-FOOD",
     "cardA11y": "Xem chi tiết {{name}}",
     "empty": "Hiện chưa có món nào để xem."
+  },
+  "ugc": {
+    "consentTitle": "Chỉ tải lên ảnh do chính bạn chụp",
+    "consentNoStock": "Không thể tải lên ảnh lấy từ trang mua sắm hoặc kết quả tìm kiếm.",
+    "consentRemoval": "Ảnh có vấn đề về quyền có thể bị xóa.",
+    "consentAgree": "Đã hiểu, chọn ảnh",
+    "photoRemovalRequest": "Yêu cầu xóa ảnh",
+    "photoRemovalPrefill": "Yêu cầu xóa ảnh: {{product}} đánh giá {{reviewId}}"
   }
 }

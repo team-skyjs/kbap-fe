@@ -30,6 +30,8 @@ export interface ActionSheetItem {
   /** P-342 ②(KB-503): 라벨 우측 트레일링 노드 — NEW "Coming soon" 칩 등 */
   trailing?: ReactNode;
   destructive?: boolean;
+  /** KB-814: 권장 행(예: 가공식품 리뷰 '사진 촬영') — 글자색만 primary(프레임 불변) */
+  emphasis?: boolean;
   onPress: () => void;
   /** P-190: 탭 시 자동 onClose 생략 — 페이즈 전환형(신고/차단)용. onClose가 플로우
    *  전체를 언마운트하는 소비처에서 조기 close가 전환을 죽이던 버그의 구조 수정. */
@@ -84,7 +86,7 @@ export function ActionSheet({
                 }}
               >
                 {it.icon}
-                <Text style={[styles.rowText, it.destructive && styles.rowTextDestructive, it.disabled && styles.rowTextDisabled]} numberOfLines={1}>{it.label}</Text>
+                <Text style={[styles.rowText, it.emphasis && styles.rowTextEmphasis, it.destructive && styles.rowTextDestructive, it.disabled && styles.rowTextDisabled]} numberOfLines={1}>{it.label}</Text>
                 {it.trailing}
               </Pressable>
             ))}
@@ -114,6 +116,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 15 },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
   rowText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink, flexShrink: 1 }, // P-224: 아이콘 옆 1줄 방어
+  rowTextEmphasis: { color: C.primaryText }, // KB-814: 색만
   rowTextDestructive: { color: DESTRUCTIVE },
   rowTextDisabled: { color: C.ink3 },
 });

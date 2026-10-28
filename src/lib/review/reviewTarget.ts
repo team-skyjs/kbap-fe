@@ -21,3 +21,10 @@ export function reviewEditHref(r: Pick<Review, 'id' | 'target' | 'foodId' | 'pro
   if (isPackagedReview(r)) return r.processedFoodId ? (`/processed-foods/${r.processedFoodId}/review?reviewId=${r.id}` as Href) : null;
   return r.foodId ? (`/food/${r.foodId}/review?reviewId=${r.id}` as Href) : null;
 }
+
+/** KB-814 F3: 가공식품 리뷰 사진 삭제 요청 = 문의 화면(제품명·리뷰 id 프리필). 음식 리뷰 = null(이 창구 없음) */
+export function photoRemovalHref(r: Pick<Review, 'id' | 'target' | 'foodName'>): Href | null {
+  if (!isPackagedReview(r)) return null;
+  const q = `prefill=photoRemoval&reviewId=${encodeURIComponent(r.id)}${r.foodName ? `&product=${encodeURIComponent(r.foodName)}` : ''}`;
+  return `/profile/feedback/new?${q}` as Href;
+}

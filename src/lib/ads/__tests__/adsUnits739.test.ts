@@ -111,7 +111,7 @@ describe('/review 9·10·11 소스 잠금', () => {
     const profile = fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8');
     expect(profile.match(/testID="profile-menu-ad-report"/g)).toHaveLength(2);
     const compose = fs.readFileSync('src/app/profile/feedback/new.tsx', 'utf8');
-    expect(compose).toContain("prefill === 'ad' ? t('ads.reportPrefill') : ''");
+    expect(compose).toContain("prefill === 'ad' ? t('ads.reportPrefill')"); // KB-814: 뒤에 photoRemoval 분기가 이어진다
     expect(compose).toContain("useLeaveConfirm((body.trim().length > 0 && body.trim() !== initialBody.trim()) || photos.length > 0");
   });
   it('Android 알림 채널 sound 옵션 없음(생략 = 시스템 기본음) — expo-notifications 57은 sound를 커스텀 파일명으로 검증해 "default"에 경고·무음 위험', () => {

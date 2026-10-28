@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { ActionSheet, DESTRUCTIVE } from '@/components/ActionSheet';
 import { Btn, Flag, IconCheck, IconEdit, IconProfile, IconReport, IconTrash, IconUserX, Input } from '@/components';
+import { IconGallery } from '@/components/icons';
 import { showTopToast } from '@/components/topToastStore';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { TopToastHost } from '@/components/TopToast';
@@ -53,6 +54,7 @@ export function ModerationFlow({
   onEdit,
   onDelete,
   onBlocked,
+  onPhotoRemoval,
 }: {
   target: ModTarget | null;
   onClose: () => void;
@@ -62,6 +64,8 @@ export function ModerationFlow({
   onDelete: (target: ModTarget) => void;
   /** 차단 완료 — 발원지별 후처리 (피드 복귀+토스트 / 댓글 제거) */
   onBlocked: (target: ModTarget) => void;
+  /** KB-814 F3: 가공식품 리뷰(남의 것)만 — 있으면 '사진 삭제 요청' 행(문의로 이동). 호출측이 대상별로 넘긴다 */
+  onPhotoRemoval?: (target: ModTarget) => void;
 }) {
   const { t } = useTranslation();
   const isGuest = useIsGuest(); // P-281: 게스트 = 차단 숨김·신고 게이트(호출처 5곳 무변)
@@ -170,6 +174,10 @@ export function ModerationFlow({
                 // 바뀌었다(BE #249·#250, X-Installation-Id 헤더로 식별). P-281 로그인 게이트는 폐기.
                 ...(target.type === 'review' || FLAGS.communityReportEnabled
                   ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, keepOpen: true, onPress: () => setPhase('report') }]
+                  : []),
+                // KB-814 F3: 사진 삭제 요청 = 통지→중단 창구(문의 화면). 게스트 게이트는 호출측
+                ...(onPhotoRemoval && target.type === 'review'
+                  ? [{ key: 'photoRemoval', label: t('ugc.photoRemovalRequest'), icon: <IconGallery size={17} color={C.ink} />, onPress: () => onPhotoRemoval(target) }]
                   : []),
                 // P-281: 게스트 = 차단 항목 자체 미노출(예진 지시 — /members/me/blocks 회원 전용)
                 // P-339 ②: 탈퇴 리뷰(작성자 부재)·신고 전용 표면(홈)도 차단 미노출
