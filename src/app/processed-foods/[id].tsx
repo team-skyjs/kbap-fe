@@ -31,7 +31,7 @@ import { RemoteImage } from '@/components/RemoteImage';
 import { RiskBadge } from '@/components/RiskBadge';
 import { Shimmer } from '@/components/Skeleton';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { MessageErrorBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
@@ -361,22 +361,22 @@ export function ProcessedFoodDetailScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.card },
   pad: { paddingHorizontal: GUTTER, paddingTop: 20, gap: 20 },
-  photo: { width: '100%', aspectRatio: 1 / PHOTO_RATIO, borderRadius: 16, backgroundColor: C.surface2, overflow: 'hidden' },
+  photo: { width: '100%', aspectRatio: 1 / PHOTO_RATIO, borderRadius: radius.md, backgroundColor: C.surface2, overflow: 'hidden' },
   photoImage: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
   badge: { position: 'absolute', left: 10, top: 0 },
   titleBlock: { gap: 4 },
-  maker: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
+  maker: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
   name: { fontFamily: font.bodyBold, fontSize: 28, lineHeight: 34, color: C.ink },
-  meta: { fontFamily: font.body, fontSize: 15, lineHeight: 20, color: C.ink2 },
-  freeStarted: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 20, color: C.primaryText, marginTop: 8 }, // KB-877
+  meta: { fontFamily: font.body, fontSize: 16, lineHeight: 21, color: C.ink2 },
+  freeStarted: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 23, color: C.primaryText, marginTop: 8 }, // KB-877
   block: { gap: 10 },
   h2: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 26, color: C.ink },
-  body: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink },
-  preview: { fontFamily: font.body, fontSize: 15, lineHeight: 21, color: C.ink2 },
+  body: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink },
+  preview: { fontFamily: font.body, fontSize: 16, lineHeight: 22, color: C.ink2 },
   expanded: { gap: 24 },
-  disclaimer: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
+  disclaimer: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
   seeLess: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, justifyContent: 'center' },
   seeLessText: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
-  skelLine: { height: 14, borderRadius: 4 },
-  skelRow: { height: 63, borderRadius: 4 },
+  skelLine: { height: 14, borderRadius: radius.xs },
+  skelRow: { height: 63, borderRadius: radius.xs },
 });

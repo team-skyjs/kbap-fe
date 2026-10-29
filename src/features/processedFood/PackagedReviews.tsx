@@ -22,7 +22,7 @@ import { QueryErrorBlock } from '@/components/StateBlock';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { photoRemovalHref } from '@/lib/review/reviewTarget';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { useMe } from '@/lib/data/useMe';
@@ -159,11 +159,11 @@ const s = StyleSheet.create({
   // 시안 31: 요약 아래 16 · 헤더 18/700 + 링크 15 ink2 · 빈 별 16 + 14 ink3 · 카드 위 8
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 20, paddingTop: 16 },
   heading: { flexShrink: 1, fontSize: 18, fontWeight: '700', color: C.ink },
-  writeLink: { fontSize: 15, fontWeight: '400', color: C.ink2 },
+  writeLink: { fontSize: 16, fontWeight: '400', color: C.ink2 },
   countRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  countText: { fontSize: 14, fontWeight: '400', color: C.ink3 },
-  beFirst: { fontSize: 14, fontWeight: '600', color: C.ink2, textAlign: 'center', paddingTop: 16 },
+  countText: { fontSize: 16, fontWeight: '400', color: C.ink3 },
+  beFirst: { fontSize: 16, fontWeight: '600', color: C.ink2, textAlign: 'center', paddingTop: 16 },
   btnRow: { paddingHorizontal: 20, paddingTop: 16 },
   skel: { paddingHorizontal: 20, paddingTop: 16, gap: 12 },
-  skelCard: { height: 96, borderRadius: 8 },
+  skelCard: { height: 96, borderRadius: radius.md },
 });

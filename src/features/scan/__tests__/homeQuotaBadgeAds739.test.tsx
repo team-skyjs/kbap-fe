@@ -137,7 +137,7 @@ it('KB-765: 두 옵션 = 같은 스타일(흰 바탕 · primary 1.5 테두리 ·
   const pick = (st: Record<string, unknown>) => ({ bg: st.backgroundColor, bw: st.borderWidth, bc: st.borderColor, r: st.borderRadius, minH: st.minHeight, flex: st.flex });
   expect(pick(flatStyle(review))).toEqual(pick(flatStyle(ad)));
   expect(pick(flatStyle(review))).toMatchObject({ bg: '#FFFFFF', bw: 1.5, bc: '#FF7134', minH: 72 });
-  const circle = (n: typeof review) => n.findAll((x) => typeof x.type === 'string' && flatStyle(x).width === 44 && flatStyle(x).borderRadius === 22)[0];
+  const circle = (n: typeof review) => n.findAll((x) => typeof x.type === 'string' && flatStyle(x).width === 44 && flatStyle(x).borderRadius === 999)[0]; // KB-909: 원 = pill
   expect(flatStyle(circle(review)).backgroundColor).toBe(flatStyle(circle(ad)).backgroundColor);
 });
 

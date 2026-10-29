@@ -12,7 +12,7 @@ import { usePreventRemove } from 'expo-router/build/react-navigation/core';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
-import { color as C, font, shadow } from '@/lib/theme';
+import { color as C, font, shadow, radius } from '@/lib/theme';
 
 type NavAction = Parameters<Parameters<typeof usePreventRemove>[1]>[0]['data']['action'];
 
@@ -76,7 +76,7 @@ export function LeaveConfirmModal({ visible, onKeep, onDiscard, kind = 'draft' }
 
 const styles = StyleSheet.create({
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.xl, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
 });

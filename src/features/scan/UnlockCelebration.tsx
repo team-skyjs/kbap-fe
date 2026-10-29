@@ -10,7 +10,7 @@ import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { FlameShape } from '@/components/FlameShape';
 import { IconClose } from '@/components/icons';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { useVersionGate } from '@/lib/versionGate';
 import { InfinityMark, PARTICLE_MS, ParticleBurst, ShockRing, StaggerTitle, titleWords, WORD_MS, WORD_STAGGER_MS } from './celebrationMotion';
 import { consumeUnlock, getUnlockSnapshot, isUnlockEventCurrent, markUnlockPresented, subscribeUnlock, type UnlockEvent } from './unlockCelebrationStore';
@@ -217,11 +217,11 @@ const styles = StyleSheet.create({
   hero: { flex: 1, paddingBottom: HERO_PAD_BOTTOM, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   glow: { position: 'absolute', left: '-15%', top: '-10%', width: '130%', height: '120%' },
   flameFrame: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, overflow: 'hidden' },
-  sheet: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 36, paddingHorizontal: 20 },
+  sheet: { backgroundColor: C.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingTop: 36, paddingHorizontal: 20 },
   title: { fontFamily: font.bodyBold, fontSize: 34, lineHeight: 46, color: C.ink, textAlign: 'center' },
   body: { fontFamily: font.body, fontSize: 16, lineHeight: 26, color: '#4B4F58', textAlign: 'center', marginTop: 8 },
   footer: { paddingTop: 24 },
-  btnWrap: { overflow: 'hidden', borderRadius: 4 }, // Btn 반경(KB-429 radius xs 4)과 같게 — shimmer가 버튼 밖으로 안 샌다
+  btnWrap: { overflow: 'hidden', borderRadius: radius.pill }, // Btn 반경(KB-909 pill)과 같게 — shimmer가 버튼 밖으로 안 샌다
   shimmer: { position: 'absolute', top: 0, bottom: 0, left: 0, width: 60, backgroundColor: 'rgba(255,255,255,0.35)' },
   close: { position: 'absolute', left: 16, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
 });

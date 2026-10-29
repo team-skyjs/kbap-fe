@@ -169,7 +169,7 @@ function FoodReviewsScreen() {
             {/* KB-431 §2-2: 음식 요약 카드 — 이미지 48 + 이름 + "ko · n reviews" */}
             <View style={styles.dishCard}>
               <View style={styles.dishThumb}>
-                {food?.photoUrl ? <CardPhoto uri={food.photoUrl} borderRadius={4} /> : <IconBubbleEmpty size={20} color={C.ink3} />}
+                {food?.photoUrl ? <CardPhoto uri={food.photoUrl} borderRadius={radius.md} /> : <IconBubbleEmpty size={20} color={C.ink3} />}
               </View>
               <View style={{ flex: 1, minWidth: 0, gap: 4 }}>{/* A-RL-02 */}
                 <Text style={styles.dishName} numberOfLines={1}>{food?.name ?? ''}</Text>
@@ -311,37 +311,37 @@ const styles = StyleSheet.create({
 
   emptyFill: { flex: 1, justifyContent: 'center' },
   // KB-84 게스트 lock-pop
-  lockPop: { position: 'absolute', left: 12, right: 12, top: 24, alignItems: 'center', gap: 8, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 18, ...shadow.sh2 },
-  lockPopIc: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  lockPopTitle: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink, textAlign: 'center' },
-  lockPopSub: { fontFamily: font.body, fontSize: 12.5, color: C.ink2, textAlign: 'center', lineHeight: 18 },
-  lockPopBtn: { backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10, marginTop: 4 },
-  lockPopBtnText: { fontFamily: font.bodyBold, fontSize: 13.5, color: '#fff' },
+  lockPop: { position: 'absolute', left: 12, right: 12, top: 24, alignItems: 'center', gap: 8, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.md, padding: 18, ...shadow.sh2 },
+  lockPopIc: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  lockPopTitle: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink, textAlign: 'center' },
+  lockPopSub: { fontFamily: font.body, fontSize: 13, color: C.ink2, textAlign: 'center', lineHeight: 19 },
+  lockPopBtn: { backgroundColor: C.primary, borderRadius: radius.pill, paddingHorizontal: 18, paddingVertical: 10, marginTop: 4 },
+  lockPopBtnText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff' },
 
   // KB-431 §2-2: 음식 요약 카드
-  dishCard: { flexDirection: 'row', alignItems: 'center', gap: 13, borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, padding: 8 },
-  dishThumb: { width: 48, height: 48, borderRadius: 4, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  dishName: { fontSize: 14, fontWeight: '600', color: C.ink },
-  dishSub: { fontSize: 13, fontWeight: '400', color: C.ink3 },
+  dishCard: { flexDirection: 'row', alignItems: 'center', gap: 13, borderWidth: 1, borderColor: C.line2, borderRadius: radius.md, padding: 8 },
+  dishThumb: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  dishName: { fontSize: 16, fontWeight: '600', color: C.ink },
+  dishSub: { fontSize: 14, fontWeight: '400', color: C.ink3 },
 
   // KB-431 §2-3: 평점 요약 박스
 
   // KB-431 §2-4: 컨트롤 행
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   filterToggle: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-RL-07
-  filterLbl: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
-  sortLabel: { fontSize: 14, fontWeight: '700', color: C.ink2 },
+  filterLbl: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 8 },
+  sortLabel: { fontSize: 16, fontWeight: '700', color: C.ink2 },
 
   // 시안 Button/Toggle md 44×24 — off 트랙 #D1D3D8 / on 트랙 primary, 노브 20 흰
-  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
+  sw: { width: 44, height: 24, borderRadius: radius.pill, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
-  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', ...shadow.sh1 },
+  knob: { width: 20, height: 20, borderRadius: radius.pill, backgroundColor: '#fff', ...shadow.sh1 },
   knobOn: { alignSelf: 'flex-end' },
 
   // P-158 ②: i18n 가변 길이 내성 — 이름만 말줄임(shrink), 필·별점은 고정폭(겹침 0)
   cards: { marginHorizontal: -20 }, // KB-848: FeedCard = 자체 좌우 20(리뷰 탭과 같은 폭)
   // P-085 keyset 더보기
-  loadMore: { alignItems: 'center', paddingVertical: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12 },
-  loadMoreText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
+  loadMore: { alignItems: 'center', paddingVertical: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: radius.md },
+  loadMoreText: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2 },
 });

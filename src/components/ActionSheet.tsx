@@ -101,8 +101,8 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: C.surface,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     paddingTop: 18,
     paddingBottom: 30,
     paddingHorizontal: 18,
@@ -110,12 +110,12 @@ const styles = StyleSheet.create({
     ...shadow.sh2,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
-  avatar: { width: 28, height: 28, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
-  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, ...shadow.sh1 },
+  avatar: { width: 28, height: 28, borderRadius: radius.pill, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
+  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.md, ...shadow.sh1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 15 },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
-  rowText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink, flexShrink: 1 }, // P-224: 아이콘 옆 1줄 방어
+  rowText: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink, flexShrink: 1 }, // P-224: 아이콘 옆 1줄 방어
   rowTextEmphasis: { color: C.primaryText }, // KB-814: 색만
   rowTextDestructive: { color: DESTRUCTIVE },
   rowTextDisabled: { color: C.ink3 },

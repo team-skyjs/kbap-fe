@@ -13,7 +13,7 @@ import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, riskText, shadow, type RiskState } from '@/lib/theme';
+import { color as C, riskText, shadow, type RiskState, radius } from '@/lib/theme';
 import { UpdateNudgeBanner } from '@/components/VersionGate';
 import {
   StickyHeader,
@@ -255,14 +255,14 @@ const styles = StyleSheet.create({
   // 언더라인 탭 (§1-3)
   tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 20, gap: 4 },
   tab: { paddingHorizontal: 8, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
-  tabLabel: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  tabLabel: { fontSize: 16, fontWeight: '600', color: C.ink2 },
   tabLabelOn: { color: INK_TITLE },
   tabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   tabBarOn: { backgroundColor: INK_TITLE },
   tabsDivider: { height: 0.5, backgroundColor: C.line2 },
 
   // 2열 그리드 (§1-5)
-  gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24 },
+  gridEmpty: { fontSize: 16, fontWeight: '400', color: C.ink2, paddingVertical: 24 },
   moreWrap: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 }, // A-HM-06(KB-486)
 
   // recent-list (§1-7)
@@ -275,18 +275,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.line2,
     borderStyle: 'dashed',
-    borderRadius: 4,
+    borderRadius: radius.xs,
     padding: 14,
     marginHorizontal: 20,
   },
-  guestCtaIc: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  guestCtaText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 18 },
-  guestCtaBtn: { fontSize: 13, fontWeight: '700', color: C.primaryText },
+  guestCtaIc: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  guestCtaText: { flex: 1, fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 19 },
+  guestCtaBtn: { fontSize: 14, fontWeight: '700', color: C.primaryText },
 
   // KB-800: 스캔 CTA — 면책 paddingTop 32 가 CTA↔면책 간격
   scanCta: { paddingHorizontal: 20, paddingTop: 24 },
   // 면책 (§1-10)
-  disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 18, paddingHorizontal: 20, paddingTop: 32, paddingBottom: 40 },
+  disc: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 20, paddingHorizontal: 20, paddingTop: 32, paddingBottom: 40 },
 });
 
 /** KB-784: 최근 스캔 행 = RecentRow + 노출 노드 + 카드 클릭(recent, 위치) */

@@ -177,5 +177,5 @@ export function RewardedTile({ sdk, initial, onUnlocked, onClose, render }: {
 const styles = StyleSheet.create({
   actions: { gap: 10 },
   rewarded: { gap: 6 },
-  note: { fontFamily: font.body, fontSize: 13, color: C.ink3, lineHeight: 18, textAlign: 'center' },
+  note: { fontFamily: font.body, fontSize: 14, color: C.ink3, lineHeight: 19, textAlign: 'center' },
 });

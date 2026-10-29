@@ -126,18 +126,18 @@ const styles = StyleSheet.create({
   foot: { paddingVertical: 16, alignItems: 'center' },
   // 커뮤니티 피드 푸터 에러와 같은 치수(새 값 발명 없음)
   footErr: { paddingVertical: 20, alignItems: 'center', gap: 10 },
-  footErrText: { fontSize: 13, fontWeight: '500', color: C.inkInfo },
-  footRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, paddingHorizontal: 20, paddingVertical: 8 },
-  footRetryText: { fontSize: 14, fontWeight: '600', color: C.ink },
+  footErrText: { fontSize: 14, fontWeight: '500', color: C.inkInfo },
+  footRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.md, paddingHorizontal: 20, paddingVertical: 8 },
+  footRetryText: { fontSize: 16, fontWeight: '600', color: C.ink },
   // P-406 전사: 보더·구분선 없음 — 여백만. 좌 세로 스택(gap 4) + 우 chevron(앞 gap 12) 수직 중앙.
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16 },
   rowText: { flex: 1, gap: 4 },
   title: { fontSize: 17, fontWeight: '400', color: C.ink },
   subRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  sub: { fontSize: 15, fontWeight: '400', color: C.ink3 },
+  sub: { fontSize: 16, fontWeight: '400', color: C.ink3 },
   // 알약: 우 24 · 하 insets+24(인라인) · 높이 52 · 좌우 24 · 라운딩 26 · 배경 C.ink · 그림자 없음
   fab: {
-    position: 'absolute', right: 24, height: FEEDBACK_FAB_H, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: 26,
+    position: 'absolute', right: 24, height: FEEDBACK_FAB_H, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: radius.pill,
     backgroundColor: C.ink, flexDirection: 'row', alignItems: 'center', gap: 8,
   },
   fabLabel: { fontSize: 17, fontWeight: '600', color: '#FFFFFF' },

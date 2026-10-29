@@ -20,7 +20,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { RemoteImage } from '@/components/RemoteImage';
 import { Shimmer } from '@/components/Skeleton';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
 import { browseUnsupported, useProcessedSearch } from '@/lib/data/useProcessedFoods';
 import { PACKAGED_TYPES, packagedTypeKey, VERDICT_RISK, type PackagedType, type ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
@@ -294,18 +294,18 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
 // 시안 01 실측(2x PNG): 사진 끝 → 제조사(13/18, 위 6) → 이름(17/24, 위 5) → 한국어명(14/20, 위 3) → 평점 줄(20, 위 6) · 다음 줄 사진까지 20
 const card = StyleSheet.create({
   root: { marginBottom: 20 },
-  photo: { aspectRatio: 161.5 / 176, borderRadius: 12, backgroundColor: C.surface2, overflow: 'hidden' },
+  photo: { aspectRatio: 161.5 / 176, borderRadius: radius.md, backgroundColor: C.surface2, overflow: 'hidden' },
   image: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
   badge: { position: 'absolute', left: 10, top: 0 },
-  maker: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2, marginTop: 6 },
+  maker: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2, marginTop: 6 },
   name: { fontFamily: font.bodyBold, fontSize: 17, lineHeight: 24, color: C.ink, marginTop: 5 },
-  nameKo: { fontFamily: font.ko, fontSize: 14, lineHeight: 20, color: C.ink2, marginTop: 3 },
+  nameKo: { fontFamily: font.ko, fontSize: 16, lineHeight: 23, color: C.ink2, marginTop: 3 },
   rating: { marginTop: 7 }, // 음식 목록 카드 평점 줄(18) 그대로(예진 10/22) — 시안 평점 줄 중심(이름 열 아래)에 맞춤
   // 시안 05: 사진 #F2F3F6(=hair, Shimmer 바탕) · 막대 r 알약
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, paddingHorizontal: 20 },
   skelPhoto: { backgroundColor: C.hair },
-  skelBar1: { width: 130, height: 16, borderRadius: 8, marginTop: 8 },
-  skelBar2: { width: 90, height: 12, borderRadius: 6, marginTop: 8 },
+  skelBar1: { width: 130, height: 16, borderRadius: radius.pill, marginTop: 8 },
+  skelBar2: { width: 90, height: 12, borderRadius: radius.pill, marginTop: 8 },
 });
 
 // R-95 실측(2x PNG): 탭 높이 48(라벨 16/24 semibold · 밑줄 2) · 활성 #2F3137 · 비활성 gray-700 · 구분선 0.5 gray-300
@@ -321,39 +321,39 @@ const seg = StyleSheet.create({
 
 const ph = StyleSheet.create({
   box: { backgroundColor: C.hair, alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden' },
-  label: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2, paddingHorizontal: 6 },
+  label: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2, paddingHorizontal: 6 },
 });
 
 // R-95 실측: 검색 335×48(세그먼트 아래 24) · 행 72(썸네일 72 r8) 간격 20 · 이름 16 bold ink · 제조사 14 gray-600 · 카드 보더 #EAEBEE
 const st = StyleSheet.create({
   // 시안 01: 탭 구분선 아래 16 · 335×48 · 칩 줄(36) 위 16 · 제목(20 bold) 위 26·아래 16
-  searchBox: { marginTop: 16, marginHorizontal: 20, height: 48, borderRadius: 4, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
-  searchInput: { flex: 1, height: 48, fontSize: 15, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
+  searchBox: { marginTop: 16, marginHorizontal: 20, height: 48, borderRadius: radius.md, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
+  searchInput: { flex: 1, height: 48, fontSize: 16, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
   chips: { marginTop: 16, flexGrow: 0 },
   chipsRow: { paddingHorizontal: 20, gap: 8 },
   heading: { fontFamily: font.bodyBold, fontSize: 22, lineHeight: 28, color: C.ink, marginTop: 26, marginBottom: 16, marginHorizontal: 20 },
   columns: { paddingHorizontal: 20, gap: 12 },
   row: { flexDirection: 'row', gap: 12, marginHorizontal: 20, marginBottom: 20 },
-  thumb: { width: 72, height: 72, borderRadius: 8 },
-  card: { flex: 1, minWidth: 0, minHeight: 72, justifyContent: 'center', borderWidth: 1, borderColor: C.line, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: C.card },
+  thumb: { width: 72, height: 72, borderRadius: radius.md },
+  card: { flex: 1, minWidth: 0, minHeight: 72, justifyContent: 'center', borderWidth: 1, borderColor: C.line, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: C.card },
   name: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 22, color: C.ink },
-  maker: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink3 },
-  type: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: C.ink3 },
+  maker: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink3 },
+  type: { fontFamily: font.body, fontSize: 13, lineHeight: 17, color: C.ink3 },
   skel: { paddingHorizontal: 20, gap: 20 },
   moreErr: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', columnGap: 8, minHeight: 44, paddingHorizontal: 20 },
-  moreErrText: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
-  moreErrCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
-  skelCard: { height: 104, borderRadius: 8 },
+  moreErrText: { fontFamily: font.body, fontSize: 14, color: C.ink3 },
+  moreErrCta: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
+  skelCard: { height: 104, borderRadius: radius.md },
   errorPad: { paddingHorizontal: 20, paddingTop: 24 },
   // 시안 04·47 실측: 아트 335×148 r16 #F7F8FA(돋보기 32) 위 16 → 제목(24 bold, 위 16) → 본문(16/26 gray-700, 위 18) → 버튼 48 둘(간격 8, 위 24)
   noMatch: { paddingHorizontal: 20, paddingTop: 16 },
-  noMatchArt: { height: 148, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  noMatchArt: { height: 148, borderRadius: radius.lg, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   noMatchTitle: { fontFamily: font.bodyBold, fontSize: 24, lineHeight: 32, color: C.ink, marginTop: 16 },
   noMatchBody: { fontFamily: font.body, fontSize: 16, lineHeight: 26, color: C.ink2, marginTop: 18 },
   noMatchActions: { gap: 8, marginTop: 24 },
   // 시안 empty(12338:37301): 유형 아트 335×150 r8 → 제목 → 본문
   state: { paddingHorizontal: 20, paddingTop: 16, gap: 16 }, // QA(10/22): 검색창과 안내 상자가 붙어 있었다 — 시안 04 아트 상자와 같은 16
-  stateArt: { height: 150, borderRadius: 8 },
+  stateArt: { height: 150, borderRadius: radius.md },
   stateTitle: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 28, color: C.ink, marginTop: 8 },
-  stateBody: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink },
+  stateBody: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink },
 });

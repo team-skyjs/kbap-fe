@@ -19,7 +19,7 @@ import { RiskBadge } from '@/components/RiskBadge';
 import { RemoteImage } from '@/components/RemoteImage';
 import { IconCamera, IconSearch, Input, OverallRating } from '@/components';
 import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { VERDICT_RISK, type LabelScanResult, type ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
@@ -298,38 +298,38 @@ function Section({ title, children, testID }: { title: string; children: React.R
 }
 
 const sc = StyleSheet.create({
-  freeStarted: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 20, color: C.primaryText }, // KB-877
+  freeStarted: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 23, color: C.primaryText }, // KB-877
   root: { flex: 1, backgroundColor: C.card },
   page: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24, gap: 16 },
   h1: { fontFamily: font.bodyBold, fontSize: 22, lineHeight: 28, color: C.ink },
   h1Big: { fontFamily: font.bodyBold, fontSize: 28, lineHeight: 34, color: C.ink, marginTop: 8 },
   h2: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 26, color: C.ink },
-  sub: { fontFamily: font.body, fontSize: 15, lineHeight: 20, color: C.ink2 },
+  sub: { fontFamily: font.body, fontSize: 16, lineHeight: 21, color: C.ink2 },
   lead: { fontFamily: font.body, fontSize: 16, lineHeight: 26, color: C.ink2 },
-  body: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink },
+  body: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink },
   list: { gap: 16 },
   // 테두리 = 양 상태 같은 1(미선택 투명) — 선택 전환은 색만(P-151)
-  card: { flexDirection: 'row', gap: 24, padding: 11, borderWidth: 1, borderRadius: 16, minHeight: 168 },
+  card: { flexDirection: 'row', gap: 24, padding: 11, borderWidth: 1, borderRadius: radius.lg, minHeight: 168 },
   cardOn: { borderColor: C.primary, backgroundColor: C.surface2 },
   cardOff: { borderColor: 'transparent', backgroundColor: 'transparent' },
-  photo: { width: 128, height: 144, borderRadius: 12, backgroundColor: C.surface2, overflow: 'hidden' },
+  photo: { width: 128, height: 144, borderRadius: radius.md, backgroundColor: C.surface2, overflow: 'hidden' },
   photoImage: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
   badge: { position: 'absolute', left: 10, top: 0 },
   textCol: { flex: 1, minWidth: 0, paddingTop: 2 },
-  maker: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
+  maker: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
   name: { fontFamily: font.bodyBold, fontSize: 17, lineHeight: 24, color: C.ink, marginTop: 5 },
-  nameKo: { fontFamily: font.ko, fontSize: 14, lineHeight: 20, color: C.ink2, marginTop: 3 },
+  nameKo: { fontFamily: font.ko, fontSize: 16, lineHeight: 23, color: C.ink2, marginTop: 3 },
   rating: { marginTop: 7 },
-  contains: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink, marginTop: 8 },
+  contains: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink, marginTop: 8 },
   bottom: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: C.card, gap: 8 },
   textAction: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, justifyContent: 'center' },
   textActionLabel: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
-  search: { height: 48, borderRadius: 4, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
-  searchInput: { flex: 1, height: 48, fontSize: 15, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
-  art: { height: 148, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  slot: { borderRadius: 16, backgroundColor: C.hair, overflow: 'hidden' },
+  search: { height: 48, borderRadius: radius.md, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
+  searchInput: { flex: 1, height: 48, fontSize: 16, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
+  art: { height: 148, borderRadius: radius.lg, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  slot: { borderRadius: radius.lg, backgroundColor: C.hair, overflow: 'hidden' },
   slotEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  slotLabel: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink2 },
+  slotLabel: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink2 },
   mainSlot: { height: 250 },
   sideRow: { flexDirection: 'row', gap: 8 },
   sideSlot: { flex: 1, height: 100 },

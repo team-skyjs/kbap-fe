@@ -19,7 +19,7 @@ import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { Pressable } from '@/components/Pressable';
 import { RemoteImage } from '@/components/RemoteImage';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
 import { openMapLink, openWebPage } from '@/lib/openExternal';
 import { IconMapPin } from '@/components/icons';
@@ -264,24 +264,24 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
 // KB-846: 점 인디케이터 = 사진 하단 가운데(아래 16) · 지름 6 · 간격 8 · 활성 흰 · 비활성 흰 40% · 그래버 띠 = 사진 위쪽 전폭 44(끌기 시작 영역)
 const st = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.32)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: C.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
+  sheet: { backgroundColor: C.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, overflow: 'hidden' },
   fill: { width: '100%', height: '100%', backgroundColor: C.surface2 },
   noPhoto: { backgroundColor: C.hair, alignItems: 'center', justifyContent: 'center' },
-  noPhotoText: { fontFamily: font.body, fontSize: 13, lineHeight: 20, color: C.ink2 },
-  handle: { position: 'absolute', top: 12, alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.line2 }, // 그래버 띠 안(띠 기준 위 12 = 시트 기준 그대로)
+  noPhotoText: { fontFamily: font.body, fontSize: 14, lineHeight: 22, color: C.ink2 },
+  handle: { position: 'absolute', top: 12, alignSelf: 'center', width: 36, height: 4, borderRadius: radius.pill, backgroundColor: C.line2 }, // 그래버 띠 안(띠 기준 위 12 = 시트 기준 그대로)
   grabZone: { position: 'absolute', top: 0, left: 0, right: 0, height: 44 },
   bodyScroll: { flexGrow: 0, flexShrink: 1 },
   dots: { position: 'absolute', left: PHOTO_INSET, bottom: 16, flexDirection: 'row', gap: 8 }, // KB-863 v2 B: 왼쪽 아래(출처 밑)
-  dot: { width: 6, height: 6, borderRadius: 3 },
+  dot: { width: 6, height: 6, borderRadius: radius.pill },
   dotOn: { backgroundColor: C.card },
   dotOff: { backgroundColor: C.card, opacity: 0.4 },
   body: { paddingHorizontal: 20, paddingTop: 16, gap: 8 },
   name: { fontFamily: font.bodyBold, fontSize: 24, lineHeight: 32, color: C.ink },
-  area: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
-  intro: { fontFamily: font.body, fontSize: 15, lineHeight: 21, color: C.ink },
+  area: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
+  intro: { fontFamily: font.body, fontSize: 16, lineHeight: 22, color: C.ink },
   // KB-852: 사진 우하단 오버레이 — caption 13 흰(gray-00) + 은은한 그림자(밝은 사진에서도 읽힘)
   // KB-863 v2 B: 출처 = 왼쪽 16 · 위끝 = 사진 바닥 − 49(줄 18 → 바닥 위 31 — 점 줄 위)
-  credit: { position: 'absolute', left: PHOTO_INSET, bottom: 31, fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.card, textAlign: 'left', textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  credit: { position: 'absolute', left: PHOTO_INSET, bottom: 31, fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.card, textAlign: 'left', textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   mapBtn: { position: 'absolute', right: PHOTO_INSET, bottom: PHOTO_INSET, width: MAP_BTN, height: MAP_BTN, borderRadius: MAP_BTN / 2, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, // gray-00
-  guide: { minHeight: 48, borderRadius: 999, paddingVertical: 8, marginTop: 4 }, // KB-863 v2 B: 전체 너비 pill(335×48, radius full)
+  guide: { minHeight: 48, borderRadius: radius.pill, paddingVertical: 8, marginTop: 4 }, // KB-863 v2 B: 전체 너비 pill(335×48, radius full)
 });

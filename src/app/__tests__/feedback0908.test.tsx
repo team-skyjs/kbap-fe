@@ -60,7 +60,7 @@ it('⑤ 북마크 상단 토스트 — 공용 호스트(루트 1개) + 토글 �
 
 it('⑥ 로그인 버튼 radius 통일 — Apple cornerRadius 4(=Google r4)', () => {
   const sb = read('src/components/SocialAuthButtons.tsx');
-  expect(sb).toContain('cornerRadius={4}');
+  expect(sb).toContain('cornerRadius={BTN_H / 2}');
   expect(sb).not.toContain('cornerRadius={14}');
 });
 

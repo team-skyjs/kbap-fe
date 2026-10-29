@@ -22,7 +22,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { openWebPage } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, shadow, type RiskState } from '@/lib/theme';
+import { color as C, font, shadow, type RiskState, radius } from '@/lib/theme';
 
 /** P-171 ① → P-223: 칩 폭 근사 — 통합 칩 메트릭(패딩 8×2·보더·RiskMark 11) 기반.
  *  CJK ≈ 폰트폭, 라틴/숫자 ≈ 절반. ponytail: 문자폭 근사 휴리스틱 — 오차는 이르게
@@ -176,7 +176,7 @@ function RichRow({
           회색 박스가 되던 결함(9/10 실기). */}
       <View style={styles.thumbWrap}>
         <View style={styles.thumb}>
-          <CardPhoto uri={thumb} borderRadius={4} />
+          <CardPhoto uri={thumb} borderRadius={radius.md} />
         </View>
         <Pressable style={styles.thumbBadge} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
           <RiskBadge state={dish.risk} />
@@ -318,50 +318,50 @@ export function OrderPill({ count, onPress, t, bottom }: { count: number; onPres
 const styles = StyleSheet.create({
   // P-226 ⑤: 미등록 안내 + 외부 검색 링크
   missRow: { marginTop: 4, gap: 5 },
-  missText: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 13 }, // A-SC-10(이탤릭 제거)
+  missText: { fontSize: 14, fontWeight: '400', color: C.ink3, lineHeight: 14 }, // A-SC-10(이탤릭 제거)
   missLinks: { flexDirection: 'row', gap: 4 }, // A-SC-09
   // P-285: 외부 검색 아이콘 칩 34×30(border #EAEBEE r37 pad 4/6)
-  googleChip: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 26, paddingVertical: 4, paddingHorizontal: 8, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 37, backgroundColor: '#FFFFFF' }, // P-366 ⑦: 회피 칩 프레임 문법
-  googleChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' },
+  googleChip: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 26, paddingVertical: 4, paddingHorizontal: 8, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: radius.pill, backgroundColor: '#FFFFFF' }, // P-366 ⑦: 회피 칩 프레임 문법
+  googleChipText: { fontSize: 13, fontWeight: '700', color: '#2F3137' },
   // KB-789(14289:8235): Closest match 칩 — primary 12% 틴트 · pad 2/8 · pill · 11/600 primary. 보더 없음(상태 전환 없는 정적 칩).
-  closestChip: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 8, borderRadius: 999, backgroundColor: 'rgba(255,113,52,0.12)' },
-  closestChipText: { fontSize: 11, fontWeight: '600', color: C.primary },
+  closestChip: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 8, borderRadius: radius.pill, backgroundColor: 'rgba(255,113,52,0.12)' },
+  closestChipText: { fontSize: 12, fontWeight: '600', color: C.primary },
   body: { paddingHorizontal: 20, paddingBottom: 120 }, // A-SC-05(KB-486)
   // P-160 B안(.bnrB 전사): surface2 바탕 + 하단 보더 + 대문자 캡션 + 칩 스트립
   bar: { backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: C.line, paddingTop: 10, paddingBottom: 11, paddingHorizontal: 16 },
   barCap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  barCapText: { flex: 1, fontFamily: font.displayBlack, fontSize: 11.5, color: C.ink3, letterSpacing: 0.5, textTransform: 'uppercase' },
+  barCapText: { flex: 1, fontFamily: font.displayBlack, fontSize: 12, color: C.ink3, letterSpacing: 0.5, textTransform: 'uppercase' },
   barStrip: { flexDirection: 'row', gap: 6, marginTop: 7 },
-  barChip: { backgroundColor: '#fff', borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
-  barChipText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink },
-  editLink: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+  barChip: { backgroundColor: '#fff', borderWidth: 1, borderColor: C.line, borderRadius: radius.pill, paddingHorizontal: 11, paddingVertical: 4 },
+  barChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
+  editLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
   // KB-432 §1-1(4150:16254): h136 pad 16/20 gap 16, 하단 line 1px
   row: { flexDirection: 'row', gap: 16, minHeight: 150, paddingVertical: 16, paddingHorizontal: 0 }, // A-SC-05: 하단 보더 제거
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   thumbWrap: { width: 118, height: 118 }, // P-285: 118×118(2200:21512) — P-362: height 명시(퍼센트 순환 봉쇄)
   thumbFb: { backgroundColor: C.surface2 },
   thumbBadge: { position: 'absolute', top: -4, left: 3 },
-  nameTitle: { fontSize: 15, fontWeight: '500', color: '#2F3137', flexShrink: 1 },
-  nameSubKo: { fontSize: 14, fontWeight: '500', color: C.ink2 },
-  desc: { fontSize: 13, fontWeight: '400', color: C.ink3 }, // P-285: 설명 1줄(2200:21512)
+  nameTitle: { fontSize: 16, fontWeight: '500', color: '#2F3137', flexShrink: 1 },
+  nameSubKo: { fontSize: 16, fontWeight: '500', color: C.ink2 },
+  desc: { fontSize: 14, fontWeight: '400', color: C.ink3 }, // P-285: 설명 1줄(2200:21512)
   // P-171: 1줄 고정 — nowrap+hidden(근사 오차 이중 방어), 행 높이 균일 회복
   warnWrap: { flexDirection: 'row', flexWrap: 'nowrap', overflow: 'hidden', alignItems: 'center', gap: 4, marginTop: 5 }, // A-SC-06/07(이름→칩 8 = col gap 3+5)
-  moreChip: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: 37, paddingHorizontal: 6, paddingVertical: 4 }, // A-SC-08(warnChip 동일)
-  moreChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' }, // A-SC-08
+  moreChip: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 4 }, // A-SC-08(warnChip 동일)
+  moreChipText: { fontSize: 13, fontWeight: '700', color: '#2F3137' }, // A-SC-08
   // P-223: 통합 칩(색+형태) — 구 avoidRow 섹션 스타일 대체
-  warnChip: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 26, borderWidth: 1, borderColor: C.line, borderRadius: 37, paddingVertical: 4, paddingLeft: 3, paddingRight: 6, backgroundColor: '#FFFFFF' }, // A-SC-07
-  warnChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' },
-  price: { fontSize: 13, fontWeight: '500', color: C.inkInfo, marginTop: 2, fontVariant: ['tabular-nums'] }, // P-284
-  priceConv: { fontSize: 14, fontWeight: '600', color: '#6B95FF' },
+  warnChip: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 26, borderWidth: 1, borderColor: C.line, borderRadius: radius.pill, paddingVertical: 4, paddingLeft: 3, paddingRight: 6, backgroundColor: '#FFFFFF' }, // A-SC-07
+  warnChipText: { fontSize: 13, fontWeight: '700', color: '#2F3137' },
+  price: { fontSize: 14, fontWeight: '500', color: C.inkInfo, marginTop: 2, fontVariant: ['tabular-nums'] }, // P-284
+  priceConv: { fontSize: 16, fontWeight: '600', color: '#6B95FF' },
   // P-366 ②: 하단 행 — 좌 가격 / 우 담기 슬롯(텍스트 열 전폭)
   bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }, // P-366 ⑥: 썸 밑변 정렬
-  thumb: { width: 118, height: 118, borderRadius: 4, backgroundColor: C.surface2 },
+  thumb: { width: 118, height: 118, borderRadius: radius.md, backgroundColor: C.surface2 },
   // 담기 슬롯 — [+]와 스테퍼가 같은 풋프린트(RIGHT_COL_W × ADD_SLOT_H)를 공유
   addSlot: { width: RIGHT_COL_W, height: ADD_SLOT_H, alignItems: 'flex-end', justifyContent: 'center' },
-  addBtn: { width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 }, // P-285: add 36(4003:5796) · A-DS-02: 기본 보더 제거(흰+sh1)
-  stepper: { width: 83, height: 31, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: 4, paddingHorizontal: 6, ...shadow.sh1 }, // P-285: 스테퍼 83×31(2162:9658)
-  qty: { fontSize: 15, fontWeight: '500', color: '#262C31', fontVariant: ['tabular-nums'], textAlign: 'center' },
-  footNote: { fontFamily: font.body, fontSize: 11.5, lineHeight: 16, color: C.ink3, paddingVertical: 14 },
-  pill: { position: 'absolute', left: 20, right: 20, backgroundColor: C.primary, borderRadius: 999, paddingVertical: 14, alignItems: 'center', shadowColor: C.primary, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-  pillText: { fontFamily: font.bodyBold, fontSize: 14.5, color: '#fff' },
+  addBtn: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 }, // P-285: add 36(4003:5796) · A-DS-02: 기본 보더 제거(흰+sh1)
+  stepper: { width: 83, height: 31, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: radius.xs, paddingHorizontal: 6, ...shadow.sh1 }, // P-285: 스테퍼 83×31(2162:9658)
+  qty: { fontSize: 16, fontWeight: '500', color: '#262C31', fontVariant: ['tabular-nums'], textAlign: 'center' },
+  footNote: { fontFamily: font.body, fontSize: 12, lineHeight: 17, color: C.ink3, paddingVertical: 14 },
+  pill: { position: 'absolute', left: 20, right: 20, backgroundColor: C.primary, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', shadowColor: C.primary, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+  pillText: { fontFamily: font.bodyBold, fontSize: 16, color: '#fff' },
 });

@@ -499,9 +499,9 @@ it('P-406 치수 — 행·알약·목록 여백이 발주 전사값 그대로', 
   expect(src).toMatch(/row: \{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16 \}/);
   expect(src).toMatch(/rowText: \{ flex: 1, gap: 4 \}/);
   expect(src).toMatch(/title: \{ fontSize: 17, fontWeight: '400', color: C\.ink \}/);
-  expect(src).toMatch(/sub: \{ fontSize: 15, fontWeight: '400', color: C\.ink3 \}/);
+  expect(src).toMatch(/sub: \{ fontSize: 16, fontWeight: '400', color: C\.ink3 \}/);
   expect(src).toMatch(/subRow: \{ flexDirection: 'row', alignItems: 'baseline', gap: 8 \}/);
-  expect(src).toMatch(/position: 'absolute', right: 24, height: FEEDBACK_FAB_H, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: 26,\s*backgroundColor: C\.ink, flexDirection: 'row', alignItems: 'center', gap: 8,/);
+  expect(src).toMatch(/position: 'absolute', right: 24, height: FEEDBACK_FAB_H, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: radius.pill,\s*backgroundColor: C\.ink, flexDirection: 'row', alignItems: 'center', gap: 8,/);
   expect(src).toMatch(/export const FEEDBACK_FAB_H = 52;/); // KB-707: 알약 높이 52는 상수로(목록 끝 여백 계산과 공유)
   expect(src).toMatch(/fabLabel: \{ fontSize: 17, fontWeight: '600', color: '#FFFFFF' \}/);
   expect(src).toMatch(/bottom: insets\.bottom \+ FEEDBACK_FAB_GAP/);

@@ -10,7 +10,7 @@ const detail = fs.readFileSync('src/app/food/[id]/index.tsx', 'utf8');
 
 it('빈도 줄 = 시트 전용 좌측 스타일(타일 center 재사용 잔존 0)', () => {
   expect(detail).toContain("<Text style={styles.ingSheetSub}>{t('detail.ofShops'");
-  expect(detail).toContain("ingSheetSub: { fontSize: 11, fontWeight: '400', color: '#5A636A' }");
+  expect(detail).toContain("ingSheetSub: { fontSize: 12, fontWeight: '400', color: '#5A636A' }");
   // 시트 블록 안에 ingTileSub 잔존 0(타일 그리드 쪽만 사용)
   const sheet = detail.slice(detail.indexOf('§1-6: 재료 상세 바텀시트'), detail.indexOf('</Modal>'));
   expect(sheet).not.toContain('styles.ingTileSub');

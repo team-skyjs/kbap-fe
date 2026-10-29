@@ -610,7 +610,7 @@ export function FoodExplorer({
         /* 원격 콘텐츠 = 스켈레톤 기본(P-188 계열) — 카드 비율·cardW 동일 2장 */
         <View style={styles.railSkel} testID="home-rail-skel">
           {[0, 1].map((i) => (
-            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
+            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: radius.xs }} />
           ))}
         </View>
       ) : gridQ.isError && gridFoods.length === 0 ? (
@@ -692,7 +692,7 @@ export function FoodExplorer({
       {variant === 'embedded' && mostReviewedLoading && (
         <View style={styles.railSkel} testID="home-most-reviewed-skel">
           {[0, 1].map((i) => (
-            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
+            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: radius.xs }} />
           ))}
         </View>
       )}
@@ -723,22 +723,22 @@ const styles = StyleSheet.create({
   searchBox: {
     flex: 1,
     height: 48,
-    borderRadius: 4,
+    borderRadius: radius.md, // KB-909: 입력창 = md
     backgroundColor: C.surface2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16, // A-HM-02
   },
-  searchPh: { flex: 1, fontSize: 15, fontWeight: '500', color: '#D1D3D8', marginRight: 8 }, // A-HM-02(scanBtn bg는 C 이관)
-  scanBtn: { width: 48, height: 48, borderRadius: 8, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  searchPh: { flex: 1, fontSize: 16, fontWeight: '500', color: '#D1D3D8', marginRight: 8 }, // A-HM-02(scanBtn bg는 C 이관)
+  scanBtn: { width: 48, height: 48, borderRadius: radius.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
 
   // 언더라인 탭 (§1-3)
   tabsScroll: { flexGrow: 0, marginTop: 14 }, // KB-707: 가로 스크롤(세로로 자라지 않게 flexGrow 0 — P-319)
   tabsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 4 }, // A-HM-03
   // A-DS-03(KB-486): 라벨 14/700 · 비활성 #9196A1 · 패딩 10
   tab: { paddingHorizontal: 10, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
-  tabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' },
+  tabLabel: { fontSize: 16, fontWeight: '700', color: '#9196A1' },
   tabLabelOn: { color: INK_TITLE },
   tabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   tabBarOn: { backgroundColor: INK_TITLE },
@@ -752,11 +752,11 @@ const styles = StyleSheet.create({
   chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: CHIP_FADE_W }, // 최소 높이 = chipRowHeight(fontScale) 인라인 — KB-903(T-101): 고정 height면 칩(라벨 줄 + 여백 + 보더)이 눌려 라벨이 아래로 넘치고 ✓/✗만 가운데(Android 2.0)
   chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: CHIP_FADE_W },
   // P-342 ②: 정렬 시트 NEW "준비 중" 칩(DS 소형 pill)
-  soonChip: { backgroundColor: '#F2F3F6', borderRadius: 999, paddingVertical: 2, paddingHorizontal: 8 },
-  soonChipText: { fontSize: 12, fontWeight: '500', color: '#6A6F7C' },
+  soonChip: { backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 2, paddingHorizontal: 8 },
+  soonChipText: { fontSize: 13, fontWeight: '500', color: '#6A6F7C' },
   chipGroup: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
-  sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 8 },
+  sortLabel: { fontSize: 16, fontWeight: '700', color: '#4B4F58' },
 
   // P-317 홈 레일(그리드 카드 동일 비율 — 폭 174 고정, gap 12, 좌우 20)
   // P-319(KB-485) 공백 근본 원인: RN ScrollView 기본 스타일(baseHorizontal)이 flexGrow:1 —
@@ -780,23 +780,23 @@ const styles = StyleSheet.create({
     backgroundColor: primaryTint,
     borderWidth: 1,
     borderColor: C.primary,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
   },
   // 텍스트·chevron은 `C.primaryText`. 발주는 `C.primary`였지만 그 값은 이 틴트 위에서
   // 대비 2.61로 AA(4.5)는커녕 비텍스트 3:1도 못 넘는다 — P-284가 "12~14px primary 텍스트는
   // primaryText"로 이미 정해둔 이유가 이것이고, primaryText는 같은 배경에서 4.91이다.
-  seeAllText: { fontSize: 14, fontWeight: '600', color: C.primaryText },
+  seeAllText: { fontSize: 16, fontWeight: '600', color: C.primaryText },
   // P-321 레일 상태 블록(전부 ScrollView 밖 세로 배치 — 줄바꿈 보장)
   railSkel: { flexDirection: 'row', gap: 12, paddingHorizontal: 20 },
   // 디자이너 빈 상태(4003:6689) = 중앙 정렬 — EmptyBlock과 본문·CTA 정렬 통일
   railState: { paddingHorizontal: 20, alignItems: 'center', gap: 4 },
-  railEmptyBody: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20, textAlign: 'center', maxWidth: 335 },
+  railEmptyBody: { fontSize: 16, fontWeight: '400', color: C.ink2, lineHeight: 23, textAlign: 'center', maxWidth: 335 },
   // Safe picks 2×2 — 홈 구 그리드 문법(카드 기본 47% + grow)
   // P-326: 음식 탭 그리드 문법(행 row + 셀 flex:1) — 47% 근사 폐기(좌우 패딩 대칭)
   safeGrid: { gap: 16, paddingHorizontal: 20 },
   safeGridRow: { flexDirection: 'row', columnGap: 16 },
   safeGridCell: { flex: 1, minWidth: 0 },
-  gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24, paddingHorizontal: 20 },
+  gridEmpty: { fontSize: 16, fontWeight: '400', color: C.ink2, paddingVertical: 24, paddingHorizontal: 20 },
 
   // 음식 탭(FlatList) 그리드 — 셀이 폭 소유(저장 목록과 같은 문법)
   gridRowWrap: { columnGap: 16, paddingHorizontal: 20 },

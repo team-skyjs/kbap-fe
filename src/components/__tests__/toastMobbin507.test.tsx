@@ -49,10 +49,10 @@ afterEach(() => {
 
 it('형태 스냅 — r24 #2F3137 minHeight 56 pad 20 · 텍스트 16/500 좌정렬 2줄 · Close 16/700 · 체크 원 22/에러 AlertTri', () => {
   const tt = read('src/components/TopToast.tsx');
-  expect(tt).toMatch(/minHeight: 56,[^}]*backgroundColor: '#2F3137',\s*borderRadius: 24,\s*paddingHorizontal: 20/s);
+  expect(tt).toMatch(/minHeight: 56,[^}]*backgroundColor: '#2F3137',\s*borderRadius: radius\.xl,\s*paddingHorizontal: 20/s);
   expect(tt).toContain("text: { flex: 1, fontSize: 16, fontWeight: '500', color: '#FFFFFF', lineHeight: 22, textAlign: 'left' }");
   expect(tt).toContain("close: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' }");
-  expect(tt).toContain("checkDot: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFFFFF'");
+  expect(tt).toContain("checkDot: { width: 22, height: 22, borderRadius: radius.pill, backgroundColor: '#FFFFFF'");
   expect(tt).toContain('IconAlertTri size={22} color="#FFFFFF"');
   expect(tt).toContain('const SHOW_MS = 2500');
   // #108 3R: 페이드는 reduce-motion에도 항상 재생(즉시 팝인/아웃 방지)
@@ -332,7 +332,7 @@ describe('KB-626 icon:info — 중립 안내 변형', () => {
     tree.root.findAll((n) => typeof n.props?.d === 'string').map((n) => n.props.d as string);
   const verdictGlyphs = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.state === 'caution');
   const dotSlots = (tree: ReactTestRenderer) =>
-    tree.root.findAll((n) => typeof n.type === 'string' && (n.props?.style as { width?: number; borderRadius?: number } | undefined)?.width === 22 && (n.props?.style as { borderRadius?: number })?.borderRadius === 11);
+    tree.root.findAll((n) => typeof n.type === 'string' && (n.props?.style as { width?: number; borderRadius?: number } | undefined)?.width === 22 && (n.props?.style as { borderRadius?: number })?.borderRadius === 999); // KB-909: 원 = pill
 
   it("icon:'alert'는 판정 글리프를 그린다 — 양성 대조군(글리프 탐지가 살아 있음)", () => {
     const tree = render();

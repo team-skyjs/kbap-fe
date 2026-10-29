@@ -15,7 +15,7 @@ import { Txt as Text } from '@/components/Txt';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { airbridge } from '@/lib/airbridge';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import type { AdsSdk } from '@/lib/ads/sdk';
 import { useAdsSdk } from '@/lib/ads/adsSession';
 import { adUnitId } from '@/lib/ads/units';
@@ -103,14 +103,14 @@ const styles = StyleSheet.create({
   card: { paddingVertical: 22, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: C.line }, // FeedCard와 동일 프레임 — 바깥 View
   inner: { gap: 8 }, // NativeAdView: padding·border·margin 0(위 주석)
   top: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  icon: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.surface2 },
+  icon: { width: 24, height: 24, borderRadius: radius.pill, backgroundColor: C.surface2 },
   who: { flex: 1, minWidth: 0, gap: 2 },
-  headline: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink, lineHeight: 21 },
-  advertiser: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
+  headline: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink, lineHeight: 22 },
+  advertiser: { fontFamily: font.body, fontSize: 13, color: C.ink3, lineHeight: 17 },
   badgeWrap: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 },
-  badge: { flexShrink: 1, fontFamily: font.bodyBold, fontSize: 11, color: C.ink2, lineHeight: 16, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: C.line2 },
+  badge: { flexShrink: 1, fontFamily: font.bodyBold, fontSize: 12, color: C.ink2, lineHeight: 17, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.xs, borderWidth: 1, borderColor: C.line2 },
   adChoicesSpace: { width: 22, height: 22, flexShrink: 0 },
-  body: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20 },
-  media: { alignSelf: 'flex-start', borderRadius: 8, backgroundColor: C.surface2 }, // 원비율·측정 가용폭으로 width/height 지정
-  cta: { alignSelf: 'flex-start', maxWidth: '100%', fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, lineHeight: 20, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: C.primary },
+  body: { fontFamily: font.body, fontSize: 16, color: C.ink2, lineHeight: 23 },
+  media: { alignSelf: 'flex-start', borderRadius: radius.md, backgroundColor: C.surface2 }, // 원비율·측정 가용폭으로 width/height 지정
+  cta: { alignSelf: 'flex-start', maxWidth: '100%', fontFamily: font.bodyBold, fontSize: 16, color: C.primaryText, lineHeight: 23, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: C.primary },
 });

@@ -109,8 +109,8 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: C.card,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     paddingTop: 26,
     paddingBottom: 34,
     paddingHorizontal: 24,
@@ -118,8 +118,8 @@ const styles = StyleSheet.create({
     gap: 12,
     ...shadow.sh2,
   },
-  glyph: { width: 56, height: 56, borderRadius: 28, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center' },
+  glyph: { width: 56, height: 56, borderRadius: radius.pill, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: font.displayBlack, fontSize: 19, color: C.ink, textAlign: 'center', lineHeight: 26 },
-  sub: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20, marginBottom: 6, maxWidth: 320 },
-  later: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, padding: 8 },
+  sub: { fontFamily: font.body, fontSize: 14, color: C.ink2, textAlign: 'center', lineHeight: 21, marginBottom: 6, maxWidth: 320 },
+  later: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink2, padding: 8 },
 });

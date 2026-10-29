@@ -12,9 +12,9 @@ it('② 스캔 진입 상세 — src===scan = Write 미렌더 + Ask 전폭, 그 
 it('④ My Foods Ordered 행 — thumbnails[0] = CardPhoto r8, 없으면 핀 현행', () => {
   const mf = read('src/app/profile/my-foods.tsx');
   expect(mf).toContain('{order.thumbnails[0] ? (');
-  expect(mf).toContain('<CardPhoto uri={order.thumbnails[0]} borderRadius={8} />');
+  expect(mf).toContain('<CardPhoto uri={order.thumbnails[0]} borderRadius={radius.md} />');
   expect(mf).toContain('<D4MapPin size={24} color={C.ink3} />'); // 폴백 유지
-  expect(mf).toMatch(/pinBox: \{ width: 70, height: 70, borderRadius: 8/);
+  expect(mf).toMatch(/pinBox: \{ width: 70, height: 70, borderRadius: radius\.md/);
 });
 
 it('③ 기본 이미지 = 앱 번들 로컬 에셋(어댑터 경계 한 곳) — 원격 927KB PNG 동시 로딩 공백 재발 방지', () => {
@@ -44,7 +44,7 @@ it('#116 2R — ready(드레인 완료) 전 토글 무시(POST 오발 방지) + 
   expect(read('src/features/food/FoodExplorer.tsx')).toContain("if (variant === 'screen' && !savedReady) return;"); // KB-779: 홈은 카드 bookmarked가 방향 — 가드 불필요
   expect(read('src/app/search.tsx')).toContain('if (!savedReady) return;');
   const rich = read('src/features/scan/ScanRichList.tsx');
-  expect(rich).toContain('<CardPhoto uri={thumb} borderRadius={4} />'); // 깨진 URL = 기본 이미지 폴백
+  expect(rich).toContain('<CardPhoto uri={thumb} borderRadius={radius.md} />'); // 깨진 URL = 기본 이미지 폴백
 });
 
 it('P-362(KB-525): 스캔 썸네일 래퍼 = 고정 118(퍼센트 높이 금지 — 행 160만px 폭주 회귀 잠금)', () => {

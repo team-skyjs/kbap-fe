@@ -23,7 +23,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { formatCalendarDate } from '@/lib/reviewTime';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import * as ImagePicker from 'expo-image-picker';
 import { ActionSheet, IconChevron, SubHeader } from '@/components';
 import { SheetShell } from '@/components/SheetShell';
@@ -414,7 +414,7 @@ export default function OrderDetailScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingTop: 8, gap: 16 },
-  scanImage: { height: 160, borderRadius: 8, backgroundColor: C.surface2 },
+  scanImage: { height: 160, borderRadius: radius.md, backgroundColor: C.surface2 },
   placeRow: { paddingHorizontal: 20 },
   placeTitle: { fontSize: 18, fontWeight: '600', color: '#1C1E21' },
   placeHint: { color: C.ink3 }, // KB-638: 장소 없음 — 같은 메트릭, 색만(탭하면 검색)
@@ -422,34 +422,34 @@ const styles = StyleSheet.create({
   // 영수증 카드 — pad 16, 행 space-between, line #DCDEE3
   receipt: { marginHorizontal: 20, paddingVertical: 16, paddingHorizontal: 0, gap: 16 }, // A-OD-01(KB-486: 보더 제거·좌우 0)
   rcptRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-  rcptLbl: { fontSize: 12, fontWeight: '600', color: C.inkInfo }, // P-284: 영수증 라벨 대비
-  rcptVal: { fontSize: 14, fontWeight: '500', color: '#1C1E21' },
+  rcptLbl: { fontSize: 13, fontWeight: '600', color: C.inkInfo }, // P-284: 영수증 라벨 대비
+  rcptVal: { fontSize: 16, fontWeight: '500', color: '#1C1E21' },
   rcptValWrap: { flex: 1, textAlign: 'right' },
   rcptLine: { height: 1, backgroundColor: C.line2 },
   rcptTotalRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 }, // 구분자 문자 대신 gap(P-196)
-  rcptTotal: { fontSize: 15, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
-  rcptTotalConv: { fontSize: 15, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
+  rcptTotal: { fontSize: 16, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
+  rcptTotalConv: { fontSize: 16, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
 
   divider8: { height: 8, backgroundColor: '#F5F5F5' }, // A-OD-02
 
   dishesHead: { flexDirection: 'row', alignItems: 'baseline', gap: 6, paddingHorizontal: 20, marginTop: -4 }, // A-OD-03(디바이더 후 12)
   dishesTitle: { fontSize: 16, fontWeight: '500', color: '#1C1E21' },
-  dishesCount: { fontSize: 14, fontWeight: '500', color: C.ink3 },
+  dishesCount: { fontSize: 16, fontWeight: '500', color: C.ink3 },
 
   items: { paddingHorizontal: 20, gap: 12, marginTop: -8 }, // A-OD-03(헤더→리스트 8)·A-OD-04(카드 간 12)
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 86, padding: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 8 }, // A-OD-04
-  itemThumb: { width: 58, height: 58, borderRadius: 4, backgroundColor: C.surface2 },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 86, padding: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EAEBEE', borderRadius: radius.md }, // A-OD-04
+  itemThumb: { width: 58, height: 58, borderRadius: radius.md, backgroundColor: C.surface2 },
   itemThumbBusy: { opacity: 0.45 }, // KB-638: 편집 진행 중 — 메트릭 불변
-  itemName: { fontSize: 14, fontWeight: '600', color: '#1C1E21' },
-  itemPending: { fontSize: 11.5, fontWeight: '500', color: C.ink3 },
+  itemName: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
+  itemPending: { fontSize: 12, fontWeight: '500', color: C.ink3 },
   itemRight: { flexDirection: 'row', alignItems: 'baseline', gap: 3 }, // A-OD-05(가로 1행)
-  itemQty: { fontSize: 13, fontWeight: '500', color: C.ink3 },
-  itemPrice: { fontSize: 14, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
+  itemQty: { fontSize: 14, fontWeight: '500', color: C.ink3 },
+  itemPrice: { fontSize: 16, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
 
   // P-411: 좌우 20 · 높이 52 · 라운드 26 · C.primary · 라벨 17/600 흰색 1줄 · 아이콘·그림자 없음(하단 = 인셋+24, 인라인)
-  downloadPill: { position: 'absolute', left: 20, right: 20, height: 52, borderRadius: 26, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  downloadPill: { position: 'absolute', left: 20, right: 20, height: 52, borderRadius: radius.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
   downloadPillLabel: { fontSize: 17, fontWeight: '600', color: '#FFFFFF' },
 
   viewerRoot: { flex: 1, backgroundColor: '#16110d' },
-  viewerClose: { position: 'absolute', top: 54, right: 18, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
+  viewerClose: { position: 'absolute', top: 54, right: 18, width: 38, height: 38, borderRadius: radius.pill, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
 });

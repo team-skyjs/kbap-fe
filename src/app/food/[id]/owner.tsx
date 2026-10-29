@@ -13,7 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { IconClose } from '@/components';
 import { PressScale } from '@/components';
 import { useOwnerConfirmation } from '@/lib/data/useOwnerConfirmation';
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     zIndex: 5,
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.pill,
     backgroundColor: C.surface2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -98,8 +98,8 @@ const styles = StyleSheet.create({
   questionLong: { fontSize: 27, lineHeight: 40 },
   menu: { color: C.primary },
   note: { fontFamily: font.koBold, fontSize: 19, lineHeight: 29, color: C.ink2, textAlign: 'center' },
-  caption: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink3, textAlign: 'center', marginTop: 4 },
+  caption: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink3, textAlign: 'center', marginTop: 4 },
   foot: { paddingHorizontal: 22 },
-  done: { backgroundColor: C.ink, borderRadius: 16, paddingVertical: 18, alignItems: 'center' },
+  done: { backgroundColor: C.ink, borderRadius: radius.lg, paddingVertical: 18, alignItems: 'center' },
   doneText: { fontFamily: font.display, fontSize: 17, color: '#fff' },
 });

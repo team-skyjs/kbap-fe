@@ -229,7 +229,7 @@ export default function Search() {
                 {popular.map((f) => (
                   <Pressable key={f.foodId} style={styles.popCard} onPress={() => openFood(f.foodId)} testID={`pop-${f.foodId}`}>
                     <View style={styles.popThumb}>
-                      {f.photoUrl ? <CardPhoto uri={f.photoUrl} recyclingKey={f.foodId} borderRadius={4} /> : <IconFood size={22} color={C.ink3} />}
+                      {f.photoUrl ? <CardPhoto uri={f.photoUrl} recyclingKey={f.foodId} borderRadius={radius.md} /> : <IconFood size={22} color={C.ink3} />}
                     </View>
                     {/* KB-903(T-057): 한 줄 자르기("Seasoned Co…") → 두 줄 + 넘치면 줄이기(홈 카드와 같은 규칙) */}
                     <Text style={styles.popCardName} numberOfLines={2} {...CARD_TITLE_FIT}>{f.name}</Text>
@@ -295,29 +295,29 @@ const styles = StyleSheet.create({
   },
   back: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   // P-345(KB-506): 홈 searchBox 동일 - h48 r4 surface2 pad16, 보더/그림자 없음
-  box: { flex: 1, height: 48, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface2, borderRadius: 4, paddingHorizontal: 16 },
-  input: { flex: 1, fontSize: 15, fontWeight: '500', color: C.ink, padding: 0 },
-  clearDot: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center' }, // DS 9:3898
+  box: { flex: 1, height: 48, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface2, borderRadius: radius.md, paddingHorizontal: 16 }, // KB-909: 입력창 = md
+  input: { flex: 1, fontSize: 16, fontWeight: '500', color: C.ink, padding: 0 },
+  clearDot: { width: 16, height: 16, borderRadius: radius.pill, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center' }, // DS 9:3898
 
   body: { padding: 18, paddingBottom: 40 },
   fill: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   secHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  secTag: { fontFamily: font.bodyBold, fontSize: 12, letterSpacing: 0.3, color: C.ink2, textTransform: 'uppercase', marginBottom: 8 },
-  clearAll: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
+  secTag: { fontFamily: font.bodyBold, fontSize: 13, letterSpacing: 0.3, color: C.ink2, textTransform: 'uppercase', marginBottom: 8 },
+  clearAll: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
 
-  recentHint: { borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', borderRadius: 13, padding: 16, alignItems: 'center' },
-  recentHintText: { fontFamily: font.body, fontSize: 13, color: C.ink3, textAlign: 'center' },
+  recentHint: { borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', borderRadius: radius.md, padding: 16, alignItems: 'center' },
+  recentHintText: { fontFamily: font.body, fontSize: 14, color: C.ink3, textAlign: 'center' },
   recentRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
   recentTap: { flex: 1 },
-  recentText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
+  recentText: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
 
   // P-143 인기 사진 레일
   popRail: { gap: 10, paddingRight: 8 },
   popCard: { width: 108 },
-  popThumb: { width: 108, height: 84, borderRadius: 4, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, // P-345: 사진 r4 통일
-  popCardName: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink, marginTop: 6 },
-  popCardKo: { fontFamily: font.ko, fontSize: 11, color: C.ink2, marginTop: 1 },
+  popThumb: { width: 108, height: 84, borderRadius: radius.md, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, // P-345: 사진 r4 통일
+  popCardName: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink, marginTop: 6 },
+  popCardKo: { fontFamily: font.ko, fontSize: 12, color: C.ink2, marginTop: 1 },
 
   // P-353 ⑤: 음식 탭 그리드 값 그대로(FoodExplorer :576-578)
 
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
 
   gridCellCard: { width: '100%' },
 
-  count: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, marginBottom: 12, paddingHorizontal: 20 }, // P-369 ①: 그리드 여백 정렬
+  count: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, marginBottom: 12, paddingHorizontal: 20 }, // P-369 ①: 그리드 여백 정렬
   // P-345: dish-item(2200:21188) - pad12 gap12 r8 #EAEBEE 흰, 그림자 없음
 
   noResults: { flex: 1, justifyContent: 'center', paddingBottom: 60 }, // P-154 ②: 상하 센터(앱 통일 — 키보드 감안 소폭 상향)

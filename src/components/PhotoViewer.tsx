@@ -18,6 +18,7 @@ import Animated, { Extrapolation, interpolate, useAnimatedStyle, useReducedMotio
 import { RemoteImage } from './RemoteImage';
 import { IconClose } from './icons';
 import { spring } from '@/lib/motion';
+import { radius } from '@/lib/theme';
 
 export const VIEWER_DISMISS_DY = 100;
 export const VIEWER_DISMISS_VY = 800; // pt/s
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
   bg: { backgroundColor: '#000000' },
   close: { position: 'absolute', top: 58, right: 20 },
   dots: { position: 'absolute', bottom: 46, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.4)' },
+  dot: { width: 6, height: 6, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.4)' },
   dotOn: { backgroundColor: '#FFFFFF' },
 });
 

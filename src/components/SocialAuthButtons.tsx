@@ -18,7 +18,7 @@ import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTranslation } from 'react-i18next';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { useSocialAuth } from '@/lib/auth/useSocialAuth';
 import type { LoginEntry } from '@/lib/auth/loginEntry';
 import { useShake } from '@/lib/useShake';
@@ -66,7 +66,7 @@ export function SocialAuthButtons({
             <AppleAuthentication.AppleAuthenticationButton testID="auth-apple"
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={4} /* P-339 ⑥: 구글(r4)과 통일 — 시안 Button r4 */
+              cornerRadius={BTN_H / 2} /* KB-909: 구글과 같은 알약(구 r4 — P-339 ⑥ 통일 유지) */
               style={styles.apple}
               // KB-784: 네이티브 서드파티 버튼(components/Pressable 밖) — ui_click 직접(uiClickCoverage784 R6)
               onPress={() => { trackUiClick('auth-apple'); if (!busy) void signInWithApple(); }}
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   wrap: { alignSelf: 'stretch', gap: 8 }, // A-LG-04(KB-486)
   appleSlot: { height: BTN_H },
   apple: { width: '100%', height: BTN_H },
-  busyBox: { flex: 1, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
+  busyBox: { flex: 1, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
 
   // Google Identity light button: white bg, #747775 border, #1F1F1F medium label
   // A-LG-03(KB-486): h48 r4 라벨 15 (Apple 네이티브는 C-22 — BTN_H 공유라 함께 48)
@@ -120,10 +120,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#747775',
-    borderRadius: 4,
+    borderRadius: radius.pill, // KB-909: 알약
   },
-  googleLabel: { fontFamily: font.bodyBold, fontSize: 15, color: '#1F1F1F' },
+  googleLabel: { fontFamily: font.bodyBold, fontSize: 16, color: '#1F1F1F' },
   dim: { opacity: 0.5 },
 
-  error: { fontFamily: font.body, fontSize: 13, color: C.riskDanger, textAlign: 'center', marginTop: 2 },
+  error: { fontFamily: font.body, fontSize: 14, color: C.riskDanger, textAlign: 'center', marginTop: 2 },
 });

@@ -99,5 +99,5 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10 },
   back: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: font.bodyBold, fontSize: 17, color: C.ink, textAlign: 'center' },
-  sub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1, textAlign: 'center' },
+  sub: { fontFamily: font.body, fontSize: 12, color: C.ink3, marginTop: 1, textAlign: 'center' },
 });

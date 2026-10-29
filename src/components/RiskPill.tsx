@@ -51,8 +51,8 @@ const styles = StyleSheet.create({
   pill: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.pill },
   sm: { gap: 5, paddingHorizontal: 9, paddingVertical: 4 },
   lg: { gap: 7, paddingHorizontal: 13, paddingVertical: 8 },
-  smText: { fontFamily: font.bodyBold, fontSize: 11.5 },
-  lgText: { fontFamily: font.display, fontSize: 14.5 },
+  smText: { fontFamily: font.bodyBold, fontSize: 12 },
+  lgText: { fontFamily: font.display, fontSize: 16 },
 });
 
 export default RiskPill;

@@ -19,7 +19,7 @@ import { Txt as Text } from '@/components/Txt';
 import { Shimmer } from '@/components/Skeleton';
 import { Btn } from '@/components/Btn';
 import { IconArrowLeft, IconChevron } from '@/components/icons';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { useCurationIndex, type CurationCard } from '@/lib/data/useCurations';
 import { trackHomeCardClick, useImpressionRef } from '@/features/home/homeImpressions';
 import { BlurCaptionCard, CARD_SPACER } from '@/features/curation/BlurCaptionCard';
@@ -40,7 +40,7 @@ export function CurationSection() {
     return (
       <View style={styles.section} testID="curation-skeleton">
         <Shimmer style={[styles.titleSkel]} />
-        <Shimmer style={{ marginHorizontal: BANNER_GUTTER, width: bannerW, height: BANNER_SKEL_H, borderRadius: 16 }} />
+        <Shimmer style={{ marginHorizontal: BANNER_GUTTER, width: bannerW, height: BANNER_SKEL_H, borderRadius: radius.lg }} />
       </View>
     );
   }
@@ -114,7 +114,7 @@ function BannerRail({ cards, bannerW }: { cards: CurationCard[]; bannerW: number
               subtitle={item.description}
               subtitleFirst /* 예진 결정(KB-861): 홈은 지금처럼 설명 위 · 제목 아래 */
               blur={Math.abs(i - index) <= 1 /* 근접 마운트(#320 규칙의 가로판) — 보이는 장 ± 1장 */}
-              radius={16}
+              radius={radius.lg}
               onPress={() => open(item, i)}
               accessibilityLabel={`${item.title}, ${item.description}`}
               testPrefix="curation-banner"
@@ -165,16 +165,16 @@ function BannerRail({ cards, bannerW }: { cards: CurationCard[]; bannerW: number
 const styles = StyleSheet.create({
   section: { marginTop: 28, gap: 16 },
   title: { paddingHorizontal: BANNER_GUTTER, fontFamily: font.bodyBold, fontSize: 20, lineHeight: 28, color: C.ink },
-  titleSkel: { marginHorizontal: BANNER_GUTTER, width: 160, height: 24, borderRadius: 4 },
-  attribution: { position: 'absolute', top: 8, right: 10, left: 10, textAlign: 'right', fontFamily: font.body, fontSize: 11, lineHeight: 14, color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.6)', textShadowRadius: 3 },
+  titleSkel: { marginHorizontal: BANNER_GUTTER, width: 160, height: 24, borderRadius: radius.xs },
+  attribution: { position: 'absolute', top: 8, right: 10, left: 10, textAlign: 'right', fontFamily: font.body, fontSize: 12, lineHeight: 15, color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.6)', textShadowRadius: 3 },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: BANNER_GUTTER },
-  counter: { fontFamily: font.body, fontSize: 14, color: C.ink2 },
+  counter: { fontFamily: font.body, fontSize: 16, color: C.ink2 },
   navBtns: { flexDirection: 'row', gap: 8 },
-  navBtn: { width: 48, height: 48, borderRadius: 4, borderWidth: 1, borderColor: C.line2, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  navBtn: { width: 48, height: 48, borderRadius: radius.pill, borderWidth: 1, borderColor: C.line2, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
   navBtnOff: { borderColor: C.line },
-  errorBox: { marginHorizontal: BANNER_GUTTER, padding: 16, gap: 12, borderRadius: 12, backgroundColor: C.surface2 },
-  errorText: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink2 },
+  errorBox: { marginHorizontal: BANNER_GUTTER, padding: 16, gap: 12, borderRadius: radius.md, backgroundColor: C.surface2 },
+  errorText: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink2 },
   staleRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, paddingHorizontal: BANNER_GUTTER, minHeight: 44 },
-  staleText: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
-  staleRetry: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+  staleText: { fontFamily: font.body, fontSize: 14, color: C.ink3 },
+  staleRetry: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
 });

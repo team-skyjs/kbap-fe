@@ -42,7 +42,7 @@ import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoo
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
+import { color as C, font, primaryTint, riskText, riskTone, shadow, radius } from '@/lib/theme';
 import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconScanLines, IconChevron, IconSparkles, IconTabScan, IconArrowLeft } from '@/components';
 import { IconChoosePhoto, IconRefreshCcw } from '@/components/icons';
 import { FramingCorners } from '@/features/scan/FramingCorners';
@@ -1428,54 +1428,54 @@ const styles = StyleSheet.create({
   // KB-432 §1-1: 언더라인 탭 2개(반반) + 인식 배너 + 컨트롤 행
   resultTabs: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: C.line2, backgroundColor: '#fff' },
   resultTab: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
-  resultTabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' }, // A-DS-03(KB-486)
+  resultTabLabel: { fontSize: 16, fontWeight: '700', color: '#9196A1' }, // A-DS-03(KB-486)
   resultTabLabelOn: { color: '#2F3137' },
   resultTabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   resultTabBarOn: { backgroundColor: '#2F3137' },
   recogBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, backgroundColor: primaryTint, paddingVertical: 12, paddingHorizontal: 20 }, // A-SC-02
-  recogBannerText: { flex: 1, fontSize: 15, fontWeight: '500', color: C.primaryText }, // P-284: 틴트 위 대비
+  recogBannerText: { flex: 1, fontSize: 16, fontWeight: '500', color: C.primaryText }, // P-284: 틴트 위 대비
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 10, backgroundColor: C.surface }, // A-SC-03
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-SC-04(off 색은 C-04)
-  toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
-  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
+  toggleLabel: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },
+  sw: { width: 44, height: 24, borderRadius: radius.pill, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
-  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
+  knob: { width: 20, height: 20, borderRadius: radius.pill, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
   knobOn: { alignSelf: 'flex-end' },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 8 },
-  sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 8 },
+  sortLabel: { fontSize: 16, fontWeight: '700', color: '#4B4F58' },
   // P-161: 확인 모달 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 전사
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.xl, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
   // P-136 콰이엇 결과 크롬 (scanflow 토큰 — 흰 배경·헤어라인·색은 마크/CTA만)
   resultRoot: { flex: 1, backgroundColor: '#fff' },
   quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, minHeight: 56, paddingBottom: 10, backgroundColor: '#fff' }, // A-SC-01(SubHeader 규격)
   qhBack: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   qhTitle: { flex: 1, fontSize: 18, fontWeight: '600', color: C.ink, textAlign: 'center' },
-  seg: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: 999, padding: 3 },
-  segBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
+  seg: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.pill, padding: 3 },
+  segBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill },
   segBtnOn: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-  segText: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink3 },
+  segText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink3 },
   segTextOn: { color: C.ink },
   root: { flex: 1, backgroundColor: '#16110d' },
   center: { alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
-  close: { position: 'absolute', left: 16, zIndex: 40, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' }, // Codex #47 P1: 권한 스크림(z30) 위 — 탈출 경로 보장
+  close: { position: 'absolute', left: 16, zIndex: 40, width: 40, height: 40, borderRadius: radius.pill, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' }, // Codex #47 P1: 권한 스크림(z30) 위 — 탈출 경로 보장
   permission: { alignItems: 'center', justifyContent: 'center', gap: 12, padding: 36 },
   permTitle: { fontFamily: font.display, fontSize: 20, color: '#fff', textAlign: 'center' },
   // P-285: 권한 거부 Alert(4003:12690)
   permScrim: { backgroundColor: 'rgba(0,0,0,0.8)', alignItems: 'center', justifyContent: 'center', zIndex: 30 }, // A-SN-04
-  permAlert: { width: 320, minHeight: 190, backgroundColor: '#FFFFFF', borderRadius: 10, paddingTop: 30, paddingHorizontal: 20, paddingBottom: 20, gap: 5 }, // A-SN-04
+  permAlert: { width: 320, minHeight: 190, backgroundColor: '#FFFFFF', borderRadius: radius.md, paddingTop: 30, paddingHorizontal: 20, paddingBottom: 20, gap: 5 }, // A-SN-04
   permAlertTitle: { fontSize: 18, fontWeight: '600', color: '#262C31', textAlign: 'center' },
-  permAlertBody: { fontSize: 15, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 22.3 }, // A-SN-04(lineHeight만 — 색 대비는 Codex #45 위임 유지) // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
-  permBody: { fontFamily: font.body, fontSize: 14, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 20 },
+  permAlertBody: { fontSize: 16, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 24 }, // A-SN-04(lineHeight만 — 색 대비는 Codex #45 위임 유지) // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
+  permBody: { fontFamily: font.body, fontSize: 16, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 23 },
   camTitleWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   camModeTabs: { position: 'absolute', left: 0, right: 0 },
   launcherRoot: { flex: 1, backgroundColor: '#fff' },
   launcherBody: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 34, gap: 12 },
   launcherTitle: { fontFamily: font.bodyBold, fontSize: 21, color: C.ink },
-  launcherHint: { fontFamily: font.body, fontSize: 13.5, lineHeight: 20, color: C.ink2, textAlign: 'center' },
-  launcherGallery: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, paddingVertical: 8 },
+  launcherHint: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.ink2, textAlign: 'center' },
+  launcherGallery: { fontFamily: font.bodyBold, fontSize: 16, color: C.primaryText, paddingVertical: 8 },
   camTitle: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 24, color: C.surface }, // title3-sbold gray-00
   camRoot: { flex: 1 }, // 바탕 = camHost(gray-1000) — 프리뷰 자리는 비워 cameraLayer가 비친다
   camHost: { flex: 1, backgroundColor: C.ink }, // 헤더 띠 0~100·홈 인디케이터 줄 = gray-1000
@@ -1489,53 +1489,53 @@ const styles = StyleSheet.create({
   camBottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: C.ink, paddingTop: 22, alignItems: 'center' }, // 칩 y610 = 바 위 22
   camCorners: { top: 24, left: 32, right: 32, bottom: 16 },
   camHintWrap: { position: 'absolute', left: 68, right: 68, alignItems: 'center' }, // KB-900(T-099): 코너(32 + 28) 안쪽 + 8 — 무료 배지가 아래 코너와 겹쳤다(길면 줄바꿈)
-  camHint: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.surface, textAlign: 'center' }, // body-l3-regular gray-00(바 위 한 줄)
+  camHint: { fontFamily: font.body, fontSize: 16, lineHeight: 24, color: C.surface, textAlign: 'center' }, // body-l3-regular gray-00(바 위 한 줄)
   camIconBtn: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }, // 아이콘 28 · 터치 52(시안 hit region)
   camLink: { minHeight: 21, marginTop: 10, alignItems: 'center', justifyContent: 'center' }, // KB-854: 링크 y768 = 컨트롤 아래 10
-  camLinkText: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.surface, textAlign: 'center' }, // body-l3-regular gray-00
+  camLinkText: { fontFamily: font.body, fontSize: 16, lineHeight: 24, color: C.surface, textAlign: 'center' }, // body-l3-regular gray-00
   hidden: { opacity: 0 },
-  landscapeBadge: { backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  landscapeBadgeText: { fontFamily: font.bodyBold, fontSize: 11, color: '#fff' },
+  landscapeBadge: { backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  landscapeBadgeText: { fontFamily: font.bodyBold, fontSize: 12, color: '#fff' },
   camRow: { width: 335, height: 88, marginTop: 24, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, // KB-854: (20,670) 335×88 — 갤러리 52 @12 · 셔터 링 72 가운데 · 전환 52 @271
   zoomRow: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
-  zoomPill: { height: 36, minWidth: 42, paddingHorizontal: 12, borderRadius: 18, backgroundColor: C.gray800, borderWidth: 1, borderColor: C.surface, alignItems: 'center', justifyContent: 'center' }, // DS chips 36:41(비활성 gray-800 + 흰 테두리) — 활성도 같은 폭 테두리(프레임 불변)
+  zoomPill: { height: 36, minWidth: 42, paddingHorizontal: 12, borderRadius: radius.pill, backgroundColor: C.gray800, borderWidth: 1, borderColor: C.surface, alignItems: 'center', justifyContent: 'center' }, // DS chips 36:41(비활성 gray-800 + 흰 테두리) — 활성도 같은 폭 테두리(프레임 불변)
   zoomPillOn: { backgroundColor: C.surface },
-  zoomPillText: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.surface }, // body-l3-regular
+  zoomPillText: { fontFamily: font.body, fontSize: 16, lineHeight: 24, color: C.surface }, // body-l3-regular
   zoomPillTextOn: { color: C.ink },
-  shutter: { width: 72, height: 72, borderRadius: 36, borderWidth: 3, borderColor: C.surface, alignItems: 'center', justifyContent: 'center' }, // KB-854: 링 72 stroke 3 @ (131,6)
+  shutter: { width: 72, height: 72, borderRadius: radius.pill, borderWidth: 3, borderColor: C.surface, alignItems: 'center', justifyContent: 'center' }, // KB-854: 링 72 stroke 3 @ (131,6)
   shutterOff: { opacity: 0.35 },
   // P-038: 빈 프로필 넛지 — Close 버튼(좌 16, 폭 40) 우측에 정렬, 리스트 여백(60) 위 오버레이
   // P-057: 배너 = 리스트 첫 카드 — 밝은 브랜드 틴트, 메뉴 카드와 같은 radius 리듬
-  nudgeCard: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#fdf0e6', borderWidth: 1, borderColor: '#f0d9c4', borderRadius: 14, paddingHorizontal: 13, paddingVertical: 12 },
-  nudgeIc: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  nudgeCardText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink2, lineHeight: 17 },
+  nudgeCard: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#fdf0e6', borderWidth: 1, borderColor: '#f0d9c4', borderRadius: radius.lg, paddingHorizontal: 13, paddingVertical: 12 },
+  nudgeIc: { width: 34, height: 34, borderRadius: radius.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  nudgeCardText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18 },
   nudgeCardStrong: { fontFamily: font.bodyBold, color: C.primaryText },
   noticeBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', zIndex: 20, padding: 28 },
-  noticeCard: { backgroundColor: '#fff', borderRadius: 20, padding: 22, alignItems: 'center', gap: 10, maxWidth: 340, alignSelf: 'stretch' },
+  noticeCard: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 22, alignItems: 'center', gap: 10, maxWidth: 340, alignSelf: 'stretch' },
   noticeTitle: { fontFamily: font.display, fontSize: 17, color: C.ink, textAlign: 'center' },
-  noticeBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20 },
-  shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: C.surface }, // KB-854: 셔터 60 @ (137,12)
+  noticeBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, textAlign: 'center', lineHeight: 21 },
+  shutterInner: { width: 60, height: 60, borderRadius: radius.pill, backgroundColor: C.surface }, // KB-854: 셔터 60 @ (137,12)
   shutterSpacer: { width: 72, height: 72 },
   // P-222: 주 문구를 밀어내지 않는 보조 톤(작게·흐리게)
-  statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
+  statusText: { fontFamily: font.bodyBold, fontSize: 16, color: '#fff', textAlign: 'center' },
   // P-529(KB-854): 공용 화면 전체 중앙 — 하단 줌/셔터와 겹치지 않는다.
   importingOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', zIndex: 20 },
-  importingStatus: { maxWidth: '90%', backgroundColor: C.ink, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', gap: 8 },
-  errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primary, textTransform: 'uppercase' }, // Codex #44 2차: 다크 배경 = 원색이 대비 우위(primaryText는 흰 바탕용)
+  importingStatus: { maxWidth: '90%', backgroundColor: C.ink, borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', gap: 8 },
+  errStage: { fontFamily: font.bodyBold, fontSize: 12, letterSpacing: 1, color: C.primary, textTransform: 'uppercase' }, // Codex #44 2차: 다크 배경 = 원색이 대비 우위(primaryText는 흰 바탕용)
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
-  degradedNote: { fontFamily: font.body, fontSize: 12, color: '#fbbf24', textAlign: 'center' },
+  degradedNote: { fontFamily: font.body, fontSize: 13, color: '#fbbf24', textAlign: 'center' },
   // P-062② D2 스캐닝 오버레이
   // P-064② 파파고식 플로팅 버튼 + 사진 하단 섀도
   resultShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
   listShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   // list rows
-  row: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderRadius: 14, paddingHorizontal: 13, paddingVertical: 12 },
-  rowName: { fontFamily: font.koBold, fontSize: 15, color: C.ink },
-  rowLatin: { fontFamily: font.body, fontSize: 12, color: C.ink2, marginTop: 1 },
-  rowUnable: { fontFamily: font.body, fontSize: 11.5, color: C.riskUnable, marginTop: 1 },
-  rowPrice: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
-  rowBadge: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
-  rowBadgeText: { fontFamily: font.bodyBold, fontSize: 11.5 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderRadius: radius.lg, paddingHorizontal: 13, paddingVertical: 12 },
+  rowName: { fontFamily: font.koBold, fontSize: 16, color: C.ink },
+  rowLatin: { fontFamily: font.body, fontSize: 13, color: C.ink2, marginTop: 1 },
+  rowUnable: { fontFamily: font.body, fontSize: 12, color: C.riskUnable, marginTop: 1 },
+  rowPrice: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  rowBadge: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 5 },
+  rowBadgeText: { fontFamily: font.bodyBold, fontSize: 12 },
 });
 
 /** 공통 카메라 화면이 보이는 동안만 true — cameraLayer의 CameraView active(로딩·결과 화면 아래에서 카메라를 멈춘다) */

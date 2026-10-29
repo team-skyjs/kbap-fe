@@ -80,10 +80,10 @@ export function OverallRating({ average, count, numTestID, style }: { average: n
   return (
     <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, height: 18 }, style]}>
       <Star size={14} fillPct={average == null ? 0 : 100} />
-      <Txt style={{ fontSize: 14, fontWeight: '700', color: average == null ? C.inkMute : C.ink }} testID={numTestID}>
+      <Txt style={{ fontSize: 16, fontWeight: '700', color: average == null ? C.inkMute : C.ink }} testID={numTestID}>
         {average == null ? '\u2014' : average.toFixed(1)}
       </Txt>
-      <Txt style={{ fontSize: 12, fontWeight: '700', color: C.ink2 }}>({count})</Txt>
+      <Txt style={{ fontSize: 13, fontWeight: '700', color: C.ink2 }}>({count})</Txt>
     </View>
   );
 }
@@ -130,7 +130,7 @@ export function RatingLine({
       {!empty && (
         <>
           <Stars value={overall.average ?? 0} size={size} />
-          <Txt style={{ fontFamily: font.bodyBold, fontSize: 12, color: C.ink2 }} testID="rating-count">
+          <Txt style={{ fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 }} testID="rating-count">
             ({overall.count})
           </Txt>
         </>

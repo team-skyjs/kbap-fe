@@ -95,7 +95,7 @@ beforeEach(() => {
 });
 
 it('상수 = 스펙 값(레퍼런스 픽셀 실측) — 번역 전·후 #1B95E0(KB-777 B2-7) · 번역 중 #536471 · 글자 12.5', () => {
-  expect(TRANSLATE_LABEL).toEqual({ idleColor: '#1B95E0', mutedColor: '#536471', fontSize: 12.5 });
+  expect(TRANSLATE_LABEL).toEqual({ idleColor: '#1B95E0', mutedColor: '#536471', fontSize: 13 });
 });
 
 it('Codex #223 P2(2차): 터치 = **실제 레이아웃 상자 44**(hitSlop 없음) · 상자가 부모(래퍼) 안 · 시각 간격 무변 · 라벨이 본문 위 z', () => {
@@ -152,7 +152,7 @@ it('라벨은 본문 **위**(같은 카드 안 렌더 순서) · 본문 아래 �
   const s = out(t);
   expect(s.indexOf('translation.showTranslation')).toBeGreaterThan(-1);
   expect(s.indexOf('translation.showTranslation')).toBeLessThan(s.indexOf('Really good soup'));
-  expect(labelText(t)).toEqual({ text: 'translation.showTranslation', style: expect.objectContaining({ color: '#1B95E0', fontSize: 12.5 }) });
+  expect(labelText(t)).toEqual({ text: 'translation.showTranslation', style: expect.objectContaining({ color: '#1B95E0', fontSize: 13 }) });
 });
 
 it('번역 중 = 같은 자리 "Translating…" #536471 · 본문 원문 유지 · 비활성', async () => {
@@ -160,7 +160,7 @@ it('번역 중 = 같은 자리 "Translating…" #536471 · 본문 원문 유지 
   mockPost.mockReturnValue(new Promise((r) => (resolve = r)));
   const t = render(REVIEW());
   await press(t);
-  expect(labelText(t)).toEqual({ text: 'reviews.translating', style: expect.objectContaining({ color: '#536471', fontSize: 12.5 }) });
+  expect(labelText(t)).toEqual({ text: 'reviews.translating', style: expect.objectContaining({ color: '#536471', fontSize: 13 }) });
   expect(out(t)).toContain('Really good soup');
   expect(btn(t).props.disabled).toBe(true);
   await act(async () => {
@@ -175,7 +175,7 @@ it('번역 후 = 본문 교체 + "Translated from {영어}" #1B95E0(KB-777 B2-7)
   await press(t);
   expect(out(t)).toContain('정말 맛있는 국');
   expect(out(t)).not.toContain('Really good soup');
-  expect(labelText(t)).toEqual({ text: 'translation.translatedFrom:translation.lang.en', style: expect.objectContaining({ color: '#1B95E0', fontSize: 12.5 }) });
+  expect(labelText(t)).toEqual({ text: 'translation.translatedFrom:translation.lang.en', style: expect.objectContaining({ color: '#1B95E0', fontSize: 13 }) });
   await press(t);
   expect(out(t)).toContain('Really good soup');
   expect(labelText(t).text).toBe('translation.showTranslation');

@@ -163,7 +163,7 @@ describe('홈 섹션', () => {
     const caps = cap.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string');
     expect(caps.map((n) => n.props.children)).toEqual(['10 places sights', 'T sights']); // 예진 결정: 홈 = 설명(위) → 제목(아래) — 기존 홈 순서
     expect(caps.map((n) => RNx.StyleSheet.flatten(n.props.style))).toEqual([
-      expect.objectContaining({ fontSize: 13, color: '#FFFFFF' }), // 설명 = 지역 스타일
+      expect.objectContaining({ fontSize: 14, color: '#FFFFFF' }), // 설명 = 지역 스타일
       expect.objectContaining({ fontSize: 18, color: '#FFFFFF' }), // 제목 = 이름 스타일(줄 높이는 배율 규칙 — 아래 큰 글씨 테스트)
     ]);
     // 흐림 띠: 카드·캡션을 잰 뒤 — 현재 장(0)과 옆(1)은 8띠, 두 장 너머(2)는 원본 + 스크림만
@@ -423,7 +423,7 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     const RNx = jest.requireActual('react-native');
     const spy = jest.spyOn(RNx, 'useWindowDimensions');
     try {
-      for (const [scale, nameLh, areaLh] of [[1, 26, 18], [1.3, undefined, undefined], [2, undefined, undefined]] as const) {
+      for (const [scale, nameLh, areaLh] of [[1, 26, 19], [1.3, undefined, undefined], [2, undefined, undefined]] as const) {
         spy.mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: scale });
         mockDetail = q({ data: detail });
         const t = render(<CurationDetailScreen />);

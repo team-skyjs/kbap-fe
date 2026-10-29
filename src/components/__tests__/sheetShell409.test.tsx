@@ -33,9 +33,9 @@ it('① 장소 태그 시트 — 공용 셸로 옮긴 뒤에도 렌더 무변(�
   const backdrop = hosts.find((n) => flat(n.props.style).backgroundColor === 'rgba(0,0,0,0.4)');
   expect(backdrop).toBeTruthy();
   expect(flat(backdrop!.props.style).justifyContent).toBe('flex-end');
-  const sheet = hosts.find((n) => flat(n.props.style).borderTopLeftRadius === 16)!;
+  const sheet = hosts.find((n) => flat(n.props.style).borderTopLeftRadius === 24)!; // KB-909: 시트 윗모서리 = xl
   expect(flat(sheet.props.style)).toMatchObject({
-    backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16,
+    backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
     paddingHorizontal: 20, paddingTop: 39, paddingBottom: 39, gap: 24,
   });
   expect(r.root.findAll((n) => n.props?.testID === 'map-google').length).toBeGreaterThan(0); // 대조: 내용 렌더

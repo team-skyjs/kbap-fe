@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     backgroundColor: C.card,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     paddingVertical: 26,
     paddingHorizontal: 22,
     ...shadow.sh2,
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   glyph: {
     width: 58,
     height: 58,
-    borderRadius: 29,
+    borderRadius: radius.pill,
     backgroundColor: primaryTint,
     alignItems: 'center',
     justifyContent: 'center',
@@ -115,5 +115,5 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     marginBottom: 2,
   },
-  later: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, padding: 6 },
+  later: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink2, padding: 6 },
 });

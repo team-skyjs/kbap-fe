@@ -142,7 +142,7 @@ it('② 편집 폼 — 국적 Disabled 필드(bg #F7F8FA + 자물쇠 + 헬퍼) �
   expect(src).toContain('busy={saving}'); // P-173 공용 가드 문법(Btn busy)
   expect(src).toContain("t('editProfile.save')"); // BottomBar Single "Save changes"
   // Input/Text 필드 D-1 Filled — bg surface2 r8(구 카드 보더 필드 소멸)
-  expect(src).toContain('backgroundColor: C.surface2, borderRadius: 8');
+  expect(src).toContain('backgroundColor: C.surface2, borderRadius: radius.md');
 });
 
 it('③ 탈퇴 — 체크박스 게이트: 동의 전 확정 무동작, 동의 후 진행(GOOGLE = 게이트 없음)', async () => {

@@ -23,7 +23,7 @@ import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, primaryTint, shadow } from '@/lib/theme';
+import { color as C, font, primaryTint, shadow, radius } from '@/lib/theme';
 import { Btn, IconCheck, SubHeader } from '@/components';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
 import { useDietPresets } from '@/lib/data/useDietPresets';
@@ -153,17 +153,17 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { padding: 18, gap: 24 }, // A-DT-07(KB-486) · KB-900: 아래 여백 = Save 바(18+48) + 인셋 보정 + 여유 20
   group: { gap: 12 }, // A-DT-07
-  groupTitle: { fontSize: 14, fontWeight: '500', color: '#6A6F7C' }, // A-DT-06(uppercase 소멸)
+  groupTitle: { fontSize: 16, fontWeight: '500', color: '#6A6F7C' }, // A-DT-06(uppercase 소멸)
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   // 온보딩 프리셋 칩 문법 — 선택 전후 프레임 불변(같은 폭 보더, 색만 전환 — P-103)
-  chip: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12 }, // A-DT-05
+  chip: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.pill, paddingHorizontal: 16, paddingVertical: 12 }, // A-DT-05
   chipOn: { backgroundColor: primaryTint, borderColor: C.primary },
-  chipText: { fontSize: 14, fontWeight: '400', color: '#1E2124' }, // A-DT-05
+  chipText: { fontSize: 16, fontWeight: '400', color: '#1E2124' }, // A-DT-05
   chipTextOn: { color: C.primaryText },
-  hint: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 17 },
+  hint: { fontFamily: font.body, fontSize: 13, color: C.ink3, lineHeight: 18 },
   savebar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18, backgroundColor: C.surface },
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.xl, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
 });

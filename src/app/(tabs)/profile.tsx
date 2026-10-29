@@ -21,7 +21,7 @@ import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import {
   StickyHeader,
   useStickyScroll,
@@ -439,48 +439,48 @@ const styles = StyleSheet.create({
   // 로고 하단→바닥 17.25pt)라 paddingTop 0 = 시안 정합(스크롤 paddingTop=headerH 유지).
   body: { paddingTop: 0, gap: 20 },
   verRow: { alignItems: 'center', paddingVertical: 10 },
-  verText: { fontSize: 12, fontWeight: '400', color: C.ink3 },
-  finishRow: { marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF4ED', borderWidth: 1, borderColor: '#FFE5D5', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 },
-  finishText: { flex: 1, fontSize: 13.5, fontWeight: '600', color: C.ink, lineHeight: 18 },
-  finishCta: { fontSize: 13, fontWeight: '600', color: C.primaryText },
+  verText: { fontSize: 13, fontWeight: '400', color: C.ink3 },
+  finishRow: { marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF4ED', borderWidth: 1, borderColor: '#FFE5D5', borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 12 },
+  finishText: { flex: 1, fontSize: 14, fontWeight: '600', color: C.ink, lineHeight: 19 },
+  finishCta: { fontSize: 14, fontWeight: '600', color: C.primaryText },
 
   // 헤더 행 — pad 20
   id: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20 }, // A-PF-02(KB-486)
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8F6FF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.10)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, // A-PF-01
-  avatarImg: { width: 48, height: 48, borderRadius: 24 },
+  avatar: { width: 48, height: 48, borderRadius: radius.pill, backgroundColor: '#E8F6FF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.10)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, // A-PF-01
+  avatarImg: { width: 48, height: 48, borderRadius: radius.pill },
   name: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
   nameUnset: { fontSize: 16, fontWeight: '400', color: C.ink3 },
   natRow: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 },
-  natText: { fontSize: 14, fontWeight: '400', color: '#5A636A', flexShrink: 1 },
+  natText: { fontSize: 16, fontWeight: '400', color: '#5A636A', flexShrink: 1 },
   // KB-707: 고정 폭 68이라 vi·th·ja "로그인" 글자가 테두리에 닿았다 — 최소 68 + 좌우 여백 12, 내용에 맞춰 넓어짐(짧은 글자는 그대로 68)
-  editBtn: { minWidth: 68, paddingHorizontal: 12, height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#DCDEE3', alignItems: 'center', justifyContent: 'center' },
-  editBtnText: { fontSize: 13, fontWeight: '500', color: '#2F3137' }, // A-PF-03
+  editBtn: { minWidth: 68, paddingHorizontal: 12, height: 36, borderRadius: radius.pill, borderWidth: 1, borderColor: '#DCDEE3', alignItems: 'center', justifyContent: 'center' },
+  editBtnText: { fontSize: 14, fontWeight: '500', color: '#2F3137' }, // A-PF-03
 
   // 랭킹 카드(4150:14390) — mx 20 h147 r8 border #F2F3F6 + 그라데이션
-  rankCard: { marginHorizontal: 20, marginTop: 4, height: 147, borderRadius: 8, borderWidth: 1, borderColor: C.hair, alignItems: 'center', justifyContent: 'center', gap: 4, paddingLeft: 20, paddingRight: 16 }, // A-PF-04(아바타행→카드 24)·A-PF-05
-  rankTier: { fontSize: 15, fontWeight: '600', color: '#2F3137', textAlign: 'center', marginTop: 4 }, // A-PF-05(메달→타이틀 8)
-  rankLv: { fontSize: 12, fontWeight: '500', color: C.ink3 },
+  rankCard: { marginHorizontal: 20, marginTop: 4, height: 147, borderRadius: radius.md, borderWidth: 1, borderColor: C.hair, alignItems: 'center', justifyContent: 'center', gap: 4, paddingLeft: 20, paddingRight: 16 }, // A-PF-04(아바타행→카드 24)·A-PF-05
+  rankTier: { fontSize: 16, fontWeight: '600', color: '#2F3137', textAlign: 'center', marginTop: 4 }, // A-PF-05(메달→타이틀 8)
+  rankLv: { fontSize: 13, fontWeight: '500', color: C.ink3 },
   rankBarRow: { flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'stretch', marginTop: 8 }, // A-PF-05(Lv→바 12)
-  rankTrack: { flex: 1, height: 10, borderRadius: 16, backgroundColor: '#EDEFF4', overflow: 'hidden' },
-  rankFill: { height: 10, borderRadius: 16, backgroundColor: C.primary },
-  rankPts: { fontSize: 12 },
-  rankPtsCur: { fontSize: 12, fontWeight: '500', color: C.primary },
-  rankPtsSep: { fontSize: 12, fontWeight: '400', color: C.inkMute },
-  rankPtsGoal: { fontSize: 12, fontWeight: '400', color: '#4B4F58' },
+  rankTrack: { flex: 1, height: 10, borderRadius: radius.pill, backgroundColor: '#EDEFF4', overflow: 'hidden' },
+  rankFill: { height: 10, borderRadius: radius.pill, backgroundColor: C.primary },
+  rankPts: { fontSize: 13 },
+  rankPtsCur: { fontSize: 13, fontWeight: '500', color: C.primary },
+  rankPtsSep: { fontSize: 13, fontWeight: '400', color: C.inkMute },
+  rankPtsGoal: { fontSize: 13, fontWeight: '400', color: '#4B4F58' },
 
   // Dietary restrictions — 4열 2행 80×86 타일
   sec: { paddingHorizontal: 20, gap: 16, marginTop: -4 }, // A-PF-06(카드→라벨 16·라벨→타일 16)
-  secLabel: { fontSize: 14, fontWeight: '500', color: C.ink2 },
+  secLabel: { fontSize: 16, fontWeight: '500', color: C.ink2 },
   dietGrid: { rowGap: 16 }, // A-PF-08 → P-368 ②: 행 chunk 컨테이너(세로)
   dietRow: { flexDirection: 'row', columnGap: 8 }, // 항상 4셀(빈 자리 = 빈 flex 셀)
-  dietTile: { width: '100%', height: 86, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', paddingTop: 8, gap: 0 }, // A-PF-07(이미지 상단 8·라벨 gap 0)
+  dietTile: { width: '100%', height: 86, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: radius.md, alignItems: 'center', paddingTop: 8, gap: 0 }, // A-PF-07(이미지 상단 8·라벨 gap 0)
   dietImg: { width: 48, height: 48, borderRadius: 0, overflow: 'hidden' }, // A-PF-07
-  dietLabel: { fontSize: 12, fontWeight: '500', color: '#2F3137', maxWidth: 72, textAlign: 'center' }, // A-PF-07
+  dietLabel: { fontSize: 13, fontWeight: '500', color: '#2F3137', maxWidth: 72, textAlign: 'center' }, // A-PF-07
 
   // 메뉴 행 리스트(tab_box)
   menuList: { gap: 0 },
   menuRow: { height: 58, flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 17, paddingHorizontal: 22 },
-  menuLabel: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1C1E21' },
-  langHint: { fontSize: 12, color: C.ink3, lineHeight: 16, paddingHorizontal: 22, marginTop: -10, paddingBottom: 8 },
-  menuValue: { fontSize: 15, fontWeight: '500', color: C.ink3 },
+  menuLabel: { flex: 1, fontSize: 16, fontWeight: '500', color: '#1C1E21' },
+  langHint: { fontSize: 13, color: C.ink3, lineHeight: 17, paddingHorizontal: 22, marginTop: -10, paddingBottom: 8 },
+  menuValue: { fontSize: 16, fontWeight: '500', color: C.ink3 },
 });

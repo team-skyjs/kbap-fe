@@ -6,7 +6,7 @@ it('A-FD — 헤드 24/18/27·타일 31% pt26(푸터 변형 pt8)·별점 행 gap
   expect(fd).toContain("headBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 27 }");
   expect(fd).toMatch(/ingTile: \{[^}]*paddingTop: 26/);
   expect(fd).toContain('ingTileWithFoot: { paddingTop: 8 }');
-  expect(fd).toContain("ratingRowText: { fontSize: 13, fontWeight: '600', color: '#2F3137' }");
+  expect(fd).toContain("ratingRowText: { fontSize: 14, fontWeight: '600', color: '#2F3137' }");
   expect(fd).toContain("rvHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 20, paddingTop: 20 }"); // KB-848: 토글만 오른쪽
   expect(fd).toMatch(/natToggleRow: \{[^}]*gap: 7/);
 });
@@ -18,7 +18,7 @@ it('A-RL — body 20/8 gap9·summaryBox pv16 ph0 gap29·좌 149·축 gap6·트�
   expect(box).toMatch(/summaryBox: \{[^}]*paddingVertical: 16, paddingHorizontal: 0, gap: 29/);
   expect(box).toContain('summaryLeft: { flex: 1, minWidth: 96, maxWidth: 149, gap: 4'); // #105 P2
   expect(box).toContain("axisCol: { alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0 }"); // #105 3R
-  expect(box).toMatch(/axisTrack: \{ width: 8, height: 46, borderRadius: 4, backgroundColor: '#DCDEE3'/);
+  expect(box).toMatch(/axisTrack: \{ width: 8, height: 46, borderRadius: radius\.pill, backgroundColor: '#DCDEE3'/);
   expect(rl).toMatch(/filterToggle: \{[^}]*gap: 7/);
 });
 
@@ -26,13 +26,13 @@ it('A-RW — body pad20 gap20·캡션 슬롯 안 14/600 #778088·라벨 13/600·
   const rw = read('src/app/food/[id]/review.tsx');
   expect(rw).toContain("body: { padding: 20, gap: 20 }");
   expect(rw).not.toContain('photoCap:'); // A-RW-05 → P-348 ③ 대체(캡션 소멸 — 아이콘만)
-  expect(rw).toContain("label: { fontSize: 13, fontWeight: '600', color: '#778088' }");
+  expect(rw).toContain("label: { fontSize: 14, fontWeight: '600', color: '#778088' }");
   expect(rw).toMatch(/textarea: \{ minHeight: 132[^}]*borderColor: '#DCDEE3'[^}]*marginTop: -8/);
   // KB-777 A2-9: 보이는 원은 그대로 16 #D9D9D9 @ top6·right6 — 위치는 44 터치 상자(top0·right0·padding 6, 오른쪽 정렬)가 만든다
   expect(rw).toMatch(/photoDelHit: \{ position: 'absolute', top: 0, right: 0, width: 44, height: 44, padding: 6, alignItems: 'flex-end' \}/);
-  expect(rw).toMatch(/photoDel: \{ width: 16, height: 16, borderRadius: 8, backgroundColor: '#D9D9D9'/);
+  expect(rw).toMatch(/photoDel: \{ width: 16, height: 16, borderRadius: radius\.pill, backgroundColor: '#D9D9D9'/);
   const rc = read('src/features/review/ReviewCellParts.tsx');
-  expect(rc).toMatch(/pickerSheet: \{[^}]*borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, gap: 20/);
+  expect(rc).toMatch(/pickerSheet: \{[^}]*borderTopLeftRadius: radius\.xl, borderTopRightRadius: radius\.xl, padding: 16, gap: 20/);
   expect(rc).toContain("pickerHeader: { alignItems: 'center' }");
   expect(rc).toMatch(/searchBox: \{[^}]*borderRadius: 4, paddingLeft: 16/);
   expect(rc).toMatch(/extrasLabelWrap: \{[^}]*gap: 4/);
@@ -47,9 +47,9 @@ it('A-SC — 결과 헤더 56/16·배너 gap6·행 보더 0·warnChip pad 3/6·m
   expect(rich).toContain("body: { paddingHorizontal: 20, paddingBottom: 120 }");
   expect(rich).not.toMatch(/row: \{[^}]*borderBottomWidth/);
   expect(rich).toMatch(/warnChip: \{[^}]*paddingLeft: 3, paddingRight: 6/);
-  expect(rich).toMatch(/moreChip: \{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C\.line, borderRadius: 37/);
-  expect(rich).toContain("moreChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' }");
-  expect(rich).toContain("missText: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 13 }");
+  expect(rich).toMatch(/moreChip: \{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C\.line, borderRadius: radius\.pill/);
+  expect(rich).toContain("moreChipText: { fontSize: 13, fontWeight: '700', color: '#2F3137' }");
+  expect(rich).toContain("missText: { fontSize: 14, fontWeight: '400', color: C.ink3, lineHeight: 14 }");
   // P-353 ③(KB-515): 미등록 = 기본 음식 이미지 + unable 마크 오버레이(구 흰 박스 소멸)
   // P-366 ①: 미매칭 = 매칭과 동일 CardPhoto + RiskBadge(unable) — 오버레이·직접 이미지 소멸
   expect(rich).not.toContain('thumbUnableOverlay');
@@ -60,7 +60,7 @@ it('A-SC — 결과 헤더 56/16·배너 gap6·행 보더 0·warnChip pad 3/6·m
 it('A-SN-04 — 권한 알럿 gap5·본문 lh22.3·스크림 0.8 / Stars 행 gap4(공용)', () => {
   const sc = read('src/app/scan.tsx');
   expect(sc).toMatch(/permAlert: \{[^}]*gap: 5 \}/);
-  expect(sc).toMatch(/permAlertBody: \{[^}]*lineHeight: 22\.3/);
+  expect(sc).toMatch(/permAlertBody: \{[^}]*lineHeight: 24/);
   expect(sc).toContain("permScrim: { backgroundColor: 'rgba(0,0,0,0.8)'");
   expect(read('src/components/Stars.tsx')).toMatch(/flexDirection: 'row', gap: 4/);
 });

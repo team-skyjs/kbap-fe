@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { useBottomInset } from '@/lib/useBottomInset';
-import { color as C, font, shadow } from '@/lib/theme';
+import { color as C, font, shadow, radius } from '@/lib/theme';
 
 export function PhotoConsentSheet({ open, onAnswer, onClosed }: { open: boolean; onAnswer: (agreed: boolean) => void; onClosed?: () => void }) {
   const { t } = useTranslation();
@@ -42,9 +42,9 @@ export function PhotoConsentSheet({ open, onAnswer, onClosed }: { open: boolean;
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: C.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingTop: 22, paddingBottom: 30, paddingHorizontal: 20, gap: 14, ...shadow.shPop },
+  sheet: { backgroundColor: C.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingTop: 22, paddingBottom: 30, paddingHorizontal: 20, gap: 14, ...shadow.shPop },
   title: { fontFamily: font.display, fontSize: 18, color: C.ink, textAlign: 'center' },
   lines: { gap: 6 },
-  body: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
+  body: { fontFamily: font.body, fontSize: 16, color: C.ink2, lineHeight: 23, textAlign: 'center' },
   actions: { gap: 9 },
 });

@@ -9,7 +9,7 @@ import { StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { AvoidTile } from './AvoidTile';
 import { IconCheck } from './icons';
 import { INGREDIENTS, INGREDIENT_SECTIONS, ingredientLabel } from '@/lib/mocks/ingredients';
@@ -75,11 +75,11 @@ export function IngredientTileSections({
 }
 
 const styles = StyleSheet.create({
-  secHead: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 1.1, textTransform: 'uppercase', color: C.ink3, marginBottom: 7 },
+  secHead: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1.1, textTransform: 'uppercase', color: C.ink3, marginBottom: 7 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   tileWrap: { width: '22.5%', alignItems: 'center', gap: 4 },
-  check: { position: 'absolute', top: 5, right: 5, width: 20, height: 20, borderRadius: 10, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }, // P-344: 배지 20
-  label: { fontSize: 10.5, fontWeight: '500', color: '#4B4F58', maxWidth: '100%' }, // P-344: 비선택 500 #4B4F58
+  check: { position: 'absolute', top: 5, right: 5, width: 20, height: 20, borderRadius: radius.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }, // P-344: 배지 20
+  label: { fontSize: 11, fontWeight: '500', color: '#4B4F58', maxWidth: '100%' }, // P-344: 비선택 500 #4B4F58
   labelOn: { color: C.primaryText, fontWeight: '700' }, // P-344(#106 P2): 소형 텍스트 대비 토큰(#BE460F) — #FF7134는 10.5px에서 2.74:1
-  empty: { fontFamily: font.body, fontSize: 13.5, color: C.ink3, paddingVertical: 8 },
+  empty: { fontFamily: font.body, fontSize: 14, color: C.ink3, paddingVertical: 8 },
 });

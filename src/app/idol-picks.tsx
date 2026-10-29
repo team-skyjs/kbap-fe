@@ -24,7 +24,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 
 const GUTTER = 20;
 const GAP = 12;
@@ -81,7 +81,7 @@ function IdolPicksScreen() {
     empty = (
       <View style={[styles.grid, styles.skelGrid]} testID="idol-picks-skeleton">
         {[0, 1, 2, 3, 4, 5].map((i) => (
-          <Shimmer key={i} style={{ width: cellW, height: (cellW * 4) / 3, borderRadius: 12 }} />
+          <Shimmer key={i} style={{ width: cellW, height: (cellW * 4) / 3, borderRadius: radius.md }} />
         ))}
       </View>
     );
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   header: { backgroundColor: C.ink, paddingHorizontal: GUTTER, paddingBottom: 24, gap: 12, marginBottom: 20 },
   back: { width: 36, height: 36, justifyContent: 'center' },
   headText: { gap: 6 },
-  label: { fontFamily: font.bodyBold, fontSize: 11, lineHeight: 16, letterSpacing: 1.6, color: C.primary },
+  label: { fontFamily: font.bodyBold, fontSize: 12, lineHeight: 17, letterSpacing: 1.6, color: C.primary },
   title: { fontFamily: font.bodyBlack, fontSize: 24, lineHeight: 34, color: '#FFFFFF' },
   row: { paddingHorizontal: GUTTER, gap: GAP },
   grid: { paddingHorizontal: GUTTER },

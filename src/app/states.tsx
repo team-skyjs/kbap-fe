@@ -11,7 +11,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { SubHeader, SkeletonList } from '@/components';
 import { EmptyBlock } from '@/components/StateBlock';
 import { Btn } from '@/components/Btn';
@@ -62,6 +62,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { padding: 18, gap: 22, paddingBottom: 40 },
   item: { gap: 8 },
-  label: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 1, color: C.ink3 },
-  frame: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.hair, borderRadius: 18, paddingVertical: 18, justifyContent: 'center' },
+  label: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.ink3 },
+  frame: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, paddingVertical: 18, justifyContent: 'center' },
 });
