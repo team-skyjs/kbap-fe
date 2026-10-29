@@ -144,11 +144,13 @@ it('P-243 해제 실동작 = dietCategories만 감소(restrictions 미전송 —
   expect(body.restrictions).toBeUndefined(); // 회피 불변 — 필드 자체 미전송(오삭제 0)
 });
 
-it('무변경 저장 = 무모달·조용한 복귀(재량 확인 반영)', async () => {
+it('KB-904(T-086): 무변경 = Save 비활성(off·눌러도 무동작) · 칩을 바꾸면 활성 · 문구 = Save changes', () => {
   const tree = render();
-  await tap(tree, 'diet-save');
+  const btn = () => tree.root.findAll((n) => n.props?.testID === 'diet-save' && 'variant' in (n.props ?? {}))[0];
+  expect(btn().props.variant).toBe('off');
+  expect(btn().props.onPress).toBeUndefined();
+  expect(btn().props.children).toBe('editProfile.save');
   expect(mockMutate).not.toHaveBeenCalled();
-  expect(mockBack).toHaveBeenCalled();
 });
 
 it('배선 소스 잠금 — 해제 안내 문구·P-227 승인 팝업 존치(경로 분리)', () => {

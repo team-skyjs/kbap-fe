@@ -117,10 +117,10 @@ it('①-c P-300(KB-449): 값 없는 이동 행 전부 chevron — 값 행 무변
   expect(src).toContain("label={t('profile.safetyNotice')} chevron");
   expect(src).toContain("label={t('community.blockedTitle')} chevron");
   expect(src).toContain("label={t('profile.deleteAccount')} dim chevron");
-  // 값 행(Saved·My reviews·Language) = chevron 없음(무변)
-  expect(src).not.toMatch(/profile\.saved'\)\} value=[^\n]*chevron/);
-  expect(src).not.toMatch(/myReviews\.title'\)\} value=[^\n]*chevron/);
-  expect(src).not.toMatch(/profile\.language'\)\} value=[^\n]*chevron/);
+  // KB-904(T-082): 값 행(Saved·My reviews·Language)도 이동이면 chevron — 숫자 행만 없어 눌리는지 몰랐다(QA)
+  expect(src).toMatch(/profile\.saved'\)\} value=[^\n]*chevron/);
+  expect(src).toMatch(/myReviews\.title'\)\} value=[^\n]*chevron/);
+  expect(src).toMatch(/profile\.language'\)\} value=[^\n]*chevron/);
   // 크기·색 = 로그아웃과 동일(MenuRow 공용 렌더 한 곳)
   expect(src).toContain('{chevron && <IconChevron size={16} color={C.ink3} />}');
 });
