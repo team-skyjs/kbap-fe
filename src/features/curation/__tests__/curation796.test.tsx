@@ -42,7 +42,7 @@ jest.mock('@/components/Btn', () => {
 const mockPush = jest.fn();
 const mockNavigate = jest.fn();
 let mockParams: Record<string, string> = {};
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, navigate: mockNavigate, back: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams }));
+jest.mock('expo-router', () => ({ useScrollToTop: () => {}, useRouter: () => ({ push: mockPush, navigate: mockNavigate, back: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams }));
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 const mockOpen = jest.fn(async () => true);
@@ -334,8 +334,8 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(imgs.map((im) => RN.StyleSheet.flatten(im.props.style))).toEqual([220, 230, 240, 250, 260, 270, 280, 290].map((y) => expect.objectContaining({ top: -y, height: 300 })));
     const scrim = t.root.findAll((n) => n.props?.testID === 'card-shade' && typeof n.type === 'string');
     expect(scrim).toHaveLength(1);
-    expect(RN.StyleSheet.flatten(scrim[0].props.style)).toMatchObject({ top: 220, bottom: 0 });
-    expect(scrim[0].props.colors).toEqual(['rgba(0,0,0,0)', 'rgba(0,0,0,0.45)']);
+    expect(RN.StyleSheet.flatten(scrim[0].props.style)).toMatchObject({ top: 180, bottom: 0 }); // KB-906(T-039): 띠 위 40부터
+    expect(scrim[0].props.colors).toEqual(['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.6)']);
     // 큰 글씨 = 캡션이 높아져 위로 — 밴드도 이름 위 16 유지
     layoutOf('curation-item-1', { x: 0, y: 0, width: 335, height: 340 });
     layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 335, height: 104 });
@@ -575,7 +575,11 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(inside(bodyOf(), 'curation-gallery-credit')).toBe(false);
     const credit = byId(t, 'curation-gallery-credit')[0];
     expect(credit.props.numberOfLines).toBe(1);
-    expect(RNc.StyleSheet.flatten(credit.props.style)).toMatchObject({ position: 'absolute', left: 16, bottom: 31, color: '#FFFFFF', textAlign: 'left' });
+    expect(RNc.StyleSheet.flatten(credit.props.style)).toMatchObject({ position: 'absolute', left: 16, bottom: 44, color: '#FFFFFF', textAlign: 'left' }); // Codex #365 P2: 여러 장 = 점 알약 위
+    const dotsBox = RNc.StyleSheet.flatten(sub('curation-gallery-dots').props.style);
+    expect(RNc.StyleSheet.flatten(credit.props.style).bottom).toBeGreaterThanOrEqual(dotsBox.bottom + dotsBox.height + 8); // 알약 윗변 + 간격 8 — 겹침 0
+    const { creditBottom } = jest.requireActual('@/features/curation/CurationGallerySheet') as { creditBottom: (m: boolean) => number };
+    expect(creditBottom(false)).toBe(31); // 1장(점 없음) = 원래 자리
     const w0 = jest.requireActual('react-native').Dimensions.get('window').width;
     const maxW = RNc.StyleSheet.flatten(credit.props.style).maxWidth as number;
     expect(maxW).toBe(creditMaxWidth(w0));
@@ -637,6 +641,51 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     press(t, 'curation-item-4');
     expect(byId(t, 'curation-gallery-nophoto')).toHaveLength(1);
     expect(ids(t)).not.toContain('curation-gallery-dots'); // 1장 = 점 없음
+  });
+});
+
+describe('KB-906 홈·큐레이션 동작', () => {
+  const detail = adaptCurationDetail(DETAIL_WIRE) as CurationDetail;
+  const withImages = (n: number) => ({ ...detail, items: detail.items.map((it) => (it.position === 1 ? { ...it, images: Array.from({ length: n }, (_, i) => ({ url: `https://cdn/g${i}.jpg`, attribution: null })) } : it)) });
+  const src = (f: string) => fs.readFileSync(`${__dirname}/../${f}`, 'utf8');
+  it('T-040: 손잡이 탭 = 닫힘 · 끌기 제스처는 사진 영역 전체(그래버 띠만이 아님)', () => {
+    mockDetail = q({ data: detail });
+    const t = render(<CurationDetailScreen />);
+    press(t, 'curation-item-1');
+    expect(ids(t)).toContain('curation-gallery');
+    act(() => t.root.findAll((n) => n.props?.testID === 'curation-gallery-grabber' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    expect(ids(t)).not.toContain('curation-gallery');
+    const sheet = src('CurationGallerySheet.tsx');
+    expect(sheet).toMatch(/<GestureDetector gesture=\{drag\}>\s*<View style=\{\{ height: photoBoxH \}\}/); // 사진 상자 전체가 끌기 영역
+    expect(sheet).toMatch(/<Pressable\s+ref=\{grabRef\}\s+style=\{st\.grabZone\}\s+onPress=\{onClose\}/);
+  });
+  it('T-128: pager 점 = 반투명 검정 알약 위 8pt 점 · 켜짐/꺼짐은 불투명도만(크기 동일)', () => {
+    mockDetail = q({ data: withImages(3) });
+    const t = render(<CurationDetailScreen />);
+    press(t, 'curation-item-1');
+    const flat = (id: string) => jest.requireActual('react-native').StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0].props.style);
+    expect(flat('curation-gallery-dots').backgroundColor).toBe('rgba(0,0,0,0.45)');
+    const on = flat('curation-gallery-dot-on');
+    const off = flat('curation-gallery-dot');
+    for (const k of ['width', 'height', 'borderRadius'] as const) expect(off[k]).toBe(on[k]);
+    expect(on.width).toBe(8);
+    expect(off.opacity).toBeLessThan(1);
+    expect(on.opacity ?? 1).toBe(1);
+  });
+  it('T-039: 이름 = 전부 대문자만 단어 첫 글자로(약어만인 이름·섞인 이름 그대로) · 위치 = "동네, 구"', () => {
+    const { placeNameOf, areaOf } = jest.requireActual('@/lib/api/curationAdapter') as { placeNameOf: (s: string) => string; areaOf: (s: string) => string };
+    expect(placeNameOf('N SEOUL TOWER')).toBe('N Seoul Tower');
+    expect(placeNameOf('SEOUL SKY')).toBe('Seoul Sky');
+    expect(placeNameOf('Dongdaemun Design Plaza')).toBe('Dongdaemun Design Plaza');
+    expect(placeNameOf('DDP')).toBe('DDP');
+    expect(placeNameOf('DDP Museum')).toBe('DDP Museum');
+    expect(areaOf('Bukchon / Jongno-gu')).toBe('Bukchon, Jongno-gu');
+    expect(areaOf('Jongno-gu')).toBe('Jongno-gu');
+  });
+  it('T-039: 카드 스크림 = 띠 위 40부터 3단(0 → 0.35 → 0.6)', () => {
+    const card = src('BlurCaptionCard.tsx');
+    expect(card).toContain("const CARD_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.6)'] as const;");
+    expect(card).toMatch(/locations=\{CARD_SCRIM_LOC\}.*top: Math\.max\(0, band\.top - CARD_SCRIM_LEAD\)/);
   });
 });
 

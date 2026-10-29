@@ -10,11 +10,11 @@
  * 게스트: 열람 개방(P-235) — 쓰기·Helpful 게이트 유지(AuthGateSheet).
  */
 import * as React from 'react';
-import { RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
-import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, useScrollToTop, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { CountryOnlyHint } from '@/features/review/CountryOnlyHint';
 import { color as C, radius } from '@/lib/theme';
@@ -56,6 +56,8 @@ const FAB_COMPACT_SLOP = 4; // 36 + 4×2 = 44
 
 export function ReviewFeed() {
   const router = useRouter();
+  const listRef = React.useRef<FlatList>(null);
+  useScrollToTop(listRef); // KB-906(T-127): Reviews 탭 재탭 = 맨 위
   const { t } = useTranslation();
   const isGuest = useIsGuest();
   const [sort, setSort] = React.useState<FeedSort>('latest');
@@ -135,6 +137,7 @@ export function ReviewFeed() {
   return (
     <View style={styles.root} testID="review-feed">
       <Animated.FlatList
+        ref={listRef}
         ListHeaderComponent={
           (
             <View>

@@ -79,6 +79,7 @@ function ProfileTabIcon({ size = 24, active }: IconProps & { active?: boolean })
             onError={() => setFailed(true)}
             style={[styles.avatarImg, { borderRadius: (size - 4) / 2 }]}
             transition={0}
+            cachePolicy="memory-disk" // KB-906(T-125): 액티비티 재생성 뒤 메모리에서 바로(디스크 재디코딩 동안 빈 회색 원 0)
           />
         ) : (
           <AvatarIcon size={size - 4} />

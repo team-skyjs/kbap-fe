@@ -51,7 +51,7 @@ jest.mock('expo-image', () => {
 });
 jest.mock('expo-image-picker', () => ({}));
 const mockPush = jest.fn();
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useSegments: () => [],
   useRouter: () => ({ push: mockPush, navigate: mockPush, back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({}),

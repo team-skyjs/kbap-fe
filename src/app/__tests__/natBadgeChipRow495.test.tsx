@@ -30,7 +30,7 @@ jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
   return { LinearGradient: (p: Record<string, unknown>) => <View {...p} testID="chip-fade" /> };
 });
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useSegments: () => [],
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn(), navigate: jest.fn() }),
   useFocusEffect: () => {},

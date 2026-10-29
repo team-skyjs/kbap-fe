@@ -5,13 +5,13 @@
  * 평점 높은 음식 행(KB-800 — 구 REVIEWS 무한 피드 대체) · 스캔 CTA · 면책. 데이터 훅·라우트 무변 — 표시만 교체.
  * 구 표면(인사말·식단 배너·스캔 CTA·Safe for you·카테고리)은 시안 부재로 제거.
  */
-import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
-import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, useScrollToTop, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, riskText, shadow, type RiskState } from '@/lib/theme';
 import { UpdateNudgeBanner } from '@/components/VersionGate';
@@ -69,6 +69,8 @@ export default function Home() {
 
 function HomeBody() {
   const { t } = useTranslation();
+  const listRef = useRef<FlatList>(null);
+  useScrollToTop(listRef); // KB-906(T-127): Home 탭 재탭 = 맨 위(헤더 접힘도 스크롤 값을 따라 함께 풀린다)
   const router = useRouter();
   const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
@@ -200,6 +202,7 @@ function HomeBody() {
   return (
     <View style={styles.root}>
       <Animated.FlatList
+        ref={listRef}
         data={isLoading ? [] : topRated}
         keyExtractor={(f) => f.foodId}
         onScroll={onScroll}
