@@ -42,7 +42,7 @@ jest.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
 }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   useFocusEffect: () => {},
   usePathname: () => '/community',

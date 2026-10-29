@@ -36,7 +36,7 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 const mockPush = jest.fn();
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useSegments: () => [], // P-214: 계측 화면 식별(StateBlock·HelpfulButton)
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/community',
