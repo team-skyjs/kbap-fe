@@ -115,8 +115,9 @@ export default function DietPresetsScreen() {
       </ScrollView>
 
       <View style={[styles.savebar, { paddingBottom: bottom + 10 }]} testID="diet-savebar">
-        <Btn icon={<IconCheck size={17} color="#fff" />} busy={saving} onPress={save} testID="diet-save">
-          {t('common.save')}
+        {/* KB-904(T-086): 바뀐 게 없으면 비활성 · 문구 = 프로필 편집과 같은 "Save changes" */}
+        <Btn icon={<IconCheck size={17} color="#fff" />} variant={dirty ? 'primary' : 'off'} busy={saving} onPress={dirty ? save : undefined} testID="diet-save">
+          {t('editProfile.save')}
         </Btn>
       </View>
 

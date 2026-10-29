@@ -129,6 +129,10 @@ export interface ShareDeps {
   storyAvailable: () => boolean;
 }
 
+/** KB-904(T-027): 저장 파일명(로컬 날짜) */
+export const shareFileName = (d: Date = new Date()) =>
+  `kbap-order-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+
 /* ---- 기본 구현(지연 require — 모듈 부재·구 번들에서도 import 시점에 죽지 않는다) ---- */
 
 export const defaultDeps: ShareDeps = {
@@ -144,7 +148,19 @@ export const defaultDeps: ShareDeps = {
     }
     try {
       // width/height = 결과 픽셀 — dp 캔버스를 그대로 찍고 늘리면 뭉개진다(발주 명시)
-      return await captureRef(ref, { format: 'png', quality: 1, width: EXPORT_W, height: EXPORT_H, result: 'tmpfile' });
+      const tmp = await captureRef(ref, { format: 'png', quality: 1, width: EXPORT_W, height: EXPORT_H, result: 'tmpfile' });
+      // KB-904(T-027): 갤러리 파일명 = kbap-order-YYYYMMDD.png(RN 기본 ReactNative-snapshot-image…였다). view-shot fileName은 안드 접두어만(+난수)·iOS 무시라
+      // 정확한 이름으로 복사해 넘긴다. 복사 실패 = 원본 그대로(저장 자체를 막지 않는다)
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const FileSystem = require('expo-file-system/legacy') as typeof import('expo-file-system/legacy');
+        const named = `${FileSystem.cacheDirectory}${shareFileName()}.png`;
+        await FileSystem.deleteAsync(named, { idempotent: true });
+        await FileSystem.copyAsync({ from: tmp, to: named });
+        return named;
+      } catch {
+        return tmp;
+      }
     } catch (e) {
       throw new ShareStepError('capture', e);
     }
