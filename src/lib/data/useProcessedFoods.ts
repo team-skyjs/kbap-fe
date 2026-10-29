@@ -7,7 +7,7 @@
  * - 상세 키에 회원 여부 — avoidance가 회원만 오고 비회원은 null(로그인 뒤 같은 캐시를 쓰면 대조가 안 보인다).
  */
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { api, ApiError } from '../api/client';
+import { api, apiLang, ApiError } from '../api/client';
 import { adaptProcessedDetail, adaptProcessedSummary, type DetailWire, type PackagedType, type ProcessedFoodDetail, type SearchPageWire } from '../api/processedFoodAdapter';
 import { useIsGuest } from '../auth/useSession';
 import { useMe } from './useMe';
@@ -38,12 +38,14 @@ export async function fetchProcessedSearch(query: string, cursor?: string, filte
     filter.type ? `type=${filter.type}` : null,
     cursor ? `cursor=${encodeURIComponent(cursor)}` : null,
     `size=${PROCESSED_PAGE_SIZE}`,
+    `lang=${apiLang()}`, // KB-901(T-014): 표시명·제조사 번역은 lang 쿼리로만 온다(Accept-Language만으론 한국어 — dev 실측)
   ];
   const page = await api.get<SearchPageWire>(`/api/processed-foods?${parts.filter(Boolean).join('&')}`, headers);
   return { items: page.items.map(adaptProcessedSummary), hasNext: page.hasNext, nextCursor: page.nextCursor ?? null };
 }
 export async function fetchProcessedDetail(id: string): Promise<ProcessedFoodDetail> {
-  return adaptProcessedDetail(await api.get<DetailWire>(`/api/processed-foods/${encodeURIComponent(id)}`, headers));
+  // KB-901(T-013): 목록과 같이 lang — 없으면 Food 탭 진입 상세만 "농심 / 신라면"(스캔 확정 진입 = 영어)이었다
+  return adaptProcessedDetail(await api.get<DetailWire>(`/api/processed-foods/${encodeURIComponent(id)}?lang=${apiLang()}`, headers));
 }
 
 export type ProcessedUnavailable = 'gone' | 'discontinued';

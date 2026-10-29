@@ -114,6 +114,12 @@ type AxisWire = { average?: number | null; count?: number | null } | null;
 type MatchWire = { code: string; evidence?: string[] | string | null };
 
 const blankToNull = (s: string | null | undefined): string | null => (s && s.trim() ? s.trim() : null);
+/** KB-901(T-003·T-012): 서버는 번역이 없을 때 translated에 원문을 그대로 채운다(dev 2453 실측 — 원재료) → "English translation" 아래 한국어,
+ *  알레르기 문장 두 번. 원문과 같은 "번역" = 번역 없음(null) */
+export const realTranslation = (translated: string | null | undefined, original: string | null): string | null => {
+  const tr = blankToNull(translated);
+  return tr && tr !== original ? tr : null;
+};
 /** KB-877: 서버 무료 창 끝 시각(ISO) — 해석 못 하는 값 = 창 없음(null). 창 계산은 서버만 한다 */
 export const isoOrNull = (s: string | null | undefined): string | null => (s && Number.isFinite(Date.parse(s)) ? s : null);
 export const toHttps = (u: string | null | undefined): string | null => {
@@ -186,6 +192,11 @@ function reviewSummaryOf(w: DetailWire['reviewSummary']): ProcessedReviewSummary
   return { overall, taste: overall.count > 0 ? overall : null, spiciness: null, sweetness: null };
 }
 
+const ingredientsOf = (w: { translated?: string | null; original?: string | null } | null | undefined, fallback: string | null) => {
+  const original = blankToNull(w?.original) ?? fallback;
+  return { translated: realTranslation(w?.translated, original), original };
+};
+
 export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
   const labelSource = labelSourceOf(w.labelSource);
   const allergens = labelSource === 'DECLARED' ? blankToNull(w.allergenStatement?.original) ?? blankToNull(w.allergens) : null;
@@ -204,8 +215,8 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     unclearIngredients: (w.unclearIngredients ?? []).map((u) => u.trim()).filter(Boolean),
     majorAllergens: w.majorAllergens == null ? null : w.majorAllergens,
     // #462 전 = 원문만(번역 null). 원문은 서버 ingredients.original → 없으면 rawMaterials
-    ingredients: { translated: blankToNull(w.ingredients?.translated), original: blankToNull(w.ingredients?.original) ?? blankToNull(w.rawMaterials) },
-    allergenStatement: allergens ? { translated: blankToNull(w.allergenStatement?.translated), original: allergens } : null,
+    ingredients: ingredientsOf(w.ingredients, blankToNull(w.rawMaterials)),
+    allergenStatement: allergens ? { translated: realTranslation(w.allergenStatement?.translated, allergens), original: allergens } : null,
     sourceProvider: w.source.provider,
     sourceAttributionKey: w.source.attributionKey,
     image: w.image?.url ? { url: toHttps(w.image.url) as string, attributionKey: w.image.attributionKey } : null,
@@ -290,8 +301,8 @@ export function adaptLabelScan(w: LabelScanWire): LabelScanResult {
     unclearIngredients: (w.unclearIngredients ?? []).map((u) => u.trim()).filter(Boolean),
     majorAllergens: w.majorAllergens == null ? null : w.majorAllergens,
     // 원문 = 서버 ingredients.original → 없으면 읽은 원문(rawText)
-    ingredients: { translated: blankToNull(w.ingredients?.translated), original: blankToNull(w.ingredients?.original) ?? rawText },
-    allergenStatement: allergenOriginal ? { translated: blankToNull(w.allergenStatement?.translated), original: allergenOriginal } : null,
+    ingredients: ingredientsOf(w.ingredients, rawText),
+    allergenStatement: allergenOriginal ? { translated: realTranslation(w.allergenStatement?.translated, allergenOriginal), original: allergenOriginal } : null,
     labelSource: labelSourceOf(w.labelSource),
     detections: adaptDetections(w.detections),
     mayContain: (w.mayContain ?? []).map((m) => ({ code: m.code, evidence: m.evidence })),
