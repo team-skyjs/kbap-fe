@@ -196,6 +196,8 @@ export interface ReviewAuthor {
   nationality: string | null; // countryCode — 미보유면 null
   tier: string;
   level: number;
+  /** KB-905(T-069): 작성자 프로필 사진(절대 URL만, 그 밖 null) — 내 리뷰 카드 아바타 */
+  profileImageUrl?: string | null;
 }
 
 export interface Review {

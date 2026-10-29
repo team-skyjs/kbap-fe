@@ -44,6 +44,9 @@ export function TranslateButton({ state, source, onPress }: { state: TranslateLa
       onPress={onPress}
       disabled={state === 'loading'}
       accessibilityRole="button"
+      // KB-905(T-067): 라벨을 명시해야 안드가 상태가 바뀔 때마다 content-desc를 다시 쓴다 — 라벨 없이 busy만 있으면 busy=false일 때
+      // RN(BaseViewManager.updateViewContentDescription)이 빈 목록이라 갱신을 건너뛰어 "busy"가 번역 뒤에도 남았다
+      accessibilityLabel={label}
       accessibilityState={{ busy: state === 'loading' }}
       testID="translate-btn"
     >

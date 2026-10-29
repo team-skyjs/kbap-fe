@@ -13,6 +13,8 @@ import { Shimmer } from './Skeleton';
 
 const FILL = { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 } as const;
 const HIDDEN = { ...FILL, opacity: 0 } as const;
+/** KB-905(T-021): 원격 이미지 로딩 바탕 — 사진 칸 바탕(#F7F8FA)보다 한 단계 진하게(스윕이 보이게) */
+export const SHIMMER_BASE = { backgroundColor: '#EAEBEE' } as const;
 
 export function RemoteImage({
   uri,
@@ -48,7 +50,9 @@ export function RemoteImage({
   const [settled, setSettled] = React.useState(false);
   return (
     <View style={[style, { overflow: 'hidden' }]}>
-      {!settled && placeholder === 'shimmer' && <Shimmer style={FILL as never} />}
+      {/* KB-905(T-021): 스켈레톤 바탕 = 사진 칸 바탕(surface2 #F7F8FA)과 같은 색이라 흰 스윕(≈0.3)이 거의 안 보여 "회색 박스"로 읽혔다 —
+          원격 이미지 자리만 한 단계 진한 바탕(SkeletonLine과 같은 #EAEBEE) */}
+      {!settled && placeholder === 'shimmer' && <Shimmer style={[FILL as never, SHIMMER_BASE]} />}
       <Image
         source={{ uri }}
         recyclingKey={recyclingKey}
