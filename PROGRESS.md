@@ -1,10 +1,10 @@
 ## 2026-10-30 — P-547 / KB-910 안전 고지 앱 안 렌더 + Avoid 통일
 
 - 안전 고지 = 약관·개인정보와 같은 앱 안 렌더: `LEGAL_URLS.safety` 추가(SAFETY_NOTICE_URL 상수 삭제), `/profile/legal?doc=safety`(제목 profile.safetyNotice), 프로필 게스트·회원 두 메뉴 = 앱 안 화면(구 openWebPage 인앱 브라우저 — 외부 도메인 노출)
-- 온보딩 동의 시트의 안전 고지도 같은 LegalDocBody 원문(구 consent 문구 3단 요약) — SAFETY_NOTICE_URL 소비처는 프로필 2곳뿐이었다(로그인은 약관·개인정보만 openWebPage — 이 발주 범위 밖, 그대로)
+- 온보딩 동의 시트의 안전 고지 = 요약 3단 유지(커맨드 — 시트에 전문을 넣으면 온보딩이 길어진다) + 아래 "전문 보기" 링크(IconChevron) → 시트를 닫고 /profile/legal?doc=safety. SAFETY_NOTICE_URL 소비처는 프로필 2곳뿐이었다(로그인은 약관·개인정보만 openWebPage — 범위 밖, 그대로)
 - 원문 판정명 → 앱 판정명(appRiskTerms, localizeLegal 단계 — 모든 법적 문서 공통): "Danger" → "Avoid" · 한국어 "안전/주의/위험/…" 목록과 “위험” → "회피"(앱 ko risk.danger) · "위험도 표시"처럼 판정명 아닌 "위험"은 그대로. 원문(kbap-legal safety.md) 수정은 예진 승인 뒤
 - 본문 로딩 = 스켈레톤 6줄(구 스피너) · 제목·문단·목록 hangul-word(iOS 어절 줄바꿈) · 새 radius·fontSize 리터럴 0(radius.xs 토큰)
-- 신규 ko 문구 0 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
+- 신규 ko 문구(K-항목): `onboarding.readFullSafety` = 안전 고지 전문 보기 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
 ## 2026-10-30 — P-545 / KB-907 문구 일괄 정리
 

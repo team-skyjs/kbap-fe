@@ -37,10 +37,16 @@ describe('배선', () => {
     expect(screen).toContain("raw === 'safety' ? 'safety'");
     expect(screen).toContain("doc === 'safety' ? 'profile.safetyNotice'");
   });
-  it('온보딩 동의 시트의 안전 고지도 같은 본문(LegalDocBody) — 구 consent 요약 문구 0', () => {
+  it('온보딩 동의 시트 = 요약 3단 유지 + 전문 링크(시트를 닫고 앱 안 법적 문서 화면) — 시트에 전문 0', () => {
     const ob = read('src/app/onboarding/index.tsx');
-    expect(ob).toContain('{doc != null && <LegalDocBody doc={doc as LegalDoc} />}');
-    expect(ob).not.toContain('safetyText');
+    expect(ob).toContain("const isRemote = doc === 'terms' || doc === 'privacy';");
+    expect(ob).toContain("[t('onboarding.consentGuidance'), t('onboarding.consentVary'), t('onboarding.consentYours')]");
+    expect(ob).toMatch(/testID="legal-read-full-safety"/);
+    expect(ob).toMatch(/onReadSafety=\{\(\) => \{\s*setLegalDoc\(null\);\s*router\.push\('\/profile\/legal\?doc=safety' as Href\);/);
+    for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es']) {
+      const v = (JSON.parse(read(`src/lib/i18n/${l}.json`)) as { onboarding: Record<string, string> }).onboarding.readFullSafety;
+      expect({ l, ok: typeof v === 'string' && v.length > 0 && !/[›>·]/.test(v) }).toEqual({ l, ok: true }); // 화살표는 SVG(IconChevron) — 기호 문자 0
+    }
   });
   it('본문 로딩 = 스켈레톤(스피너 0) · 제목·본문 어절 줄바꿈', () => {
     const body = read('src/components/LegalDocBody.tsx');

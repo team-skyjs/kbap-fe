@@ -951,7 +951,8 @@
     },
     "countryLabel": "Country",
     "popularCountries": "Popular",
-    "searchNoResults": "No matches. Try a different spelling."
+    "searchNoResults": "No matches. Try a different spelling.",
+    "readFullSafety": "Read the full safety notice"
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",

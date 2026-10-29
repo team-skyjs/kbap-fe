@@ -823,7 +823,8 @@
     },
     "countryLabel": "Страна",
     "popularCountries": "Популярные",
-    "searchNoResults": "Ничего не найдено. Попробуйте другое написание."
+    "searchNoResults": "Ничего не найдено. Попробуйте другое написание.",
+    "readFullSafety": "Читать раздел «О безопасности» полностью"
   },
   "editProfile": {
     "title": "Профиль",

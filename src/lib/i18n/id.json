@@ -793,7 +793,8 @@
     },
     "countryLabel": "Negara",
     "popularCountries": "Populer",
-    "searchNoResults": "Tidak ada hasil. Coba ejaan lain."
+    "searchNoResults": "Tidak ada hasil. Coba ejaan lain.",
+    "readFullSafety": "Baca Pemberitahuan keamanan lengkap"
   },
   "editProfile": {
     "title": "Edit profil",

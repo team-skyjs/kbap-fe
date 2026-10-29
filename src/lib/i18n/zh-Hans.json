@@ -793,7 +793,8 @@
     },
     "countryLabel": "国家",
     "popularCountries": "热门国家",
-    "searchNoResults": "没有找到结果。换个写法试试。"
+    "searchNoResults": "没有找到结果。换个写法试试。",
+    "readFullSafety": "查看安全须知全文"
   },
   "editProfile": {
     "title": "编辑资料",
