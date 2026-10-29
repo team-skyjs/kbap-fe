@@ -15,14 +15,17 @@ export function Snackbar({
   text,
   actionLabel,
   onAction,
+  bottom = 24,
 }: {
   icon?: React.ReactNode;
   text: string;
   actionLabel?: string;
   onAction?: () => void;
+  /** KB-900: 탭 바 없는 화면은 하단 인셋을 더해 넘긴다(3버튼 내비 바가 Undo를 덮음) */
+  bottom?: number;
 }) {
   return (
-    <View style={styles.root} pointerEvents="box-none">
+    <View style={[styles.root, { bottom }]} pointerEvents="box-none">
       {/* P-031: 하단 등장 = damped 스프링, 퇴장 = 짧은 페이드 (등장 경로 대칭은
           타이머 소멸이라 페이드가 자연스러움 — apple-design §14 비전정 폴백 겸) */}
       <Animated.View
@@ -43,7 +46,7 @@ export function Snackbar({
 }
 
 const styles = StyleSheet.create({
-  root: { position: 'absolute', left: 16, right: 16, bottom: 24 },
+  root: { position: 'absolute', left: 16, right: 16 },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',

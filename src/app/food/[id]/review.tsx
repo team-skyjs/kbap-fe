@@ -16,7 +16,7 @@ import { Platform, ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Scr
 import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
 import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { Pressable } from '@/components/Pressable';
-import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
+import { KAV_BEHAVIOR, KAV_OFFSET } from '@/lib/keyboardAvoid';
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -453,7 +453,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   return (
     // KB-700 → KB-768: KeyboardAvoidingView(padding, 두 플랫폼) — 하단 고정 "Post review" 바가 키보드 위로 따라 올라온다.
     // Android도 edge-to-edge(Expo 57)라 adjustResize가 창을 줄이지 않는다 — lib/keyboardAvoid 참조.
-    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID="review-kav">
+    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET} testID="review-kav">
       {/* P-168 ③: 헤더 Post 소멸 — 제출 진입점은 하단 "Post review" 단일화 */}
       <SubHeader title={t(editing ? 'editReview.title' : 'review.title')} onBack={() => router.back()} />
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}

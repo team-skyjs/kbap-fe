@@ -21,7 +21,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 're
 import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { Pressable } from '@/components/Pressable';
-import { KAV_BEHAVIOR, useKeyboardLift } from '@/lib/keyboardAvoid';
+import { KAV_BEHAVIOR, KAV_OFFSET, useKeyboardLift } from '@/lib/keyboardAvoid';
 import Animated from 'react-native-reanimated';
 import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
@@ -160,7 +160,7 @@ export default function CommunityCompose() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR}>
+    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET}>
       {/* ── 상단 warm hero (시안 1존) ── */}
       <View style={[styles.hero, { paddingTop: insets.top + 8 }]}>
         <View style={styles.heroBar}>

@@ -5,6 +5,7 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { ScrollView, StyleSheet } from 'react-native';
 
 jest.mock('@/lib/data/useDietPresets', () => ({
   useDietPresets: () => {
@@ -65,6 +66,8 @@ jest.mock('@/lib/data/useMe', () => ({
   useUpdateMe: () => ({ mutate: mockMutate }),
 }));
 
+let mockInset = 0;
+jest.mock('@/lib/useBottomInset', () => ({ useBottomInset: () => mockInset })); // KB-900: 안드 3버튼 인셋 흉내
 import DietPresetsScreen from '../profile/diet';
 import { DIET_PRESETS, presetSubstanceCodes } from '@/lib/onboarding/dietPresets';
 
@@ -90,6 +93,7 @@ const tap = async (tree: ReactTestRenderer, id: string) => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockInset = 0;
   mockUseMe.mockReturnValue(ME([...NO_ALCOHOL, 'EGG'], ['NO_ALCOHOL']));
   mockMutate.mockImplementation((_input: unknown, opts?: { onSuccess?: () => void }) => opts?.onSuccess?.());
 });
@@ -193,4 +197,15 @@ it('KB-776: 되돌리면(같은 칩 다시 탭) 막기 해제 · 저장 성공 �
   await tap(tree, 'diet-save');
   expect(mockMutate).toHaveBeenCalledTimes(1);
   expect(mockPrevent.on).toBe(false);
+});
+
+it('KB-900: Save 바 아래 여백 = 인셋 + 10 · 본문 아래 여백도 같이 늘어 마지막 행이 바 뒤로 안 숨음(iOS 34 = 종전 120)', () => {
+  mockInset = 48;
+  const tree = render();
+  const bar = tree.root.findAll((n) => n.props?.testID === 'diet-savebar' && n.props?.style)[0];
+  expect(StyleSheet.flatten(bar.props.style).paddingBottom).toBe(58);
+  expect(StyleSheet.flatten(tree.root.findByType(ScrollView).props.contentContainerStyle).paddingBottom).toBe(134);
+  act(() => trees.pop()!.unmount());
+  mockInset = 34;
+  expect(StyleSheet.flatten(render().root.findByType(ScrollView).props.contentContainerStyle).paddingBottom).toBe(120);
 });
