@@ -82,7 +82,8 @@ it('on(dev·teamtest) → 실화면 (플레이스홀더 없음)', () => {
   const all = texts(tree);
   // KB-430: 헤더 타이틀 소멸(로고 AppBar) — 실피드 판별 = 컨트롤 행·작성 필
   expect(all).toContain('reviews.sort_latest');
-  expect(all).toContain('reviews.writeReview');
+  // KB-903: 큰 글자(jest 기본 fontScale 2)에선 작성 필이 원형(라벨은 스크린리더 이름) — 필 존재는 접근성 이름으로
+  expect(tree.root.findAll((n) => n.props?.testID === 'feed-write-fab' && n.props?.accessibilityLabel === 'reviews.writeReview').length).toBeGreaterThan(0);
   expect(all).not.toContain('community.lockedTitle');
 });
 

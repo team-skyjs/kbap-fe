@@ -44,6 +44,13 @@ const SORT_OPTIONS: FeedSort[] = ['latest', 'rating_high', 'rating_low', 'food_r
 
 /** KB-777 B3-7: 플로팅 "Write a review"를 아이콘만으로 줄이는 작은 화면(폭 < 360 또는 높이 < 700 dp — QA 720×1280@2x = 360×640). */
 export const isCompactFabScreen = (w: number, h: number): boolean => w < 360 || h < 700;
+/** KB-903(T-022): 글자 크기 1.3배 이상이면 첫 화면부터 필이 둘째 리뷰 본문을 덮었다(AX5) — 아이콘 원형으로 */
+export const FAB_COMPACT_FONT_SCALE = 1.3;
+/** 원형(아이콘만) 조건 — 작은 화면 · 큰 글자 · 스크롤 중 */
+export const fabCompactFor = (w: number, h: number, fontScale: number, scrolling: boolean): boolean =>
+  isCompactFabScreen(w, h) || fontScale >= FAB_COMPACT_FONT_SCALE || scrolling;
+/** 스크롤이 멈춘 뒤 필로 돌아오기까지(음식 상세 알약 멈춤 규칙과 같은 300ms) */
+export const FAB_IDLE_MS = 300;
 const FAB_COMPACT_SLOP = 4; // 36 + 4×2 = 44
 
 export function ReviewFeed() {
@@ -75,8 +82,14 @@ export function ReviewFeed() {
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [mod, setMod] = React.useState<ModTarget | null>(null);
   const win = useWindowDimensions();
-  const fabCompact = isCompactFabScreen(win.width, win.height);
   const { onScroll, hidden, atTop } = useStickyScroll();
+  // KB-903(T-022): 스크롤 중 필이 본문 문장을 덮었다 — 끌기·관성 동안은 원형, 멈추고 300ms 뒤 다시 필(워클릿 없이 JS 스크롤 이벤트로)
+  const [scrolling, setScrolling] = React.useState(false);
+  const idle = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollStart = () => { if (idle.current) clearTimeout(idle.current); setScrolling(true); };
+  const scrollStop = () => { if (idle.current) clearTimeout(idle.current); idle.current = setTimeout(() => setScrolling(false), FAB_IDLE_MS); };
+  React.useEffect(() => () => { if (idle.current) clearTimeout(idle.current); }, []);
+  const fabCompact = fabCompactFor(win.width, win.height, win.fontScale, scrolling);
   const headerH = useHeaderHeight();
 
   // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증이라 보조(확인되면 제거)
@@ -164,6 +177,10 @@ export function ReviewFeed() {
         contentContainerStyle={[styles.list, { paddingTop: headerH + 4, paddingBottom: 96, flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
+        onScrollBeginDrag={scrollStart}
+        onMomentumScrollBegin={scrollStart}
+        onScrollEndDrag={scrollStop}
+        onMomentumScrollEnd={scrollStop}
         scrollEventThrottle={16}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}

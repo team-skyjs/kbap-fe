@@ -436,7 +436,7 @@ export function FoodExplorer({
               ref={chipScrollRef}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={[styles.chipScrollContent, { height: chipRowHeight(fontScale) }]}
+              contentContainerStyle={[styles.chipScrollContent, { minHeight: chipRowHeight(fontScale) }]}
               testID="food-chip-scroll"
               {...chipLine.scrollProps}
             >
@@ -749,7 +749,7 @@ const styles = StyleSheet.create({
   // P-340 2-A: 한 줄 고정(칩 34) + pad 14/12 + 하단 헤어라인 — 정렬 버튼은 스크롤 밖 우측
   chipRowScreen: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // P-351 ②(#114 P2): 헤어라인 아래 12 — top은 ListHeader라 contentContainer paddingTop은 헤더째 밀림
   // KB-707: 오른쪽 끝 여백 = 페이드 폭 — 끝까지 밀면 마지막 칩이 페이드·정렬 버튼에 가리지 않는다(옛 8 < 페이드 24 → 마지막 칩 끝 16pt가 늘 덮였다)
-  chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: CHIP_FADE_W }, // 높이 = chipRowHeight(fontScale) 인라인
+  chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: CHIP_FADE_W }, // 최소 높이 = chipRowHeight(fontScale) 인라인 — KB-903(T-101): 고정 height면 칩(라벨 줄 + 여백 + 보더)이 눌려 라벨이 아래로 넘치고 ✓/✗만 가운데(Android 2.0)
   chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: CHIP_FADE_W },
   // P-342 ②: 정렬 시트 NEW "준비 중" 칩(DS 소형 pill)
   soonChip: { backgroundColor: '#F2F3F6', borderRadius: 999, paddingVertical: 2, paddingHorizontal: 8 },
