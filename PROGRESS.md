@@ -1,3 +1,9 @@
+## 2026-10-30 — P-543 / KB-905 리뷰 피드·시트 동작
+
+- T-021 원격 이미지 스켈레톤 바탕을 사진 칸(#F7F8FA)보다 진하게(#EAEBEE — 흰 스윕이 안 보여 회색 박스로 읽힘, RemoteImage·CardPhoto) · T-067 번역 버튼 접근성 이름 명시(RN 안드가 busy 해제 때 content-desc 갱신을 건너뜀) · T-066 Tag a food 0개 = Done 비활성 · T-075 목록 끝 여백 · T-068 신고 시트 Cancel · T-069 내 리뷰 = 내 프로필 사진(실패 = 기본) · T-070 국기 이모지 유지(헌법 v2.3.0 허용)·크기 14 · T-073 사진 1장 = 전폭.
+- T-023은 서버 원인(ReviewResponse.language null — id 49·42·43·40) → FE 범위 제외(커맨드가 서버 후속).
+- **사고**: 에뮬 연결 명령에 표시용으로 쓴 `pm clear`가 실행돼 kbap 앱 데이터 초기화·회원 세션 풀림. 예진 재로그인 대기, Android 기기 검증은 재로그인 뒤 QA. 위 규칙 추가.
+
 ## 2026-10-30 — P-541 / KB-901 가공식품 표기·Packaged 탭 동작 정리
 
 - 원인 2개가 대부분: ① 목록·상세 요청에 `lang` 쿼리 없음 — 서버는 표시명·제조사·알레르기 번역을 lang으로만 준다(Accept-Language만으론 한국어, dev 2453 실측) → Food 탭 진입만 "농심 / 신라면"(T-013·T-014). ② 서버가 번역 없을 때 translated에 원문을 그대로 채움 → "English translation" 아래 한국어·알레르기 문장 2번(T-003·T-012) → 어댑터 realTranslation이 원문과 같은 번역을 버림, 원문엔 "Korean original" 라벨.
@@ -82,6 +88,7 @@
 
 # kbap-fe Build Progress
 > 규칙: 한 번에 1개. [ ]→[~]→[x]. 각 화면 완료 시 목업 대조 + 커밋.
+> 규칙(10/30 KB-905 사고 후): 에뮬·시뮬 명령에 `pm clear`·`uninstall`·`clearState`(·`simctl erase`)는 **문자열로도 쓰지 않는다** — 표시용으로 쓴 줄이 실행돼 QA 회원 세션을 지웠다. 기기 명령은 보내기 전 이 목록과 대조.
 > 목업 SSOT: Claude Design `43cc8ad0-38d8-4afa-a66f-a7412eae2a49` ("KLens Hi-Fi (Direction G)", hifi-*.jsx, hifi-g.css).
 > 계약 SSOT: spec 레포 `specs/001-personalized-menu-mvp/contracts/openapi.yaml` (재조정 중 — 미확정 필드에 로직 강결합 금지).
 > 브랜드: 목업 "KLens" → 표시명 **K-Bap** 치환.

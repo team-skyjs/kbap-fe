@@ -14,6 +14,7 @@
  * 사진: 전송 = path(objectKey) / 조회 = 서버 조합 완전 URL(imageUrls) —
  * 프로필 사진과 동일 규약. 기존 사진 유지 시 URL→path 역변환(imageUrlToPath).
  */
+import { adaptProfileImageUrl } from './memberAdapter';
 import type { Review, ReviewAuthor, ReviewPage } from './types';
 import { toHttps } from './processedFoodAdapter';
 
@@ -26,6 +27,7 @@ export interface ReviewAuthorWire {
   tier: string;
   level: number;
   score: number;
+  profileImageUrl?: string | null;
 }
 
 /** P-165(#144): 리뷰 대상 음식 요약 — 목록 조회에서만, 음식 삭제 시 null. name은 lang 해석값. */
@@ -96,6 +98,7 @@ function adaptAuthor(wire: ReviewAuthorWire | null | undefined): ReviewAuthor | 
     nationality: wire.countryCode ?? null,
     tier: wire.tier,
     level: wire.level,
+    profileImageUrl: adaptProfileImageUrl(wire.profileImageUrl),
   };
 }
 
