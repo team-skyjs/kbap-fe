@@ -175,7 +175,8 @@ function render(el: React.ReactElement): ReactTestRenderer {
 const flatJson = (t2: ReactTestRenderer) => JSON.stringify(t2.toJSON());
 
 /** KB-891: 커서 추종 가시 높이 = 뷰포트 − 떠 있는 알약(측정 전 48 + 바닥 여백 12) */
-const PILL = 48 + 12;
+// KB-891 → KB-903(T-071): 알약 바가 ScrollView 아래 흐름 안 — 뷰포트(svH)가 이미 바를 뺀 높이라 바 몫 차감·여백 0
+const PILL = 0;
 
 it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + 셀렉션/성장 스크롤 배선', () => {
   const { Keyboard } = require('react-native') as typeof import('react-native');
@@ -192,7 +193,7 @@ it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + �
   act(() => listeners['keyboardDidShow']?.({ endCoordinates: { height: 336 } }));
   const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
   const pad = (require('react-native').StyleSheet.flatten(sv.props.contentContainerStyle) as { paddingBottom?: number }).paddingBottom;
-  expect(pad).toBe(PILL + 16); // KB-891: 떠 있는 알약(측정 전 48 + 바닥 12) + 16
+  expect(pad).toBe(PILL + 16); // KB-903: 바가 흐름 안 — 아래 여백 16뿐
   // 셀렉션·성장·포커스 배선 — scrollTo 호출(블록/뷰포트 실측 주입 후)
   const scrollTo = jest.fn();
   const svInst = sv.instance as { scrollTo?: unknown } | null;

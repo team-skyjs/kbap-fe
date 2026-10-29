@@ -286,14 +286,16 @@ describe('KB-708 (7) 칩 줄 높이', () => {
     expect(chipRowHeight(3.1)).toBeCloseTo(41.2, 5);
     expect(chipRowHeight(0.85)).toBe(34);
   });
-  it('렌더: 칩 스크롤 내용 높이 = chipRowHeight(창 fontScale) — 기본 34 · XXXL(3.1) 41.2', () => {
+  it('렌더: 칩 스크롤 내용 **최소** 높이 = chipRowHeight(창 fontScale) — 기본 34 · XXXL(3.1) 41.2 · KB-903(T-101): 고정 height 0(칩이 눌려 아이콘·라벨 어긋남)', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- spyOn은 실제 모듈 객체여야 함(import * = 인터롭 사본이라 컴포넌트가 안 봄)
     const spy = jest.spyOn(require('react-native') as typeof import('react-native'), 'useWindowDimensions');
     for (const [fs, h] of [[1, 34], [3.1, 41.2]] as const) {
       spy.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: fs });
       const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
       const sv = tree.root.findAll((n) => n.props?.testID === 'food-chip-scroll' && n.props?.contentContainerStyle != null)[0];
-      expect((StyleSheet.flatten(sv.props.contentContainerStyle) as { height: number }).height).toBeCloseTo(h, 5);
+      const st = StyleSheet.flatten(sv.props.contentContainerStyle) as { height?: number; minHeight: number };
+      expect(st.minHeight).toBeCloseTo(h, 5);
+      expect(st.height).toBeUndefined();
       tree.unmount();
     }
     spy.mockRestore();

@@ -441,13 +441,14 @@ describe('KB-891 하단 Post 버튼 = 음식 상세와 같은 가로 전체 알�
   const bodyPad = (t2: ReactTestRenderer) =>
     t2.root.findAllByType(ScrollView).filter((n) => !n.props.horizontal).map((n) => StyleSheet.flatten(n.props.contentContainerStyle).paddingBottom)[0];
 
-  it('흰 바·상단 선 없음 · 좌우 20 떠 있는 줄 · 알약 틀(공용 정의) · 비활성 = off 색 그대로', () => {
+  it('KB-903(T-071): 흰 띠·상단 선 없음 · 흐름 안(절대 위치 아님 — 마지막 칩이 바 뒤로 못 들어감) · 좌우 20 · 알약 틀(공용 정의) · 비활성 = off 색 그대로', () => {
     mockParams.reviewId = undefined; // 신규 — 별점 없음 = off
     const tree = render(<ReviewCompose />);
     const bar = StyleSheet.flatten(host(tree, 'review-bottom-bar').props.style);
-    expect(bar.backgroundColor).toBeUndefined();
+    expect(bar.backgroundColor).toBe('#FFFFFF');
     expect(bar.borderTopWidth).toBeUndefined();
-    expect(bar).toMatchObject({ position: 'absolute', left: 20, right: 20, bottom: 12 });
+    expect(bar.position).toBeUndefined();
+    expect(bar).toMatchObject({ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12 });
     const btn = StyleSheet.flatten(host(tree, 'post-review').props.style);
     expect(btn).toMatchObject({ ...StyleSheet.flatten(pillCta.pillShape), backgroundColor: TC.line });
     expect(StyleSheet.flatten(label(tree, 'review.postReview').props.style)).toMatchObject({ fontSize: 16, lineHeight: 22, color: TC.inkDisabled });
@@ -463,10 +464,12 @@ describe('KB-891 하단 Post 버튼 = 음식 상세와 같은 가로 전체 알�
     expect(StyleSheet.flatten(label(tree, 'editReview.save').props.style)).toMatchObject({ ...text, color: '#fff' });
   });
 
-  it('스크롤 하단 여백 = 알약 줄 실높이 + 바닥 여백 + 16(측정 전 48) — 큰 글씨로 줄이 커지면 따라 는다', () => {
+  it('KB-903: 바가 흐름 안이라 스크롤 하단 여백 = 16 고정 — 바 높이(큰 글씨)를 더할 필요 없음 · 바는 ScrollView 다음 형제', () => {
     const tree = render(<ReviewCompose />);
-    expect(bodyPad(tree)).toBe(48 + 12 + 16);
-    act(() => host(tree, 'review-bottom-bar').props.onLayout({ nativeEvent: { layout: { height: 92 } } }));
-    expect(bodyPad(tree)).toBe(92 + 12 + 16);
+    expect(bodyPad(tree)).toBe(16);
+    expect(host(tree, 'review-bottom-bar').props.onLayout).toBeUndefined();
+    const stage = host(tree, 'review-bottom-bar').parent!;
+    const kids = stage.children.filter((c) => typeof c !== 'string') as ReactTestRenderer['root'][];
+    expect(kids[kids.length - 1]).toBe(host(tree, 'review-bottom-bar'));
   });
 });

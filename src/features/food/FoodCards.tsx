@@ -28,6 +28,9 @@ export function padOddGrid<T>(items: T[]): (T | GridPad)[] {
 }
 
 /** 2열 그리드 카드 (4150:13806) — 히어로 이미지 + RiskBadge + 북마크 버튼. */
+/** KB-903(T-033·T-057): 카드 제목 공통 — 넘치면 글자를 줄여 단어가 안 쪼개지게(최소 0.75) */
+export const CARD_TITLE_FIT = { adjustsFontSizeToFit: true, minimumFontScale: 0.75 } as const;
+
 export function FoodGridCard({
   food,
   risk,
@@ -73,7 +76,8 @@ export function FoodGridCard({
       </View>
       <View style={styles.gmeta}>
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-          <Text style={styles.gname} numberOfLines={2}>
+          {/* KB-903(T-033): AX 최대에서 한 단어가 카드 폭을 넘으면 단어 중간에서 꺾였다("Jajangmyeo / n") — 2줄 안에 들도록 줄이기(자르기 아님) */}
+          <Text style={styles.gname} numberOfLines={2} {...CARD_TITLE_FIT}>
             {food.name}
           </Text>
           {food.nameKo !== food.name && (

@@ -108,7 +108,7 @@ it('P-333 ② 저장 카드 배지 — 회원(guest=false) 카드 3장 전부 Ri
 it('P-334 — 하단 바 비율(≥360 = 3:5, <360 = 1:1)·아이콘 없음·fitLabel(2줄+0.85), Read all chevron, Btn pad 10', () => {
   const fd = read('src/app/food/[id]/index.tsx');
   // KB-851 → KB-871: 가로 전체 두 줄 — Ask = 라벨 단독(말풍선 아이콘 없음) · Write = 흰 file-pen + 라벨
-  expect(fd).toContain("<Text style={write ? styles.pillOutlineText : styles.pillPrimaryText}>{t('detail.askOwner')}</Text>");
+  expect(fd).toContain("<Text style={write ? styles.pillOutlineText : styles.pillPrimaryText} {...PILL_LABEL}>{t('detail.askOwner')}</Text>");
   expect(fd).toContain('<IconEdit size={20} color="#FFFFFF" />');
   expect(fd).toContain('pillPrimaryText: pillCta.pillPrimaryText,'); // KB-891: 공용 정의
   expect(read('src/features/food/pillCta.ts')).toMatch(/const label: TextStyle = \{ flexShrink: 1/); // 긴 번역 = 줄바꿈(잘림 0)

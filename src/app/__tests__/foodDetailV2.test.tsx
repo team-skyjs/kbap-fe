@@ -397,13 +397,14 @@ describe('P-228: Ask the owner 플로팅', () => {
     expect(sub.props.numberOfLines).toBe(2);
   });
 
-  it('KB-871(예진 10/22): 하단 버튼 = 좌우 20 · 가로 전체 · 위 primary Write(흰 글자·흰 file-pen) + 아래 테두리 Ask(회원) · 높이 48 radius full · 바 배경 0', () => {
+  it('KB-871 → KB-903: 하단 버튼 = 화면 폭 흰 띠(좌우 여백 20 · 위 12 · 아래 안전 영역) · 가로 전체 · 위 primary Write + 아래 테두리 Ask · 높이 48 radius full · 띠가 터치를 먹음', () => {
     const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
     const tree = render(<FoodDetailScreen />);
     const bar = byId(tree, 'detail-bottom-bar').find((n) => typeof n.type === 'string')!;
     const barStyle = StyleSheet.flatten(bar.props.style) as Record<string, unknown>;
-    expect(barStyle).toMatchObject({ position: 'absolute', left: 20, right: 20, gap: 8 });
-    expect(barStyle.backgroundColor).toBeUndefined();
+    // KB-903(T-060·T-019): 배경 0이던 바 사이·아래로 콘텐츠가 비치고 비친 별점 행 탭이 Write로 갔다 → 불투명 띠 + 띠가 터치를 받음
+    expect(barStyle).toMatchObject({ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 8, backgroundColor: '#FFFFFF' });
+    expect(bar.props.pointerEvents).toBe('auto');
     expect(barStyle.flexDirection).toBeUndefined(); // 세로(두 줄) — 가로 반쪽 회귀 방지
     expect(barStyle.justifyContent).toBeUndefined();
     const st = (id: string) => StyleSheet.flatten(byId(tree, id).find((n) => typeof n.type === 'string')!.props.style) as Record<string, unknown>;
@@ -416,13 +417,21 @@ describe('P-228: Ask the owner 플로팅', () => {
     const src = jest.requireActual('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
     expect(src).toContain('shown={pill.shown}');
     for (const h of ['onScrollBeginDrag={pill.onScrollBeginDrag}', 'onScrollEndDrag={pill.onScrollEndDrag}', 'onMomentumScrollBegin={pill.onMomentumScrollBegin}', 'onMomentumScrollEnd={pill.onMomentumScrollEnd}']) expect(src).toContain(h);
-    expect(src).toContain('pill.onBand(h + pillBottom + 8)');
+    expect(src).toContain('pill.onBand(h + 8)'); // KB-903: 띠 실높이에 안전 영역 포함
     expect(src).toContain('transform: [{ translateY: reduced ? 0 : !ready ? hideY : withTiming(shown ? 0 : hideY');
     expect(src).toContain('opacity: !ready ? 0 : withTiming(shown ? 1 : 0'); // KB-871 QA AP: 첫 측정 전 = 애니메이션 없이 숨김
     expect(src).toContain('useScrollAwarePill({ card: idolExpected, emptyCta: emptyCtaExpected })');
     expect(src).toContain('testID="review-empty-cta" onLayout={(e) => onEmptyCtaLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)}');
     expect(src).toContain('if (!emptyCta) onEmptyCtaLayout?.(0, 0);'); // Codex #337: 상자가 사라지면 높이 0 보고
     expect(src).not.toContain('onInsets');
+  });
+
+  it('KB-903(T-032): 알약 글자 = 한 줄 + 넘치면 줄이기(자르기 아님) + 확대 상한 1.15 — 2.0에서 "Ask the / owner" 두 줄로 바가 화면 1/4', () => {
+    const tree = render(<FoodDetailScreen />);
+    for (const key of ['reviews.writeReview', 'detail.askOwner']) {
+      const label = byId(tree, 'detail-bottom-bar').find((n) => typeof n.type === 'string')!.findAll((n) => typeof n.type === 'string' && n.props.children === key)[0];
+      expect({ key, n: label.props.numberOfLines, fit: label.props.adjustsFontSizeToFit, min: label.props.minimumFontScale, max: label.props.maxFontSizeMultiplier }).toEqual({ key, n: 1, fit: true, min: 0.7, max: 1.15 });
+    }
   });
 
   it('KB-871: 스캔 진입(P-353 — Write 없음) = Ask 한 줄이 primary 전체 너비', () => {
@@ -445,8 +454,8 @@ describe('P-228: Ask the owner 플로팅', () => {
     expect(byId(tree, 'bottom-write').length).toBeGreaterThanOrEqual(1);
     expect(flat(tree)).toContain('detail.askOwner');
     const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
-    // Codex #97 3R P2 → KB-851: 알약 줄 실높이 + 바닥 여백 + 16(마지막 리뷰 가림 방지)
-    expect(src).toContain('paddingBottom: showBottomBar ? (barH || 48) + pillBottom + 16 : 40');
+    // Codex #97 3R P2 → KB-851 → KB-903: 띠 실높이 + 16(마지막 리뷰 가림 방지) — 하단 바 화면 공통 규칙(useBottomBand)
+    expect(src).toContain('paddingBottom: showBottomBar ? band.scrollPad : 40');
     // 라벨 4곳 = FixedBottom 1 + caution 타일 풋터 + 미등록 본문 CTA + 재료 시트(P-306)
     expect(src.match(/detail\.askOwner/g)?.length).toBe(4);
   });
@@ -454,10 +463,10 @@ describe('P-228: Ask the owner 플로팅', () => {
   it('Codex #97 3R P2: 바 onLayout 실측 → 스크롤 하단 여백 파생(2줄 라벨 = inset 증가)', () => {
     const tree = render(<FoodDetailScreen />);
     const bar = byId(tree, 'detail-bottom-bar').find((n) => typeof n.props?.onLayout === 'function')!;
-    act(() => bar.props.onLayout({ nativeEvent: { layout: { height: 131 } } }));
-    const sv = tree.root.findAll((n) => Array.isArray(n.props?.contentContainerStyle))[0];
-    const pad = Object.assign({}, ...sv.props.contentContainerStyle.filter(Boolean)) as { paddingBottom?: number };
-    expect(pad.paddingBottom).toBe(159); // 알약 줄 131 + 바닥 12(안전 영역 0 → 최소 12) + 16
+    const pad = () => Object.assign({}, ...tree.root.findAll((n) => Array.isArray(n.props?.contentContainerStyle))[0].props.contentContainerStyle.filter(Boolean)) as { paddingBottom?: number };
+    expect(pad().paddingBottom).toBe(12 + 48 + 12 + 16); // 측정 전 = 위 12 + 알약 48 + 바닥 12(안전 영역 0 → 최소 12) + 16
+    act(() => bar.props.onLayout({ nativeEvent: { layout: { height: 155 } } }));
+    expect(pad().paddingBottom).toBe(171); // 띠 155(알약 두 줄 + 위 여백 + 안전 영역) + 16
   });
 
   it('게스트 = Ask 미노출(회피 프로필 없어 질문 조립 무의미) — Write primary 단독', () => {

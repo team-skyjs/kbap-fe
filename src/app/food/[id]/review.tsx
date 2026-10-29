@@ -325,14 +325,9 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   const touchY = useRef<number | null>(null);
   const scrollY = useRef(0);
   const kbHRef = useRef(0);
-  // KB-891: 하단 알약은 ScrollView 위에 떠 있다 — 알약 줄 실높이(큰 글씨면 커짐) + 바닥 여백만큼 콘텐츠 하단 여백(측정 전 폴백 48, 음식 상세 barH와 같음).
-  // 커서 추종의 가시 높이에서도 이만큼 뺀다(뷰포트가 알약 밑까지 이어지므로 — 키보드는 KAV가 이미 뺐다).
-  const [barH, setBarH] = useState(0);
+  // KB-891 → KB-903(T-071): 하단 알약 바는 ScrollView 아래 **흐름 안**(전엔 위에 떠서 첫 화면 "Where did you eat?" 칩이 바 뒤로 반쯤 들어갔다).
+  // 스크롤이 바 위에서 끝나므로 아래 여백·커서 추종에서 바 높이를 뺄 일이 없다(svH = 이미 바·키보드 제외 높이)
   const pillBottom = pillBottomOf(bottomInset);
-  const pillCover = useRef(48 + pillBottom);
-  useLayoutEffect(() => {
-    pillCover.current = (barH || 48) + pillBottom;
-  });
   // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
   useLayoutEffect(() => {
     kbHRef.current = kbH;
@@ -354,14 +349,14 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
     if (!bodyFocusedRef.current) return;
     // KB-700 → KB-768: 두 플랫폼 모두 KeyboardAvoidingView(padding)라 ScrollView 자체가 키보드 위로 줄어든다(svH = 이미 키보드 제외 높이) —
     // 키보드를 또 빼면 이중 차감(예전 Android 차감은 adjustResize 전제였고 edge-to-edge로 깨졌다).
-    const visible = svH.current - pillCover.current;
+    const visible = svH.current;
     if (visible <= 0 || !blockBottom.current) return;
     const target = blockBottom.current - visible + 16; // 커서 줄이 키보드 위 16pt
     if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
   };
   const ensureTappedLineVisible = () => {
     if (!bodyFocusedRef.current || touchY.current == null) return;
-    const visible = svH.current - pillCover.current; // KB-768: 위와 같은 이유로 두 플랫폼 동일
+    const visible = svH.current; // KB-768: 위와 같은 이유로 두 플랫폼 동일
     if (visible <= 0) return;
     const lineTop = blockTop.current + inputTopInBlock.current + touchY.current - 12;
     const lineBottom = lineTop + 32; // 탭한 줄(본문 줄 높이 + 여유)
@@ -459,12 +454,12 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
       {/* P-158 ①: 키보드 실측 패딩(contentContainer) + 블록 하단 프록시 스크롤 —
           커서 추종은 위 ensureCursorVisible 참조 (P-150② 인셋 방식은 폐기됨) */}
-      {/* KB-891: 알약을 띄우는 무대 — KAV(padding)가 줄이는 쪽은 이 View, 알약 absolute 기준도 여기(KAV 자체 padding과 섞이지 않게) */}
+      {/* KB-891: 무대 — KAV(padding)가 줄이는 쪽은 이 View. KB-903: 알약 바는 ScrollView 아래 형제(흐름 안) */}
       <View style={styles.stage}>
       <ScrollView
         ref={scrollRef}
         keyboardDismissMode="on-drag"
-        contentContainerStyle={[styles.body, { paddingBottom: (barH || 48) + pillBottom + 16 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: 16 }]}
         // KB-700: automaticallyAdjustKeyboardInsets 제거 — 바깥 KAV가 ScrollView를 키보드 위로 줄이므로 인셋까지 더하면 이중(P-348 ⑤의 "수동 패딩 공백"과 같은 문제)
         scrollEventThrottle={16}
         onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
@@ -668,14 +663,9 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
         )}
       </ScrollView>
 
-      {/* §2-8 → KB-891: 하단 "Post review" = 음식 상세와 같은 가로 전체 알약(흰 바·상단 선 없음, 항상 표시). P-173 가드 = useSubmitGuard +
+      {/* §2-8 → KB-891: 하단 "Post review" = 음식 상세와 같은 가로 전체 알약(흰 띠·상단 선 없음, 항상 표시 — KB-903 흐름 안). P-173 가드 = useSubmitGuard +
           Btn busy(공용 문법 — 메트릭 불변 스피너). 비활성 = off 색 그대로(알약은 틀·글자 크기만) */}
-      <View
-        style={[pillCta.pillRow, { bottom: pillBottom }]}
-        pointerEvents="box-none"
-        onLayout={(e) => setBarH(e.nativeEvent.layout.height)}
-        testID="review-bottom-bar"
-      >
+      <View style={[pillCta.bandStatic, { paddingBottom: pillBottom }]} testID="review-bottom-bar">
         {/* KB-828: 비활성 Btn은 터치를 받지 않아 바깥 래퍼가 받는다 → 토스트 없이 안내 강조. 스크린리더는 Btn(비활성 + 사유 힌트) */}
         <Pressable onPress={showMinLen ? () => setMinLenStressed(true) : undefined} accessible={false} testID="post-review-blocked">
           <Btn
