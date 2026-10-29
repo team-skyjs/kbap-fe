@@ -35,7 +35,7 @@ import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
-import { primaryTint, color as C, font, radius, shadow, type, type RiskState } from '@/lib/theme';
+import { primaryTint, color as C, font, radius, shadow, type } from '@/lib/theme';
 import {
   Btn,
   IconCheck,
