@@ -4,6 +4,7 @@
  *  - ① Run sample scan 부재(카메라·에러 화면)
  *  - ③ D3 하단 바 — 원형 버튼 4(리스트/위험도/원본/다시찍기)·활성 뷰 주황
  */
+import { ScanExitPrompts } from '@/features/scan/ScanExitPrompts';
 import * as React from 'react';
 import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
@@ -166,7 +167,6 @@ jest.mock('@/lib/data/useScan', () => ({
 }));
 
 import Scan from '../scan';
-import { ScanExitPrompts } from '@/features/scan/ScanExitPrompts';
 
 function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;

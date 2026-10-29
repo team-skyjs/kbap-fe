@@ -221,7 +221,7 @@ it('OS 권한 거부 = 토큰 등록·PATCH 0회, onDone은 호출', async () =>
 });
 
 it('KB-497 소스 잠금: 스캔 프라이머 = PushPrimerModal(시트 래퍼) — KB-908: 스캔을 닫은 뒤 루트 호스트(ScanExitPrompts)가 띄움', () => {
-  const host = require('fs').readFileSync('src/features/scan/ScanExitPrompts.tsx', 'utf8') as string;
+  const host = fs.readFileSync('src/features/scan/ScanExitPrompts.tsx', 'utf8');
   expect(host).toContain('<PushPrimerModal surface="scan"');
   expect(host).toContain('runAfterInteractions'); // KB-377: 스캔 모달이 다 내려간 뒤
   const primer = require('fs').readFileSync('src/features/push/PushPrimerModal.tsx', 'utf8') as string;

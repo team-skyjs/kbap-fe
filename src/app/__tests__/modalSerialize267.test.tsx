@@ -3,6 +3,8 @@
  * "찍었으니 사진이 보여야지"(신규 유저 멘탈 모델). KB-140의 리스트 기본은
  * 파파고 개편으로 근거 소멸. 리스트·원본은 하단 버튼 전환 — 전환 무회귀 잠금.
  */
+import { ScanExitPrompts } from '@/features/scan/ScanExitPrompts';
+import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
@@ -152,8 +154,6 @@ jest.mock('@/lib/push/pushAdapter', () => ({
 import Scan from '../scan';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { PushPrimerModal } from '@/features/push/PushPrimerModal';
-import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
-import { ScanExitPrompts } from '@/features/scan/ScanExitPrompts';
 
 // KB-908(T-010): 넛지·리뷰 유도 호스트는 루트에 — 스캔만 내려 "떠남"을 재현한다(같은 트리에서 호스트는 살아 있음)
 function App({ scan = true }: { scan?: boolean }) {

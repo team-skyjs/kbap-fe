@@ -1,3 +1,4 @@
+import { armScanExitPrompt, fireScanExitPrompt } from '@/features/scan/ScanExitPrompts';
 import { ScanModeTabs, type ScanMode } from '@/features/scan/ScanModeTabs';
 import { CameraSlot, PackagedScanFlow, type ScanCamOpts } from '@/features/scan/PackagedScanFlow';
 import { ScanLoading } from '@/features/scan/ScanLoading';
@@ -84,7 +85,6 @@ import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
-import { armScanExitPrompt, fireScanExitPrompt } from '@/features/scan/ScanExitPrompts';
 import { openAppSettings } from '@/lib/openExternal';
 
 type Photo = { uri: string; width: number; height: number } | null;

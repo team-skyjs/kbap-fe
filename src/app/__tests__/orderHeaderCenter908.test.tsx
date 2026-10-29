@@ -1,4 +1,5 @@
 /** KB-908(T-111): 스캔 주문 화면 헤더("Your order / N dishes")만 왼쪽 정렬이었다 — 다른 화면처럼 가운데(뒤로 버튼과 같은 폭의 빈 칸으로 좌우 대칭) */
+import ScanOrder from '../scan-order';
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { StyleSheet } from 'react-native';
@@ -15,7 +16,6 @@ jest.mock('@/components', () => ({ IconChevron: () => null, IconArrowLeft: () =>
 jest.mock('@/features/order/FlippedOrderCard', () => ({ FlippedOrderCard: () => null }));
 jest.mock('@/lib/analytics', () => ({ track: jest.fn(), EVENTS: {} }));
 
-import ScanOrder from '../scan-order';
 
 it('제목·부제 가운데 · 뒤로 버튼 반대편에 같은 폭 빈 칸', async () => {
   let tree!: ReactTestRenderer;
