@@ -17,7 +17,8 @@
  * unhandled rejection으로 흘렀고, 사용자는 눌러도 아무 일이 없었다.
  * → **`void Linking.*` 직접 호출 금지**(글롭 순회 잠금). 실패는 반드시 보이게 한다.
  */
-import { Linking } from 'react-native';
+import { Linking, Platform } from 'react-native';
+import Constants from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import { showTopToast } from '@/components/topToastStore';
 import i18n from '@/lib/i18n';
@@ -51,6 +52,25 @@ export async function openAppSettings(): Promise<boolean> {
     showTopToast(i18n.t('states.settingsFailed'), { error: true });
     return false;
   }
+}
+
+const ANDROID_PACKAGE = Constants.expoConfig?.android?.package ?? 'com.rocher.kbap';
+
+/**
+ * KB-904(T-080): 알림 설정 — Android는 **이 앱의 알림 페이지**로 직행(App info 맨 위가 아니라). 이 인텐트는 패키지를 extra로 받아
+ * RN `sendIntent`로 보낼 수 있다(API 35 에뮬 resolve 확인). 실패·iOS = 앱 설정(iOS 앱 설정 페이지에 알림 행이 있다).
+ * 앱 언어(APP_LOCALE_SETTINGS)는 `package:` **데이터 URI**가 필요해 sendIntent로 못 보낸다(같은 에뮬에서 resolve 실패) — 언어는 openAppSettings + 행 아래 안내.
+ */
+export async function openNotificationSettings(): Promise<boolean> {
+  if (Platform.OS === 'android') {
+    try {
+      await Linking.sendIntent('android.settings.APP_NOTIFICATION_SETTINGS', [{ key: 'android.provider.extra.APP_PACKAGE', value: ANDROID_PACKAGE }]);
+      return true;
+    } catch {
+      // 못 열면 앱 설정으로(여기서도 실패하면 openAppSettings가 토스트)
+    }
+  }
+  return openAppSettings();
 }
 
 /**

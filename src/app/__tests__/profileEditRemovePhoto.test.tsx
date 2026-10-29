@@ -108,8 +108,6 @@ const textNodes = (tree: ReactTestRenderer, key: string) =>
   tree.root.findAll((n) => n.props?.onPress !== undefined && n.findAllByType(Txt).some((t) => t.props.children === key));
 const labelPresent = (tree: ReactTestRenderer, key: string) =>
   tree.root.findAllByType(Txt).some((t) => t.props.children === key);
-const headerSave = (tree: ReactTestRenderer) =>
-  tree.root.findAll((n) => 'disabled' in (n.props ?? {}) && n.findAllByType(Txt).some((t) => t.props.children === 'common.save'))[0];
 const saveBtn = (tree: ReactTestRenderer) =>
   tree.root.findAllByType(Btn).find((b) => String(b.props.children).includes('editProfile.save'))!;
 const avatar = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID === 'avatar' && typeof n.props.onPress !== 'undefined')[0];
@@ -149,7 +147,7 @@ it('시트 remove 선택 = 드래프트(즉시 PATCH 0) → 저장 1회 합류 (
   const tree = render(<EditProfile />);
   await act(async () => { avatar(tree).props.onPress(); });
   expect(mockMutate).not.toHaveBeenCalled(); // 드래프트 — 저장 시 합류
-  act(() => headerSave(tree).props.onPress());
+  act(() => saveBtn(tree).props.onPress());
   expect(mockMutate).toHaveBeenCalledTimes(1);
   expect(mockMutate.mock.calls[0][0]).toMatchObject({ profileImageUrl: pm.PROFILE_IMAGE_CLEAR });
 });
@@ -162,14 +160,12 @@ it('시트 remove 노출 조건 — 사진 없음/기본 사진이면 remove 라
   expect(pm.choosePhotoSource.mock.calls[0][0].remove).toBeUndefined();
 });
 
-it('업로드 중 — 헤더 저장 disabled + 하단 CTA off, 완료 후 복원', async () => {
+it('업로드 중 — 하단 CTA off(KB-904: 헤더 저장 제거 — 저장 버튼 하나), 완료 후 복원', async () => {
   const upload = armUpload();
   const tree = render(<EditProfile />);
   await act(async () => { avatar(tree).props.onPress(); });
-  expect(headerSave(tree).props.disabled).toBe(true);
   expect(saveBtn(tree).props.variant).toBe('off');
   await act(async () => { upload.resolve('images/profile/new.jpg'); });
-  expect(headerSave(tree).props.disabled).toBe(false);
   expect(saveBtn(tree).props.variant).not.toBe('off');
 });
 
@@ -179,7 +175,7 @@ it('드래프트 → 저장 1회 PATCH 합류 · 저장 전(=뒤로가기 경로
   await act(async () => { avatar(tree).props.onPress(); });
   await act(async () => { upload.resolve('images/profile/new.jpg'); });
   expect(mockMutate).not.toHaveBeenCalled(); // 업로드 완료돼도 전송 없음 — 뒤로가기면 서버 무변
-  act(() => headerSave(tree).props.onPress());
+  act(() => saveBtn(tree).props.onPress());
   expect(mockMutate).toHaveBeenCalledTimes(1);
   expect(mockMutate.mock.calls[0][0]).toMatchObject({ profileImageUrl: 'images/profile/new.jpg' });
 });
@@ -190,9 +186,10 @@ it('업로드 실패 — 드래프트 미반영(저장에 사진 필드 생략) 
   await act(async () => { avatar(tree).props.onPress(); });
   await act(async () => { upload.reject(new Error('boom')); });
   expect(labelPresent(tree, 'editProfile.photoError')).toBe(true);
-  act(() => headerSave(tree).props.onPress());
-  expect(mockMutate).toHaveBeenCalledTimes(1);
-  expect('profileImageUrl' in mockMutate.mock.calls[0][0]).toBe(false); // 실패분 미전송
+  // KB-904(T-078): 실패한 사진 = 변경 아님 → 저장 비활성(다른 변경이 없으니 보낼 것도 없다)
+  expect(saveBtn(tree).props.variant).toBe('off');
+  expect(saveBtn(tree).props.onPress).toBeUndefined();
+  expect(mockMutate).not.toHaveBeenCalled(); // 실패분 미전송
 });
 
 /* ---- KB-776(QA B3-3): 미저장 뒤로 = 이탈 확인(식단·회피 편집과 같은 공용 훅) ---- */
@@ -220,7 +217,7 @@ it('KB-776: 저장 성공 = 막기를 풀고 다음 렌더에서 뒤로(성공�
   await act(async () => { avatar(tree).props.onPress(); });
   await act(async () => { upload.resolve('images/profile/new.jpg'); });
   expect(mockPrevent.on).toBe(true);
-  await act(async () => { headerSave(tree).props.onPress(); });
+  await act(async () => { saveBtn(tree).props.onPress(); });
   expect(mockMutate).toHaveBeenCalledTimes(1);
   expect(mockPrevent.on).toBe(false);
   expect(tree.root.findAll((n) => n.props?.testID === 'leave-confirm' && typeof n.type === 'string')).toHaveLength(0);

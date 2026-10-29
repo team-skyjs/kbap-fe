@@ -163,7 +163,7 @@ export default function Profile() {
             </View>
             <View style={styles.menuList}>
               {canOpenLangSettings && (
-                <MenuRow testID="profile-menu-language" label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openAppSettings()} />
+                <LanguageRow lang={lang} t={t} />
               )}
               {/* KB-497: 알림은 회원 전용 — 게스트 분기에 알림 설정 진입점 없음(라우트는 AuthGateSheet 이중 방어) */}
               {/* P-394(KB-586): 문의는 게스트도 가능(설치 ID 식별) — 로그인 게이트 없음 */}
@@ -212,7 +212,8 @@ export default function Profile() {
                       </Text>
                     </>
                   )}
-                  <Text style={styles.natText}>{lang.split('-')[0].toUpperCase()}</Text>
+                  {/* KB-904(T-082): "South Korea EN"의 EN이 무슨 뜻인지 몰랐다 — 언어 이름(엔도님)으로. 구분 = 간격(가운데 점 금지) */}
+                  <Text style={styles.natText} testID="nation-lang">{LANG_ENDONYM[lang] ?? lang}</Text>
                 </View>
               </View>
               {/* 정보수정 — 아웃라인 68×36 r8 border #DCDEE3, 13/500 */}
@@ -270,7 +271,7 @@ export default function Profile() {
                   wrap이 3열로 접혀 스페이서 계산이 틀어짐 — 행 단위 chunk + flex 셀
                   (P-326 저장 그리드 문법)로 교체: 열 수가 폭과 무관하게 항상 4. */}
               <View style={styles.dietGrid}>
-                {Array.from({ length: Math.ceil(Math.min(me.restrictions.length, 8) / 4) }).map((_, ri) => {
+                {Array.from({ length: Math.ceil(Math.min(me.restrictions.length, AVOID_TILE_MAX) / 4) }).map((_, ri) => {
                   const row = me.restrictions.slice(ri * 4, ri * 4 + 4);
                   return (
                     <View key={`diet-row-${ri}`} style={styles.dietRow}>
@@ -305,15 +306,18 @@ export default function Profile() {
               <View style={{ marginTop: -8 }}>{/* A-PF-09: 타일→Show all 8 */}
                 {/* P-351 ①(KB-513): 회피 0건 = 카운트 없는 라벨 + 꺾쇠. 1건 이상은
                     시안(A-PF-09) 그대로 — 꺾쇠 없음(시안 이탈 금지). */}
+                {/* KB-904(T-082): 타일이 다 보이면(8개 이하) "Show all N"은 더 보여 줄 게 없다 — 같은 자리를 편집 진입("Edit restrictions" ›)으로. 9개부터 Show all N */}
                 <Btn
                   variant="ghost"
                   onPress={() => router.push('/profile/restrictions' as Href)}
-                  iconEnd={me.restrictions.length === 0 ? <IconChevron size={16} color={C.ink3} /> : undefined}
+                  iconEnd={me.restrictions.length <= AVOID_TILE_MAX ? <IconChevron size={16} color={C.ink3} /> : undefined}
                   testID="avoid-show-all"
                 >
-                  {me.restrictions.length > 0
+                  {me.restrictions.length > AVOID_TILE_MAX
                     ? t('profile.showAll', { count: me.restrictions.length })
-                    : t('profile.showAllEmpty')}
+                    : me.restrictions.length > 0
+                      ? t('restrictionsEdit.title')
+                      : t('profile.showAllEmpty')}
                 </Btn>
               </View>
             </View>
@@ -321,11 +325,11 @@ export default function Profile() {
             {/* 메뉴 행 리스트(tab_box h58 pad 17/22) — 구분선 없음, 탭 하이라이트 surface2 */}
             <View style={[styles.menuList, { marginTop: -20 }]}>{/* A-PF-09: Show all→메뉴 0 */}
               {/* My Foods — 시안 §1-4 목록 부재·§5 화면 진입점(질문 누적, 기능 유지) */}
-              {/* P-300(KB-449, 9/7 예진): 값 없는 이동 행 전부 chevron — 값 행(Saved·My reviews·Language)은 무변 */}
+              {/* P-300(KB-449, 9/7 예진): 값 없는 이동 행 전부 chevron. KB-904(T-082): 값 행(Saved·My reviews·Language)도 이동이면 chevron — 숫자 행만 없어 눌리는지 몰랐다 */}
               <MenuRow testID="profile-menu-my-foods" label={t('profile.myFoods')} chevron onPress={() => router.push('/profile/my-foods' as Href)} />
-              <MenuRow testID="profile-menu-saved" label={t('profile.saved')} value={String(bookmarks?.length ?? 0)} onPress={() => router.push('/profile/saved' as Href)} />
+              <MenuRow testID="profile-menu-saved" label={t('profile.saved')} value={String(bookmarks?.length ?? 0)} chevron onPress={() => router.push('/profile/saved' as Href)} />
               {FLAGS.reviewsEnabled && (
-                <MenuRow testID="profile-menu-reviews" label={t('myReviews.title')} value={String(reviews?.length ?? 0)} onPress={() => router.push('/profile/reviews' as Href)} />
+                <MenuRow testID="profile-menu-reviews" label={t('myReviews.title')} value={String(reviews?.length ?? 0)} chevron onPress={() => router.push('/profile/reviews' as Href)} />
               )}
               {/* Codex #33 P2: 식이 카테고리 편집 = /profile/diet 유일 편집 경로(1.1 dietCategories) —
                   섹션 소멸로 진입 0이 되던 것 복원. 시안 §1-4 목록 부재 = 질문 누적(My Foods 행 계열) */}
@@ -333,7 +337,7 @@ export default function Profile() {
                 <MenuRow testID="profile-menu-diet" label={t('profile.dietTitle')} chevron onPress={() => router.push('/profile/diet' as Href)} />
               )}
               {canOpenLangSettings && (
-                <MenuRow testID="profile-menu-language" label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openAppSettings()} />
+                <LanguageRow lang={lang} t={t} />
               )}
               {/* P-192: 알림 설정 — 푸시 플래그 종속 그대로 */}
               {FLAGS.pushEnabled && (
@@ -386,6 +390,20 @@ export default function Profile() {
 }
 
 /** tab_box 행(h58 pad 17/22) — 라벨 15/500 #1C1E21 · 카운트 15/500 #9196A1 · 구분선 없음. */
+/** 회피 타일 최대(4열 2행) */
+const AVOID_TILE_MAX = 8;
+
+/** KB-904(T-025·T-082): 언어 행 = 이동 표시(›) + 안드 안내 — 안드는 앱 언어 페이지로 직행할 수 없어(package: 데이터 URI 필요, RN sendIntent 불가) App info가 열린다.
+ *  누르기 전에 보이게 행 아래 한 줄(토스트는 설정 앱이 덮어 안 보인다). iOS = 앱 설정 페이지(Language 행) */
+function LanguageRow({ lang, t }: { lang: string; t: (k: string) => string }) {
+  return (
+    <View>
+      <MenuRow testID="profile-menu-language" label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} chevron onPress={() => void openAppSettings()} />
+      {Platform.OS === 'android' && <Text style={styles.langHint} testID="profile-language-hint">{t('profile.languageHintAndroid')}</Text>}
+    </View>
+  );
+}
+
 function MenuRow({
   label,
   value,
@@ -463,5 +481,6 @@ const styles = StyleSheet.create({
   menuList: { gap: 0 },
   menuRow: { height: 58, flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 17, paddingHorizontal: 22 },
   menuLabel: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1C1E21' },
+  langHint: { fontSize: 12, color: C.ink3, lineHeight: 16, paddingHorizontal: 22, marginTop: -10, paddingBottom: 8 },
   menuValue: { fontSize: 15, fontWeight: '500', color: C.ink3 },
 });

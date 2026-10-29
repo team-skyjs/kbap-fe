@@ -105,11 +105,6 @@ export default function EditRestrictions() {
       <SubHeader
         title={t('restrictionsEdit.title')}
         onBack={() => router.back()}
-        trailing={
-          <Pressable testID="restrictions-save-header" onPress={save} disabled={saving} hitSlop={8} style={[styles.saveWrap, saving && { opacity: 0.35 }]}>
-            <Text style={styles.saveLink} numberOfLines={1}>{t('common.save')}</Text>
-          </Pressable>
-        }
       />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* KB-776(QA B3-4): 빨간 위험 마크(원 안 ✕)가 닫기 버튼처럼 보였다 — 안내는 DS 정보 아이콘. 문구 = "저장하면 반영"(Save 버튼과 일치) */}
@@ -128,7 +123,8 @@ export default function EditRestrictions() {
       </ScrollView>
 
       <View style={[styles.savebar, { paddingBottom: bottom + 10 }]} testID="restrictions-savebar">
-        <Btn icon={<IconCheck size={17} color="#fff" />} busy={saving} onPress={save} testID="restrictions-save">
+        {/* KB-904(T-079): 저장 버튼은 이것 하나(헤더 Save 제거 — 색도 프로필 편집과 달랐다) · 바뀐 게 없으면 비활성 */}
+        <Btn icon={<IconCheck size={17} color="#fff" />} variant={dirty ? 'primary' : 'off'} busy={saving} onPress={dirty ? save : undefined} testID="restrictions-save">
           {t('restrictionsEdit.save')}
         </Btn>
       </View>
@@ -142,8 +138,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 28, gap: 16 },
   // P-203: 카테고리 프리셋(러프)
-  saveWrap: { paddingHorizontal: 6, height: 38, justifyContent: 'center' },
-  saveLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
 
   notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
   noticeText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2, lineHeight: 19 },

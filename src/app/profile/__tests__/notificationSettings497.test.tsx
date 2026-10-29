@@ -68,6 +68,8 @@ jest.mock('@/lib/openExternal', () => ({
   openWebPage: (...a: unknown[]) => mockOpen(...a),
   // P-381(KB-541 후속): 설정 열기도 공용 헬퍼 경유 — 실패 시 토스트는 헬퍼 자체 스위트가 잠근다
   openAppSettings: (...a: unknown[]) => mockOpenSettings(...a),
+  // KB-904(T-080): 알림 배너 = 알림 설정 직행 헬퍼(안드 알림 페이지 · 실패·iOS = 앱 설정)
+  openNotificationSettings: (...a: unknown[]) => mockOpenSettings(...a),
 }));
 const mockAdapter = {
   getPermissionStatus: jest.fn().mockResolvedValue('granted'),

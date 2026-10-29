@@ -130,11 +130,14 @@ describe('④ Tag a food 시트 첫 렌더', () => {
 });
 
 describe('P-351(KB-513) 소형 2건', () => {
-  it('① 프로필 Show all — 0건 = showAllEmpty 라벨 + 꺾쇠, 1건 이상 = 카운트 라벨·꺾쇠 없음(시안 A-PF-09)', () => {
+  it('① 프로필 Show all — 0건 = showAllEmpty + 꺾쇠 · KB-904(T-082): 타일이 다 보이면(8 이하) "Edit restrictions" + 꺾쇠 · 9건부터 Show all N(꺾쇠 없음, 시안 A-PF-09)', () => {
     const pf = read('src/app/(tabs)/profile.tsx');
     expect(pf).toContain("? t('profile.showAll', { count: me.restrictions.length })");
+    expect(pf).toContain("? t('restrictionsEdit.title')");
     expect(pf).toContain(": t('profile.showAllEmpty')}");
-    expect(pf).toContain('iconEnd={me.restrictions.length === 0 ? <IconChevron size={16} color={C.ink3} /> : undefined}');
+    expect(pf).toContain('{me.restrictions.length > AVOID_TILE_MAX');
+    expect(pf).toContain('iconEnd={me.restrictions.length <= AVOID_TILE_MAX ? <IconChevron size={16} color={C.ink3} /> : undefined}');
+    expect(pf).toContain('const AVOID_TILE_MAX = 8;');
     for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
       expect(read(`src/lib/i18n/${loc}.json`)).toContain('"showAllEmpty"');
     }
@@ -181,7 +184,7 @@ describe('P-352(KB-514) 리뷰 작성 부제·건너뛰기', () => {
 it('P-368 ②(KB-531): dietGrid = 행 chunk + flex 셀 — 열 수가 폭과 무관하게 4(375pt 접힘 픽스)', () => {
   const pf = read('src/app/(tabs)/profile.tsx');
   expect(pf).toContain('testID="diet-grid-pad"');
-  expect(pf).toContain('Math.ceil(Math.min(me.restrictions.length, 8) / 4)');
+  expect(pf).toContain('Math.ceil(Math.min(me.restrictions.length, AVOID_TILE_MAX) / 4)');
   expect(pf).toContain('Array.from({ length: 4 - row.length })'); // 빈 자리 = 빈 flex 셀
   expect(pf).toMatch(/dietRow: \{ flexDirection: 'row', columnGap: 8 \}/);
   expect(pf).toContain("dietTile: { width: '100%', height: 86,");
