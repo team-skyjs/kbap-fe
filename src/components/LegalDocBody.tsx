@@ -9,10 +9,12 @@ import { Pressable } from '@/components/Pressable';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius } from '@/lib/theme';
-import { fetchLegalBlocks, type LegalBlock, type LegalDoc } from '@/lib/legalText';
+import { fetchLegalBlocks, localizeLegal, type LegalBlock, type LegalDoc } from '@/lib/legalText';
+import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 
 export function LegalDocBody({ doc }: { doc: LegalDoc }) {
   const { t } = useTranslation();
+  const appLang = useAppLanguage(); // KB-907: 구독형(렌더 중 i18n.language 직접 읽기는 컴파일러가 굳힌다 — KB-695)
   // KB-603 3R: 결과·실패 모두 **어느 문서의 것인지** 달아 저장 — 이전 문서의 늦은 응답이 다음 문서에 붙지 않는다. 표시는 현재 doc과 같을 때만.
   const [remote, setRemote] = React.useState<{ doc: LegalDoc; blocks: LegalBlock[] } | null>(null);
   const [errorDoc, setErrorDoc] = React.useState<LegalDoc | null>(null);
@@ -44,7 +46,7 @@ export function LegalDocBody({ doc }: { doc: LegalDoc }) {
       </View>
     );
   }
-  return <LegalBlocks blocks={remote.blocks} />;
+  return <LegalBlocks blocks={localizeLegal(remote.blocks, appLang)} />; // KB-907: 앱 언어 한 벌 + 이모지 0
 }
 
 function LegalBlocks({ blocks }: { blocks: LegalBlock[] }) {

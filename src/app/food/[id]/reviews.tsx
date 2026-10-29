@@ -21,6 +21,7 @@ import Animated from 'react-native-reanimated';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
+import { CountryOnlyHint } from '@/features/review/CountryOnlyHint';
 import { EVENTS, track } from '@/lib/analytics';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
@@ -219,6 +220,7 @@ function FoodReviewsScreen() {
                 <IconChevronDown size={16} color={C.ink2} />
               </Pressable>
             </View>
+            {!isGuest && nationality ? <CountryOnlyHint code={nationality} style={{ marginTop: 4 }} /> : null}
 
             {/* filtered to empty — KC-0329 B: 국적 필터 빈 상태는 전용 문구 */}
             {items.length === 0 ? (

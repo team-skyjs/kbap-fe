@@ -177,7 +177,7 @@
     "reasonOtherPlaceholder": "Ceritakan lebih lanjut",
     "reportSubmit": "Kirim laporan",
     "blockConfirmTitle": "Blokir {{name}}?",
-    "blockConfirmBody": "Kamu tidak akan melihat postingan dan komentarnya lagi. Bisa dibuka blokirnya kapan saja di Pengaturan.",
+    "blockConfirmBody": "Kamu tidak akan melihat ulasannya lagi. Bisa dibuka blokirnya kapan saja di Profil, bagian Pengguna diblokir.",
     "blockConfirmCta": "Blokir",
     "blocking": "Memblokir…",
     "viewDetails": "Lihat detail",
@@ -203,7 +203,7 @@
     "searchFoodsHint": "Cari di katalog makanan untuk menandai.",
     "added": "Ditambahkan",
     "blockedTitle": "Pengguna diblokir",
-    "blockedNote": "Postingan dan komentar pengguna yang diblokir tidak akan terlihat. Mereka tetap bisa melihat milikmu.",
+    "blockedNote": "Ulasan dari pengguna yang diblokir tidak akan terlihat. Mereka tetap bisa melihat ulasanmu.",
     "blockedEmptyTitle": "Tidak ada yang diblokir",
     "blockedEmptyBody": "Pengguna yang kamu blokir akan tampil di sini.",
     "unblock": "Buka blokir",
@@ -278,8 +278,6 @@
     "checkedAgainst": "Dicek dengan profil Anda",
     "mayContain": "Mungkin mengandung",
     "notInDb": "Belum ada di data kami — tanyakan staf.",
-    "viewOrder_one": "{{count}} item, Lihat pesanan",
-    "viewOrder_other": "{{count}} item, Lihat pesanan",
     "legendHint": "Ketuk hidangan untuk bahan, cubit untuk zoom",
     "listFootNote": "Info hidangan berdasarkan foto — pastikan ke staf jika ragu.",
     "cameraTitle": "Pindai menu",
@@ -289,7 +287,6 @@
     "launcherHint": "Foto menunya — kami cocokkan setiap hidangan dengan profil Anda.",
     "retakeTitle": "Pindai ulang?",
     "retakeBody": "Hasil saat ini akan dihapus.",
-    "retakeBodyWithCart": "Hasil dan {{count}} item yang ditambahkan akan dihapus.",
     "retakeConfirm": "Pindai ulang",
     "leaveTitle": "Keluar dari hasil pindai?",
     "leaveConfirm": "Keluar",
@@ -333,7 +330,12 @@
     "closestMatchSheetBody": "Di menu tertulis “{{scanned}}”. Kami menampilkan {{food}} ({{foodKo}}), yang paling mirip di katalog kami, jadi bahan dan tingkat risiko Anda mengacu pada {{food}}.",
     "closestMatchSeeDetails": "Lihat detail {{food}}",
     "searchOnGoogle": "Cari di Google",
-    "resultsEmpty": "Tidak ada hasil pemindaian"
+    "resultsEmpty": "Tidak ada hasil pemindaian",
+    "viewOrderAction": "Lihat pesanan",
+    "orderCount_one": "{{count}} item",
+    "orderCount_other": "{{count}} item",
+    "retakeBodyWithCart_one": "Hasil dan {{count}} item yang ditambahkan akan dihapus.",
+    "retakeBodyWithCart_other": "Hasil dan {{count}} item yang ditambahkan akan dihapus."
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",
@@ -432,7 +434,6 @@
     "placeRecent": "Terbaru",
     "placeNoResults": "Tidak ada tempat yang cocok.",
     "placeSkip": "Lewati",
-    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "Tidak bisa menghapus ulasan. Periksa koneksi dan coba lagi.",
     "photoCapNote": "Maksimal {{max}} foto — kelebihan dilewati",
     "placeNearby": "Terdekat",
@@ -516,12 +517,12 @@
     "ratingAll": "Semua rating",
     "ratingMin": "{{min}}+ bintang",
     "countryOnly": "Hanya {{code}}",
-    "allReviews": "Semua ulasan"
+    "allReviews": "Semua ulasan",
+    "countryOnlyHint": "Aktifkan untuk melihat ulasan dari orang asal {{country}} saja."
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",
-    "headerTitleKo": "내 랭킹",
-    "vipEyebrow": "KEANGGOTAAN VIP",
+    "vipEyebrow": "PERINGKATMU",
     "levelLabel": "LEVEL {{level}}",
     "totalPoints": "{{score}} total poin",
     "totalPointsSuffix": "total poin",
@@ -529,30 +530,24 @@
     "flavorPost": "hidangan Korea berbeda sejauh ini.",
     "ptsTo_one": "{{count}} poin menuju {{tier}}",
     "ptsTo_other": "{{count}} poin menuju {{tier}}",
-    "ptsToKo": "{{tier}}까지",
     "totalChip": "{{score}} poin",
     "tickPts": "{{at}} poin",
     "topTier": "Tingkat teratas tercapai",
     "topTierSub": "Anda Korea Sejati — peringkat tertinggi. Terus mengulas untuk mempertahankan takhta Anda.",
     "breakdownTitle": "Rincian skor",
-    "breakdownSub": "점수 내역",
     "reviewsLabel": "Ulasan",
-    "reviewsLabelKo": "리뷰",
     "reviewsDetail_one": "{{count}} ulasan × 10 poin",
     "reviewsDetail_other": "{{count}} ulasan × 10 poin",
     "diversityLabel": "Variasi makanan",
-    "diversityLabelKo": "음식 다양성",
     "diversityDetail_one": "{{count}} hidangan unik × 5 poin",
     "diversityDetail_other": "{{count}} hidangan unik × 5 poin",
     "scansLabel": "Pindai",
-    "scansLabelKo": "스캔",
     "scansDetail_one": "{{count}} pindai menu × 2 poin",
     "scansDetail_other": "{{count}} pindai menu × 2 poin",
     "gain": "+{{points}}",
     "oneMore": "Satu ulasan lagi",
     "oneMorePlus": "+10 poin",
     "ladderTitle": "Semua peringkat",
-    "ladderSub": "전체 등급",
     "now": "SEKARANG",
     "done": "Selesai",
     "entryPts": "{{at}}+ poin",
@@ -569,15 +564,6 @@
       "gourmet": "Penikmat Kuliner",
       "kfood_master": "Master K-Food",
       "korean_at_heart": "Korea Sejati"
-    },
-    "tierKo": {
-      "newcomer": "입문자",
-      "taster": "맛보기",
-      "explorer": "탐험가",
-      "regular": "단골",
-      "gourmet": "미식가",
-      "kfood_master": "한식 고수",
-      "korean_at_heart": "뼛속까지 한국인"
     },
     "reviewsComing": "Hadir di pembaruan berikutnya"
   },
@@ -632,7 +618,8 @@
       "sub": "Mungkin kamu akan melihat wajah yang familier.",
       "cta": "Tonton untuk tahu",
       "a11y": "Buka video idol K-pop yang mencicipi hidangan ini"
-    }
+    },
+    "verdictMayContain": "Mungkin mengandung {{list}} — ada di daftar hindaran Anda"
   },
   "states": {
     "catalogTitle": "Status",
@@ -643,7 +630,7 @@
     "errorTitle": "Terjadi kesalahan",
     "errorBody": "Kami tidak bisa memuat ini sekarang. Ini dari sisi kami, bukan Anda.",
     "offlineTitle": "Anda sedang luring",
-    "offlineBody": "Sambungkan ke internet untuk memindai menu dan memuat ulasan. Pindaian tersimpan Anda masih ada di sini.",
+    "offlineBody": "Sambungkan ke internet untuk memindai menu dan memuat ulasan.",
     "linkFailed": "Tidak bisa membuka tautan",
     "settingsFailed": "Tidak bisa membuka Pengaturan"
   },
@@ -980,7 +967,7 @@
     "newestFirst": "Terbaru dulu",
     "swipeHint": "Geser kartu ke kiri untuk menghapus",
     "emptyTitle": "Belum ada yang disimpan",
-    "emptyBody": "Ketuk ikon penanda pada hidangan mana pun untuk menyimpannya di sini — daftar pendekmu untuk makan enak dan aman.",
+    "emptyBody": "Ketuk ikon bintang pada hidangan mana pun untuk menyimpannya di sini — daftar pendekmu untuk makan enak dan aman.",
     "emptyCta": "Jelajahi makanan",
     "removed": "Dihapus dari Tersimpan",
     "undo": "Urungkan",
@@ -1382,7 +1369,8 @@
     "resultMajorSet": "{{contains}}. Atur bahan yang dihindari untuk hasil pribadi.",
     "freeFor_one": "Pindai produk kemasan gratis {{count}} menit lagi",
     "freeFor_other": "Pindai produk kemasan gratis {{count}} menit lagi",
-    "freeStarted": "Pindai produk kemasan berikutnya gratis selama 1 jam."
+    "freeStarted": "Pindai produk kemasan berikutnya gratis selama 1 jam.",
+    "freeExplain": "Selama waktu ini, kamu bisa memindai produk kemasan sepuasnya. Pindai menu tidak termasuk."
   },
   "scanCamera": {
     "title": "Pindai",

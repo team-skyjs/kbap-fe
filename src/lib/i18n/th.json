@@ -177,7 +177,7 @@
     "reasonOtherPlaceholder": "บอกเราเพิ่มเติม",
     "reportSubmit": "ส่งรายงาน",
     "blockConfirmTitle": "บล็อก {{name}}?",
-    "blockConfirmBody": "คุณจะไม่เห็นโพสต์และความคิดเห็นของเขาอีก ปลดบล็อกได้ทุกเมื่อในตั้งค่า",
+    "blockConfirmBody": "คุณจะไม่เห็นรีวิวของเขาอีก ปลดบล็อกได้ทุกเมื่อที่โปรไฟล์ในหัวข้อผู้ใช้ที่บล็อก",
     "blockConfirmCta": "บล็อก",
     "blocking": "กำลังบล็อก…",
     "viewDetails": "ดูรายละเอียด",
@@ -203,7 +203,7 @@
     "searchFoodsHint": "ค้นหาในแคตตาล็อกอาหารเพื่อแท็ก",
     "added": "เพิ่มแล้ว",
     "blockedTitle": "ผู้ใช้ที่บล็อก",
-    "blockedNote": "จะไม่เห็นโพสต์และความคิดเห็นของผู้ใช้ที่บล็อก แต่เขายังเห็นของคุณ",
+    "blockedNote": "จะไม่เห็นรีวิวของผู้ใช้ที่บล็อก แต่เขายังเห็นรีวิวของคุณ",
     "blockedEmptyTitle": "ยังไม่ได้บล็อกใคร",
     "blockedEmptyBody": "คนที่คุณบล็อกจะแสดงที่นี่",
     "unblock": "ปลดบล็อก",
@@ -278,8 +278,6 @@
     "checkedAgainst": "ตรวจกับโปรไฟล์ของคุณแล้ว",
     "mayContain": "อาจมี",
     "notInDb": "ยังไม่มีในฐานข้อมูล — ถามพนักงานให้แน่ใจ",
-    "viewOrder_one": "{{count}} รายการ ดูออเดอร์",
-    "viewOrder_other": "{{count}} รายการ ดูออเดอร์",
     "legendHint": "แตะเมนูดูวัตถุดิบ บีบเพื่อซูม",
     "listFootNote": "ข้อมูลเมนูอิงจากรูป — ไม่แน่ใจให้ถามพนักงาน",
     "cameraTitle": "สแกนเมนู",
@@ -289,7 +287,6 @@
     "launcherHint": "ถ่ายเมนู แล้วเราจะตรวจทุกจานกับโปรไฟล์ของคุณ",
     "retakeTitle": "สแกนใหม่ไหม?",
     "retakeBody": "ผลปัจจุบันจะถูกลบ",
-    "retakeBodyWithCart": "ผลและ {{count}} รายการที่เพิ่มจะถูกลบ",
     "retakeConfirm": "สแกนใหม่",
     "leaveTitle": "ออกจากผลการสแกนไหม?",
     "leaveConfirm": "ออก",
@@ -333,7 +330,12 @@
     "closestMatchSheetBody": "ในเมนูเขียนว่า “{{scanned}}” เรากำลังแสดง {{food}} ({{foodKo}}) ซึ่งเป็นเมนูที่ใกล้เคียงที่สุดในแคตตาล็อกของเรา ดังนั้นส่วนผสมและระดับความเสี่ยงของคุณจึงอิงจาก {{food}}",
     "closestMatchSeeDetails": "ดูรายละเอียด {{food}}",
     "searchOnGoogle": "ค้นหาใน Google",
-    "resultsEmpty": "ไม่มีผลการสแกน"
+    "resultsEmpty": "ไม่มีผลการสแกน",
+    "viewOrderAction": "ดูออเดอร์",
+    "orderCount_one": "{{count}} รายการ",
+    "orderCount_other": "{{count}} รายการ",
+    "retakeBodyWithCart_one": "ผลและ {{count}} รายการที่เพิ่มจะถูกลบ",
+    "retakeBodyWithCart_other": "ผลและ {{count}} รายการที่เพิ่มจะถูกลบ"
   },
   "owner": {
     "caption": "แสดงหน้าจอนี้ให้พนักงานร้านอาหารดู",
@@ -432,7 +434,6 @@
     "placeRecent": "ล่าสุด",
     "placeNoResults": "ไม่มีสถานที่ที่ตรงกัน",
     "placeSkip": "ข้าม",
-    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "ลบรีวิวไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองใหม่",
     "photoCapNote": "รูปได้สูงสุด {{max}} รูป — ส่วนเกินถูกข้าม",
     "placeNearby": "ใกล้เคียง",
@@ -516,12 +517,12 @@
     "ratingAll": "ทุกคะแนน",
     "ratingMin": "{{min}} ดาวขึ้นไป",
     "countryOnly": "เฉพาะ {{code}}",
-    "allReviews": "รีวิวทั้งหมด"
+    "allReviews": "รีวิวทั้งหมด",
+    "countryOnlyHint": "เปิดเพื่อดูเฉพาะรีวิวจากคนที่มาจาก {{country}}"
   },
   "ranking": {
     "headerTitle": "อันดับของฉัน",
-    "headerTitleKo": "내 랭킹",
-    "vipEyebrow": "สมาชิก VIP",
+    "vipEyebrow": "อันดับของคุณ",
     "levelLabel": "เลเวล {{level}}",
     "totalPoints": "รวม {{score}} คะแนน",
     "totalPointsSuffix": "คะแนนรวม",
@@ -529,30 +530,24 @@
     "flavorPost": "เมนูเกาหลีที่แตกต่างกันมาจนถึงตอนนี้",
     "ptsTo_one": "อีก {{count}} คะแนนถึง {{tier}}",
     "ptsTo_other": "อีก {{count}} คะแนนถึง {{tier}}",
-    "ptsToKo": "{{tier}}까지",
     "totalChip": "{{score}} คะแนน",
     "tickPts": "{{at}} คะแนน",
     "topTier": "ถึงระดับสูงสุดแล้ว",
     "topTierSub": "คุณคือ Korean at Heart — อันดับสูงสุด รีวิวต่อไปเพื่อรักษาบัลลังก์ของคุณ",
     "breakdownTitle": "รายละเอียดคะแนน",
-    "breakdownSub": "점수 내역",
     "reviewsLabel": "รีวิว",
-    "reviewsLabelKo": "리뷰",
     "reviewsDetail_one": "{{count}} รีวิว × 10 คะแนน",
     "reviewsDetail_other": "{{count}} รีวิว × 10 คะแนน",
     "diversityLabel": "ความหลากหลายของอาหาร",
-    "diversityLabelKo": "음식 다양성",
     "diversityDetail_one": "{{count}} เมนูที่ไม่ซ้ำ × 5 คะแนน",
     "diversityDetail_other": "{{count}} เมนูที่ไม่ซ้ำ × 5 คะแนน",
     "scansLabel": "การสแกน",
-    "scansLabelKo": "스캔",
     "scansDetail_one": "สแกนเมนู {{count}} ครั้ง × 2 คะแนน",
     "scansDetail_other": "สแกนเมนู {{count}} ครั้ง × 2 คะแนน",
     "gain": "+{{points}}",
     "oneMore": "อีกหนึ่งรีวิว",
     "oneMorePlus": "+10 คะแนน",
     "ladderTitle": "ทุกอันดับ",
-    "ladderSub": "전체 등급",
     "now": "ตอนนี้",
     "done": "เสร็จแล้ว",
     "entryPts": "{{at}}+ คะแนน",
@@ -569,15 +564,6 @@
       "gourmet": "นักกิน",
       "kfood_master": "เซียนอาหารเกาหลี",
       "korean_at_heart": "เกาหลีเต็มหัวใจ"
-    },
-    "tierKo": {
-      "newcomer": "입문자",
-      "taster": "맛보기",
-      "explorer": "탐험가",
-      "regular": "단골",
-      "gourmet": "미식가",
-      "kfood_master": "한식 고수",
-      "korean_at_heart": "뼛속까지 한국인"
     },
     "reviewsComing": "จะมาในอัปเดตถัดไป"
   },
@@ -632,7 +618,8 @@
       "sub": "คุณอาจได้เห็นหน้าที่คุ้นเคย",
       "cta": "ดูวิดีโอเพื่อหาคำตอบ",
       "a11y": "เปิดวิดีโอไอดอล K-pop ที่กินเมนูนี้"
-    }
+    },
+    "verdictMayContain": "อาจมี{{list}} — อยู่ในรายการที่คุณเลี่ยง"
   },
   "states": {
     "catalogTitle": "สถานะ",
@@ -643,7 +630,7 @@
     "errorTitle": "เกิดข้อผิดพลาดบางอย่าง",
     "errorBody": "เราโหลดข้อมูลนี้ตอนนี้ไม่ได้ เป็นที่ฝั่งเรา ไม่ใช่ที่คุณ",
     "offlineTitle": "คุณกำลังออฟไลน์",
-    "offlineBody": "เชื่อมต่ออินเทอร์เน็ตเพื่อสแกนเมนูและโหลดรีวิว สแกนที่บันทึกไว้ยังอยู่ที่นี่",
+    "offlineBody": "เชื่อมต่ออินเทอร์เน็ตเพื่อสแกนเมนูและโหลดรีวิว",
     "linkFailed": "เปิดลิงก์ไม่ได้",
     "settingsFailed": "เปิดการตั้งค่าไม่ได้"
   },
@@ -980,7 +967,7 @@
     "newestFirst": "ใหม่ล่าสุดก่อน",
     "swipeHint": "ปัดการ์ดไปทางซ้ายเพื่อลบ",
     "emptyTitle": "ยังไม่มีเมนูที่บันทึกไว้",
-    "emptyBody": "แตะบุ๊กมาร์กที่เมนูใดก็ได้เพื่อเก็บไว้ที่นี่ — ลิสต์ของคุณสำหรับกินอร่อยอย่างปลอดภัย",
+    "emptyBody": "แตะดาวที่เมนูใดก็ได้เพื่อเก็บไว้ที่นี่ — ลิสต์ของคุณสำหรับกินอร่อยอย่างปลอดภัย",
     "emptyCta": "ดูเมนูอาหาร",
     "removed": "ลบออกจากบันทึกไว้แล้ว",
     "undo": "เลิกทำ",
@@ -1382,7 +1369,8 @@
     "resultMajorSet": "{{contains}} ตั้งค่าส่วนผสมที่หลีกเลี่ยงเพื่อดูผลของคุณ",
     "freeFor_one": "สแกนอาหารบรรจุภัณฑ์ฟรี อีก {{count}} นาที",
     "freeFor_other": "สแกนอาหารบรรจุภัณฑ์ฟรี อีก {{count}} นาที",
-    "freeStarted": "สแกนอาหารบรรจุภัณฑ์ครั้งต่อไปฟรี 1 ชั่วโมง"
+    "freeStarted": "สแกนอาหารบรรจุภัณฑ์ครั้งต่อไปฟรี 1 ชั่วโมง",
+    "freeExplain": "ช่วงนี้สแกนอาหารบรรจุภัณฑ์ได้ไม่จำกัด ไม่รวมการสแกนเมนู"
   },
   "scanCamera": {
     "title": "สแกน",

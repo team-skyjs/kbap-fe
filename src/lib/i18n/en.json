@@ -173,7 +173,7 @@
     "reasonOtherPlaceholder": "Tell us more",
     "reportSubmit": "Submit report",
     "blockConfirmTitle": "Block {{name}}?",
-    "blockConfirmBody": "You won’t see their posts or comments anymore. You can unblock them anytime in Settings.",
+    "blockConfirmBody": "You won’t see their reviews anymore. You can unblock them anytime in Profile, under Blocked users.",
     "blockConfirmCta": "Block",
     "blocking": "Blocking…",
     "viewDetails": "View details",
@@ -199,7 +199,7 @@
     "searchFoodsHint": "Search our food catalog to tag a dish.",
     "added": "Added",
     "blockedTitle": "Blocked users",
-    "blockedNote": "You won’t see posts or comments from blocked users. They can still see yours.",
+    "blockedNote": "You won’t see reviews from blocked users. They can still see yours.",
     "blockedEmptyTitle": "No blocked users",
     "blockedEmptyBody": "People you block will show up here.",
     "unblock": "Unblock",
@@ -274,8 +274,6 @@
     "checkedAgainst": "Checked against your profile",
     "mayContain": "May contain",
     "notInDb": "Not in our catalog yet. Ask the staff to be sure.",
-    "viewOrder_one": "{{count}} item, View order",
-    "viewOrder_other": "{{count}} items, View order",
     "legendHint": "Tap a dish for ingredients, pinch to zoom",
     "listFootNote": "Dish info is our best match from the photo. Confirm with staff if unsure.",
     "cameraTitle": "Scan menu",
@@ -285,7 +283,6 @@
     "launcherHint": "Snap the menu. We'll check each dish against your profile.",
     "retakeTitle": "Scan again?",
     "retakeBody": "Your current results will be discarded.",
-    "retakeBodyWithCart": "Your results and {{count}} added item(s) will be discarded.",
     "retakeConfirm": "Rescan",
     "leaveTitle": "Leave scan results?",
     "leaveConfirm": "Leave",
@@ -329,7 +326,12 @@
     "closestMatchSheetBody": "The menu lists “{{scanned}}”. We’re showing {{food}} ({{foodKo}}), the closest match in our catalog, so the ingredients and your risk level are based on {{food}}.",
     "closestMatchSeeDetails": "See {{food}} details",
     "searchOnGoogle": "Search on Google",
-    "resultsEmpty": "No scan results"
+    "resultsEmpty": "No scan results",
+    "viewOrderAction": "View order",
+    "orderCount_one": "{{count}} item",
+    "orderCount_other": "{{count}} items",
+    "retakeBodyWithCart_one": "Your results and {{count}} added item will be discarded.",
+    "retakeBodyWithCart_other": "Your results and {{count}} added items will be discarded."
   },
   "owner": {
     "caption": "Show this screen to the restaurant staff",
@@ -473,7 +475,6 @@
     "placeRecent": "Recent",
     "placeNoResults": "No places match.",
     "placeSkip": "Skip this",
-    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "Couldn't delete the review. Check your connection and try again.",
     "photoCapNote": "Up to {{max}} photos. Extras were skipped.",
     "placeNearby": "Nearby",
@@ -557,12 +558,12 @@
     "ratingAll": "All ratings",
     "ratingMin": "{{min}}+ stars",
     "countryOnly": "{{code}} only",
-    "allReviews": "All reviews"
+    "allReviews": "All reviews",
+    "countryOnlyHint": "Turn on to see reviews only from people from {{country}}."
   },
   "ranking": {
     "headerTitle": "My Ranking",
-    "headerTitleKo": "내 랭킹",
-    "vipEyebrow": "VIP MEMBERSHIP",
+    "vipEyebrow": "YOUR RANK",
     "levelLabel": "LEVEL {{level}}",
     "totalPoints": "{{score}} total points",
     "totalPointsSuffix": "total points",
@@ -570,30 +571,24 @@
     "flavorPost": "different Korean dishes so far.",
     "ptsTo_one": "{{count}} pt to {{tier}}",
     "ptsTo_other": "{{count}} pts to {{tier}}",
-    "ptsToKo": "{{tier}}까지",
     "totalChip": "{{score}} pts",
     "tickPts": "{{at}} pts",
     "topTier": "Top tier reached",
     "topTierSub": "You've reached Korean at Heart, the highest rank. Keep reviewing to stay there.",
     "breakdownTitle": "Score breakdown",
-    "breakdownSub": "점수 내역",
     "reviewsLabel": "Reviews",
-    "reviewsLabelKo": "리뷰",
     "reviewsDetail_one": "{{count}} review × 10 pts",
     "reviewsDetail_other": "{{count}} reviews × 10 pts",
     "diversityLabel": "Food variety",
-    "diversityLabelKo": "음식 다양성",
     "diversityDetail_one": "{{count}} unique dish × 5 pts",
     "diversityDetail_other": "{{count}} unique dishes × 5 pts",
     "scansLabel": "Scans",
-    "scansLabelKo": "스캔",
     "scansDetail_one": "{{count}} menu scan × 2 pts",
     "scansDetail_other": "{{count}} menu scans × 2 pts",
     "gain": "+{{points}}",
     "oneMore": "One more review",
     "oneMorePlus": "+10 pts",
     "ladderTitle": "All ranks",
-    "ladderSub": "전체 등급",
     "now": "NOW",
     "done": "Done",
     "entryPts": "{{at}}+ pts",
@@ -610,15 +605,6 @@
       "gourmet": "Gourmet",
       "kfood_master": "K-Food Master",
       "korean_at_heart": "Korean at Heart"
-    },
-    "tierKo": {
-      "newcomer": "입문자",
-      "taster": "맛보기",
-      "explorer": "탐험가",
-      "regular": "단골",
-      "gourmet": "미식가",
-      "kfood_master": "한식 고수",
-      "korean_at_heart": "뼛속까지 한국인"
     },
     "reviewsComing": "Coming in the next update"
   },
@@ -790,7 +776,8 @@
       "sub": "You might spot a familiar face.",
       "cta": "Watch to find out",
       "a11y": "Open a video of a K-pop idol trying this dish"
-    }
+    },
+    "verdictMayContain": "May contain {{list}} from your avoid list"
   },
   "states": {
     "catalogTitle": "States",
@@ -801,7 +788,7 @@
     "errorTitle": "Something went wrong",
     "errorBody": "We couldn't load this. The problem is on our end.",
     "offlineTitle": "You're offline",
-    "offlineBody": "Connect to the internet to scan menus and load reviews. Your saved scans are still here.",
+    "offlineBody": "Connect to the internet to scan menus and load reviews.",
     "linkFailed": "Couldn't open the link",
     "settingsFailed": "Couldn't open Settings"
   },
@@ -976,7 +963,7 @@
     "newestFirst": "Newest first",
     "swipeHint": "Swipe a card left to remove it",
     "emptyTitle": "Nothing saved yet",
-    "emptyBody": "Tap the bookmark on any dish to keep it here.",
+    "emptyBody": "Tap the star on any dish to keep it here.",
     "emptyCta": "Browse food",
     "removed": "Removed from Saved",
     "undo": "Undo",
@@ -1378,7 +1365,8 @@
     "resultMajorSet": "{{contains}}. Set your avoid ingredients to see a personal result.",
     "freeFor_one": "Free packaged scans for {{count}} min",
     "freeFor_other": "Free packaged scans for {{count}} min",
-    "freeStarted": "Your next packaged scans are free for 1 hour."
+    "freeStarted": "Your next packaged scans are free for 1 hour.",
+    "freeExplain": "Scan as many packaged products as you like during this time. Menu scans aren't included."
   },
   "scanCamera": {
     "title": "Scan",

@@ -46,7 +46,7 @@ describe('i18n 보간 — 자리표시자는 전부 값을 받는다', () => {
     expect(missing(['packagedScan.labelMaxReached'], 'vars')).toEqual([]);
   });
   it('템플릿 키 계열(검사 밖) = 자리표시자 없음', () => {
-    for (const fam of ['risk', 'scan.stage', 'packagedScan.err', 'scanMode', 'ranking.tier', 'ranking.tierKo', 'community.map', 'community.reason', 'ingCat', 'translation.lang']) {
+    for (const fam of ['risk', 'scan.stage', 'packagedScan.err', 'scanMode', 'ranking.tier', 'community.map', 'community.reason', 'ingCat', 'translation.lang']) {
       const o = get(fam) as Record<string, unknown>;
       expect({ fam, has: JSON.stringify(o).includes('{{') }).toEqual({ fam, has: false });
     }

@@ -177,7 +177,7 @@
     "reasonOtherPlaceholder": "詳しく教えてください",
     "reportSubmit": "報告を送信",
     "blockConfirmTitle": "{{name}}さんをブロックしますか？",
-    "blockConfirmBody": "相手の投稿とコメントが表示されなくなります。設定からいつでも解除できます。",
+    "blockConfirmBody": "相手のレビューが表示されなくなります。プロフィールの「ブロックしたユーザー」からいつでも解除できます。",
     "blockConfirmCta": "ブロック",
     "blocking": "ブロック中…",
     "viewDetails": "詳細を見る",
@@ -203,7 +203,7 @@
     "searchFoodsHint": "カタログから料理を検索してタグ付けできます。",
     "added": "追加済み",
     "blockedTitle": "ブロックしたユーザー",
-    "blockedNote": "ブロックしたユーザーの投稿とコメントは表示されません。相手はあなたの投稿を見られます。",
+    "blockedNote": "ブロックしたユーザーのレビューは表示されません。相手はあなたのレビューを見られます。",
     "blockedEmptyTitle": "ブロック中のユーザーはいません",
     "blockedEmptyBody": "ブロックした相手がここに表示されます。",
     "unblock": "解除",
@@ -278,8 +278,6 @@
     "checkedAgainst": "あなたのプロフィール基準で確認済み",
     "mayContain": "含む可能性",
     "notInDb": "まだデータにないメニューです。店員にご確認ください。",
-    "viewOrder_one": "{{count}}品、注文を見る",
-    "viewOrder_other": "{{count}}品、注文を見る",
     "legendHint": "タップで食材を確認、ピンチでズーム",
     "listFootNote": "写真から最も近い情報を表示しています — 不確かな場合は店員にご確認を。",
     "cameraTitle": "メニューをスキャン",
@@ -289,7 +287,6 @@
     "launcherHint": "メニューを撮ると、全品をあなたのプロフィールと照合します。",
     "retakeTitle": "もう一度スキャンしますか?",
     "retakeBody": "今の結果は破棄されます。",
-    "retakeBodyWithCart": "今の結果と追加した{{count}}件が破棄されます。",
     "retakeConfirm": "再スキャン",
     "leaveTitle": "スキャン結果を閉じますか?",
     "leaveConfirm": "閉じる",
@@ -333,7 +330,12 @@
     "closestMatchSheetBody": "メニューには「{{scanned}}」と書かれています。最も近い料理の{{food}}（{{foodKo}}）を表示しているため、材料とリスク表示は{{food}}を基準にしています。",
     "closestMatchSeeDetails": "{{food}}の詳細を見る",
     "searchOnGoogle": "Googleで検索",
-    "resultsEmpty": "スキャン結果がありません"
+    "resultsEmpty": "スキャン結果がありません",
+    "viewOrderAction": "注文を見る",
+    "orderCount_one": "{{count}}品",
+    "orderCount_other": "{{count}}品",
+    "retakeBodyWithCart_one": "今の結果と追加した{{count}}件が破棄されます。",
+    "retakeBodyWithCart_other": "今の結果と追加した{{count}}件が破棄されます。"
   },
   "owner": {
     "caption": "この画面を店員に見せてください",
@@ -432,7 +434,6 @@
     "placeRecent": "最近",
     "placeNoResults": "一致する場所がありません。",
     "placeSkip": "スキップ",
-    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "レビューを削除できませんでした。接続を確認してもう一度お試しください。",
     "photoCapNote": "写真は最大{{max}}枚 — 超過分は除外しました",
     "placeNearby": "近くの場所",
@@ -516,12 +517,12 @@
     "ratingAll": "すべての評価",
     "ratingMin": "{{min}}点以上",
     "countryOnly": "{{code}}のみ",
-    "allReviews": "すべてのレビュー"
+    "allReviews": "すべてのレビュー",
+    "countryOnlyHint": "オンにすると{{country}}の人のレビューだけを表示します。"
   },
   "ranking": {
     "headerTitle": "マイランキング",
-    "headerTitleKo": "내 랭킹",
-    "vipEyebrow": "VIPメンバーシップ",
+    "vipEyebrow": "あなたのランク",
     "levelLabel": "レベル {{level}}",
     "totalPoints": "合計 {{score}} ポイント",
     "totalPointsSuffix": "合計ポイント",
@@ -529,30 +530,24 @@
     "flavorPost": "種類の韓国料理。",
     "ptsTo_one": "{{tier}}まであと {{count}} ポイント",
     "ptsTo_other": "{{tier}}まであと {{count}} ポイント",
-    "ptsToKo": "{{tier}}까지",
     "totalChip": "{{score}} ポイント",
     "tickPts": "{{at}} ポイント",
     "topTier": "最高ランク到達",
     "topTierSub": "あなたは「根っからの韓国人」— 最高ランクです。レビューを続けて王座を守りましょう。",
     "breakdownTitle": "スコアの内訳",
-    "breakdownSub": "점수 내역",
     "reviewsLabel": "レビュー",
-    "reviewsLabelKo": "리뷰",
     "reviewsDetail_one": "{{count}} 件のレビュー × 10 ポイント",
     "reviewsDetail_other": "{{count}} 件のレビュー × 10 ポイント",
     "diversityLabel": "料理の多様性",
-    "diversityLabelKo": "음식 다양성",
     "diversityDetail_one": "{{count}} 種類の料理 × 5 ポイント",
     "diversityDetail_other": "{{count}} 種類の料理 × 5 ポイント",
     "scansLabel": "スキャン",
-    "scansLabelKo": "스캔",
     "scansDetail_one": "{{count}} 回のメニュースキャン × 2 ポイント",
     "scansDetail_other": "{{count}} 回のメニュースキャン × 2 ポイント",
     "gain": "+{{points}}",
     "oneMore": "あと1件レビュー",
     "oneMorePlus": "+10 ポイント",
     "ladderTitle": "全ランク",
-    "ladderSub": "전체 등급",
     "now": "現在",
     "done": "完了",
     "entryPts": "{{at}}+ ポイント",
@@ -569,15 +564,6 @@
       "gourmet": "グルメ",
       "kfood_master": "韓食の達人",
       "korean_at_heart": "根っからの韓国人"
-    },
-    "tierKo": {
-      "newcomer": "입문자",
-      "taster": "맛보기",
-      "explorer": "탐험가",
-      "regular": "단골",
-      "gourmet": "미식가",
-      "kfood_master": "한식 고수",
-      "korean_at_heart": "뼛속까지 한국인"
     },
     "reviewsComing": "次のアップデートで提供予定"
   },
@@ -632,7 +618,8 @@
       "sub": "見覚えのある顔が出てくるかも。",
       "cta": "動画で確かめる",
       "a11y": "この料理を食べるK-POPアイドルの動画を開く"
-    }
+    },
+    "verdictMayContain": "{{list}}を含む可能性 — あなたの回避リストにあります"
   },
   "states": {
     "catalogTitle": "状態",
@@ -643,7 +630,7 @@
     "errorTitle": "問題が発生しました",
     "errorBody": "現在読み込めませんでした。原因は当方側にあります。",
     "offlineTitle": "オフラインです",
-    "offlineBody": "メニューのスキャンやレビューの読み込みにはインターネット接続が必要です。保存済みのスキャンはそのまま残っています。",
+    "offlineBody": "メニューのスキャンやレビューの読み込みにはインターネット接続が必要です。",
     "linkFailed": "リンクを開けませんでした",
     "settingsFailed": "設定を開けませんでした"
   },
@@ -980,7 +967,7 @@
     "newestFirst": "新しい順",
     "swipeHint": "カードを左にスワイプで削除",
     "emptyTitle": "まだ保存がありません",
-    "emptyBody": "料理のブックマークをタップするとここに保存されます。安心しておいしく食べるためのリストに。",
+    "emptyBody": "料理の星をタップするとここに保存されます。安心しておいしく食べるためのリストに。",
     "emptyCta": "料理をさがす",
     "removed": "保存済みから削除しました",
     "undo": "元に戻す",
@@ -1382,7 +1369,8 @@
     "resultMajorSet": "{{contains}}。避けたい食材を設定すると、自分向けの結果を見られます。",
     "freeFor_one": "加工食品スキャン無料 残り{{count}}分",
     "freeFor_other": "加工食品スキャン無料 残り{{count}}分",
-    "freeStarted": "この後1時間、加工食品のスキャンは無料です。"
+    "freeStarted": "この後1時間、加工食品のスキャンは無料です。",
+    "freeExplain": "この間は加工食品を回数を気にせずスキャンできます。メニューのスキャンは対象外です。"
   },
   "scanCamera": {
     "title": "スキャン",
