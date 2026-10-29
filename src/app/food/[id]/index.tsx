@@ -31,7 +31,7 @@ import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { HeroGallery } from '@/features/food/HeroGallery';
 import { PILL_FADE_MS, useScrollAwarePill } from '@/features/food/scrollAwarePill';
-import { pillBottomOf, pillCta } from '@/features/food/pillCta';
+import { PILL_MAX_SCALE, pillCta, useBottomBand } from '@/features/food/pillCta';
 import { IDOL_CARD_BOTTOM_PAD, IdolVideoCard } from '@/features/food/IdolVideoCard';
 import { useIdolPickVideo } from '@/lib/data/useIdolPicks';
 import { useIsNewFood } from '@/lib/newFood';
@@ -161,8 +161,8 @@ export default function FoodDetailScreen() {
   // KB-431 §1-8 → KB-851 떠 있는 알약 — 등록 음식만(미등록은 본문 CTA 현행 유지)
   const showBottomBar = !!food && food.isRegistered;
   // Codex #97 3R P2 → KB-851: 알약 줄 실높이(큰 글씨·긴 번역이면 커짐) + 바닥 여백만큼 콘텐츠 하단 여백 — 마지막 리뷰를 가리지 않게(측정 전 폴백 48)
-  const [barH, setBarH] = useState(0);
-  const pillBottom = pillBottomOf(insets.bottom);
+  // KB-903: 띠(불투명 바) 실높이 → 스크롤 아래 여백 — 하단 바 화면 공통 규칙(useBottomBand)
+  const band = useBottomBand(insets.bottom);
 
   return (
     <View style={styles.root}>
@@ -176,7 +176,7 @@ export default function FoodDetailScreen() {
         onMomentumScrollEnd={pill.onMomentumScrollEnd}
         onLayout={(e) => pill.onViewLayout(e.nativeEvent.layout.height)}
         onContentSizeChange={(_w, h) => pill.onContentSize(h)}
-        contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 48) + pillBottom + 16 : 40 }, (error || hidden) && !food ? { flexGrow: 1 } : null]}
+        contentContainerStyle={[{ paddingBottom: showBottomBar ? band.scrollPad : 40 }, (error || hidden) && !food ? { flexGrow: 1 } : null]}
         testID="detail-scroll"
       >
         {/* KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**(FOOD-001)이면 에러 블록 대신 조용한 안내.
@@ -248,10 +248,10 @@ export default function FoodDetailScreen() {
         <RegisteredBottomBar
           shown={pill.shown}
           ready={pill.ready}
-          bottom={pillBottom}
+          bottom={band.bottom}
           guest={isGuest}
           scanEntry={src === 'scan'}
-          onHeight={(h) => { setBarH(h); pill.onBand(h + pillBottom + 8); }}
+          onHeight={(h) => { band.onHeight(h); pill.onBand(h + 8); }}
           t={t}
           onWrite={() => {
             // P-392(KB-584): 자격 게이트 폐기 — 회원이면 스캔 여부 무관(BE #274: reviewEligible 항상 true)
@@ -305,6 +305,9 @@ const VERDICT: Record<RiskState, string> = {
 type IngChip = 'all' | 'safe' | 'danger' | 'caution';
 const ING_CHIPS: IngChip[] = ['all', 'safe', 'danger', 'caution'];
 
+// KB-903(T-032): 알약 글자 = 한 줄(Android 2.0에서 "Ask the / owner" 두 줄 → 바가 화면 1/4) · 넘치면 줄이기(자르기 아님) · 확대 상한 낮춤
+const PILL_LABEL = { numberOfLines: 1, adjustsFontSizeToFit: true, minimumFontScale: 0.7, maxFontSizeMultiplier: PILL_MAX_SCALE } as const;
+
 function RegisteredBottomBar({
   shown,
   ready = true,
@@ -319,7 +322,7 @@ function RegisteredBottomBar({
   shown: boolean;
   /** 첫 측정 전 = 애니메이션 없이 숨김(KB-871 QA AP — 진입 때 카드 위로 번쩍 보였다 사라짐) */
   ready?: boolean;
-  /** 화면 바닥에서 알약까지(안전 영역, 최소 12) */
+  /** 띠 안 알약 아래 여백(안전 영역, 최소 12) */
   bottom: number;
   guest: boolean;
   t: TFn;
@@ -327,12 +330,12 @@ function RegisteredBottomBar({
   onAsk?: () => void;
   /** P-353 ②(KB-515): 스캔 진입 = Write 미렌더·Ask 단독(스캔한 음식이라 리뷰 유도 대신 문의 단독) */
   scanEntry?: boolean;
-  /** 알약 줄 실높이 보고 — 스크롤 하단 여백 파생(큰 글씨·긴 번역 대응) */
+  /** 띠 실높이(알약 + 위 여백 + 안전 영역) 보고 — 스크롤 하단 여백 파생(큰 글씨·긴 번역 대응) */
   onHeight?: (h: number) => void;
 }) {
   const reduced = useReducedMotion();
-  const [rowH, setRowH] = useState(48);
-  const hideY = rowH + bottom + 8; // 화면 밖까지
+  const [rowH, setRowH] = useState(48 + bottom);
+  const hideY = rowH + 8; // 띠 전체가 화면 밖까지
   // 표시·숨김 = 200ms 슬라이드 + 페이드(감속 곡선) · 모션 줄이기 = 슬라이드 없이 짧은 페이드만
   const anim = useAnimatedStyle(() => ({
     opacity: !ready ? 0 : withTiming(shown ? 1 : 0, { duration: reduced ? 120 : PILL_FADE_MS, easing: Easing.out(Easing.cubic) }),
@@ -342,21 +345,22 @@ function RegisteredBottomBar({
   if (!write && !onAsk) return null;
   return (
     <Animated.View
-      style={[styles.pillRow, { bottom }, anim]}
-      pointerEvents={shown ? 'box-none' : 'none'}
+      style={[pillCta.band, { paddingBottom: bottom }, anim]}
+      // KB-903(T-019): 보이는 동안 띠가 터치를 먹는다 — box-none이면 띠 바탕 탭이 아래 별점 행·타일로 새었다
+      pointerEvents={shown ? 'auto' : 'none'}
       onLayout={(e) => { const h = e.nativeEvent.layout.height; setRowH(h); onHeight?.(h); }}
       testID="detail-bottom-bar"
     >
       {write && (
         <Pressable style={styles.pillPrimary} onPress={onWrite} accessibilityRole="button" testID="bottom-write">
           <IconEdit size={20} color="#FFFFFF" />
-          <Text style={styles.pillPrimaryText}>{t('reviews.writeReview')}</Text>
+          <Text style={styles.pillPrimaryText} {...PILL_LABEL}>{t('reviews.writeReview')}</Text>
         </Pressable>
       )}
       {onAsk && (
         // 회원 = Write 아래 테두리 한 줄 · 스캔 진입(Write 없음) = primary 한 줄(P-353)
         <Pressable style={write ? styles.pillOutline : styles.pillPrimary} onPress={onAsk} accessibilityRole="button" testID="bottom-ask">
-          <Text style={write ? styles.pillOutlineText : styles.pillPrimaryText}>{t('detail.askOwner')}</Text>
+          <Text style={write ? styles.pillOutlineText : styles.pillPrimaryText} {...PILL_LABEL}>{t('detail.askOwner')}</Text>
         </Pressable>
       )}
     </Animated.View>
@@ -910,7 +914,6 @@ const styles = StyleSheet.create({
   // §1-8: FixedBottom
   // KB-871(예진 10/22): 하단 고정 · 좌우 = 화면 여백 20 · 가로 전체 알약(높이 48 radius full) 세로 간격 8 — primary(흰 글자·흰 file-pen) / 테두리(gray-300)
   // KB-891: 알약 정의 = features/food/pillCta 한 곳(리뷰 작성 하단과 공용)
-  pillRow: pillCta.pillRow,
   pillPrimary: pillCta.pillPrimary,
   pillPrimaryText: pillCta.pillPrimaryText,
   pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },

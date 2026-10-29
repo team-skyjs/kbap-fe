@@ -440,7 +440,9 @@ it('KB-777 B3-7: 작은 화면 판정(폭<360 또는 높이<700) · 기본 화�
   const { isCompactFabScreen } = jest.requireActual('../ReviewFeed') as { isCompactFabScreen: (w: number, h: number) => boolean };
   expect([isCompactFabScreen(360, 640), isCompactFabScreen(320, 800), isCompactFabScreen(375, 667), isCompactFabScreen(390, 844), isCompactFabScreen(360, 760)]).toEqual([true, true, true, false, false]);
   const RN = jest.requireActual('react-native');
+  const normal = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1 }); // KB-903: jest 기본 fontScale 2 = 큰 글자
   const big = render();
+  normal.mockRestore();
   const fab = () => big.root.findAll((n) => n.props?.testID === 'feed-write-fab' && typeof n.type === 'string')[0];
   expect(big.root.findAll((n) => n.props?.testID === 'feed-write-fab-label')).not.toHaveLength(0);
   expect(fab().props.accessibilityLabel).toBe('reviews.writeReview');
@@ -457,4 +459,32 @@ it('KB-777 B3-7: 작은 화면 판정(폭<360 또는 높이<700) · 기본 화�
   expect(fab().props.hitSlop).toBeUndefined(); // 일반 화면 필은 그대로
   expect(sfab.props.accessibilityLabel).toBe('reviews.writeReview');
   spy.mockRestore();
+});
+
+// KB-903(T-022): 필이 스크롤 중·큰 글자에서 리뷰 본문을 덮었다 — 원형으로 줄이고, 멈추고 300ms 뒤 필
+it('KB-903 T-022: 큰 글자(1.3배↑) = 처음부터 원형 · 스크롤 시작 = 원형 → 멈춘 뒤 300ms = 필', () => {
+  jest.useFakeTimers();
+  const RN = jest.requireActual('react-native');
+  const { fabCompactFor, FAB_IDLE_MS } = jest.requireActual('../ReviewFeed') as { fabCompactFor: (w: number, h: number, f: number, s: boolean) => boolean; FAB_IDLE_MS: number };
+  expect([fabCompactFor(390, 844, 1, false), fabCompactFor(390, 844, 1.3, false), fabCompactFor(390, 844, 1, true)]).toEqual([false, true, true]);
+  const label = (t: ReturnType<typeof render>) => t.root.findAll((n) => n.props?.testID === 'feed-write-fab-label').length;
+  const spy = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1 });
+  const tree = render();
+  expect(label(tree)).toBeGreaterThan(0);
+  const list = tree.root.findAll((n) => typeof n.props?.onScrollBeginDrag === 'function' && typeof n.props?.onMomentumScrollEnd === 'function')[0];
+  act(() => { list.props.onScrollBeginDrag(); });
+  expect(label(tree)).toBe(0);
+  act(() => { list.props.onScrollEndDrag(); list.props.onMomentumScrollBegin(); }); // 관성이 이어지면 원형 유지
+  act(() => { jest.advanceTimersByTime(FAB_IDLE_MS + 50); });
+  expect(label(tree)).toBe(0);
+  act(() => { list.props.onMomentumScrollEnd(); });
+  act(() => { jest.advanceTimersByTime(FAB_IDLE_MS - 50); });
+  expect(label(tree)).toBe(0);
+  act(() => { jest.advanceTimersByTime(100); });
+  expect(label(tree)).toBeGreaterThan(0);
+  spy.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1.3 });
+  const bigText = render();
+  expect(label(bigText)).toBe(0);
+  spy.mockRestore();
+  jest.useRealTimers();
 });
