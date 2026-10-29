@@ -12,10 +12,10 @@ export const LEGAL_URLS = {
   /** KB-497: 광고성 알림 동의 전문 2종 — 페이지 생성은 kbap-legal 레포(요청 중). */
   marketingPrivacy: 'https://team-skyjs.github.io/kbap-legal/marketing-privacy-consent.html',
   marketingReceive: 'https://team-skyjs.github.io/kbap-legal/advertising-receipt-consent.html',
+  /** KB-910: 안전 고지도 약관·개인정보와 같은 앱 안 렌더(구 인앱 브라우저로 kbap-legal 페이지 노출) */
+  safety: 'https://team-skyjs.github.io/kbap-legal/safety.html',
 } as const;
 
-/** 안전 고지(프로필 메뉴) — 같은 kbap-legal 정본. P-377: 리터럴 중복 2곳을 여기로. */
-export const SAFETY_NOTICE_URL = 'https://team-skyjs.github.io/kbap-legal/safety.html';
 
 export type LegalDoc = keyof typeof LEGAL_URLS;
 
@@ -85,6 +85,11 @@ const pick = (s: string, ko: boolean) => {
 /** KB-907(T-109·T-110): kbap-legal 원문은 한 문서에 "English" 절과 "한국어" 절을 이어 붙이고 제목·시행일도 "영문 / 한글" 병기 —
  *  앱 언어 한 벌만 보여 준다(ko = 한국어 절, 그 외 = English 절). 절 구분(h2 English·한국어)을 못 찾으면 원문 전체 그대로(내용 숨김 0).
  *  제목의 경고 이모지(⚠️)는 언어와 무관하게 뺀다. 원문 수정은 kbap-legal 레포 몫(앱은 렌더 필터만) */
+/** KB-910: 원문 판정명 → 앱 판정명(헌법: 4상태 용어 = 앱과 동일). 원문(kbap-legal)은 "Danger"·"위험"인데 앱은 "Avoid"·"회피".
+ *  한국어는 판정명 목록(안전/주의/위험/…)과 따옴표 판정명만 바꾼다 — "위험도 표시"처럼 판정명이 아닌 "위험"은 그대로. 원문 수정은 kbap-legal 레포 몫 */
+export const appRiskTerms = (s: string): string =>
+  s.replace(/\bDanger\b/g, 'Avoid').replace(/주의\/위험\//g, '주의/회피/').replace(/“위험”/g, '“회피”');
+
 export function localizeLegal(blocks: LegalBlock[], lang: string): LegalBlock[] {
   const ko = lang.startsWith('ko');
   const isSec = (b: LegalBlock, label: string) => b.type === 'heading' && b.level === 2 && b.text.trim() === label;
@@ -102,7 +107,7 @@ export function localizeLegal(blocks: LegalBlock[], lang: string): LegalBlock[] 
     });
     out = [...head, ...(ko ? blocks.slice(kr + 1) : blocks.slice(en + 1, kr))];
   }
-  return out.map((b) => (b.type === 'heading' || b.type === 'paragraph' || b.type === 'listItem' ? { ...b, text: noEmoji(b.text) } : b));
+  return out.map((b) => (b.type === 'heading' || b.type === 'paragraph' || b.type === 'listItem' ? { ...b, text: appRiskTerms(noEmoji(b.text)) } : b));
 }
 
 export async function fetchLegalBlocks(doc: LegalDoc): Promise<LegalBlock[]> {

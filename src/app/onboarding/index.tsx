@@ -550,18 +550,15 @@ function Consent({
   );
 }
 
-/** 전문 바텀시트 — terms/privacy는 kbap-legal fetch, safety는 i18n 재사용. */
+/** 전문 바텀시트 — terms·privacy·safety 모두 kbap-legal 원문(LegalDocBody — 프로필 법적 문서 화면과 같은 본문). KB-910: safety도 원문(구 consent 문구 3단 요약) */
 function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAgree: () => void; onClose: () => void; t: TFn }) {
   // P-337(KB-490): 핸들+제목 스와이프 닫기 — 본문 ScrollView와 충돌 방지(영역 한정).
   // 이 시트는 마운트 유지형(visible=doc) — open 전환 시 훅이 translateY 리셋.
   const swipe = useSheetSwipeDismiss(onClose, doc != null);
   const bottomInset = useBottomInset();
-  const isRemote = doc === 'terms' || doc === 'privacy';
 
   const title =
     doc === 'terms' ? t('onboarding.termsOfService') : doc === 'privacy' ? t('onboarding.privacyPolicy') : t('profile.safetyNotice');
-  // 안전 고지 = 구 consent 화면 문구 재사용 (아이콘 나열만 삭제 — 스펙)
-  const safetyText = [t('onboarding.consentGuidance'), t('onboarding.consentVary'), t('onboarding.consentYours')].join('\n\n');
 
   return (
     <Modal visible={doc != null} transparent animationType="slide" onRequestClose={onClose}>
@@ -580,11 +577,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
           </View>
         </GestureDetector>
         <ScrollView keyboardDismissMode="on-drag" style={styles.legalScroll} showsVerticalScrollIndicator>
-          {isRemote ? (
-            <LegalDocBody doc={doc as LegalDoc} />
-          ) : (
-            <Text style={styles.legalText}>{safetyText}</Text>
-          )}
+          {doc != null && <LegalDocBody doc={doc as LegalDoc} />}
         </ScrollView>
         <Btn testID="legal-agree" onPress={onAgree}>{t('onboarding.agree')}</Btn>
       </Animated.View>
