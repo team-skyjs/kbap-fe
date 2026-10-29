@@ -19,7 +19,7 @@ it('하단 Post 바가 KAV **안**(키보드 위로 따라 올라옴) · ScrollV
 
 it('커서 추종 가시 높이 — 두 플랫폼 KAV로 줄어든 뷰포트 그대로(키보드 이중 차감 0, KB-768)', () => {
   // KB-768: 안드도 KAV(padding)가 뷰포트를 줄이므로 두 플랫폼 모두 키보드 차감 0(옛 안드 차감 = adjustResize 전제, edge-to-edge로 깨짐)
-  expect(src).toContain('const visible = svH.current;');
+  expect(src).toContain('const visible = svH.current - pillCover.current;'); // KB-891: 떠 있는 알약 몫만 뺀다(키보드 아님)
   expect(src).not.toContain('svH.current - (Platform.OS');
 });
 

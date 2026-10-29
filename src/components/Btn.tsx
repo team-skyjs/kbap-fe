@@ -3,7 +3,7 @@
  * Ported from hifi-g.css `.btn`. Label is i18n text passed by the caller.
  */
 import * as React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View, type TextStyle, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow } from '@/lib/theme';
@@ -26,6 +26,7 @@ export function Btn({
   disabled,
   onPress,
   style,
+  labelStyle,
   accessibilityLabel,
   accessibilityHint,
 }: {
@@ -44,6 +45,8 @@ export function Btn({
   disabled?: boolean;
   onPress?: () => void;
   style?: ViewStyle;
+  /** KB-891: 라벨 글자 틀(크기·줄높이) — 색은 변형이 정한다(off 회색 유지) */
+  labelStyle?: TextStyle;
   /** KB-796: 라벨만으로 대상이 모호할 때(같은 "View guide"가 여러 개) 스크린리더 이름·힌트 — 미지정 = 라벨 그대로 */
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -94,7 +97,7 @@ export function Btn({
           {icon}
           {children != null && (
             <Text
-              style={[styles.label, sm && styles.labelSm, palette.label, icon != null && styles.labelGap]}
+              style={[styles.label, sm && styles.labelSm, labelStyle, palette.label, icon != null && styles.labelGap]}
               numberOfLines={fitLabel ? 2 : undefined}
               adjustsFontSizeToFit={fitLabel}
               minimumFontScale={fitLabel ? 0.85 : undefined}

@@ -37,7 +37,7 @@ it('③④ 사진 슬롯 = 아이콘만 + 탭 = 촬영/갤러리 시트(choosePh
 
 it('⑤ 키보드 — 수동 kbH 패딩 소멸 + (KB-700) iOS = 화면 KeyboardAvoidingView(padding) · 시스템 인셋 제거(이중 방지) · 커서 추종 실측 유지', () => {
   const rv = read('src/app/food/[id]/review.tsx');
-  expect(rv).toContain('{ paddingBottom: 28 }');
+  expect(rv).toContain('{ paddingBottom: (barH || 48) + pillBottom + 16 }'); // KB-891: 떠 있는 알약 실높이 기준
   expect(rv).not.toContain('28 + kbH');
   expect(rv).toContain("<KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR}"); // KB-768: 두 플랫폼 padding(안드 edge-to-edge)
   expect(rv).not.toContain('automaticallyAdjustKeyboardInsets={');
