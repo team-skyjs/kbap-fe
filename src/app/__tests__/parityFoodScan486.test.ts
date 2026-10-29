@@ -34,7 +34,7 @@ it('A-RW — body pad20 gap20·캡션 슬롯 안 14/600 #778088·라벨 13/600·
   const rc = read('src/features/review/ReviewCellParts.tsx');
   expect(rc).toMatch(/pickerSheet: \{[^}]*borderTopLeftRadius: radius\.xl, borderTopRightRadius: radius\.xl, padding: 16, gap: 20/);
   expect(rc).toContain("pickerHeader: { alignItems: 'center' }");
-  expect(rc).toMatch(/searchBox: \{[^}]*borderRadius: 4, paddingLeft: 16/);
+  expect(rc).toMatch(/searchBox: \{[^}]*borderRadius: radius\.md, paddingLeft: 16/);
   expect(rc).toMatch(/extrasLabelWrap: \{[^}]*gap: 4/);
 });
 

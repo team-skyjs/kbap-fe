@@ -7,7 +7,7 @@ it('① 검색창 = 홈 searchBox 동일(h48 r4 surface2 pad16 보더 0) · 아�
   expect(s).not.toContain('borderColor: C.primary'); // 구 포커스 보더 소멸
   expect(s).toContain('selectionColor={C.primary}');
   expect(s).toContain('placeholderTextColor="#D1D3D8"');
-  expect(s).toContain("clearDot: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#D9D9D9'");
+  expect(s).toContain("clearDot: { width: 16, height: 16, borderRadius: radius.pill, backgroundColor: '#D9D9D9'");
   expect(s).toMatch(/query\.length > 0 \? \([^]*?search-clear[^]*?\) : \(\s*<IconSearch size=\{20\} color=\{C\.ink3\} \/>/);
 });
 

@@ -16,7 +16,7 @@ it('① 회색 띠 — 사진 컨테이너 정적 bg 제거(폴백만 유지)·�
   expect(cards).toContain("gphoto: { aspectRatio: 174 / 203, borderRadius: radius.md, overflow: 'visible' }");
   expect(cards).toContain('rthumb: { width: 100, height: 100, borderRadius: radius.md }');
   // P-353 ③: 아이콘 폴백 박스 소멸 — CardPhoto가 null/실패 시 기본 음식 이미지
-  expect(cards).toContain('recyclingKey={food.foodId} borderRadius={4} />'); // 그리드 라운딩
+  expect(cards).toContain('recyclingKey={food.foodId} borderRadius={radius.md} />'); // 그리드 라운딩
   // 배지 그림자(shBadge)는 유지 — 시안 DROP 1,1 3.7 0.6 동일
   expect(fs.readFileSync('src/components/RiskBadge.tsx', 'utf8')).toContain('shadow.shBadge');
 });
