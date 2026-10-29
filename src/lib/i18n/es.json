@@ -177,7 +177,7 @@
     "reasonOtherPlaceholder": "Cuéntanos más",
     "reportSubmit": "Enviar denuncia",
     "blockConfirmTitle": "¿Bloquear a {{name}}?",
-    "blockConfirmBody": "Ya no verás sus publicaciones ni comentarios. Puedes desbloquear cuando quieras en Ajustes.",
+    "blockConfirmBody": "Ya no verás sus reseñas. Puedes desbloquear cuando quieras en Perfil, en Usuarios bloqueados.",
     "blockConfirmCta": "Bloquear",
     "blocking": "Bloqueando…",
     "viewDetails": "Ver detalles",
@@ -203,7 +203,7 @@
     "searchFoodsHint": "Busca en el catálogo para etiquetar un plato.",
     "added": "Añadido",
     "blockedTitle": "Usuarios bloqueados",
-    "blockedNote": "No verás publicaciones ni comentarios de usuarios bloqueados. Ellos sí pueden ver los tuyos.",
+    "blockedNote": "No verás reseñas de usuarios bloqueados. Ellos sí pueden ver las tuyas.",
     "blockedEmptyTitle": "Sin usuarios bloqueados",
     "blockedEmptyBody": "Las personas que bloquees aparecerán aquí.",
     "unblock": "Desbloquear",
@@ -278,8 +278,6 @@
     "checkedAgainst": "Comprobado con tu perfil",
     "mayContain": "Puede contener",
     "notInDb": "Aún no está en nuestra base — pregunta al personal.",
-    "viewOrder_one": "{{count}} plato, Ver pedido",
-    "viewOrder_other": "{{count}} platos, Ver pedido",
     "legendHint": "Toca un plato para ver ingredientes, pellizca para zoom",
     "listFootNote": "La información es nuestra mejor coincidencia — confirma con el personal si dudas.",
     "cameraTitle": "Escanear menú",
@@ -289,7 +287,6 @@
     "launcherHint": "Fotografía el menú y compararemos cada plato con tu perfil.",
     "retakeTitle": "¿Escanear de nuevo?",
     "retakeBody": "Se descartarán los resultados actuales.",
-    "retakeBodyWithCart": "Se descartarán los resultados y {{count}} artículo(s) añadidos.",
     "retakeConfirm": "Reescanear",
     "leaveTitle": "¿Salir de los resultados?",
     "leaveConfirm": "Salir",
@@ -333,7 +330,12 @@
     "closestMatchSheetBody": "El menú dice “{{scanned}}”. Te mostramos {{food}} ({{foodKo}}), el plato más parecido de nuestro catálogo, así que los ingredientes y tu nivel de riesgo se basan en {{food}}.",
     "closestMatchSeeDetails": "Ver detalles de {{food}}",
     "searchOnGoogle": "Buscar en Google",
-    "resultsEmpty": "Sin resultados de escaneo"
+    "resultsEmpty": "Sin resultados de escaneo",
+    "viewOrderAction": "Ver pedido",
+    "orderCount_one": "{{count}} plato",
+    "orderCount_other": "{{count}} platos",
+    "retakeBodyWithCart_one": "Se descartarán los resultados y {{count}} artículo añadido.",
+    "retakeBodyWithCart_other": "Se descartarán los resultados y {{count}} artículos añadidos."
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",
@@ -432,7 +434,6 @@
     "placeRecent": "Recientes",
     "placeNoResults": "No hay lugares que coincidan.",
     "placeSkip": "Omitir",
-    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "No se pudo eliminar la reseña. Revisa tu conexión e inténtalo de nuevo.",
     "photoCapNote": "Máximo {{max}} fotos — se omitieron las adicionales",
     "placeNearby": "Cerca",
@@ -516,12 +517,12 @@
     "ratingAll": "Todas las valoraciones",
     "ratingMin": "{{min}}+ estrellas",
     "countryOnly": "Solo {{code}}",
-    "allReviews": "Todas las reseñas"
+    "allReviews": "Todas las reseñas",
+    "countryOnlyHint": "Actívalo para ver solo reseñas de personas de {{country}}."
   },
   "ranking": {
     "headerTitle": "Mi clasificación",
-    "headerTitleKo": "내 랭킹",
-    "vipEyebrow": "MEMBRESÍA VIP",
+    "vipEyebrow": "TU RANGO",
     "levelLabel": "NIVEL {{level}}",
     "totalPoints": "{{score}} puntos totales",
     "totalPointsSuffix": "puntos totales",
@@ -529,30 +530,24 @@
     "flavorPost": "platos coreanos distintos hasta ahora.",
     "ptsTo_one": "{{count}} pt para {{tier}}",
     "ptsTo_other": "{{count}} pts para {{tier}}",
-    "ptsToKo": "{{tier}}까지",
     "totalChip": "{{score}} pts",
     "tickPts": "{{at}} pts",
     "topTier": "Máximo nivel alcanzado",
     "topTierSub": "Eres Coreano de Corazón, el rango más alto. Sigue reseñando para mantener tu trono.",
     "breakdownTitle": "Desglose de puntuación",
-    "breakdownSub": "점수 내역",
     "reviewsLabel": "Reseñas",
-    "reviewsLabelKo": "리뷰",
     "reviewsDetail_one": "{{count}} reseña × 10 pts",
     "reviewsDetail_other": "{{count}} reseñas × 10 pts",
     "diversityLabel": "Variedad de comida",
-    "diversityLabelKo": "음식 다양성",
     "diversityDetail_one": "{{count}} plato único × 5 pts",
     "diversityDetail_other": "{{count}} platos únicos × 5 pts",
     "scansLabel": "Escaneos",
-    "scansLabelKo": "스캔",
     "scansDetail_one": "{{count}} escaneo de menú × 2 pts",
     "scansDetail_other": "{{count}} escaneos de menú × 2 pts",
     "gain": "+{{points}}",
     "oneMore": "Una reseña más",
     "oneMorePlus": "+10 pts",
     "ladderTitle": "Todos los rangos",
-    "ladderSub": "전체 등급",
     "now": "AHORA",
     "done": "Hecho",
     "entryPts": "{{at}}+ pts",
@@ -569,15 +564,6 @@
       "gourmet": "Gourmet",
       "kfood_master": "Maestro de la comida coreana",
       "korean_at_heart": "Coreano de corazón"
-    },
-    "tierKo": {
-      "newcomer": "입문자",
-      "taster": "맛보기",
-      "explorer": "탐험가",
-      "regular": "단골",
-      "gourmet": "미식가",
-      "kfood_master": "한식 고수",
-      "korean_at_heart": "뼛속까지 한국인"
     },
     "reviewsComing": "Disponible en la próxima actualización"
   },
@@ -632,7 +618,8 @@
       "sub": "Quizás veas una cara conocida.",
       "cta": "Míralo en video",
       "a11y": "Abrir un video de un idol del K-pop probando este plato"
-    }
+    },
+    "verdictMayContain": "Puede contener {{list}} — en tu lista a evitar"
   },
   "states": {
     "catalogTitle": "Estados",
@@ -643,7 +630,7 @@
     "errorTitle": "Algo salió mal",
     "errorBody": "No pudimos cargar esto ahora. Es de nuestro lado, no del tuyo.",
     "offlineTitle": "Estás sin conexión",
-    "offlineBody": "Conéctate a internet para escanear menús y cargar reseñas. Tus escaneos guardados siguen aquí.",
+    "offlineBody": "Conéctate a internet para escanear menús y cargar reseñas.",
     "linkFailed": "No se pudo abrir el enlace",
     "settingsFailed": "No se pudo abrir Ajustes"
   },
@@ -980,7 +967,7 @@
     "newestFirst": "Más recientes primero",
     "swipeHint": "Desliza una tarjeta a la izquierda para eliminarla",
     "emptyTitle": "Aún no has guardado nada",
-    "emptyBody": "Toca el marcador en cualquier plato para guardarlo aquí: tu lista para comer rico y seguro.",
+    "emptyBody": "Toca la estrella en cualquier plato para guardarlo aquí: tu lista para comer rico y seguro.",
     "emptyCta": "Explorar comida",
     "removed": "Eliminado de Guardados",
     "undo": "Deshacer",
@@ -1382,7 +1369,8 @@
     "resultMajorSet": "{{contains}}. Elige ingredientes a evitar para ver un resultado personal.",
     "freeFor_one": "Escaneos de envasados gratis por {{count}} min",
     "freeFor_other": "Escaneos de envasados gratis por {{count}} min",
-    "freeStarted": "Tus próximos escaneos de envasados son gratis durante 1 hora."
+    "freeStarted": "Tus próximos escaneos de envasados son gratis durante 1 hora.",
+    "freeExplain": "Durante este tiempo puedes escanear envasados sin límite. No incluye los escaneos de menús."
   },
   "scanCamera": {
     "title": "Escanear",

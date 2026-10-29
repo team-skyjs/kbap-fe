@@ -151,23 +151,20 @@ describe('P-351(KB-513) 소형 2건', () => {
 });
 
 describe('P-352(KB-514) 리뷰 작성 부제·건너뛰기', () => {
-  it('① 부제 3케이스 — 0건 = 한글명만 / 한글명 없음 = subtitle만(0건이면 줄 생략) / 5건 = " | " 결합', () => {
+  it('① 부제 3케이스 — 0건 = 한글명만 / 한글명 없음 = subtitle만(0건이면 줄 생략) / 5건 = 두 조각(KB-907 T-107: " | " 구분자 → 화면 간격)', () => {
     // 렌더 경유 없이 순수 헬퍼 검증(배선은 소스 잠금)
     const { foodSubtitle } = require('@/lib/review/foodSubtitle') as typeof import('@/lib/review/foodSubtitle');
-    // #115 P1: 결합형 = review.foodSubtitle 키 경유(구분자·어순 로케일 소유)
-    const t = (k: string, o?: Record<string, unknown>) =>
-      k === 'review.foodSubtitle' ? `${o?.nameKo} | ${o?.reviews}` : `${o?.count} reviews`;
-    expect(foodSubtitle({ name: 'Kimbap', nameKo: '김밥', overall: { count: 0 } }, t)).toBe('김밥');
-    expect(foodSubtitle({ name: 'Kimbap', nameKo: null, overall: { count: 5 } }, t)).toBe('5 reviews');
-    expect(foodSubtitle({ name: 'Kimbap', nameKo: null, overall: { count: 0 } }, t)).toBeNull(); // 줄 생략
-    expect(foodSubtitle({ name: 'Kimbap', nameKo: '김밥', overall: { count: 5 } }, t)).toBe('김밥 | 5 reviews');
-    const src = read('src/lib/review/foodSubtitle.ts');
-    expect(src).toContain("t('review.foodSubtitle', { nameKo: ko, reviews })");
+    const t = (_k: string, o?: Record<string, unknown>) => `${o?.count} reviews`;
+    expect(foodSubtitle({ name: 'Kimbap', nameKo: '김밥', overall: { count: 0 } }, t)).toEqual(['김밥']);
+    expect(foodSubtitle({ name: 'Kimbap', nameKo: null, overall: { count: 5 } }, t)).toEqual(['5 reviews']);
+    expect(foodSubtitle({ name: 'Kimbap', nameKo: null, overall: { count: 0 } }, t)).toEqual([]); // 줄 생략
+    expect(foodSubtitle({ name: 'Kimbap', nameKo: '김밥', overall: { count: 5 } }, t)).toEqual(['김밥', '5 reviews']);
     for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
-      expect((JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { review: { foodSubtitle: string } }).review.foodSubtitle).toBe('{{nameKo}} | {{reviews}}');
+      expect((JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { review: Record<string, unknown> }).review.foodSubtitle).toBeUndefined(); // 구분자 키 소멸
     }
     const rv = read('src/app/food/[id]/review.tsx');
-    expect(rv).toContain('const sub = packaged ? product?.maker ?? null : foodSubtitle(food, t);' /* KB-812 2차: 가공식품 = 제조사 */); // 배선 잠금
+    expect(rv).toContain('const parts = packaged ? (product?.maker ? [product.maker] : []) : foodSubtitle(food, t);' /* KB-812 2차: 가공식품 = 제조사 */); // 배선 잠금
+    expect(rv).toMatch(/foodSubRow: \{ flexDirection: 'row', alignItems: 'center', gap: 8 \}/);
     expect(rv).not.toContain('`${food.nameKo} `'); // 구 공백 구분 소멸
   });
 

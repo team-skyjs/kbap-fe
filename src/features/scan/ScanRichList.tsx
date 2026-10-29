@@ -310,7 +310,11 @@ export function OrderPill({ count, onPress, t, bottom }: { count: number; onPres
   if (count <= 0) return null;
   return (
     <Pressable style={[styles.pill, { bottom }]} onPress={onPress} testID="order-pill">
-      <Text style={styles.pillText}>{t('scan.viewOrder', { count })}</Text>
+      {/* KB-907(T-103): "2 items, View order" 쉼표 연결 → 개수와 동작을 두 덩어리로(간격 구분) */}
+      <View style={styles.pillRow}>
+        <Text style={styles.pillCount}>{t('scan.orderCount', { count })}</Text>
+        <Text style={styles.pillText}>{t('scan.viewOrderAction')}</Text>
+      </View>
     </Pressable>
   );
 }
@@ -364,4 +368,6 @@ const styles = StyleSheet.create({
   footNote: { fontFamily: font.body, fontSize: 12, lineHeight: 17, color: C.ink3, paddingVertical: 14 },
   pill: { position: 'absolute', left: 20, right: 20, backgroundColor: C.primary, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', shadowColor: C.primary, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
   pillText: { fontFamily: font.bodyBold, fontSize: 16, color: '#fff' },
+  pillRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
+  pillCount: { fontFamily: font.body, fontSize: 16, color: '#fff', opacity: 0.85 },
 });

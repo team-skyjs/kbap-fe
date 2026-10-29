@@ -8,6 +8,7 @@
  */
 import * as React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { PackagedFreeExplain } from './packagedFreeHour';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -242,7 +243,12 @@ export function LabelResultScreen({ result, photoUri, pages, member, stale = fal
       <SubHeader title={t('packagedScan.resultTitle')} onBack={onDone} />
       <ScrollView contentContainerStyle={[sc.page, { gap: 24 }]}>
         {/* KB-877: 이번 분석이 차감하며 창을 열었으면 안내 한 줄, 아니면 남은 분(창 안이면) */}
-        {freeStarted ? <Text style={sc.freeStarted} testID="pscan-free-started">{t('packagedScan.freeStarted')}</Text> : banner}
+        {freeStarted ? (
+          <View style={{ gap: 2 }}>
+            <Text style={sc.freeStarted} testID="pscan-free-started">{t('packagedScan.freeStarted')}</Text>
+            <PackagedFreeExplain />
+          </View>
+        ) : banner}
         <PhotoSlot uri={photoUri} label={t('packagedScan.labelBox')} style={sc.resultSlot}>
           {risk && <View style={sc.badge}><RiskBadge state={risk} size={22} flat testID={`pscan-result-badge-${risk}`} /></View>}
         </PhotoSlot>

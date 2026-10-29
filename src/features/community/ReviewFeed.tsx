@@ -16,6 +16,7 @@ import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useFocusEffect, useRouter, useScrollToTop, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { CountryOnlyHint } from '@/features/review/CountryOnlyHint';
 import { color as C, radius } from '@/lib/theme';
 import { Spinner, StickyHeader, useHeaderHeight, useStickyScroll, IconChevronDown, IconCheck, IconEdit } from '@/components';
 import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
@@ -162,6 +163,7 @@ export function ReviewFeed() {
                   <IconChevronDown size={16} color="#4B4F58" />
                 </Pressable>
               </View>
+              {!isGuest && myNat ? <CountryOnlyHint code={myNat} style={styles.natHint} /> : null}
               {/* 9/5 예진 판정(Q1)·KB-435 쿼터 넛지 카드(4150:17089) — P-384(KB-442): 회원·무료 소진·미해금만 */}
               {!isGuest && isScanQuotaExhausted(me?.scanQuota) && (
                 <View style={styles.nudge} testID="quota-nudge">
@@ -330,6 +332,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   list: { gap: 0 },
   // KB-430 §2-2: 컨트롤 행(4150:17070 — 좌 토글 + 우 드롭다운)
+  natHint: { paddingHorizontal: 20, marginTop: -4, paddingBottom: 8 }, // KB-907(T-106)
   controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 0, paddingBottom: 8 }, // A-RT-01(KB-486)
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-RT-02
   toggleLabel: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },

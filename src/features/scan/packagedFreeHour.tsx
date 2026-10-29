@@ -3,7 +3,7 @@
  * 출처: 프로필(카메라 진입·포그라운드 복귀 때 재조회) + 확정·성분표 응답(받은 즉시 프로필 캐시에 반영).
  */
 import * as React from 'react';
-import { AppState, StyleSheet, type TextStyle } from 'react-native';
+import { AppState, StyleSheet, View, type TextStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { QueryClient } from '@tanstack/react-query';
 import { Txt as Text } from '@/components/Txt';
@@ -50,16 +50,25 @@ function subscribeClock(fn: () => void): () => void {
 // ponytail: 15초 단위로 내린 시각 — 표시가 최대 15초 늦게 바뀐다(분 단위 문구라 체감 0). 초 단위가 필요하면 TICK_MS를 줄인다
 const clockNow = () => Math.floor(Date.now() / TICK_MS) * TICK_MS;
 
-/** "Free packaged scans for 42 min" — 창이 없거나 끝나면 아무것도 그리지 않는다 */
-export function PackagedFreeLine({ style, testID = 'pscan-free-line' }: { style?: TextStyle; testID?: string }) {
+/** KB-907(T-104): "무료"의 뜻 한 줄 — 창 안의 가공식품 스캔은 횟수 차감 0, 메뉴판 스캔은 그대로 차감(서버 freeUntil 계약) */
+export function PackagedFreeExplain() {
+  const { t } = useTranslation();
+  return <Text style={st.explain} testID="pscan-free-explain">{t('packagedScan.freeExplain')}</Text>;
+}
+
+/** "Free packaged scans for 42 min" — 창이 없거나 끝나면 아무것도 그리지 않는다. explain = 아래 뜻 한 줄(카메라 위 짧은 안내는 false) */
+export function PackagedFreeLine({ style, testID = 'pscan-free-line', explain = true }: { style?: TextStyle; testID?: string; explain?: boolean }) {
   const { t } = useTranslation();
   const until = useMe().data?.packagedFreeUntil ?? null;
   const now = React.useSyncExternalStore(subscribeClock, clockNow, clockNow);
   const minutes = freeMinutesLeft(until, now);
   if (minutes <= 0) return null;
-  return <Text style={[st.line, style]} testID={testID}>{t('packagedScan.freeFor', { count: minutes })}</Text>;
+  const line = <Text style={[st.line, style]} testID={testID}>{t('packagedScan.freeFor', { count: minutes })}</Text>;
+  return explain ? <View style={st.box}>{line}<PackagedFreeExplain /></View> : line;
 }
 
 const st = StyleSheet.create({
   line: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 19, color: C.primaryText },
+  box: { gap: 2 },
+  explain: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink3 },
 });

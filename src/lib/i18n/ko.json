@@ -177,7 +177,7 @@
     "reasonOtherPlaceholder": "자세히 알려주세요",
     "reportSubmit": "신고 제출",
     "blockConfirmTitle": "{{name}}님을 차단할까요?",
-    "blockConfirmBody": "그 사용자의 글과 댓글이 더 이상 보이지 않아요. 설정에서 언제든 해제할 수 있어요.",
+    "blockConfirmBody": "그 사용자의 리뷰가 더 이상 보이지 않아요. 프로필의 차단한 사용자에서 언제든 해제할 수 있어요.",
     "blockConfirmCta": "차단",
     "blocking": "차단하는 중…",
     "viewDetails": "상세 보기",
@@ -203,7 +203,7 @@
     "searchFoodsHint": "음식 카탈로그에서 검색해 태그하세요.",
     "added": "추가됨",
     "blockedTitle": "차단한 사용자",
-    "blockedNote": "차단한 사용자의 글과 댓글이 보이지 않아요. 상대는 내 글을 그대로 볼 수 있어요.",
+    "blockedNote": "차단한 사용자의 리뷰가 보이지 않아요. 상대는 내 리뷰를 그대로 볼 수 있어요.",
     "blockedEmptyTitle": "차단한 사용자가 없어요",
     "blockedEmptyBody": "차단한 사람이 여기에 표시돼요.",
     "unblock": "차단 해제",
@@ -278,8 +278,6 @@
     "checkedAgainst": "내 프로필 기준으로 확인했어요",
     "mayContain": "들어 있을 수 있는 재료",
     "notInDb": "아직 저희 데이터에 없는 메뉴예요. 직원에게 확인해 주세요.",
-    "viewOrder_one": "담은 메뉴 {{count}}개, 주문 보기",
-    "viewOrder_other": "담은 메뉴 {{count}}개, 주문 보기",
     "legendHint": "메뉴를 탭해 재료 확인, 두 손가락으로 확대",
     "listFootNote": "사진에서 찾은 메뉴와 가장 가까운 음식 정보를 보여드려요. 확실하지 않다면 직원에게 확인해 주세요.",
     "cameraTitle": "메뉴판 스캔",
@@ -289,7 +287,6 @@
     "launcherHint": "메뉴판을 찍으면 모든 메뉴를 내 프로필과 대조해요.",
     "retakeTitle": "다시 스캔할까요?",
     "retakeBody": "지금 결과가 사라져요.",
-    "retakeBodyWithCart": "지금 결과와 담은 메뉴 {{count}}개가 사라져요.",
     "retakeConfirm": "다시 스캔",
     "leaveTitle": "스캔 결과에서 나갈까요?",
     "leaveConfirm": "나가기",
@@ -333,7 +330,12 @@
     "closestMatchSheetBody": "메뉴에는 “{{scanned}}”라고 적혀 있어요. 가장 가까운 음식인 {{food}}({{foodKo}}) 정보를 보여드리고 있어서, 재료와 위험도는 {{food}} 기준이에요.",
     "closestMatchSeeDetails": "{{food}} 상세 보기",
     "searchOnGoogle": "구글에서 검색",
-    "resultsEmpty": "스캔 결과가 없어요"
+    "resultsEmpty": "스캔 결과가 없어요",
+    "viewOrderAction": "주문 보기",
+    "orderCount_one": "담은 메뉴 {{count}}개",
+    "orderCount_other": "담은 메뉴 {{count}}개",
+    "retakeBodyWithCart_one": "지금 결과와 담은 메뉴 {{count}}개가 사라져요.",
+    "retakeBodyWithCart_other": "지금 결과와 담은 메뉴 {{count}}개가 사라져요."
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",
@@ -477,7 +479,6 @@
     "placeRecent": "최근",
     "placeNoResults": "일치하는 장소가 없어요.",
     "placeSkip": "건너뛰기",
-    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "리뷰를 삭제하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
     "photoCapNote": "사진은 {{max}}장까지 추가할 수 있어요. 나머지는 제외했어요.",
     "placeNearby": "주변 장소",
@@ -561,12 +562,12 @@
     "ratingAll": "전체 별점",
     "ratingMin": "{{min}}점 이상",
     "countryOnly": "{{code}}만",
-    "allReviews": "전체 리뷰"
+    "allReviews": "전체 리뷰",
+    "countryOnlyHint": "켜면 {{country}} 국적 사용자의 리뷰만 보여요."
   },
   "ranking": {
     "headerTitle": "내 랭킹",
-    "headerTitleKo": "My Ranking",
-    "vipEyebrow": "VIP MEMBERSHIP",
+    "vipEyebrow": "내 등급",
     "levelLabel": "레벨 {{level}}",
     "totalPoints": "총 {{score}}점",
     "totalPointsSuffix": "총점",
@@ -574,30 +575,24 @@
     "flavorPost": "가지 한식을 맛봤어요.",
     "ptsTo_one": "{{tier}}까지 {{count}}점 남음",
     "ptsTo_other": "{{tier}}까지 {{count}}점 남음",
-    "ptsToKo": "to {{tier}}",
     "totalChip": "{{score}}점",
     "tickPts": "{{at}}점",
     "topTier": "최고 등급 달성",
     "topTierSub": "당신은 뼛속까지 한국인 — 최고 등급이에요. 리뷰를 이어가며 왕좌를 지키세요.",
     "breakdownTitle": "점수 내역",
-    "breakdownSub": "Score breakdown",
     "reviewsLabel": "리뷰",
-    "reviewsLabelKo": "Reviews",
     "reviewsDetail_one": "리뷰 {{count}}개 × 10점",
     "reviewsDetail_other": "리뷰 {{count}}개 × 10점",
     "diversityLabel": "음식 다양성",
-    "diversityLabelKo": "Food variety",
     "diversityDetail_one": "요리 {{count}}종 × 5점",
     "diversityDetail_other": "요리 {{count}}종 × 5점",
     "scansLabel": "스캔",
-    "scansLabelKo": "Scans",
     "scansDetail_one": "메뉴 스캔 {{count}}회 × 2점",
     "scansDetail_other": "메뉴 스캔 {{count}}회 × 2점",
     "gain": "+{{points}}",
     "oneMore": "리뷰 하나 더",
     "oneMorePlus": "+10점",
     "ladderTitle": "전체 등급",
-    "ladderSub": "All ranks",
     "now": "현재",
     "done": "달성",
     "entryPts": "{{at}}점 이상",
@@ -614,15 +609,6 @@
       "gourmet": "미식가",
       "kfood_master": "한식 고수",
       "korean_at_heart": "뼛속까지 한국인"
-    },
-    "tierKo": {
-      "newcomer": "Newcomer",
-      "taster": "Taster",
-      "explorer": "Explorer",
-      "regular": "Regular",
-      "gourmet": "Gourmet",
-      "kfood_master": "K-Food Master",
-      "korean_at_heart": "Korean at Heart"
     },
     "reviewsComing": "다음 업데이트에 제공돼요"
   },
@@ -794,7 +780,8 @@
       "sub": "익숙한 얼굴이 나올지도 몰라요.",
       "cta": "영상으로 확인하기",
       "a11y": "이 음식을 먹는 K-POP 아이돌 영상 열기"
-    }
+    },
+    "verdictMayContain": "들어 있을 수 있는 못 먹는 재료: {{list}}"
   },
   "states": {
     "catalogTitle": "상태",
@@ -805,7 +792,7 @@
     "errorTitle": "문제가 생겼어요",
     "errorBody": "지금은 불러올 수 없어요. 회원님 잘못이 아니라 저희 쪽 문제예요.",
     "offlineTitle": "오프라인 상태예요",
-    "offlineBody": "메뉴 스캔과 리뷰 로드는 인터넷 연결이 필요해요. 저장된 스캔은 그대로 있어요.",
+    "offlineBody": "메뉴 스캔과 리뷰 로드는 인터넷 연결이 필요해요.",
     "linkFailed": "링크를 열 수 없어요",
     "settingsFailed": "설정을 열 수 없어요"
   },
@@ -980,7 +967,7 @@
     "newestFirst": "최신순",
     "swipeHint": "카드를 왼쪽으로 밀면 삭제할 수 있어요",
     "emptyTitle": "아직 저장한 음식이 없어요",
-    "emptyBody": "음식의 북마크를 누르면 여기에 모여요 — 안심하고 맛있게 먹기 위한 나만의 리스트.",
+    "emptyBody": "음식의 별을 누르면 여기에 모여요. 안심하고 맛있게 먹을 나만의 리스트예요.",
     "emptyCta": "음식 둘러보기",
     "removed": "저장됨에서 삭제했어요",
     "undo": "되돌리기",
@@ -1382,7 +1369,8 @@
     "resultMajorSet": "{{contains}}. 피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요.",
     "freeFor_one": "가공식품 무료 스캔 시간이 {{count}}분 남았어요",
     "freeFor_other": "가공식품 무료 스캔 시간이 {{count}}분 남았어요",
-    "freeStarted": "다음 가공식품 스캔은 1시간 동안 무료예요."
+    "freeStarted": "다음 가공식품 스캔은 1시간 동안 무료예요.",
+    "freeExplain": "이 시간 동안은 가공식품을 횟수 걱정 없이 스캔할 수 있어요. 메뉴판 스캔은 해당되지 않아요."
   },
   "scanCamera": {
     "title": "스캔",

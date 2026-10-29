@@ -8,6 +8,30 @@
 - 오분류 바로잡음: shadowOffset의 height를 상자 높이로 읽어 토스트·공유 카드가 알약이 된 3건, 0 → xs 1건(직각 유지)
 - 신규 ko 문구 0 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
+## 2026-10-30 — P-545 / KB-907 문구 일괄 정리
+
+- T-036 My Ranking 한국어 병기(등급 필·점수 내역·칸 라벨·등급 카드·전체 등급) 렌더·키 제거 · 제목 VIP MEMBERSHIP → YOUR RANK(코드의 등급 체계 = rank) · 내역 배지 marginTop auto(가장 긴 칸 기준 바닥 정렬)
+- T-007 상세 띠: Caution + 걸린 재료 전부 caution = "May contain" · danger 재료가 섞이면 기존 "Contains"(false-safe 0)
+- T-030 오프라인 "저장된 스캔" 문장 삭제 · T-035 차단 = 리뷰 + Profile의 Blocked users · T-037 북마크 → 별
+- T-103 주문 pill = 개수와 "View order" 두 덩어리(간격) · 나가기 확인 복수형 _one/_other(ru 중립)
+- T-104 무료 창 뜻 한 줄(결과 배너·시작 안내, 카메라 위 제외) — K112 잠금(차감 표현 0) 지켜 "횟수 걱정 없이"
+- T-106 "{국가} only" 토글 세 곳 아래 설명 한 줄(나라 이름 — 필터 = 보는 사람과 같은 국적, 한국 고정 아님)
+- T-107 리뷰 작성 부제·가공식품 메타 세로 막대 → gap(P-352·시안의 구분자 결정을 발주로 대체)
+- T-109·T-110 약관·개인정보: 앱 렌더에서 언어 한 벌만(ko = 한국어 절, 그 외 English 절) + 이모지 제거 — 원문(kbap-legal) 수정은 그 레포 몫
+- T-034 사장님 카드 한국어 lineBreakStrategyIOS hangul-word(iOS 어절 줄바꿈, 문구 무변 — Android는 RN 미지원)
+- 신규·변경 ko 문구(K-항목):
+  - `ranking.vipEyebrow` = 내 등급
+  - `detail.verdictMayContain` = 들어 있을 수 있는 못 먹는 재료: {{list}}
+  - `states.offlineBody` = 메뉴 스캔과 리뷰 로드는 인터넷 연결이 필요해요.
+  - `community.blockConfirmBody` = 그 사용자의 리뷰가 더 이상 보이지 않아요. 프로필의 차단한 사용자에서 언제든 해제할 수 있어요.
+  - `community.blockedNote` = 차단한 사용자의 리뷰가 보이지 않아요. 상대는 내 리뷰를 그대로 볼 수 있어요.
+  - `saved.emptyBody` = 음식의 별을 누르면 여기에 모여요. 안심하고 맛있게 먹을 나만의 리스트예요. (Codex #366 P1 — 완결 문장)
+  - `scan.orderCount_one` = 담은 메뉴 {{count}}개
+  - `scan.viewOrderAction` = 주문 보기
+  - `scan.retakeBodyWithCart_one` = 지금 결과와 담은 메뉴 {{count}}개가 사라져요.
+  - `packagedScan.freeExplain` = 이 시간 동안은 가공식품을 횟수 걱정 없이 스캔할 수 있어요. 메뉴판 스캔은 해당되지 않아요.
+  - `reviews.countryOnlyHint` = 켜면 {{country}} 국적 사용자의 리뷰만 보여요.
+
 ## 2026-10-30 — P-544 / KB-906 홈·큐레이션 동작
 
 - T-039 큐레이션 카드 스크림 = 띠 위 40부터 0 → 0.35 → 0.6(밝은 사진 위 흰 제목) · 이름 표시 규칙(전부 대문자 + 4글자 이상 단어 있을 때만 단어 첫 글자로 — "N Seoul Tower") · 위치 "동네 / 구" → "동네, 구"(어댑터, 서버 문자열 무변). 헤더 아래 "어두운 줄"은 헤더 요소가 아니라 위로 스크롤된 앞 카드 바닥(스크림 가장 진한 끝) — 코드 변경 없음, 보고

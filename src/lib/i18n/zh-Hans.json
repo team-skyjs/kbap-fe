@@ -177,7 +177,7 @@
     "reasonOtherPlaceholder": "告诉我们更多",
     "reportSubmit": "提交举报",
     "blockConfirmTitle": "屏蔽{{name}}？",
-    "blockConfirmBody": "将不再显示对方的帖子和评论。可随时在设置中解除。",
+    "blockConfirmBody": "将不再显示对方的评价。可随时在“我的”中的“已屏蔽用户”解除。",
     "blockConfirmCta": "屏蔽",
     "blocking": "屏蔽中…",
     "viewDetails": "查看详情",
@@ -203,7 +203,7 @@
     "searchFoodsHint": "在菜品目录中搜索并标记。",
     "added": "已添加",
     "blockedTitle": "已屏蔽用户",
-    "blockedNote": "将不再显示已屏蔽用户的帖子和评论。对方仍能看到你的内容。",
+    "blockedNote": "将不再显示已屏蔽用户的评价。对方仍能看到你的评价。",
     "blockedEmptyTitle": "暂无屏蔽用户",
     "blockedEmptyBody": "你屏蔽的用户会显示在这里。",
     "unblock": "解除屏蔽",
@@ -278,8 +278,6 @@
     "checkedAgainst": "已按你的资料核对",
     "mayContain": "可能含有",
     "notInDb": "尚未收录的菜品——请向店员确认。",
-    "viewOrder_one": "已选 {{count}} 项，查看订单",
-    "viewOrder_other": "已选 {{count}} 项，查看订单",
     "legendHint": "点按查看食材，捏合缩放",
     "listFootNote": "菜品信息基于照片匹配——不确定时请向店员确认。",
     "cameraTitle": "扫描菜单",
@@ -289,7 +287,6 @@
     "launcherHint": "拍下菜单，我们会将每道菜与您的档案比对。",
     "retakeTitle": "重新扫描?",
     "retakeBody": "当前结果将被清除。",
-    "retakeBodyWithCart": "当前结果和已加入的{{count}}项将被清除。",
     "retakeConfirm": "重新扫描",
     "leaveTitle": "离开扫描结果?",
     "leaveConfirm": "离开",
@@ -333,7 +330,12 @@
     "closestMatchSheetBody": "菜单上写的是“{{scanned}}”。我们显示的是最接近的{{food}}（{{foodKo}}），因此食材和风险等级以{{food}}为准。",
     "closestMatchSeeDetails": "查看{{food}}详情",
     "searchOnGoogle": "在Google搜索",
-    "resultsEmpty": "没有扫描结果"
+    "resultsEmpty": "没有扫描结果",
+    "viewOrderAction": "查看订单",
+    "orderCount_one": "已选 {{count}} 项",
+    "orderCount_other": "已选 {{count}} 项",
+    "retakeBodyWithCart_one": "当前结果和已加入的{{count}}项将被清除。",
+    "retakeBodyWithCart_other": "当前结果和已加入的{{count}}项将被清除。"
   },
   "owner": {
     "caption": "将此界面出示给餐厅工作人员",
@@ -432,7 +434,6 @@
     "placeRecent": "最近",
     "placeNoResults": "没有匹配的地点。",
     "placeSkip": "跳过",
-    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "无法删除评价。请检查网络后重试。",
     "photoCapNote": "最多{{max}}张照片 — 超出部分已跳过",
     "placeNearby": "附近地点",
@@ -516,12 +517,12 @@
     "ratingAll": "全部评分",
     "ratingMin": "{{min}}分以上",
     "countryOnly": "仅{{code}}",
-    "allReviews": "全部评价"
+    "allReviews": "全部评价",
+    "countryOnlyHint": "开启后只显示来自{{country}}的用户的评价。"
   },
   "ranking": {
     "headerTitle": "我的排名",
-    "headerTitleKo": "내 랭킹",
-    "vipEyebrow": "VIP 会员",
+    "vipEyebrow": "我的等级",
     "levelLabel": "等级 {{level}}",
     "totalPoints": "总计 {{score}} 分",
     "totalPointsSuffix": "总分",
@@ -529,30 +530,24 @@
     "flavorPost": "道不同的韩国菜。",
     "ptsTo_one": "距 {{tier}} 还差 {{count}} 分",
     "ptsTo_other": "距 {{tier}} 还差 {{count}} 分",
-    "ptsToKo": "{{tier}}까지",
     "totalChip": "{{score}} 分",
     "tickPts": "{{at}} 分",
     "topTier": "已达最高等级",
     "topTierSub": "你已是「骨子里的韩国人」——最高等级。继续点评以守住王座。",
     "breakdownTitle": "得分明细",
-    "breakdownSub": "점수 내역",
     "reviewsLabel": "点评",
-    "reviewsLabelKo": "리뷰",
     "reviewsDetail_one": "{{count}} 条点评 × 10 分",
     "reviewsDetail_other": "{{count}} 条点评 × 10 分",
     "diversityLabel": "菜品多样性",
-    "diversityLabelKo": "음식 다양성",
     "diversityDetail_one": "{{count}} 道不同菜品 × 5 分",
     "diversityDetail_other": "{{count}} 道不同菜品 × 5 分",
     "scansLabel": "扫描",
-    "scansLabelKo": "스캔",
     "scansDetail_one": "{{count}} 次菜单扫描 × 2 分",
     "scansDetail_other": "{{count}} 次菜单扫描 × 2 分",
     "gain": "+{{points}}",
     "oneMore": "再写一条点评",
     "oneMorePlus": "+10 分",
     "ladderTitle": "全部等级",
-    "ladderSub": "전체 등급",
     "now": "当前",
     "done": "已完成",
     "entryPts": "{{at}}+ 分",
@@ -569,15 +564,6 @@
       "gourmet": "美食家",
       "kfood_master": "韩食达人",
       "korean_at_heart": "骨子里的韩国人"
-    },
-    "tierKo": {
-      "newcomer": "입문자",
-      "taster": "맛보기",
-      "explorer": "탐험가",
-      "regular": "단골",
-      "gourmet": "미식가",
-      "kfood_master": "한식 고수",
-      "korean_at_heart": "뼛속까지 한국인"
     },
     "reviewsComing": "将在下次更新中提供"
   },
@@ -632,7 +618,8 @@
       "sub": "说不定会看到熟悉的面孔。",
       "cta": "看视频揭晓",
       "a11y": "打开K-POP爱豆吃这道菜的视频"
-    }
+    },
+    "verdictMayContain": "可能含{{list}} — 在您的回避清单中"
   },
   "states": {
     "catalogTitle": "状态",
@@ -643,7 +630,7 @@
     "errorTitle": "出错了",
     "errorBody": "我们暂时无法加载。这是我们的问题，不是你的。",
     "offlineTitle": "你已离线",
-    "offlineBody": "连接网络以扫描菜单和加载点评。你已保存的扫描仍在这里。",
+    "offlineBody": "连接网络以扫描菜单和加载点评。",
     "linkFailed": "无法打开链接",
     "settingsFailed": "无法打开设置"
   },
@@ -980,7 +967,7 @@
     "newestFirst": "最新优先",
     "swipeHint": "向左滑动卡片即可移除",
     "emptyTitle": "还没有收藏",
-    "emptyBody": "点按任意菜品上的收藏图标即可保存到这里——你的安心美味清单。",
+    "emptyBody": "点按任意菜品上的星标即可保存到这里——你的安心美味清单。",
     "emptyCta": "去逛逛美食",
     "removed": "已从收藏中移除",
     "undo": "撤销",
@@ -1382,7 +1369,8 @@
     "resultMajorSet": "{{contains}}。设置要避免的食材后可查看个人结果。",
     "freeFor_one": "加工食品扫描免费，还剩{{count}}分钟",
     "freeFor_other": "加工食品扫描免费，还剩{{count}}分钟",
-    "freeStarted": "接下来1小时内，加工食品扫描免费。"
+    "freeStarted": "接下来1小时内，加工食品扫描免费。",
+    "freeExplain": "在此期间可不限次数扫描加工食品。扫描菜单不在此列。"
   },
   "scanCamera": {
     "title": "扫描",

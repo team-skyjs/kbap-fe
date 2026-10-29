@@ -415,7 +415,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
             render={renderCamera}
             o={{
             kind: 'ingredient',
-            notice: <PackagedFreeLine style={st.camFree} />,
+            notice: <PackagedFreeLine style={st.camFree} explain={false} />,
             // 모은 면이 있으면 n/4(QA Z5) · 그 밖 디자인 힌트(차감 문구 없음 — README)
             hint: pages.length ? t('packagedScan.labelPagesCount', { count: pages.length, max: LABEL_PAGES_MAX }) : undefined,
             onShot: (photo: ScanPhoto) => onLabelShot(cam, photo),
@@ -529,7 +529,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         render={renderCamera}
         o={{
         kind: 'package',
-        notice: <PackagedFreeLine style={st.camFree} />,
+        notice: <PackagedFreeLine style={st.camFree} explain={false} />,
         onShot: onFrontShot,
         link: labelEnabled
           ? { label: t('packagedScan.labelInstead'), onPress: () => { track(EVENTS.food_packaged_scan_handoff, { from: 'capture' }); goStep({ kind: 'handoff', analysisId: null }); }, testID: 'pscan-label-instead' }

@@ -42,10 +42,10 @@ export default function OwnerConfirm() {
       >
         {data && (
           <>
-            <Text style={[styles.question, isLongQuestion(data.questionKo) && styles.questionLong]}>
+            <Text style={[styles.question, isLongQuestion(data.questionKo) && styles.questionLong]} lineBreakStrategyIOS="hangul-word" /* KB-907(T-034): 어절 단위 줄바꿈 — "들어가 / 나요?" 방지(문구 무변) */>
               {renderQuestion(data.questionKo, data.menuNameKo)}
             </Text>
-            <Text style={styles.note}>{data.explanationKo}</Text>
+            <Text style={styles.note} lineBreakStrategyIOS="hangul-word">{data.explanationKo}</Text>
             <Text style={styles.caption}>{t('owner.caption')}</Text>
           </>
         )}

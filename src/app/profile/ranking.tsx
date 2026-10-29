@@ -100,7 +100,7 @@ function RankingBody({ rk }: { rk: Ranking }) {
 
   return (
     <View style={styles.body}>
-      {/* 히어로 — VIP MEMBERSHIP + 월계수(opacity 0.5) 뒤 RankMedal 56(그림자) + 등급명 + ko 필 + 시식 문구 */}
+      {/* 히어로 — 내 등급 라벨 + 월계수(opacity 0.5) 뒤 RankMedal 56(그림자) + 등급명 + 레벨 필 + 시식 문구(KB-907: 한글 병기·VIP 표현 제거) */}
       <View style={styles.hero}>
         <Text style={styles.eyebrow}>{t('ranking.vipEyebrow')}</Text>
         <View style={styles.medalGroup} testID="ranking-medal-group">
@@ -113,9 +113,8 @@ function RankingBody({ rk }: { rk: Ranking }) {
         </View>
         <Text style={styles.tierName}>{t(`ranking.tier.${cur.key}`)}</Text>
         <View style={styles.tierPill}>
-          <Text style={styles.tierPillText}>
-            {t(`ranking.tierKo.${cur.key}`)} {t('ranking.levelLabel', { level: cur.level })}
-          </Text>
+          {/* KB-907(T-036): 한국어 등급명 병기 제거 — 모든 로케일에 한글이 섞였다 */}
+          <Text style={styles.tierPillText}>{t('ranking.levelLabel', { level: cur.level })}</Text>
         </View>
         {bd && (
           <Text style={styles.flavor}>
@@ -158,10 +157,9 @@ function RankingBody({ rk }: { rk: Ranking }) {
         </View>
       )}
 
-      {/* Score breakdown — 제목 16/500 + ko 13/500 */}
+      {/* Score breakdown — 제목 16/500 */}
       <View style={styles.secHead}>
         <Text style={styles.secTitle}>{t('ranking.breakdownTitle')}</Text>
-        <Text style={styles.secSub}>{t('ranking.breakdownSub')}</Text>
       </View>
       {/* P-283(9/5 예진 확정): 3칸 전부 실배선 — 서버 breakdown 실값(리뷰 10·고유 음식 5·
           스캔 2pt, Ranking.kt). 자물쇠+Coming 하드코딩 소멸. 리뷰 아이콘 = 시안
@@ -170,7 +168,6 @@ function RankingBody({ rk }: { rk: Ranking }) {
         <BreakCol
           icon={<IconTabReviews size={24} color={'#9196A1'} />}
           label={t('ranking.reviewsLabel')}
-          labelKo={t('ranking.reviewsLabelKo')}
           detail={bd ? t('ranking.reviewsDetail', { count: bd.reviews.count }) : ''}
           detailColor={C.ink3}
           points={bd?.reviews.points}
@@ -179,7 +176,6 @@ function RankingBody({ rk }: { rk: Ranking }) {
         <BreakCol
           icon={<IconCutlery size={24} color={'#9196A1'} />}
           label={t('ranking.diversityLabel')}
-          labelKo={t('ranking.diversityLabelKo')}
           detail={bd ? t('ranking.diversityDetail', { count: bd.diversity.count }) : ''}
           detailColor={C.ink3}
           points={bd?.diversity.points}
@@ -188,7 +184,6 @@ function RankingBody({ rk }: { rk: Ranking }) {
         <BreakCol
           icon={<IconScanLines size={24} color={'#9196A1'} />}
           label={t('ranking.scansLabel')}
-          labelKo={t('ranking.scansLabelKo')}
           detail={bd ? t('ranking.scansDetail', { count: bd.scans.count }) : ''}
           detailColor={C.ink3}
           points={bd?.scans.points}
@@ -198,7 +193,6 @@ function RankingBody({ rk }: { rk: Ranking }) {
       {/* All ranks — 3열 × 2행 + 마지막 full */}
       <View style={styles.secHead}>
         <Text style={styles.secTitle}>{t('ranking.ladderTitle')}</Text>
-        <Text style={styles.secSub}>{t('ranking.ladderSub')}</Text>
       </View>
       <View style={styles.rankGrid}>
         {TIERS.map((tier) => {
@@ -239,7 +233,6 @@ function RankingBody({ rk }: { rk: Ranking }) {
                     <RankMedal level={tier.level} size={28} />
                   </View>
                   <Text style={styles.rankName} numberOfLines={2}>{t(`ranking.tier.${tier.key}`)}</Text>{/* KB-707: "K-Food Mas…" — 두 줄까지 */}
-                  <Text style={styles.rankKo} numberOfLines={1}>{t(`ranking.tierKo.${tier.key}`)}</Text>
                   <Text style={[styles.rankPts, now && { color: C.primary }]}>{t('ranking.tickPts', { at: tier.at })}</Text>
                 </View>
               </View>
@@ -251,19 +244,17 @@ function RankingBody({ rk }: { rk: Ranking }) {
   );
 }
 
-/** 내역 카드 열 — 아이콘 원 40 + 제목/ko + 설명 + 점수 필(P-283: 3칸 전부 활성 — locked 소멸).
+/** 내역 카드 열 — 아이콘 원 40 + 제목 + 설명 + 점수 필(KB-907: 바닥 정렬)(P-283: 3칸 전부 활성 — locked 소멸).
  *  Codex #89 P2: 비활성 판정 = **숫자 points**(없음·0) — 포맷("+n")은 필 안에서. */
 function BreakCol({
   icon,
   label,
-  labelKo,
   detail,
   detailColor,
   points,
 }: {
   icon: React.ReactNode;
   label: string;
-  labelKo: string;
   detail: string;
   detailColor: string;
   points?: number;
@@ -274,7 +265,6 @@ function BreakCol({
     <View style={styles.breakCol}>
       <View style={styles.breakIc}>{icon}</View>
       <Text style={styles.breakLabel} numberOfLines={1}>{label}</Text>
-      <Text style={styles.breakKo} numberOfLines={1}>{labelKo}</Text>
       <Text style={[styles.breakDetail, { color: detailColor }]} numberOfLines={2}>{detail}</Text>
       {/* P-327: 비활성(0점 포함) = opacity 0.2 + "-" */}
       <View style={[styles.gainPill, !active && { opacity: 0.2 }]} testID={active ? 'gain-active' : 'gain-inactive'}>
@@ -314,7 +304,6 @@ const styles = StyleSheet.create({
   // P-327 §4: 카드→헤드 18 · 헤드 gap 6 · 헤드→리스트 0(카드 자체 상단 pad)
   secHead: { flexDirection: 'row', alignItems: 'baseline', gap: 6, paddingHorizontal: 20, marginTop: 18 },
   secTitle: { fontSize: 16, fontWeight: '500', color: '#1C1E21' },
-  secSub: { fontSize: 14, fontWeight: '500', color: '#6A6F7C' },
 
   // 내역 카드 — r20 흰 보더 없음 pad 상하 16/좌우 0, 열 사이 1px #EAEBEE(h175)
   breakCard: { marginHorizontal: 20, flexDirection: 'row', paddingVertical: 16, paddingHorizontal: 0, borderRadius: radius.lg, backgroundColor: '#FFFFFF' },
@@ -322,9 +311,9 @@ const styles = StyleSheet.create({
   breakDiv: { width: 1, height: 175, alignSelf: 'center', backgroundColor: '#EAEBEE' },
   breakIc: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: '#F7F8FA', alignItems: 'center', justifyContent: 'center' },
   breakLabel: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
-  breakKo: { fontSize: 13, fontWeight: '500', color: '#9196A1', marginTop: -6 }, // 제목/ko gap 2(열 gap 8 보정)
   breakDetail: { fontSize: 13, fontWeight: '400', textAlign: 'center', lineHeight: 17, minHeight: 32 },
-  gainPill: { height: 32, justifyContent: 'center', backgroundColor: C.primary, borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 10 },
+  gainPill: { marginTop: 'auto', height: 32, // KB-907(T-036): 칸 높이 = 가장 긴 칸 — 배지를 바닥에 붙여 세 칸 가로 정렬
+    justifyContent: 'center', backgroundColor: C.primary, borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 10 },
   gainText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF' },
 
   // P-327 §5: 헤드→그리드 10 · 비현재 보더 없음(NOW만 primary 1) · 1행 h145/2행·풀 h129
@@ -341,7 +330,6 @@ const styles = StyleSheet.create({
   nowBadgeText: { fontSize: 11, fontWeight: '600', color: '#FFFFFF' },
   medalGlow: { shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 }, // P-369 ②: shadowColor = 등급색(인라인)
   rankName: { fontSize: 16, fontWeight: '600', color: '#1C1E21', marginTop: 6, textAlign: 'center' }, // KB-707: 두 줄로 감쌀 때 가운데
-  rankKo: { fontSize: 13, fontWeight: '400', color: C.ink3, marginTop: 2 },
   rankPts: { fontSize: 14, fontWeight: '500', color: C.ink3, marginTop: 6 },
 
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
