@@ -25,6 +25,7 @@ import { Btn } from '@/components/Btn';
 import { Input, Spinner } from '@/components';
 import { color as C, font } from '@/lib/theme';
 import { FLAGS, isDiagnosticChannel } from '@/lib/flags';
+import { uploadNameScanPhoto } from '@/lib/api/scanImage';
 import { EVENTS, track } from '@/lib/analytics';
 import { apiLang } from '@/lib/api/client';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
@@ -110,6 +111,13 @@ function LabelDebug({ onAdd }: { onAdd: (text: string) => void }) {
   );
 }
 
+/** 끝난 값만 동기로 읽는다 — 끝나기 전·실패는 null(KB-892: 늦은 업로드를 기다리지 않기 위한 창) */
+function settledOrNull(p: Promise<string | null>): () => string | null {
+  let v: string | null = null;
+  void p.then((x) => { v = x; });
+  return () => v;
+}
+
 /** focused = 스캔 화면이 보이는 중(Codex #318) · onQuota = 확정이 한도에 걸림(KB-865 ③ 시안 21 — scan.tsx가 기존 소진 화면을 이 흐름 위에 띄운다, 흐름 상태 유지) */
 export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, focused = true, onQuota }: { mode: ScanMode; onMode: (m: ScanMode) => void; onClose: () => void; startLabel?: boolean; renderCamera: (o: ScanCamOpts) => React.ReactElement; focused?: boolean; onQuota?: () => void }) {
   const { t } = useTranslation();
@@ -147,13 +155,15 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   /** 확정 성공(CONFIRMED)한 분석 — 성분표는 이어 받지 않는다 → 성분표로 가면 새 분석(Codex #339: NO_CANDIDATE로 정리됐다가 이름 찾기로 확정된 경우 포함) */
   const confirmedIds = React.useRef(new Set<string>());
 
-  const runName = async (ocrText: string, photoUri: string | null = null) => {
+  /** photoPath = 앞면 사진 업로드의 지금 값(KB-892) — 요청 시점에 끝나 있으면 싣고, 아직이거나 실패면 없이(기다리지 않는다) */
+  const runName = async (ocrText: string, photoUri: string | null = null, photoPath?: () => string | null) => {
     goStep({ kind: 'reading', photoUri });
     const my = reqSeq.current;
     try {
-      const r = await scanProcessedName(ocrText, apiLang());
+      const imagePath = photoPath?.() ?? null;
+      const r = await scanProcessedName(ocrText, apiLang(), imagePath);
       if (my !== reqSeq.current) return; // 그 사이 뒤로 감
-      track(EVENTS.food_packaged_scan_name, { candidate_count: r.candidates.length });
+      track(EVENTS.food_packaged_scan_name, { candidate_count: r.candidates.length, photo_attached: imagePath != null });
       if (r.candidates.length) setStep({ kind: 'candidates', analysisId: r.analysisId, candidates: r.candidates, selectedId: null, ocrText });
       else {
         settledIds.current.add(r.analysisId);
@@ -162,7 +172,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       }
     } catch (e) {
       if (my !== reqSeq.current) return;
-      setStep({ kind: 'error', failure: scanFailureOf(e), retry: () => void runName(ocrText, photoUri) });
+      setStep({ kind: 'error', failure: scanFailureOf(e), retry: () => void runName(ocrText, photoUri, photoPath) });
     }
   };
 
@@ -181,6 +191,8 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   };
 
   const onFrontShot = async (photo: ScanPhoto) => {
+    // KB-892: 앞면 사진 업로드는 OCR과 병렬로 시작만 — 이름 요청은 기다리지 않는다(스캔 체감 시간 무변)
+    const photoPath = FLAGS.packagedNameScanPhoto ? settledOrNull(uploadNameScanPhoto(photo)) : undefined;
     const text = await readText(photo, false, { kind: 'capture' });
     if (text == null) return;
     if (!text.trim()) {
@@ -189,7 +201,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       setStep({ kind: 'frontUnreadable' });
       return;
     }
-    await runName(text, photo.uri);
+    await runName(text, photo.uri, photoPath);
   };
 
   // ── P-508 성분표 ──

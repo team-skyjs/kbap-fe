@@ -46,6 +46,8 @@ let mockProfileMissing = false;
 let mockFreeUntil: string | null = null; // KB-877: 서버 무료 창 끝 // 프로필 대기·실패(data 없음)
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockProfileMissing ? undefined : { id: '41', restrictions: mockRestrictions, packagedFreeUntil: mockFreeUntil } }) })); // KB-865: 판정 캐시 키 = 회피 코드 집합 · 0개 = 시안 45
 const mockOcr = jest.fn();
+const mockUploadPhoto = jest.fn(async (_p: unknown): Promise<string | null> => null);
+jest.mock('@/lib/api/scanImage', () => ({ ...jest.requireActual('@/lib/api/scanImage'), uploadNameScanPhoto: (p: unknown) => mockUploadPhoto(p) }));
 jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockOcr(...a) }));
 let mockGranted = true;
 jest.mock('@/lib/openExternal', () => ({ openAppSettings: jest.fn(async () => true) }));
@@ -59,6 +61,7 @@ import { ApiError } from '@/lib/api/client';
 import { adaptScanConfirm, adaptScanName } from '@/lib/api/processedFoodAdapter';
 import { scanFailureOf, scanProcessedName } from '@/lib/data/useProcessedScan';
 import { PackagedScanFlow, type ScanCamOpts } from '../PackagedScanFlow';
+import { FLAGS } from '@/lib/flags';
 import { ScanModeTabs } from '../ScanModeTabs';
 import { ProcessedFoodDetailScreen as Detail } from '@/app/processed-foods/[id]'; // KB-870: 기본 내보내기 = 채널 게이트 — 화면 자체를 직접 렌더
 /* eslint-enable import/first */
@@ -68,7 +71,7 @@ const DETAIL = { id: 11, reportNo: 'R1', productName: '새우깡', maker: '농�
 
 const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
-beforeEach(() => { qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; mockFreeUntil = null; });
+beforeEach(() => { FLAGS.packagedNameScanPhoto = false; /* KB-892: 기존 흐름 = 플래그 OFF(jest는 dev 채널이라 기본 ON) */ qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; mockFreeUntil = null; });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); qc.clear(); jest.clearAllMocks(); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -137,7 +140,7 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(ids(t)).toEqual(expect.arrayContaining(['pscan-candidates', 'pscan-candidate-11', 'pscan-candidate-12']));
     expect(texts(t)).toContain('packagedScan.matchTitle');
     expect(JSON.stringify(texts(t))).not.toMatch(/usedOnSuccess|noScanUsed|scanUsed/); // README: 차감 문구 0
-    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_name', { candidate_count: 2 });
+    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_name', { candidate_count: 2, photo_attached: false });
     // 선택 전 확정 = 요청 0
     await press(t, 'pscan-confirm');
     expect(mockPost).toHaveBeenCalledTimes(1);
@@ -631,5 +634,58 @@ describe('모드 탭·상세 띠·배선', () => {
       expect([...flat(d.scanMode, 'scanMode.'), ...flat(d.packagedScan, 'packagedScan.')].filter((k) => !/_(few|many)$/.test(k)).sort()).toEqual(keys);
       expect(JSON.stringify([d.scanMode, d.packagedScan])).not.toContain('·');
     }
+  });
+});
+
+describe('KB-892 이름 스캔 앞면 사진 동봉(dev 플래그, 그림자 모드)', () => {
+  const NO_CAND = { analysisId: 'A9', state: 'NO_CANDIDATE', candidates: [] };
+  const nameBody = () => mockPost.mock.calls.find((c) => c[0] === '/api/processed-foods/scan/name')![1];
+  afterEach(() => { FLAGS.packagedNameScanPhoto = false; });
+
+  it('플래그 OFF = 업로드 0 · body가 현행과 바이트 동일 · photo_attached false', async () => {
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost.mockResolvedValueOnce(NO_CAND);
+    await press(flow(), 'pscan-take-photo');
+    expect(mockUploadPhoto).not.toHaveBeenCalled();
+    expect(JSON.stringify(nameBody())).toBe(JSON.stringify({ ocrText: '새우깡', lang: 'en' }));
+    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_name', { candidate_count: 0, photo_attached: false });
+  });
+
+  it('ON · 업로드가 OCR보다 먼저 끝남 = 촬영 사진으로 업로드 → body에 imagePath · photo_attached true(경로는 이벤트에 없음)', async () => {
+    FLAGS.packagedNameScanPhoto = true;
+    mockUploadPhoto.mockResolvedValueOnce('scan/41/front.jpg');
+    mockOcr.mockImplementationOnce(async () => { await new Promise((r) => setTimeout(r, 0)); return [{ text: '새우깡' }]; });
+    mockPost.mockResolvedValueOnce(NO_CAND);
+    await press(flow(), 'pscan-take-photo');
+    expect(mockUploadPhoto).toHaveBeenCalledWith(mockShot);
+    expect(nameBody()).toEqual({ ocrText: '새우깡', lang: 'en', imagePath: 'scan/41/front.jpg' });
+    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_name', { candidate_count: 0, photo_attached: true });
+  });
+
+  it('ON · 업로드가 OCR보다 느림 = 기다리지 않고 imagePath 없이 바로 요청(업로드 대기 중에 이미 나감)', async () => {
+    FLAGS.packagedNameScanPhoto = true;
+    let finish!: (v: string | null) => void;
+    mockUploadPhoto.mockImplementationOnce(() => new Promise((r) => { finish = r; }));
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost.mockResolvedValueOnce(NO_CAND);
+    await press(flow(), 'pscan-take-photo');
+    expect(nameBody()).toEqual({ ocrText: '새우깡', lang: 'en' }); // 업로드는 아직 안 끝났다
+    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_name', { candidate_count: 0, photo_attached: false });
+    await act(async () => { finish('scan/41/late.jpg'); });
+    expect(mockPost.mock.calls.filter((c) => c[0] === '/api/processed-foods/scan/name')).toHaveLength(1); // 늦은 경로로 재요청 없음
+  });
+
+  it('ON · 업로드 실패(null) = imagePath 없이 기존대로', async () => {
+    FLAGS.packagedNameScanPhoto = true;
+    mockUploadPhoto.mockResolvedValueOnce(null);
+    mockOcr.mockImplementationOnce(async () => { await new Promise((r) => setTimeout(r, 0)); return [{ text: '새우깡' }]; });
+    mockPost.mockResolvedValueOnce(NO_CAND);
+    await press(flow(), 'pscan-take-photo');
+    expect(nameBody()).toEqual({ ocrText: '새우깡', lang: 'en' });
+  });
+
+  it('채널 규칙 = 다른 dev 서버 전용 기능과 같은 축(production OFF)', () => {
+    const src = fs.readFileSync('src/lib/flags.ts', 'utf8');
+    expect(src).toContain('packagedNameScanPhoto: DEV_SERVER_CHANNEL,');
   });
 });

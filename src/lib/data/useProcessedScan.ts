@@ -12,9 +12,11 @@ import { PROCESSED_FOOD_API_VERSION } from './processedFoodApiVersion';
 export const OCR_TEXT_MAX = 2000;
 const headers = { headers: { 'X-API-Version': PROCESSED_FOOD_API_VERSION } };
 
-export async function scanProcessedName(ocrText: string, lang: string): Promise<ScanNameResult> {
+/** KB-892: imagePath = 앞면 사진 업로드 경로(서버 그림자 모드용) — 없으면 키 자체를 안 보낸다(현행 body와 바이트 동일) */
+export async function scanProcessedName(ocrText: string, lang: string, imagePath: string | null = null): Promise<ScanNameResult> {
   const text = Array.from(ocrText).slice(0, OCR_TEXT_MAX).join(''); // 서버 상한 2000자(코드포인트로 자름 — 서로게이트 깨짐 방지)
-  return adaptScanName(await api.post<ScanNameWire>('/api/processed-foods/scan/name', { ocrText: text, lang }, headers));
+  const body = imagePath ? { ocrText: text, lang, imagePath } : { ocrText: text, lang };
+  return adaptScanName(await api.post<ScanNameWire>('/api/processed-foods/scan/name', body, headers));
 }
 export async function confirmProcessedScan(analysisId: string, reportNo: string | null): Promise<ScanConfirmResult> {
   return adaptScanConfirm(await api.post<ScanConfirmWire>('/api/processed-foods/scan/confirm', { analysisId, reportNo }, headers));
