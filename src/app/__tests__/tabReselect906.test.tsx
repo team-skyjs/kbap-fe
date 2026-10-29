@@ -5,6 +5,7 @@
 import * as fs from 'fs';
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
+import TabsLayout from '../(tabs)/_layout'; // jest.mock은 위로 끌어올려진다
 
 let mockOnPress: ((k: string) => void) | undefined;
 let mockTabBarProps: unknown;
@@ -16,7 +17,9 @@ jest.mock('@/components', () => ({
 }));
 jest.mock('expo-router', () => {
   const Tabs = ({ tabBar }: { tabBar: (p: unknown) => React.ReactNode }) => tabBar(mockTabBarProps);
-  Tabs.Screen = () => null;
+  Tabs.Screen = function Screen() {
+    return null;
+  };
   return { Tabs, useFocusEffect: () => {}, useRouter: () => ({ navigate: jest.fn() }) };
 });
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
@@ -28,7 +31,6 @@ jest.mock('@/lib/deeplink', () => ({ isEntryResolved: () => false, setDeeplinkRe
 jest.mock('@/lib/auth/beTokens', () => ({ isRegisteredForAnalytics: () => new Promise(() => {}) }));
 jest.mock('@/components/ResumeOnboardingBanner', () => ({ ResumeOnboardingBanner: () => null }));
 
-import TabsLayout from '../(tabs)/_layout';
 
 function setup(activeIndex: number, prevented = false) {
   const emit = jest.fn(() => ({ defaultPrevented: prevented }));
