@@ -75,6 +75,36 @@ export function parseLegalHtml(html: string): LegalBlock[] {
   return out;
 }
 
+const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\uFE0F\u200D]/gu;
+const noEmoji = (s: string) => s.replace(EMOJI, '').replace(/ {2,}/g, ' ').trim();
+const pick = (s: string, ko: boolean) => {
+  const parts = s.split(' / ');
+  return parts.length === 2 ? parts[ko ? 1 : 0] : s;
+};
+
+/** KB-907(T-109·T-110): kbap-legal 원문은 한 문서에 "English" 절과 "한국어" 절을 이어 붙이고 제목·시행일도 "영문 / 한글" 병기 —
+ *  앱 언어 한 벌만 보여 준다(ko = 한국어 절, 그 외 = English 절). 절 구분(h2 English·한국어)을 못 찾으면 원문 전체 그대로(내용 숨김 0).
+ *  제목의 경고 이모지(⚠️)는 언어와 무관하게 뺀다. 원문 수정은 kbap-legal 레포 몫(앱은 렌더 필터만) */
+export function localizeLegal(blocks: LegalBlock[], lang: string): LegalBlock[] {
+  const ko = lang.startsWith('ko');
+  const isSec = (b: LegalBlock, label: string) => b.type === 'heading' && b.level === 2 && b.text.trim() === label;
+  const en = blocks.findIndex((b) => isSec(b, 'English'));
+  const kr = blocks.findIndex((b) => isSec(b, '한국어'));
+  let out = blocks;
+  if (en >= 0 && kr > en) {
+    const head = blocks.slice(0, en).map((b): LegalBlock => {
+      if (b.type === 'heading') return { ...b, text: pick(b.text, ko) };
+      if (b.type === 'paragraph') {
+        const m = b.text.match(/^([^:]+ \/ [^:]+):(.*)$/); // "Effective date / 시행일: 2026-07-16 ..."
+        return m ? { ...b, text: `${pick(m[1], ko)}:${m[2]}` } : b;
+      }
+      return b;
+    });
+    out = [...head, ...(ko ? blocks.slice(kr + 1) : blocks.slice(en + 1, kr))];
+  }
+  return out.map((b) => (b.type === 'heading' || b.type === 'paragraph' || b.type === 'listItem' ? { ...b, text: noEmoji(b.text) } : b));
+}
+
 export async function fetchLegalBlocks(doc: LegalDoc): Promise<LegalBlock[]> {
   incInflight(); // P-347: raw fetch도 OTA 정적 창 카운터에 포함
   try {

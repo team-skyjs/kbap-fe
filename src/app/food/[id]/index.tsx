@@ -22,6 +22,7 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
+import { CountryOnlyHint } from '@/features/review/CountryOnlyHint';
 import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
 import { ingredientLabel, isCatalogIngredient } from '@/lib/mocks/ingredients';
 import { RiskMark, RiskBadge, CardPhoto, Chip, NewBadge, Star, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft } from '@/components';
@@ -452,7 +453,9 @@ function Registered({
       : dishRisk === 'safe'
         ? t('detail.basisSafe')
         : flagged.length > 0
-          ? t('detail.verdictContains', { list: flagged.map((i) => i.name).join(', ') })
+          ? // KB-907(T-007): Caution 띠 + 걸린 재료가 전부 caution = "May contain"(QA: Caution인데 "Contains Egg").
+            // 걸린 재료에 danger가 하나라도 있으면 기존 "Contains" — 확정 재료를 "may"로 낮추지 않는다(false-safe 0)
+            t(dishRisk === 'caution' && flagged.every((i) => i.risk === 'caution') ? 'detail.verdictMayContain' : 'detail.verdictContains', { list: flagged.map((i) => i.name).join(', ') })
           : t('detail.basisFlagged');
 
   // 재료별 사유 — 기존 중립 조립 유지(FE 템플릿, "알레르기" 단정 금지)
@@ -634,6 +637,9 @@ function Registered({
                 <Text style={styles.natToggleLabel}>{t('reviews.countryOnly', { code: nationality })}</Text>
               </Pressable>
             </View>
+          ) : null}
+          {!guest && nationality ? (
+            <CountryOnlyHint code={nationality} style={styles.natHint} />
           ) : null}
           {/* KB-848: 평점 요약 박스(리뷰 전체 목록과 공용) — P-360: KR only ON = 같은 국적 집계 · 같은 국적 0건 = 박스 없음. 탭 = 리뷰 전체 목록 */}
           {(() => {
@@ -891,6 +897,7 @@ const styles = StyleSheet.create({
 
   // §1-7: 리뷰 섹션
   reviewSec: { gap: 14, paddingBottom: 8 },
+  natHint: { paddingHorizontal: 20, marginTop: 4, textAlign: 'right' }, // KB-907(T-106): 토글(오른쪽) 아래
   rvHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 20, paddingTop: 20 }, // KB-848: 토글만 — 오른쪽 정렬
   rvSummary: { paddingHorizontal: 20, paddingTop: 12 }, // KB-848: 요약 박스(토글 아래)
   rvSummaryTop: { paddingTop: 20 }, // 토글 없는 경우(게스트·국적 미상) = 디바이더 아래 20

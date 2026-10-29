@@ -20,6 +20,7 @@
  */
 import * as React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { PackagedFreeExplain } from '@/features/scan/packagedFreeHour';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -295,11 +296,16 @@ export function ProcessedFoodDetailScreen() {
         <View style={s.titleBlock}>
           {!!d.maker && <Text style={s.maker}>{d.maker}</Text>}
           <Text style={s.name} accessibilityRole="header" lineBreakStrategyIOS="hangul-word">{d.name}</Text>
-          {/* 한국어명 | 유형 — 시안의 세로 막대 구분자(가운데 점 금지 규칙과 무관) */}
+          {/* 한국어명 + 유형 — KB-907(T-107): 세로 막대 구분자 → 간격(gap 8, 줄이 넘치면 다음 줄로) */}
           {(!!d.nameKo || !!d.type || !!d.foodType) && (
-            <Text style={s.meta}>{[d.nameKo, d.type ? t(packagedTypeKey(d.type)) : d.foodType].filter(Boolean).join(' | ')}</Text>
+            <View style={s.metaRow} testID="pf-meta">
+              {[d.nameKo, d.type ? t(packagedTypeKey(d.type)) : d.foodType].filter(Boolean).map((m, i) => (
+                <Text key={i} style={s.meta}>{m}</Text>
+              ))}
+            </View>
           )}
           {freeStarted && <Text style={s.freeStarted} testID="pf-free-started">{t('packagedScan.freeStarted')}</Text>}
+          {freeStarted && <PackagedFreeExplain />}
         </View>
 
         {verdictText ? (
@@ -368,6 +374,7 @@ const s = StyleSheet.create({
   maker: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
   name: { fontFamily: font.bodyBold, fontSize: 28, lineHeight: 34, color: C.ink },
   meta: { fontFamily: font.body, fontSize: 15, lineHeight: 20, color: C.ink2 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 8 },
   freeStarted: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 20, color: C.primaryText, marginTop: 8 }, // KB-877
   block: { gap: 10 },
   h2: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 26, color: C.ink },

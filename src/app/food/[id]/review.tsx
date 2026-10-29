@@ -486,14 +486,18 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
           )}
           <View style={{ flex: 1, minWidth: 0, gap: 4 }}>{/* A-RW-02 */}
             <Text style={styles.foodName} numberOfLines={1}>{targetName}</Text>
-            {/* P-352(KB-514): count 0 = 리뷰 수 숨김(한글명 없으면 줄 생략),
-                n≥1 = "한글명 | n reviews"(" | " 구분 — 예진 결정, 구 P-196 공백 구분 대체) */}
+            {/* P-352(KB-514): count 0 = 리뷰 수 숨김(한글명 없으면 줄 생략), n≥1 = 한글명 + n reviews.
+                KB-907(T-107): 세로 막대 구분자 → 간격(gap 8) */}
             {(() => {
-              const sub = packaged ? product?.maker ?? null : foodSubtitle(food, t);
-              return sub == null ? null : (
-                <Text style={styles.foodKo} numberOfLines={1}>
-                  {sub}
-                </Text>
+              const parts = packaged ? (product?.maker ? [product.maker] : []) : foodSubtitle(food, t);
+              return parts.length === 0 ? null : (
+                <View style={styles.foodSubRow} testID="review-food-sub">
+                  {parts.map((p, i) => (
+                    <Text key={i} style={[styles.foodKo, i === 0 && styles.foodSubFirst]} numberOfLines={1}>
+                      {p}
+                    </Text>
+                  ))}
+                </View>
               );
             })()}
           </View>
@@ -761,6 +765,8 @@ const styles = StyleSheet.create({
   foodPh: { width: 48, height: 48, borderRadius: 4, backgroundColor: C.surface2, overflow: 'hidden' },
   foodName: { fontSize: 14, fontWeight: '600', color: C.ink },
   foodKo: { fontSize: 13, fontWeight: '400', color: C.ink3 },
+  foodSubRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  foodSubFirst: { flexShrink: 1 }, // 긴 한글명만 말줄임 — 리뷰 수는 그대로
 
   block: { gap: 12 },
   tasteBlock: { gap: 16 }, // KB-865 ④ 시안 32: 당도 행 → 안내 1줄

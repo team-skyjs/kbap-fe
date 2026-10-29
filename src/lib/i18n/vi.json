@@ -177,7 +177,7 @@
     "reasonOtherPlaceholder": "Cho chúng tôi biết thêm",
     "reportSubmit": "Gửi báo cáo",
     "blockConfirmTitle": "Chặn {{name}}?",
-    "blockConfirmBody": "Bạn sẽ không thấy bài viết và bình luận của họ nữa. Có thể bỏ chặn bất cứ lúc nào trong Cài đặt.",
+    "blockConfirmBody": "Bạn sẽ không thấy đánh giá của họ nữa. Có thể bỏ chặn bất cứ lúc nào trong Hồ sơ, mục Người dùng đã chặn.",
     "blockConfirmCta": "Chặn",
     "blocking": "Đang chặn…",
     "viewDetails": "Xem chi tiết",
@@ -203,7 +203,7 @@
     "searchFoodsHint": "Tìm trong danh mục món ăn để gắn thẻ.",
     "added": "Đã thêm",
     "blockedTitle": "Người dùng đã chặn",
-    "blockedNote": "Bạn sẽ không thấy bài viết và bình luận của người bị chặn. Họ vẫn thấy nội dung của bạn.",
+    "blockedNote": "Bạn sẽ không thấy đánh giá của người bị chặn. Họ vẫn thấy đánh giá của bạn.",
     "blockedEmptyTitle": "Chưa chặn ai",
     "blockedEmptyBody": "Những người bạn chặn sẽ hiển thị ở đây.",
     "unblock": "Bỏ chặn",
@@ -278,8 +278,6 @@
     "checkedAgainst": "Đã đối chiếu với hồ sơ của bạn",
     "mayContain": "Có thể chứa",
     "notInDb": "Chưa có trong dữ liệu — hãy hỏi nhân viên.",
-    "viewOrder_one": "{{count}} món, Xem đơn",
-    "viewOrder_other": "{{count}} món, Xem đơn",
     "legendHint": "Chạm món để xem nguyên liệu, véo để phóng to",
     "listFootNote": "Thông tin món dựa trên ảnh — hỏi nhân viên nếu chưa chắc.",
     "cameraTitle": "Quét thực đơn",
@@ -289,7 +287,6 @@
     "launcherHint": "Chụp thực đơn — chúng tôi sẽ đối chiếu từng món với hồ sơ của bạn.",
     "retakeTitle": "Quét lại?",
     "retakeBody": "Kết quả hiện tại sẽ bị xóa.",
-    "retakeBodyWithCart": "Kết quả và {{count}} mục đã thêm sẽ bị xóa.",
     "retakeConfirm": "Quét lại",
     "leaveTitle": "Rời khỏi kết quả quét?",
     "leaveConfirm": "Rời đi",
@@ -333,7 +330,12 @@
     "closestMatchSheetBody": "Menu ghi “{{scanned}}”. Chúng tôi đang hiển thị {{food}} ({{foodKo}}), món gần nhất trong danh mục, nên nguyên liệu và mức rủi ro của bạn dựa trên {{food}}.",
     "closestMatchSeeDetails": "Xem chi tiết {{food}}",
     "searchOnGoogle": "Tìm trên Google",
-    "resultsEmpty": "Không có kết quả quét"
+    "resultsEmpty": "Không có kết quả quét",
+    "viewOrderAction": "Xem đơn",
+    "orderCount_one": "{{count}} món",
+    "orderCount_other": "{{count}} món",
+    "retakeBodyWithCart_one": "Kết quả và {{count}} mục đã thêm sẽ bị xóa.",
+    "retakeBodyWithCart_other": "Kết quả và {{count}} mục đã thêm sẽ bị xóa."
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",
@@ -432,7 +434,6 @@
     "placeRecent": "Gần đây",
     "placeNoResults": "Không có địa điểm phù hợp.",
     "placeSkip": "Bỏ qua",
-    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "Không xóa được đánh giá. Kiểm tra kết nối và thử lại.",
     "photoCapNote": "Tối đa {{max}} ảnh — phần chọn thừa đã bị bỏ qua",
     "placeNearby": "Gần đây",
@@ -516,12 +517,12 @@
     "ratingAll": "Mọi mức sao",
     "ratingMin": "Từ {{min}} sao",
     "countryOnly": "Chỉ {{code}}",
-    "allReviews": "Tất cả đánh giá"
+    "allReviews": "Tất cả đánh giá",
+    "countryOnlyHint": "Bật để chỉ xem đánh giá của người đến từ {{country}}."
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",
-    "headerTitleKo": "내 랭킹",
-    "vipEyebrow": "THÀNH VIÊN VIP",
+    "vipEyebrow": "HẠNG CỦA BẠN",
     "levelLabel": "CẤP {{level}}",
     "totalPoints": "{{score}} tổng điểm",
     "totalPointsSuffix": "tổng điểm",
@@ -529,30 +530,24 @@
     "flavorPost": "món Hàn khác nhau cho đến nay.",
     "ptsTo_one": "Còn {{count}} điểm để lên {{tier}}",
     "ptsTo_other": "Còn {{count}} điểm để lên {{tier}}",
-    "ptsToKo": "{{tier}}까지",
     "totalChip": "{{score}} điểm",
     "tickPts": "{{at}} điểm",
     "topTier": "Đã đạt hạng cao nhất",
     "topTierSub": "Bạn là Người Hàn Trong Tim — hạng cao nhất. Tiếp tục đánh giá để giữ ngôi vương.",
     "breakdownTitle": "Chi tiết điểm số",
-    "breakdownSub": "점수 내역",
     "reviewsLabel": "Đánh giá",
-    "reviewsLabelKo": "리뷰",
     "reviewsDetail_one": "{{count}} đánh giá × 10 điểm",
     "reviewsDetail_other": "{{count}} đánh giá × 10 điểm",
     "diversityLabel": "Đa dạng món ăn",
-    "diversityLabelKo": "음식 다양성",
     "diversityDetail_one": "{{count}} món khác nhau × 5 điểm",
     "diversityDetail_other": "{{count}} món khác nhau × 5 điểm",
     "scansLabel": "Lần quét",
-    "scansLabelKo": "스캔",
     "scansDetail_one": "{{count}} lần quét thực đơn × 2 điểm",
     "scansDetail_other": "{{count}} lần quét thực đơn × 2 điểm",
     "gain": "+{{points}}",
     "oneMore": "Thêm một đánh giá nữa",
     "oneMorePlus": "+10 điểm",
     "ladderTitle": "Tất cả các hạng",
-    "ladderSub": "전체 등급",
     "now": "HIỆN TẠI",
     "done": "Xong",
     "entryPts": "{{at}}+ điểm",
@@ -569,15 +564,6 @@
       "gourmet": "Người sành ăn",
       "kfood_master": "Bậc thầy món Hàn",
       "korean_at_heart": "Người Hàn Trong Tim"
-    },
-    "tierKo": {
-      "newcomer": "입문자",
-      "taster": "맛보기",
-      "explorer": "탐험가",
-      "regular": "단골",
-      "gourmet": "미식가",
-      "kfood_master": "한식 고수",
-      "korean_at_heart": "뼛속까지 한국인"
     },
     "reviewsComing": "Sẽ có trong bản cập nhật tới"
   },
@@ -632,7 +618,8 @@
       "sub": "Có thể bạn sẽ thấy một gương mặt quen thuộc.",
       "cta": "Xem video để biết",
       "a11y": "Mở video idol K-pop ăn món này"
-    }
+    },
+    "verdictMayContain": "Có thể chứa {{list}} — có trong danh sách tránh của bạn"
   },
   "states": {
     "catalogTitle": "Trạng thái",
@@ -643,7 +630,7 @@
     "errorTitle": "Đã xảy ra sự cố",
     "errorBody": "Chúng tôi không thể tải mục này lúc này. Lỗi ở phía chúng tôi, không phải bạn.",
     "offlineTitle": "Bạn đang ngoại tuyến",
-    "offlineBody": "Kết nối internet để quét thực đơn và tải đánh giá. Các bản quét đã lưu vẫn còn ở đây.",
+    "offlineBody": "Kết nối internet để quét thực đơn và tải đánh giá.",
     "linkFailed": "Không mở được liên kết",
     "settingsFailed": "Không mở được Cài đặt"
   },
@@ -980,7 +967,7 @@
     "newestFirst": "Mới nhất trước",
     "swipeHint": "Vuốt thẻ sang trái để xóa",
     "emptyTitle": "Chưa lưu món nào",
-    "emptyBody": "Chạm vào dấu trang trên món bất kỳ để lưu vào đây — danh sách để ăn ngon và an toàn của bạn.",
+    "emptyBody": "Chạm vào ngôi sao trên món bất kỳ để lưu vào đây — danh sách để ăn ngon và an toàn của bạn.",
     "emptyCta": "Khám phá món ăn",
     "removed": "Đã xóa khỏi Đã lưu",
     "undo": "Hoàn tác",
@@ -1382,7 +1369,8 @@
     "resultMajorSet": "{{contains}}. Đặt nguyên liệu cần tránh để xem kết quả riêng.",
     "freeFor_one": "Quét thực phẩm đóng gói miễn phí còn {{count}} phút",
     "freeFor_other": "Quét thực phẩm đóng gói miễn phí còn {{count}} phút",
-    "freeStarted": "Các lần quét thực phẩm đóng gói tiếp theo miễn phí trong 1 giờ."
+    "freeStarted": "Các lần quét thực phẩm đóng gói tiếp theo miễn phí trong 1 giờ.",
+    "freeExplain": "Trong thời gian này, bạn có thể quét thực phẩm đóng gói bao nhiêu lần tùy thích. Không áp dụng cho quét thực đơn."
   },
   "scanCamera": {
     "title": "Quét",
