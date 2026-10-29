@@ -13,7 +13,8 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
-import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
+import { KAV_BEHAVIOR, KAV_OFFSET } from '@/lib/keyboardAvoid';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +31,7 @@ import { FLAGS } from '@/lib/flags';
 import { BE_CODES } from '@/lib/mocks/ingredients';
 
 export default function EditRestrictions() {
+  const bottom = useBottomInset(); // KB-900(T-005): 3버튼 내비 바가 Save 바를 반쯤 가렸다(고정 30, 인셋 미반영)
   const router = useRouter();
   const { t } = useTranslation();
   const { data: me } = useMe();
@@ -99,7 +101,7 @@ export default function EditRestrictions() {
 
   return (
     // KB-700(#228 공부 지적 — 전수 스캔이 못 본 화면): IngredientFilter 검색 입력 중 하단 Save 바가 키보드 뒤 → 같은 iOS KAV(padding)
-    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID="restrictions-kav">
+    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET} testID="restrictions-kav">
       <SubHeader
         title={t('restrictionsEdit.title')}
         onBack={() => router.back()}
@@ -125,7 +127,7 @@ export default function EditRestrictions() {
         </View>
       </ScrollView>
 
-      <View style={styles.savebar}>
+      <View style={[styles.savebar, { paddingBottom: bottom + 10 }]} testID="restrictions-savebar">
         <Btn icon={<IconCheck size={17} color="#fff" />} busy={saving} onPress={save} testID="restrictions-save">
           {t('restrictionsEdit.save')}
         </Btn>
@@ -149,5 +151,5 @@ const styles = StyleSheet.create({
   disc: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, paddingTop: 2 },
   discText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink2, lineHeight: 18 },
 
-  savebar: { padding: 18, paddingBottom: 30, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
+  savebar: { padding: 18, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
 });

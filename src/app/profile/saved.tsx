@@ -18,6 +18,7 @@ import { Chip } from '@/components/Chip';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { EmptyBlock, QueryErrorBlock } from '@/components/StateBlock';
 import { Snackbar } from '@/components/Snackbar';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { EVENTS, track } from '@/lib/analytics';
@@ -33,6 +34,7 @@ const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
 
 export default function SavedScreen() {
   const router = useRouter();
+  const bottomInset = useBottomInset(); // KB-900: 탭 바 없는 화면 — Undo 스낵바가 3버튼 내비 바에 덮였다
   const { t } = useTranslation();
   const isGuest = useIsGuest();
   const { data: list, isLoading, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useBookmarks(); // P-164
@@ -148,6 +150,7 @@ export default function SavedScreen() {
           text={t('saved.removed')}
           actionLabel={t('saved.undo')}
           onAction={onUndo}
+          bottom={24 + bottomInset}
         />
       )}
     </View>

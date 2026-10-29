@@ -4,11 +4,12 @@
  * Android = adjustResize(창이 줄어듦) — KAV behavior 없음(compose와 동일), 커서 추종 계산 무변.
  */
 import * as fs from 'fs';
+import { DISMISS_BAR_H, kavOffsetFor } from '@/lib/keyboardAvoid';
 
 const src = fs.readFileSync('src/app/food/[id]/review.tsx', 'utf8');
 
 it('하단 Post 바가 KAV **안**(키보드 위로 따라 올라옴) · ScrollView와 형제 · 시스템 인셋 없음', () => {
-  const kav = src.indexOf("<KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID=\"review-kav\">");
+  const kav = src.indexOf("<KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET} testID=\"review-kav\">");
   const bar = src.indexOf('testID="review-bottom-bar"');
   const close = src.indexOf('</KeyboardAvoidingView>');
   expect(kav).toBeGreaterThan(-1);
@@ -79,7 +80,7 @@ it('입력창이 있는 화면 전수(직접 + 입력 품은 컴포넌트 경유
   // 고정값 — 화면이 늘거나 줄면 한 번 멈춰 서서 KAV/예외 판단을 하게(스캔이 비어도 실패)
   expect(screens).toHaveLength(15); // KB-800: 홈 = 신고 시트 소멸로 입력 화면에서 빠짐 · KB-777: 내 리뷰 = 공용 시트(ModerationFlow) 경유로 편입 · KB-812 가공식품 · KB-813: 스캔(OCR 디버그 칸) · KB-847: 리뷰 상세 제거(#288 revert)
   expect(screens).toContain('src/app/profile/restrictions.tsx');
-  const missing = screens.filter((f) => !NO_FIXED_BAR_INPUT[f] && !/<KeyboardAvoidingView[^>]*behavior=\{KAV_BEHAVIOR\}/.test(fs.readFileSync(f, 'utf8')));
+  const missing = screens.filter((f) => !NO_FIXED_BAR_INPUT[f] && !/<KeyboardAvoidingView[^>]*behavior=\{KAV_BEHAVIOR\} keyboardVerticalOffset=\{KAV_OFFSET\}/.test(fs.readFileSync(f, 'utf8')));
   expect(missing).toEqual([]);
   for (const f of Object.keys(NO_FIXED_BAR_INPUT)) expect(screens).toContain(f); // 예외 목록이 낡으면 알림
 });
@@ -98,11 +99,20 @@ it('프로필 편집 — Save 바는 절대 위치가 아니라 KAV 안 ScrollVi
 // ScrollView가 줄지 않아 스크롤 범위 0(SE에서 Send 위 19pt만 보이고 닿지도 못함). 예외에서 빼고 KAV — 위 전수 스캔이 이제 이 화면도 잡는다
 it('KB-710 문의 작성 = iOS KAV(padding) · Send는 KAV 안 ScrollView 본문(키보드 위 영역에서 스크롤로 닿음) · 예외 목록에 없음', () => {
   const src = fs.readFileSync('src/app/profile/feedback/new.tsx', 'utf8');
-  const kav = src.indexOf(`<KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID="feedback-kav">`);
+  const kav = src.indexOf(`<KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET} testID="feedback-kav">`);
   const send = src.indexOf('testID="feedback-send"');
   const close = src.lastIndexOf('</KeyboardAvoidingView>');
   expect(kav).toBeGreaterThan(-1);
   expect(send).toBeGreaterThan(kav);
   expect(close).toBeGreaterThan(send);
   expect(Object.keys(NO_FIXED_BAR_INPUT)).not.toContain('src/app/profile/feedback/new.tsx');
+});
+
+// KB-900(T-031): 안드 루트 내리기 바(40)가 키보드 위 끝에 붙어 KAV로 올린 하단 바를 덮었다 — KAV는 입력 화면 여부와 무관하게 **전부** 바 높이 오프셋
+it('KB-900 KeyboardAvoidingView 전수 = keyboardVerticalOffset={KAV_OFFSET}(안드 40 · iOS 0)', () => {
+  const all = [...tsxFiles('src/app'), ...tsxFiles('src/components'), ...tsxFiles('src/features')].filter((f) => /<KeyboardAvoidingView\b/.test(fs.readFileSync(f, 'utf8')));
+  expect(all.length).toBeGreaterThanOrEqual(7);
+  const bad = all.filter((f) => (fs.readFileSync(f, 'utf8').match(/<KeyboardAvoidingView\b[^>]*>/g) ?? []).some((tag) => !tag.includes('keyboardVerticalOffset={KAV_OFFSET}')));
+  expect(bad).toEqual([]);
+  expect([kavOffsetFor('android'), kavOffsetFor('ios')]).toEqual([DISMISS_BAR_H, 0]);
 });
