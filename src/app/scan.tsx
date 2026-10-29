@@ -988,10 +988,7 @@ export default function Scan() {
       originalScannedName: p.originalScannedName,
     }));
     const allDishes = [...resultDishes, ...photoDishes];
-    // §14-5: unable sorted last, never hidden.
-    // P-226 ②③: 소팅 세그 — 기본 = 메뉴판 그대로 순(unable만 최하단, 현행 유지),
-    // 안전한 순 = safe→caution→danger→unable. ⚠️ unable은 어느 모드에서도 **최하단**
-    // — 불확실을 안전해 보이는 위치에 두지 않는다(false-safe, 유닛 잠금).
+    // unable은 숨기지 않는다(§14-5). 정렬 = resultSort — 기본 메뉴판 순(KB-908: unable도 제자리, 행의 Unable 라벨·회색 리본이 표시), 가격순은 null 맨 아래
     const listDishes = sortResultDishes(allDishes, sortMode);
     // P-354(KB-516): Safe only — 표시만 필터(장바구니 수량은 itemId 키로 보존,
     // goOrder는 listDishes(전체) 기준이라 숨긴 담김분도 합계 불변)
