@@ -1,7 +1,7 @@
 /**
  * Food detail — KB-431(P-276) 디자인 4차 D-3 (Figma 4150:16891 · 4150:16974).
  * 히어로 정방 + 하단 그라데이션 · 위험 요약 행(히어로 직하, riskTone 틴트 —
- * danger=붉은/caution=노란, 커맨드 센터 판정) · 헤더 블록(맵기 칩+SVG 고추·
+ * danger=붉은/caution=주황 — 리본 계열, KB-908) · 헤더 블록(맵기 칩+SVG 고추·
  * 제목·설명·별점 행·북마크 36) · 8px 섹션 디바이더 · What's inside 칩 필터 +
  * 재료 타일 3열 그리드 + 재료 바텀시트 · 리뷰 섹션(D-2 카드 ×3) · FixedBottom.
  *
@@ -468,8 +468,7 @@ function Registered({
   return (
     <>
       {/* §1-3: 위험 요약 행 — 히어로 직하 full-width, riskTone 틴트(마크 색 기준
-          매핑: danger=붉은 #FFF3EF / caution=노란 #FFFDEF — 시안 인스턴스 뒤바뀜은
-          커맨드 센터 판정으로 통일). 탭 = 코치마크 재열람(P-134). */}
+          매핑: KB-908 10/30 결정 — 띠 배경 = 리본 계열, danger 붉은 · caution 주황). 탭 = 코치마크 재열람(P-134). */}
       {guest ? (
         <Pressable style={styles.lockSlot} onPress={() => setGateOpen(true)} testID="verdict-lock">
           <IconLock size={16} color={C.ink2} />

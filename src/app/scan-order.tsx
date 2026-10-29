@@ -69,10 +69,12 @@ export default function ScanOrder() {
         <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back} testID="order-back">
           <IconArrowLeft size={18} color={C.ink2} />
         </Pressable>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1 }} testID="order-header-text">
           <Text style={styles.title}>{t('order.title')}</Text>
           <Text style={styles.sub}>{t('order.headerSub', { count })}</Text>
         </View>
+        {/* KB-908(T-111): 다른 화면처럼 제목 가운데 — 뒤로 버튼과 같은 폭의 빈 칸으로 좌우 대칭 */}
+        <View style={styles.back} />
       </View>
       <FlippedOrderCard
         items={items}
@@ -96,6 +98,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#fff' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10 },
   back: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  title: { fontFamily: font.bodyBold, fontSize: 17, color: C.ink },
-  sub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
+  title: { fontFamily: font.bodyBold, fontSize: 17, color: C.ink, textAlign: 'center' },
+  sub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1, textAlign: 'center' },
 });
