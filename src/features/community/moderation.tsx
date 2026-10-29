@@ -148,7 +148,8 @@ export function ModerationFlow({
     const KIND_BY = { post: 'community.postBy', comment: 'community.commentBy', review: 'community.reviewBy' } as const;
     const title = target.mine ? t(KIND_MINE[target.type]) : t(KIND_BY[target.type], { name });
     const avatar = target.author.nationality ? (
-      <Flag code={target.author.nationality} size={26} />
+      // KB-905(T-070): 국기 이모지는 헌법 v2.3.0 허용(유지) — 제목 줄에서 크게 튀던 26을 리뷰 행 배지와 같은 14로
+      <Flag code={target.author.nationality} size={14} />
     ) : (
       <View style={styles.anonAvatar}>
         <IconProfile size={15} color={C.ink3} />
@@ -220,7 +221,7 @@ export function ModerationFlow({
                  ModerationFlow를 유지한 채 target만 바꾸므로, A의 응답이 끝날 때까지 B의
                  신고가 스피너에 묶였다. 가드가 이 자식에 살면 대상 전환(phase 리셋)에서
                  함께 사라진다 — key는 시트가 마운트된 채 대상만 바뀌는 변형까지 막는 보험. */
-              <ReportSheet key={`${target.type}:${target.id}`} onSubmit={doReport} />
+              <ReportSheet key={`${target.type}:${target.id}`} onSubmit={doReport} onCancel={close} />
             ))}
 
           {phase === 'blockConfirm' && (
@@ -269,7 +270,7 @@ export function ModerationFlow({
  * 대상이 바뀌면 가드도 함께 사라진다. 부모(ModerationFlow)는 호출처에서 계속 마운트된
  * 채 target만 바뀌므로, 가드를 부모에 두면 A의 응답이 B의 제출을 막는다(Codex #161 3R).
  */
-function ReportSheet({ onSubmit }: { onSubmit: (reason: ReportReason, note: string) => Promise<void> }) {
+function ReportSheet({ onSubmit, onCancel }: { onSubmit: (reason: ReportReason, note: string) => Promise<void>; onCancel: () => void }) {
   const { t } = useTranslation();
   const [reason, setReason] = React.useState<ReportReason | null>(null);
   const [note, setNote] = React.useState('');
@@ -301,6 +302,10 @@ function ReportSheet({ onSubmit }: { onSubmit: (reason: ReportReason, note: stri
         testID="report-submit"
       >
         {t('community.reportSubmit')}
+      </Btn>
+      {/* KB-905(T-068): 닫을 길이 배경 탭·뒤로뿐이었다 — 삭제·차단 확인과 같은 ghost Cancel */}
+      <Btn testID="report-cancel" variant="ghost" onPress={onCancel}>
+        {t('common.cancel')}
       </Btn>
     </View>
   );
