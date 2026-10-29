@@ -15,7 +15,7 @@
   - `states.offlineBody` = 메뉴 스캔과 리뷰 로드는 인터넷 연결이 필요해요.
   - `community.blockConfirmBody` = 그 사용자의 리뷰가 더 이상 보이지 않아요. 프로필의 차단한 사용자에서 언제든 해제할 수 있어요.
   - `community.blockedNote` = 차단한 사용자의 리뷰가 보이지 않아요. 상대는 내 리뷰를 그대로 볼 수 있어요.
-  - `saved.emptyBody` = 음식의 별을 누르면 여기에 모여요 — 안심하고 맛있게 먹기 위한 나만의 리스트.
+  - `saved.emptyBody` = 음식의 별을 누르면 여기에 모여요. 안심하고 맛있게 먹을 나만의 리스트예요. (Codex #366 P1 — 완결 문장)
   - `scan.orderCount_one` = 담은 메뉴 {{count}}개
   - `scan.viewOrderAction` = 주문 보기
   - `scan.retakeBodyWithCart_one` = 지금 결과와 담은 메뉴 {{count}}개가 사라져요.
