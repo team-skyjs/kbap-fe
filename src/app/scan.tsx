@@ -19,7 +19,6 @@ import { currentGen } from '@/lib/auth/beTokens';
  *
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
-import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
 import { useCallback, useEffect, useRef, useState, useLayoutEffect, useSyncExternalStore, type ReactElement } from 'react';
 import { ActivityIndicator, AppState, BackHandler, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
@@ -59,10 +58,8 @@ import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/
 import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
 
 // P-354(KB-516): 정렬 라벨 — 메뉴판 순 → 가격 높은순 → 가격 낮은순(시트 순서 동일)
-import { useReviewPrompt } from '@/lib/useReviewPrompt';
 import { recordScanSuccess } from '@/lib/reviewPrompt';
-import { useOneShotQueue, type QueueStep } from '@/lib/oneShotQueue';
-import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
+import { useOneShotQueue } from '@/lib/oneShotQueue';
 const SORT_LABEL_KEY: Record<ResultSortMode, string> = {
   menu: 'scan.sortMenu',
   priceDesc: 'scan.sortPriceDesc',
@@ -87,7 +84,7 @@ import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
-import { PushPrimerModal } from '@/features/push/PushPrimerModal';
+import { armScanExitPrompt, fireScanExitPrompt } from '@/features/scan/ScanExitPrompts';
 import { openAppSettings } from '@/lib/openExternal';
 
 type Photo = { uri: string; width: number; height: number } | null;
@@ -175,12 +172,10 @@ export default function Scan() {
     if (scanMode === 'packaged') { packagedHoldRef.current = false; setPackagedHold(false); }
     setScanModeState(m);
   };
-  const reviewPrompt = useReviewPrompt(); // KB-730: 스캔 성공 2회 이상 — 결과 화면 일회성 모달 큐의 마지막 스텝
-  const modalQueue = useOneShotQueue(); // P-267 직렬화의 일반화: 코치마크 → 알림 넛지 → 리뷰 유도
+  const modalQueue = useOneShotQueue(); // P-267 직렬화의 일반화 — KB-908: 결과 화면엔 코치마크만(알림 넛지·리뷰 유도는 스캔을 닫은 뒤 ScanExitPrompts)
   const coachDoneRef = useRef<(() => void) | null>(null);
-  const primerDoneRef = useRef<(() => void) | null>(null);
   const settle = (ref: React.MutableRefObject<(() => void) | null>) => { const f = ref.current; ref.current = null; f?.(); };
-  const scanRecordedRef = useRef<Promise<unknown>>(Promise.resolve()); // 성공 카운트 저장 완료 → 리뷰 스텝 판정 순서 보장
+  const scanRecordedRef = useRef<Promise<unknown>>(Promise.resolve()); // 성공 카운트 저장 완료 → 나갈 때 리뷰 유도 판정 순서 보장
   const [photo, setPhoto] = useState<Photo>(null);
   // ⑦(KB-137) 촬영/갤러리 파일 캐시 누적 방지 — 결과 오버레이가 photo.uri를
   // 렌더하므로 OCR 직후가 아니라 **표시 수명이 끝날 때** 삭제: 새 사진으로
@@ -397,29 +392,6 @@ export default function Scan() {
     });
     return () => sub.remove();
   }, [noticeOpen]);
-  // P-192: 푸시 프라이머 — 스캔 완료 도달 시 미응답자만 1회(기록 = pushAdapter).
-  // P-267(KB-377): 단독 effect 폐지 — 코치마크와 **직렬화**(아래 결과 진입 effect가
-  // 순차 판정). 동시 present = 네이티브 fullScreenModal 위 RN Modal 2개 같은 커밋
-  // present → iOS UIKit presentation 교착(첫 스캔 먹통 — 실기 2건).
-  // 2026-09-28(종한): 판정 확장 — OS 거부 / 서버 활동 알림 OFF면 매 스캔마다 유도(lib/push/scanNudge), 그 외는 기존 1회 프라이머.
-  const [pushPrimer, setPushPrimer] = useState(false);
-  const [nudgeMode, setNudgeMode] = useState<ScanNudgeMode>('primer');
-  // Codex 리뷰: 결과 1회당 시트 1회 — 「나중에」 뒤 마커 탭→코치마크 닫힘이 판정을 다시 불러도 재노출 0. 새 스캔(카메라 복귀)에서 리셋.
-  const nudgeShownRef = useRef(false);
-  // 큐 스텝: 알림 넛지 — 안 뜨면 false(다음 스텝), 뜨면 완전히 닫힌 뒤 done
-  const nudgeStep = useCallback((): QueueStep => ({
-    key: 'push-nudge',
-    present: async (done) => {
-      if (!FLAGS.pushEnabled || nudgeShownRef.current) return false;
-      const m = await decideScanNudge(isGuest);
-      if (!m || nudgeShownRef.current) return false;
-      nudgeShownRef.current = true;
-      primerDoneRef.current = done;
-      setNudgeMode(m);
-      setPushPrimer(true);
-      return true;
-    },
-  }), [isGuest]);
   // P-061①→P-062⓪ 보수: state 가드는 리렌더 전 연타를 못 막음(스테일 클로저) —
   // **ref 동기 가드**(진입 즉시 검사·세트)가 실차단, state는 시각적 disable 전용.
   const capturingRef = useRef(false);
@@ -450,10 +422,10 @@ export default function Scan() {
   // P-267(KB-377): 일회성 모달 직렬화 — 결과 도달마다 **한 흐름에서 순차 판정**.
   // 코치마크 우선, 뜨면 프라이머는 보류(코치 onClose에서 재평가). 코치마크가 없으면
   // (이번에 안 뜸·기존자 재도달) 프라이머 단독 판정 = 현행 시맨틱 무변.
-  const reviewStep = reviewPrompt.step; // useCallback 안정 — 훅 반환 객체 자체는 매 렌더 새것
-  // KB-730: 결과 도달마다 큐에 순서대로 — 코치마크(1회) → 넛지 → 리뷰 유도. 한 스텝이 완전히 닫혀야 다음(동시 present 절대 금지, KB-377)
+  // KB-908(T-010): 결과 도달 = 코치마크(1회)만 큐에. 알림 넛지·리뷰 유도는 나갈 때 하나만(ScanExitPrompts — 판정·빈도 규칙 무변)
   useEffect(() => {
-    if (phase !== 'result') { nudgeShownRef.current = false; modalQueue.clear(); return; }
+    if (phase !== 'result') { modalQueue.clear(); return; }
+    armScanExitPrompt({ isGuest, ready: scanRecordedRef.current });
     modalQueue.add({
       key: 'coach-mark',
       present: async (done) => {
@@ -466,9 +438,8 @@ export default function Scan() {
         return true;
       },
     });
-    modalQueue.add(nudgeStep());
-    modalQueue.add(reviewStep('scan', { ready: scanRecordedRef.current }));
-  }, [phase, modalQueue, nudgeStep, reviewStep]); // 전부 안정(큐 ref·useCallback) — isGuest 전환 시 재평가는 종전(maybeShowPrimer 의존)과 동일
+  }, [phase, modalQueue, isGuest]);
+  useEffect(() => () => fireScanExitPrompt(), []); // 스캔 화면 닫힘 = 결과가 있었으면 하나 띄우기
 
   useEffect(() => {
     if (Platform.OS !== 'android') return; // iOS는 카메라 콜백이 담당
@@ -1165,7 +1136,6 @@ export default function Scan() {
           onClose={() => setSortSheet(false)}
         />
         {GateSheet}
-        <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} onShow={reviewPrompt.onShow} onClosed={reviewPrompt.onClosed} disabled={reviewPrompt.answered} />
         {/* P-370(KB-533): 모달 컨텍스트 자체 토스트 호스트(스택 top) */}
         <TopToastHost />
         {/* P-267 Codex P1: 프라이머 트리거 = iOS는 onDismiss(네이티브 dismiss 완료
@@ -1214,15 +1184,6 @@ export default function Scan() {
           </View>
         </Modal>
 
-        {/* P-192: 푸시 프라이머 — 첫 스캔 완료 후 1회(미응답자만: 게스트 개방 대비 +
-            온보딩 프라이머 이전 기존 회원 커버 — 응답 기록 시 재노출 0) */}
-        <PushPrimerModal
-          surface="scan"
-          mode={nudgeMode}
-          open={pushPrimer}
-          onDone={() => { setPushPrimer(false); if (Platform.OS !== 'ios') settle(primerDoneRef); }}
-          onDismiss={Platform.OS === 'ios' ? () => settle(primerDoneRef) : undefined}
-        />
       </View>
     );
   }

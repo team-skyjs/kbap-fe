@@ -154,7 +154,7 @@ it('배선 잠금(소스) — 전 표면이 플래그 게이트 뒤 + P-268 전 
   expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('pushEnabled: true'); // P-289(예진 9/7): 전 채널 — KB-422 재숨김 종료
   // 프로필 행(회원 분기)·스캔 프라이머·루트 배선 — 전부 플래그 게이트 뒤. 온보딩 프라이머는 제거(KB-497)
   expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toContain('FLAGS.pushEnabled && (');
-  expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain("!FLAGS.pushEnabled || nudgeShownRef.current) return false");
+  expect(fs.readFileSync('src/features/scan/ScanExitPrompts.tsx', 'utf8')).toContain('const m = FLAGS.pushEnabled ? await decideScanNudge(a.isGuest).catch(() => null) : null;'); // KB-908: 스캔 닫은 뒤 호스트
   expect(fs.readFileSync('src/app/_layout.tsx', 'utf8')).toContain('if (!FLAGS.pushEnabled || !entryChecked) return;'); // KB-573: 플래그 게이트 유지 + entryChecked(콜드 스타트) 게이트
   const onboarding = fs.readFileSync('src/app/onboarding/index.tsx', 'utf8') as string;
   expect(onboarding).not.toContain('PushPrimerModal');
@@ -220,10 +220,10 @@ it('OS 권한 거부 = 토큰 등록·PATCH 0회, onDone은 호출', async () =>
   expect(onDone).toHaveBeenCalled();
 });
 
-it('KB-497 소스 잠금: scan.tsx 프라이머 = PushPrimerModal(시트 래퍼) + 코치마크 직렬화(일회성 모달 큐 — KB-730) 유지', () => {
-  const scan = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
-  expect(scan).toContain('<PushPrimerModal\n          surface="scan"');
-  expect(scan).toContain('modalQueue'); // KB-377: 코치마크 닫힌 뒤에만
+it('KB-497 소스 잠금: 스캔 프라이머 = PushPrimerModal(시트 래퍼) — KB-908: 스캔을 닫은 뒤 루트 호스트(ScanExitPrompts)가 띄움', () => {
+  const host = require('fs').readFileSync('src/features/scan/ScanExitPrompts.tsx', 'utf8') as string;
+  expect(host).toContain('<PushPrimerModal surface="scan"');
+  expect(host).toContain('runAfterInteractions'); // KB-377: 스캔 모달이 다 내려간 뒤
   const primer = require('fs').readFileSync('src/features/push/PushPrimerModal.tsx', 'utf8') as string;
   expect(primer).toContain('<NotificationSheet');
   expect(primer).toContain("variant=\"primer\"");
@@ -319,12 +319,11 @@ it('mode=osDenied·activityOff 「나중에」 = 닫기만 — 기록 0(매 스�
   }
 });
 
-it('배선 잠금: scan.tsx 판정 = decideScanNudge(isGuest) → mode 전달', () => {
-  const scan = fs.readFileSync('src/app/scan.tsx', 'utf8');
-  expect(scan).toContain('decideScanNudge(isGuest)');
-  expect(scan).toContain('<PushPrimerModal\n          surface="scan"\n          mode={nudgeMode}');
-  expect(scan).not.toContain('getPrimerResult'); // 판정은 scanNudge 한 곳
-  // Codex 리뷰: 결과 1회당 1회(마커 탭→코치마크 닫힘 재호출에 재노출 0) · 카메라 복귀에서 리셋
-  expect(scan).toContain('if (!m || nudgeShownRef.current) return false;');
-  expect(scan).toContain("if (phase !== 'result') { nudgeShownRef.current = false; modalQueue.clear(); return; }");
+it('배선 잠금: 스캔 넛지 판정 = decideScanNudge(isGuest) → mode 전달 — KB-908: 스캔을 닫은 뒤 루트 호스트, 한 번 닫힘에 1회', () => {
+  const host = fs.readFileSync('src/features/scan/ScanExitPrompts.tsx', 'utf8');
+  expect(host).toContain('decideScanNudge(a.isGuest)');
+  expect(host).toContain('<PushPrimerModal surface="scan" mode={nudgeMode} open={nudgeOpen}');
+  expect(host).not.toContain('getPrimerResult'); // 판정은 scanNudge 한 곳
+  expect(host).toContain('if (busy.current) return;'); // 떠 있는 동안 또 닫힘 = 무시
+  expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).not.toContain('decideScanNudge');
 });

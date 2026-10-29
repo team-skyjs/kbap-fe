@@ -30,7 +30,13 @@ jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
 jest.mock('@/lib/onboarding/data', () => ({ restrictionLabel: (c: string) => `L(${c})` }));
 const mockPush = jest.fn();
 let mockParams: Record<string, string> = {};
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn(), navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams }));
+// KB-908(T-050): 후보 화면 이탈 확인(useLeaveConfirm) — 마지막 usePreventRemove 호출의 (막는지, 콜백) 기록
+const mockNavDispatch = jest.fn();
+const mockPrevent: { on: boolean; cb: ((o: { data: { action: unknown } }) => void) | null } = { on: false, cb: null };
+jest.mock('expo-router/build/react-navigation/core', () => ({
+  usePreventRemove: (on: boolean, cb: (o: { data: { action: unknown } }) => void) => { mockPrevent.on = on; mockPrevent.cb = cb; },
+}));
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn(), navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams, useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }) }));
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 const mockPost = jest.fn();

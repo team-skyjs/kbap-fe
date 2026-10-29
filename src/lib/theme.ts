@@ -39,8 +39,8 @@ export const color = {
   riskUnable: '#B1B5BD', // 4064:798
   // P-284(9/6): 소형(12~13px) 위험 상태 '텍스트' 대비 토큰 — 마크·배지·아이콘 fill은 원색 무변
   riskSafeText: '#007F43', // 흰 5.10
-  riskCautionText: '#9A5F00', // 흰 5.24 · caution 틴트 위 4.82
-  riskDangerText: '#C4352F', // 흰 5.39 · danger 틴트 위 4.96
+  riskCautionText: '#9A5F00', // 흰 5.24 · caution 틴트 위 4.89
+  riskDangerText: '#C4352F', // 흰 5.39 · danger 틴트 위 4.86
   riskUnableText: '#6A6F7C', // Codex #44 P2: unable 텍스트 대비(흰 5.03 — inkInfo 동일값·의미 분리)
   inkInfo: '#6A6F7C', // 12~13px 정보성 회색 텍스트(흰 5.03 — gray-700 동값·의미 토큰)
   // KB-845(D-31 scan refresh): 시안 gray 팔레트 이름 그대로 — 어두운 카메라·로딩 화면(값은 DS gray-*)
@@ -56,9 +56,10 @@ export const color = {
  */
 export const riskTone = {
   safe: { fg: color.riskSafe, bg: '#EFFFF7', line: '#D5DFE7' },
-  // 9/5 예진 확정: 시안 인스턴스(4150:16971/16972) 그대로 — caution=붉은/danger=노란 틴트
-  caution: { fg: color.riskCaution, bg: '#FFF3EF', line: '#D5DFE7' },
-  danger: { fg: color.riskDanger, bg: '#FFFDEF', line: '#D5DFE7' },
+  // KB-908(10/30 예진 결정 — 9/5 "시안 인스턴스 그대로"를 뒤집음): 띠 배경 = 리본(fg) 계열. fg를 흰 위에 10% 알파로 섞은 값
+  // (danger #F76661 → #FEF0EF 붉은 · caution #FFA526 → #FFF6E9 주황). 옛 값은 caution #FFF3EF / danger #FFFDEF로 뒤바뀌어 보였다(QA aos#1)
+  caution: { fg: color.riskCaution, bg: '#FFF6E9', line: '#D5DFE7' },
+  danger: { fg: color.riskDanger, bg: '#FEF0EF', line: '#D5DFE7' },
   unable: { fg: color.riskUnable, bg: '#ECECEC', line: '#D5DFE7' },
 } as const;
 

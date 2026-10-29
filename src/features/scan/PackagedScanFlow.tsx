@@ -40,6 +40,8 @@ import { confirmProcessedScan, LABEL_PAGES_MAX, scanFailureOf, scanProcessedLabe
 import type { LabelScanResult, ScanCandidate } from '@/lib/api/processedFoodAdapter';
 import type { ScanMode } from './ScanModeTabs';
 import { ScanLoading } from './ScanLoading';
+import { ScanLeaveConfirm } from './ScanLeaveConfirm';
+import { useLeaveConfirm } from '@/components/LeaveConfirmModal';
 
 /** KB-845 공통 카메라(scan.tsx cameraUi) — 가공식품 앞면·성분표 단계가 이걸로 찍는다(시스템 카메라·흰 안내 페이지 경유 0) */
 export type ScanPhoto = { uri: string; width: number; height: number };
@@ -146,6 +148,9 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     return () => sub.remove();
   }, [guard.busy]);
   // Codex #310 P2: 뒤로가기 뒤에 도착한 응답은 버린다 — 요청마다 회차, 단계를 사용자가 바꾸면 회차가 올라 늦은 응답이 화면을 되돌리거나 이동시키지 않는다
+  // KB-908(T-050): 후보 화면에서 하드웨어 뒤로·닫기·스와이프 = 메뉴 결과와 같은 "Leave scan results?" 확인(전엔 확인 없이 스캔 전체 종료).
+  // 확정 요청 중(busy)은 위 BackHandler가 이미 삼킨다 — 확인 창을 겹치지 않는다
+  const leave = useLeaveConfirm(focused && step.kind === 'candidates' && !guard.busy);
   const reqSeq = React.useRef(0);
   const goStep = (next: Step) => { reqSeq.current += 1; setStep(next); };
   // Codex #310 R2: 확정해 차감된 분석 — 상세에서 뒤로 와 같은 후보를 다시 고르면 서버는 멱등이라 charged false를 준다 → 이미 쓴 1회를 잊지 않는다
@@ -330,6 +335,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   if (step.kind === 'candidates') {
     const sel = step.candidates.find((c) => c.id === step.selectedId) ?? null;
     return (
+      <>
       <CandidateScreen
         testID="pscan-candidates"
         banner={<PackagedFreeLine />}
@@ -348,6 +354,8 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         personalized={personalized}
         busy={guard.busy}
       />
+      <ScanLeaveConfirm visible={leave.modal.visible} onKeep={leave.modal.onKeep} onLeave={leave.modal.onDiscard} />
+      </>
     );
   }
 

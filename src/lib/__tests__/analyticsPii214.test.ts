@@ -116,7 +116,7 @@ describe('② ③ ④ 배선 소스 잠금 — 공용 1곳 원칙', () => {
     expect(read('src/features/push/PushPrimerModal.tsx')).toContain('EVENTS.push_primer_response');
     // KB-497: 온보딩 프라이머 제거 — 표면은 스캔 1곳(surface 유니온도 'scan'만)
     expect(read('src/app/onboarding/index.tsx')).not.toContain('PushPrimerModal');
-    expect(read('src/app/scan.tsx')).toContain('surface="scan"');
+    expect(read('src/features/scan/ScanExitPrompts.tsx')).toContain('surface="scan"'); // KB-908: 스캔 프라이머 호스트
     expect(read('src/app/profile/notifications.tsx')).toContain('EVENTS.push_pref_toggle');
     expect(read('src/app/profile/restrictions.tsx')).toContain('EVENTS.profile_avoid_update');
     expect(read('src/app/community/compose.tsx')).toContain('EVENTS.community_post_submit');

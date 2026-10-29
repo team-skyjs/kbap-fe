@@ -166,6 +166,7 @@ jest.mock('@/lib/data/useScan', () => ({
 }));
 
 import Scan from '../scan';
+import { ScanExitPrompts } from '@/features/scan/ScanExitPrompts';
 
 function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
@@ -480,20 +481,27 @@ it('P-529: 촬영 대기·완료는 갤러리 가져오기 로딩을 표시하�
   expect(tree.root.findAll((n) => n.props?.testID === 'recog-banner').length).toBeGreaterThan(0);
 });
 
-// KB-730: 스캔 성공 **2회째**에만 리뷰 유도 시트(결과 화면 진입 직후) — 1회째·3회째는 아님. 실패 경로는 onSuccess를 안 타므로 자동 제외
-it('KB-730 스캔 성공 2회째 → 리뷰 유도 시트 1 · 1회째 → 0', async () => {
+// KB-730: 스캔 성공 **2회째**에만 리뷰 유도 시트 — 1회째·3회째는 아님. 실패 경로는 onSuccess를 안 타므로 자동 제외
+// KB-908(T-010): 결과 화면 진입 직후가 아니라 **스캔을 닫은 뒤**(루트 호스트) — 결과 화면에선 0
+it('KB-730·KB-908 스캔 성공 2회째 → 스캔을 닫으면 리뷰 유도 시트 1(결과 화면에선 0) · 1회째 → 0', async () => {
   const asMod = jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock') as { default?: unknown } & Record<string, unknown>;
   const AsyncStorage = (asMod.default ?? asMod) as { clear: () => Promise<void>; setItem: (k: string, v: string) => Promise<void>; getItem: (k: string) => Promise<string | null>; removeItem: (k: string) => Promise<void> };
   const sheets = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'review-prompt' && typeof n.type === 'string').length;
-  const settle = async () => { for (let i = 0; i < 24; i++) await act(async () => { await Promise.resolve(); }); }; // 큐 3스텝(코치·넛지·리뷰) 비동기 판정 통과
+  const settle = async () => { for (let i = 0; i < 24; i++) await act(async () => { await Promise.resolve(); }); await act(async () => { await new Promise((r) => setTimeout(r, 10)); }); };
+  const App = ({ scan = true }: { scan?: boolean }) => (<>{scan && <Scan />}<ScanExitPrompts /></>);
   await AsyncStorage.removeItem('kbap.reviewPrompt.v1');
-  const first = render(<Scan />);
+  const first = render(<App />);
   await act(async () => { await galleryBtn(first).props.onPress(); }); // 성공 1회째
+  await settle();
+  await act(async () => { first.update(<App scan={false} />); });
   await settle();
   expect(sheets(first)).toBe(0);
   expect(JSON.parse((await AsyncStorage.getItem('kbap.reviewPrompt.v1')) ?? '{}').scanSuccess).toBe(1);
-  const second = render(<Scan />);
+  const second = render(<App />);
   await act(async () => { await galleryBtn(second).props.onPress(); }); // 성공 2회째
+  await settle();
+  expect(sheets(second)).toBe(0); // 결과 화면에선 안 뜸
+  await act(async () => { second.update(<App scan={false} />); }); // 스캔 닫힘
   await settle();
   expect(sheets(second)).toBe(1);
 });

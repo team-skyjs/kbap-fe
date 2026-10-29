@@ -56,10 +56,12 @@ function render(el: React.ReactElement): ReactTestRenderer {
 }
 const byId = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id);
 
-it('① 위험 요약 행 틴트 — riskTone 매핑(시안 인스턴스: caution #FFF3EF / danger #FFFDEF)', () => {
+it('① 위험 요약 행 틴트 — KB-908: 띠 배경 = 리본(fg)을 흰 위에 10% 섞은 값(danger 붉은 · caution 주황)', () => {
+  const mix10 = (hex: string) => '#' + [1, 3, 5].map((i) => Math.round(255 - (255 - parseInt(hex.slice(i, i + 2), 16)) * 0.1).toString(16).padStart(2, '0')).join('').toUpperCase();
   expect(riskTone.safe.bg).toBe('#EFFFF7');
-  expect(riskTone.caution.bg).toBe('#FFF3EF');
-  expect(riskTone.danger.bg).toBe('#FFFDEF');
+  expect(riskTone.caution.bg).toBe(mix10(riskTone.caution.fg));
+  expect(riskTone.danger.bg).toBe(mix10(riskTone.danger.fg));
+  expect([riskTone.caution.bg, riskTone.danger.bg]).toEqual(['#FFF6E9', '#FEF0EF']); // 옛 #FFF3EF / #FFFDEF(뒤바뀌어 보임, QA aos#1)
   expect(riskTone.unable.bg).toBe('#ECECEC');
   // 상세 위험 요약 행 = riskTone.bg 배선(소스 잠금 — 4상태 자동 추종)
   const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
