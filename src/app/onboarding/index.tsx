@@ -861,7 +861,7 @@ const styles = StyleSheet.create({
   railName: { fontSize: 13, fontWeight: '500', color: '#2F3137', marginTop: 2, paddingHorizontal: 6 }, // A-SP-06
   railKo: { fontSize: 12, fontWeight: '400', color: '#5A636A' },
   sliderBox: { backgroundColor: C.surface2, borderRadius: radius.md, paddingHorizontal: 14, paddingTop: 5, paddingBottom: 14, marginTop: 22 }, // A-SP-07(KB-486): 박스 81(트랙 중심 27·라벨 y49)
-  spiceDesc: { fontSize: 13, fontWeight: '400', lineHeight: 20, height: 36, color: C.ink2, textAlign: 'center', paddingHorizontal: 8 }, // 2줄 고정 슬롯 — 프레임 불변 유지
+  spiceDesc: { fontSize: 13, fontWeight: '400', lineHeight: 20, height: 40, color: C.ink2, textAlign: 'center', paddingHorizontal: 8 }, // 2줄 고정 슬롯 — 프레임 불변 유지 · KB-909 Codex #367: 높이 = 2 × lineHeight(구 2 × 18)
   // P-130 v3
   miniHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 56 }, // A-NT-01(KB-486)
   miniBack: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginLeft: -8 },

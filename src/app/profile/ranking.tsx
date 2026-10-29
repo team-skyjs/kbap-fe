@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   breakDiv: { width: 1, height: 175, alignSelf: 'center', backgroundColor: '#EAEBEE' },
   breakIc: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: '#F7F8FA', alignItems: 'center', justifyContent: 'center' },
   breakLabel: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
-  breakDetail: { fontSize: 13, fontWeight: '400', textAlign: 'center', lineHeight: 17, minHeight: 32 },
+  breakDetail: { fontSize: 13, fontWeight: '400', textAlign: 'center', lineHeight: 17, minHeight: 34 }, // KB-909 Codex #367: 2줄 자리 = 2 × lineHeight
   gainPill: { marginTop: 'auto', height: 32, // KB-907(T-036): 칸 높이 = 가장 긴 칸 — 배지를 바닥에 붙여 세 칸 가로 정렬
     justifyContent: 'center', backgroundColor: C.primary, borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 10 },
   gainText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF' },
