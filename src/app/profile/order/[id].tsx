@@ -25,7 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { formatCalendarDate } from '@/lib/reviewTime';
 import { color as C } from '@/lib/theme';
 import * as ImagePicker from 'expo-image-picker';
-import { ActionSheet, SubHeader } from '@/components';
+import { ActionSheet, IconChevron, SubHeader } from '@/components';
 import { SheetShell } from '@/components/SheetShell';
 import { TopToastHost } from '@/components/TopToast';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
@@ -310,6 +310,12 @@ export default function OrderDetailScreen() {
                     <Text style={styles.itemPrice}>{conv(it.price) ?? formatKrw(it.price)}</Text>
                   )}
                 </View>
+                {/* KB-904(T-095): 상세로 가는 행 = › (탭하면 이동하는데 표시가 없었다) · 못 가는 행은 같은 폭 빈 칸(열 정렬 유지) */}
+                {it.foodId != null && it.ready !== false ? (
+                  <View testID={`order-item-chevron-${k}`}><IconChevron size={16} color={C.ink3} /></View>
+                ) : (
+                  <View style={{ width: 16 }} />
+                )}
               </Pressable>
             ))}
           </View>

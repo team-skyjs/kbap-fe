@@ -83,7 +83,7 @@ const mockOpenSettings = jest.fn().mockResolvedValue(true);
 const mockCancelAfterOs = jest.fn();
 const mockFinishAfterOs = jest.fn(() => mockCancelAfterOs);
 jest.mock('@/lib/push/scanNudge', () => ({ get finishAfterOsSettings() { return mockFinishAfterOs; } }));
-jest.mock('@/lib/openExternal', () => ({ openWebPage: jest.fn(), get openAppSettings() { return mockOpenSettings; } }));
+jest.mock('@/lib/openExternal', () => ({ openWebPage: jest.fn(), get openAppSettings() { return mockOpenSettings; }, get openNotificationSettings() { return mockOpenSettings; } })); // KB-904: 넛지 = 알림 설정 직행
 const mockAdapter = jest.requireMock('@/lib/push/pushAdapter') as Record<
   'markPrimerResult' | 'requestPermission' | 'registerPushToken' | 'getPrimerResult',
   jest.Mock

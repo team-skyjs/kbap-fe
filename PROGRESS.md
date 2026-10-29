@@ -4,6 +4,12 @@
 - T-023은 서버 원인(ReviewResponse.language null — id 49·42·43·40) → FE 범위 제외(커맨드가 서버 후속).
 - **사고**: 에뮬 연결 명령에 표시용으로 쓴 `pm clear`가 실행돼 kbap 앱 데이터 초기화·회원 세션 풀림. 예진 재로그인 대기, Android 기기 검증은 재로그인 뒤 QA. 위 규칙 추가.
 
+## 2026-10-30 — P-542 / KB-904 프로필·설정 내비·저장 버튼
+
+- T-080 알림 "기기 설정 열기" = Android 이 앱 알림 페이지 직행(APP_NOTIFICATION_SETTINGS + 패키지 extra — RN sendIntent로 가능, 에뮬 확인). T-025 앱 언어 직행은 package: 데이터 URI가 필요해 RN으로 불가(에뮬 resolve 실패, 네이티브 모듈 추가 금지) → App info + 언어 행 아래 안내(누르기 전에 보이게).
+- 저장 버튼 하나·무변경 비활성(프로필 편집·회피·식이), 헤더 Save 제거 · 연동 계정 값 = Apple/Google · Language 라벨 통일 · 맵기 미설정 = 회색 트랙 + Not set · 알림 식사 알림 이유 캡션·이중 흐림 제거·외톨이 구분선 제거 · 프로필 값 행 › · 국가 옆 언어 이름 · 회피 8개 이하 = Edit restrictions › · 주문 공유 Share image/Save to photos·파일명 kbap-order-YYYYMMDD.png · 주문 음식 행 › · 탈퇴 화면 정렬.
+- 에뮬에서 화면별 확인(알림 페이지 직행·저장 토스트·파일명 MediaStore 확인). iOS 시뮬 미캡처. 지문 무변.
+
 ## 2026-10-30 — P-541 / KB-901 가공식품 표기·Packaged 탭 동작 정리
 
 - 원인 2개가 대부분: ① 목록·상세 요청에 `lang` 쿼리 없음 — 서버는 표시명·제조사·알레르기 번역을 lang으로만 준다(Accept-Language만으론 한국어, dev 2453 실측) → Food 탭 진입만 "농심 / 신라면"(T-013·T-014). ② 서버가 번역 없을 때 translated에 원문을 그대로 채움 → "English translation" 아래 한국어·알레르기 문장 2번(T-003·T-012) → 어댑터 realTranslation이 원문과 같은 번역을 버림, 원문엔 "Korean original" 라벨.

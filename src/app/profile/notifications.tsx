@@ -27,7 +27,7 @@ import { Shimmer } from '@/components/Skeleton';
 import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { EVENTS, track } from '@/lib/analytics';
-import { openAppSettings, openWebPage } from '@/lib/openExternal';
+import { openNotificationSettings, openWebPage } from '@/lib/openExternal';
 import { consentUrl, PRIVACY_CONSENT_VERSION, RECEIVE_CONSENT_VERSION } from '@/lib/push/consent';
 import { useNotificationSettings, useUpdateNotificationSettings, type NotificationSettings as Settings } from '@/lib/data/useNotificationSettings';
 import { NotificationSheet } from '@/features/push/NotificationSheet';
@@ -123,7 +123,7 @@ function NotificationSettingsScreen() {
           <Pressable
             style={styles.banner}
             // KB-630 계측: 팝업 결과(grant/deny)는 requestPermission 안에서 1곳 — 여기선 설정 열기만
-            onPress={() => { if (osAsk) { void askPermission(); return; } track(EVENTS.push_permission, { state: 'settings_open' }); void openAppSettings(); }}
+            onPress={() => { if (osAsk) { void askPermission(); return; } track(EVENTS.push_permission, { state: 'settings_open' }); void openNotificationSettings(); }} // KB-904(T-080): 안드 = 이 앱 알림 페이지
             testID={osAsk ? 'notif-os-ask' : 'notif-os-off'}
           >
             <IconBell size={16} color={C.riskCaution} />
@@ -161,9 +161,9 @@ function NotificationSettingsScreen() {
             <View style={styles.group}>
               <Text style={styles.groupTitle}>{t('notif.newsGroup')}</Text>
               <ToggleRow label={t('notif.news')} sub={t('notif.newsSub')} on={s.news.enabled} onPress={toggleNews} testID="notif-news" disabled={osOff} />
-              <View style={styles.hair} />
-              {/* 소식 OFF = 비활성 — 색·불투명도만(P-151), 탭 무동작 */}
-              <View style={[!s.news.enabled && styles.rowDisabled]} testID="notif-mealtime-row">
+              {/* 소식 OFF = 비활성 — 색·불투명도만(P-151), 탭 무동작. KB-904(T-081): OS 꺼짐이면 위 본문이 이미 흐림 — 겹쳐 흐리면(0.4×0.4) 거의 안 보였다.
+                  KB-904(T-097): 이 줄 위 구분선 하나만 있던 것 제거 — 그룹 간격으로만 나눈다 */}
+              <View style={[!s.news.enabled && !osOff && styles.rowDisabled]} testID="notif-mealtime-row">
                 <ToggleRow
                   label={t('notif.mealTime')}
                   sub={t('notif.mealTimeSub')}
@@ -173,6 +173,8 @@ function NotificationSettingsScreen() {
                   testID="notif-mealtime"
                 />
               </View>
+              {/* KB-904(T-081): 왜 못 켜는지 — 소식 알림이 꺼져 있으면 */}
+              {!s.news.enabled && <Text style={styles.captionText} testID="notif-mealtime-why">{t('notif.mealTimeNeedsNews')}</Text>}
               {consent && (
                 <View style={styles.caption} testID="notif-consent-status">
                   <Text style={styles.captionText}>{t('notif.consentStatus', consent)}</Text>
@@ -271,7 +273,6 @@ const styles = StyleSheet.create({
   rowDisabled: { opacity: 0.4 }, // 상태 = 불투명도만(P-151)
   rowLabel: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
   rowSub: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
-  hair: { height: 1, backgroundColor: C.hair },
   caption: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 12 },
   captionText: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
   captionLink: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText },
