@@ -134,7 +134,8 @@ export function ReviewPhotoStrip({ photos, size = 72, radius = 10, variant = 'ti
   const [measured, setMeasured] = React.useState<number | null>(null);
   if (!photos.length) return null;
   const open = (i: number) => { setPage(i); setOpenAt(i); };
-  const tileW = Math.max(0, (measured ?? width - 40) - PEEK_REVEAL);
+  // KB-905(T-073): 1장이면 걸쳐 보일 다음 장이 없다 — 전폭(전엔 80%만 차고 오른쪽 빈 공간)
+  const tileW = Math.max(0, (measured ?? width - 40) - (photos.length > 1 ? PEEK_REVEAL : 0));
   return (
     <>
       {variant === 'peek' ? (

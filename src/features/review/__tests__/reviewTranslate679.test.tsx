@@ -17,6 +17,7 @@ jest.mock('react-native-reanimated', () => {
     default: { View, createAnimatedComponent: (c: unknown) => c },
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: () => ({}),
+    useReducedMotion: () => true, // Codex #364: 내 아바타 로딩 스켈레톤(Shimmer)
     withSpring: (v: unknown) => v,
     withTiming: (v: unknown) => v,
     withRepeat: (v: unknown) => v,
@@ -48,7 +49,7 @@ const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
 
 import { ApiError } from '@/lib/api/client';
-import { FeedCard } from '../FeedCard';
+import { FeedCard, MyAvatar } from '../FeedCard';
 import type { Review } from '@/lib/api/types';
 
 const REVIEW = (over: Partial<Review> = {}): Review =>
@@ -251,4 +252,19 @@ it('표면 경유 소스 잠금 — FeedCard·음식별 전체 리뷰 모두 공
     expect(src).not.toContain('<ExpandableBody');
     expect(src).not.toContain('useReviewTranslation');
   }
+});
+
+it('Codex #364 P2: 내 아바타 실패 뒤 새 URL = 다시 시도(A 실패 → B 사진 → B 실패 → A로 돌아와도 재시도)', () => {
+  let tree!: ReactTestRenderer;
+  const shown = () => tree.root.findAll((n) => n.props?.testID === 'feed-my-avatar' && typeof n.type === 'string').length;
+  const fail = () => act(() => tree.root.findAll((n) => typeof n.props?.onError === 'function')[0].props.onError());
+  act(() => { tree = renderer.create(<MyAvatar uri="https://cdn/a.jpg" />); });
+  expect(shown()).toBe(1);
+  fail();
+  expect(shown()).toBe(0); // 실패 = 기본 아바타
+  act(() => tree.update(<MyAvatar uri="https://cdn/b.jpg" />));
+  expect(shown()).toBe(1);
+  fail();
+  act(() => tree.update(<MyAvatar uri="https://cdn/a.jpg" />));
+  expect(shown()).toBe(1);
 });
