@@ -220,17 +220,28 @@ describe('KB-892 이름 스캔 앞면 사진 — 축소 후 업로드, 실패는
     expect(fitLongSide(1456, 1000)).toBeNull();
     expect(fitLongSide(900, 1200)).toBeNull();
   });
-  it('큰 사진 = resize + JPEG 0.8 → 축소본을 MENU_SCAN으로 업로드(원본 uri는 업로드에 안 씀) → 경로', async () => {
+  it('큰 사진 = resize + JPEG 0.8 → 축소본을 PACKAGED_SCAN으로 업로드(원본 uri는 업로드에 안 씀) → 경로', async () => {
     mockManipulate.mockResolvedValueOnce({ uri: 'file:///cache/small.jpg', width: 1092, height: 1456 });
     await expect(uploadNameScanPhoto({ uri: 'file:///cache/front.jpg', width: 3024, height: 4032 })).resolves.toBe('scan/1/a.jpg');
     expect(mockManipulate).toHaveBeenCalledWith('file:///cache/front.jpg', [{ resize: { width: 1092, height: 1456 } }], { compress: 0.8, format: 'jpeg' });
-    expect(api.post).toHaveBeenCalledWith('/images/upload-url', expect.objectContaining({ purpose: 'MENU_SCAN', contentType: 'image/jpeg' }));
+    expect(api.post).toHaveBeenCalledWith('/images/upload-url', expect.objectContaining({ purpose: 'PACKAGED_SCAN', contentType: 'image/jpeg' })); // 메뉴판 스캔 피드(MENU_SCAN)와 분리
     expect(mockUploadAsync.mock.calls[0][1]).toBe('file:///cache/small.jpg');
   });
   it('작은 사진 = 축소 없이 JPEG 0.8 재인코딩만', async () => {
     mockManipulate.mockResolvedValueOnce({ uri: 'file:///cache/re.jpg', width: 900, height: 1200 });
     await uploadNameScanPhoto({ uri: 'file:///cache/front.jpg', width: 900, height: 1200 });
     expect(mockManipulate).toHaveBeenCalledWith('file:///cache/front.jpg', [], { compress: 0.8, format: 'jpeg' });
+  });
+  it('서버가 PACKAGED_SCAN을 모름(S-893 배포 전) = 발급 400 → null · PUT·완료 신고 0 → 이름 스캔은 사진 없이', async () => {
+    mockManipulate.mockResolvedValueOnce({ uri: 'file:///cache/re.jpg', width: 1000, height: 1400 });
+    (api.post as jest.Mock).mockImplementationOnce(async (path: string, body: { purpose: string }) => {
+      expect(path).toBe('/images/upload-url');
+      expect(body.purpose).toBe('PACKAGED_SCAN');
+      throw Object.assign(new Error('잘못된 요청입니다'), { status: 400, code: 'COMMON-002' });
+    });
+    await expect(uploadNameScanPhoto(PHOTO)).resolves.toBeNull();
+    expect(mockUploadAsync).not.toHaveBeenCalled();
+    expect(api.post).toHaveBeenCalledTimes(1);
   });
   it('축소 실패·발급 실패·PUT 실패 = null(throw 없음 — 스캔은 사진 없이 진행)', async () => {
     mockManipulate.mockRejectedValueOnce(new Error('decode'));

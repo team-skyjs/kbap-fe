@@ -163,7 +163,8 @@ export function fitLongSide(width: number, height: number, max = NAME_SCAN_PHOTO
 }
 
 /**
- * KB-892: 이름 스캔 앞면 사진 → 축소(긴 변 1,456px 이하·JPEG 0.8, 원본 파일 무변) → 기존 업로드 길목(MENU_SCAN) → 경로.
+ * KB-892: 이름 스캔 앞면 사진 → 축소(긴 변 1,456px 이하·JPEG 0.8, 원본 파일 무변) → 기존 업로드 길목 → 경로.
+ * purpose = PACKAGED_SCAN(서버 S-893 신규) — MENU_SCAN이면 어드민 메뉴판 스캔 사진 피드(KB-888)에 섞인다. 서버 배포 전엔 발급이 400 → null.
  * 이름 스캔 결과에는 쓰이지 않는 그림자 입력이라 **어떤 실패도 null**(스캔은 사진 없이 그대로 진행).
  */
 export async function uploadNameScanPhoto(photo: PhotoFile): Promise<string | null> {
@@ -173,7 +174,7 @@ export async function uploadNameScanPhoto(photo: PhotoFile): Promise<string | nu
     const size = fitLongSide(photo.width, photo.height);
     const out = await manipulateAsync(photo.uri, size ? [{ resize: size }] : [], { compress: 0.8, format: SaveFormat.JPEG });
     console.log(`[scan] name photo ${photo.width}x${photo.height} → ${out.width}x${out.height}`);
-    return (await uploadImage({ uri: out.uri, width: out.width, height: out.height }, 'MENU_SCAN')).path;
+    return (await uploadImage({ uri: out.uri, width: out.width, height: out.height }, 'PACKAGED_SCAN')).path;
   } catch (e) {
     console.log('[scan] name photo upload failed — 사진 없이 진행:', (e as Error)?.message ?? e);
     return null;
