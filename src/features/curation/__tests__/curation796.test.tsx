@@ -17,7 +17,6 @@ jest.mock('react-native-reanimated', () => {
 // KB-846 끌어 닫기 — Pan 설정을 잡아 콜백을 테스트가 직접 부른다
 type PanCbs = { onUpdate?: (e: { translationY: number }) => void; onEnd?: (e: { translationY: number; velocityY: number }, ok: boolean) => void; onFinalize?: (e: object, ok: boolean) => void; activeOffsetY?: unknown; failOffsetX?: unknown };
 let mockPan: PanCbs = {};
-let mockTapEnd: ((e: object, ok: boolean) => void) | undefined; // KB-906(T-040) 손잡이 탭
 jest.mock('react-native-gesture-handler', () => {
   const { View } = jest.requireActual('react-native');
   const pan = () => {
@@ -27,13 +26,7 @@ jest.mock('react-native-gesture-handler', () => {
     for (const k of ['runOnJS', 'activeOffsetY', 'failOffsetX', 'onUpdate', 'onEnd', 'onFinalize']) g[k] = (v: unknown) => { (cbs as Record<string, unknown>)[k] = v; return g; };
     return g;
   };
-  const tap = () => {
-    const g: Record<string, (...a: unknown[]) => unknown> = {};
-    g.runOnJS = () => g;
-    g.onEnd = (v: unknown) => { mockTapEnd = v as typeof mockTapEnd; return g; };
-    return g;
-  };
-  return { Gesture: { Pan: pan, Tap: tap }, GestureDetector: ({ children }: { children: React.ReactNode }) => children, GestureHandlerRootView: View };
+  return { Gesture: { Pan: pan }, GestureDetector: ({ children }: { children: React.ReactNode }) => children, GestureHandlerRootView: View };
 });
 jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View {...p} /> }; });
 jest.mock('@/components/RemoteImage', () => { const { View } = jest.requireActual('react-native'); return { RemoteImage: (p: { uri: string; blurRadius?: number; style?: unknown; placeholder?: string; onLoad?: () => void; onError?: () => void }) => <View testID={p.blurRadius ? `blur:${p.uri}` : `img:${p.uri}`} style={p.style} {...({ blurRadius: p.blurRadius, placeholder: p.placeholder, onLoad: p.onLoad, onError: p.onError } as object)} /> }; });
@@ -656,13 +649,11 @@ describe('KB-906 홈·큐레이션 동작', () => {
     const t = render(<CurationDetailScreen />);
     press(t, 'curation-item-1');
     expect(ids(t)).toContain('curation-gallery');
-    act(() => mockTapEnd?.({}, false)); // 탭 취소(끌기로 넘어감) = 유지
-    expect(ids(t)).toContain('curation-gallery');
-    act(() => mockTapEnd?.({}, true));
+    act(() => t.root.findAll((n) => n.props?.testID === 'curation-gallery-grabber' && typeof n.props?.onPress === 'function')[0].props.onPress());
     expect(ids(t)).not.toContain('curation-gallery');
     const sheet = src('CurationGallerySheet.tsx');
     expect(sheet).toMatch(/<GestureDetector gesture=\{drag\}>\s*<View style=\{\{ height: photoBoxH \}\}/); // 사진 상자 전체가 끌기 영역
-    expect(sheet).toMatch(/<GestureDetector gesture=\{grabTap\}>\s*<View\s+ref=\{grabRef\}/);
+    expect(sheet).toMatch(/<Pressable\s+ref=\{grabRef\}\s+style=\{st\.grabZone\}\s+onPress=\{onClose\}/);
   });
   it('T-128: pager 점 = 반투명 검정 알약 위 8pt 점 · 켜짐/꺼짐은 불투명도만(크기 동일)', () => {
     mockDetail = q({ data: withImages(3) });

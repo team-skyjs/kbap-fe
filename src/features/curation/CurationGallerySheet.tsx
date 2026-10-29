@@ -134,8 +134,6 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
     .onFinalize((_e, success) => {
       if (!success) dragY.set(withSpring(0, { damping: 20, stiffness: 220 })); // 취소(OS 끼어들기) = 제자리
     });
-  // KB-906(T-040): 손잡이 탭 = 닫기(전엔 끌기 전용이라 눈으로 탭하면 아무 일 없었다 — 스크린리더 "닫기"와 같은 동작)
-  const grabTap = Gesture.Tap().runOnJS(true).onEnd((_e, success) => { if (success) onClose(); });
   const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: dragY.get() }] }));
 
   return (
@@ -182,21 +180,21 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
                   </View>
                 )}
               />
-              {/* 그래버 띠 — 탭·아래로 끌기 = 닫힘(끌기는 바깥 사진 영역 제스처가 받는다). 스크린리더 = "닫기" 버튼(활성화로 닫힘) */}
-              <GestureDetector gesture={grabTap}>
-                <View
-                  ref={grabRef}
-                  style={st.grabZone}
-                  accessible
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.close')}
-                  accessibilityActions={[{ name: 'activate' }]}
-                  onAccessibilityAction={(e) => { if (e.nativeEvent.actionName === 'activate') onClose(); }}
-                  testID="curation-gallery-grabber"
-                >
-                  <View style={st.handle} />
-                </View>
-              </GestureDetector>
+              {/* 그래버 띠 — 탭·아래로 끌기 = 닫힘(끌기는 바깥 사진 영역 제스처가 받는다). 스크린리더 = "닫기" 버튼(활성화로 닫힘)
+                  KB-906(T-040): 전엔 끌기 전용 View라 눈으로 탭하면 무반응 → 앱 Pressable(ui_click 계측 경유 — Gesture.Tap은 사진 확대 전용 잠금) */}
+              <Pressable
+                ref={grabRef}
+                style={st.grabZone}
+                onPress={onClose}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel={t('common.close')}
+                accessibilityActions={[{ name: 'activate' }]}
+                onAccessibilityAction={(e) => { if (e.nativeEvent.actionName === 'activate') onClose(); }}
+                testID="curation-gallery-grabber"
+              >
+                <View style={st.handle} />
+              </Pressable>
               {/* KB-852 → KB-863(v2 B): 출처 = 사진 왼쪽 아래 오버레이(흰 글자 + 은은한 그림자, 1줄 말줄임 — 지도 버튼과 겹침 0). 출처 없는 사진 = 없음 */}
               {!!current?.attribution && (
                 <Text
