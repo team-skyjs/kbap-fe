@@ -154,10 +154,16 @@ export function FeedCard({
 }
 
 /** KB-905(T-069): 내 프로필 사진 24 — 원격 이미지 규칙(로딩 스켈레톤·실패 폴백) */
-function MyAvatar({ uri }: { uri: string }) {
+export function MyAvatar({ uri }: { uri: string }) {
   const [failed, setFailed] = React.useState(false);
+  // Codex #364 P2: 새 사진 URL이 오면 옛 실패를 버리고 다시 시도 — 렌더 중 전환 비교(TabBar 아바타·KB-603과 같은 패턴, 값 키는 A→B→A 재시도를 잃는다)
+  const [prevUri, setPrevUri] = React.useState(uri);
+  if (uri !== prevUri) {
+    setPrevUri(uri);
+    setFailed(false);
+  }
   if (failed) return <AvatarPlaceholder height={24} />;
-  return <View testID="feed-my-avatar"><RemoteImage uri={uri} style={styles.avatarImg} onError={() => setFailed(true)} /></View>;
+  return <View testID="feed-my-avatar"><RemoteImage key={uri} uri={uri} style={styles.avatarImg} onError={() => setFailed(true)} /></View>;
 }
 
 const styles = StyleSheet.create({
