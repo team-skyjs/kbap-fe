@@ -13,7 +13,7 @@ import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, riskText, shadow, type RiskState, radius } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { UpdateNudgeBanner } from '@/components/VersionGate';
 import {
   StickyHeader,

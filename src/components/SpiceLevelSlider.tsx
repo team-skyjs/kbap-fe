@@ -24,7 +24,7 @@ import { LayoutAnimation, PanResponder, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { SPICE_LEVEL_LABEL, SPICE_LEVELS, spiceRank, type SpiceLevel } from '@/lib/spice';
 
 const KNOB = 28; // KB-433(4150:14286): 썸 28 흰 원

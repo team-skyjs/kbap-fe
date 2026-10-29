@@ -11,7 +11,7 @@ import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, riskTone, radius } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { Btn } from './Btn';
 import Svg from 'react-native-svg';
 import { D4CircleDashed } from './design4Assets';
