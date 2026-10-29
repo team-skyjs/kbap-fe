@@ -58,7 +58,7 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 const mockBack = jest.fn();
 /** KB-620: 편집(reviewId 있음)·신규(없음) 두 경로를 같은 스위트에서 — beforeEach가 편집으로 되돌린다. */
 const mockParams: { id: string; reviewId?: string } = { id: '7', reviewId: 'r1' };
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useRouter: () => ({ push: jest.fn(), back: mockBack, replace: jest.fn() }),
   useLocalSearchParams: () => mockParams,
   useSegments: () => [],

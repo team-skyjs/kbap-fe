@@ -120,7 +120,8 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
     const node = findNodeHandle(grabRef.current);
     if (node) AccessibilityInfo.setAccessibilityFocus(node);
   };
-  // 세로 끌기는 그래버 띠(사진 위쪽)에서만 시작 — 사진 캐러셀의 가로 스와이프와 겹치지 않는다(가로로 먼저 움직이면 실패)
+  // KB-905→KB-906(T-040): 세로 끌기 = **사진 영역 전체**(전엔 위 44 그래버 띠만 — 사진 위에서 아래로 쓸면 안 닫혔다). 시트 안에 세로 목록이 없어
+  // 공용 시트 계약(핸들·헤더만 — 내부 스크롤과 충돌 방지)의 이유가 여기엔 없다. 가로로 먼저 움직이면 실패 = 사진 넘김은 그대로
   const drag = Gesture.Pan()
     .runOnJS(true)
     .activeOffsetY(8)
@@ -133,6 +134,8 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
     .onFinalize((_e, success) => {
       if (!success) dragY.set(withSpring(0, { damping: 20, stiffness: 220 })); // 취소(OS 끼어들기) = 제자리
     });
+  // KB-906(T-040): 손잡이 탭 = 닫기(전엔 끌기 전용이라 눈으로 탭하면 아무 일 없었다 — 스크린리더 "닫기"와 같은 동작)
+  const grabTap = Gesture.Tap().runOnJS(true).onEnd((_e, success) => { if (success) onClose(); });
   const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: dragY.get() }] }));
 
   return (
@@ -148,6 +151,7 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
             accessibilityViewIsModal
             onAccessibilityEscape={onClose}
           >
+            <GestureDetector gesture={drag}>
             <View style={{ height: photoBoxH }} onLayout={(e) => setPagerH(Math.round(e.nativeEvent.layout.height))} testID="curation-gallery-photo">
               <FlatList
                 ref={listRef}
@@ -178,8 +182,8 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
                   </View>
                 )}
               />
-              {/* 그래버 띠 — 아래로 끌면 닫힘. 스크린리더 = "닫기" 버튼(활성화로 닫힘), 눈으로 탭하면 아무 일 없음(끌기 전용) */}
-              <GestureDetector gesture={drag}>
+              {/* 그래버 띠 — 탭·아래로 끌기 = 닫힘(끌기는 바깥 사진 영역 제스처가 받는다). 스크린리더 = "닫기" 버튼(활성화로 닫힘) */}
+              <GestureDetector gesture={grabTap}>
                 <View
                   ref={grabRef}
                   style={st.grabZone}
@@ -225,6 +229,7 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
                 <IconMapPin size={24} color={C.ink} />
               </Pressable>
             </View>
+            </GestureDetector>
             {/* KB-846: 본문 고정(스크롤·바운스 없음) — 소개 최대 4줄. 짧은 화면·큰 글씨는 위 사진 영역이 줄어(flexShrink) Guide가 가려지지 않는다 */}
             <ScrollView
               style={st.bodyScroll}
@@ -271,10 +276,11 @@ const st = StyleSheet.create({
   handle: { position: 'absolute', top: 12, alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.line2 }, // 그래버 띠 안(띠 기준 위 12 = 시트 기준 그대로)
   grabZone: { position: 'absolute', top: 0, left: 0, right: 0, height: 44 },
   bodyScroll: { flexGrow: 0, flexShrink: 1 },
-  dots: { position: 'absolute', left: PHOTO_INSET, bottom: 16, flexDirection: 'row', gap: 8 }, // KB-863 v2 B: 왼쪽 아래(출처 밑)
-  dot: { width: 6, height: 6, borderRadius: 3 },
+  // KB-863 v2 B: 왼쪽 아래(출처 밑). KB-906(T-128): 흰 점 6이 밝은 바닥(하늘·돌바닥)에서 안 보였다 — 반투명 검정 알약 위 점 8(대비 확보)
+  dots: { position: 'absolute', left: PHOTO_INSET, bottom: 16, flexDirection: 'row', gap: 6, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.45)' },
+  dot: { width: 8, height: 8, borderRadius: 4 },
   dotOn: { backgroundColor: C.card },
-  dotOff: { backgroundColor: C.card, opacity: 0.4 },
+  dotOff: { backgroundColor: C.card, opacity: 0.45 }, // 상태 = 불투명도만(크기 동일 — 프레임 불변)
   body: { paddingHorizontal: 20, paddingTop: 16, gap: 8 },
   name: { fontFamily: font.bodyBold, fontSize: 24, lineHeight: 32, color: C.ink },
   area: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },

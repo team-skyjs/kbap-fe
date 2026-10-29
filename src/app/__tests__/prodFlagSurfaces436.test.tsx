@@ -43,7 +43,7 @@ jest.mock('expo-linear-gradient', () => {
   return { LinearGradient: View };
 });
 jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { version: '1.0.2' } } }));
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useSegments: () => [],
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn(), navigate: jest.fn() }),
   usePathname: () => '/',
