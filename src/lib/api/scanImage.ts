@@ -151,6 +151,35 @@ export async function uploadImage(
   return { path, publicUrl: issued.publicUrl };
 }
 
+/** KB-892: 이름 스캔 앞면 사진 — 긴 변 상한(px). 서버 모델 입력 권장 크기 */
+export const NAME_SCAN_PHOTO_MAX = 1456;
+
+/** 긴 변이 상한을 넘으면 비율 유지 축소 치수, 이미 작으면 null(재인코딩만) */
+export function fitLongSide(width: number, height: number, max = NAME_SCAN_PHOTO_MAX): { width: number; height: number } | null {
+  const long = Math.max(width, height);
+  if (long <= max) return null;
+  const k = max / long;
+  return width >= height ? { width: max, height: Math.round(height * k) } : { width: Math.round(width * k), height: max };
+}
+
+/**
+ * KB-892: 이름 스캔 앞면 사진 → 축소(긴 변 1,456px 이하·JPEG 0.8, 원본 파일 무변) → 기존 업로드 길목(MENU_SCAN) → 경로.
+ * 이름 스캔 결과에는 쓰이지 않는 그림자 입력이라 **어떤 실패도 null**(스캔은 사진 없이 그대로 진행).
+ */
+export async function uploadNameScanPhoto(photo: PhotoFile): Promise<string | null> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { manipulateAsync, SaveFormat } = require('expo-image-manipulator') as typeof import('expo-image-manipulator');
+    const size = fitLongSide(photo.width, photo.height);
+    const out = await manipulateAsync(photo.uri, size ? [{ resize: size }] : [], { compress: 0.8, format: SaveFormat.JPEG });
+    console.log(`[scan] name photo ${photo.width}x${photo.height} → ${out.width}x${out.height}`);
+    return (await uploadImage({ uri: out.uri, width: out.width, height: out.height }, 'MENU_SCAN')).path;
+  } catch (e) {
+    console.log('[scan] name photo upload failed — 사진 없이 진행:', (e as Error)?.message ?? e);
+    return null;
+  }
+}
+
 /**
  * 촬영 사진 → 검증된 imagePath. 실패 시 null → 스캔 요청은 서버에서 400(빈 imagePath 거절) = 스캔 실패.
  * KB-711: 스캔 PUT은 **상한 없음**(timeoutMs null) — 카메라 원본(대개 2~4MB)이 약한 망에서 60초를 넘기 쉽고, 끊으면 "느림"이 "불가"가 된다.

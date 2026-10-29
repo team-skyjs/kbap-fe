@@ -203,6 +203,11 @@ export const FLAGS = {
    */
   packagedReviewWrite: DEV_SERVER_CHANNEL,
   /**
+   * KB-892(P-536): 가공식품 이름 스캔에 앞면 사진(긴 변 1,456px·JPEG 0.8) 업로드 + `imagePath` 동봉 — 서버 Haiku 그림자 모드용(S-893).
+   * **채널 게이트 의도(발주 P-536)**: dev 서버 채널만. 운영은 그림자 수치 확인 뒤 별도 결정. OFF = 요청 body 현행과 바이트 동일, 업로드 0.
+   */
+  packagedNameScanPhoto: DEV_SERVER_CHANNEL,
+  /**
    * KB-870/P-528 OTA2 채널 게이트 의도: 사용자 검수·공개 승인으로 큐레이션·K-pop·회피6만 전 채널 공개.
    * 운영 큐레이션 게시/GET·idol GET·회피 catalog/profile PATCH 왕복 확인 뒤 develop 머지/발행한다.
    * PF3종과 리뷰 버전은 DEV_SERVER_CHANNEL에 유지한다. 공용 dev 게이트를 켜지 않는다.

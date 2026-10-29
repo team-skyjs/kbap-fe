@@ -24,7 +24,7 @@ const { api } = require('@/lib/api/client');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 // eslint-disable-next-line import/first -- jest.mock 선언 뒤(팩토리 호이스팅) — 레포 관례
-import { imageContentType, resolveScanImagePath, uploadImage, UPLOAD_PUT_TIMEOUT_MS } from '../scanImage';
+import { fitLongSide, imageContentType, NAME_SCAN_PHOTO_MAX, resolveScanImagePath, uploadImage, uploadNameScanPhoto, UPLOAD_PUT_TIMEOUT_MS } from '../scanImage';
 // eslint-disable-next-line import/first -- 위와 같음
 import { isUploadAborted } from '../uploadAbort';
 
@@ -208,5 +208,37 @@ describe('KB-711 업로드 상한·취소', () => {
     await jest.advanceTimersByTimeAsync(5_001);
     expect(String(((await caught) as Error).message)).toContain('timeout 5000ms');
     expect(mockCancelAsync).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('KB-892 이름 스캔 앞면 사진 — 축소 후 업로드, 실패는 조용히 null', () => {
+  it('긴 변 1,456px 이하 비율 유지 — 세로·가로 원본 · 이미 작으면 축소 없음', () => {
+    expect(NAME_SCAN_PHOTO_MAX).toBe(1456);
+    expect(fitLongSide(3024, 4032)).toEqual({ width: 1092, height: 1456 }); // 아이폰 세로 12MP
+    expect(fitLongSide(4032, 3024)).toEqual({ width: 1456, height: 1092 });
+    expect(fitLongSide(1080, 1920)).toEqual({ width: 819, height: 1456 });
+    expect(fitLongSide(1456, 1000)).toBeNull();
+    expect(fitLongSide(900, 1200)).toBeNull();
+  });
+  it('큰 사진 = resize + JPEG 0.8 → 축소본을 MENU_SCAN으로 업로드(원본 uri는 업로드에 안 씀) → 경로', async () => {
+    mockManipulate.mockResolvedValueOnce({ uri: 'file:///cache/small.jpg', width: 1092, height: 1456 });
+    await expect(uploadNameScanPhoto({ uri: 'file:///cache/front.jpg', width: 3024, height: 4032 })).resolves.toBe('scan/1/a.jpg');
+    expect(mockManipulate).toHaveBeenCalledWith('file:///cache/front.jpg', [{ resize: { width: 1092, height: 1456 } }], { compress: 0.8, format: 'jpeg' });
+    expect(api.post).toHaveBeenCalledWith('/images/upload-url', expect.objectContaining({ purpose: 'MENU_SCAN', contentType: 'image/jpeg' }));
+    expect(mockUploadAsync.mock.calls[0][1]).toBe('file:///cache/small.jpg');
+  });
+  it('작은 사진 = 축소 없이 JPEG 0.8 재인코딩만', async () => {
+    mockManipulate.mockResolvedValueOnce({ uri: 'file:///cache/re.jpg', width: 900, height: 1200 });
+    await uploadNameScanPhoto({ uri: 'file:///cache/front.jpg', width: 900, height: 1200 });
+    expect(mockManipulate).toHaveBeenCalledWith('file:///cache/front.jpg', [], { compress: 0.8, format: 'jpeg' });
+  });
+  it('축소 실패·발급 실패·PUT 실패 = null(throw 없음 — 스캔은 사진 없이 진행)', async () => {
+    mockManipulate.mockRejectedValueOnce(new Error('decode'));
+    await expect(uploadNameScanPhoto(PHOTO)).resolves.toBeNull();
+    mockManipulate.mockResolvedValue({ uri: 'file:///cache/re.jpg', width: 1000, height: 1400 });
+    (api.post as jest.Mock).mockRejectedValueOnce(new Error('500'));
+    await expect(uploadNameScanPhoto(PHOTO)).resolves.toBeNull();
+    mockUploadAsync.mockResolvedValueOnce({ status: 403 });
+    await expect(uploadNameScanPhoto(PHOTO)).resolves.toBeNull();
   });
 });

@@ -198,7 +198,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   home_curation_map_open: ['collection_key', 'entry_id'],
   home_curation_map_select: ['collection_key', 'entry_id', 'provider'],
   scan_mode_select: ['mode'],
-  food_packaged_scan_name: ['candidate_count'],
+  food_packaged_scan_name: ['candidate_count', 'photo_attached'], // KB-892: 사진·경로는 싣지 않음(동봉 여부만)
   food_packaged_scan_confirm: ['charged', 'rejected'],
   food_packaged_scan_handoff: ['from'],
   home_idol_pick_list_view: ['count'],
