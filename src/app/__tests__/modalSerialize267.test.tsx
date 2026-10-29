@@ -3,6 +3,8 @@
  * "찍었으니 사진이 보여야지"(신규 유저 멘탈 모델). KB-140의 리스트 기본은
  * 파파고 개편으로 근거 소멸. 리스트·원본은 하단 버튼 전환 — 전환 무회귀 잠금.
  */
+import { ScanExitPrompts } from '@/features/scan/ScanExitPrompts';
+import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
@@ -153,6 +155,11 @@ import Scan from '../scan';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { PushPrimerModal } from '@/features/push/PushPrimerModal';
 
+// KB-908(T-010): 넛지·리뷰 유도 호스트는 루트에 — 스캔만 내려 "떠남"을 재현한다(같은 트리에서 호스트는 살아 있음)
+function App({ scan = true }: { scan?: boolean }) {
+  return (<>{scan && <Scan />}<ScanExitPrompts /></>);
+}
+
 /**
  * P-267(KB-377): 첫 스캔 결과 화면 먹통 — 코치마크·푸시 프라이머 일회성 모달
  * **직렬화** 잠금. 동시 present = 네이티브 fullScreenModal 위 RN Modal 2개 같은
@@ -191,50 +198,63 @@ it('① 첫 스캔(코치 대상·프라이머 후보) — 동시 present 불가
   expect(primerOpen(tree)).toBe(false); // KB-377 교착 원인 — 동시 true 절대 금지
 });
 
-it('② iOS: onClose(JS 닫힘) 시점엔 프라이머 미발화 — 네이티브 dismiss 완료(onDismiss) 후에만', async () => {
-  const tree = render(<Scan />);
-  await reachResult(tree);
-  const coach = tree.root.findAllByType(ScanCoachMark)[0];
-  await act(async () => {
-    coach.props.onClose(); // visible=false 커밋 — 네이티브 dismissal은 아직 진행 중
-    await new Promise((r) => setTimeout(r, 0));
-  });
-  expect(coachOpen(tree)).toBe(false);
-  expect(primerOpen(tree)).toBe(false); // Codex P1: 여기서 present 시작하면 잔존 race
-  await act(async () => {
-    tree.root.findAllByType(ScanCoachMark)[0].props.onDismiss(); // 네이티브 dismiss 완료
-    await new Promise((r) => setTimeout(r, 0));
-  });
-  expect(primerOpen(tree)).toBe(true); // 보류분이 dismiss 완료 후 표시 — 소실 금지
-});
+const reviewOpen = (t: ReactTestRenderer) => t.root.findAllByType(ReviewPromptSheet).some((n) => n.props.open === true);
+async function leaveScan(tree: ReactTestRenderer) {
+  await act(async () => { tree.update(<App scan={false} />); });
+  await act(async () => { await new Promise((r) => setTimeout(r, 10)); }); // runAfterInteractions + 판정 async 체인
+}
 
-it('②-b 배선 — Modal onDismiss 연결 + 안드는 onClose 경로(플랫폼 분기) 소스 잠금', () => {
-  const fs = require('fs');
-  expect(fs.readFileSync('src/features/scan/ScanCoachMark.tsx', 'utf8')).toContain('onDismiss={onDismiss}');
-  const scan = fs.readFileSync('src/app/scan.tsx', 'utf8') as string;
-  // KB-730: 프라이머 직접 호출 → 일회성 모달 큐의 done(settle) — iOS는 onDismiss, 안드는 onClose(onDismiss 미지원)
-  expect(scan).toContain("onDismiss={Platform.OS === 'ios' ? () => settle(coachDoneRef) : undefined}");
-  expect(scan).toContain("if (Platform.OS !== 'ios') settle(coachDoneRef);");
-  expect(scan).toContain("modalQueue.add(nudgeStep());"); // 코치 → 넛지 순서는 큐가 보장
-});
-
-it('③ 코치마크 비대상(기존자) = 프라이머 단독 present(현행 무변)', async () => {
-  mockShouldShowCoach.mockResolvedValue(false);
-  const tree = render(<Scan />);
-  await reachResult(tree);
-  expect(coachOpen(tree)).toBe(false);
-  expect(primerOpen(tree)).toBe(true);
-});
-
-it('④ 프라이머 기응답자 = 코치 닫혀도 프라이머 안 뜸(기록 로직 무변)', async () => {
-  mockGetPrimer.mockResolvedValue('declined');
-  const tree = render(<Scan />);
+it('② KB-908(T-010): 코치마크가 닫혀도 결과 화면엔 프라이머 0 — 스캔을 떠난 뒤 하나만', async () => {
+  const tree = render(<App />);
   await reachResult(tree);
   const coach = tree.root.findAllByType(ScanCoachMark)[0];
   await act(async () => {
     coach.props.onClose();
-    coach.props.onDismiss(); // iOS 완주 경로로도 미발화(기응답 기록이 막는다)
+    coach.props.onDismiss();
     await new Promise((r) => setTimeout(r, 0));
   });
+  expect(coachOpen(tree)).toBe(false);
+  expect(primerOpen(tree)).toBe(false); // 결과 직후 2연속 금지(QA aos#7)
+  expect(reviewOpen(tree)).toBe(false);
+  await leaveScan(tree);
+  expect(primerOpen(tree)).toBe(true);
+  expect(reviewOpen(tree)).toBe(false); // 한 번에 하나
+});
+
+it('②-b 배선 — 코치마크 onDismiss·안드 onClose 큐 완료는 그대로 · 결과 큐엔 코치마크만 · 나갈 때 루트 호스트', () => {
+  const fs = require('fs');
+  expect(fs.readFileSync('src/features/scan/ScanCoachMark.tsx', 'utf8')).toContain('onDismiss={onDismiss}');
+  const scan = fs.readFileSync('src/app/scan.tsx', 'utf8') as string;
+  expect(scan).toContain("onDismiss={Platform.OS === 'ios' ? () => settle(coachDoneRef) : undefined}");
+  expect(scan).toContain("if (Platform.OS !== 'ios') settle(coachDoneRef);");
+  expect(scan).toContain('armScanExitPrompt({ isGuest, ready: scanRecordedRef.current });');
+  expect(scan).toContain('useEffect(() => () => fireScanExitPrompt(), []);');
+  expect(scan).not.toMatch(/nudgeStep|reviewStep|<PushPrimerModal|<ReviewPromptSheet/);
+  expect(fs.readFileSync('src/app/_layout.tsx', 'utf8')).toContain('<ScanExitPrompts />');
+});
+
+it('③ 코치마크 비대상(기존자) = 결과 화면엔 아무것도 안 뜸 · 떠나면 프라이머', async () => {
+  mockShouldShowCoach.mockResolvedValue(false);
+  const tree = render(<App />);
+  await reachResult(tree);
+  expect(coachOpen(tree)).toBe(false);
+  expect(primerOpen(tree)).toBe(false);
+  await leaveScan(tree);
+  expect(primerOpen(tree)).toBe(true);
+});
+
+it('③-b 결과 없이 스캔을 닫음(카메라에서 X) = 아무것도 안 뜸', async () => {
+  mockShouldShowCoach.mockResolvedValue(false);
+  const tree = render(<App />);
+  await leaveScan(tree);
+  expect(primerOpen(tree)).toBe(false);
+  expect(reviewOpen(tree)).toBe(false);
+});
+
+it('④ 프라이머 기응답자 = 떠나도 프라이머 안 뜸(기록 로직 무변)', async () => {
+  mockGetPrimer.mockResolvedValue('declined');
+  const tree = render(<App />);
+  await reachResult(tree);
+  await leaveScan(tree);
   expect(primerOpen(tree)).toBe(false);
 });

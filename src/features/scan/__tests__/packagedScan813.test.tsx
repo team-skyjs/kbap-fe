@@ -31,7 +31,13 @@ jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
 jest.mock('@/lib/onboarding/data', () => ({ restrictionLabel: (c: string) => `L(${c})` }));
 const mockPush = jest.fn();
 let mockParams: Record<string, string> = {};
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn(), navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams }));
+// KB-908(T-050): 후보 화면 이탈 확인(useLeaveConfirm) — 마지막 usePreventRemove 호출의 (막는지, 콜백) 기록
+const mockNavDispatch = jest.fn();
+const mockPrevent: { on: boolean; cb: ((o: { data: { action: unknown } }) => void) | null } = { on: false, cb: null };
+jest.mock('expo-router/build/react-navigation/core', () => ({
+  usePreventRemove: (on: boolean, cb: (o: { data: { action: unknown } }) => void) => { mockPrevent.on = on; mockPrevent.cb = cb; },
+}));
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn(), navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams, useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }) }));
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 const mockPost = jest.fn();
@@ -71,7 +77,7 @@ const DETAIL = { id: 11, reportNo: 'R1', productName: '새우깡', maker: '농�
 
 const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
-beforeEach(() => { FLAGS.packagedNameScanPhoto = false; /* KB-892: 기존 흐름 = 플래그 OFF(jest는 dev 채널이라 기본 ON) */ qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; mockFreeUntil = null; });
+beforeEach(() => { mockPrevent.on = false; mockPrevent.cb = null; FLAGS.packagedNameScanPhoto = false; /* KB-892: 기존 흐름 = 플래그 OFF(jest는 dev 채널이라 기본 ON) */ qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; mockFreeUntil = null; });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); qc.clear(); jest.clearAllMocks(); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -149,6 +155,27 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(mockPush).toHaveBeenCalledWith('/processed-foods/11?scan=1&charged=1');
     expect(inv).toHaveBeenCalledWith({ queryKey: ['me'] });
     expect(qc.getQueryData(['processedFoods', 'detail', '11', 'en|member:SHRIMP'])).toMatchObject({ id: '11', name: '새우깡' });
+  });
+  it('KB-908(T-050): 후보 화면 = 하드웨어 뒤로·닫기가 확인 없이 스캔 종료하지 않음 — 메뉴 결과와 같은 "Leave scan results?" · 머무르기 = 후보 그대로 · 나가기 = 막았던 이동 진행', async () => {
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+    mockPost.mockResolvedValueOnce({ analysisId: 'A7', state: 'CANDIDATES', candidates: [cand(11, 'R1')] });
+    const t = flow();
+    expect(mockPrevent.on).toBe(false); // 앞면 카메라 = 막지 않음(종전)
+    await press(t, 'pscan-take-photo');
+    expect(ids(t)).toContain('pscan-candidates');
+    expect(mockPrevent.on).toBe(true);
+    expect(ids(t)).not.toContain('scan-leave-confirm');
+    const action = { type: 'GO_BACK' };
+    act(() => mockPrevent.cb!({ data: { action } }));
+    expect(ids(t)).toContain('scan-leave-confirm');
+    expect(texts(t)).toEqual(expect.arrayContaining(['scan.leaveTitle', 'scan.retakeBody', 'scan.leaveConfirm']));
+    await press(t, 'scan-confirm-cancel');
+    expect(ids(t)).not.toContain('scan-leave-confirm');
+    expect(ids(t)).toContain('pscan-candidates');
+    expect(mockNavDispatch).not.toHaveBeenCalled();
+    act(() => mockPrevent.cb!({ data: { action } }));
+    await press(t, 'scan-leave-go');
+    expect(mockNavDispatch).toHaveBeenCalledWith(action);
   });
   it('선택 = 색만(P-151): 테두리 폭·안쪽 여백·라운딩 무변 — 선택 전후 스타일 메트릭 비교', async () => {
     const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');

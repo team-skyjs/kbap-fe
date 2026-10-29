@@ -1,5 +1,5 @@
 /**
- * P-226(KB-29·306): 주문하기 화면 개편 — 정렬(unable 최하단 잠금)·위계 반전·
+ * P-226(KB-29·306): 주문하기 화면 개편 — 정렬(KB-908: menu 모드 unable 최하단 폐지)·위계 반전·
  * 배지 제거·미등록 딥링크·무플립 소스 잠금.
  */
 import { sortResultDishes } from '../resultSort';
@@ -9,11 +9,11 @@ const read = (p: string) => fs.readFileSync(p, 'utf8') as string;
 
 const D = (id: number, risk: 'safe' | 'caution' | 'danger' | 'unable', priceKrw: number | null = null) => ({ id, risk, priceKrw });
 
-describe('② 정렬 — P-354(KB-516): menu(unable 최하단 유지) + 가격 양방향(null 맨 아래)', () => {
+describe('② 정렬 — KB-908: menu = 메뉴판 순 그대로(unable 포함) + P-354 가격 양방향(null 맨 아래)', () => {
   const mixed = [D(0, 'danger', 9000), D(1, 'unable', null), D(2, 'safe', 12000), D(3, 'caution', null), D(4, 'unable', 7000), D(5, 'safe', 9000)];
 
-  it('menu(기본) = 메뉴판 순 유지 + unable만 최하단(false-safe 현행)', () => {
-    expect(sortResultDishes(mixed, 'menu').map((d) => d.id)).toEqual([0, 2, 3, 5, 1, 4]);
+  it('menu(기본) = 메뉴판 순 그대로 — unable(미매칭)도 제자리(KB-908 T-009, P-226 최하단 규칙은 이 모드에서 폐지)', () => {
+    expect(sortResultDishes(mixed, 'menu').map((d) => d.id)).toEqual([0, 1, 2, 3, 4, 5]);
   });
 
   it('priceDesc = 가격 높은순, null은 맨 아래(메뉴판 순 유지)', () => {
