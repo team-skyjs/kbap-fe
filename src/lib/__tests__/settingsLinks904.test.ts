@@ -1,5 +1,6 @@
 /** KB-904 — 설정 딥링크(T-080·T-025) · 저장 파일명(T-027) · 화면 소스 잠금(T-078·T-079·T-081·T-082·T-086·T-087·T-095·T-097) */
 import * as fs from 'fs';
+import { Linking, Platform } from 'react-native';
 
 const mockToast = jest.fn();
 jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn() }));
@@ -11,7 +12,6 @@ jest.mock('react-native/Libraries/Linking/Linking', () => ({
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (text: string, opts?: unknown) => mockToast(text, opts) }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { t: (k: string) => k } }));
 
-import { Linking, Platform } from 'react-native';
 // eslint-disable-next-line import/first -- jest.mock 뒤
 import { openNotificationSettings } from '../openExternal';
 // eslint-disable-next-line import/first

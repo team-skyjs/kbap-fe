@@ -12,7 +12,6 @@
 // 소진 발주(KB-603~) 1순위 후보. 코드 변경은 이번 PR 범위 밖이라 표시만 남긴다.
 import { useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
-import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR, KAV_OFFSET } from '@/lib/keyboardAvoid';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { Txt as Text } from '@/components/Txt';
