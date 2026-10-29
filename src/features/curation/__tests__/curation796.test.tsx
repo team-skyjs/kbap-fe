@@ -575,7 +575,11 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(inside(bodyOf(), 'curation-gallery-credit')).toBe(false);
     const credit = byId(t, 'curation-gallery-credit')[0];
     expect(credit.props.numberOfLines).toBe(1);
-    expect(RNc.StyleSheet.flatten(credit.props.style)).toMatchObject({ position: 'absolute', left: 16, bottom: 31, color: '#FFFFFF', textAlign: 'left' });
+    expect(RNc.StyleSheet.flatten(credit.props.style)).toMatchObject({ position: 'absolute', left: 16, bottom: 44, color: '#FFFFFF', textAlign: 'left' }); // Codex #365 P2: 여러 장 = 점 알약 위
+    const dotsBox = RNc.StyleSheet.flatten(sub('curation-gallery-dots').props.style);
+    expect(RNc.StyleSheet.flatten(credit.props.style).bottom).toBeGreaterThanOrEqual(dotsBox.bottom + dotsBox.height + 8); // 알약 윗변 + 간격 8 — 겹침 0
+    const { creditBottom } = jest.requireActual('@/features/curation/CurationGallerySheet') as { creditBottom: (m: boolean) => number };
+    expect(creditBottom(false)).toBe(31); // 1장(점 없음) = 원래 자리
     const w0 = jest.requireActual('react-native').Dimensions.get('window').width;
     const maxW = RNc.StyleSheet.flatten(credit.props.style).maxWidth as number;
     expect(maxW).toBe(creditMaxWidth(w0));
