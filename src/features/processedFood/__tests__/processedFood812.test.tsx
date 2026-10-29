@@ -52,7 +52,7 @@ jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), 
 const mockGet = jest.fn();
 jest.mock('@/lib/api/client', () => {
   class MockApiError extends Error { status?: number; code?: string; constructor(m: string, s?: number, c?: string) { super(m); this.status = s; this.code = c; } }
-  return { api: { get: (...a: unknown[]) => mockGet(...a) }, ApiError: MockApiError };
+  return { api: { get: (...a: unknown[]) => mockGet(...a) }, apiLang: () => 'en', ApiError: MockApiError };
 });
 let mockGuest = true;
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest }));
@@ -142,8 +142,8 @@ describe('어댑터·요청', () => {
     mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null }).mockResolvedValueOnce(W1711);
     await fetchProcessedSearch('우유', '5');
     await fetchProcessedDetail('1711');
-    expect(mockGet.mock.calls[0]).toEqual([`/api/processed-foods?query=${encodeURIComponent('우유')}&cursor=5&size=20`, { headers: { 'X-API-Version': '3.2' } }]);
-    expect(mockGet.mock.calls[1]).toEqual(['/api/processed-foods/1711', { headers: { 'X-API-Version': '3.2' } }]);
+    expect(mockGet.mock.calls[0]).toEqual([`/api/processed-foods?query=${encodeURIComponent('우유')}&cursor=5&size=20&lang=en`, { headers: { 'X-API-Version': '3.2' } }]);
+    expect(mockGet.mock.calls[1]).toEqual(['/api/processed-foods/1711?lang=en', { headers: { 'X-API-Version': '3.2' } }]);
   });
 });
 
@@ -220,6 +220,30 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     const n = detail({ verdict: 'SAFE_WITH_NOTE' });
     expect(ids(n)).toEqual(expect.arrayContaining(['badge-safe', 'pf-verdict-safe_with_note']));
     expect(text(n)).toContain('packaged.unclearBody:{\\"items\\":\\"합성착향료\\"}');
+  });
+  // KB-901(T-003·T-012): dev 2453 실측 — 번역이 없으면 서버가 translated에 원문을 그대로 채운다("English translation" 아래 한국어 · 알레르기 문장 2번)
+  it('KB-901 T-003·T-012: 원문과 같은 "번역" = 번역 없음 — Ingredients 소제목 "English translation" 0 · 원문 라벨(Korean original) · 알레르기 문장 1번', () => {
+    const ko = '*면/소맥분(미국산,호주산),난각칼슘';
+    const al = '밀,대두,돼지고기,계란,쇠고기 함유';
+    const t = detail({ labelSource: 'DECLARED', ingredients: { translated: ko, original: ko }, allergenStatement: { translated: al, original: al } });
+    press(t, 'pf-see-detail');
+    expect(text(t)).not.toContain('packaged.translationLabel');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-raw-label', 'pf-raw', 'pf-allergens']));
+    expect(text(t)).toContain('packaged.koreanOriginal');
+    const allergen = t.root.findAll((n) => n.props?.testID === 'pf-allergens' && typeof n.type === 'string')[0];
+    expect(allergen.findAll((n) => typeof n.type === 'string' && n.props.children === al)).toHaveLength(1);
+    // 진짜 번역(lang=en: "Wheat, Soy…") = 번역 먼저 + 원문
+    const w = detail({ labelSource: 'DECLARED', allergenStatement: { translated: 'Wheat, Soy contained', original: al } });
+    press(w, 'pf-see-detail');
+    const a2 = w.root.findAll((n) => n.props?.testID === 'pf-allergens' && typeof n.type === 'string')[0];
+    expect(a2.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children)).toEqual(['packaged.allergenTitle', 'Wheat, Soy contained', al]);
+  });
+  it('KB-901 T-053: 피하는 재료 근거 원재료 = 판정 문장 아래 작은 글자("Egg: 난각칼슘") · 근거 없으면 줄 0', () => {
+    member();
+    const a = detail({ verdict: 'AVOID', avoidMatches: [{ code: 'EGG', evidence: ['난각칼슘'] }, { code: 'MILK', evidence: [] }] });
+    expect(ids(a)).toContain('pf-evidence-EGG');
+    expect(ids(a)).not.toContain('pf-evidence-MILK');
+    expect(text(a)).toContain('packaged.matchEvidence:{\\"name\\":\\"L(EGG)\\",\\"evidence\\":\\"난각칼슘\\"}');
   });
   it('회원인데 verdict null(원재료·표시 둘 다 없음) = 리본 없이 "확인 못 함"', () => {
     member();
@@ -339,7 +363,7 @@ describe('Food 탭 세그먼트·목록', () => {
     const t = render(<QueryClientProvider client={qc}><PackagedExplorer top={null} /></QueryClientProvider>);
     await until(() => ids(t).includes('packaged-guide'));
     expect(mockGet).toHaveBeenCalledTimes(1);
-    expect(mockGet.mock.calls[0][0]).toBe('/api/processed-foods?size=20');
+    expect(mockGet.mock.calls[0][0]).toBe('/api/processed-foods?size=20&lang=en');
     expect(ids(t)).toContain('packaged-guide');
     expect(ids(t)).not.toContain('packaged-types');
     expect(text(t)).not.toContain('packaged.popularPicks');
@@ -454,7 +478,7 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     const chip = (k: string) => t.root.findAll((n) => n.props?.testID === `packaged-type-${k}` && typeof n.props?.onPress === 'function')[0];
     await act(async () => { chip('snacks').props.onPress(); });
     await flush();
-    expect(mockGet.mock.calls[1][0]).toBe('/api/processed-foods?type=SNACKS&size=20'); // KB-867: 대문자
+    expect(mockGet.mock.calls[1][0]).toBe('/api/processed-foods?type=SNACKS&size=20&lang=en'); // KB-867: 대문자
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_type_select', { type: 'snacks' });
     expect(ids(t)).toContain('packaged-no-filter-match'); // 칩으로 0 = 시안 47
     await act(async () => { chip('all').props.onPress(); });
@@ -475,7 +499,7 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     act(() => input.props.onChangeText('바나나'));
     await act(async () => { input.props.onSubmitEditing(); });
     await flush();
-    expect(mockGet.mock.calls[2][0]).toBe(`/api/processed-foods?query=${encodeURIComponent('바나나')}&type=DRINKS&size=20`);
+    expect(mockGet.mock.calls[2][0]).toBe(`/api/processed-foods?query=${encodeURIComponent('바나나')}&type=DRINKS&size=20&lang=en`);
     expect(text(t)).toContain('packaged.searchResults');
   });
 
@@ -550,6 +574,33 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-empty-show-all' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
     expect(ids(t)).toContain('packaged-item-7');
     expect(mockTrack).toHaveBeenLastCalledWith('food_packaged_type_select', { type: 'all' });
+  });
+
+  it('KB-901 T-016·T-105·T-017: 칩 고르면 제목 = 유형명 · 검색 + 칩 0건 → Show all products = 칩 All + 검색어도 지움 · 제출 = 키보드 내림 · 칩 줄 handled', async () => {
+    mockGet.mockResolvedValueOnce(V4());
+    const t = await mount();
+    const heading = () => t.root.findAll((n) => n.props?.testID === 'packaged-heading' && typeof n.type === 'string')[0]?.props.children;
+    expect(heading()).toBe('packaged.popularPicks');
+    mockGet.mockResolvedValueOnce(V4());
+    await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-type-drinks' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    await flush();
+    expect(heading()).toBe('packaged.type.drinks'); // T-105: "Popular picks" 아님
+    const chipRow = t.root.findAll((n) => n.props?.testID === 'packaged-types' && n.props?.horizontal)[0];
+    expect(chipRow.props.keyboardShouldPersistTaps).toBe('handled'); // T-017: ✕ 뒤 칩 첫 탭이 키보드 닫기에 먹히지 않게
+    const input = t.root.findAll((n) => n.props?.testID === 'packaged-search-input' && typeof n.props?.onChangeText === 'function')[0];
+    mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
+    act(() => input.props.onChangeText('zzzqqq'));
+    await act(async () => { input.props.onSubmitEditing(); });
+    await flush();
+    // T-017: 제출 = 키보드 내림(테스트 렌더러엔 호스트 입력 인스턴스가 없어 소스로 잠금)
+    expect(fs.readFileSync('src/features/processedFood/PackagedExplorer.tsx', 'utf8')).toContain('const submit = () => { setQuery(draft); setSearchSeq((n) => n + 1); inputRef.current?.blur(); };');
+    expect(ids(t)).toContain('packaged-no-filter-match');
+    await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-empty-show-all' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    await flush();
+    expect(ids(t)).toContain('packaged-item-7'); // 두 번째 빈 화면 0
+    expect(t.root.findAll((n) => n.props?.testID === 'packaged-search-input' && typeof n.props?.onChangeText === 'function')[0].props.value).toBe('');
+    expect(mockGet.mock.calls.map((c) => c[0] as string).filter((u) => u.includes('zzzqqq'))).toHaveLength(1); // 검색어로 다시 조회 0
+    expect(heading()).toBe('packaged.popularPicks');
   });
 
   it('Codex #338 R3 P1: 판정 캐시 = 회피 코드 집합에 묶임 — 설정을 다른 목록으로 바꾸면 새로 받고, 받기 전엔 옛 판정(리본)을 그리지 않는다', async () => {

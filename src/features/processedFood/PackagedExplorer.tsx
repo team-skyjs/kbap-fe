@@ -169,7 +169,8 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
     track(EVENTS.food_packaged_search, { query_length: Array.from(term).length, result_count: items.length });
   }, [term, q.isSuccess, items.length, searchSeq]);
 
-  const submit = () => { setQuery(draft); setSearchSeq((n) => n + 1); };
+  // KB-901(T-017): 돋보기·키보드 검색 = 키보드 내림(안 내려가 빈 결과 안내가 키보드에 가렸다)
+  const submit = () => { setQuery(draft); setSearchSeq((n) => n + 1); inputRef.current?.blur(); };
   const clear = () => { setDraft(''); setQuery(''); };
   // 시안 04·47: 성분표 찍기(비회원 = 가입 게이트) — 상세 "성분표 직접 확인"과 같은 진입(새 분석)
   const scanLabel = () => {
@@ -207,12 +208,18 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
         </Pressable>
       </View>
       {v4 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.chips} contentContainerStyle={st.chipsRow} testID="packaged-types">
+        // KB-901(T-017): 바깥 목록만 handled면 안쪽 가로 칩 줄의 첫 탭은 키보드 닫기에 쓰였다(✕ 뒤 Drinks 첫 탭 무반응)
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={st.chips} contentContainerStyle={st.chipsRow} testID="packaged-types">
           <Chip label={t('food.categories.all')} selected={type == null} onPress={() => pickType(null)} testID="packaged-type-all" />
           {PACKAGED_TYPES.map((k) => <Chip key={k} label={t(packagedTypeKey(k))} selected={type === k} onPress={() => pickType(k)} testID={`packaged-type-${k.toLowerCase()}`} />)}
         </ScrollView>
       )}
-      {!legacyGuide && (items.length > 0 || q.isPending) && <Text style={st.heading} accessibilityRole="header">{t(term ? 'packaged.searchResults' : 'packaged.popularPicks')}</Text>}
+      {/* KB-901(T-105): 유형 칩을 고르면 제목 = 그 유형명(Drinks인데 "Popular picks"였다) */}
+      {!legacyGuide && (items.length > 0 || q.isPending) && (
+        <Text style={st.heading} accessibilityRole="header" testID="packaged-heading">
+          {term ? t('packaged.searchResults') : v4 && type ? t(packagedTypeKey(type)) : t('packaged.popularPicks')}
+        </Text>
+      )}
     </View>
   );
 
@@ -241,7 +248,8 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
         <View style={st.noMatchActions}>
           {FLAGS.packagedLabelScan && <Btn onPress={scanLabel} testID="packaged-empty-scan-label">{t('packaged.scanIngredientLabel')}</Btn>}
           {filtered ? (
-            <Btn variant="ghost" onPress={() => pickType(null)} testID="packaged-empty-show-all">{t('packaged.showAllProducts')}</Btn>
+            // KB-901(T-016): "모든 제품" = 칩 All + 검색어도 지움(검색어가 남아 두 번째 빈 화면으로 갔다)
+            <Btn variant="ghost" onPress={() => { clear(); pickType(null); }} testID="packaged-empty-show-all">{t('packaged.showAllProducts')}</Btn>
           ) : (
             <Btn variant="ghost" onPress={changeSearch} testID="packaged-empty-change-search">{t('packaged.changeSearch')}</Btn>
           )}

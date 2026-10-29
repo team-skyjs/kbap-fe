@@ -93,8 +93,12 @@ function Expanded({ d, showTranslation, showAvoidList }: { d: ProcessedFoodDetai
             <Text style={s.body}>{translated}</Text>
           </View>
         ) : d.ingredients.original ? (
-          // 번역 없음 = 원문을 본문으로(소제목 "English translation"·별도 "Korean original" 없음 — QA AQ2)
-          <Text style={s.body} testID="pf-raw">{d.ingredients.original}</Text>
+          // 번역 없음 = 원문을 본문으로(소제목 "English translation" 없음 — QA AQ2). KB-901(T-003): 한국어 아닌 사용자에겐 원문 라벨("Korean original")을
+          // 붙인다 — 번역처럼 보이지 않게(서버가 원문을 translated로 채우던 건 어댑터 realTranslation이 거른다)
+          <View>
+            {showTranslation && <Text style={s.body} testID="pf-raw-label">{t('packaged.koreanOriginal')}</Text>}
+            <Text style={s.body} testID="pf-raw">{d.ingredients.original}</Text>
+          </View>
         ) : (
           <Text style={s.body} testID="pf-no-raw">{t('packaged.noIngredients')}</Text>
         )}
@@ -149,10 +153,18 @@ function VerdictText({ d }: { d: ProcessedFoodDetail }) {
     title = t('packaged.unclearTitle');
     body = t('packaged.unclearBody', { items: d.unclearIngredients.join(', ') });
   }
+  // KB-901(T-053): 어느 원재료 때문에 걸렸는지(서버 evidence — "Egg: 난각칼슘") — 문장 아래 작은 글자. 근거가 없으면 줄 없음
+  const matches = d.verdict === 'AVOID' ? d.avoidMatches : d.verdict === 'CAUTION' ? d.mayContainMatches : [];
+  const evidence = matches.filter((m) => m.evidence.length > 0);
   return (
     <View style={s.block} testID={`pf-verdict-${(d.verdict ?? '').toLowerCase()}`}>
       <Text style={s.h2} accessibilityRole="header">{title}</Text>
       <Text style={s.body}>{body}</Text>
+      {evidence.map((m) => (
+        <Text key={m.code} style={s.disclaimer} testID={`pf-evidence-${m.code}`}>
+          {t('packaged.matchEvidence', { name: restrictionLabel(m.code), evidence: m.evidence.join(', ') })}
+        </Text>
+      ))}
     </View>
   );
 }
