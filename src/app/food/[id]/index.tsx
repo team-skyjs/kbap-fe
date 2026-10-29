@@ -31,6 +31,7 @@ import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { HeroGallery } from '@/features/food/HeroGallery';
 import { PILL_FADE_MS, useScrollAwarePill } from '@/features/food/scrollAwarePill';
+import { pillBottomOf, pillCta } from '@/features/food/pillCta';
 import { IDOL_CARD_BOTTOM_PAD, IdolVideoCard } from '@/features/food/IdolVideoCard';
 import { useIdolPickVideo } from '@/lib/data/useIdolPicks';
 import { useIsNewFood } from '@/lib/newFood';
@@ -161,7 +162,7 @@ export default function FoodDetailScreen() {
   const showBottomBar = !!food && food.isRegistered;
   // Codex #97 3R P2 → KB-851: 알약 줄 실높이(큰 글씨·긴 번역이면 커짐) + 바닥 여백만큼 콘텐츠 하단 여백 — 마지막 리뷰를 가리지 않게(측정 전 폴백 48)
   const [barH, setBarH] = useState(0);
-  const pillBottom = Math.max(insets.bottom, 12);
+  const pillBottom = pillBottomOf(insets.bottom);
 
   return (
     <View style={styles.root}>
@@ -908,9 +909,10 @@ const styles = StyleSheet.create({
 
   // §1-8: FixedBottom
   // KB-871(예진 10/22): 하단 고정 · 좌우 = 화면 여백 20 · 가로 전체 알약(높이 48 radius full) 세로 간격 8 — primary(흰 글자·흰 file-pen) / 테두리(gray-300)
-  pillRow: { position: 'absolute', left: 20, right: 20, gap: 8 },
-  pillPrimary: { alignSelf: 'stretch', minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, backgroundColor: C.primary },
-  pillPrimaryText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: '#FFFFFF', textAlign: 'center' },
+  // KB-891: 알약 정의 = features/food/pillCta 한 곳(리뷰 작성 하단과 공용)
+  pillRow: pillCta.pillRow,
+  pillPrimary: pillCta.pillPrimary,
+  pillPrimaryText: pillCta.pillPrimaryText,
   pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
   pillOutlineText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink, textAlign: 'center' },
 

@@ -45,6 +45,7 @@ import { airbridge } from '@/lib/airbridge';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, reviewBodyLength, reviewPhotoKey, REVIEW_MAX_PHOTOS, REVIEW_MIN_BODY, uploadReviewImages, type ReviewPhoto } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
+import { pillBottomOf, pillCta } from '@/features/food/pillCta';
 import { ExtrasRater, PACKAGED_TASTE_AXES, PlacePickerSheet, StarAxisRater, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { openAppSettings } from '@/lib/openExternal';
@@ -324,6 +325,14 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   const touchY = useRef<number | null>(null);
   const scrollY = useRef(0);
   const kbHRef = useRef(0);
+  // KB-891: 하단 알약은 ScrollView 위에 떠 있다 — 알약 줄 실높이(큰 글씨면 커짐) + 바닥 여백만큼 콘텐츠 하단 여백(측정 전 폴백 48, 음식 상세 barH와 같음).
+  // 커서 추종의 가시 높이에서도 이만큼 뺀다(뷰포트가 알약 밑까지 이어지므로 — 키보드는 KAV가 이미 뺐다).
+  const [barH, setBarH] = useState(0);
+  const pillBottom = pillBottomOf(bottomInset);
+  const pillCover = useRef(48 + pillBottom);
+  useLayoutEffect(() => {
+    pillCover.current = (barH || 48) + pillBottom;
+  });
   // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
   useLayoutEffect(() => {
     kbHRef.current = kbH;
@@ -345,14 +354,14 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
     if (!bodyFocusedRef.current) return;
     // KB-700 → KB-768: 두 플랫폼 모두 KeyboardAvoidingView(padding)라 ScrollView 자체가 키보드 위로 줄어든다(svH = 이미 키보드 제외 높이) —
     // 키보드를 또 빼면 이중 차감(예전 Android 차감은 adjustResize 전제였고 edge-to-edge로 깨졌다).
-    const visible = svH.current;
+    const visible = svH.current - pillCover.current;
     if (visible <= 0 || !blockBottom.current) return;
     const target = blockBottom.current - visible + 16; // 커서 줄이 키보드 위 16pt
     if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
   };
   const ensureTappedLineVisible = () => {
     if (!bodyFocusedRef.current || touchY.current == null) return;
-    const visible = svH.current; // KB-768: 위와 같은 이유로 두 플랫폼 동일
+    const visible = svH.current - pillCover.current; // KB-768: 위와 같은 이유로 두 플랫폼 동일
     if (visible <= 0) return;
     const lineTop = blockTop.current + inputTopInBlock.current + touchY.current - 12;
     const lineBottom = lineTop + 32; // 탭한 줄(본문 줄 높이 + 여유)
@@ -450,10 +459,12 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
       {/* P-158 ①: 키보드 실측 패딩(contentContainer) + 블록 하단 프록시 스크롤 —
           커서 추종은 위 ensureCursorVisible 참조 (P-150② 인셋 방식은 폐기됨) */}
+      {/* KB-891: 알약을 띄우는 무대 — KAV(padding)가 줄이는 쪽은 이 View, 알약 absolute 기준도 여기(KAV 자체 padding과 섞이지 않게) */}
+      <View style={styles.stage}>
       <ScrollView
         ref={scrollRef}
         keyboardDismissMode="on-drag"
-        contentContainerStyle={[styles.body, { paddingBottom: 28 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: (barH || 48) + pillBottom + 16 }]}
         // KB-700: automaticallyAdjustKeyboardInsets 제거 — 바깥 KAV가 ScrollView를 키보드 위로 줄이므로 인셋까지 더하면 이중(P-348 ⑤의 "수동 패딩 공백"과 같은 문제)
         scrollEventThrottle={16}
         onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
@@ -657,9 +668,14 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
         )}
       </ScrollView>
 
-      {/* §2-8: FixedBottom — primary "Post review" full-width. P-173 가드 = useSubmitGuard +
-          Btn busy(공용 문법 — 메트릭 불변 스피너). */}
-      <View style={[styles.bottomBar, { paddingBottom: 10 + bottomInset }]} testID="review-bottom-bar">
+      {/* §2-8 → KB-891: 하단 "Post review" = 음식 상세와 같은 가로 전체 알약(흰 바·상단 선 없음, 항상 표시). P-173 가드 = useSubmitGuard +
+          Btn busy(공용 문법 — 메트릭 불변 스피너). 비활성 = off 색 그대로(알약은 틀·글자 크기만) */}
+      <View
+        style={[pillCta.pillRow, { bottom: pillBottom }]}
+        pointerEvents="box-none"
+        onLayout={(e) => setBarH(e.nativeEvent.layout.height)}
+        testID="review-bottom-bar"
+      >
         {/* KB-828: 비활성 Btn은 터치를 받지 않아 바깥 래퍼가 받는다 → 토스트 없이 안내 강조. 스크린리더는 Btn(비활성 + 사유 힌트) */}
         <Pressable onPress={showMinLen ? () => setMinLenStressed(true) : undefined} accessible={false} testID="post-review-blocked">
           <Btn
@@ -667,11 +683,14 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
             busy={posting}
             onPress={post}
             accessibilityHint={showMinLen ? t('review.minLength') : undefined}
+            style={pillCta.pillShape}
+            labelStyle={pillCta.pillLabel}
             testID="post-review"
           >
             {t(editing ? 'editReview.save' : 'review.postReview')}
           </Btn>
         </Pressable>
+      </View>
       </View>
 
       {/* P-168 ②: 완료 = P-162 주문 완료 모달 문법(화면 전환 없이) — 확인 = 상세 복귀 */}
@@ -783,7 +802,7 @@ const styles = StyleSheet.create({
   pillClear: { width: 16, height: 16, borderRadius: 8, backgroundColor: C.inkMute, alignItems: 'center', justifyContent: 'center' },
   // §2-8: FixedBottom
   // Codex #31 P1: 하단 = 10 + useBottomInset(인라인)
-  bottomBar: { paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
+  stage: { flex: 1 },
   // P-085: 제출 실패 안내 (온보딩 submitErr 톤)
   postErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   postErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },

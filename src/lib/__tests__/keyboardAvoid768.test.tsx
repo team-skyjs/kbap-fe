@@ -36,7 +36,7 @@ describe('① 소스 잠금 — 키보드 회피 단일 규칙', () => {
   it('리뷰 작성 커서 추종 = 뷰포트(svH)만 — 안드에서 키보드 높이를 또 빼지 않는다(KAV가 이미 줄였다)', () => {
     const review = fs.readFileSync(path.join(SRC, 'app', 'food', '[id]', 'review.tsx'), 'utf8');
     expect(review).not.toMatch(/svH\.current - \(Platform\.OS/);
-    expect((review.match(/const visible = svH\.current;/g) ?? []).length).toBe(2);
+    expect((review.match(/const visible = svH\.current - pillCover\.current;/g) ?? []).length).toBe(2); // KB-891: 알약 몫만(키보드 0)
   });
   it('신고 시트·내리기 바·장소 시트 2곳 = useKeyboardLift(안드도 리프트 — Modal 창도 edge-to-edge)', () => {
     const read = (...seg: string[]) => fs.readFileSync(path.join(SRC, ...seg), 'utf8');
