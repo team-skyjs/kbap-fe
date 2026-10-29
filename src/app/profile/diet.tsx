@@ -28,6 +28,7 @@ import { Btn, IconCheck, SubHeader } from '@/components';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
 import { useDietPresets } from '@/lib/data/useDietPresets';
 import { unionResolvedCodes, type PresetGroup } from '@/lib/onboarding/dietPresets';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 
@@ -39,6 +40,7 @@ const GROUP_LABEL: Record<PresetGroup, string> = {
 
 export default function DietPresetsScreen() {
   const router = useRouter();
+  const bottom = useBottomInset(); // KB-900: 회피 편집과 같은 고정 30 Save 바 — 3버튼 내비 바에 가림(iOS 34 → 아래 여백 120 종전과 같음)
   const { t } = useTranslation();
   const { data: me } = useMe();
   const update = useUpdateMe();
@@ -87,7 +89,7 @@ export default function DietPresetsScreen() {
   return (
     <View style={styles.root}>
       <SubHeader title={t('profile.dietTitle')} onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: 86 + bottom }]} showsVerticalScrollIndicator={false}>
         {(['diet', 'religion', 'allergy'] as PresetGroup[]).map((g) => (
           <View key={g} style={styles.group}>
             <Text style={styles.groupTitle}>{t(GROUP_LABEL[g])}</Text>
@@ -112,7 +114,7 @@ export default function DietPresetsScreen() {
         <Text style={styles.hint}>{t('profile.dietUncheckHint')}</Text>
       </ScrollView>
 
-      <View style={styles.savebar}>
+      <View style={[styles.savebar, { paddingBottom: bottom + 10 }]} testID="diet-savebar">
         <Btn icon={<IconCheck size={17} color="#fff" />} busy={saving} onPress={save} testID="diet-save">
           {t('common.save')}
         </Btn>
@@ -148,7 +150,7 @@ export default function DietPresetsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { padding: 18, gap: 24, paddingBottom: 120 }, // A-DT-07(KB-486)
+  body: { padding: 18, gap: 24 }, // A-DT-07(KB-486) · KB-900: 아래 여백 = Save 바(18+48) + 인셋 보정 + 여유 20
   group: { gap: 12 }, // A-DT-07
   groupTitle: { fontSize: 14, fontWeight: '500', color: '#6A6F7C' }, // A-DT-06(uppercase 소멸)
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -158,7 +160,7 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 14, fontWeight: '400', color: '#1E2124' }, // A-DT-05
   chipTextOn: { color: C.primaryText },
   hint: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 17 },
-  savebar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18, paddingBottom: 30, backgroundColor: C.surface },
+  savebar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18, backgroundColor: C.surface },
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
   confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },

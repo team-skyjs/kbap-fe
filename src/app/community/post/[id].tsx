@@ -10,7 +10,7 @@
 import * as React from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
-import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
+import { KAV_BEHAVIOR, KAV_OFFSET } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { ExpandToggle } from '@/components/ExpandToggle';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -146,7 +146,7 @@ export default function CommunityPostDetail() {
   return (
     <View style={styles.root}>
       <SubHeader title={t('community.postTitle')} onBack={() => router.back()} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={KAV_BEHAVIOR}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET}>
         <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <AuthorRow
             author={post.author}

@@ -783,3 +783,20 @@ describe('KB-845 공통 카메라', () => {
     expect(mockCamMounts.n).toBe(before);
   });
 });
+
+// KB-900(T-004·T-099): 안드 3버튼 내비 바(불투명 48) — 아래 바 내용 201(링크가 맨 아래)이 인셋을 전부 비워야 링크가 다 눌린다
+it('KB-900 아래 바 높이 — 안드 = 내용 + 인셋 전부(링크 아래 끝이 내비 바 위) · iOS = 시안(−11, 하한 8) 그대로', () => {
+  const { CAM_BAR_CONTENT, camBarHeight } = jest.requireActual('../scan') as typeof import('../scan');
+  expect(camBarHeight(48, 'android') - CAM_BAR_CONTENT).toBe(48);
+  expect(camBarHeight(24, 'android') - CAM_BAR_CONTENT).toBe(24);
+  expect(camBarHeight(34, 'ios')).toBe(224); // 시안 588~812
+  expect(camBarHeight(0, 'ios')).toBe(209);
+});
+
+it('KB-900 무료 배지·힌트 줄 = 아래 코너(32 + 28) 안쪽 — 길면 코너와 겹치지 않고 줄바꿈', () => {
+  const corner = 32 + 28;
+  const wrap = jest.requireActual('fs').readFileSync('src/app/scan.tsx', 'utf8').match(/camHintWrap: \{[^}]*\}/)[0] as string;
+  const m = /left: (\d+), right: (\d+)/.exec(wrap)!;
+  expect(Number(m[1])).toBeGreaterThan(corner);
+  expect(Number(m[2])).toBeGreaterThan(corner);
+});

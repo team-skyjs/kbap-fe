@@ -106,6 +106,9 @@ const DARK_ROOT_PHASES = new Set<string>(['error']); // KB-845: scanning = 흰 �
 // KB-854 카메라 v2 B — 위 바 = 상태바 아래 108(헤더 + 탭 40 + 8) · 아래 바 내용 = 22 + 칩 36 + 24 + 컨트롤 88 + 10 + 링크 21
 export const CAM_TOP_BAR = 108;
 export const CAM_BAR_CONTENT = 201;
+/** 아래 단색 바 높이 = 내용 201 + 하단 여백. KB-900(T-004): 시안의 −11은 iOS 홈 인디케이터(얇은 선) 위로 링크가 11 걸쳐도 되는 값 —
+ *  안드 3버튼 내비 바는 불투명 버튼이라 링크가 덮여 ~26px만 눌렸다. 안드는 인셋 전부를 비운다(useBottomInset이 48 하한) */
+export const camBarHeight = (bottom: number, os: string = Platform.OS) => CAM_BAR_CONTENT + (os === 'android' ? bottom : Math.max(bottom - 11, 8));
 
 export default function Scan() {
   const router = useRouter();
@@ -750,7 +753,7 @@ export default function Scan() {
   const [camShown, setCamShown] = useState(false);
   // KB-854 카메라 v2 B: 위 단색 바(헤더+탭) = 상태바 아래 108 · 아래 단색 바(줌 · 갤러리/셔터/전환 · 링크) = 내용 201 + 하단 여백
   // (375×812 시안: 위 바 0~152, 아래 바 588~812 = 224 = 201 + 홈 인디케이터 34 − 11). 프리뷰 = 두 바 사이(크롭 기준 previewSize도 이 영역)
-  const camBarH = CAM_BAR_CONTENT + Math.max(bottom - 11, 8);
+  const camBarH = camBarHeight(bottom);
   const cameraLayer = permission?.granted ? (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none" testID="scan-camera-layer">
       <View style={[styles.camPreview, { top: insets.top + CAM_TOP_BAR, bottom: camBarH }]}>
@@ -1527,7 +1530,7 @@ const styles = StyleSheet.create({
   camTopBar: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.ink },
   camBottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: C.ink, paddingTop: 22, alignItems: 'center' }, // 칩 y610 = 바 위 22
   camCorners: { top: 24, left: 32, right: 32, bottom: 16 },
-  camHintWrap: { position: 'absolute', left: 20, right: 20, alignItems: 'center' },
+  camHintWrap: { position: 'absolute', left: 68, right: 68, alignItems: 'center' }, // KB-900(T-099): 코너(32 + 28) 안쪽 + 8 — 무료 배지가 아래 코너와 겹쳤다(길면 줄바꿈)
   camHint: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.surface, textAlign: 'center' }, // body-l3-regular gray-00(바 위 한 줄)
   camIconBtn: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }, // 아이콘 28 · 터치 52(시안 hit region)
   camLink: { minHeight: 21, marginTop: 10, alignItems: 'center', justifyContent: 'center' }, // KB-854: 링크 y768 = 컨트롤 아래 10
