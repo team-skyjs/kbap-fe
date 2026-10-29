@@ -8,6 +8,21 @@
 - 오분류 바로잡음: shadowOffset의 height를 상자 높이로 읽어 토스트·공유 카드가 알약이 된 3건, 0 → xs 1건(직각 유지)
 - 신규 ko 문구 0 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
+## 2026-10-30 — P-544 / KB-906 홈·큐레이션 동작
+
+- T-039 큐레이션 카드 스크림 = 띠 위 40부터 0 → 0.35 → 0.6(밝은 사진 위 흰 제목) · 이름 표시 규칙(전부 대문자 + 4글자 이상 단어 있을 때만 단어 첫 글자로 — "N Seoul Tower") · 위치 "동네 / 구" → "동네, 구"(어댑터, 서버 문자열 무변). 헤더 아래 "어두운 줄"은 헤더 요소가 아니라 위로 스크롤된 앞 카드 바닥(스크림 가장 진한 끝) — 코드 변경 없음, 보고
+- T-040 장소 시트 끌어 닫기 = 사진 영역 전체(전엔 위 44 띠만) · 손잡이 = 앱 Pressable(탭 = 닫기, ui_click 경유 — Gesture.Tap 잠금 uiClickCoverage784 R5 유지)
+- T-125 탭바 아바타 cachePolicy memory-disk(RemoteImage에 prop 추가)
+- T-127 커스텀 탭 바가 tabPress를 먼저 낸다(같은 탭 = 이동 0) → Home·Reviews 목록 useScrollToTop
+- T-128 pager 점 8 + 반투명 검정 알약 바탕, 켜짐/꺼짐 = 불투명도만
+- 기기 미검증: 제스처 변경(T-040)은 실기 확인 대상 — iOS 시뮬 새 설치본은 로그인 불가라 QA 위임, Android는 재로그인 대기
+
+## 2026-10-30 — P-543 / KB-905 리뷰 피드·시트 동작
+
+- T-021 원격 이미지 스켈레톤 바탕을 사진 칸(#F7F8FA)보다 진하게(#EAEBEE — 흰 스윕이 안 보여 회색 박스로 읽힘, RemoteImage·CardPhoto) · T-067 번역 버튼 접근성 이름 명시(RN 안드가 busy 해제 때 content-desc 갱신을 건너뜀) · T-066 Tag a food 0개 = Done 비활성 · T-075 목록 끝 여백 · T-068 신고 시트 Cancel · T-069 내 리뷰 = 내 프로필 사진(실패 = 기본) · T-070 국기 이모지 유지(헌법 v2.3.0 허용)·크기 14 · T-073 사진 1장 = 전폭.
+- T-023은 서버 원인(ReviewResponse.language null — id 49·42·43·40) → FE 범위 제외(커맨드가 서버 후속).
+- **사고**: 에뮬 연결 명령에 표시용으로 쓴 `pm clear`가 실행돼 kbap 앱 데이터 초기화·회원 세션 풀림. 예진 재로그인 대기, Android 기기 검증은 재로그인 뒤 QA. 위 규칙 추가.
+
 ## 2026-10-30 — P-542 / KB-904 프로필·설정 내비·저장 버튼
 
 - T-080 알림 "기기 설정 열기" = Android 이 앱 알림 페이지 직행(APP_NOTIFICATION_SETTINGS + 패키지 extra — RN sendIntent로 가능, 에뮬 확인). T-025 앱 언어 직행은 package: 데이터 URI가 필요해 RN으로 불가(에뮬 resolve 실패, 네이티브 모듈 추가 금지) → App info + 언어 행 아래 안내(누르기 전에 보이게).
@@ -98,6 +113,7 @@
 
 # kbap-fe Build Progress
 > 규칙: 한 번에 1개. [ ]→[~]→[x]. 각 화면 완료 시 목업 대조 + 커밋.
+> 규칙(10/30 KB-905 사고 후): 에뮬·시뮬 명령에 `pm clear`·`uninstall`·`clearState`(·`simctl erase`)는 **문자열로도 쓰지 않는다** — 표시용으로 쓴 줄이 실행돼 QA 회원 세션을 지웠다. 기기 명령은 보내기 전 이 목록과 대조.
 > 목업 SSOT: Claude Design `43cc8ad0-38d8-4afa-a66f-a7412eae2a49` ("KLens Hi-Fi (Direction G)", hifi-*.jsx, hifi-g.css).
 > 계약 SSOT: spec 레포 `specs/001-personalized-menu-mvp/contracts/openapi.yaml` (재조정 중 — 미확정 필드에 로직 강결합 금지).
 > 브랜드: 목업 "KLens" → 표시명 **K-Bap** 치환.

@@ -406,6 +406,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   const kbLift = useKeyboardLift({ dismissBar: true }); // KB-768: 키보드·내리기 바 위로
   const bottomInset = useBottomInset();
   const router = useRouter();
+  const pickedNone = kind === 'place' ? placeTag == null : foodTags.length === 0;
   const [q, setQ] = React.useState('');
   // P-238: 리뷰 픽커 검색 = 본인 스캔 한정(scope=scanned) 우선 — 0건이면
   // "전체에서 찾기" 행으로 all 재검색 제안.
@@ -526,7 +527,8 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
             />
           </View>
 
-          <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+          {/* KB-905(T-075): 목록 끝 여백 — 마지막 행·구역 제목이 하단 버튼 줄에 붙지 않게 */}
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
             {/* P-349 ④: scanned isPending 동안 = 스켈레톤만(구역·배너는 판정 후 한 번에) */}
             {scanPending && isBrowse && (
               <View testID="picker-skeleton">
@@ -635,7 +637,8 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
               </Btn>
             </View>
             <View style={{ flex: 1 }}>
-              <Btn onPress={onClose} testID="picker-done">
+              {/* KB-905(T-066): 고른 게 없으면 Done 비활성(전엔 눌러도 Close와 같이 닫혔다 — 리뷰 픽커는 고르는 즉시 이동이라 항상 0) */}
+              <Btn onPress={pickedNone ? undefined : onClose} variant={pickedNone ? 'off' : 'primary'} testID="picker-done">
                 {t('community.done')}
               </Btn>
             </View>

@@ -32,7 +32,7 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 const mockPush = jest.fn();
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useSegments: () => [],
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn(), navigate: jest.fn() }),
   usePathname: () => '/',

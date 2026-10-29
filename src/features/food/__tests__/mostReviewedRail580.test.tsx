@@ -34,7 +34,7 @@ jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: View };
 });
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), navigate: jest.fn(), back: jest.fn() }),
   useLocalSearchParams: () => ({}),
   usePathname: () => '/',

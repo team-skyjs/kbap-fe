@@ -103,7 +103,13 @@ export default function TabsLayout() {
         tabBar={(props) => (
           <AppTabBar
             activeRoute={props.state.routes[props.state.index]?.name ?? 'index'}
-            navigate={(name) => props.navigation.navigate(name as never)}
+            navigate={(name) => {
+              // KB-906(T-127): 기본 탭 바처럼 tabPress를 먼저 낸다 — 같은 탭 재탭 = 화면의 useScrollToTop이 맨 위로(직접 navigate만 하면 이벤트 0)
+              const target = props.state.routes.find((r) => r.name === name);
+              const focused = props.state.routes[props.state.index]?.name === name;
+              const e = props.navigation.emit({ type: 'tabPress', target: target?.key, canPreventDefault: true });
+              if (!focused && !e.defaultPrevented) props.navigation.navigate(name as never);
+            }}
           />
         )}
       >

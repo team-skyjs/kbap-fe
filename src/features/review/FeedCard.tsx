@@ -17,6 +17,7 @@ import { useReviewTime } from '@/lib/reviewTime';
 import { CardPhoto, RankMedal, Star, IconChevron, IconFood, IconMore } from '@/components';
 import { AvatarPlaceholder } from '@/components/design4Assets';
 import { FlagEmoji } from '@/components/FlagEmoji';
+import { RemoteImage } from '@/components/RemoteImage';
 import { HelpfulButton, ReviewBody, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import type { Review } from '@/lib/api/types';
 
@@ -76,7 +77,12 @@ export function FeedCard({
               **국기 한정 헌법 이모지 예외(예진 결정 9/8)**. 탈퇴·국적 null = 배지 없음. */}
           <View style={styles.avatarWrap}>
             <View style={styles.avatar}>
-              <AvatarPlaceholder height={24} />
+              {/* KB-905(T-069): 내 리뷰 = 내 프로필 사진(있으면) — 남의 리뷰는 시안대로 기본 아바타(9/5 Q3) · 실패 = 기본 아바타 */}
+              {mine && !anon && review.author?.profileImageUrl ? (
+                <MyAvatar uri={review.author.profileImageUrl} />
+              ) : (
+                <AvatarPlaceholder height={24} />
+              )}
             </View>
             {/* Codex #101 P2: 배지 = 순수 장식(스크린리더 무음) — 국가명 10로케일 도입 안 함, 닉네임만 읽힘 */}
             {!anon && !!review.authorNationality && (
@@ -147,6 +153,19 @@ export function FeedCard({
   );
 }
 
+/** KB-905(T-069): 내 프로필 사진 24 — 원격 이미지 규칙(로딩 스켈레톤·실패 폴백) */
+export function MyAvatar({ uri }: { uri: string }) {
+  const [failed, setFailed] = React.useState(false);
+  // Codex #364 P2: 새 사진 URL이 오면 옛 실패를 버리고 다시 시도 — 렌더 중 전환 비교(TabBar 아바타·KB-603과 같은 패턴, 값 키는 A→B→A 재시도를 잃는다)
+  const [prevUri, setPrevUri] = React.useState(uri);
+  if (uri !== prevUri) {
+    setPrevUri(uri);
+    setFailed(false);
+  }
+  if (failed) return <AvatarPlaceholder height={24} />;
+  return <View testID="feed-my-avatar"><RemoteImage key={uri} uri={uri} style={styles.avatarImg} onError={() => setFailed(true)} /></View>;
+}
+
 const styles = StyleSheet.create({
   // 카드(4150:13934) — 구분선형(보더·그림자 소멸)
   card: { paddingVertical: 22, paddingHorizontal: 20, gap: 8, borderBottomWidth: 1, borderBottomColor: C.line }, // A-FC-01(KB-486) · gap ↔ 번역 라벨 padTop(TRANSLATE_LABEL_BOX) 묶임 — 줄이면 라벨 상자가 위 사진 터치를 덮는다(유닛)
@@ -159,6 +178,7 @@ const styles = StyleSheet.create({
   when: { ...type_.caption, color: C.ink3, flexShrink: 0 }, // caption1-regular · gray-600
   // 시안 아바타: 원 bg #E8F6FF + 실루엣(SVG) — TabBar 프로필 슬롯과 동일 문법
   avatarWrap: { width: 24, height: 24 }, // P-340: 배지 오버행 수용(overflow 기본 visible)
+  avatarImg: { width: 24, height: 24 },
   avatar: { width: 24, height: 24, borderRadius: radius.pill, backgroundColor: '#E8F6FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.10)' }, // A-FC-03
   // P-340(1-B): 국기 배지 14 — 흰 링 1.5 원형, 아바타 밖 우하단 -2 걸침
   flagBadge: { position: 'absolute', right: -2, bottom: -2, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }, // P-342 ④: 이모지만(흰 원·링 제거)

@@ -75,7 +75,7 @@ export function BlurCaptionCard({
         <View style={[StyleSheet.absoluteFill, styles.noPhoto]} testID={`${testPrefix}-nophoto-${testKey}`} />
       )}
       {photoUri && band && blur && <BlurBand cover={photoUri} band={band} cardH={cardH as number} itemId={recyclingKey} testID={`${testPrefix}-blur-${testKey}`} />}
-      {band && <LinearGradient colors={CARD_SCRIM} style={[styles.shade, { top: band.top }]} pointerEvents="none" />}
+      {band && <LinearGradient colors={CARD_SCRIM} locations={CARD_SCRIM_LOC} style={[styles.shade, { top: Math.max(0, band.top - CARD_SCRIM_LEAD) }]} pointerEvents="none" testID={`${testPrefix}-scrim-${testKey}`} />}
       {overlay}
       <View style={{ height: CARD_SPACER }} />
       <View style={styles.caption} onLayout={(e) => setCaptionTop(e.nativeEvent.layout.y)} testID={`${testPrefix}-caption-${testKey}`} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
@@ -126,7 +126,10 @@ function FadeInBand({ style, testID, ready, children }: { style: object; testID:
 }
 
 // KB-846 스크림 — 밴드 위(투명) → 카드 바닥(어둡게 0.45). 띠 경계를 숨기고 흰 글자 대비를 맡는다(구 55% 그라데이션 대체 — 밴드 위 사진은 투명 그대로)
-const CARD_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.45)'] as const;
+// KB-906(T-039): 밝은 사진(하늘·궁 처마) 위 흰 제목 대비 부족 — 띠 위 40부터 시작해 제목 높이에서 이미 진해지게(0 → 0.35 → 0.6)
+const CARD_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.6)'] as const;
+const CARD_SCRIM_LOC = [0, 0.4, 1] as const;
+const CARD_SCRIM_LEAD = 40;
 /** 블러 밴드 시작 = 이름(캡션 블록) 위 16 */
 export const CARD_BLUR_LEAD = 16;
 /** KB-846 QA(큰 글씨에서 이름·지역의 g·y 아래 잘림): 글꼴 배율 > 1이면 고정 lineHeight(26·18)를 빼고 글꼴 고유 줄 높이로 —
