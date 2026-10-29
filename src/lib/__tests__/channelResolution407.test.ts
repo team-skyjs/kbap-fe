@@ -52,7 +52,7 @@ describe('KB-812 2차·P-508 — packagedReviewWrite·packagedLabelScan = dev �
   it.each([
     // channel,        __DEV__, write
     ['development', false, true],
-    ['teamtest', false, false], // KB-870/P-527: 기존 설치 채널에서 prod 리허설
+    ['teamtest', false, true], // KB-894: teamtest = dev 서버(KB-870 prod 리허설을 되돌림)
     ['teamtest-prod', true, false], // 진단 채널이지만 백엔드 prod(쓰기 OFF) — 막다른 버튼 금지
     ['preview', true, false],
     ['production', true, false],
@@ -67,7 +67,8 @@ describe('KB-812 2차·P-508 — packagedReviewWrite·packagedLabelScan = dev �
   it('eas.json — 쓰기 버튼 채널은 전부 dev 서버, 숨김 채널은 dev 서버가 아니다', () => {
     const build = JSON.parse(fs.readFileSync('eas.json', 'utf8')).build as Record<string, { channel?: string; env?: Record<string, string> }>;
     const base = (ch: string) => Object.values(build).find((p) => p.channel === ch)?.env?.EXPO_PUBLIC_BE_BASE;
-    for (const ch of ['teamtest', 'teamtest-prod', 'preview', 'production']) expect(base(ch)).toBe('https://prod.kbap.site');
+    expect(base('teamtest')).toBe('https://dev.kbap.site'); // KB-894
+    for (const ch of ['teamtest-prod', 'preview', 'production']) expect(base(ch)).toBe('https://prod.kbap.site');
   });
 });
 
