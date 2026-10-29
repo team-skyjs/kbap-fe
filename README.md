@@ -71,6 +71,10 @@ hotfix/kbXXX-슬러그     스토어 긴급 수정 — main에서 분기, main+d
 - **export·`eas update`는 항상 `--clear`** — Metro 캐시가 env(API 호스트)만 바뀐 재수출에서
   이전 번들을 재사용한 실측 사례 있음. 발행 전 번들 grep(대상 호스트 1·타 호스트 0) 필수
 - BE 연결: teamtest = dev API / production = prod API (eas.json 프로필에 고정)
+  - teamtest 백엔드 정본 = `src/lib/teamtest-target.json`의 `backend` + `eas.json` `build.teamtest.env.EXPO_PUBLIC_BE_BASE`
+    (`scripts/teamtest-target.mjs`가 둘의 일치를 검사 — 다르면 OTA export 실패). 지금 = dev(KB-894, 10/29).
+  - **prod로 되돌리는 두 줄**: `teamtest-target.json` → `"backend": "prod"` · `eas.json` teamtest → `"EXPO_PUBLIC_BE_BASE": "https://prod.kbap.site"`.
+    머지 = teamtest OTA 자동 발행(새 빌드 없음, 지문 무변 — eas.json·json은 지문 밖). 잠금 테스트 기대값(teamtestTarget870·channelResolution407·prodHide870)도 같이 바꾼다.
 - 스토어 제출·OTA 발행은 **예진 승인 후에만**
 - CI/CD: EAS Workflows 도입 예정(태그 트리거 빌드 — 예진 확정 시). 그 전까지 수동 발행
 

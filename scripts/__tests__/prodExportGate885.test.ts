@@ -77,10 +77,15 @@ it('CLI는 커밋된 eas.json을 읽는다 — 실제 운영 키 포함 export �
   const cli = (profile: string) => spawnSync(process.execPath, ['scripts/prod-export-gate.mjs', profile, dir], { encoding: 'utf8', env: { ...process.env, EXPO_PUBLIC_BE_BASE: '' } });
   bundle(dir, 'https://prod.kbap.site');
   expect(cli('production').status).toBe(1);
+  expect(cli('teamtest').status).toBe(1); // KB-894: teamtest = dev 서버 — prod 호스트 번들은 호스트 가드에서 실패
+  bundle(dir, 'https://dev.kbap.site');
   expect(cli('teamtest').status).toBe(0);
   bundle(dir, `https://prod.kbap.site ${key}`);
   const ok = cli('production');
   expect(ok.status).toBe(0);
   expect(ok.stdout + ok.stderr).not.toContain(key);
-  expect(cli('teamtest').status).toBe(1);
+  bundle(dir, `https://dev.kbap.site ${key}`);
+  const leak = cli('teamtest');
+  expect(leak.status).toBe(1); // 운영 키가 실린 teamtest export = 실패
+  expect(leak.stdout + leak.stderr).not.toContain(key);
 });

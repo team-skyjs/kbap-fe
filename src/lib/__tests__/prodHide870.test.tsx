@@ -83,13 +83,14 @@ describe('development 채널(dev 서버) — 동작 무변', () => {
   });
 });
 
-describe('teamtest 채널 — 기존 설치본 prod 리허설', () => {
-  const current = load('teamtest'); const production = load('production');
-  it('전체 제품 FLAGS가 production과 같고 진단 정책은 유지한다', () => {
-    expect(current.flags.FLAGS).toEqual(production.flags.FLAGS);
+describe('teamtest 채널 — KB-894: 기존 설치본 dev 서버(KB-870 prod 리허설을 되돌림)', () => {
+  const current = load('teamtest'); const development = load('development');
+  it('전체 제품 FLAGS가 development와 같고(dev 기능 ON) 진단 정책은 유지한다', () => {
+    expect(current.flags.FLAGS).toEqual(development.flags.FLAGS);
+    expect(current.flags.isDevServerChannel()).toBe(true);
     expect(current.flags.isDiagnosticChannel()).toBe(true);
     expect(current.flags.isProdChannel()).toBe(false);
-    expect(current.reviews.REVIEW_READ_HEADERS).toBeUndefined();
+    expect(current.reviews.REVIEW_READ_HEADERS).toEqual({ headers: { 'X-API-Version': '3.2' } });
     for (const code of GROUP) expect(current.ing.BE_CODES.has(code)).toBe(true);
   });
 });
