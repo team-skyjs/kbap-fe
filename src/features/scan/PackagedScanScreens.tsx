@@ -66,6 +66,8 @@ export function CandidateRow({ item, personalized, picking, onPress, testID, dis
           )}
         </View>
         {risk && <View style={richStyles.thumbBadge}><RiskBadge state={risk} testID={`pscan-verdict-${item.id}`} /></View>}
+        {/* KB-944: 확정 대기 스피너 = 썸네일 위에 겹침(구 = 줄 오른쪽 새 칸 → 이름 폭이 줄어 줄바꿈이 튐) */}
+        {picking && <View style={sc.thumbSpin} testID={`pscan-picking-${item.id}`}><View style={sc.spinDisc}><Spinner size={20} /></View></View>}
       </View>
       <View style={sc.rowText}>
         <ProductName name={item.name} nameKo={item.nameKo} />
@@ -74,7 +76,6 @@ export function CandidateRow({ item, personalized, picking, onPress, testID, dis
         <WarnChips warns={warns} testID={`pscan-warn-${item.id}`} moreTestID={`pscan-warn-more-${item.id}`} />
         {!!contains && <Text style={sc.rowMeta} testID={`pscan-contains-${item.id}`}>{contains}</Text>}
       </View>
-      {picking && <View style={sc.rowSpin} testID={`pscan-picking-${item.id}`}><Spinner size={20} /></View>}
     </Pressable>
   );
 }
@@ -356,7 +357,8 @@ const sc = StyleSheet.create({
   rowImage: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
   rowText: { flex: 1, minWidth: 0, gap: 4 },
   rowMeta: { ...type.meta, fontWeight: '400', color: C.ink2 },
-  rowSpin: { justifyContent: 'center' },
+  thumbSpin: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  spinDisc: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
   noneRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 56, paddingVertical: 12 },
   noneLabel: { ...type.button, color: C.ink },
   // 테두리 = 양 상태 같은 1(미선택 투명) — 선택 전환은 색만(P-151)

@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { StyleSheet } from 'react-native';
 
 jest.mock('react-native-reanimated', () => {
   const { View, Pressable, FlatList } = jest.requireActual('react-native');
@@ -191,7 +192,14 @@ describe('흐름(KB-865 ③ v4)', () => {
     const row = t.root.findAll((n) => n.props?.testID === 'pscan-candidate-11' && n.props?.accessibilityState)[0];
     expect(row.props.accessibilityRole).toBe('button');
     expect(row.props.accessibilityState).not.toHaveProperty('selected');
+    // KB-944: 스피너가 줄에 새 칸을 만들면 이름 폭이 줄어 줄바꿈이 튄다 — 줄 직계 칸 수 불변 + 스피너는 썸네일 안
+    const hostRow = () => t.root.findAll((n) => n.props?.testID === 'pscan-candidate-11' && typeof n.type === 'string')[0];
+    const cols = hostRow().children.length;
     await press(t, 'pscan-candidate-11');
+    expect(hostRow().children.length).toBe(cols);
+    const spin = t.root.findAll((n) => n.props?.testID === 'pscan-picking-11' && typeof n.type === 'string')[0];
+    expect(hostRow().children).not.toContain(spin);
+    expect(StyleSheet.flatten(spin.props.style)).toMatchObject({ position: 'absolute' });
     expect(mockPost).toHaveBeenCalledTimes(2);
     expect(mockPost.mock.calls[1][1]).toEqual({ analysisId: 'A9', reportNo: 'R1' });
     expect(ids(t)).toContain('pscan-picking-11');

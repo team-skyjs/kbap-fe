@@ -181,6 +181,10 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     const bare = detail({ rawMaterials: null, ingredients: null, allergenStatement: null, labelSource: 'NONE' });
     expect(ids(bare)).toContain('pf-not-verified');
     expect(ids(bare)).not.toContain('badge-safe');
+    // 서버 labelKnown과 같은 규칙(S-928) = labelSource 기준 — 원재료 칸에 자리표시 글자가 있어도 NONE이면 Safe 0
+    const placeholder = detail({ rawMaterials: '알수없음', labelSource: 'NONE' });
+    expect(ids(placeholder)).toContain('pf-not-verified');
+    expect(ids(placeholder)).not.toContain('badge-safe');
     mockGuest = false; mockMe = undefined;
     const pending = detail({ verdict: null });
     expect(ids(pending)).toContain('pf-profile-pending');

@@ -1,7 +1,7 @@
 /**
  * KB-945(P-564·565, 예진 10/31): 섹션 순서 = 음식 상세(Registered) — 사진 → 판정 띠(화면 폭) → 이름 → 굵은 구분선 → What's inside(음식 상세 칩 필터 + 재료 타일 한 그리드:
  * 감지·일치 + 주요 알레르기 + 혼입 가능 — 구 감지 카드·Major allergens 문단·원재료 미리보기를 합침) → 원재료 원문·출처는 접힌 "Ingredients and source"로만 → 굵은 구분선 → 리뷰.
- * 피할 재료 설정·로그인 유도 버튼 제거. KB-947: 비회원·회피 0개 회원 = Safe 띠(예진 결정) — 단 원재료·알레르기 표시가 둘 다 없는 제품은 회원과 같이 "확인 못 함"(false-safe 0).
+ * 피할 재료 설정·로그인 유도 버튼 제거. KB-947: 비회원·회피 0개 회원 = Safe 띠(예진 결정) — 단 표시 근거 없는 제품(labelSource NONE = 목록 labelKnown false)은 회원과 같이 "확인 못 함"(false-safe 0).
  * 가공식품 상세 — KB-865 v4(P-523 ②, Figma 12371:70304 시안 08~13·34~38·51·52, 예진 10/22 Q1~Q4): 아래 v4 규칙이 위 KB-812 규칙을 대체한다.
  * - 판정 = 서버 verdict(+ avoidMatches·mayContainMatches·unclearIngredients). 회원 SAFE = 원재료 미리보기 + See detail /
  *   AVOID·CAUTION·SAFE_WITH_NOTE = 판정 제목·문장 + Ingredients and source. 둘 다 같은 제자리 펼침(처음 접힘) → See less.
@@ -192,8 +192,8 @@ export function ProcessedFoodDetailScreen() {
     // Codex #338 R5(커맨드 규칙): 서버가 회원 기준으로 계산해 보낸 verdict가 있으면 프로필 상태와 무관하게 그린다(비회원은 서버가 늘 null).
     // 회피를 바꾼 직후의 옛 판정은 캐시 키(회피 코드·언어)가 막는다(R3) — 여기서 member로 다시 거르면 프로필이 늦을 때 판정이 통째로 빠진다
     const hasVerdict = !guest && d.verdict != null;
-    // 원재료·알레르기 표시가 둘 다 없음 = 회원도 verdict null인 제품(#457) — 회피 미설정이어도 Safe로 그리지 않는다
-    const noLabel = !d.ingredients.original && !d.allergenStatement;
+    // 표시 근거 없음(labelSource NONE — 서버 목록 labelKnown false와 같은 규칙, S-928) = 회원도 verdict null인 제품(#457) — 회피 미설정이어도 Safe로 그리지 않는다
+    const noLabel = d.labelSource === 'NONE';
     const canWrite = FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && FLAGS.packagedReviewWrite;
     const codes = insideCodes(d);
     body = (
