@@ -97,13 +97,14 @@ export function ExpandableBody({ body, t, style, toggleColor }: { body: string; 
  *  KB-703(예진 10/2): 누른 뒤 사라지는 경우는 없다 — 같은 언어 응답도 일반 번역 결과처럼 표시.
  *  KB-703 ②: 서버가 판별한 리뷰 언어(`review.language`)가 앱 언어와 같으면 라벨을 **처음부터** 숨긴다(유일한 숨김 조건).
  *  null·필드 없음(판별 불가·구서버) = 지금처럼 표시, 안내 문구 없음. 앱 언어는 구독형(useAppLanguage — 렌더 중 싱글턴 직접 읽기 금지, KB-695). */
-export function ReviewBody({ review, t, style, toggleColor }: { review: Review; t: TFn; style?: object; toggleColor?: string }) {
+export function ReviewBody({ review, t, style, toggleColor, autoTranslate = false }: { review: Review; t: TFn; style?: object; toggleColor?: string; /** KB-941: 리뷰 탭 첫 묶음 — 탭 없이 번역문부터 */ autoTranslate?: boolean }) {
   const original = review.body?.trim() ? review.body : null;
-  const tx = useContentTranslation('REVIEW', review.id, original ?? '');
   // 앱 언어 원값과 비교(clampLang 안 거침 — 앱 10개 언어 = 서버 언어 집합. 어긋나면 "다름" = 표시 쪽이라 안전, client 모듈 의존도 안 늘림)
   const appLang = useAppLanguage();
-  if (!original) return null;
   const sameAsApp = review.language != null && review.language === appLang;
+  // KB-941: 같은 언어 = 요청 0 · 판별 불가(null) = 대상(같은 언어 응답이면 KB-703대로 표시)
+  const tx = useContentTranslation('REVIEW', review.id, original ?? '', { auto: autoTranslate && FLAGS.contentTranslation && !sameAsApp });
+  if (!original) return null;
   const label = FLAGS.contentTranslation && !sameAsApp; // 탭 뒤 같은 언어로 판정돼도 숨기지 않는다(KB-703 ①) — 숨김은 처음부터만
   return (
     // 라벨이 있을 때만 래퍼를 카드 gap 안으로 8 올린다 — 라벨 상자(44)의 위 여유가 래퍼(부모) 안에 들어오게(시각 위치 무변)

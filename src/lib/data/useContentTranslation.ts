@@ -10,6 +10,8 @@
  * - 보기 상태(원문/번역)는 **카드 로컬 상태** — 서버가 아는 사실이 아니라 보기 설정이다.
  * - 실패(503·400 REVIEW-001·네트워크·빈 text) = 토스트(에러 변형) + 원문 유지. 실패는 캐시하지 않는다(다음 탭에서 다시 요청).
  * - 캐시 키에 본문 해시 · 보기 상태는 "보고 있는 키" — 본문·언어가 바뀌면 원문으로 돌아가고 다음 탭에 재요청.
+ * - KB-941 `auto`: 호출부가 켜면(리뷰 탭 첫 묶음 · 앱 언어와 다른 리뷰) 탭 없이 번역을 받아 처음부터 번역문. 요청은 동시 AUTO_MAX_CONCURRENT 이하(전역 줄),
+ *   실패 = 원문 유지·토스트 0 · "원문 보기"를 누르면 그 키는 원문(다시 누르면 번역). 계측 = source 'auto'(수동 지표와 분리).
  */
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -32,7 +34,8 @@ export interface ContentTranslation {
   toggle: () => void;
 }
 
-export function useContentTranslation(targetType: TranslationTargetType, targetId: string, text: string): ContentTranslation {
+export function useContentTranslation(targetType: TranslationTargetType, targetId: string, text: string, opts: { auto?: boolean } = {}): ContentTranslation {
+  const auto = !!opts.auto && !!text.trim();
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
   const lang = i18n?.language ?? 'en';
@@ -51,8 +54,24 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
   // KB-703(예진 10/2 "버튼이 갑자기 사라지는 경우는 없게"): 같은 언어 응답도 **일반 번역 결과처럼** 보여 준다 —
   // 라벨은 "Translated from ○○"/"Translated", 본문은 받은 글(원문과 같아도), 다시 누르면 원문. 탭 뒤 라벨이 사라지는 경로 0.
   // (어댑터의 sameLanguage는 계측 result=same에만 쓴다 — 표시에 안 씀)
-  const showing = shownKey === keyStr && data != null;
+  // KB-941: 자동 = 캐시가 차면 번역문(사용자가 이 키에서 "원문 보기"를 누르지 않았으면)
+  const [originalKey, setOriginalKey] = React.useState<string | null>(null);
+  const showing = data != null && (shownKey === keyStr || (auto && originalKey !== keyStr));
   const [loading, setLoading] = React.useState(false);
+  // 자동 로딩 = 파생값(effect 안 동기 setState 0): 켜져 있고·캐시 없고·이 키가 실패하지 않았으면 "가는 중"
+  const [autoFailedKey, setAutoFailedKey] = React.useState<string | null>(null);
+  const autoPending = auto && data == null && autoFailedKey !== keyStr;
+  React.useEffect(() => {
+    if (!auto || data != null) return;
+    void runLimited(() => qc.fetchQuery({ queryKey, queryFn: () => fetchTranslation(targetType, targetId), staleTime: Infinity, gcTime: Infinity, retry: 0 }))
+      .then((tr) => { track(EVENTS.review_translate_toggle, { action: 'translate', target: targetType.toLowerCase(), result: tr.sameLanguage ? 'same' : 'ok', source: 'auto' }); })
+      .catch(() => {
+        qc.removeQueries({ queryKey, exact: true }); // 실패 = 원문 유지 · 토스트 0(자동) · 항목은 남기지 않는다(다음 탭에 다시)
+        track(EVENTS.review_translate_toggle, { action: 'translate', target: targetType.toLowerCase(), result: 'fail', source: 'auto' });
+        setAutoFailedKey(queryKey.join('|')); // 로딩 라벨 끝(원문 + "번역 보기")
+      });
+    // data가 차면 위에서 바로 끝난다(재요청 0) · 실패는 data가 그대로라 재실행 0 — 다음 시도는 키가 바뀔 때·수동 탭
+  }, [auto, data, qc, queryKey, targetId, targetType]);
   const target = targetType.toLowerCase(); // 계측 enum(review|post …) — 공용 훅이라 하드코딩 금지
 
   const toggle = React.useCallback(() => {
@@ -60,8 +79,10 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
     if (showing) {
       track(EVENTS.review_translate_toggle, { action: 'original', target });
       setShownKey(null);
+      setOriginalKey(keyStr); // KB-941: 자동 번역도 이 키에선 원문으로
       return;
     }
+    setOriginalKey(null);
     if (data != null) {
       track(EVENTS.review_translate_toggle, { action: 'translate', target, result: data.sameLanguage ? 'same' : 'ok' });
       setShownKey(keyStr); // 캐시 — 재요청 0
@@ -85,10 +106,28 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
   return {
     translatedText: showing ? data.text : null,
     showingTranslated: showing,
-    loading,
+    loading: loading || autoPending,
     source: showing ? data.source : null,
     toggle,
   };
+}
+
+/** KB-941: 자동 번역 동시 요청 상한 — 첫 묶음 50개가 한꺼번에 나가지 않게(전역 줄, 수동 탭은 줄 밖) */
+export const AUTO_MAX_CONCURRENT = 4;
+let running = 0;
+const waiting: (() => void)[] = [];
+export function runLimited<T>(job: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const start = () => {
+      running++;
+      job().then(resolve, reject).finally(() => {
+        running--;
+        waiting.shift()?.();
+      });
+    };
+    if (running < AUTO_MAX_CONCURRENT) start();
+    else waiting.push(start);
+  });
 }
 
 /** 키용 짧은 해시(djb2) — 본문 원문을 키에 통째로 싣지 않으려는 것뿐, 보안 용도 아님.

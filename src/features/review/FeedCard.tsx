@@ -48,6 +48,7 @@ export function FeedCard({
   showFood = true,
   photoVariant = 'tiles',
   youAsName = false,
+  autoTranslate = false,
 }: {
   review: Review;
   t: TFn;
@@ -63,6 +64,8 @@ export function FeedCard({
   photoVariant?: 'tiles' | 'peek';
   /** KB-865 ④(시안 46): 내 리뷰 = 닉네임 자리에 'You' — 가공식품 상세만 켠다(그 밖 표면 무변) */
   youAsName?: boolean;
+  /** KB-941: 리뷰 탭 첫 묶음 — 본문을 탭 없이 앱 언어로(ReviewBody auto) */
+  autoTranslate?: boolean;
 }) {
   const fontScale = useWindowDimensions().fontScale; // KB-777: 글꼴 배율 전이 = 칩 재측정
   const anon = review.anonymized;
@@ -128,7 +131,7 @@ export function FeedCard({
 
       {/* P-390(KB-578): 사진 위·본문 아래 — 4표면 동일 순서(예진 실기: 반대였다) */}
       <ReviewPhotoStrip photos={review.photos ?? []} size={104} radius={radius.md} variant={photoVariant} />
-      <ReviewBody review={review} t={t} style={styles.body} toggleColor={photoVariant === 'peek' ? INK_TITLE : undefined} />
+      <ReviewBody review={review} t={t} style={styles.body} toggleColor={photoVariant === 'peek' ? INK_TITLE : undefined} autoTranslate={autoTranslate} />
 
       {/* 음식 칩 행 — 탭 = 음식 상세 (구 미니 카드 대체) */}
       {showFood && (

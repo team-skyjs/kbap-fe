@@ -213,7 +213,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_permission: ['state'], // view|grant|deny|settings_open
   error_state_view: ['screen', 'kind', 'action'], // kind: error|offline|empty · action: view|retry
   review_helpful_toggle: ['on', 'surface', 'target_type'], // KB-812 2차 target_type: food|packaged
-  review_translate_toggle: ['action', 'target', 'result'], // action: translate|original · target: review|post · result: ok|fail|same(KB-679 — 번역 시도 결과, original엔 없음 · KB-689 same = 원문 언어 == 요청 언어)
+  review_translate_toggle: ['action', 'target', 'result', 'source'], // action: translate|original · target: review|post · result: ok|fail|same(KB-679 — 번역 시도 결과, original엔 없음 · KB-689 same = 원문 언어 == 요청 언어) · source: auto(KB-941 리뷰 탭 첫 묶음 자동 — 수동 탭엔 없음)
   push_primer_response: ['action', 'surface'], // accept|later · onboarding|scan
   push_pref_toggle: ['key', 'on'],
   // KB-630 — 값은 enum만(문구·URL 금지). state 체계는 scan_permission 준용.
