@@ -118,9 +118,11 @@ it('2-A 음식 탭 칩 = 한 줄 가로 스크롤 + 우측 페이드 + 정렬 �
   // 정렬 버튼은 스크롤 밖(형제) — 스크롤 서브트리에 미포함
   expect(scroll.findAll((n: { props?: { testID?: string } }) => n.props?.testID === 'food-sort')).toHaveLength(0);
   expect(tree.root.findAll((n) => n.props?.testID === 'food-sort').length).toBeGreaterThanOrEqual(1);
-  // 홈 embedded = 구 chipRow 유지(스크롤 없음)
+  // KB-909(Q-367): 홈 embedded도 같은 한 줄 가로 스크롤(XXL 두 줄 넘김 방지) — 정렬 버튼·Saved 칩은 홈엔 없다
   const home = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
-  expect(home.root.findAll((n) => n.props?.testID === 'food-chip-scroll')).toHaveLength(0);
+  expect(home.root.findAll((n) => n.props?.testID === 'food-chip-scroll' && typeof n.type === 'string').length).toBeGreaterThanOrEqual(1);
+  expect(home.root.findAll((n) => n.props?.testID === 'food-sort')).toHaveLength(0);
+  expect(home.root.findAll((n) => n.props?.testID === 'food-chip-saved')).toHaveLength(0);
   // 행 높이 고정 소스 잠금(칩 34 + pad 14/12 + 헤어라인)
   const fx = require('fs').readFileSync('src/features/food/FoodExplorer.tsx', 'utf8') as string;
   expect(fx).toMatch(/chipRowScreen: \{[^}]*paddingTop: 14, paddingBottom: 12[^}]*borderBottomColor: '#EAEBEE'/);

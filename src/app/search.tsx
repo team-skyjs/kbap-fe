@@ -24,7 +24,7 @@ import { color as C, font, radius, type RiskState } from '@/lib/theme';
 import { Spinner, QueryErrorBlock, classifyQueryError, CardPhoto, PressScale, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood, Input } from '@/components';
 import { EmptyBlock } from '@/components/StateBlock';
 import { useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
-import { CARD_TITLE_FIT, FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
+import { CARD_TITLE, FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
 import { useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { AdBanner } from '@/features/ads/AdBanner';
@@ -232,7 +232,7 @@ export default function Search() {
                       {f.photoUrl ? <CardPhoto uri={f.photoUrl} recyclingKey={f.foodId} borderRadius={radius.md} /> : <IconFood size={22} color={C.ink3} />}
                     </View>
                     {/* KB-903(T-057): 한 줄 자르기("Seasoned Co…") → 두 줄 + 넘치면 줄이기(홈 카드와 같은 규칙) */}
-                    <Text style={styles.popCardName} numberOfLines={2} {...CARD_TITLE_FIT}>{f.name}</Text>
+                    <Text style={styles.popCardName} {...CARD_TITLE}>{f.name}</Text>
                     {f.nameKo !== f.name && <Text style={styles.popCardKo} numberOfLines={1}>{f.nameKo}</Text>}
                   </Pressable>
                 ))}

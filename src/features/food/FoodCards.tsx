@@ -28,8 +28,9 @@ export function padOddGrid<T>(items: T[]): (T | GridPad)[] {
 }
 
 /** 2열 그리드 카드 (4150:13806) — 히어로 이미지 + RiskBadge + 북마크 버튼. */
-/** KB-903(T-033·T-057): 카드 제목 공통 — 넘치면 글자를 줄여 단어가 안 쪼개지게(최소 0.75) */
-export const CARD_TITLE_FIT = { adjustsFontSizeToFit: true, minimumFontScale: 0.75 } as const;
+/** 카드 제목 공통 — KB-909(Q-367): 자동 축소 끔(XXL에서 "Spicy Crab"만 작아져 이웃 카드와 글자 크기가 달랐다) · 2줄 + 말줄임.
+ *  (구 KB-903 "넘치면 축소" 규칙 — 2줄에 들어가면 축소가 안 걸려 "Jajangmyeo / n"이 그대로 쪼개졌다) */
+export const CARD_TITLE = { numberOfLines: 2, ellipsizeMode: 'tail' } as const;
 
 export function FoodGridCard({
   food,
@@ -77,7 +78,7 @@ export function FoodGridCard({
       <View style={styles.gmeta}>
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
           {/* KB-903(T-033): AX 최대에서 한 단어가 카드 폭을 넘으면 단어 중간에서 꺾였다("Jajangmyeo / n") — 2줄 안에 들도록 줄이기(자르기 아님) */}
-          <Text style={styles.gname} numberOfLines={2} {...CARD_TITLE_FIT}>
+          <Text style={styles.gname} {...CARD_TITLE}>
             {food.name}
           </Text>
           {food.nameKo !== food.name && (
