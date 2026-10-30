@@ -11,6 +11,11 @@
 - Codex #369 2R P1: 가공 SAFE 띠 제목 = 매칭 범위 키(구 음식 상세 detail.verdictSafe "안심하고 드세요" — 보장 표현 금지) · 가공 띠 제목 전부 가공 전용 키
 - 신규 ko 문구(K-항목 — 안전 문구, 예진 승인 대상): `packaged.noAvoidMatchTitle` = 피하는 재료와 겹치는 것 없음 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
+## 2026-10-30 · P-558 KB-932 음식 상세 하단 CTA 띠 투명
+- pillCta.band(떠 있는 바) 흰 바탕 → 투명(예진 TestFlight — 흰 띠가 "What's inside" 등 콘텐츠를 잘라 보이게 함). 알약만 뜬다. 스크림 0(완전 투명 우선).
+- pointerEvents 보이는 동안 auto → box-none: 이제 보이는 아래 콘텐츠라 띠 바탕 탭은 그 콘텐츠로(KB-903 T-019 반대 결정 — 커맨드 보고).
+- 스크롤 아래 여백(띠 실높이 + 16, useBottomBand) 그대로 — 끝까지 스크롤 시 마지막 줄 알약 위. 리뷰 작성(bandStatic 흐름 안)·가공식품 상세(흐름 안 바) 대상 아님.
+
 ## 2026-10-30 · P-555 KB-926 리본 그림자 실루엣 + 검색 스캔 버튼 radius + 정렬 알약 패딩
 - ① RiskBadge 그림자 = 리본 경로(흰 보더 폭 스트로크 포함) 반투명 두 겹, 1/1 오프셋 뒤 Svg — 구 shBadge(컨테이너 View 그림자)는 직사각형. shBadge 토큰 제거. flat(가공식품 카드)은 그대로 그림자 없음.
 - ② SearchScanButton radius pill → md(KB-909 직전 8 → 토큰 12, 커맨드 결정 (a)) — 홈·Food·Packaged 공용. 탭바 스캔 원형 무변.
