@@ -11,6 +11,10 @@
 - Codex #369 2R P1: 가공 SAFE 띠 제목 = 매칭 범위 키(구 음식 상세 detail.verdictSafe "안심하고 드세요" — 보장 표현 금지) · 가공 띠 제목 전부 가공 전용 키
 - 신규 ko 문구(K-항목 — 안전 문구, 예진 승인 대상): `packaged.noAvoidMatchTitle` = 피하는 재료와 겹치는 것 없음 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
+## 2026-10-30 · P-561b KB-941 후속 — 리뷰 탭 번역 캐시 서버 동봉 사용(KB-940 #504)
+- 전역 피드 첫 페이지 items[].translation {text, sourceLanguage} → reviewAdapter serverTranslation(요청 lang + adaptTranslation 규칙) → useContentTranslation seed: 요청 lang = 지금 apiLang이면 기존 캐시 키에 setQueryData, 자동 POST 0. 구 서버(키 없음)·다른 lang = 현행 자동 요청.
+- dev 실응답(lang=ja) 대입: 50개 중 28개 시드(서버 실측과 같음). foodAdapter map(adaptReview) → 화살표(배열 index가 requestLang으로 들어가는 것 차단).
+
 ## 2026-10-30 · P-561 KB-941 리뷰 탭 첫 묶음 자동 번역
 - useContentTranslation에 auto 옵션(새 훅 0): 켜면 탭 없이 번역 요청 → 처음부터 번역문 · "원문 보기" 토글 유지(누르면 그 키는 원문) · 실패 = 원문 유지·토스트 0 · 로딩 = 원문 + 기존 로딩 라벨.
 - 자동 요청은 전역 줄로 동시 4개 이하(runLimited). 캐시·구독 방식(useSyncExternalStore) 그대로 — 렌더 중 캐시 직접 읽기 0.

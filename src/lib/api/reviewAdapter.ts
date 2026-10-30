@@ -17,6 +17,7 @@
 import { adaptProfileImageUrl } from './memberAdapter';
 import type { Review, ReviewAuthor, ReviewPage } from './types';
 import { toHttps } from './processedFoodAdapter';
+import { adaptTranslation } from './translationAdapter';
 
 /* ---- wire shapes (스냅샷 기준) ---- */
 
@@ -63,6 +64,8 @@ export interface ReviewWire {
   place?: { name?: string | null; address?: string | null; latitude?: number | null; longitude?: number | null; source?: string | null; placeId?: string | null } | null;
   /** KB-702(서버) → KB-703 ②: 리뷰 본문 언어 = 앱 언어 코드(clampLang 집합) · 판별 못 하면 null · 구서버엔 필드 없음. */
   language?: string | null;
+  /** KB-940(서버): 전역 피드 첫 페이지 항목에만 — `{ text: 요청 lang 번역문, sourceLanguage }`(없으면 키 생략) */
+  translation?: { text?: string | null; sourceLanguage?: string | null } | null;
   /** KB-812 2차(서버 #435, 3.2 응답만): 리뷰 대상 — 구응답·3.1 이하엔 없음(= FOOD) */
   targetType?: 'FOOD' | 'PROCESSED_FOOD' | string;
   /** 가공식품 리뷰에만 — 음식 리뷰에선 필드 자체가 생략 */
@@ -105,7 +108,8 @@ function adaptAuthor(wire: ReviewAuthorWire | null | undefined): ReviewAuthor | 
 /** KB-865 ④: 1~5 정수만 값 — 그 밖(부재·null·0·범위 밖) = 미입력 */
 export const tasteAxis = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 5 ? v : null);
 
-export function adaptReview(wire: ReviewWire): Review {
+/** requestLang = 이 응답을 받은 요청의 lang — 동봉 번역은 그 언어일 때만 의미가 있다(화면이 현재 lang과 대조) */
+export function adaptReview(wire: ReviewWire, requestLang?: string): Review {
   const author = adaptAuthor(wire.author);
   // P-165(#144): foodId·memberId 정본 = 중첩(food/author), 최상위는 구응답 폴백
   const foodId = wire.food?.foodId ?? wire.foodId;
@@ -135,6 +139,11 @@ export function adaptReview(wire: ReviewWire): Review {
     translatedBody: null,
     // KB-703 ②: 빈 문자열·비문자 = 판별 불가(null) — 버튼은 지금처럼 보인다(숨김은 확신할 때만)
     language: typeof wire.language === 'string' && wire.language.trim() !== '' ? wire.language : null,
+    // KB-941: 서버 동봉 번역 → 도메인 Translation(원문 언어 판정은 번역 어댑터 규칙 그대로) · 빈 본문 = 없음(자동 요청으로)
+    serverTranslation:
+      requestLang && typeof wire.translation?.text === 'string' && wire.translation.text.trim()
+        ? { lang: requestLang, value: adaptTranslation({ targetType: 'REVIEW', targetId: wire.reviewId, language: requestLang, text: wire.translation.text, sourceLanguage: wire.translation.sourceLanguage ?? null }) }
+        : undefined,
     // P-108: 좋아요 = 서버값 (목 로컬 계산 폐기 — 토글 낙관 반영은 뮤테이션 몫)
     likes: wire.likeCount ?? 0,
     myLike: wire.likedByMe === true,
@@ -156,9 +165,9 @@ export function adaptReview(wire: ReviewWire): Review {
   };
 }
 
-export function adaptReviewPage(wire: ReviewPageWire): ReviewPage {
+export function adaptReviewPage(wire: ReviewPageWire, requestLang?: string): ReviewPage {
   return {
-    items: (wire.items ?? []).map(adaptReview),
+    items: (wire.items ?? []).map((w) => adaptReview(w, requestLang)),
     hasNext: wire.hasNext === true,
     nextCursor: wire.nextCursor != null ? String(wire.nextCursor) : null,
   };

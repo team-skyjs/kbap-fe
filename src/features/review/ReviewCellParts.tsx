@@ -103,7 +103,7 @@ export function ReviewBody({ review, t, style, toggleColor, autoTranslate = fals
   const appLang = useAppLanguage();
   const sameAsApp = review.language != null && review.language === appLang;
   // KB-941: 같은 언어 = 요청 0 · 판별 불가(null) = 대상(같은 언어 응답이면 KB-703대로 표시)
-  const tx = useContentTranslation('REVIEW', review.id, original ?? '', { auto: autoTranslate && FLAGS.contentTranslation && !sameAsApp });
+  const tx = useContentTranslation('REVIEW', review.id, original ?? '', { auto: autoTranslate && FLAGS.contentTranslation && !sameAsApp, seed: review.serverTranslation });
   if (!original) return null;
   const label = FLAGS.contentTranslation && !sameAsApp; // 탭 뒤 같은 언어로 판정돼도 숨기지 않는다(KB-703 ①) — 숨김은 처음부터만
   return (

@@ -222,6 +222,8 @@ export interface Review {
   anonymized: boolean; // author 부재(탈퇴) = true
   /** KB-703 ②: 서버가 판별한 본문 언어(앱 언어 코드) — null = 판별 불가·구서버. 앱 언어와 같으면 번역 라벨을 **처음부터** 숨긴다. */
   language?: string | null;
+  /** KB-941(서버 KB-940): 전역 피드 첫 페이지에 동봉된 번역(요청 lang = `lang`) — 있으면 자동 번역 요청 대신 캐시 시드. 없음 = undefined */
+  serverTranslation?: { lang: string; value: import('./translationAdapter').Translation };
   /** 구 번역 축(P-085) — 미사용. KB-679부터 번역은 POST /api/translations 온디맨드(useContentTranslation). */
   bodyLanguage?: string;
   translatedBody?: string | null;

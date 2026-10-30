@@ -80,7 +80,8 @@ export async function fetchGlobalReviewsPage(cursor: string | null, filters: Glo
   const max = filters.maxRating ?? null;
   if (min != null && (max == null || min <= max)) q.set('minRating', String(min));
   if (max != null && (min == null || min <= max)) q.set('maxRating', String(max));
-  const fetchPage = async () => adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`, REVIEW_READ_HEADERS));
+  // KB-941: 요청 lang을 함께 — 서버 동봉 번역(첫 페이지)은 이 언어로 왔다
+  const fetchPage = async () => adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`, REVIEW_READ_HEADERS), q.get('lang') ?? undefined);
   // foodId 필터가 있으면 서버 `listReviews`가 `getReadyFood`를 탄다 = FOOD-001 원천(#185 5R). 현재 화면 호출자는
   // 안 넘기지만 계약상 열려 있으므로 같은 부기 경로로.
   return filters.foodId ? trackReadyFood(filters.foodId, fetchPage) : fetchPage();
