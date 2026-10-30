@@ -29,13 +29,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
-import { primaryTint, color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
+import { primaryTint, color as C, font, radius, shadow, type } from '@/lib/theme';
 import {
   Btn,
   IconCheck,
@@ -479,6 +479,10 @@ export default function Onboarding() {
           setLegalDoc(null);
         }}
         onClose={() => setLegalDoc(null)}
+        onReadSafety={() => {
+          setLegalDoc(null);
+          router.push('/profile/legal?doc=safety' as Href);
+        }}
         t={t}
       />
 
@@ -550,8 +554,8 @@ function Consent({
   );
 }
 
-/** 전문 바텀시트 — terms/privacy는 kbap-legal fetch, safety는 i18n 재사용. */
-function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAgree: () => void; onClose: () => void; t: TFn }) {
+/** 전문 바텀시트 — terms/privacy는 kbap-legal fetch, safety는 i18n 요약 3단 + 전문 링크(KB-910: 앱 안 법적 문서 화면 — 시트에 전문을 넣으면 온보딩이 길어진다). */
+function LegalSheet({ doc, onAgree, onClose, onReadSafety, t }: { doc: ConsentKey | null; onAgree: () => void; onClose: () => void; onReadSafety: () => void; t: TFn }) {
   // P-337(KB-490): 핸들+제목 스와이프 닫기 — 본문 ScrollView와 충돌 방지(영역 한정).
   // 이 시트는 마운트 유지형(visible=doc) — open 전환 시 훅이 translateY 리셋.
   const swipe = useSheetSwipeDismiss(onClose, doc != null);
@@ -583,7 +587,14 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
           {isRemote ? (
             <LegalDocBody doc={doc as LegalDoc} />
           ) : (
-            <Text style={styles.legalText}>{safetyText}</Text>
+            <>
+              <Text style={styles.legalText}>{safetyText}</Text>
+              {/* KB-910: 전문은 앱 안 법적 문서 화면(프로필과 같은 화면) — 시트(Modal)를 닫고 연다(Modal이 위에 남으면 화면을 가린다) */}
+              <Pressable onPress={onReadSafety} accessibilityRole="link" hitSlop={8} style={styles.readFullRow} testID="legal-read-full-safety">
+                <Text style={styles.readFull}>{t('onboarding.readFullSafety')}</Text>
+                <IconChevron size={16} color={C.primaryText} />
+              </Pressable>
+            </>
           )}
         </ScrollView>
         <Btn testID="legal-agree" onPress={onAgree}>{t('onboarding.agree')}</Btn>
@@ -1001,6 +1012,8 @@ const styles = StyleSheet.create({
   sheetTitle: { fontFamily: font.display, fontSize: 18, color: C.ink },
   legalScroll: { flexGrow: 0, minHeight: 180, borderWidth: 1, borderColor: C.hair, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4, backgroundColor: C.surface },
   legalText: { fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 20, paddingVertical: 10 },
+  readFullRow: { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'flex-start', paddingVertical: 8 },
+  readFull: { ...type.meta, fontFamily: font.bodyBold, color: C.primaryText }, // KB-910: 토큰(type.meta) — 새 fontSize 리터럴 0
 
   linkbtn: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, textAlign: 'center', padding: 6 },
 });

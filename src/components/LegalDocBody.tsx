@@ -4,7 +4,8 @@
  * 표는 폰 폭에 3열이 안 들어가 **행마다 카드**(머리 라벨 + 값). 목록 불릿 = 작은 원(View) — 기호 문자·가운데 점 금지.
  */
 import * as React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Shimmer } from '@/components/Skeleton';
 import { Pressable } from '@/components/Pressable';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
@@ -41,8 +42,11 @@ export function LegalDocBody({ doc }: { doc: LegalDoc }) {
   }
   if (remote?.doc !== doc) {
     return (
+      // KB-910: 원격 본문 로딩 = 스켈레톤(헌법 — 구 스피너). 글 줄 모양 6개
       <View style={styles.loading} testID="legal-loading">
-        <ActivityIndicator color={C.primary} />
+        {SKELETON_WIDTHS.map((w, i) => (
+          <Shimmer key={i} style={[styles.skLine, { width: w }]} />
+        ))}
       </View>
     );
   }
@@ -53,13 +57,14 @@ function LegalBlocks({ blocks }: { blocks: LegalBlock[] }) {
   return (
     <View style={styles.blocks} testID="legal-blocks">
       {blocks.map((b, i) => {
-        if (b.type === 'heading') return <Text key={i} style={b.level === 1 ? styles.h1 : b.level === 2 ? styles.h2 : styles.h3} accessibilityRole="header">{b.text}</Text>;
-        if (b.type === 'paragraph') return <Text key={i} style={styles.p}>{b.text}</Text>;
+        // KB-910: 한국어 제목·본문 어절 단위 줄바꿈("안전 고 / 지" 방지 — iOS, #366 사장님 카드와 같은 방식)
+        if (b.type === 'heading') return <Text key={i} style={b.level === 1 ? styles.h1 : b.level === 2 ? styles.h2 : styles.h3} accessibilityRole="header" lineBreakStrategyIOS="hangul-word">{b.text}</Text>;
+        if (b.type === 'paragraph') return <Text key={i} style={styles.p} lineBreakStrategyIOS="hangul-word">{b.text}</Text>;
         if (b.type === 'listItem')
           return (
             <View key={i} style={styles.li}>
               <View style={styles.bullet} />
-              <Text style={[styles.p, { flex: 1 }]}>{b.text}</Text>
+              <Text style={[styles.p, { flex: 1 }]} lineBreakStrategyIOS="hangul-word">{b.text}</Text>
             </View>
           );
         return (
@@ -81,6 +86,8 @@ function LegalBlocks({ blocks }: { blocks: LegalBlock[] }) {
   );
 }
 
+const SKELETON_WIDTHS = ['60%', '100%', '100%', '90%', '100%', '70%'] as const;
+
 const styles = StyleSheet.create({
   blocks: { gap: 10, paddingVertical: 10 },
   h1: { fontFamily: font.bodyBold, fontSize: 17, lineHeight: 24, color: C.ink, marginTop: 4 },
@@ -95,7 +102,8 @@ const styles = StyleSheet.create({
   cell: { gap: 2 },
   cellHead: { fontFamily: font.body, fontSize: 11, lineHeight: 15, color: C.ink3 },
   cellFirst: { fontFamily: font.bodyBold, fontSize: 13, lineHeight: 20, color: C.ink },
-  loading: { paddingVertical: 40, alignItems: 'center' },
+  loading: { paddingVertical: 16, gap: 12 },
+  skLine: { height: 12, borderRadius: radius.xs },
   error: { paddingVertical: 30, alignItems: 'center', gap: 10 },
   errorText: { fontFamily: font.body, fontSize: 13, color: C.ink2, textAlign: 'center' },
   retry: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primary, padding: 4 },

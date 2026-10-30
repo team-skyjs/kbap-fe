@@ -55,7 +55,8 @@ it('③ 둘 다 실패 = 오류 토스트 1회 + false(무반응 금지)', async
 });
 
 it('적용 4표면 = openWebPage 경유 · Linking.openURL 잔재 0', () => {
-  const surfaces = ['src/app/login.tsx', 'src/app/(tabs)/profile.tsx', 'src/features/scan/ScanRichList.tsx'];
+  // KB-910: 프로필의 웹페이지 링크(안전 고지)는 앱 안 화면으로 옮겨 openWebPage 표면에서 빠졌다
+  const surfaces = ['src/app/login.tsx', 'src/features/scan/ScanRichList.tsx'];
   for (const f of surfaces) {
     const s = read(f);
     expect(s).toContain('openWebPage(');
@@ -65,11 +66,13 @@ it('적용 4표면 = openWebPage 경유 · Linking.openURL 잔재 0', () => {
   expect(login).toContain('openWebPage(LEGAL_URLS.terms)');
   expect(login).toContain('openWebPage(LEGAL_URLS.privacy)');
   const profile = read('src/app/(tabs)/profile.tsx');
-  expect((profile.match(/openWebPage\(SAFETY_NOTICE_URL\)/g) ?? []).length).toBe(2); // 게스트·회원 두 분기
+  expect(profile).not.toContain('openWebPage'); // KB-910: 안전 고지 = 앱 안 화면(외부 페이지 노출 0)
+  expect((profile.match(/router\.push\('\/profile\/legal\?doc=safety' as Href\)/g) ?? []).length).toBe(2); // 게스트·회원 두 분기
+  expect(profile).not.toContain('Linking.openURL');
   // P-381: OS 설정도 공용 헬퍼 경유(웹뷰로 여는 것은 여전히 금지 — 설정은 링크가 아니다)
   expect((profile.match(/openAppSettings\(\)/g) ?? []).length).toBe(1); // KB-904: 게스트·회원 두 분기가 LanguageRow 하나를 쓴다
   expect((profile.match(/<LanguageRow /g) ?? []).length).toBe(2);
-  expect(read('src/lib/legalText.ts')).toContain("export const SAFETY_NOTICE_URL = 'https://team-skyjs.github.io/kbap-legal/safety.html'");
+  expect(read('src/lib/legalText.ts')).toContain("safety: 'https://team-skyjs.github.io/kbap-legal/safety.html'"); // KB-910: LEGAL_URLS 한 곳
 });
 
 it('네이티브 앱 딥링크는 인앱 브라우저 금지 — 스토어·지도', () => {

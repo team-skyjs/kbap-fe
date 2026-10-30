@@ -793,7 +793,8 @@
     },
     "countryLabel": "País",
     "popularCountries": "Populares",
-    "searchNoResults": "Sin resultados. Prueba con otra ortografía."
+    "searchNoResults": "Sin resultados. Prueba con otra ortografía.",
+    "readFullSafety": "Leer el aviso de seguridad completo"
   },
   "editProfile": {
     "title": "Editar perfil",

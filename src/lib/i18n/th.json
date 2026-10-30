@@ -793,7 +793,8 @@
     },
     "countryLabel": "ประเทศ",
     "popularCountries": "ยอดนิยม",
-    "searchNoResults": "ไม่พบผลลัพธ์ ลองสะกดแบบอื่น"
+    "searchNoResults": "ไม่พบผลลัพธ์ ลองสะกดแบบอื่น",
+    "readFullSafety": "อ่านประกาศด้านความปลอดภัยฉบับเต็ม"
   },
   "editProfile": {
     "title": "แก้ไขโปรไฟล์",

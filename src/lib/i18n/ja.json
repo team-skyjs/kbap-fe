@@ -793,7 +793,8 @@
     },
     "countryLabel": "国",
     "popularCountries": "人気の国",
-    "searchNoResults": "見つかりません。別の表記で探してみてください。"
+    "searchNoResults": "見つかりません。別の表記で探してみてください。",
+    "readFullSafety": "安全に関する注意の全文を見る"
   },
   "editProfile": {
     "title": "プロフィール編集",

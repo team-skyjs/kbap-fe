@@ -14,8 +14,7 @@ import { useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Alert } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
-import { SAFETY_NOTICE_URL } from '@/lib/legalText';
-import { openAppSettings, openWebPage } from '@/lib/openExternal';
+import { openAppSettings } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -172,7 +171,7 @@ export default function Profile() {
               {FLAGS.ads.enabled && (
                 <MenuRow testID="profile-menu-ad-report" label={t('ads.report')} chevron onPress={() => router.push('/profile/feedback/new?prefill=ad' as Href)} />
               )}
-              <MenuRow testID="profile-menu-safety" label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
+              <MenuRow testID="profile-menu-safety" label={t('profile.safetyNotice')} chevron onPress={() => router.push('/profile/legal?doc=safety' as Href)} /* KB-910: 앱 안 화면(구 인앱 브라우저) */ />
               {/* KB-776(QA B2-4): 가입 뒤에도 약관·개인정보처리방침 다시 보기 — 온보딩 동의 시트와 같은 본문(LegalDocBody) */}
               <MenuRow testID="profile-menu-terms" label={t('onboarding.termsOfService')} chevron onPress={() => router.push('/profile/legal?doc=terms' as Href)} />
               <MenuRow testID="profile-menu-privacy" label={t('onboarding.privacyPolicy')} chevron onPress={() => router.push('/profile/legal?doc=privacy' as Href)} />
@@ -353,7 +352,7 @@ export default function Profile() {
                 <MenuRow testID="profile-menu-ad-report" label={t('ads.report')} chevron onPress={() => router.push('/profile/feedback/new?prefill=ad' as Href)} />
               )}
               {/* P-061③: 안전 고지 페이지(EN/KO) */}
-              <MenuRow testID="profile-menu-safety" label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
+              <MenuRow testID="profile-menu-safety" label={t('profile.safetyNotice')} chevron onPress={() => router.push('/profile/legal?doc=safety' as Href)} /* KB-910: 앱 안 화면(구 인앱 브라우저) */ />
               {/* KB-776(QA B2-4): 가입 뒤에도 약관·개인정보처리방침 다시 보기 — 온보딩 동의 시트와 같은 본문(LegalDocBody) */}
               <MenuRow testID="profile-menu-terms" label={t('onboarding.termsOfService')} chevron onPress={() => router.push('/profile/legal?doc=terms' as Href)} />
               <MenuRow testID="profile-menu-privacy" label={t('onboarding.privacyPolicy')} chevron onPress={() => router.push('/profile/legal?doc=privacy' as Href)} />
