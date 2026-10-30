@@ -172,6 +172,9 @@ export function adaptProcessedSummary(w: SummaryWire): ProcessedFoodSummary {
 /** 판정 → RiskBadge 상태. 내용 불명 메모가 붙은 Safe도 배지는 safe(결정 4) */
 // KB-921(R-147): SAFE_WITH_NOTE = 속을 알 수 없는 원재료(혼합제제·양념 등)가 있음 → 주의 — "모름"을 초록으로 그리지 않는다(false-safe 0). 띠·목록 리본·후보 줄이 전부 이 표를 거친다
 export const VERDICT_RISK = { AVOID: 'danger', CAUTION: 'caution', SAFE: 'safe', SAFE_WITH_NOTE: 'caution' } as const;
+/** KB-927: 판정 칩(리본과 같은 3상태) → 서버 verdict 파라미터 — VERDICT_RISK 역매핑이라 리본 톤과 늘 같다(Caution = CAUTION + SAFE_WITH_NOTE) */
+export type VerdictChipRisk = 'safe' | 'caution' | 'danger';
+export const verdictsForRisk = (risk: VerdictChipRisk): ProcessedVerdict[] => VERDICTS.filter((v) => VERDICT_RISK[v] === risk);
 
 // 판정 원소 변환 — 상세(GET /processed-foods/{id})와 성분표 분석(scan/label)이 같은 모양이라 한 벌로
 const adaptDetections = (ds: DetailWire['detections'] | null | undefined): ProcessedDetection[] =>

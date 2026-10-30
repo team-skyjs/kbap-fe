@@ -1278,7 +1278,8 @@
     "mayContainNames": "可能含有{{names}}",
     "signInToPersonalize": "登入後依我的標準查看",
     "setAvoidIngredients": "設定要避免的食材",
-    "noAvoidMatchTitle": "與避免清單無相符"
+    "noAvoidMatchTitle": "與避免清單無相符",
+    "findMore": "繼續查找"
   },
   "scanMode": {
     "menu": "菜單",

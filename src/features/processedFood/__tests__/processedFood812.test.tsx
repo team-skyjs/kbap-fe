@@ -421,7 +421,8 @@ describe('Food 탭 세그먼트·목록', () => {
   });
   it('KB-865: 유형은 v4 확인 뒤에만 보낸다 · 칩도 v4일 때만 · 검색 계측에 검색어 원문 0', () => {
     const ex = fs.readFileSync('src/features/processedFood/PackagedExplorer.tsx', 'utf8');
-    expect(ex).toContain('useProcessedSearch(query, { type: v4 ? type : null })');
+    expect(ex).toContain('useProcessedSearchPaged(query, { type: v4 ? type : null, verdicts })'); // KB-927: 판정 필터 동승(판정 칩도 v4 + 회원 판정일 때만)
+    expect(ex).toContain('const verdictChips = v4 && personalized;');
     expect(ex).toContain('{v4 && (');
     expect(ex).toContain('track(EVENTS.food_packaged_search, { query_length: Array.from(term).length, result_count: items.length });');
   });
@@ -672,5 +673,106 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     const legacy = adaptProcessedSummary({ id: 1, productName: 'x' });
     expect([legacy.verdict, legacy.nameKo, legacy.rating]).toEqual([null, null, null]);
     expect(adaptProcessedSummary({ id: 1, productName: 'x', rating: { average: 4, count: null } }).rating).toBeNull();
+  });
+});
+
+describe('KB-927 Packaged 판정 칩 — 서버 verdict 필터 · 빈 페이지 이어 부르기', () => {
+  const ITEM = { id: 7, productName: 'Banana Flavored Milk', nameKo: '바나나맛우유', maker: 'Binggrae', foodType: '가공유', imageUrl: null, verdict: 'SAFE' };
+  const flush = () => act(async () => { for (let i = 0; i < 30; i++) await new Promise((r) => setTimeout(r, 0)); });
+  const mount = async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    const t = render(<QueryClientProvider client={qc}><PackagedExplorer top={null} /></QueryClientProvider>);
+    await flush();
+    return t;
+  };
+  const press = async (t: ReactTestRenderer, id: string) => {
+    await act(async () => { t.root.findAll((n) => n.props?.testID === id && typeof n.props.onPress === 'function')[0].props.onPress(); });
+    await flush();
+  };
+  const urls = () => mockGet.mock.calls.map((c) => String(c[0]));
+  const verdictCalls = () => urls().filter((u) => u.includes('verdict='));
+  // 판정 없는 요청 = 한 건 있는 마지막 페이지 · 판정 요청 = over(호출 순번)
+  const serve = (verdictPage: (n: number) => object) => {
+    let n = 0;
+    mockGet.mockImplementation((url: string) => Promise.resolve(url.includes('verdict=') ? verdictPage(n++) : { items: [ITEM], hasNext: false, nextCursor: null }));
+  };
+  beforeEach(() => { mockGet.mockReset(); mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] }; });
+
+  it('칩 → 파라미터 = VERDICT_RISK 역매핑(Caution = CAUTION + SAFE_WITH_NOTE) · 요청은 반복 키', async () => {
+    const { verdictsForRisk } = jest.requireActual('@/lib/api/processedFoodAdapter') as typeof import('@/lib/api/processedFoodAdapter');
+    expect(verdictsForRisk('safe')).toEqual(['SAFE']);
+    expect(verdictsForRisk('danger')).toEqual(['AVOID']);
+    expect(verdictsForRisk('caution')).toEqual(['CAUTION', 'SAFE_WITH_NOTE']);
+    mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
+    await fetchProcessedSearch('', undefined, { verdicts: ['CAUTION', 'SAFE_WITH_NOTE'] });
+    expect(String(mockGet.mock.calls[0][0])).toContain('verdict=CAUTION&verdict=SAFE_WITH_NOTE');
+  });
+
+  it('비회원·회피 0개 = 판정 칩 숨김(서버가 무시 — 거짓 필터 0) · 유형 칩은 그대로', async () => {
+    for (const who of ['guest', 'm0'] as const) {
+      mockGuest = who === 'guest'; mockMe = who === 'guest' ? undefined : { id: '41', restrictions: [] };
+      serve(() => ({ items: [], hasNext: false, nextCursor: null }));
+      const t = await mount();
+      expect(ids(t)).not.toContain('packaged-verdicts');
+      expect(ids(t)).toContain('packaged-types');
+      t.unmount();
+    }
+  });
+
+  it('회원: 판정 칩 줄 + 유형 칩 줄 · Safe = verdict=SAFE · Caution = CAUTION·SAFE_WITH_NOTE · All = 파라미터 0', async () => {
+    serve(() => ({ items: [ITEM], hasNext: false, nextCursor: null }));
+    const t = await mount();
+    expect(ids(t)).toEqual(expect.arrayContaining(['packaged-verdicts', 'packaged-verdict-all', 'packaged-verdict-safe', 'packaged-verdict-danger', 'packaged-verdict-caution', 'packaged-types']));
+    await press(t, 'packaged-verdict-safe');
+    expect(verdictCalls().at(-1)).toMatch(/verdict=SAFE(&|$)/);
+    expect(verdictCalls().at(-1)).not.toMatch(/verdict=(AVOID|CAUTION|SAFE_WITH_NOTE)/);
+    await press(t, 'packaged-verdict-caution');
+    expect(verdictCalls().at(-1)).toContain('verdict=CAUTION&verdict=SAFE_WITH_NOTE');
+    const before = verdictCalls().length;
+    await press(t, 'packaged-verdict-all');
+    expect(verdictCalls()).toHaveLength(before); // All = verdict 없는 요청
+  });
+
+  it('0건 + hasNext = 자동 이어 부르기 3번 → "더 찾아보기"(결과 없음 아님) · 누르면 다시 3번', async () => {
+    serve((n) => ({ items: [], hasNext: true, nextCursor: `c${n + 1}` }));
+    const t = await mount();
+    await press(t, 'packaged-verdict-danger');
+    expect(verdictCalls()).toHaveLength(3);
+    expect(ids(t)).toContain('packaged-find-more');
+    expect(ids(t)).not.toEqual(expect.arrayContaining(['packaged-empty']));
+    expect(ids(t)).not.toContain('packaged-no-filter-match');
+    await press(t, 'packaged-find-more');
+    expect(verdictCalls()).toHaveLength(6);
+    expect(ids(t)).toContain('packaged-find-more');
+  });
+
+  it('빈 페이지 뒤 건이 오면 목록 — "결과 없음"은 hasNext=false && 누적 0건일 때만', async () => {
+    serve((n) => (n === 0 ? { items: [], hasNext: true, nextCursor: 'c1' } : { items: [ITEM], hasNext: false, nextCursor: null }));
+    const t = await mount();
+    await press(t, 'packaged-verdict-safe');
+    expect(verdictCalls()).toHaveLength(2);
+    expect(ids(t)).toContain('packaged-item-7');
+    t.unmount();
+    serve(() => ({ items: [], hasNext: false, nextCursor: null }));
+    const t2 = await mount();
+    await press(t2, 'packaged-verdict-safe');
+    expect(ids(t2)).toContain('packaged-no-filter-match');
+    expect(ids(t2)).not.toContain('packaged-find-more');
+  });
+});
+
+describe('KB-927 emptyPageAction', () => {
+  const { emptyPageAction } = jest.requireActual('@/lib/data/useProcessedFoods') as typeof import('@/lib/data/useProcessedFoods');
+  it.each([
+    [[0], true, 0, 'fetch'],
+    [[0, 0], true, 0, 'fetch'],
+    [[0, 0, 0], true, 0, 'button'],
+    [[0, 0, 0], false, 0, 'none'], // 다음 없음 = 결과 없음(화면)
+    [[3], true, 0, 'none'], // 건이 있으면 목록 끝(onEndReached) 몫
+    [[5, 0, 0, 0], true, 0, 'button'], // 목록 뒤 빈 페이지 3번도 버튼
+    [[0, 0, 0, 0], true, 3, 'fetch'], // 더 찾아보기 뒤 = 다시 센다
+    [[], true, 0, 'none'],
+  ])('%j hasNext=%s resumeAt=%s → %s', (sizes, hasNext, at, want) => {
+    expect(emptyPageAction(sizes as number[], hasNext as boolean, at as number)).toBe(want);
   });
 });

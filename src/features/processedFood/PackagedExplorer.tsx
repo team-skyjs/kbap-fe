@@ -7,7 +7,7 @@
  * - 로딩 = 시안 loading(335×104 회색 4장) · 결과 0 = 시안 empty(유형 플레이스홀더 + 문구, 성분표 촬영 버튼은 F2 전까지 숨김).
  */
 import * as React from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -22,9 +22,10 @@ import { RemoteImage } from '@/components/RemoteImage';
 import { Shimmer } from '@/components/Skeleton';
 import { color as C, font, radius } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
-import { browseUnsupported, useProcessedSearch } from '@/lib/data/useProcessedFoods';
-import { PACKAGED_TYPES, packagedTypeKey, VERDICT_RISK, type PackagedType, type ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
-import { SearchScanButton } from '@/features/food/FoodExplorer';
+import { browseUnsupported, emptyPageAction, useProcessedSearch, useProcessedSearchPaged } from '@/lib/data/useProcessedFoods';
+import { PACKAGED_TYPES, packagedTypeKey, VERDICT_RISK, verdictsForRisk, type PackagedType, type ProcessedFoodSummary, type VerdictChipRisk } from '@/lib/api/processedFoodAdapter';
+import { chipRowHeight, SearchScanButton } from '@/features/food/FoodExplorer';
+import { ChipScrollRow } from '@/components/ChipScrollRow';
 import { ProductName } from './ProductName';
 
 export type FoodSegment = 'dishes' | 'packaged';
@@ -143,11 +144,12 @@ function SkeletonGrid({ width }: { width: number }) {
 export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.ReactNode; topPad?: number; onScroll?: React.ComponentProps<typeof Animated.FlatList<ProcessedFoodSummary>>['onScroll'] }) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { width: winW } = useWindowDimensions();
+  const { width: winW, fontScale } = useWindowDimensions();
   const cardW = (winW - 40 - 12) / 2;
   const [draft, setDraft] = React.useState('');
   const [query, setQuery] = React.useState('');
   const [type, setType] = React.useState<PackagedType | null>(null);
+  const [verdictChip, setVerdictChip] = React.useState<'all' | VerdictChipRisk>('all');
   const [searchSeq, setSearchSeq] = React.useState(0); // 제출 회차 — 같은 검색어를 다시 제출해도 1회로 센다(Codex #308 R2)
   const [gate, setGate] = React.useState(false);
   const guest = useIsGuest();
@@ -158,8 +160,26 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   const browse = useProcessedSearch('');
   const v4 = browse.isSuccess;
   const term = query.trim();
-  const q = useProcessedSearch(query, { type: v4 ? type : null });
-  const items = q.data ?? [];
+  // KB-927(R-142): 판정 칩 = 회피 1개 이상 회원만(비회원·회피 0개는 서버가 verdict를 무시해 전체를 준다 — 보여 주면 거짓 필터) · v4 확인 뒤에만(유형 칩과 같은 이유)
+  const verdictChips = v4 && personalized;
+  const verdicts = verdictChips && verdictChip !== 'all' ? verdictsForRisk(verdictChip) : null;
+  const q = useProcessedSearchPaged(query, { type: v4 ? type : null, verdicts });
+  const items = q.data?.items ?? [];
+  const pageSizes = q.data?.pageSizes ?? [];
+  // 판정 필터는 서버가 최대 200행만 살펴 0건 페이지 + hasNext가 올 수 있다 — 연속 3번까지 자동으로 이어 부르고 그 뒤엔 "더 찾아보기"(누를 때마다 다시 3번)
+  const filterKey = `${term}|${v4 ? type ?? '' : ''}|${verdicts?.join(',') ?? ''}`;
+  const [resume, setResume] = React.useState({ key: filterKey, at: 0 });
+  const resumeAt = resume.key === filterKey ? resume.at : 0; // 검색어·칩이 바뀌면 처음부터 센다
+  const emptyAction = q.isSuccess ? emptyPageAction(pageSizes, q.hasNextPage, resumeAt) : 'none';
+  const canFetchMore = !q.isFetchingNextPage && !q.isFetchNextPageError;
+  const fetchNext = q.fetchNextPage;
+  const pageCount = pageSizes.length;
+  React.useEffect(() => {
+    // cancelRefetch false = 이미 가는 요청을 끊고 다시 보내지 않는다(렌더마다 다시 판정해도 1발).
+    // pageCount = 페이지가 붙을 때마다 다시 판정 — "가는 중"과 "도착"이 한 렌더로 묶이면 나머지 deps가 그대로라 둘째 빈 페이지 뒤에 멈췄다(jest 재현)
+    if (emptyAction === 'fetch' && canFetchMore) void fetchNext({ cancelRefetch: false });
+  }, [emptyAction, canFetchMore, fetchNext, pageCount]);
+  const findMore = () => { setResume({ key: filterKey, at: pageSizes.length }); void q.fetchNextPage(); };
   const legacyGuide = !term && q.isError && browseUnsupported(q.error);
 
   // 검색 1회 = 제출 1번마다 결과(첫 페이지) 도착 시 1번 — 검색어 원문은 보내지 않는다(길이·결과 수만)
@@ -179,6 +199,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
     router.navigate(`/scan?mode=packaged&label=1&t=${Date.now()}` as Href);
   };
   const changeSearch = () => { clear(); inputRef.current?.focus(); };
+  const pickVerdict = (next: 'all' | VerdictChipRisk) => setVerdictChip(next);
   const pickType = (next: PackagedType | null) => {
     setType(next);
     track(EVENTS.food_packaged_type_select, { type: next ? next.toLowerCase() : 'all' }); // 계측 값은 소문자 유지(1단계와 같은 값)
@@ -187,8 +208,8 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   const header = (
     <View>
       {top}
-      {/* KB-914(R-142): 상단 = Dishes와 같은 검색 행(검색칸 + 주황 스캔 버튼 — 가공식품 모드로) · 둘째 줄 = 유형 칩.
-          판정 칩(All·Safe·Avoid·Caution)은 서버 verdict 필터 대기 — 클라 필터 금지(받은 페이지만 걸러 0건처럼 보인다) */}
+      {/* KB-914(R-142): 상단 = Dishes와 같은 검색 행(검색칸 + 주황 스캔 버튼 — 가공식품 모드로).
+          KB-927: 판정 칩 = 서버 verdict 필터(클라 필터 0 — 받은 페이지만 걸러 0건처럼 보이는 일 없음) */}
       <View style={st.searchRow}>
       <View style={st.searchBox}>
         <Input
@@ -213,12 +234,27 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
       </View>
       <SearchScanButton onPress={() => router.navigate(`/scan?mode=packaged&t=${Date.now()}` as Href)} testID="packaged-scan" />
       </View>
+      {/* KB-927: 칩 줄 = Dishes와 같은 공용 줄(가로 스크롤·끝 여백·숨은 칩 페이드). 첫 줄 판정 칩(회원 판정이 있을 때만) · 둘째 줄 유형 칩(항상) */}
+      {verdictChips && (
+        <ChipScrollRow style={st.chips} minHeight={chipRowHeight(fontScale)} keyboardShouldPersistTaps="handled" scrollTestID="packaged-verdicts" fadeTestID="packaged-verdicts-fade">
+          {(['all', 'safe', 'danger', 'caution'] as const).map((c) => (
+            <Chip
+              key={c}
+              label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
+              selected={verdictChip === c}
+              onPress={() => pickVerdict(c)}
+              testID={`packaged-verdict-${c}`}
+              risk={c === 'all' ? undefined : c} // 리본·Dishes 칩과 같은 상태색·마크
+            />
+          ))}
+        </ChipScrollRow>
+      )}
       {v4 && (
         // KB-901(T-017): 바깥 목록만 handled면 안쪽 가로 칩 줄의 첫 탭은 키보드 닫기에 쓰였다(✕ 뒤 Drinks 첫 탭 무반응)
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={st.chips} contentContainerStyle={st.chipsRow} testID="packaged-types">
+        <ChipScrollRow style={verdictChips ? st.chipsSecond : st.chips} minHeight={chipRowHeight(fontScale)} keyboardShouldPersistTaps="handled" scrollTestID="packaged-types" fadeTestID="packaged-types-fade">
           <Chip label={t('food.categories.all')} selected={type == null} onPress={() => pickType(null)} testID="packaged-type-all" />
           {PACKAGED_TYPES.map((k) => <Chip key={k} label={t(packagedTypeKey(k))} selected={type === k} onPress={() => pickType(k)} testID={`packaged-type-${k.toLowerCase()}`} />)}
-        </ScrollView>
+        </ChipScrollRow>
       )}
       {/* KB-901(T-105): 유형 칩을 고르면 제목 = 그 유형명(Drinks인데 "Popular picks"였다) */}
       {!legacyGuide && (items.length > 0 || q.isPending) && (
@@ -243,9 +279,16 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
     empty = <SkeletonGrid width={cardW} />;
   } else if (q.isError) {
     empty = <View style={st.errorPad}><QueryErrorBlock error={q.error} onRetry={() => void q.refetch()} /></View>;
+  } else if (q.hasNextPage) {
+    // KB-927: 지금까지 0건이어도 다음이 있으면 "결과 없음"이 아니다 — 이어 부르는 중 = 스켈레톤 · 3번 빈 뒤 = 더 찾아보기 · 다음 페이지 실패 = 다시 시도
+    empty = emptyAction === 'button' && canFetchMore ? (
+      <View style={st.findMorePad} testID="packaged-find-more-empty">
+        <Btn variant="ghost" onPress={findMore} testID="packaged-find-more">{t('packaged.findMore')}</Btn>
+      </View>
+    ) : q.isFetchNextPageError ? null : <SkeletonGrid width={cardW} />;
   } else {
     // 시안 04(검색 0)·47(유형 칩으로 0) — 탭 안에서 목록 자리만 바꾼다(예진 10/22: 검색창·칩 유지, 버튼은 본문)
-    const filtered = v4 && type != null;
+    const filtered = v4 && (type != null || verdicts != null); // KB-927: 판정 칩으로 0건도 "필터 결과 없음"
     empty = (
       <View style={st.noMatch} testID={filtered ? 'packaged-no-filter-match' : 'packaged-empty'}>
         <View style={st.noMatchArt}><IconSearch size={32} color="#000000" /></View>
@@ -255,7 +298,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
           {FLAGS.packagedLabelScan && <Btn onPress={scanLabel} testID="packaged-empty-scan-label">{t('packaged.scanIngredientLabel')}</Btn>}
           {filtered ? (
             // KB-901(T-016): "모든 제품" = 칩 All + 검색어도 지움(검색어가 남아 두 번째 빈 화면으로 갔다)
-            <Btn variant="ghost" onPress={() => { clear(); pickType(null); }} testID="packaged-empty-show-all">{t('packaged.showAllProducts')}</Btn>
+            <Btn variant="ghost" onPress={() => { clear(); pickType(null); pickVerdict('all'); }} testID="packaged-empty-show-all">{t('packaged.showAllProducts')}</Btn>
           ) : (
             <Btn variant="ghost" onPress={changeSearch} testID="packaged-empty-change-search">{t('packaged.changeSearch')}</Btn>
           )}
@@ -275,7 +318,9 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       ListFooterComponent={
-        q.isFetchingNextPage ? <Spinner /> : q.isFetchNextPageError ? (
+        q.isFetchingNextPage ? <Spinner /> : items.length > 0 && emptyAction === 'button' ? (
+          <View style={st.findMorePad}><Btn variant="ghost" onPress={findMore} testID="packaged-find-more">{t('packaged.findMore')}</Btn></View>
+        ) : q.isFetchNextPageError ? (
           // Codex #308 P2: 다음 페이지 실패 = 안내 + 다시 시도(자동 재요청은 멈춤 — 수동만)
           <Pressable style={st.moreErr} onPress={() => void q.fetchNextPage()} accessibilityRole="button" testID="packaged-more-retry">
             <Text style={st.moreErrText}>{t('packaged.loadMoreFailed')}</Text>
@@ -335,8 +380,9 @@ const st = StyleSheet.create({
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, paddingHorizontal: 20 }, // KB-914: Dishes 검색 행(A-HM-02)과 같은 줄
   searchBox: { flex: 1, height: 48, borderRadius: radius.md, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
   searchInput: { flex: 1, height: 48, fontSize: 16, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
-  chips: { marginTop: 16, flexGrow: 0 },
-  chipsRow: { paddingHorizontal: 20, gap: 8 },
+  chips: { marginTop: 16 },
+  chipsSecond: { marginTop: 8 }, // KB-927: 판정 줄 아래 유형 줄
+  findMorePad: { paddingHorizontal: 20, paddingVertical: 16, alignItems: 'center' },
   heading: { fontFamily: font.bodyBold, fontSize: 22, lineHeight: 28, color: C.ink, marginTop: 26, marginBottom: 16, marginHorizontal: 20 },
   columns: { paddingHorizontal: 20, gap: 12 },
   row: { flexDirection: 'row', gap: 12, marginHorizontal: 20, marginBottom: 20 },

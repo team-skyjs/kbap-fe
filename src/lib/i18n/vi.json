@@ -1278,7 +1278,8 @@
     "mayContainNames": "Có thể chứa {{names}}",
     "signInToPersonalize": "Đăng nhập để cá nhân hóa",
     "setAvoidIngredients": "Đặt nguyên liệu cần tránh",
-    "noAvoidMatchTitle": "Không khớp danh sách cần tránh"
+    "noAvoidMatchTitle": "Không khớp danh sách cần tránh",
+    "findMore": "Tìm thêm"
   },
   "scanMode": {
     "menu": "Thực đơn",
