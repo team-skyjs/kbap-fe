@@ -58,19 +58,18 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
   const [originalKey, setOriginalKey] = React.useState<string | null>(null);
   const showing = data != null && (shownKey === keyStr || (auto && originalKey !== keyStr));
   const [loading, setLoading] = React.useState(false);
-  const [autoLoading, setAutoLoading] = React.useState(false);
+  // 자동 로딩 = 파생값(effect 안 동기 setState 0): 켜져 있고·캐시 없고·이 키가 실패하지 않았으면 "가는 중"
+  const [autoFailedKey, setAutoFailedKey] = React.useState<string | null>(null);
+  const autoPending = auto && data == null && autoFailedKey !== keyStr;
   React.useEffect(() => {
     if (!auto || data != null) return;
-    let live = true;
-    setAutoLoading(true);
     void runLimited(() => qc.fetchQuery({ queryKey, queryFn: () => fetchTranslation(targetType, targetId), staleTime: Infinity, gcTime: Infinity, retry: 0 }))
       .then((tr) => { track(EVENTS.review_translate_toggle, { action: 'translate', target: targetType.toLowerCase(), result: tr.sameLanguage ? 'same' : 'ok', source: 'auto' }); })
       .catch(() => {
         qc.removeQueries({ queryKey, exact: true }); // 실패 = 원문 유지 · 토스트 0(자동) · 항목은 남기지 않는다(다음 탭에 다시)
         track(EVENTS.review_translate_toggle, { action: 'translate', target: targetType.toLowerCase(), result: 'fail', source: 'auto' });
-      })
-      .finally(() => { if (live) setAutoLoading(false); });
-    return () => { live = false; };
+        setAutoFailedKey(queryKey.join('|')); // 로딩 라벨 끝(원문 + "번역 보기")
+      });
     // data가 차면 위에서 바로 끝난다(재요청 0) · 실패는 data가 그대로라 재실행 0 — 다음 시도는 키가 바뀔 때·수동 탭
   }, [auto, data, qc, queryKey, targetId, targetType]);
   const target = targetType.toLowerCase(); // 계측 enum(review|post …) — 공용 훅이라 하드코딩 금지
@@ -107,7 +106,7 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
   return {
     translatedText: showing ? data.text : null,
     showingTranslated: showing,
-    loading: loading || (autoLoading && data == null),
+    loading: loading || autoPending,
     source: showing ? data.source : null,
     toggle,
   };
