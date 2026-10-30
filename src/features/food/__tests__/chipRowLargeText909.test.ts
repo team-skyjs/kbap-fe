@@ -6,7 +6,7 @@ const src = fs.readFileSync('src/features/food/FoodExplorer.tsx', 'utf8');
 it('① 칩 줄 = 홈·Food 탭 모두 한 줄 가로 스크롤(줄바꿈 칩 그룹 0)', () => {
   expect(src).not.toMatch(/chipGroup|flexWrap: 'wrap', gap: 6 \}/);
   expect(src.match(/<ScrollView\s+ref=\{chipScrollRef\}\s+horizontal/g)).toHaveLength(1); // 두 변형이 같은 스크롤 하나
-  expect(src).toContain("<View style={variant === 'screen' ? styles.chipRowScreen : styles.chipRowHome}>");
+  expect(src).toContain("<View style={variant === 'screen' ? [styles.chipRowScreen, sortOwnRow && styles.chipRowScreenStack] : styles.chipRowHome}>");
   expect(src).toContain("{variant === 'screen' && <Chip label={t('saved.title')}"); // Saved 칩은 Food 탭만(홈 무변)
 });
 
