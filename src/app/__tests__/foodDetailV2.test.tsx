@@ -402,9 +402,9 @@ describe('P-228: Ask the owner 플로팅', () => {
     const tree = render(<FoodDetailScreen />);
     const bar = byId(tree, 'detail-bottom-bar').find((n) => typeof n.type === 'string')!;
     const barStyle = StyleSheet.flatten(bar.props.style) as Record<string, unknown>;
-    // KB-903(T-060·T-019): 배경 0이던 바 사이·아래로 콘텐츠가 비치고 비친 별점 행 탭이 Write로 갔다 → 불투명 띠 + 띠가 터치를 받음
-    expect(barStyle).toMatchObject({ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 8, backgroundColor: '#FFFFFF' });
-    expect(bar.props.pointerEvents).toBe('auto');
+    // KB-903(T-060·T-019) 불투명 띠 → KB-932(예진 TestFlight): 흰 띠가 콘텐츠를 가려 잘려 보였다 → 투명 띠(알약만 뜬다) · 띠 바탕 탭 = 보이는 아래 콘텐츠(box-none)
+    expect(barStyle).toMatchObject({ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 8, backgroundColor: 'transparent' });
+    expect(bar.props.pointerEvents).toBe('box-none');
     expect(barStyle.flexDirection).toBeUndefined(); // 세로(두 줄) — 가로 반쪽 회귀 방지
     expect(barStyle.justifyContent).toBeUndefined();
     const st = (id: string) => StyleSheet.flatten(byId(tree, id).find((n) => typeof n.type === 'string')!.props.style) as Record<string, unknown>;

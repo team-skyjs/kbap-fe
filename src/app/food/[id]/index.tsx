@@ -318,8 +318,8 @@ function RegisteredBottomBar({
   return (
     <Animated.View
       style={[pillCta.band, { paddingBottom: bottom }, anim]}
-      // KB-903(T-019): 보이는 동안 띠가 터치를 먹는다 — box-none이면 띠 바탕 탭이 아래 별점 행·타일로 새었다
-      pointerEvents={shown ? 'auto' : 'none'}
+      // KB-903(T-019) auto → KB-932: 띠가 투명해져 아래 콘텐츠가 보인다 — 띠 바탕 탭은 보이는 그 콘텐츠로(box-none), 알약은 알약이 받는다. 숨김 = 전부 통과
+      pointerEvents={shown ? 'box-none' : 'none'}
       onLayout={(e) => { const h = e.nativeEvent.layout.height; setRowH(h); onHeight?.(h); }}
       testID="detail-bottom-bar"
     >
