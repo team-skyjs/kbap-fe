@@ -19,8 +19,9 @@ const band: ViewStyle = { paddingHorizontal: 20, paddingTop: BAND_PAD_TOP, gap: 
 
 export const pillCta = StyleSheet.create({
   pillRow: { position: 'absolute', left: 20, right: 20, gap: 8 },
-  /** KB-903(T-060·T-019): 떠 있는 바 = 화면 폭 불투명 띠 — 알약 사이·아래로 콘텐츠가 비치고, 비친 별점 행을 누르면 알약이 눌렸다. 아래 여백(안전 영역)은 호출부가 */
-  band: { ...band, position: 'absolute', left: 0, right: 0, bottom: 0 },
+  /** KB-903(T-060·T-019) 불투명 띠 → KB-932(예진 TestFlight): 떠 있는 바 = **투명** — 흰 띠가 "What's inside" 제목 등 스크롤 콘텐츠를 가려 잘려 보였다.
+   *  알약만 콘텐츠 위에 뜬다. 띠 바탕 탭은 아래 콘텐츠로(호출부 pointerEvents box-none — 이제 보이는 콘텐츠라 받는 게 맞다). 아래 여백(안전 영역)은 호출부가 */
+  band: { ...band, backgroundColor: 'transparent', position: 'absolute', left: 0, right: 0, bottom: 0 },
   /** KB-903(T-071): 흐름 안 바(리뷰 작성·수정) — 스크롤이 바 위에서 끝나 마지막 줄이 바 뒤로 들어갈 수 없다 */
   bandStatic: band,
   pillShape: shape,
