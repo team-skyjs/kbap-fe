@@ -760,6 +760,28 @@ describe('KB-927 Packaged 판정 칩 — 서버 verdict 필터 · 빈 페이지 
     expect(verdictCalls()).toHaveLength(before);
   });
 
+  it('QA pr374b: 빈 페이지 자동 이어 부르기 중 목록 끝(onEndReached) = 추가 요청 0 — 같은 커서 1번만', async () => {
+    // 둘째 판정 페이지를 붙잡아 "가는 중"을 고정한다(빈 목록 = 늘 바닥 — 이때 목록 끝이 같은 커서를 또 보냈다)
+    let release!: (v: object) => void;
+    let n = 0;
+    mockGet.mockImplementation((url: string) => {
+      if (!url.includes('verdict=')) return Promise.resolve({ items: [ITEM], hasNext: false, nextCursor: null });
+      n++;
+      if (n === 1) return Promise.resolve({ items: [], hasNext: true, nextCursor: 'c1' });
+      if (n === 2) return new Promise((r) => { release = r; });
+      return Promise.resolve({ items: [], hasNext: false, nextCursor: null });
+    });
+    const t = await mount();
+    await press(t, 'packaged-verdict-danger');
+    expect(verdictCalls().filter((u) => u.includes('cursor=c1'))).toHaveLength(1); // 자동 효과가 c1을 1번
+    await act(async () => { t.root.findAll((x) => x.props?.testID === 'packaged-list' && typeof x.props.onEndReached === 'function')[0].props.onEndReached(); });
+    await flush();
+    expect(verdictCalls().filter((u) => u.includes('cursor=c1'))).toHaveLength(1); // 목록 끝은 끼어들지 않는다
+    await act(async () => { release({ items: [], hasNext: false, nextCursor: null }); });
+    await flush();
+    expect(ids(t)).toContain('packaged-no-filter-match');
+  });
+
   it('빈 페이지 뒤 건이 오면 목록 — "결과 없음"은 hasNext=false && 누적 0건일 때만', async () => {
     serve((n) => (n === 0 ? { items: [], hasNext: true, nextCursor: 'c1' } : { items: [ITEM], hasNext: false, nextCursor: null }));
     const t = await mount();
@@ -772,6 +794,24 @@ describe('KB-927 Packaged 판정 칩 — 서버 verdict 필터 · 빈 페이지 
     await press(t2, 'packaged-verdict-safe');
     expect(ids(t2)).toContain('packaged-no-filter-match');
     expect(ids(t2)).not.toContain('packaged-find-more');
+  });
+});
+
+describe('QA pr374b endReachedShouldFetch — 목록 끝은 마지막 페이지에 건이 있을 때만', () => {
+  const { endReachedShouldFetch } = jest.requireActual('@/lib/data/useProcessedFoods') as typeof import('@/lib/data/useProcessedFoods');
+  const base = { hasNext: true, fetching: false, nextError: false };
+  it('자동 이어 부르기 중(fetch, "가는 중"이 아직 안 보인 렌더) = false — 같은 커서 중복 요청의 그 상태', () => {
+    expect(endReachedShouldFetch({ ...base, emptyAction: 'fetch' })).toBe(false);
+  });
+  it('"더 찾아보기" 표시 중(button) = false · 건 있는 마지막 페이지(none) = true · 다음 없음·가는 중·실패 = false', () => {
+    expect(endReachedShouldFetch({ ...base, emptyAction: 'button' })).toBe(false);
+    expect(endReachedShouldFetch({ ...base, emptyAction: 'none' })).toBe(true);
+    expect(endReachedShouldFetch({ ...base, emptyAction: 'none', hasNext: false })).toBe(false);
+    expect(endReachedShouldFetch({ ...base, emptyAction: 'none', fetching: true })).toBe(false);
+    expect(endReachedShouldFetch({ ...base, emptyAction: 'none', nextError: true })).toBe(false);
+  });
+  it('목록이 이 판정을 쓴다(소스)', () => {
+    expect(fs.readFileSync('src/features/processedFood/PackagedExplorer.tsx', 'utf8')).toContain('onEndReached={() => { if (endReachedShouldFetch({');
   });
 });
 

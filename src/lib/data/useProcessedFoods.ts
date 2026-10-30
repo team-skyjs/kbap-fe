@@ -96,6 +96,11 @@ export type EmptyPageAction = 'fetch' | 'button' | 'none';
 /** KB-927 빈 페이지 규칙: 마지막 페이지가 0건인데 다음이 있으면 이어 부른다 — 연속 EMPTY_AUTO_MAX번(resumeAt 뒤에서 센다)까지 자동, 그 뒤엔 "더 찾아보기" 버튼.
  *  마지막 페이지에 건이 있으면 'none'(목록 끝 onEndReached가 맡는다) · 다음이 없으면 'none'(누적 0건이면 그때 "결과 없음"). */
 export const EMPTY_AUTO_MAX = 3;
+/** 목록 끝(onEndReached)이 다음 페이지를 불러도 되나 — 마지막 페이지에 건이 있을 때('none')만. 빈 페이지면 자동 효과·"더 찾아보기"만 잇는다.
+ *  QA pr374b: 빈 목록은 늘 바닥이라, 자동 효과가 보낸 직후("가는 중"이 아직 안 보인 렌더의 핸들러) 목록 끝이 같은 커서를 또 보냈다 */
+export function endReachedShouldFetch(s: { hasNext: boolean; emptyAction: EmptyPageAction; fetching: boolean; nextError: boolean }): boolean {
+  return s.hasNext && s.emptyAction === 'none' && !s.fetching && !s.nextError;
+}
 export function emptyPageAction(pageSizes: readonly number[], hasNext: boolean, resumeAt = 0): EmptyPageAction {
   if (!hasNext || pageSizes.length === 0 || pageSizes[pageSizes.length - 1] > 0) return 'none';
   let streak = 0;

@@ -22,7 +22,7 @@ import { RemoteImage } from '@/components/RemoteImage';
 import { Shimmer } from '@/components/Skeleton';
 import { color as C, font, radius } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
-import { browseUnsupported, emptyPageAction, useProcessedSearch, useProcessedSearchPaged } from '@/lib/data/useProcessedFoods';
+import { browseUnsupported, emptyPageAction, endReachedShouldFetch, useProcessedSearch, useProcessedSearchPaged } from '@/lib/data/useProcessedFoods';
 import { PACKAGED_TYPES, packagedTypeKey, VERDICT_RISK, verdictsForRisk, type PackagedType, type ProcessedFoodSummary, type VerdictChipRisk } from '@/lib/api/processedFoodAdapter';
 import { chipRowHeight, SearchScanButton } from '@/features/food/FoodExplorer';
 import { ChipScrollRow } from '@/components/ChipScrollRow';
@@ -329,8 +329,9 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
         ) : null
       }
       onEndReachedThreshold={0.6}
-      // Codex #374 P2: "더 찾아보기"가 떠 있으면(빈 페이지 3번) 바닥에 다시 닿아도 부르지 않는다 — 버튼만 이어 부른다
-      onEndReached={() => { if (q.hasNextPage && emptyAction !== 'button' && !q.isFetchingNextPage && !q.isFetchNextPageError) void q.fetchNextPage(); }}
+      // Codex #374 P2 → QA(pr374b): 목록 끝은 마지막 페이지에 건이 있을 때(emptyAction 'none')만 — 빈 페이지면 자동 효과·"더 찾아보기"만 이어 부른다.
+      // 빈 목록은 늘 바닥이라 자동 이어 부르기와 같은 커서를 한 번 더 보냈다(cancelRefetch 기본 = 진행 중 요청을 끊고 다시 — 11페이지에 19요청)
+      onEndReached={() => { if (endReachedShouldFetch({ hasNext: q.hasNextPage, emptyAction, fetching: q.isFetchingNextPage, nextError: q.isFetchNextPageError })) void q.fetchNextPage(); }}
       contentContainerStyle={{ paddingTop: topPad, paddingBottom: 110 }}
       keyboardShouldPersistTaps="handled"
       onScroll={onScroll}
