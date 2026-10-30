@@ -12,8 +12,8 @@ import { VerdictBand, VERDICT_TITLE } from '@/components/VerdictBand';
 import { IngredientTile, tile } from '@/components/IngredientTile';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { restrictionLabel } from '@/lib/onboarding/data';
-import { color as C, font, type, type RiskState } from '@/lib/theme';
-import { VERDICT_RISK, type ProcessedDetection, type ProcessedMatch, type ProcessedVerdict } from '@/lib/api/processedFoodAdapter';
+import { color as C, font, type } from '@/lib/theme';
+import { VERDICT_RISK, type ProcessedDetection, type ProcessedVerdict } from '@/lib/api/processedFoodAdapter';
 import { detectedCodes, tileRisk, type VerdictFields } from './packagedVerdictLogic';
 
 export { detectedCodes, tileRisk };

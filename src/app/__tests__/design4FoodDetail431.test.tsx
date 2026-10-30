@@ -4,6 +4,7 @@
  * ② 재료 필터 칩 4상태 클라 필터 ③ 평점 세로 바 높이 = 점수/5 비례
  * ④ 재료 타일 그리드 = 태그 단위 줄바꿈(flexWrap·flexShrink 0·이름 1줄) 소스 잠금.
  */
+import * as fs from 'fs';
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
@@ -67,7 +68,7 @@ it('① 위험 요약 행 틴트 — KB-908: 띠 배경 = 리본(fg)을 흰 위�
   const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
   // KB-914: 띠 = 공용 VerdictBand(riskTone[state].bg) — 상세는 그 부품을 쓴다
   expect(src).toContain('<VerdictBand state={dishRisk}');
-  expect(require('fs').readFileSync('src/components/VerdictBand.tsx', 'utf8')).toContain('backgroundColor: riskTone[state].bg');
+  expect(fs.readFileSync('src/components/VerdictBand.tsx', 'utf8')).toContain('backgroundColor: riskTone[state].bg');
 });
 
 it('② 재료 필터 칩 — All + personalRisk 3상태 클라 필터(소스 잠금)', () => {
@@ -107,11 +108,11 @@ it('⑥ RankMedal(Codex #30 P2 → P-315) — 레벨 숫자 텍스트 오버레�
 
 it('④ 재료 타일 — 태그(타일) 단위 줄바꿈: flexWrap + flexShrink 0 + 이름 1줄(§3 규칙)', () => {
   // KB-914: 타일·격자 = 공용 IngredientTile(가공식품 감지 재료와 같은 부품) — 상세는 tile.grid 안에 IngredientTile
-  const src = require('fs').readFileSync('src/components/IngredientTile.tsx', 'utf8') as string;
+  const src = fs.readFileSync('src/components/IngredientTile.tsx', 'utf8');
   expect(src).toMatch(/grid: \{[^}]*flexWrap: 'wrap'/);
   expect(src).toMatch(/tile: \{[^}]*flexShrink: 0/);
   expect(src).toContain('<Text style={tile.name} numberOfLines={1}>');
-  const detail = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
+  const detail = fs.readFileSync('src/app/food/[id]/index.tsx', 'utf8');
   expect(detail).toContain('<View style={tile.grid}>');
   expect(detail).toContain('<IngredientTile key={ing.code}');
 });
