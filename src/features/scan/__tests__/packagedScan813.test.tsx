@@ -326,7 +326,7 @@ describe('흐름(KB-865 ③ v4)', () => {
     const t = flow();
     await press(t, 'pscan-take-photo');
     const label = (id: number) => t.root.findAll((n) => n.props?.testID === `pscan-candidate-${id}` && n.props?.accessibilityRole === 'button')[0].props.accessibilityLabel as string;
-    expect(label(11)).toContain('risk.safe, packaged.unclearNoteA11y');
+    expect(label(11)).toContain('risk.caution, packaged.unclearNoteA11y'); // KB-921: SAFE_WITH_NOTE 리본 = 주의
     expect(label(12)).toContain('risk.safe');
     expect(label(12)).not.toContain('packaged.unclearNoteA11y');
   });
