@@ -1270,7 +1270,7 @@
     "matchEvidence": "{{name}}: {{evidence}}",
     "crossContactTitle": "혼입 가능성",
     "crossContactBody": "같은 제조시설에서 {{names}}이(가) 섞일 수 있다는 표기가 있어요.",
-    "unverifiedTitle": "일부 성분 확인 안 됨",
+    "unverifiedTitle": "일부 성분을 확인할 수 없어요",
     "majorAllergensTitle": "주요 알레르기 성분",
     "majorUnavailable": "이 제품은 알레르기 정보를 확인할 수 없어요.",
     "majorNoneFound": "원재료와 표시에 주요 알레르기 성분 표기가 없어요.",

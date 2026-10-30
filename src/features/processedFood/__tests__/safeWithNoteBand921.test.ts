@@ -23,7 +23,7 @@ describe('KB-921 판정 → 띠 톤·제목', () => {
     expect(read('src/features/scan/PackagedScanScreens.tsx')).toContain("avoid = result.unclearIngredients.join(', ') || null");
   });
 
-  it('unverifiedTitle 10로케일(en 폴백 0) · ko = 일부 성분 확인 안 됨 · 옛 키 제거', () => {
+  it('unverifiedTitle 10로케일(en 폴백 0) · ko = 일부 성분을 확인할 수 없어요 · 옛 키 제거', () => {
     const en = JSON.parse(read('src/lib/i18n/en.json')).packaged.unverifiedTitle as string;
     expect(en).toBe("Some ingredients can't be verified");
     for (const l of LOCALES) {
@@ -32,6 +32,6 @@ describe('KB-921 판정 → 띠 톤·제목', () => {
       expect({ l, ok: !!v && (l === 'en' || v !== en) }).toEqual({ l, ok: true });
       expect([d.packaged.unclearTitle, d.packaged.unclearBody, d.packagedScan.resultUnclear]).toEqual([undefined, undefined, undefined]);
     }
-    expect(JSON.parse(read('src/lib/i18n/ko.json')).packaged.unverifiedTitle).toBe('일부 성분 확인 안 됨');
+    expect(JSON.parse(read('src/lib/i18n/ko.json')).packaged.unverifiedTitle).toBe('일부 성분을 확인할 수 없어요') // Codex #371 P1: 해요체;
   });
 });

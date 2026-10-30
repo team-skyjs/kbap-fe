@@ -14,7 +14,7 @@
 ## 2026-10-30 · P-550 KB-921 가공식품 SAFE_WITH_NOTE 띠 = 주의 톤 (R-147)
 - VERDICT_RISK.SAFE_WITH_NOTE safe → caution(한 표) — 상세 띠·성분표 결과 띠·검색 카드 리본·후보 줄 리본이 함께 주의(색+형태). "모름"을 초록으로 그리지 않음(false-safe 0).
 - 띠 제목 = packaged.unverifiedTitle(10로케일) · 부제 = 서버 unclearIngredients 쉼표 나열(비면 생략). 옛 키 unclearTitle·unclearBody·packagedScan.resultUnclear 제거.
-- 신규 ko(K-항목 — 판정 띠 제목, 안전 문구, 예진 승인 대상): packaged.unverifiedTitle = 일부 성분 확인 안 됨
+- 신규 ko(K-항목 — 판정 띠 제목, 안전 문구, 예진 승인 대상): packaged.unverifiedTitle = 일부 성분을 확인할 수 없어요(Codex #371 P1 해요체)
 - 잠금: safeWithNoteBand921(4판정 톤·제목 키) + 812·508·813 갱신. 캡처 = 회원 판정 필요(게스트 verdict null) — QA 위임 문의.
 
 ## 2026-10-30 — P-546 / KB-909 DS 토큰 통일 — radius 알약·글자 상향 (Draft)
