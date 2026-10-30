@@ -78,20 +78,20 @@ export function RatingSummaryBox({
 }
 
 const styles = StyleSheet.create({
-  summaryBox: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.sm, paddingVertical: 16, paddingHorizontal: 0, gap: 29 }, // A-RL-04
+  summaryBox: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.md, paddingVertical: 16, paddingHorizontal: 0, gap: 29 }, // A-RL-04
   summaryLeft: { flex: 1, minWidth: 96, maxWidth: 149, gap: 4, justifyContent: 'center', alignItems: 'center' }, // A-RL-04(#105 P2: minWidth 96 = Stars 16×5+gap — 320폭에서 별 넘침 방지)
   bigScore: { fontSize: 34, fontWeight: '700', color: C.ink, lineHeight: 42 },
   bigScoreOf: { fontSize: 20, fontWeight: '400', color: C.inkMute },
-  overallLbl: { fontSize: 13, fontWeight: '500', color: C.ink3 },
+  overallLbl: { fontSize: 14, fontWeight: '500', color: C.ink3 },
   axisCol: { alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0 }, // A-RL-05(#105 3R: 넘칠 때만 축소)
-  axisBadge: { width: 34, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  axisBadge: { width: 34, height: 20, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   axisBadgeTop: { backgroundColor: '#2F3137' },
   axisBadgeRest: { backgroundColor: C.inkDisabled },
-  axisBadgeText: { fontSize: 12, fontWeight: '600', color: '#2F3137' },
-  axisTrack: { width: 8, height: 46, borderRadius: 4, backgroundColor: '#DCDEE3', justifyContent: 'flex-end', overflow: 'hidden' }, // A-RL-06(fill 3위 색은 C-57)
-  axisFill: { width: 8, borderRadius: 4 },
+  axisBadgeText: { fontSize: 13, fontWeight: '600', color: '#2F3137' },
+  axisTrack: { width: 8, height: 46, borderRadius: radius.pill, backgroundColor: '#DCDEE3', justifyContent: 'flex-end', overflow: 'hidden' }, // A-RL-06(fill 3위 색은 C-57)
+  axisFill: { width: 8, borderRadius: radius.pill },
   axisFillTop: { backgroundColor: '#2F3137' },
   axisFillRest: { backgroundColor: C.inkDisabled },
-  axisLbl: { fontSize: 10, fontWeight: '500', color: C.ink3, textAlign: 'center' }, // #105 3R: 축소 시 2줄 랩 중앙
+  axisLbl: { fontSize: 11, fontWeight: '500', color: C.ink3, textAlign: 'center' }, // #105 3R: 축소 시 2줄 랩 중앙
   summaryRight: { flexGrow: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', gap: 13, alignItems: 'flex-start', justifyContent: 'center' }, // P-343 2-B(#105 4R: 상단 정렬 — 트랙 46 고정이라 바닥 공유, 2줄 라벨만 아래로 확장)
 });

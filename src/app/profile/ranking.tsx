@@ -13,7 +13,7 @@ import { StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { Btn, RankMedal, SubHeader, IconScanLines, IconTabReviews } from '@/components';
 import { MEDAL_COLORS } from '@/components/RankMedal';
 import { IconCutlery, RankPointBadge, RankWreath } from '@/components/rankBadge';
@@ -281,56 +281,56 @@ const styles = StyleSheet.create({
 
   // P-327 §2: 헤더→라벨 16 · 라벨→메달 그룹 17 · 메달→이름 9 · 필/문구 gap 8
   hero: { alignItems: 'center', paddingTop: 16, paddingHorizontal: 20 },
-  eyebrow: { fontSize: 14, fontWeight: '500', color: INK_TITLE, textAlign: 'center' },
+  eyebrow: { fontSize: 16, fontWeight: '500', color: INK_TITLE, textAlign: 'center' },
   medalGroup: { width: 130, height: 70, alignItems: 'center', justifyContent: 'center', marginTop: 17 },
   medalShadow: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 22.9, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   tierName: { fontSize: 20, fontWeight: '700', color: '#1C1E21', textAlign: 'center', marginTop: 9 },
-  tierPill: { backgroundColor: PRIMARY_10, borderRadius: 24, paddingVertical: 4, paddingHorizontal: 12, marginTop: 8 },
-  tierPillText: { fontSize: 13, fontWeight: '500', color: C.primary },
-  flavor: { fontSize: 14, fontWeight: '400', color: '#9196A1', textAlign: 'center', lineHeight: 20, maxWidth: 300, marginTop: 8 },
+  tierPill: { backgroundColor: PRIMARY_10, borderRadius: radius.pill, paddingVertical: 4, paddingHorizontal: 12, marginTop: 8 },
+  tierPillText: { fontSize: 14, fontWeight: '500', color: C.primary },
+  flavor: { fontSize: 16, fontWeight: '400', color: '#9196A1', textAlign: 'center', lineHeight: 23, maxWidth: 300, marginTop: 8 },
 
   // P-327 §3: 히어로→카드 24 · pad 20 gap 10 r8 stroke #F2F3F6
-  progCard: { marginTop: 24, marginHorizontal: 20, padding: 20, borderRadius: 8, borderWidth: 1, borderColor: '#F2F3F6', backgroundColor: '#FFFFFF', gap: 10 },
+  progCard: { marginTop: 24, marginHorizontal: 20, padding: 20, borderRadius: radius.md, borderWidth: 1, borderColor: '#F2F3F6', backgroundColor: '#FFFFFF', gap: 10 },
   progHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
   progTo: { fontSize: 16, fontWeight: '500', color: '#1C1E21', flexShrink: 1 },
-  progPts: { fontSize: 12 },
+  progPts: { fontSize: 13 },
   progPtsCur: { fontSize: 18, fontWeight: '600', color: INK_TITLE },
-  progPtsGoal: { fontSize: 12, fontWeight: '400', color: '#B1B5BD' },
+  progPtsGoal: { fontSize: 13, fontWeight: '400', color: '#B1B5BD' },
   starGrid: { gap: 10 },
   starRow: { flexDirection: 'row', justifyContent: 'space-evenly' },
-  track: { height: 10, borderRadius: 16, backgroundColor: '#EDEFF4', overflow: 'hidden' },
-  fill: { height: 10, borderRadius: 16, backgroundColor: C.primary },
+  track: { height: 10, borderRadius: radius.pill, backgroundColor: '#EDEFF4', overflow: 'hidden' },
+  fill: { height: 10, borderRadius: radius.pill, backgroundColor: C.primary },
 
   // P-327 §4: 카드→헤드 18 · 헤드 gap 6 · 헤드→리스트 0(카드 자체 상단 pad)
   secHead: { flexDirection: 'row', alignItems: 'baseline', gap: 6, paddingHorizontal: 20, marginTop: 18 },
   secTitle: { fontSize: 16, fontWeight: '500', color: '#1C1E21' },
 
   // 내역 카드 — r20 흰 보더 없음 pad 상하 16/좌우 0, 열 사이 1px #EAEBEE(h175)
-  breakCard: { marginHorizontal: 20, flexDirection: 'row', paddingVertical: 16, paddingHorizontal: 0, borderRadius: 20, backgroundColor: '#FFFFFF' },
+  breakCard: { marginHorizontal: 20, flexDirection: 'row', paddingVertical: 16, paddingHorizontal: 0, borderRadius: radius.lg, backgroundColor: '#FFFFFF' },
   breakCol: { flex: 1, alignItems: 'center', gap: 8, paddingHorizontal: 8 },
   breakDiv: { width: 1, height: 175, alignSelf: 'center', backgroundColor: '#EAEBEE' },
-  breakIc: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F7F8FA', alignItems: 'center', justifyContent: 'center' },
-  breakLabel: { fontSize: 14, fontWeight: '600', color: '#1C1E21' },
-  breakDetail: { fontSize: 12, fontWeight: '400', textAlign: 'center', lineHeight: 16, minHeight: 32 },
+  breakIc: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: '#F7F8FA', alignItems: 'center', justifyContent: 'center' },
+  breakLabel: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
+  breakDetail: { fontSize: 13, fontWeight: '400', textAlign: 'center', lineHeight: 17, minHeight: 34 }, // KB-909 Codex #367: 2줄 자리 = 2 × lineHeight
   gainPill: { marginTop: 'auto', height: 32, // KB-907(T-036): 칸 높이 = 가장 긴 칸 — 배지를 바닥에 붙여 세 칸 가로 정렬
-    justifyContent: 'center', backgroundColor: C.primary, borderRadius: 100, paddingVertical: 6, paddingHorizontal: 10 },
-  gainText: { fontSize: 13, fontWeight: '500', color: '#FFFFFF' },
+    justifyContent: 'center', backgroundColor: C.primary, borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 10 },
+  gainText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF' },
 
   // P-327 §5: 헤드→그리드 10 · 비현재 보더 없음(NOW만 primary 1) · 1행 h145/2행·풀 h129
   // KB-707(#235 Codex): 이름을 두 줄까지 허용 → 고정 높이면 NOW 카드(세로 여백 40)에서 메달·두 줄 이름·한국어·점수가 넘쳤다.
   // 높이 = 최소값(시안 145·129 = 이름 한 줄일 때 — 한 줄 언어는 모양 무변) + 줄 안 카드끼리 가장 높은 카드에 맞춤(stretch).
   rankGrid: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch', gap: 8, paddingHorizontal: 20, marginTop: 10 },
-  rankCard: { width: '31.5%', flexGrow: 1, minHeight: 145, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
+  rankCard: { width: '31.5%', flexGrow: 1, minHeight: 145, borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   rankCardRow2: { minHeight: 129 },
   rankContent: { alignSelf: 'stretch', alignItems: 'center' }, // KB-708(6): 줄 최대 내용 높이(minHeight 인라인) · 위 정렬
   rankContentInner: { alignItems: 'center' },
   rankCardFull: { width: '100%', minHeight: 129 },
   rankCardNow: { borderWidth: 1, borderColor: C.primary, paddingTop: 24, paddingBottom: 16 },
-  nowBadge: { position: 'absolute', top: 4, left: 4, backgroundColor: INK_TITLE, borderRadius: 4, paddingVertical: 2, paddingHorizontal: 6 },
-  nowBadgeText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
+  nowBadge: { position: 'absolute', top: 4, left: 4, backgroundColor: INK_TITLE, borderRadius: radius.xs, paddingVertical: 2, paddingHorizontal: 6 },
+  nowBadgeText: { fontSize: 11, fontWeight: '600', color: '#FFFFFF' },
   medalGlow: { shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 }, // P-369 ②: shadowColor = 등급색(인라인)
-  rankName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', marginTop: 6, textAlign: 'center' }, // KB-707: 두 줄로 감쌀 때 가운데
-  rankPts: { fontSize: 13, fontWeight: '500', color: C.ink3, marginTop: 6 },
+  rankName: { fontSize: 16, fontWeight: '600', color: '#1C1E21', marginTop: 6, textAlign: 'center' }, // KB-707: 두 줄로 감쌀 때 가운데
+  rankPts: { fontSize: 14, fontWeight: '500', color: C.ink3, marginTop: 6 },
 
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
 });

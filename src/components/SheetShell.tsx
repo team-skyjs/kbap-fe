@@ -14,7 +14,7 @@ import { Platform, ScrollView, StyleSheet, useWindowDimensions } from 'react-nat
 import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { shadow } from '@/lib/theme';
+import { shadow, radius } from '@/lib/theme';
 import { useBottomInset } from '@/lib/useBottomInset';
 
 export function SheetShell({
@@ -55,7 +55,7 @@ export function SheetShell({
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   // KB-431: 시트 흰 radius 16 상단, pad 20/39, gap 24
-  sheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 20, paddingTop: 39, paddingBottom: 39, gap: 24, ...shadow.sh2 },
+  sheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: 20, paddingTop: 39, paddingBottom: 39, gap: 24, ...shadow.sh2 },
   // 내용 hug(flexGrow 0) — 최대 높이에 닿을 때만 줄어들어 스크롤. 자식 간 gap 24는 여기서(시트 gap과 같은 값)
   scroll: { flexGrow: 0 },
   content: { gap: 24 },

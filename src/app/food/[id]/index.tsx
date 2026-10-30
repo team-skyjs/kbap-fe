@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { CountryOnlyHint } from '@/features/review/CountryOnlyHint';
-import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
+import { color as C, font, riskTone, shadow, type RiskState, radius } from '@/lib/theme';
 import { ingredientLabel, isCatalogIngredient } from '@/lib/mocks/ingredients';
 import { RiskMark, RiskBadge, CardPhoto, Chip, NewBadge, Star, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
@@ -84,7 +84,7 @@ function IngChainImage({ code, imageUrl, size, iconSize }: { code: string; image
         uri={uri}
         onError={nextSource}
         contentFit={isCutout ? 'contain' : undefined}
-        style={isCutout ? { width: size * 0.74, height: size * 0.74 } : { width: size, height: size, borderRadius: 8 }} // P-344: 74% 공통
+        style={isCutout ? { width: size * 0.74, height: size * 0.74 } : { width: size, height: size, borderRadius: radius.md }} // P-344: 74% 공통
       />
     </>
   );
@@ -834,38 +834,38 @@ const styles = StyleSheet.create({
   fhead: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 8 },
   fheadBg: { backgroundColor: FHEAD_BAR_BG, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
   fheadStatusShield: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.surface }, // KB-696
-  fBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(20,24,31,0.38)', alignItems: 'center', justifyContent: 'center' },
+  fBtn: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: 'rgba(20,24,31,0.38)', alignItems: 'center', justifyContent: 'center' },
   fBtnSolid: { backgroundColor: 'transparent' },
   fTitle: { fontFamily: font.bodySemi, fontSize: 16, color: C.ink, textAlign: 'center' },
 
   // §1-3: 위험 요약 행(4129:11366) — 틴트 + 하단 헤어라인
   riskRow: { flexDirection: 'row', alignItems: 'center', gap: 15, paddingVertical: 12, paddingHorizontal: 20, minHeight: 63, borderBottomWidth: 0.5, borderBottomColor: '#D5DFE7' },
-  riskRowTitle: { fontSize: 14, fontWeight: '600', color: C.ink },
-  riskRowSub: { fontSize: 13, fontWeight: '500', color: C.ink2, lineHeight: 18 },
+  riskRowTitle: { fontSize: 16, fontWeight: '600', color: C.ink },
+  riskRowSub: { fontSize: 14, fontWeight: '500', color: C.ink2, lineHeight: 19 },
   lockSlot: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 20, paddingVertical: 13, backgroundColor: C.surface2, borderBottomWidth: 0.5, borderBottomColor: '#D5DFE7' },
-  lockSlotText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.ink2 },
-  lockSlotCta: { fontSize: 13, fontWeight: '700', color: C.primaryText },
+  lockSlotText: { flex: 1, fontSize: 14, fontWeight: '400', color: C.ink2 },
+  lockSlotCta: { fontSize: 14, fontWeight: '700', color: C.primaryText },
 
   // §1-2: 헤더 블록
   headBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 27 }, // A-FD-01/02(KB-486)
   spiceRow: { flexDirection: 'row', alignItems: 'center', gap: 10 }, // A-FD-03
-  spiceChip: { backgroundColor: '#F2F3F6', borderRadius: 4, paddingVertical: 1, paddingHorizontal: 5 },
-  spiceChipText: { fontSize: 14, fontWeight: '500', color: C.ink2 },
+  spiceChip: { backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 1, paddingHorizontal: 5 },
+  spiceChipText: { fontSize: 16, fontWeight: '500', color: C.ink2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FD-04
   name: { flexShrink: 1, fontSize: 24, fontWeight: '700', color: C.ink, lineHeight: 32 },
   // NEW 배지(시안 — primary pill h18 pad 1/5, 10/600 흰)
-  ko: { fontSize: 14, fontWeight: '400', color: INK_TITLE },
-  desc: { fontSize: 15, fontWeight: '400', color: '#4B4F58', lineHeight: 22 },
-  scanPrice: { fontSize: 14, fontWeight: '700', color: C.ink },
-  scanPriceNote: { fontSize: 12.5, fontWeight: '400', color: C.ink2 },
+  ko: { fontSize: 16, fontWeight: '400', color: INK_TITLE },
+  desc: { fontSize: 16, fontWeight: '400', color: '#4B4F58', lineHeight: 23 },
+  scanPrice: { fontSize: 16, fontWeight: '700', color: C.ink },
+  scanPriceNote: { fontSize: 13, fontWeight: '400', color: C.ink2 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'flex-start' }, // A-FD-06
-  ratingRowText: { fontSize: 13, fontWeight: '600', color: '#2F3137' }, // A-FD-06
+  ratingRowText: { fontSize: 14, fontWeight: '600', color: '#2F3137' }, // A-FD-06
   // 북마크 36(4129:10698 — 홈 그리드와 동일 문법)
   // A-DS-02(KB-486): 기본 흰+sh1(보더 투명 자리 유지 — P-151), 저장만 #EAEBEE 1
-  bmBtn: { width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
+  bmBtn: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
   bmBtnSaved: { borderColor: '#EAEBEE' },
 
-  profileHint: { fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 18, paddingHorizontal: 20, paddingBottom: 12 },
+  profileHint: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 19, paddingHorizontal: 20, paddingBottom: 12 },
 
   // §1-4: 8px 섹션 디바이더
   thickDivider: { height: 8, backgroundColor: '#F5F5F5' },
@@ -876,24 +876,24 @@ const styles = StyleSheet.create({
   ingChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20 },
   // §3: 타일 단위 줄바꿈 — flexWrap + 타일 flexShrink 0
   ingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20 },
-  ingTile: { width: '31%', flexGrow: 1, maxWidth: '32%', flexShrink: 0, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, paddingTop: 26, alignItems: 'center', gap: 2, overflow: 'hidden' }, // A-FD-08
+  ingTile: { width: '31%', flexGrow: 1, maxWidth: '32%', flexShrink: 0, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ECEDF0', borderRadius: radius.md, paddingTop: 26, alignItems: 'center', gap: 2, overflow: 'hidden' }, // A-FD-08
   ingTileMark: { position: 'absolute', top: 6, left: 6 },
   ingTileImg: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  ingTileName: { fontSize: 12, fontWeight: '500', color: INK_TITLE, textAlign: 'center', paddingHorizontal: 6 },
-  ingTileSub: { fontSize: 11, fontWeight: '400', color: '#5A636A', textAlign: 'center', paddingHorizontal: 4, marginBottom: 10 },
+  ingTileName: { fontSize: 13, fontWeight: '500', color: INK_TITLE, textAlign: 'center', paddingHorizontal: 6 },
+  ingTileSub: { fontSize: 12, fontWeight: '400', color: '#5A636A', textAlign: 'center', paddingHorizontal: 4, marginBottom: 10 },
   ingTileWithFoot: { paddingTop: 8 }, // A-FD-08 푸터 변형
-  ingTileFoot: { alignSelf: 'stretch', minHeight: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,113,52,0.05)', borderBottomLeftRadius: 3, borderBottomRightRadius: 3 },
-  ingTileFootText: { fontSize: 12, fontWeight: '500', color: C.primary }, // A-FD-09(색·굵기는 C-62)
+  ingTileFoot: { alignSelf: 'stretch', minHeight: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,113,52,0.05)', borderBottomLeftRadius: radius.xs, borderBottomRightRadius: radius.xs },
+  ingTileFootText: { fontSize: 13, fontWeight: '500', color: C.primary }, // A-FD-09(색·굵기는 C-62)
 
   // §1-6: 재료 바텀시트
   sheetScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  ingSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 20, paddingVertical: 28, gap: 16 },
+  ingSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: 20, paddingVertical: 28, gap: 16 },
   ingSheetTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   ingSheetName: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },
   // P-306: 시트 전용 빈도 줄 — 좌측 정렬(마크·이름 아래), 타일용 ingTileSub(center)와 분리
-  ingSheetSub: { fontSize: 11, fontWeight: '400', color: '#5A636A' },
-  ingSheetImg: { width: 56, height: 56, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  ingSheetBody: { fontSize: 15, fontWeight: '400', color: '#4B4F58', lineHeight: 22 },
+  ingSheetSub: { fontSize: 12, fontWeight: '400', color: '#5A636A' },
+  ingSheetImg: { width: 56, height: 56, borderRadius: radius.md, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  ingSheetBody: { fontSize: 16, fontWeight: '400', color: '#4B4F58', lineHeight: 23 },
 
   // §1-7: 리뷰 섹션
   reviewSec: { gap: 14, paddingBottom: 8 },
@@ -903,33 +903,33 @@ const styles = StyleSheet.create({
   rvSummaryTop: { paddingTop: 20 }, // 토글 없는 경우(게스트·국적 미상) = 디바이더 아래 20
   // Q12: "{국가} only" 토글(시안 Button/Toggle md 44×24)
   natToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 0 }, // A-FD-10
-  natToggleLabel: { fontSize: 14, fontWeight: '500', color: C.ink },
+  natToggleLabel: { fontSize: 16, fontWeight: '500', color: C.ink },
   // P-323 토글 쿼리 상태(스켈레톤·빈 문구) — 홈 피드 스켈레톤 문법
   natSkel: { gap: 12, paddingTop: 12 },
-  natSkelCard: { height: 150, borderRadius: 8, backgroundColor: '#F2F3F6' },
-  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
+  natSkelCard: { height: 150, borderRadius: radius.md, backgroundColor: '#F2F3F6' },
+  sw: { width: 44, height: 24, borderRadius: radius.pill, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
-  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
+  knob: { width: 20, height: 20, borderRadius: radius.pill, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
   knobOn: { alignSelf: 'flex-end' },
-  rvBeFirst: { fontSize: 14, fontWeight: '600', color: C.ink2, textAlign: 'center', paddingTop: 16 },
+  rvBeFirst: { fontSize: 16, fontWeight: '600', color: C.ink2, textAlign: 'center', paddingTop: 16 },
   rvMore: { paddingHorizontal: 20, paddingTop: 16 },
 
   // 면책
-  disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 17, paddingHorizontal: 20 },
+  disc: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 18, paddingHorizontal: 20 },
 
   // §1-8: FixedBottom
   // KB-871(예진 10/22): 하단 고정 · 좌우 = 화면 여백 20 · 가로 전체 알약(높이 48 radius full) 세로 간격 8 — primary(흰 글자·흰 file-pen) / 테두리(gray-300)
   // KB-891: 알약 정의 = features/food/pillCta 한 곳(리뷰 작성 하단과 공용)
   pillPrimary: pillCta.pillPrimary,
   pillPrimaryText: pillCta.pillPrimaryText,
-  pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
+  pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
   pillOutlineText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink, textAlign: 'center' },
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },
-  unreg: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 10, padding: 16, backgroundColor: '#ECECEC', borderWidth: 1, borderColor: '#D5DFE7' },
+  unreg: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: radius.md, padding: 16, backgroundColor: '#ECECEC', borderWidth: 1, borderColor: '#D5DFE7' },
   unregTitle: { fontFamily: font.display, fontSize: 19, color: C.riskUnable },
-  unregBody: { fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 19, marginTop: 3 },
-  emptyBlock: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderStyle: 'dashed', borderRadius: 8, padding: 18 },
-  emptyBlockText: { fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 19 },
+  unregBody: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20, marginTop: 3 },
+  emptyBlock: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderStyle: 'dashed', borderRadius: radius.md, padding: 18 },
+  emptyBlockText: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20 },
 });

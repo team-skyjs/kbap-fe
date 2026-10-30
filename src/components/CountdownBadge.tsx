@@ -33,7 +33,7 @@ import { FlameShape } from '@/components/FlameShape';
 import { FLAME_COLORS, FLAME_LOOP_MS, FLAME_VIEWBOX, flameDrawnTopUnit } from '@/components/flameGeometry';
 import { useMotionState } from '@/lib/useMotionPaused';
 import { spring } from '@/lib/motion';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 
 export const BADGE_W = 64;
 export const BADGE_H = 72;
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   // R-64: 0회 = 그림자 색만 중립 회색(오프셋·반경 불변 — 상태로 바뀌는 건 색뿐, P-151)
   numEmpty: { textShadowColor: FLAME_COLORS.numberShadowEmpty },
-  particle: { position: 'absolute', width: 6, height: 6, borderRadius: 3, top: BADGE_H / 2 - 3, left: BADGE_W / 2 - 3 },
+  particle: { position: 'absolute', width: 6, height: 6, borderRadius: radius.pill, top: BADGE_H / 2 - 3, left: BADGE_W / 2 - 3 },
 });
 
 export default CountdownBadge;

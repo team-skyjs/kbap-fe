@@ -13,10 +13,10 @@ it('① 배지 오프셋 top -4/left 3 — 그리드·recent·스캔 전수(시�
 
 it('① 회색 띠 — 사진 컨테이너 정적 bg 제거(폴백만 유지)·그리드 CardPhoto 라운딩 전달', () => {
   const cards = fs.readFileSync('src/features/food/FoodCards.tsx', 'utf8');
-  expect(cards).toContain("gphoto: { aspectRatio: 174 / 203, borderRadius: 4, overflow: 'visible' }");
-  expect(cards).toContain('rthumb: { width: 100, height: 100, borderRadius: 4 }');
+  expect(cards).toContain("gphoto: { aspectRatio: 174 / 203, borderRadius: radius.md, overflow: 'visible' }");
+  expect(cards).toContain('rthumb: { width: 100, height: 100, borderRadius: radius.md }');
   // P-353 ③: 아이콘 폴백 박스 소멸 — CardPhoto가 null/실패 시 기본 음식 이미지
-  expect(cards).toContain('recyclingKey={food.foodId} borderRadius={4} />'); // 그리드 라운딩
+  expect(cards).toContain('recyclingKey={food.foodId} borderRadius={radius.md} />'); // 그리드 라운딩
   // 배지 그림자(shBadge)는 유지 — 시안 DROP 1,1 3.7 0.6 동일
   expect(fs.readFileSync('src/components/RiskBadge.tsx', 'utf8')).toContain('shadow.shBadge');
 });
@@ -24,7 +24,7 @@ it('① 회색 띠 — 사진 컨테이너 정적 bg 제거(폴백만 유지)·�
 it('② 랭킹 카드 — 그라데이션 #FF7134 α0→0.05·보더 hair·메달 글로우 제거·숫자 16/800', () => {
   const profile = fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8');
   expect(profile).toContain("colors={['rgba(255,113,52,0)', 'rgba(255,113,52,0.05)']}");
-  expect(profile).toContain("rankTrack: { flex: 1, height: 10, borderRadius: 16, backgroundColor: '#EDEFF4'");
+  expect(profile).toContain("rankTrack: { flex: 1, height: 10, borderRadius: radius.pill, backgroundColor: '#EDEFF4'");
   const medal = fs.readFileSync('src/components/RankMedal.tsx', 'utf8');
   expect(medal).not.toContain('shadowGlow(');
   expect(medal).toContain("fontSize: (size * 16) / 28, fontWeight: '800'");

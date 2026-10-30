@@ -52,13 +52,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 9,
     backgroundColor: C.ink,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
     ...shadow.sh2,
   },
-  text: { flex: 1, fontFamily: font.body, fontSize: 13.5, color: '#fff' },
-  action: { fontFamily: font.bodyBold, fontSize: 13.5, color: '#FFB27A' },
+  text: { flex: 1, fontFamily: font.body, fontSize: 14, color: '#fff' },
+  action: { fontFamily: font.bodyBold, fontSize: 14, color: '#FFB27A' },
 });
 
 export default Snackbar;

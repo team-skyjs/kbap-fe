@@ -13,7 +13,7 @@ import { Pressable } from '@/components/Pressable';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { IconTabFood, IconTabHome, IconTabReviews, IconTabScan, type IconProps } from './icons';
 import { RemoteImage } from './RemoteImage';
 import { useMyAvatarUrl } from '@/lib/data/useMyAvatarUrl';
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   avatarDim: { opacity: 0.6 }, // P-315: 비활성 = 흐림(색·불투명도만 — 프레임 불변)
   avatarImg: { width: '100%', height: '100%' },
   // 시안: 11/500 — i18n 가변 길이(독일어/러시아어)는 축소 허용(adjustsFontSizeToFit)
-  tlbl: { fontSize: 11, fontWeight: '500', letterSpacing: -0.11 },
+  tlbl: { fontSize: 12, fontWeight: '500', letterSpacing: -0.11 },
   fab: {
     position: 'absolute',
     // P-371(KB-534): iOS는 바 paddingTop(TABBAR_V_SHIFT 6)만큼 FAB이 낮아지므로
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: radius.pill,
     backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',

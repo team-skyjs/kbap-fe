@@ -12,7 +12,7 @@ import * as React from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, type as type_ } from '@/lib/theme';
+import { color as C, type as type_, radius } from '@/lib/theme';
 import { useReviewTime } from '@/lib/reviewTime';
 import { CardPhoto, RankMedal, Star, IconChevron, IconFood, IconMore } from '@/components';
 import { AvatarPlaceholder } from '@/components/design4Assets';
@@ -127,7 +127,7 @@ export function FeedCard({
       </View>
 
       {/* P-390(KB-578): 사진 위·본문 아래 — 4표면 동일 순서(예진 실기: 반대였다) */}
-      <ReviewPhotoStrip photos={review.photos ?? []} size={104} radius={4} variant={photoVariant} />
+      <ReviewPhotoStrip photos={review.photos ?? []} size={104} radius={radius.md} variant={photoVariant} />
       <ReviewBody review={review} t={t} style={styles.body} toggleColor={photoVariant === 'peek' ? INK_TITLE : undefined} />
 
       {/* 음식 칩 행 — 탭 = 음식 상세 (구 미니 카드 대체) */}
@@ -135,7 +135,7 @@ export function FeedCard({
       <Pressable style={styles.foodChip} onPress={onOpenFood} testID={`feed-food-${review.id}`}>
         {review.foodImageUrl ? (
           <View style={styles.foodChipThumb}>
-            <CardPhoto uri={review.foodImageUrl} borderRadius={4} />
+            <CardPhoto uri={review.foodImageUrl} borderRadius={radius.md} />
           </View>
         ) : (
           <IconFood size={16} color={C.ink2} />
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   card: { paddingVertical: 22, paddingHorizontal: 20, gap: 8, borderBottomWidth: 1, borderBottomColor: C.line }, // A-FC-01(KB-486) · gap ↔ 번역 라벨 padTop(TRANSLATE_LABEL_BOX) 묶임 — 줄이면 라벨 상자가 위 사진 터치를 덮는다(유닛)
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 }, // A-FC-01
   who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FC-02
-  whoName: { flexShrink: 1, fontSize: 15, fontWeight: '500', color: '#2F3137' }, // A-FC-02
+  whoName: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: '#2F3137' }, // A-FC-02
   // KB-781: name-group — 가로 wrap(간격 8 · 줄 간격 2). 닉네임 줄은 상자 폭까지만(말줄임), 시각은 자기 폭 그대로(안 잘림)
   nameGroup: { flex: 1, minWidth: 0, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1, maxWidth: '100%' },
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   // 시안 아바타: 원 bg #E8F6FF + 실루엣(SVG) — TabBar 프로필 슬롯과 동일 문법
   avatarWrap: { width: 24, height: 24 }, // P-340: 배지 오버행 수용(overflow 기본 visible)
   avatarImg: { width: 24, height: 24 },
-  avatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#E8F6FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.10)' }, // A-FC-03
+  avatar: { width: 24, height: 24, borderRadius: radius.pill, backgroundColor: '#E8F6FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.10)' }, // A-FC-03
   // P-340(1-B): 국기 배지 14 — 흰 링 1.5 원형, 아바타 밖 우하단 -2 걸침
   flagBadge: { position: 'absolute', right: -2, bottom: -2, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }, // P-342 ④: 이모지만(흰 원·링 제거)
 
@@ -187,14 +187,14 @@ const styles = StyleSheet.create({
   // (main=CENTER 속성은 hug 너비라 무효). gap 16(항목 간)·4(라벨-별) 현행 유지.
   axisRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 16 },
   axis: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  axisLabel: { fontSize: 13, fontWeight: '500', color: C.ink2 },
-  axisValue: { fontSize: 13, fontWeight: '600', color: INK_TITLE },
+  axisLabel: { fontSize: 14, fontWeight: '500', color: C.ink2 },
+  axisValue: { fontSize: 14, fontWeight: '600', color: INK_TITLE },
 
-  body: { fontSize: 14, fontWeight: '400', color: INK_TITLE, lineHeight: 20 },
+  body: { fontSize: 16, fontWeight: '400', color: INK_TITLE, lineHeight: 23 },
 
   foodChip: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', maxWidth: '100%' }, // A-FC-06
-  foodChipThumb: { width: 16, height: 16, borderRadius: 4, overflow: 'hidden', backgroundColor: C.surface2 },
-  foodChipName: { flexShrink: 1, fontSize: 12, fontWeight: '500', color: C.inkInfo }, // P-284: 정보성 링크(동값·의미 토큰)
+  foodChipThumb: { width: 16, height: 16, borderRadius: radius.xs, overflow: 'hidden', backgroundColor: C.surface2 },
+  foodChipName: { flexShrink: 1, fontSize: 13, fontWeight: '500', color: C.inkInfo }, // P-284: 정보성 링크(동값·의미 토큰)
 });
 
 export default FeedCard;

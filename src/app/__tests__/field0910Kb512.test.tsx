@@ -115,7 +115,7 @@ describe('④ Tag a food 시트 첫 렌더', () => {
   it('scanned isPending = 스켈레톤 행(원 48 + 바 2줄) — 구역 헤더·배너·목록 미렌더 게이트', () => {
     expect(cp).toContain("const scanPending = kind === 'food' && useScanScope && scanned.isPending;");
     expect(cp).toContain('testID="picker-skeleton"');
-    expect(cp).toContain("skelThumb: { width: 48, height: 48, borderRadius: 24 }");
+    expect(cp).toContain("skelThumb: { width: 48, height: 48, borderRadius: radius.pill }");
     // 구역 분기·본문 목록·자격 블록 전부 scanPending 게이트 뒤
     expect(cp).toContain('{!(scanPending && isBrowse) && isBrowse && (');
     expect(cp).toContain("{!(scanPending && isBrowse) && (kind === 'food'");

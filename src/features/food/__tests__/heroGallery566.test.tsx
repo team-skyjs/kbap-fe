@@ -222,7 +222,7 @@ describe('소스 잠금 — 배선·금지 규칙', () => {
     expect(pausedHook).toContain("AppState.addEventListener('change'");
     expect(pausedHook).toContain('isReduceMotionEnabled');
     expect(g).toContain('Image.prefetch(urls.slice(1))');
-    expect(g).toContain('dot: { width: 6, height: 6, borderRadius: 3 }'); // 상태 전환은 색만(프레임 불변)
+    expect(g).toContain('dot: { width: 6, height: 6, borderRadius: radius.pill }'); // 상태 전환은 색만(프레임 불변)
   });
 
   it('BE 필드명은 어댑터 밖에 새지 않는다', () => {

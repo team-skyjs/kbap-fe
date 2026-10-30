@@ -151,7 +151,7 @@ describe('P-181: 프로필 소형 4건', () => {
     const st = flatten(btn.props.style);
     expect(st.minWidth).toBe(68); // KB-707: 짧은 글자는 그대로 68, 긴 언어는 내용에 맞춰 넓어짐(고정 폭이면 vi·th·ja가 테두리에 닿았다)
     expect(st.height).toBe(36);
-    expect(st.borderRadius).toBe(8);
+    expect(st.borderRadius).toBe(999); // KB-909: 버튼 = 알약
     expect(st.borderColor).toBe('#DCDEE3');
     expect(btn.findAll((n) => n.props?.children === 'profile.edit').length).toBeGreaterThanOrEqual(1); // "정보수정" 현 키
   });

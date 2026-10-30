@@ -24,7 +24,7 @@ import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-ha
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, shadow } from '@/lib/theme';
+import { color as C, font, shadow, radius } from '@/lib/theme';
 import { Btn } from '@/components/Btn';
 import { IconCheck } from '@/components/icons';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -207,30 +207,30 @@ const styles = StyleSheet.create({
   dim: { backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet: {
     backgroundColor: C.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     paddingTop: 10,
     paddingBottom: 34,
     paddingHorizontal: 20,
     gap: 12,
     ...shadow.sh2,
   },
-  handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.line, marginBottom: 6 },
+  handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: radius.pill, backgroundColor: C.line, marginBottom: 6 },
   title: { fontFamily: font.bodyBold, fontSize: 18, color: C.ink, lineHeight: 25 },
-  body: { fontFamily: font.body, fontSize: 14, color: C.ink3, lineHeight: 20 },
-  consents: { backgroundColor: C.surface2, borderRadius: 16, paddingHorizontal: 15 },
+  body: { fontFamily: font.body, fontSize: 16, color: C.ink3, lineHeight: 23 },
+  consents: { backgroundColor: C.surface2, borderRadius: radius.lg, paddingHorizontal: 15 },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 10 },
   rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  rowLabel: { flex: 1, fontFamily: font.bodyBold, fontSize: 14, color: C.ink, lineHeight: 19 },
+  rowLabel: { flex: 1, fontFamily: font.bodyBold, fontSize: 16, color: C.ink, lineHeight: 22 },
   hair: { height: 1, backgroundColor: C.hair },
   // 체크박스: 미선택도 같은 폭 보더로 자리 유지 — 상태로 바뀌는 건 색만(P-151)
-  box: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: C.line, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  box: { width: 20, height: 20, borderRadius: radius.xs, borderWidth: 1.5, borderColor: C.line, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
   boxOn: { borderColor: C.primary, backgroundColor: C.primary },
   boxIcon: { opacity: 1 },
   boxIconHidden: { opacity: 0 },
-  viewFull: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText, padding: 4 },
-  notice: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: C.riskDangerText, textAlign: 'center', marginTop: -4 },
+  viewFull: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText, padding: 4 },
+  notice: { fontFamily: font.body, fontSize: 13, lineHeight: 17, color: C.riskDangerText, textAlign: 'center', marginTop: -4 },
   noticeHidden: { opacity: 0 },
   actions: { gap: 6, marginTop: 4 },
-  later: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, padding: 8, textAlign: 'center' },
+  later: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink2, padding: 8, textAlign: 'center' },
 });

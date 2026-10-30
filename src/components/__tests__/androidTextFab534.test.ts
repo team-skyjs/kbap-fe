@@ -10,7 +10,7 @@ it('Txt — includeFontPadding:false 기본이 두 렌더 분기 모두에 선�
 
 it('Chip — 칩 높이 36 유지(세로 여백 × 2 + 라벨 줄 높이) · KB-708: 줄 높이 24(vi 위아래 성조 부호·g 꼬리가 안 잘리게)', () => {
   const chip = read('src/components/Chip.tsx');
-  expect(chip).toContain("label: { fontSize: 14, fontWeight: '500', lineHeight: CHIP_LABEL_LH }");
+  expect(chip).toContain("label: { fontSize: 16, fontWeight: '500', lineHeight: CHIP_LABEL_LH }");
   const lh = Number(/export const CHIP_LABEL_LH = (\d+);/.exec(chip)![1]);
   const pv = Number(/chip: \{ paddingVertical: (\d+), paddingHorizontal: 14/.exec(chip)![1]);
   expect(pv * 2 + lh).toBe(36); // 칩 높이(시안 고정) 무변

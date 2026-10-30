@@ -7,7 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 // 고정 높이 18px 필 — 큰글씨 상한(×1.3)·Android 폰트 패딩 제거가 필수라 Txt 경유(P-031·P-371).
 import { Txt as Text } from '@/components/Txt';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 
 export function NewBadge({ testID }: { testID?: string }) {
   const { t } = useTranslation();
@@ -19,6 +19,6 @@ export function NewBadge({ testID }: { testID?: string }) {
 }
 
 const styles = StyleSheet.create({
-  badge: { height: 18, borderRadius: 9, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  text: { fontSize: 10, fontWeight: '600', color: '#fff' },
+  badge: { height: 18, borderRadius: radius.pill, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  text: { fontSize: 11, fontWeight: '600', color: '#fff' },
 });

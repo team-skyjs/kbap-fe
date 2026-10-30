@@ -15,5 +15,5 @@ export function CountryOnlyHint({ code, style }: { code: string; style?: TextSty
 }
 
 const st = StyleSheet.create({
-  hint: { fontSize: 12, lineHeight: 17, color: C.ink3 },
+  hint: { fontSize: 13, lineHeight: 18, color: C.ink3 }, // KB-909: 12→13
 });

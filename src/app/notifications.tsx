@@ -12,7 +12,7 @@ import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, primaryTint } from '@/lib/theme';
+import { color as C, primaryTint, radius } from '@/lib/theme';
 import { SubHeader } from '@/components';
 import { EmptyBlock, QueryErrorBlock } from '@/components/StateBlock';
 import { SkeletonInbox } from '@/components/Skeleton';
@@ -93,9 +93,9 @@ const styles = StyleSheet.create({
   list: { paddingBottom: 24 },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.hair },
   rowUnread: { backgroundColor: primaryTint },
-  title: { fontSize: 15, fontWeight: '700', color: C.ink }, // A-NF-01(KB-486)
-  body: { fontSize: 14, fontWeight: '500', color: '#4B4F58', lineHeight: 20 },
-  when: { fontSize: 13, fontWeight: '500', color: C.inkInfo }, // P-284: 정보성 시각 텍스트 대비
+  title: { fontSize: 16, fontWeight: '700', color: C.ink }, // A-NF-01(KB-486)
+  body: { fontSize: 16, fontWeight: '500', color: '#4B4F58', lineHeight: 23 },
+  when: { fontSize: 14, fontWeight: '500', color: C.inkInfo }, // P-284: 정보성 시각 텍스트 대비
   dotSlot: { width: 8, alignItems: 'center', paddingTop: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.primary },
+  dot: { width: 8, height: 8, borderRadius: radius.pill, backgroundColor: C.primary },
 });

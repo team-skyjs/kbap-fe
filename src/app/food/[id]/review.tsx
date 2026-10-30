@@ -431,9 +431,9 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
         <SubHeader title={t('editReview.title')} onBack={() => router.back()} />
         {refill.isLoading || refill.isFetching ? (
           <View style={{ padding: 20, gap: 16 }} testID="edit-loading">
-            <Shimmer style={{ height: 64, borderRadius: 8 }} />
-            <Shimmer style={{ height: 120, borderRadius: 8 }} />
-            <Shimmer style={{ height: 156, borderRadius: 8 }} />
+            <Shimmer style={{ height: 64, borderRadius: radius.md }} />
+            <Shimmer style={{ height: 120, borderRadius: radius.md }} />
+            <Shimmer style={{ height: 156, borderRadius: radius.md }} />
           </View>
         ) : (
           <View style={{ padding: 20 }} testID="edit-not-found">
@@ -479,7 +479,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
           {/* P-170 A안: 썸네일 = 상세 캐시(useFoodDetail) 재사용 — 네트워크 0, 무사진 폴백 */}
           {targetPhoto ? (
             <View style={styles.foodPh}>
-              <CardPhoto uri={targetPhoto} borderRadius={4} />
+              <CardPhoto uri={targetPhoto} borderRadius={radius.md} />
             </View>
           ) : (
             <View style={styles.foodPh} testID="food-ph" />
@@ -757,61 +757,61 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { padding: 20, gap: 20 }, // A-RW-01(KB-486)
 
-  postLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, marginRight: 8 },
+  postLink: { fontFamily: font.bodyBold, fontSize: 16, color: C.primaryText, marginRight: 8 },
   postLinkOff: { color: C.ink3 },
 
   // KB-432 §2-2: 대상 카드(4150:16477) — #DCDEE3 1px r8 pad 8 gap 13
-  foodChip: { flexDirection: 'row', alignItems: 'center', gap: 13, borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, padding: 8 },
-  foodPh: { width: 48, height: 48, borderRadius: 4, backgroundColor: C.surface2, overflow: 'hidden' },
-  foodName: { fontSize: 14, fontWeight: '600', color: C.ink },
-  foodKo: { fontSize: 13, fontWeight: '400', color: C.ink3 },
+  foodChip: { flexDirection: 'row', alignItems: 'center', gap: 13, borderWidth: 1, borderColor: C.line2, borderRadius: radius.md, padding: 8 },
+  foodPh: { width: 48, height: 48, borderRadius: radius.xs, backgroundColor: C.surface2, overflow: 'hidden' },
+  foodName: { fontSize: 16, fontWeight: '600', color: C.ink },
+  foodKo: { fontSize: 14, fontWeight: '400', color: C.ink3 },
   foodSubRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   foodSubFirst: { flexShrink: 1 }, // 긴 한글명만 말줄임 — 리뷰 수는 그대로
 
   block: { gap: 12 },
   tasteBlock: { gap: 16 }, // KB-865 ④ 시안 32: 당도 행 → 안내 1줄
-  tasteNote: { fontSize: 13, fontWeight: '500', color: C.ink2 },
-  label: { fontSize: 13, fontWeight: '600', color: '#778088' }, // A-RW-07
+  tasteNote: { fontSize: 14, fontWeight: '500', color: C.ink2 },
+  label: { fontSize: 14, fontWeight: '600', color: '#778088' }, // A-RW-07
   // §2-3: 별 48 gap 11 + 수치 18/600 #4B4F58
   starPick: { flexDirection: 'row', gap: 11, justifyContent: 'center', marginTop: 4 },
   starCap: { fontSize: 18, fontWeight: '600', color: '#4B4F58', textAlign: 'center' },
   starCapEmpty: { color: C.ink3 },
 
   // §2-6(4150:16505): h156 흰 bg line 1px r8 pad 14/16, focus = primary
-  textarea: { minHeight: 132, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', borderRadius: radius.sm, paddingVertical: 14, paddingHorizontal: 16, fontSize: 15, fontWeight: '500', color: C.ink, lineHeight: 21, marginTop: -8 }, // A-RW-07(라벨→필드 4 = block gap 12 - 8)
+  textarea: { minHeight: 132, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: 16, fontSize: 16, fontWeight: '500', color: C.ink, lineHeight: 22, marginTop: -8 }, // A-RW-07(라벨→필드 4 = block gap 12 - 8)
   textareaFocus: { borderColor: C.primary },
   // §2-5: 사진 슬롯 100 r8
   photoRow: { flexDirection: 'row', gap: 8 },
   photoThumbWrap: { width: 100, height: 100 },
-  photoThumb: { width: 100, height: 100, borderRadius: radius.sm, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.inkDisabled },
+  photoThumb: { width: 100, height: 100, borderRadius: radius.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.inkDisabled },
   // KB-777 A2-9: 터치 = 썸네일 안쪽 모서리 44×44 상자(부모 100 안 — hitSlop은 부모 밖에서 잘린다), 보이는 원은 시안 그대로 16 @ top6·right6
   photoDelHit: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, padding: 6, alignItems: 'flex-end' },
-  photoDel: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center' }, // A-RW-06
-  photoAdd: { width: 100, height: 100, borderRadius: radius.sm, borderWidth: 1, borderColor: C.line2, backgroundColor: 'rgba(244,246,246,0.5)', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
+  photoDel: { width: 16, height: 16, borderRadius: radius.pill, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center' }, // A-RW-06
+  photoAdd: { width: 100, height: 100, borderRadius: radius.md, borderWidth: 1, borderColor: C.line2, backgroundColor: 'rgba(244,246,246,0.5)', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
   metaRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
-  tag: { fontSize: 13, fontWeight: '500', color: C.ink3 },
-  minLenHint: { flex: 1, fontSize: 13, fontWeight: '500', color: C.ink3 }, // KB-828: tag와 같은 메트릭 — 강조는 색만
+  tag: { fontSize: 14, fontWeight: '500', color: C.ink3 },
+  minLenHint: { flex: 1, fontSize: 14, fontWeight: '500', color: C.ink3 }, // KB-828: tag와 같은 메트릭 — 강조는 색만
   minLenStressed: { color: C.primaryText },
   // §2-7: 장소 필 h38 border #DCDEE3 r24 pad 8/12
-  placePill: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 38, borderWidth: 1, borderColor: C.line2, borderRadius: 24, paddingVertical: 8, paddingHorizontal: 12, maxWidth: '100%' }, // A-RW-09
-  placePillText: { flexShrink: 1, fontSize: 13, fontWeight: '500', color: C.ink },
-  pillClear: { width: 16, height: 16, borderRadius: 8, backgroundColor: C.inkMute, alignItems: 'center', justifyContent: 'center' },
+  placePill: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 38, borderWidth: 1, borderColor: C.line2, borderRadius: radius.pill, paddingVertical: 8, paddingHorizontal: 12, maxWidth: '100%' }, // A-RW-09
+  placePillText: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
+  pillClear: { width: 16, height: 16, borderRadius: radius.pill, backgroundColor: C.inkMute, alignItems: 'center', justifyContent: 'center' },
   // §2-8: FixedBottom
   // Codex #31 P1: 하단 = 10 + useBottomInset(인라인)
   stage: { flex: 1 },
   // P-085: 제출 실패 안내 (온보딩 submitErr 톤)
-  postErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
-  postErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
+  postErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 10 },
+  postErrText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 18 },
   // KB-620: postErr와 **같은 틀**, 중립 색(risk*·주황 계열 금지)
-  hiddenNote: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
-  hiddenNoteText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.inkInfo, lineHeight: 17 },
+  hiddenNote: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 10 },
+  hiddenNoteText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.inkInfo, lineHeight: 18 },
 
   // submitted
   // P-168 ②: 완료 모달 (P-162 confirm 문법과 동일 수치)
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.xl, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
-  doneCheck: { alignSelf: 'center', width: 52, height: 52, borderRadius: 26, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  confirmBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
+  doneCheck: { alignSelf: 'center', width: 52, height: 52, borderRadius: radius.pill, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   okMeta: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 2 },
 });

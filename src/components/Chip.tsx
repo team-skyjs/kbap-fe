@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   on: { backgroundColor: INK_ACTIVE, borderColor: INK_ACTIVE },
   off: { backgroundColor: '#FFFFFF', borderColor: C.line },
   // P-371: 줄 높이 고정(칩 높이 36 유지, Android 한글 세로 중앙) — KB-708: 20 → 24(여백 8 → 6과 짝)
-  label: { fontSize: 14, fontWeight: '500', lineHeight: CHIP_LABEL_LH },
+  label: { fontSize: 16, fontWeight: '500', lineHeight: CHIP_LABEL_LH },
 });
 
 export default Chip;

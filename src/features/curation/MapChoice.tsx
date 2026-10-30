@@ -10,7 +10,7 @@ import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { DESTRUCTIVE } from '@/components/ActionSheet';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { MAP_PROVIDERS, type MapProvider } from '@/lib/curation/mapLinks';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
@@ -65,7 +65,7 @@ export function MapChoiceDialog({ open, t, onPick, onClose }: { open: boolean; t
 // 시안 E(12371:48599) 구조 — 바깥 24 · 안쪽 24 · 제목 → 목록 → 오른쪽 아래 Cancel. 실제 모양은 앱 소유 대화상자(OS 테마 아님)
 const st = StyleSheet.create({
   scrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.32)', justifyContent: 'center', paddingHorizontal: 24 },
-  dialog: { backgroundColor: C.card, borderRadius: 28, paddingTop: 24, paddingBottom: 12, paddingHorizontal: 24 },
+  dialog: { backgroundColor: C.card, borderRadius: radius.xl, paddingTop: 24, paddingBottom: 12, paddingHorizontal: 24 },
   title: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 27, color: C.ink, marginBottom: 12 },
   items: { marginHorizontal: -24 },
   item: { minHeight: 52, justifyContent: 'center', paddingHorizontal: 24 },

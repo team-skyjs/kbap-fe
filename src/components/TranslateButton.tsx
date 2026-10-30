@@ -15,7 +15,7 @@ import { font } from '@/lib/theme';
 import type { TranslationSource } from '@/lib/api/translationAdapter';
 
 /** 번역 라벨 **전용** 값 — DS 토큰에 없는 X 동일 색(예진 지시, 레퍼런스 픽셀 실측). 다른 곳에서 쓰지 않는다. */
-export const TRANSLATE_LABEL = { idleColor: '#1B95E0', mutedColor: '#536471', fontSize: 12.5 } as const;
+export const TRANSLATE_LABEL = { idleColor: '#1B95E0', mutedColor: '#536471', fontSize: 13 } as const;
 
 /** 라벨 줄 높이(1줄 고정). */
 export const TRANSLATE_LABEL_LINE_H = 17;

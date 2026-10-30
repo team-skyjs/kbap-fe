@@ -6,10 +6,10 @@ const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
 it('A-DS — SectionHead 11/700·22/700, 세그먼트 탭 14/700 #9196A1, 북마크 기본 보더 투명(저장만 #EAEBEE)', () => {
   const head = read('src/components/SectionHead.tsx');
-  expect(head).toContain("fontSize: 11, fontWeight: '700', letterSpacing: 1.6");
+  expect(head).toContain("fontSize: 12, fontWeight: '700', letterSpacing: 1.6");
   expect(head).toContain("fontSize: 22, fontWeight: '700', lineHeight: 30, letterSpacing: -0.6");
   const fx = read('src/features/food/FoodExplorer.tsx');
-  expect(fx).toContain("tabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' }");
+  expect(fx).toContain("tabLabel: { fontSize: 16, fontWeight: '700', color: '#9196A1' }");
   const cards = read('src/features/food/FoodCards.tsx');
   expect(cards).toContain("borderColor: 'transparent'");
   expect(cards).toContain("gbmSaved: { borderColor: '#EAEBEE' }");
@@ -30,10 +30,10 @@ it('A-HM — 검색 pt0·padH16·placeholder #D1D3D8(스캔 버튼 bg는 C 이�
   expect(fx).toContain("color: '#D1D3D8'");
   expect(fx).toMatch(/scanBtn: \{[^}]*backgroundColor: C\.primary/); // A-HM-02 제외분(C 이관)
   expect(fx).toMatch(/tabsScroll: \{[^}]*marginTop: 14/); // KB-707: 탭 줄이 가로 스크롤로 감싸지며 위 간격은 감싸개로(값 무변)
-  expect(fx).toMatch(/chipRow: \{[^}]*paddingTop: 18, paddingBottom: 14/);
+  expect(fx).toMatch(/chipRowHome: \{ paddingTop: 18, paddingBottom: 14 \}/);
   const cards = read('src/features/food/FoodCards.tsx');
   expect(cards).toMatch(/gmeta: \{[^}]*gap: 5, marginTop: 10/);
-  expect(cards).toContain("rname: { fontSize: 15, fontWeight: '700'");
+  expect(cards).toContain("rname: { fontSize: 16, fontWeight: '700'");
   const home = read('src/app/(tabs)/index.tsx');
   expect(home).toMatch(/moreWrap: \{[^}]*paddingTop: 16, paddingBottom: 16/);
 });
@@ -44,14 +44,14 @@ it('A-SV·A-RT·A-NF·A-ER — 저장 그리드 17·리뷰탭 토글 7·FAB 14/1
   const rf = read('src/features/community/ReviewFeed.tsx');
   expect(rf).toMatch(/toggleRow: \{[^}]*gap: 7/);
   expect(rf).toMatch(/right: 14,\s*\n\s*bottom: 18/);
-  expect(read('src/app/notifications.tsx')).toMatch(/title: \{ fontSize: 15, fontWeight: '700'/);
+  expect(read('src/app/notifications.tsx')).toMatch(/title: \{ fontSize: 16, fontWeight: '700'/);
   expect(read('src/components/StateBlock.tsx')).toMatch(/errWrap: \{[^}]*gap: 6/);
 });
 
 it('A-SK — 리뷰 블록 pv14·내 리뷰 카드 스트로크·마이푸드 보더 #EAEBEE·그리드 프레임 소멸', () => {
   const sk = read('src/components/Skeleton.tsx');
   expect(sk).toContain('reviewBlock: { gap: 12, paddingVertical: 14 }');
-  expect(sk).toContain("myRevCard: { borderRadius: 8, borderWidth: 1, borderColor: '#EAEBEE', padding: 16, gap: 12 }");
+  expect(sk).toContain("myRevCard: { borderRadius: radius.md, borderWidth: 1, borderColor: '#EAEBEE', padding: 16, gap: 12 }");
   expect(sk).toMatch(/myFoodsRow: \{[^}]*borderBottomColor: '#EAEBEE'/);
   // KB-830: 스켈레톤 그리드 = 실제 카드 그리드의 행·셀 스타일을 그대로(좌우 20·열 간격 16 — 화면 끝까지 붙던 것)
   expect(read('src/features/food/FoodExplorer.tsx')).toContain('<SkeletonFoodGrid rowStyle={styles.gridRowWrap} cellStyle={styles.gridCell} />');

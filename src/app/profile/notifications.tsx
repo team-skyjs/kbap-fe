@@ -137,9 +137,9 @@ function NotificationSettingsScreen() {
         {query.isLoading && (
           /* 읽는 중 = 스켈레톤(기본값 스위치로 위장 금지 — P-207 계열) */
           <View style={{ gap: 12 }} testID="notif-skeleton">
-            <Shimmer style={{ height: 52, borderRadius: 8 }} />
-            <Shimmer style={{ height: 52, borderRadius: 8 }} />
-            <Shimmer style={{ height: 52, borderRadius: 8 }} />
+            <Shimmer style={{ height: 52, borderRadius: radius.md }} />
+            <Shimmer style={{ height: 52, borderRadius: radius.md }} />
+            <Shimmer style={{ height: 52, borderRadius: radius.md }} />
           </View>
         )}
         {query.isError && !s && (
@@ -263,29 +263,29 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 32, gap: 20 },
 
   // 배너(OS 권한·읽기 실패·저장 실패) — 테두리·그림자 없는 연회색 블록(시안 1)
-  banner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface2, borderRadius: radius.sm, padding: 13 },
-  bannerText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18 },
-  bannerCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface2, borderRadius: radius.md, padding: 13 },
+  bannerText: { flex: 1, fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 19 },
+  bannerCta: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
 
   group: { gap: 0 },
-  groupTitle: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, lineHeight: 18, marginBottom: 2 },
+  groupTitle: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, lineHeight: 19, marginBottom: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
   rowDisabled: { opacity: 0.4 }, // 상태 = 불투명도만(P-151)
-  rowLabel: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
-  rowSub: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
+  rowLabel: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
+  rowSub: { fontFamily: font.body, fontSize: 13, color: C.ink3, lineHeight: 17 },
   caption: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 12 },
-  captionText: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
-  captionLink: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText },
+  captionText: { fontFamily: font.body, fontSize: 13, color: C.ink3, lineHeight: 17 },
+  captionLink: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
 
   // P-162 확인 모달(scan.tsx·주문 완료 모달과 동일 수치)
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.xl, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
   confirmActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
 
-  sw: { width: 34, height: 20, borderRadius: 10, backgroundColor: C.line, padding: 2, justifyContent: 'center' },
+  sw: { width: 34, height: 20, borderRadius: radius.pill, backgroundColor: C.line, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
-  knob: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff' },
+  knob: { width: 16, height: 16, borderRadius: radius.pill, backgroundColor: '#fff' },
   knobOn: { alignSelf: 'flex-end' },
 });

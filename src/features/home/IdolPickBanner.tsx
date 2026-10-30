@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { IconChevron } from '@/components/icons';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { trackHomeCardClick, useImpressionRef } from './homeImpressions';
 
 const BG = require('../../../assets/images/idol_pick_banner_bg.webp');
@@ -61,13 +61,13 @@ export function IdolPickBanner() {
 
 const styles = StyleSheet.create({
   outer: { paddingHorizontal: 20, paddingTop: 32 },
-  banner: { backgroundColor: C.ink, borderRadius: 16, overflow: 'hidden' },
+  banner: { backgroundColor: C.ink, borderRadius: radius.lg, overflow: 'hidden' },
   bg: { position: 'absolute', top: 0, left: 0 },
   inner: { paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
   texts: { gap: 6 },
-  label: { fontFamily: font.bodyBold, fontSize: 11, lineHeight: 16, letterSpacing: 1.6, color: C.primary },
+  label: { fontFamily: font.bodyBold, fontSize: 12, lineHeight: 17, letterSpacing: 1.6, color: C.primary },
   title: { fontFamily: font.bodyBlack, fontSize: 24, lineHeight: 34, color: '#FFFFFF' }, // 34 = th 성조·모음 기호 잘림 방지(전 로케일 공통)
-  pill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, borderRadius: 22, paddingHorizontal: 18, backgroundColor: '#FFFFFF' },
-  pillText: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
+  pill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, borderRadius: radius.pill, paddingHorizontal: 18, backgroundColor: '#FFFFFF' },
+  pillText: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
   press: { backgroundColor: 'rgba(255,255,255,0.12)' },
 });

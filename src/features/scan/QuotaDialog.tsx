@@ -16,7 +16,7 @@ import { Txt as Text } from '@/components/Txt';
 import { CountdownBadge } from '@/components/CountdownBadge';
 import { IconEdit } from '@/components/icons';
 import { RewardedTile, useAdUnlockSource } from '@/features/ads/RewardedUnlock';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
 
 const DIM = 'rgba(28, 30, 33, 0.5)'; // gray-1000(ink) 50%
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   content: { paddingTop: 28, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'stretch' },
   hero: { alignItems: 'center', marginBottom: 12 },
   title: { fontFamily: font.bodyBold, fontSize: 18, lineHeight: 25, color: C.ink, textAlign: 'center' },
-  body: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink3, textAlign: 'center', marginTop: 6 },
+  body: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink3, textAlign: 'center', marginTop: 6 },
   tiles: { flexDirection: 'row', gap: 11, marginTop: 20, alignItems: 'stretch' },
   // 두 옵션 같은 스타일 — 흰 바탕 · primary 1.5 테두리 · 카드 전체 탭(최소 72h)
   tile: {
@@ -173,21 +173,21 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
     borderWidth: 1.5,
     borderColor: C.primary,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     paddingHorizontal: 10,
     paddingVertical: 18,
     alignItems: 'center',
     gap: 6,
   },
   tilePressed: { backgroundColor: PRIMARY_12 },
-  tileIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: PRIMARY_12, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  tileIcon: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: PRIMARY_12, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   tileTitle: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 22, color: C.ink, textAlign: 'center' },
-  tileSub: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink3, textAlign: 'center' },
+  tileSub: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink3, textAlign: 'center' },
   progress: { flexDirection: 'row', gap: 4, marginTop: 6 },
-  seg: { width: 16, height: 4, borderRadius: 2 },
+  seg: { width: 16, height: 4, borderRadius: radius.pill },
   segDone: { backgroundColor: C.primary },
   segTodo: { backgroundColor: C.line }, // gray-200
-  note: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: C.ink3, textAlign: 'center', marginTop: 4 },
+  note: { fontFamily: font.body, fontSize: 13, lineHeight: 17, color: C.ink3, textAlign: 'center', marginTop: 4 },
   later: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
-  laterText: { fontFamily: font.body, fontSize: 15, color: C.ink3 }, // gray-600 텍스트 버튼(박스 없음)
+  laterText: { fontFamily: font.body, fontSize: 16, color: C.ink3 }, // gray-600 텍스트 버튼(박스 없음)
 });

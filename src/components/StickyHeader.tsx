@@ -33,7 +33,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { spring } from '@/lib/motion';
 import { IconArrowLeft, IconBell, IconSearch, IconStar } from './icons'; // P-129: 상세 저장 = 별 · P-216: 알림 벨
 import { AppBarMark } from './design4Assets';
@@ -266,12 +266,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: C.ink,
   },
-  titleKo: { fontFamily: font.koBold, fontSize: 12.5, color: C.ink3 },
+  titleKo: { fontFamily: font.koBold, fontSize: 13, color: C.ink3 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   iconBtn: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.hair,
@@ -285,22 +285,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  signInPill: { backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
-  signInText: { fontFamily: font.bodyBold, fontSize: 12.5, color: '#fff' },
+  signInPill: { backgroundColor: C.primary, borderRadius: radius.pill, paddingHorizontal: 13, paddingVertical: 7 },
+  signInText: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff' },
   // 9/5 예진 확정: NEW 배지 = primary pill h18 pad 1/5, 10/600 흰(시안값 — 근사 보더 폐기)
   dot: {
     position: 'absolute',
     top: 0,
     right: -6,
     height: 18,
-    borderRadius: 9,
+    borderRadius: radius.pill,
     paddingHorizontal: 5,
     paddingVertical: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: C.primary,
   },
-  dotText: { fontSize: 10, fontWeight: '600', color: '#fff' },
+  dotText: { fontSize: 11, fontWeight: '600', color: '#fff' },
   hairline: {
     position: 'absolute',
     left: 0,

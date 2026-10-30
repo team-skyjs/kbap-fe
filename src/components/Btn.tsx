@@ -6,7 +6,7 @@ import * as React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, type TextStyle, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, shadow } from '@/lib/theme';
+import { color as C, font, shadow, radius } from '@/lib/theme';
 import { PRESS_SCALE, spring } from '@/lib/motion';
 import { trackUiClick } from '@/lib/uiClick';
 
@@ -128,9 +128,9 @@ const styles = StyleSheet.create({
     // device (web was fine). Element-inspector confirmed. alignSelf:stretch
     // gives the same full width without tripping that path.
     alignSelf: 'stretch',
-    // KB-429(4123:3985): h48 · radius xs(4) · pad 10
+    // KB-429(4123:3985): h48 · pad 10 · KB-909: radius = pill(예진 10/30 버튼 알약 통일, 구 xs 4)
     minHeight: 48,
-    borderRadius: 4,
+    borderRadius: radius.pill,
     paddingVertical: 10,
     paddingHorizontal: 10, // P-334(시안 2200:22055 pad 10 — 구 14): md 전 소비처 공통, 풀폭 버튼은 시각 무영향
   },
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     minHeight: 30,
     paddingVertical: 7,
     paddingHorizontal: 13,
-    borderRadius: 4,
+    borderRadius: radius.pill, // KB-909: 알약
     width: 'auto',
     borderWidth: 1,
     borderColor: C.line,
@@ -156,8 +156,8 @@ const styles = StyleSheet.create({
     // 부모 alignItems를 오버라이드하니 호출측에서 style alignSelf:'center' 명시할 것.
     alignSelf: 'flex-start',
   },
-  label: { fontFamily: font.bodySemi, fontSize: 15, color: '#fff' }, // 15/600
-  labelSm: { fontSize: 12, fontWeight: '500' }, // 12/500
+  label: { fontFamily: font.bodySemi, fontSize: 16, color: '#fff' }, // 15/600
+  labelSm: { fontSize: 13, fontWeight: '500' }, // 12/500
   labelGap: { marginLeft: 9 },
   iconEndGap: { marginLeft: 2 }, // P-334: Read all chevron gap 2
 });
@@ -176,7 +176,7 @@ const VARIANTS: Record<
   ghost: {
     container: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line2 },
     pressed: { backgroundColor: '#F2F3F6', borderColor: C.inkMute },
-    label: { color: C.ink, fontSize: 14, fontWeight: '500' as const },
+    label: { color: C.ink, fontSize: 16, fontWeight: '500' as const },
   },
   // KB-429(4123:3997): disabled — bg line(#EAEBEE) / 텍스트 inkDisabled
   off: {

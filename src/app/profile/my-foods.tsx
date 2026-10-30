@@ -13,7 +13,7 @@ import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { CardPhoto, IconChevron, SubHeader, Spinner } from '@/components';
 import { D4MapPin } from '@/components/design4Assets';
 import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
@@ -135,7 +135,7 @@ function OrderCard({ order, onPress }: { order: OrderSummary; onPress: () => voi
       {/* P-353 ④(KB-515): 첫 썸네일(서버가 기본 이미지 포함 최대 4개 구성) — 없으면 핀 현행 */}
       <View style={styles.pinBox}>
         {order.thumbnails[0] ? (
-          <CardPhoto uri={order.thumbnails[0]} borderRadius={8} />
+          <CardPhoto uri={order.thumbnails[0]} borderRadius={radius.md} />
         ) : (
           <D4MapPin size={24} color={C.ink3} />
         )}
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   // 언더라인 탭(responsive 2분할)
   tabsRow: { flexDirection: 'row', paddingHorizontal: 0, marginTop: 0 }, // A-MF-01(KB-486: AppBar 직하 전폭)
   tab: { flex: 1, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
-  tabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' }, // A-DS-03(KB-486)
+  tabLabel: { fontSize: 16, fontWeight: '700', color: '#9196A1' }, // A-DS-03(KB-486)
   tabLabelOn: { color: INK_TITLE },
   tabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   tabBarOn: { backgroundColor: INK_TITLE },
@@ -191,11 +191,11 @@ const styles = StyleSheet.create({
 
   // 주문 카드 — pad 16/20 gap 14 하단 line
   card: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // A-MF-02(핀↔정보 10)
-  pinBox: { width: 70, height: 70, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  placeName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', lineHeight: 20 },
+  pinBox: { width: 70, height: 70, borderRadius: radius.md, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  placeName: { fontSize: 16, fontWeight: '600', color: '#1C1E21', lineHeight: 21 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 }, // A-MF-03
-  metaDate: { fontSize: 12, fontWeight: '400', color: C.ink3 },
-  qtyPill: { backgroundColor: C.hair, borderRadius: 100, paddingVertical: 2, paddingHorizontal: 8 },
-  qtyPillText: { fontSize: 12, fontWeight: '500', color: '#1C1E21' }, // A-MF-04
+  metaDate: { fontSize: 13, fontWeight: '400', color: C.ink3 },
+  qtyPill: { backgroundColor: C.hair, borderRadius: radius.pill, paddingVertical: 2, paddingHorizontal: 8 },
+  qtyPillText: { fontSize: 13, fontWeight: '500', color: '#1C1E21' }, // A-MF-04
   // 장소 미태그 변형 — 아웃라인 필(primary 1px r8 pad 4/8, 12/600) · 태그 기능 부재 = 무동작
 });

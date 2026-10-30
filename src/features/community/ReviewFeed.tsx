@@ -335,24 +335,24 @@ const styles = StyleSheet.create({
   natHint: { paddingHorizontal: 20, marginTop: -4, paddingBottom: 8 }, // KB-907(T-106)
   controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 0, paddingBottom: 8 }, // A-RT-01(KB-486)
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-RT-02
-  toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
+  toggleLabel: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },
   // Button/Toggle md 44×24 — off 트랙 #D1D3D8 / on primary, 노브 20 흰 + 그림자 2/2 b4 15%
-  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
+  sw: { width: 44, height: 24, borderRadius: radius.pill, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
-  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
+  knob: { width: 20, height: 20, borderRadius: radius.pill, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
   knobOn: { alignSelf: 'flex-end' },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
-  sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 8 },
+  sortLabel: { fontSize: 16, fontWeight: '700', color: '#4B4F58' },
   center: { paddingVertical: 30, alignItems: 'center' },
   // Codex #58 P2: 다음 페이지 실패 푸터 — 소형(리스트 흐름 유지), 색 = 정보성 회색
   footerErr: { paddingVertical: 20, alignItems: 'center', gap: 10 },
-  footerErrText: { fontSize: 13, fontWeight: '500', color: C.inkInfo },
-  footerRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, paddingHorizontal: 20, paddingVertical: 8 },
-  footerRetryText: { fontSize: 14, fontWeight: '600', color: C.ink },
+  footerErrText: { fontSize: 14, fontWeight: '500', color: C.inkInfo },
+  footerRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.md, paddingHorizontal: 20, paddingVertical: 8 },
+  footerRetryText: { fontSize: 16, fontWeight: '600', color: C.ink },
   // Q1: 쿼터 넛지 카드(4150:17089) — mx 24, bg #FFFBF4 r16 pad 20/12/20/20
-  nudge: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 24, backgroundColor: '#FFFBF4', borderRadius: 16, paddingTop: 12, paddingBottom: 20, paddingHorizontal: 20 },
-  nudgeTitle: { fontSize: 15, fontWeight: '700', color: '#262C31' },
-  nudgeBody: { fontSize: 14, fontWeight: '400', color: '#4B4F58' },
+  nudge: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 24, backgroundColor: '#FFFBF4', borderRadius: radius.lg, paddingTop: 12, paddingBottom: 20, paddingHorizontal: 20 },
+  nudgeTitle: { fontSize: 16, fontWeight: '700', color: '#262C31' },
+  nudgeBody: { fontSize: 16, fontWeight: '400', color: '#4B4F58' },
 
   // KB-430 §2-5: 플로팅 필(4150:17079)
   // A-RT-03(KB-486): gap 4 · right 14 · bottom 18
@@ -364,12 +364,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: '#1C1E21',
-    borderRadius: 24,
+    borderRadius: radius.pill,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
-  fabLabel: { fontSize: 14, fontWeight: '600', color: '#fff' },
-  fabCompact: { width: 36, height: 36, borderRadius: 18, paddingVertical: 0, paddingHorizontal: 0, justifyContent: 'center' }, // KB-777 B3-7
+  fabLabel: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  fabCompact: { width: 36, height: 36, borderRadius: radius.pill, paddingVertical: 0, paddingHorizontal: 0, justifyContent: 'center' }, // KB-777 B3-7
 });
 
 export default ReviewFeed;

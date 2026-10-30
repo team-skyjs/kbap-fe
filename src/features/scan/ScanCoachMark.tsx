@@ -77,12 +77,12 @@ export function ScanCoachMark({
 
 const styles = StyleSheet.create({
   scrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: 26 },
-  card: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.lg, padding: 22, alignItems: 'center', gap: 10, ...shadow.shPop },
-  ic: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(226,88,12,0.1)', alignItems: 'center', justifyContent: 'center' },
+  card: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.md, padding: 22, alignItems: 'center', gap: 10, ...shadow.shPop },
+  ic: { width: 52, height: 52, borderRadius: radius.pill, backgroundColor: 'rgba(226,88,12,0.1)', alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: font.display, fontSize: 18, color: C.ink, textAlign: 'center' },
   rows: { alignSelf: 'stretch', gap: 11, marginTop: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  rowName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },
-  rowDesc: { fontFamily: font.body, fontSize: 12, lineHeight: 17, color: C.ink2 },
-  caption: { fontFamily: font.body, fontSize: 11, color: C.ink3, textAlign: 'center' },
+  rowName: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
+  rowDesc: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
+  caption: { fontFamily: font.body, fontSize: 12, color: C.ink3, textAlign: 'center' },
 });

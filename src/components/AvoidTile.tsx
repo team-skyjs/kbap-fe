@@ -10,7 +10,7 @@ import * as React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { Txt as Text } from '@/components/Txt';
-import { font, color as C } from '@/lib/theme';
+import { font, color as C, radius } from '@/lib/theme';
 import { Shimmer } from './Skeleton';
 import { ingredientCutoutUrl, ingredientImageUrl } from '@/lib/onboarding/ingredientImages';
 
@@ -37,7 +37,7 @@ export function AvoidTile({
   tint,
   selected,
   style,
-  radius = 14, // A-PF-07(KB-486): 프로필 타일 = 0 — 기본 14는 온보딩·재료 그리드 무변
+  radius: tileRadius = radius.md, // A-PF-07(KB-486): 프로필 타일 = 0 · KB-909: 기본 = 토큰 md(구 14)
   children,
 }: {
   code: string;
@@ -65,7 +65,7 @@ export function AvoidTile({
   }
   const failed = !uri; // 체인 소진 = 실패 확정
   return (
-    <View style={[styles.tile, { backgroundColor: failed ? tint : '#FFFFFF', borderRadius: radius }, radius === 0 && { borderWidth: 0 }, selected && styles.tileOn, style]} testID={`avtile-${code}`}>{/* P-341: 사진 상태 = 흰 배경(tint는 실패 폴백만) */}
+    <View style={[styles.tile, { backgroundColor: failed ? tint : '#FFFFFF', borderRadius: tileRadius }, tileRadius === 0 && { borderWidth: 0 }, selected && styles.tileOn, style]} testID={`avtile-${code}`}>{/* P-341: 사진 상태 = 흰 배경(tint는 실패 폴백만) */}
       {/* P-188: 실패시에만 약어(로딩 중 "GM" 노출 소멸) */}
       {failed && <Text style={styles.abbr}>{abbr}</Text>}
       {!failed && !loaded && (
@@ -97,10 +97,10 @@ export function AvoidTile({
 const styles = StyleSheet.create({
   // P-344(KB-505, A안): 기본 = 흰 + 보더 1 #EAEBEE r14 / 선택 = 1.5 #FF7134 + primary 6%
   // (외곽 치수 고정 — 보더는 안쪽으로 그려져 프레임 불변, P-151 취지 유지)
-  tile: { width: '100%', aspectRatio: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#EAEBEE', overflow: 'hidden' },
+  tile: { width: '100%', aspectRatio: 1, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#EAEBEE', overflow: 'hidden' },
   tileOn: { borderWidth: 1.5, borderColor: C.primary, backgroundColor: 'rgba(255,113,52,0.06)' },
   // 사진/스켈레톤 = 폴백 위 absolute fill — 상태 전환에도 프레임 불변
   photo: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }, // 라운딩 = 타일 overflow hidden이 클립(radius prop 연동)
   photoCut: { position: 'absolute', top: '13%', right: '13%', bottom: '13%', left: '13%' }, // P-341 → P-344: 이미지 ≈74%
-  abbr: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink2, letterSpacing: 1 },
+  abbr: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink2, letterSpacing: 1 },
 });

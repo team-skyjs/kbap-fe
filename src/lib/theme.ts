@@ -88,7 +88,9 @@ export const primaryTint2 = 'rgba(255,113,52,0.03)';
 export const primaryTintSolid = '#FFF8F5';
 export const accentTint = 'rgba(14,154,167,0.08)';
 
-export const radius = { lg: 10, sm: 8, xs: 4, pill: 999 } as const; // Alert 4123:4019 · tag/input · 버튼/카드
+// KB-909(예진 10/30 "알약으로 맞추자, borderRadius 모든 컴포넌트 맞춰야 해"): 버튼·칩 = pill · 이미지 타일·입력 = md · 카드 = lg · 시트 윗모서리·대화상자 = xl · 작은 배지·바 = xs.
+// 구 sm 8·lg 10은 md로 흡수. 원(아바타·아이콘 원)은 정사각 상자에 pill. 하드코딩 금지 — 전부 이 토큰 참조
+export const radius = { xs: 4, md: 12, lg: 16, xl: 24, pill: 999 } as const;
 
 /**
  * Font families. Each (family, weight) is a distinct registered fontFamily key
@@ -167,17 +169,17 @@ export const type = {
   largeTitle: { fontSize: 26, fontWeight: '700' },
   sectionTitle: { fontSize: 22, fontWeight: '700' }, // A-DS-01(KB-486) — 구 20/400(4064:787)
   appBar: { fontSize: 18, fontWeight: '600' },
-  button: { fontSize: 15, fontWeight: '600' },
-  emphasis: { fontSize: 15, fontWeight: '500' }, // 닉네임·입력
-  body: { fontSize: 14, fontWeight: '400' },
-  chip: { fontSize: 14, fontWeight: '500' }, // 칩·ko 부제
-  subtitle: { fontSize: 14, fontWeight: '600' },
-  meta: { fontSize: 13, fontWeight: '500' },
-  rating: { fontSize: 13, fontWeight: '600' },
-  caption: { fontSize: 12, fontWeight: '400' },
-  captionMed: { fontSize: 12, fontWeight: '500' },
-  riskLabel: { fontSize: 12, fontWeight: '700' }, // "Safe"
-  tabLabel: { fontSize: 11, fontWeight: '500' },
+  button: { fontSize: 16, fontWeight: '600' }, // KB-909: 15→16
+  emphasis: { fontSize: 16, fontWeight: '500' }, // 닉네임·입력 · KB-909: 15→16
+  body: { fontSize: 16, fontWeight: '400' }, // KB-909: 14→16
+  chip: { fontSize: 15, fontWeight: '500' }, // 칩·ko 부제 · KB-909: 14→15
+  subtitle: { fontSize: 15, fontWeight: '600' }, // KB-909: 14→15
+  meta: { fontSize: 14, fontWeight: '500' }, // KB-909: 13→14
+  rating: { fontSize: 14, fontWeight: '600' }, // KB-909: 13→14
+  caption: { fontSize: 13, fontWeight: '400' }, // KB-909: 12→13
+  captionMed: { fontSize: 13, fontWeight: '500' }, // KB-909: 12→13
+  riskLabel: { fontSize: 13, fontWeight: '700' }, // "Safe" · KB-909: 12→13
+  tabLabel: { fontSize: 12, fontWeight: '500' }, // KB-909: 11→12
   newBadge: { fontSize: 10, fontWeight: '600' },
 } as const;
 

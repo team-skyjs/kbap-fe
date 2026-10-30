@@ -28,12 +28,12 @@ export function ShellPlaceholder() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, padding: 18, gap: 14 },
-  line: { height: 14, borderRadius: 7, backgroundColor: C.surface2 },
-  card: { height: 96, borderRadius: radius.lg, backgroundColor: C.surface2 },
+  line: { height: 14, borderRadius: radius.pill, backgroundColor: C.surface2 },
+  card: { height: 96, borderRadius: radius.md, backgroundColor: C.surface2 },
   cardSm: { height: 60 },
   chips: { flexDirection: 'row', gap: 8 },
-  chip: { height: 30, width: 76, borderRadius: 999, backgroundColor: C.surface2 },
-  note: { marginTop: 'auto', textAlign: 'center', fontFamily: font.body, fontSize: 12, color: C.ink3 },
+  chip: { height: 30, width: 76, borderRadius: radius.pill, backgroundColor: C.surface2 },
+  note: { marginTop: 'auto', textAlign: 'center', fontFamily: font.body, fontSize: 13, color: C.ink3 },
 });
 
 export default ShellPlaceholder;

@@ -23,7 +23,7 @@ import { SubHeader } from '@/components/SubHeader';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { Input, Spinner } from '@/components';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { FLAGS, isDiagnosticChannel } from '@/lib/flags';
 import { uploadNameScanPhoto } from '@/lib/api/scanImage';
 import { EVENTS, track } from '@/lib/analytics';
@@ -601,22 +601,22 @@ const st = StyleSheet.create({
   camFree: { color: C.surface, textAlign: 'center' }, // KB-877: 카메라 어두운 바 위(힌트와 같은 흰 글자)
   root: { flex: 1, backgroundColor: C.card },
   page: { paddingHorizontal: 20, paddingTop: 24, gap: 20 },
-  eyebrow: { fontFamily: font.body, fontSize: 15, lineHeight: 20, color: C.primary },
+  eyebrow: { fontFamily: font.body, fontSize: 16, lineHeight: 21, color: C.primary },
   h1: { fontFamily: font.bodyBold, fontSize: 28, lineHeight: 36, color: C.ink },
   h2: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 24, color: C.ink },
-  body: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink },
-  muted: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink2 },
-  box: { height: 264, borderRadius: 24, backgroundColor: '#2F3137', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  body: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink },
+  muted: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink2 },
+  box: { height: 264, borderRadius: radius.xl, backgroundColor: '#2F3137', alignItems: 'center', justifyContent: 'center', gap: 12 },
   boxText: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 24, color: '#FFFFFF' },
   outline: { minHeight: 40, paddingVertical: 8 },
   bottom: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: C.card },
   darkBand: { height: 100, backgroundColor: '#2F3137' },
-  sheet: { marginTop: -24, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: C.card, paddingHorizontal: 20, paddingTop: 20 },
-  skelRow: { height: 72, borderRadius: 8 },
+  sheet: { marginTop: -24, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, backgroundColor: C.card, paddingHorizontal: 20, paddingTop: 20 },
+  skelRow: { height: 72, borderRadius: radius.md },
   countRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   flameBox: { width: 24, height: 30, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
-  countText: { flex: 1, fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink2 },
-  debug: { gap: 8, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: C.line, borderStyle: 'dashed' },
+  countText: { flex: 1, fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink2 },
+  debug: { gap: 8, padding: 12, borderRadius: radius.md, borderWidth: 1, borderColor: C.line, borderStyle: 'dashed' },
   debugInput: { minHeight: 72, textAlignVertical: 'top' },
   searchState: { paddingVertical: 24, alignItems: 'center' },
 });

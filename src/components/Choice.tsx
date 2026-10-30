@@ -8,7 +8,7 @@ import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import Svg, { Path } from 'react-native-svg';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 
 export function Checkbox({ checked, onPress, testID }: { checked: boolean; onPress?: () => void; testID: string }) {
   return (
@@ -31,10 +31,10 @@ export function Radio({ selected, onPress, testID }: { selected: boolean; onPres
 }
 
 const styles = StyleSheet.create({
-  box: { width: 20, height: 20, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
+  box: { width: 20, height: 20, borderRadius: radius.xs, alignItems: 'center', justifyContent: 'center' },
   boxOn: { backgroundColor: C.primary },
   boxOff: { borderWidth: 1.5, borderColor: C.line2, backgroundColor: '#FFFFFF' },
-  radio: { width: 16, height: 16, borderRadius: 8 },
+  radio: { width: 16, height: 16, borderRadius: radius.pill },
   radioOn: { borderWidth: 5, borderColor: C.primary, backgroundColor: '#FFFFFF' },
   radioOff: { borderWidth: 1.5, borderColor: C.line2, backgroundColor: '#FFFFFF' },
 });

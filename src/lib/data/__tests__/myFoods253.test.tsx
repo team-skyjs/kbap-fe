@@ -426,7 +426,7 @@ describe('KB-636 공유 카드 시트', () => {
     const host = tree.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'order-share-open')[0];
     const flat = (st: unknown) => Object.assign({}, ...[st].flat(Infinity).filter(Boolean)) as Record<string, unknown>;
     expect(flat(host.props.style)).toMatchObject({
-      position: 'absolute', left: 20, right: 20, height: 52, borderRadius: 26, backgroundColor: '#FF7134', bottom: 24, // 인셋 0(목) + 24
+      position: 'absolute', left: 20, right: 20, height: 52, borderRadius: 999, backgroundColor: '#FF7134', bottom: 24, // 인셋 0(목) + 24
     });
     expect(flat(host.props.style).borderWidth).toBeUndefined(); // outline(ghost) 아님
     const label = host.findAll((n) => typeof n.type === 'string' && n.props.children === 'myFoods.shareDownloadInline')[0];

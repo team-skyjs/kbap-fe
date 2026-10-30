@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
-import { color as C, font, shadow } from '@/lib/theme';
+import { color as C, font, shadow, radius } from '@/lib/theme';
 
 export function ScanLeaveConfirm({ visible, onKeep, onLeave }: { visible: boolean; onKeep: () => void; onLeave: () => void }) {
   const { t } = useTranslation();
@@ -31,7 +31,7 @@ export function ScanLeaveConfirm({ visible, onKeep, onLeave }: { visible: boolea
 // scan.tsx confirmBackdrop·confirmCard·confirmTitle·confirmBody와 같은 값
 const st = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  card: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  card: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.xl, padding: 22, gap: 8, ...shadow.shPop },
   title: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  body: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
 });

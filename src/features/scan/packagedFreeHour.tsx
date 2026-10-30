@@ -68,7 +68,7 @@ export function PackagedFreeLine({ style, testID = 'pscan-free-line', explain = 
 }
 
 const st = StyleSheet.create({
-  line: { fontFamily: font.bodyBold, fontSize: 13, lineHeight: 18, color: C.primaryText },
+  line: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 19, color: C.primaryText },
   box: { gap: 2 },
-  explain: { fontFamily: font.body, fontSize: 12, lineHeight: 17, color: C.ink3 },
+  explain: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink3 },
 });

@@ -89,7 +89,7 @@ const st = StyleSheet.create({
   tab: { flex: 1, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
   tabDark: { flexGrow: 1, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 }, // 밑줄 = 칸 전폭(시안)
   label: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, paddingHorizontal: 4 },
-  labelDark: { fontFamily: font.body, fontSize: 14, lineHeight: 21, paddingHorizontal: 12 }, // body-l3-regular · 긴 번역 칸이 넓어질 때 좌우 여백
+  labelDark: { fontFamily: font.body, fontSize: 16, lineHeight: 24, paddingHorizontal: 12 }, // body-l3-regular · 긴 번역 칸이 넓어질 때 좌우 여백
   bar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   divider: { height: 0.5, backgroundColor: C.line2 },
 });

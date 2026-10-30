@@ -46,7 +46,7 @@ export function FoodTagSheet({ target, onClose }: { target: { foodId: string; na
   return (
     <SheetShell onClose={onClose}>
       <View style={styles.foodTop}>
-        <View style={styles.foodThumb}>{!!food?.photoUrl && <CardPhoto uri={food.photoUrl} borderRadius={14} />}</View>
+        <View style={styles.foodThumb}>{!!food?.photoUrl && <CardPhoto uri={food.photoUrl} borderRadius={radius.md} />}</View>
         <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
           <Text style={styles.title} numberOfLines={1}>
             {food?.name ?? target.name}
@@ -73,14 +73,14 @@ export function FoodTagSheet({ target, onClose }: { target: { foodId: string; na
 export { PlaceTagSheet, openMap, _mapUrlsForTest, type MapApp, type MapPlace } from './placeMap';
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: C.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 34, gap: 14, ...shadow.sh2 },
+  sheet: { backgroundColor: C.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: 22, paddingBottom: 34, gap: 14, ...shadow.sh2 },
   title: { fontFamily: font.display, fontSize: 17, color: C.ink },
-  sub: { fontFamily: font.body, fontSize: 12.5, color: C.ink2 },
-  desc: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
+  sub: { fontFamily: font.body, fontSize: 13, color: C.ink2 },
+  desc: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20 },
 
   foodTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  foodThumb: { width: 56, height: 56, borderRadius: 14, backgroundColor: C.surface2, overflow: 'hidden' },
-  riskLine: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, paddingHorizontal: 13, paddingVertical: 11 },
-  riskText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },
+  foodThumb: { width: 56, height: 56, borderRadius: radius.md, backgroundColor: C.surface2, overflow: 'hidden' },
+  riskLine: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.md, paddingHorizontal: 13, paddingVertical: 11 },
+  riskText: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
 
 });

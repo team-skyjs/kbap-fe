@@ -151,13 +151,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 34,
     gap: 12,
   },
-  icWrap: { width: 74, height: 74, borderRadius: 37, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  icWrap: { width: 74, height: 74, borderRadius: radius.pill, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   title: { fontFamily: font.display, fontSize: 21, color: C.ink, letterSpacing: -0.3, textAlign: 'center' },
-  body: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.ink2, textAlign: 'center' },
+  body: { fontFamily: font.body, fontSize: 16, lineHeight: 24, color: C.ink2, textAlign: 'center' },
   // P-381 2R: 커버 안 인라인 실패 문구(토스트는 커버 뒤에 깔려 안 보인다)
-  gateError: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.riskDangerText, textAlign: 'center', marginTop: 10 },
+  gateError: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.riskDangerText, textAlign: 'center', marginTop: 10 },
 
-  banner: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, paddingHorizontal: 13, paddingVertical: 11, ...shadow.sh1 },
-  bannerText: { flex: 1, fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink },
-  bannerCta: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.md, paddingHorizontal: 13, paddingVertical: 11, ...shadow.sh1 },
+  bannerText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
+  bannerCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
 });

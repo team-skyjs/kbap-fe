@@ -4,10 +4,10 @@
  */
 import * as React from 'react';
 import { StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 
 // 색 없는 틀·글자 — Btn 변형 색(off 등)을 그대로 받는 곳은 이것만 쓴다
-const shape: ViewStyle = { alignSelf: 'stretch', minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999 };
+const shape: ViewStyle = { alignSelf: 'stretch', minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 24, paddingVertical: 12, borderRadius: radius.pill };
 const label: TextStyle = { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, textAlign: 'center' };
 
 /** KB-903: 하단 바 띠 위 여백 — 알약 위로 콘텐츠가 바로 붙지 않게 */

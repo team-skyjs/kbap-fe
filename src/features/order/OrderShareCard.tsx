@@ -18,6 +18,7 @@ import { RemoteImage } from '@/components/RemoteImage';
 import { IconDownload, IconInstagram } from '@/components/icons';
 import { SHARE_CARD_W, SHARE_GRID_H, shareCells } from './shareCard';
 import { CANVAS_H, CANVAS_W, CARD_SCALE, EXPORT_BG } from './shareExport';
+import { radius } from '@/lib/theme';
 
 /** 앱 아이콘과 같은 마크(검은 K + 주황 그릇, 투명 배경) — 배지 교체분. */
 const BRAND_MARK = require('../../../assets/images/splash-mark-ios.png') as number;
@@ -226,7 +227,7 @@ const styles = StyleSheet.create({
   card: {
     width: SHARE_CARD_W,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: radius.lg,
     overflow: 'hidden', // 그리드 모서리를 카드 라운드로 자른다
     shadowColor: '#000000',
     shadowOpacity: 0.12,
@@ -238,16 +239,16 @@ const styles = StyleSheet.create({
   grid: { width: SHARE_CARD_W, height: SHARE_GRID_H, backgroundColor: '#EAEBEE' },
 
   info: { padding: 14, gap: 10, backgroundColor: '#FFFFFF' },
-  place: { fontSize: 15, fontWeight: '700', letterSpacing: -0.15, color: '#1C1E21' },
-  menu: { fontSize: 11, lineHeight: 15.4, color: '#6B7280' }, // 1.4em
+  place: { fontSize: 16, fontWeight: '700', letterSpacing: -0.15, color: '#1C1E21' },
+  menu: { fontSize: 12, lineHeight: 17, color: '#6B7280' }, // 1.4em
   metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   metaLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }, // 구분자 문자 대신 gap
-  meta: { flexShrink: 1, fontSize: 10, color: '#9196A1' },
+  meta: { flexShrink: 1, fontSize: 11, color: '#9196A1' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   brandMark: { width: 16, height: 16 },
-  brandText: { fontSize: 11, fontWeight: '600', letterSpacing: -0.11, color: '#1C1E21' },
+  brandText: { fontSize: 12, fontWeight: '600', letterSpacing: -0.11, color: '#1C1E21' },
 
-  caption: { fontSize: 11, fontWeight: '500', letterSpacing: -0.11, color: '#9196A1' },
+  caption: { fontSize: 12, fontWeight: '500', letterSpacing: -0.11, color: '#9196A1' },
 
   bottom: { paddingHorizontal: 20, paddingBottom: 12, gap: 12, backgroundColor: '#FFFFFF' },
   actions: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 },
@@ -261,12 +262,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#EAEBEE',
-    borderRadius: 14,
+    borderRadius: radius.lg,
   },
   actionBusy: { opacity: 0.45 },
-  storyHint: { fontSize: 11, lineHeight: 15, color: '#9196A1', textAlign: 'center' },
+  storyHint: { fontSize: 12, lineHeight: 16, color: '#9196A1', textAlign: 'center' },
   retryText: { color: '#6A6F7C', textDecorationLine: 'underline' },
-  actionLabel: { fontSize: 12, lineHeight: 16.2, fontWeight: '600', letterSpacing: -0.12, color: '#2F3137', textAlign: 'center' },
+  actionLabel: { fontSize: 13, lineHeight: 18, fontWeight: '600', letterSpacing: -0.12, color: '#2F3137', textAlign: 'center' },
 });
 
 export default OrderShareSection;

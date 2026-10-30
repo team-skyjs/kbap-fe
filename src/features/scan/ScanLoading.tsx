@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { Pressable } from '@/components/Pressable';
 import { IconClose } from '@/components/icons';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { useBottomInset } from '@/lib/useBottomInset';
 
 export const LOADING_PHOTO_H = 430;
@@ -117,12 +117,12 @@ const st = StyleSheet.create({
   bodyL: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.gray800 },
   gap: { flexGrow: 1, minHeight: 24, maxHeight: 76 },
   photoArea: { height: LOADING_PHOTO_H, flexShrink: 1, minHeight: 160, alignItems: 'center' }, // 박스는 위·가운데 정렬(가로 사진 = 아래 여백)
-  photo: { borderRadius: 12, overflow: 'hidden', backgroundColor: C.surface2 },
+  photo: { borderRadius: radius.md, overflow: 'hidden', backgroundColor: C.surface2 },
   // KB-853 스윕 색·선 3·빛 번짐 그림자는 그대로 — KB-862: 좌우 여백 0(사진 가로 전체) · 빛은 선 위아래 대칭 24(이전 위쪽 90 트레일 폐기)
   // KB-862: 사진 가로 전체(좌우 0 — 사진 박스의 둥근 모서리 클립 안쪽) · 위 빛 = 선 = 아래 빛 순서(대칭)
   glow: { position: 'absolute', left: 0, right: 0, top: 0, height: SCAN_GLOW_H },
   trailUp: { position: 'absolute', left: 0, right: 0, top: 0, height: SCAN_GLOW_REACH },
   line: { position: 'absolute', left: 0, right: 0, top: SCAN_GLOW_REACH, height: SCAN_LINE_H, backgroundColor: SWEEP, shadowColor: SWEEP, shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   trailDown: { position: 'absolute', left: 0, right: 0, top: SCAN_GLOW_REACH + SCAN_LINE_H, height: SCAN_GLOW_REACH },
-  caption: { marginTop: 20, fontFamily: font.body, fontSize: 13, lineHeight: 19.5, color: C.ink2 },
+  caption: { marginTop: 20, fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.ink2 },
 });

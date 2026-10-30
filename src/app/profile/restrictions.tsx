@@ -139,10 +139,10 @@ const styles = StyleSheet.create({
   // P-203: 카테고리 프리셋(러프)
 
   notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
-  noticeText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
+  noticeText: { flex: 1, fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, lineHeight: 20 },
 
   disc: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, paddingTop: 2 },
-  discText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink2, lineHeight: 18 },
+  discText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 19 },
 
   savebar: { padding: 18, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
 });

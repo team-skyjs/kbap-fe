@@ -126,7 +126,7 @@ export const PEEK_GAP = 8;
 
 /** 사진 가로 스트립 + 탭 = 풀스크린 뷰어(가로 페이징·X 닫기·인덱스).
  *  variant 'tiles'(기본) = 정사각 최대 3장 · 'peek'(KB-817, 리뷰 탭) = 전체 장수 가로 스냅, 4:3, 다음 장이 걸쳐 보임. */
-export function ReviewPhotoStrip({ photos, size = 72, radius = 10, variant = 'tiles' }: { photos: string[]; size?: number; radius?: number; variant?: 'tiles' | 'peek' }) {
+export function ReviewPhotoStrip({ photos, size = 72, radius: tileRadius = radius.md, variant = 'tiles' }: { photos: string[]; size?: number; radius?: number; variant?: 'tiles' | 'peek' }) {
   const [openAt, setOpenAt] = React.useState<number | null>(null);
   const { width } = useWindowDimensions();
   const [page, setPage] = React.useState(0);
@@ -150,7 +150,7 @@ export function ReviewPhotoStrip({ photos, size = 72, radius = 10, variant = 'ti
           >
             {photos.map((uri, i) => (
               <Pressable key={uri} onPress={() => open(i)} testID={`photo-${i}`}>
-                <RemoteImage uri={uri} style={{ width: tileW, height: (tileW * 3) / 4, borderRadius: 12, backgroundColor: C.surface2 }} />
+                <RemoteImage uri={uri} style={{ width: tileW, height: (tileW * 3) / 4, borderRadius: radius.md, backgroundColor: C.surface2 }} />
               </Pressable>
             ))}
           </ScrollView>
@@ -159,7 +159,7 @@ export function ReviewPhotoStrip({ photos, size = 72, radius = 10, variant = 'ti
       <View style={styles.strip}>
         {photos.slice(0, 3).map((uri, i) => (
           <Pressable key={uri} hitSlop={4} onPress={() => open(i)} testID={`photo-${i}`}>
-            <RemoteImage uri={uri} style={{ width: size, height: size, borderRadius: radius, backgroundColor: C.surface2 }} />
+            <RemoteImage uri={uri} style={{ width: size, height: size, borderRadius: tileRadius, backgroundColor: C.surface2 }} />
           </Pressable>
         ))}
       </View>
@@ -523,25 +523,25 @@ export function HelpfulButton({
 
 
 const styles = StyleSheet.create({
-  body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
+  body: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20 },
   // P-202: 3축 섹션(작성·수정 공용) + 셀 축약 — 기본 스타일(디자이너 폴리시 전)
   // KB-432 §2-4: 카드 박스 소멸 — mx 39 플랫 2행
   extrasBox: { gap: 18, marginHorizontal: 20 }, // P-348 ⑦: 39는 ko/id 라벨+별 5개 공존 불가(i18n 예외)
   extrasBoxPackaged: { marginHorizontal: 0 }, // KB-865 ④ 시안 32: 라벨 = 본문 거터(20)
   extrasRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   extrasLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 }, // A-RW-04 → P-348 ⑦: 라벨 고정(별 행이 축소)
-  extrasLabel: { fontSize: 13, fontWeight: '500', color: C.ink2 },
-  extrasValue: { fontSize: 13, fontWeight: '600', color: '#2F3137' },
+  extrasLabel: { fontSize: 14, fontWeight: '500', color: C.ink2 },
+  extrasValue: { fontSize: 14, fontWeight: '600', color: '#2F3137' },
   extrasLine: { flexDirection: 'row', gap: 8, alignSelf: 'flex-start' },
   extrasChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  extrasChipText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3 },
+  extrasChipText: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink3 },
   // P-201: 장소 줄 — 핀+이름 한 줄(조용한 톤), 탭 = 지도 시트
   // P-196: Helpful — 상태별 색만 전환(프레임 불변): 기본 ink2 · 내 토글 primary · 본인 ink3
   // 9/5 시안 실측(4123:3696): 흰 bg + border #EAEBEE 1px r4, h30 pad 7/13, gap 4, 12/500 #2F3137
-  helpfulBtn: { minWidth: 61, height: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 4, backgroundColor: '#FFFFFF' }, // P-342 ① 2R: 시안 61 = 보더 포함 — pad 12/6+border 1, 2자리 = 61·99+만 자연 확장
+  helpfulBtn: { minWidth: 61, height: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: radius.pill, backgroundColor: '#FFFFFF' }, // P-342 ① 2R: 시안 61 = 보더 포함 — pad 12/6+border 1, 2자리 = 61·99+만 자연 확장
   helpfulBtnOn: { borderColor: C.primary }, // 눌림 = 스트로크 색만(프레임 불변)
-  helpfulCount: { fontSize: 12, fontWeight: '700', color: '#2F3137', fontVariant: ['tabular-nums'] }, // P-342 ①
-  helpful: { fontSize: 12, fontWeight: '500', color: '#2F3137' },
+  helpfulCount: { fontSize: 13, fontWeight: '700', color: '#2F3137', fontVariant: ['tabular-nums'] }, // P-342 ①
+  helpful: { fontSize: 13, fontWeight: '500', color: '#2F3137' },
   helpfulOn: { color: C.primaryText },
   helpfulMine: { color: C.ink3 },
   strip: { flexDirection: 'row', gap: 6 },
@@ -550,32 +550,32 @@ const styles = StyleSheet.create({
   viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.94)', justifyContent: 'center' },
   viewerClose: { position: 'absolute', top: 54, right: 18 },
   dots: { position: 'absolute', bottom: 42, alignSelf: 'center', flexDirection: 'row', gap: 6 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.35)' },
+  dot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.35)' },
   dotOn: { backgroundColor: '#fff' },
   editBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 },
-  editCard: { backgroundColor: C.card, borderRadius: 26, padding: 20, gap: 12, ...shadow.shPop },
+  editCard: { backgroundColor: C.card, borderRadius: radius.xl, padding: 20, gap: 12, ...shadow.shPop },
   editTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
   editStars: { flexDirection: 'row', justifyContent: 'center', gap: 8 },
-  editInput: { minHeight: 110, maxHeight: 220, backgroundColor: C.surface2, borderRadius: radius.sm, padding: 12, fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 20 },
+  editInput: { minHeight: 110, maxHeight: 220, backgroundColor: C.surface2, borderRadius: radius.md, padding: 12, fontFamily: font.body, fontSize: 16, color: C.ink, lineHeight: 23 },
   // P-201: 수정 시트 장소 행/칩 — 작성 화면 문법 축약
-  editPlaceChip: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.surface2, borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 10 },
-  editPlaceText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
+  editPlaceChip: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.surface2, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 10 },
+  editPlaceText: { flex: 1, fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
   editPlaceRow: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 2 },
-  editPlaceAdd: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
+  editPlaceAdd: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
   // P-201: 장소 픽커 시트 (review.tsx P-095 스타일 이식 — 작성·수정 공용화로 이동)
   pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   // P-355(KB-517): 음식 선택 시트 — 드래그 페이드는 dim 레이어(compose P-337 문법)
-  pickerSheet: { height: '92%', backgroundColor: C.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, gap: 20, ...shadow.sh2 }, // A-RW-11
+  pickerSheet: { height: '92%', backgroundColor: C.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: 16, gap: 20, ...shadow.sh2 }, // A-RW-11
   pickerHeader: { alignItems: 'center' }, // A-RW-11(중앙)
   pickerTitle: { fontSize: 18, fontWeight: '600', color: C.ink }, // A-RW-11
-  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: 4, paddingLeft: 16, paddingRight: 14 }, // A-RW-11(Input/Search DS)
-  searchInput: { flex: 1, paddingVertical: 14, fontSize: 15, fontWeight: '500', color: C.ink }, // A-RW-11(h48)
+  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: radius.md, paddingLeft: 16, paddingRight: 14 }, // A-RW-11(Input/Search DS)
+  searchInput: { flex: 1, paddingVertical: 14, fontSize: 16, fontWeight: '500', color: C.ink }, // A-RW-11(h48)
   // KB-432 §2-10: 라벨 12/500 · 행 h66(장소명 15/600 / 주소 13/500 #6A6F7C)
-  recentLbl: { fontSize: 12, fontWeight: '500', color: C.ink3 },
+  recentLbl: { fontSize: 13, fontWeight: '500', color: C.ink3 },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 66, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.line }, // A-RW-11(핀 인라인 gap 2)
-  resultText: { fontSize: 15, fontWeight: '600', color: C.ink },
-  resultSub: { fontSize: 13, fontWeight: '500', color: C.ink2, marginTop: 1 },
-  noResults: { fontFamily: font.body, fontSize: 13, color: C.ink3, textAlign: 'center', paddingVertical: 26 },
+  resultText: { fontSize: 16, fontWeight: '600', color: C.ink },
+  resultSub: { fontSize: 14, fontWeight: '500', color: C.ink2, marginTop: 1 },
+  noResults: { fontFamily: font.body, fontSize: 14, color: C.ink3, textAlign: 'center', paddingVertical: 26 },
   // §2-10 FixedBottom
   sheetBottom: { flexDirection: 'row', gap: 16, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line }, // 하단 = 8 + bottomInset(인라인)
   sheetBottomSkip: { flexShrink: 0, minWidth: 119 },

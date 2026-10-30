@@ -172,8 +172,8 @@ const styles = StyleSheet.create({
   blurImg: { position: 'absolute', left: 0, right: 0 },
   caption: { flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 16, paddingRight: 16, paddingBottom: 16, gap: 4 },
   name: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 26, color: '#FFFFFF' },
-  area: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: '#FFFFFF' },
+  area: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: '#FFFFFF' },
   nameLarge: { fontFamily: font.bodySemi, fontSize: 18, color: '#FFFFFF' }, // 큰 글씨 = 글꼴 고유 줄 높이(KB-846 QA)
-  areaLarge: { fontFamily: font.body, fontSize: 13, color: '#FFFFFF' },
+  areaLarge: { fontFamily: font.body, fontSize: 14, color: '#FFFFFF' },
   arrow: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
 });

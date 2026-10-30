@@ -69,7 +69,7 @@ it('① 메뉴 행 — 매칭 = RiskBadge + 시안 칩(#2F3137 12/700) / 미등�
   expect(tree.root.findAll((n) => n.props?.testID === 'risk-badge-danger').length).toBeGreaterThanOrEqual(1);
   expect(s).toContain('"width":118'); // P-285 최종본 썸네일
   // 회피 칩: 시안 프레임(r37) + 12/700 #2F3137
-  expect(s).toContain('"borderRadius":37');
+  expect(s).toContain('"borderRadius":999');
   expect(s).toContain('Soybean');
   // 미등록(A-SC-10/11): 흰 박스 + 비이탤릭 13/lh13 안내
   expect(s).toContain('"backgroundColor":"#FFFFFF","alignItems":"center","justifyContent":"center"');
