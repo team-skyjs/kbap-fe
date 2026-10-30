@@ -51,6 +51,8 @@ const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
 export { CHIP_FADE_W, chipFadeShown } from '@/components/ChipScrollRow';
 /** Food 탭 칩 줄 높이(시안 34). KB-708: 큰 글자에선 칩 라벨 줄 높이가 늘어난 만큼 같이 늘어난다 — 기본 크기 = 34 그대로.
  *  RN은 lineHeight도 글자 배율(상한 MAX_FONT_SCALE)만큼 키우므로 칩은 스스로 커지는데, 줄이 34로 고정이라 잘렸다(XXXL QA). */
+/** KB-934: 카드 리본이 사진 위로 걸치는 높이(FoodCards gbadge top −4) — 홈 가로 레일 위 여백 */
+export const RAIL_RIBBON_OVERHANG = 4;
 export const CHIP_ROW_H = 34;
 export function chipRowHeight(fontScale: number): number {
   return CHIP_ROW_H + CHIP_LABEL_LH * (Math.min(Math.max(fontScale, 1), MAX_FONT_SCALE) - 1);
@@ -720,8 +722,9 @@ const styles = StyleSheet.create({
   // 세로 FlatList 헤더(column) 안에서 가로 레일이 잔여 세로 공간을 흡수해 화면 높이만큼
   // 늘어났다(Fabric). 레일 자신은 세로로 자라면 안 되는 요소 — flexGrow:0으로 차단
   // (고정 height 가리기 아님 — 높이는 콘텐츠(카드)가 결정).
-  rail: { flexGrow: 0 },
-  railContent: { paddingHorizontal: 20, gap: 12 },
+  // KB-934: 리본(RiskBadge)이 사진 위로 4pt 걸친다(gbadge top −4) — 가로 ScrollView는 자기 경계에서 자르므로 위 여백 4로 리본을 경계 안에, 같은 만큼 위로 당겨 카드 자리는 그대로
+  rail: { flexGrow: 0, marginTop: -RAIL_RIBBON_OVERHANG },
+  railContent: { paddingHorizontal: 20, gap: 12, paddingTop: RAIL_RIBBON_OVERHANG },
   // 폭은 렌더 시 cardW로 주입(P-319) — 비율·모양만 여기서
   // P-339 ①(KB-494) → P-396(KB-590): 레일 끝 더보기가 눈에 안 띈다는 실기 피드백 —
   // 주황 포인트로 승격. 배경·보더는 DS에 이미 있는 primary 쌍(온보딩 선택 타일과 같은

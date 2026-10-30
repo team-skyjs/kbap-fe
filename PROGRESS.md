@@ -11,6 +11,11 @@
 - Codex #369 2R P1: 가공 SAFE 띠 제목 = 매칭 범위 키(구 음식 상세 detail.verdictSafe "안심하고 드세요" — 보장 표현 금지) · 가공 띠 제목 전부 가공 전용 키
 - 신규 ko 문구(K-항목 — 안전 문구, 예진 승인 대상): `packaged.noAvoidMatchTitle` = 피하는 재료와 겹치는 것 없음 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
+## 2026-10-30 · P-559 KB-934 홈 레일 리본 윗변 잘림
+- 원인: 리본이 사진 위로 4pt 걸치는데(gbadge top −4) 홈 Popular dishes 레일은 가로 ScrollView라 자기 경계에서 잘림(Food 그리드는 세로 흐름이라 안 잘림).
+- 수정: 레일 contentContainer 위 여백 4 + 레일 marginTop −4(카드 자리 무변). overflow visible은 ScrollView에선 iOS·Android 모두 안 먹어 여백으로.
+- 잠금 railRibbonClip934. 캡처 = 회원 리본이라 QA.
+
 ## 2026-10-30 · P-558 KB-932 음식 상세 하단 CTA 띠 투명
 - pillCta.band(떠 있는 바) 흰 바탕 → 투명(예진 TestFlight — 흰 띠가 "What's inside" 등 콘텐츠를 잘라 보이게 함). 알약만 뜬다. 스크림 0(완전 투명 우선).
 - pointerEvents 보이는 동안 auto → box-none: 이제 보이는 아래 콘텐츠라 띠 바탕 탭은 그 콘텐츠로(KB-903 T-019 반대 결정 — 커맨드 보고).
