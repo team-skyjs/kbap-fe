@@ -8,7 +8,8 @@
 - 2차 R-141 무료 창 = 배지 하나(FreeBadge — 틴트 알약) · 카메라(앞면·성분표)·후보·결과만 — 면 검토·이름 찾기·상세 문장 제거 · 뜻 한 줄(freeExplain)은 배지 아래에만
 - 2차 R-142 Packaged 탭 상단 = Dishes와 같은 검색 행(검색칸 + 공용 SearchScanButton → /scan?mode=packaged) · 둘째 줄 유형 칩 · **판정 칩 = 서버 verdict 필터 대기(R-142 일부 보류 — 클라 필터 금지, 커맨드 (a))**
 - 새 스타일 = type 토큰만(새 fontSize·radius 리터럴 0)
-- 신규 ko 문구 0(기존 키만) · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
+- Codex #369 2R P1: 가공 SAFE 띠 제목 = 매칭 범위 키(구 음식 상세 detail.verdictSafe "안심하고 드세요" — 보장 표현 금지) · 가공 띠 제목 전부 가공 전용 키
+- 신규 ko 문구(K-항목 — 안전 문구, 예진 승인 대상): `packaged.noAvoidMatchTitle` = 피하는 재료와 겹치는 것 없음 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
 ## 2026-10-30 — P-546 / KB-909 DS 토큰 통일 — radius 알약·글자 상향 (Draft)
 

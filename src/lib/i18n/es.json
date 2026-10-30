@@ -1278,7 +1278,8 @@
     "containsNames": "Contiene {{names}}",
     "mayContainNames": "Puede contener {{names}}",
     "signInToPersonalize": "Inicia sesión para personalizar",
-    "setAvoidIngredients": "Elegir ingredientes a evitar"
+    "setAvoidIngredients": "Elegir ingredientes a evitar",
+    "noAvoidMatchTitle": "Sin coincidencias con tu lista"
   },
   "scanMode": {
     "menu": "Menú",

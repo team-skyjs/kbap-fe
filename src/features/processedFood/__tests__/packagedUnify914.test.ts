@@ -118,3 +118,18 @@ describe('Codex #369 P2 · R-139 어두운 페이지 상태바', () => {
     expect(flow).toMatch(/<ScanDarkMessage\s+testID=\{`pscan-error-\$\{f\}`\}\s+lightStatusBar=\{focused\}/);
   });
 });
+
+describe('Codex #369 2R P1 — 가공 판정 띠 제목 = 매칭 범위(보장 표현 0)', () => {
+  it('가공 띠 제목 = 가공 전용 키만(음식 상세 detail.verdict* 0) · SAFE = noAvoidMatchTitle 10로케일 · ko = "피하는 재료와 겹치는 것 없음"', () => {
+    const v = read('src/features/processedFood/PackagedVerdict.tsx');
+    expect(v).not.toMatch(/VERDICT_TITLE|detail\.verdict/);
+    expect(v).toContain("t('packaged.noAvoidMatchTitle')");
+    for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es']) {
+      const pk = (JSON.parse(read(`src/lib/i18n/${l}.json`)) as { packaged: Record<string, string> }).packaged;
+      expect({ l, ok: typeof pk.noAvoidMatchTitle === 'string' && pk.noAvoidMatchTitle.length > 0 }).toEqual({ l, ok: true });
+    }
+    const ko = (JSON.parse(read('src/lib/i18n/ko.json')) as { packaged: Record<string, string> }).packaged;
+    expect(ko.noAvoidMatchTitle).toBe('피하는 재료와 겹치는 것 없음');
+    expect(ko.noAvoidMatchTitle).not.toMatch(/안전|안심|드세요/);
+  });
+});

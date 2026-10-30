@@ -1278,7 +1278,8 @@
     "containsNames": "Mengandung {{names}}",
     "mayContainNames": "Mungkin mengandung {{names}}",
     "signInToPersonalize": "Masuk untuk personalisasi",
-    "setAvoidIngredients": "Atur bahan yang dihindari"
+    "setAvoidIngredients": "Atur bahan yang dihindari",
+    "noAvoidMatchTitle": "Tidak cocok dengan daftar hindari"
   },
   "scanMode": {
     "menu": "Menu",
