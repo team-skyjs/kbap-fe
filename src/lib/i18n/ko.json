@@ -348,7 +348,7 @@
     "mirrorTitle": "직원이 읽게 될 내용이에요",
     "estimatedTotal": "예상 합계",
     "done": "완료",
-    "mirrorAvoid": "빼 주세요: {{list}}",
+    "mirrorAvoidNotice": "저는 아래 재료를 못 먹어요. 들어간 메뉴가 있으면 알려주세요.",
     "title": "주문 카드",
     "headerSub_one": "메뉴 {{count}}개",
     "headerSub_other": "메뉴 {{count}}개",

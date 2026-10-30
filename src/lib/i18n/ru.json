@@ -364,7 +364,7 @@
     "mirrorTitle": "Это увидит персонал",
     "estimatedTotal": "Примерный итог",
     "done": "Готово",
-    "mirrorAvoid": "Пожалуйста, без: {{list}}",
+    "mirrorAvoidNotice": "Я не могу есть эти ингредиенты. Скажите, пожалуйста, если они есть в каком-то блюде.",
     "title": "Ваш заказ",
     "headerSub_one": "Блюд: {{count}}",
     "headerSub_other": "Блюд: {{count}}",

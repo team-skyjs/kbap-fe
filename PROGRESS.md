@@ -11,6 +11,12 @@
 - Codex #369 2R P1: 가공 SAFE 띠 제목 = 매칭 범위 키(구 음식 상세 detail.verdictSafe "안심하고 드세요" — 보장 표현 금지) · 가공 띠 제목 전부 가공 전용 키
 - 신규 ko 문구(K-항목 — 안전 문구, 예진 승인 대상): `packaged.noAvoidMatchTitle` = 피하는 재료와 겹치는 것 없음 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
+## 2026-10-30 · P-549 KB-915 사장님 주문 카드 영어·한국어 면 동기화
+- 재현: 회피 목록에 81종(로컬 카탈로그) 미등재 코드(레거시 ing:slug·카탈로그 신규)가 섞이면 한국어 면(avoidNoticeKo)은 거르고 미러는 avoidNames 전부 나열 → 영어 면에만 재료가 더 보임. 요청 문구도 달랐다(한국어 "못 먹어요, 들어간 메뉴면 알려주세요" ↔ 미러 "Please leave out").
+- 수정: orderCard.ts buildOrderCard 단일 모델(항목 줄·맺음·회피 코드↔한국어 라벨↔리더 이름 짝) → 두 면이 같은 모델을 렌더. 미러 요청 = order.mirrorAvoidNotice(한국어 면과 같은 뜻) + 재료 줄(구 order.mirrorAvoid 제거).
+- 신규 ko: `order.mirrorAvoidNotice` = 저는 아래 재료를 못 먹어요. 들어간 메뉴가 있으면 알려주세요.(카드 본문과 같은 문장)
+- 잠금: orderCardSync915(모델) + scanRichOrder(렌더 두 면 줄 수·재료 집합). 시뮬 캡처 = 로그인 계정 필요(게스트 = 회피 8개 고정) — 커맨드 문의.
+
 ## 2026-10-30 — P-546 / KB-909 DS 토큰 통일 — radius 알약·글자 상향 (Draft)
 
 - 글자: `scripts/kb909-font-codemod.mjs`로 fontSize 리터럴 일괄 치환(런타임 간접층 없음) — 11→12·12→13·12.5→13·13→14·13.5→14·14→16·15→16, 표 밖 값은 같은 규칙(9.5→10·10→11·10.5→11·11.5→12·14.5→16·15.5→16), 16 이상 그대로. 같은 스타일 객체의 lineHeight는 새/옛 비율로(반올림). theme type 토큰은 손으로 표대로. 상한(MAX_FONT_SCALE 1.3) 무변

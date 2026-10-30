@@ -18,10 +18,10 @@ import { Pressable } from '@/components/Pressable';
 import { EVENTS, track } from '@/lib/analytics';
 import { airbridge } from '@/lib/airbridge';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, primaryTint, primaryTintSolid, radius, shadow } from '@/lib/theme';
+import { color as C, font, primaryTint, primaryTintSolid, radius, shadow, type } from '@/lib/theme';
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
 import { ConfettiBurst, CONFETTI_DURATION_MS } from '@/components/ConfettiBurst';
-import { avoidNoticeKo, orderClosingKo, orderItemLineKo, orderSentenceKo } from '@/lib/order/orderCard';
+import { buildOrderCard } from '@/lib/order/orderCard';
 import { keepWordsKo } from '@/lib/order/keepWords';
 import { saveOrderHistory } from '@/lib/data/orders';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
@@ -97,10 +97,8 @@ export function FlippedOrderCard({
     return () => clearTimeout(timer);
   }, [confetti]);
   // P-265: 2개 이상 = 품목 나열(주세요 X) + 맺음 한 줄(총 N개) / 단일 = 종전 한 문장
-  const multi = items.length >= 2;
-  const lines = items.map((i) => (multi ? orderItemLineKo(i.nameKo, i.qty) : orderSentenceKo(i.nameKo, i.qty)));
-  const closing = multi ? orderClosingKo(items.reduce((a, i) => a + i.qty, 0)) : null;
-  const avoid = avoidNoticeKo(avoidCodes);
+  // KB-915: 한국어 면·미러 = 같은 모델(항목·순서·회피 집합 동일)
+  const { lines, closing, avoid } = buildOrderCard(items, avoidCodes, avoidNames);
   const totalKrw = items.reduce((a, i) => a + (i.priceKrw ?? 0) * i.qty, 0);
   const converted = totalKrw > 0 ? convertKrw(totalKrw, currency, fx) : null; // P-242
 
@@ -109,7 +107,7 @@ export function FlippedOrderCard({
     <View style={{ gap: big ? 18 : 10 }}>
       {lines.map((l, i) => (
         <Text key={i} style={[styles.koLine, big && styles.koLineBig]} testID={big ? undefined : `ko-line-${i}`}>
-          {keepWordsKo(l)}
+          {keepWordsKo(l.ko)}
         </Text>
       ))}
       {/* P-265: 맺음 한 줄 — 사장님이 소리내 읽는 본문의 일부라 품목 줄과 같은 타이포 */}
@@ -144,13 +142,17 @@ export function FlippedOrderCard({
 
       {/* 정방향 미러 — 같은 데이터의 리더 언어 표현, 캡션은 박스 하단(시안) */}
       <View style={styles.mirror} testID="order-mirror">
-        {items.map((i, k) => (
-          <Text key={k} style={styles.mirrorLine}>
-            {i.qty} × {i.name}
+        {lines.map((l, k) => (
+          <Text key={k} style={styles.mirrorLine} testID={`mirror-line-${k}`}>
+            {l.qty} × {l.name}
           </Text>
         ))}
-        {avoidNames.length > 0 && (
-          <Text style={styles.mirrorAvoid}>{t('order.mirrorAvoid', { list: avoidNames.join(', ') })}</Text>
+        {/* KB-915: 요청 문구 = 한국어 면과 같은 뜻(못 먹는 재료 + 들어간 메뉴면 알려 달라) — 구 "빼 주세요"는 다른 요청이었다 */}
+        {!!avoid && (
+          <>
+            <Text style={styles.mirrorAvoid} testID="mirror-avoid">{t('order.mirrorAvoidNotice')}</Text>
+            <Text style={styles.mirrorAvoidList} testID="mirror-avoid-list">{avoid.names.join(', ')}</Text>
+          </>
         )}
         <Text style={styles.mirrorCaption}>{t('order.mirrorTitle')}</Text>
       </View>
@@ -294,7 +296,9 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   mirrorLine: { fontFamily: font.bodySemi, fontSize: 16, color: C.ink },
-  mirrorAvoid: { fontFamily: font.body, fontSize: 13, color: C.ink2, marginTop: 2 },
+  // KB-915: 요청 문장 + 재료 줄(한국어 면과 같은 2단) — 토큰 타이포(KB-909)
+  mirrorAvoid: { ...type.meta, fontFamily: font.body, color: C.ink2, marginTop: 2 },
+  mirrorAvoidList: { ...type.meta, fontFamily: font.bodySemi, color: C.ink2 },
   // 시안(IMG_1799): 캡션은 미러 박스 하단 중앙 뮤트
   mirrorCaption: { fontFamily: font.body, fontSize: 12, color: C.ink3, textAlign: 'center', marginTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair, paddingTop: 8 },
   totalRow: {

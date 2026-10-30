@@ -348,7 +348,7 @@
     "mirrorTitle": "Ini yang akan dibaca staf",
     "estimatedTotal": "Perkiraan total",
     "done": "Selesai",
-    "mirrorAvoid": "Tolong tanpa: {{list}}",
+    "mirrorAvoidNotice": "Saya tidak bisa makan bahan di bawah ini. Tolong beri tahu jika ada menu yang mengandungnya.",
     "title": "Pesanan Anda",
     "headerSub_one": "{{count}} hidangan",
     "headerSub_other": "{{count}} hidangan",

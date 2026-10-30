@@ -348,7 +348,7 @@
     "mirrorTitle": "Esto es lo que leerá el personal",
     "estimatedTotal": "Total estimado",
     "done": "Listo",
-    "mirrorAvoid": "Sin: {{list}}, por favor",
+    "mirrorAvoidNotice": "No puedo comer los ingredientes de abajo. Avísame si algún plato los lleva.",
     "title": "Tu pedido",
     "headerSub_one": "{{count}} plato",
     "headerSub_other": "{{count}} platos",
