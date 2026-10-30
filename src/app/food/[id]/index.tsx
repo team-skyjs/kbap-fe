@@ -36,7 +36,8 @@ import { PILL_MAX_SCALE, pillCta, useBottomBand } from '@/features/food/pillCta'
 import { IDOL_CARD_BOTTOM_PAD, IdolVideoCard } from '@/features/food/IdolVideoCard';
 import { useIdolPickVideo } from '@/lib/data/useIdolPicks';
 import { useIsNewFood } from '@/lib/newFood';
-import { useIngredientImageChain } from '@/components/AvoidTile';
+import { IngChainImage, IngredientTile, tile } from '@/components/IngredientTile';
+import { VerdictBand, VERDICT_TITLE } from '@/components/VerdictBand';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
@@ -66,29 +67,6 @@ const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2
 const HEADER_SOLID_Y = 210;
 const INK_TITLE = '#2F3137';
 const REVIEW_PREVIEW_N = 3; // 발주 §1-7: 카드 ×3
-
-/** P-303(KB-457): 재료 타일·시트 이미지 = AvoidTile과 같은 3단 체인(서버 imageUrl →
- *  CDN 조립 → 폴백) — 상세만 서버 imageUrl 단독이라 사진이 안 뜨던 결함 해소.
- *  체인 소진 시 현 폴백(IconFood) 유지, 타일 크기 48/56 무변(시안 §3). */
-function IngChainImage({ code, imageUrl, size, iconSize }: { code: string; imageUrl?: string | null; size: number; iconSize: number }) {
-  const { uri, isCutout, nextSource } = useIngredientImageChain(code, imageUrl);
-  if (!uri) return <IconFood size={iconSize} color={C.ink3} />;
-  // key = 소스별 리마운트(RemoteImage settle 리셋 — AvoidTile 문법 동일)
-  // P-341(KB-502): 누끼본 = contain(여백은 크기 축소로 근사 — 타일 pad 유지)
-  // Codex #102 P2: 누끼 상태 = 흰 바닥(AvoidTile 동일 규칙) — 부모 surface2는 실패 폴백만
-  return (
-    <>
-      {isCutout && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF' }]} testID={`ing-cut-bg-${code}`} />}
-      <RemoteImage
-        key={uri}
-        uri={uri}
-        onError={nextSource}
-        contentFit={isCutout ? 'contain' : undefined}
-        style={isCutout ? { width: size * 0.74, height: size * 0.74 } : { width: size, height: size, borderRadius: radius.md }} // P-344: 74% 공통
-      />
-    </>
-  );
-}
 
 export default function FoodDetailScreen() {
   // P-012(KB-179): price는 스캔 결과 진입에만 실리는 표시 전용 param — 조작 방어 파싱
@@ -295,12 +273,6 @@ export default function FoodDetailScreen() {
 type TFn = ReturnType<typeof useTranslation>['t'];
 type Router = ReturnType<typeof useRouter>;
 
-const VERDICT: Record<RiskState, string> = {
-  safe: 'detail.verdictSafe',
-  caution: 'detail.verdictCaution',
-  danger: 'detail.verdictDanger',
-  unable: 'detail.verdictUnable',
-};
 
 /** 재료 필터 칩(§1-5) — D-2 홈과 동일 문법. */
 type IngChip = 'all' | 'safe' | 'danger' | 'caution';
@@ -479,17 +451,8 @@ function Registered({
           <Text style={styles.lockSlotCta}>{t('intro.signUp')}</Text>
         </Pressable>
       ) : (
-        <Pressable
-          style={[styles.riskRow, { backgroundColor: riskTone[dishRisk].bg }]}
-          onPress={() => setCoachOpen(true)}
-          testID="detail-verdict"
-        >
-          <RiskBadge state={dishRisk} />
-          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-            <Text style={styles.riskRowTitle}>{t(VERDICT[dishRisk])}</Text>
-            <Text style={styles.riskRowSub}>{verdictReason}</Text>
-          </View>
-        </Pressable>
+        // KB-914(R-137): 띠 = 공용 VerdictBand(가공식품 상세·성분표 결과와 같은 부품)
+        <VerdictBand state={dishRisk} title={t(VERDICT_TITLE[dishRisk])} reason={verdictReason} onPress={() => setCoachOpen(true)} />
       )}
 
       {/* §1-2: 헤더 블록 — 좌 컬럼 + 우 북마크 36(4129:10698) */}
@@ -566,42 +529,34 @@ function Registered({
               </View>
             )}
             {/* §3 태그 줄바꿈 규칙: 타일 단위로만 줄바꿈 — flexWrap + flexShrink:0 + 이름 1줄 */}
-            <View style={styles.ingGrid}>
+            <View style={tile.grid}>
               {shownIngredients.map((ing) => {
                 const dRisk = personalRisk(ing.risk, hasRestrictions);
                 return (
-                  <Pressable key={ing.code} style={[styles.ingTile, !guest && dRisk === 'caution' && styles.ingTileWithFoot]} onPress={() => setIngSheet(ing)} testID={`ing-${ing.code}`}>
-                    {!guest && (
-                      <View style={styles.ingTileMark}>
-                        <RiskMark state={dRisk} size={18} />
-                      </View>
-                    )}
-                    <View style={styles.ingTileImg}>
-                      <IngChainImage code={ing.code} imageUrl={cat.imageUrl(ing.code)} size={48} iconSize={28} />
-                    </View>
-                    <Text style={styles.ingTileName} numberOfLines={1}>{ing.name}</Text>
+                  // KB-914(R-137): 타일 = 공용 IngredientTile(가공식품 감지 재료와 같은 부품) — 부가 줄·풋터는 여기서
+                  <IngredientTile key={ing.code} code={ing.code} name={ing.name} risk={guest ? null : dRisk} imageUrl={cat.imageUrl(ing.code)} withFoot={!guest && dRisk === 'caution'} onPress={() => setIngSheet(ing)} testID={`ing-${ing.code}`}>
                     {/* KB-599: 함의 매치 근거(새우 회피 → 새우젓) — 회원·카탈로그 code일 때만, 2줄 클램프. 뒤에 % 줄이 오면 하단 여백은 그 줄이 맡는다 */}
                     {!guest && ing.impliedBy && isCatalogIngredient(ing.impliedBy) && (
-                      <Text style={ing.percentage != null ? [styles.ingTileSub, { marginBottom: 0 }] : styles.ingTileSub} numberOfLines={2} testID={`ing-implied-${ing.code}`}>
+                      <Text style={ing.percentage != null ? [tile.sub, { marginBottom: 0 }] : tile.sub} numberOfLines={2} testID={`ing-implied-${ing.code}`}>
                         {t('detail.avoidImplied', { ingredient: ingredientLabel(ing.impliedBy) })}
                       </Text>
                     )}
                     {ing.percentage != null && (
                       // KB-710(3): 두 줄까지 — SE 큰 글자에서 "~98% of sho…" 잘림. 기본 크기는 한 줄 그대로, 같은 줄 타일은 줄바꿈 격자가 높이를 맞춘다
-                      <Text style={styles.ingTileSub} numberOfLines={2} testID={`ing-shops-${ing.code}`}>{t('detail.ofShops', { pct: Math.round(ing.percentage) })}</Text>
+                      <Text style={tile.sub} numberOfLines={2} testID={`ing-shops-${ing.code}`}>{t('detail.ofShops', { pct: Math.round(ing.percentage) })}</Text>
                     )}
                     {/* caution 변형: "Ask the owner" 풋터(h30 primaryTint) → 사장님 카드(기존 진입점) */}
                     {!guest && dRisk === 'caution' && (
                       <Pressable
-                        style={styles.ingTileFoot}
+                        style={tile.foot}
                         onPress={() => { track(EVENTS.owner_ask_open, { source: 'ingredient', food_id: id }); router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(ing.code)}` as Href); }}
                         hitSlop={4}
                         testID={`ask-${ing.code}`}
                       >
-                        <Text style={styles.ingTileFootText} numberOfLines={1}>{t('detail.askOwner')}</Text>
+                        <Text style={tile.footText} numberOfLines={1}>{t('detail.askOwner')}</Text>
                       </Pressable>
                     )}
-                  </Pressable>
+                  </IngredientTile>
                 );
               })}
             </View>
@@ -839,9 +794,6 @@ const styles = StyleSheet.create({
   fTitle: { fontFamily: font.bodySemi, fontSize: 16, color: C.ink, textAlign: 'center' },
 
   // §1-3: 위험 요약 행(4129:11366) — 틴트 + 하단 헤어라인
-  riskRow: { flexDirection: 'row', alignItems: 'center', gap: 15, paddingVertical: 12, paddingHorizontal: 20, minHeight: 63, borderBottomWidth: 0.5, borderBottomColor: '#D5DFE7' },
-  riskRowTitle: { fontSize: 16, fontWeight: '600', color: C.ink },
-  riskRowSub: { fontSize: 14, fontWeight: '500', color: C.ink2, lineHeight: 19 },
   lockSlot: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 20, paddingVertical: 13, backgroundColor: C.surface2, borderBottomWidth: 0.5, borderBottomColor: '#D5DFE7' },
   lockSlotText: { flex: 1, fontSize: 14, fontWeight: '400', color: C.ink2 },
   lockSlotCta: { fontSize: 14, fontWeight: '700', color: C.primaryText },
@@ -875,15 +827,6 @@ const styles = StyleSheet.create({
   insideTitle: { fontSize: 16, fontWeight: '500', color: C.ink, paddingHorizontal: 20 },
   ingChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20 },
   // §3: 타일 단위 줄바꿈 — flexWrap + 타일 flexShrink 0
-  ingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20 },
-  ingTile: { width: '31%', flexGrow: 1, maxWidth: '32%', flexShrink: 0, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ECEDF0', borderRadius: radius.md, paddingTop: 26, alignItems: 'center', gap: 2, overflow: 'hidden' }, // A-FD-08
-  ingTileMark: { position: 'absolute', top: 6, left: 6 },
-  ingTileImg: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  ingTileName: { fontSize: 13, fontWeight: '500', color: INK_TITLE, textAlign: 'center', paddingHorizontal: 6 },
-  ingTileSub: { fontSize: 12, fontWeight: '400', color: '#5A636A', textAlign: 'center', paddingHorizontal: 4, marginBottom: 10 },
-  ingTileWithFoot: { paddingTop: 8 }, // A-FD-08 푸터 변형
-  ingTileFoot: { alignSelf: 'stretch', minHeight: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,113,52,0.05)', borderBottomLeftRadius: radius.xs, borderBottomRightRadius: radius.xs },
-  ingTileFootText: { fontSize: 13, fontWeight: '500', color: C.primary }, // A-FD-09(색·굵기는 C-62)
 
   // §1-6: 재료 바텀시트
   sheetScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },

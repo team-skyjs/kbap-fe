@@ -12,7 +12,7 @@ it('누끼 인셋 13%(≈74%) 전 표면 공통 — AvoidTile·상세 IngChainIm
   const av = read('src/components/AvoidTile.tsx');
   expect(av).toContain("photoCut: { position: 'absolute', top: '13%', right: '13%', bottom: '13%', left: '13%' }");
   expect(av).toContain("contentFit={isCutout ? 'contain' : 'cover'}"); // 폴백 = cover
-  expect(read('src/app/food/[id]/index.tsx')).toContain('size * 0.74');
+  expect(read('src/components/IngredientTile.tsx')).toContain('size * 0.74'); // KB-914: 공용 타일로 이동
 });
 
 it('선택 라벨 #FF7134 700 / 비선택 #4B4F58 500 · 체크 배지 20 · 프로필 Dietary(radius 0) 형태 유지', () => {

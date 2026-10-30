@@ -61,6 +61,7 @@ let mockMeError = false;
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockMe, isError: mockMeError }) }));
 type Q = { isPending: boolean; isError: boolean; data?: unknown; error?: unknown; refetch: jest.Mock };
 let mockDetail: Q;
+jest.mock('@/lib/data/useIngredientCatalog', () => ({ useIngredientCatalog: () => ({ name: (c: string) => c, imageUrl: () => null }) })); // KB-914: 감지 재료 타일
 jest.mock('@/lib/data/useProcessedFoods', () => ({ ...jest.requireActual('@/lib/data/useProcessedFoods'), useProcessedDetail: () => mockDetail }));
 // KB-812 2차: 리뷰 섹션은 자기 쿼리를 가진다 — 판정 화면 테스트에선 자리·전달값만(섹션 자체는 packagedReviews507)
 const mockReviewsProps = jest.fn();
@@ -194,13 +195,14 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(text(detail({ majorAllergens: [], labelSource: 'NONE' }))).toContain('packaged.majorUnavailable');
     expect(text(detail({ majorAllergens: [] }))).toContain('packaged.majorNoneFound');
   });
-  it('회원 SAFE(08): safe 리본 · 판정 문장 0 · 미리보기 + See detail → 제자리 펼침(Your avoid list·원재료·원문·출처) → See less + 계측(id만)', () => {
+  it('회원 SAFE(08) → KB-914: safe 띠(음식 상세와 같은 부품, "회피 일치 없음") · 미리보기 + See detail → 제자리 펼침(원재료·원문·출처 — 구 Your avoid list는 띠가 대신) → See less + 계측(id만)', () => {
     member();
     const t = detail({ verdict: 'SAFE' });
-    expect(ids(t)).toContain('badge-safe');
-    expect(ids(t).some((i) => i.startsWith('pf-verdict-'))).toBe(false);
+    expect(ids(t)).toEqual(expect.arrayContaining(['badge-safe', 'pf-verdict-safe']));
+    expect(text(t)).toContain('packaged.noAvoidMatches');
     press(t, 'pf-see-detail');
-    expect(ids(t)).toEqual(expect.arrayContaining(['pf-expanded', 'pf-your-avoid', 'pf-ingredients', 'pf-raw', 'pf-source', 'pf-source-disclaimer', 'pf-see-less'])); // 번역 전 = 원재료 본문이 원문
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-expanded', 'pf-ingredients', 'pf-raw', 'pf-source', 'pf-source-disclaimer', 'pf-see-less'])); // 번역 전 = 원재료 본문이 원문
+    expect(ids(t)).not.toContain('pf-your-avoid');
     expect(ids(t)).not.toContain('pf-see-detail');
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_detail_expand', { product_id: '10201', action: 'see_detail' });
     press(t, 'pf-see-less');
@@ -228,7 +230,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     const t = detail({ labelSource: 'DECLARED', ingredients: { translated: ko, original: ko }, allergenStatement: { translated: al, original: al } });
     press(t, 'pf-see-detail');
     expect(text(t)).not.toContain('packaged.translationLabel');
-    expect(ids(t)).toEqual(expect.arrayContaining(['pf-raw-label', 'pf-raw', 'pf-allergens']));
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-raw-original-label', 'pf-raw-original', 'pf-allergens'])); // KB-914: 원재료 한 체계(IngredientsText)
     expect(text(t)).toContain('packaged.koreanOriginal');
     const allergen = t.root.findAll((n) => n.props?.testID === 'pf-allergens' && typeof n.type === 'string')[0];
     expect(allergen.findAll((n) => typeof n.type === 'string' && n.props.children === al)).toHaveLength(1);
@@ -245,11 +247,12 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(ids(a)).not.toContain('pf-evidence-MILK');
     expect(text(a)).toContain('packaged.matchEvidence:{\\"name\\":\\"L(EGG)\\",\\"evidence\\":\\"난각칼슘\\"}');
   });
-  it('회원인데 verdict null(원재료·표시 둘 다 없음) = 리본 없이 "확인 못 함"', () => {
+  it('회원인데 verdict null(원재료·표시 둘 다 없음) = 판정 리본 없이 "확인 못 함"(KB-914: 회색 unable 띠 — 4상태의 "판정 불가")', () => {
     member();
     const t = detail({ verdict: null });
     expect(ids(t)).toContain('pf-not-verified');
-    expect(ids(t).some((i) => i.startsWith('badge-'))).toBe(false);
+    expect(ids(t).filter((i) => /^badge-(safe|caution|danger)$/.test(i))).toEqual([]); // 판정 리본 0 — unable만
+    expect(ids(t)).toContain('badge-unable');
   });
   it('QA AQ2: 번역 없음(#462 전) = 미리보기 원문 2줄 · 펼침 Ingredients 본문 = 원문(빈 제목 0) · "English translation"·별도 Korean original 0', () => {
     const t = detail({ ingredients: { translated: null, original: '감자,식물성유지,조미료' } });
@@ -259,14 +262,14 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     const ing = t.root.findAll((n) => n.props?.testID === 'pf-ingredients' && typeof n.type === 'string')[0];
     expect(JSON.stringify(ing.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children))).toContain('감자,식물성유지,조미료');
     expect(text(t)).not.toContain('packaged.translationLabel');
-    expect(ids(t)).not.toContain('pf-original');
+    expect(ids(t)).not.toContain('pf-raw-translation-label');
     // 번역 있음 = 번역 1줄 + 원문 1줄(시안), 펼침 = 번역 + 별도 원문
     const w = detail({ ingredients: { translated: 'Potato, oil', original: '감자,식물성유지' } });
     const p2 = w.root.findAll((n) => n.props?.testID === 'pf-ingredients-preview' && typeof n.type === 'string')[0];
     expect(p2.findAll((n) => n.props?.numberOfLines === 2)).toHaveLength(0);
     press(w, 'pf-see-detail');
     expect(text(w)).toContain('packaged.translationLabel');
-    expect(ids(w)).toContain('pf-original');
+    expect(ids(w)).toEqual(expect.arrayContaining(['pf-raw-translation-label', 'pf-raw-original-label', 'pf-raw-original'])); // KB-914: 같은 섹션 안 같은 위계(구 별도 Korean original 섹션)
   });
   it('원재료: 번역(#462) 있으면 번역 + 원문 · 번역 전 = 원문만 · 한국어 사용자 = 번역 줄 생략', () => {
     const t = detail({ ingredients: { translated: 'Milk, water, sugar', original: '원유,정제수,백설탕' } });
@@ -295,7 +298,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     mockMeError = true;
     const f = detail({ verdict: null, majorAllergens: ['MILK'] });
     expect(ids(f)).toEqual(expect.arrayContaining(['pf-profile-unavailable', 'pf-profile-unavailable-major']));
-    expect(ids(f).some((i) => i.startsWith('badge-'))).toBe(false);
+    expect(ids(f).filter((i) => /^badge-(safe|caution|danger)$/.test(i))).toEqual([]); // KB-914: 회색 unable 띠만
   });
   it('QA #338: 상세 사진 = 상세 전용 recyclingKey + 로드 전 투명(다른 제품 사진 비침 0) · 사진이 바뀌면 다시 마운트', () => {
     const src = fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8');

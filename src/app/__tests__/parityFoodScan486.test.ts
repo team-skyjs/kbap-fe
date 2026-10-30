@@ -4,8 +4,8 @@ const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 it('A-FD — 헤드 24/18/27·타일 31% pt26(푸터 변형 pt8)·별점 행 gap2 13/600·natToggle gap7', () => {
   const fd = read('src/app/food/[id]/index.tsx');
   expect(fd).toContain("headBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 27 }");
-  expect(fd).toMatch(/ingTile: \{[^}]*paddingTop: 26/);
-  expect(fd).toContain('ingTileWithFoot: { paddingTop: 8 }');
+  expect(read('src/components/IngredientTile.tsx')).toMatch(/tile: \{[^}]*paddingTop: 26/); // KB-914: 공용 타일
+  expect(read('src/components/IngredientTile.tsx')).toContain('withFoot: { paddingTop: 8 }'); // KB-914: 공용 타일
   expect(fd).toContain("ratingRowText: { fontSize: 14, fontWeight: '600', color: '#2F3137' }");
   expect(fd).toContain("rvHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 20, paddingTop: 20 }"); // KB-848: 토글만 오른쪽
   expect(fd).toMatch(/natToggleRow: \{[^}]*gap: 7/);

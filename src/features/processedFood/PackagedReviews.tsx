@@ -33,7 +33,7 @@ import { ModerationFlow, type ModTarget } from '@/features/community/moderation'
 import { RatingSummaryBox } from '@/features/review/RatingSummaryBox';
 import type { ProcessedFoodDetail } from '@/lib/api/processedFoodAdapter';
 
-export function PackagedReviews({ productId, summary, loadMoreRef }: { productId: string; summary: ProcessedFoodDetail['reviewSummary']; loadMoreRef?: React.RefObject<(() => void) | null> }) {
+export function PackagedReviews({ productId, summary, loadMoreRef, writeInBar = false }: { productId: string; summary: ProcessedFoodDetail['reviewSummary']; loadMoreRef?: React.RefObject<(() => void) | null>; writeInBar?: boolean }) {
   const { t } = useTranslation();
   const router = useRouter();
   const q = useProcessedReviews(productId);
@@ -114,7 +114,8 @@ export function PackagedReviews({ productId, summary, loadMoreRef }: { productId
       {/* KB-865 ④ 시안 31: 헤더 행 — 쓰기 링크는 서버 쓰기 플래그 + 롤백 스위치(reviewsLiveEnabled off = 쓰기 경로 없음, Codex #314) */}
       <View style={s.head}>
         <Text style={s.heading} accessibilityRole="header">{t('reviews.headerTitle')}</Text>
-        {FLAGS.packagedReviewWrite && FLAGS.reviewsLiveEnabled && (
+        {/* KB-914: 상세 하단 고정 바가 쓰기를 맡으면 섹션 링크 없음(진입점 하나) */}
+        {FLAGS.packagedReviewWrite && FLAGS.reviewsLiveEnabled && !writeInBar && (
           <Pressable onPress={write} hitSlop={12} accessibilityRole="button" testID="pf-write-review">
             <Text style={s.writeLink}>{t('reviews.writeReview')}</Text>
           </Pressable>

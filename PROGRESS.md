@@ -1,3 +1,12 @@
+## 2026-10-30 — P-548 / KB-914 가공식품 화면 메뉴판 스캔과 통일 (Draft — 1차 R-137·138·139)
+
+- 공용 부품 추출(무변 이동): 음식 상세 판정 띠 → `components/VerdictBand` · 재료 타일 → `components/IngredientTile`(IngChainImage 포함) · 메뉴판 회피 칩 줄 → `ScanRichList` `WarnChips` · 메뉴판 오류 화면 → `features/scan/ScanDarkMessage`
+- R-137 가공식품 상세·성분표 결과 = 같은 띠(서버 verdict 그대로, 제목 = 기존 가공식품 판정 키, 성분표 결과 이유 = 결과 전용 문장 키 무변) + 감지 재료 타일(회원 판정 있을 때만 마크: 회피 = danger · 혼입 = caution · 그 밖 감지 = safe — 판정 없으면 마크 0) · 확인 못 함 = 회색 unable 띠 · 원재료 = 한 체계(IngredientsText — "English translation"·"Korean original" 같은 위계 소제목) · 성분표 결과 원문 = 접힘 · 상세 하단 고정 "Write a review" 알약(섹션 링크 숨김) · 결과 하단 = Done 알약 + 보조 테두리 · 사진 위 작은 리본 소멸
+- R-138 후보 줄 = 메뉴판 결과 줄 치수(richStyles) + ProductName(영어 굵게 + 한국어 작게) + 회피 칩(위험 판정 줄만 상세 프리페치 — 서버 후보 항목엔 일치 코드가 없다) · **줄 탭 = 바로 확정**(하단 확정 버튼 소멸, 확정 대기 줄에 스피너, 나머지 잠금 유지) · "None of these" = 목록 끝 줄
+- R-139 후보 없음·못 읽음·오류(MessagePage) = 메뉴판 'Not a menu'와 같은 어두운 전체 화면(주황 라벨 = 구 헤더 제목 · 흰 문장 · 버튼 세로) · 왼쪽 위 뒤로
+- 새 스타일 = type 토큰만(fontSize 리터럴 0): 상세 제목은 2차 ProductName(largeTitle 26, 구 28)
+- 신규 ko 문구 0(기존 키만) · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
+
 ## 2026-10-30 — P-546 / KB-909 DS 토큰 통일 — radius 알약·글자 상향 (Draft)
 
 - 글자: `scripts/kb909-font-codemod.mjs`로 fontSize 리터럴 일괄 치환(런타임 간접층 없음) — 11→12·12→13·12.5→13·13→14·13.5→14·14→16·15→16, 표 밖 값은 같은 규칙(9.5→10·10→11·10.5→11·11.5→12·14.5→16·15.5→16), 16 이상 그대로. 같은 스타일 객체의 lineHeight는 새/옛 비율로(반올림). theme type 토큰은 손으로 표대로. 상한(MAX_FONT_SCALE 1.3) 무변

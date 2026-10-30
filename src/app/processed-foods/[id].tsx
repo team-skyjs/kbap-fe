@@ -44,6 +44,7 @@ import { processedUnavailable, useProcessedDetail } from '@/lib/data/useProcesse
 import { packagedTypeKey, VERDICT_RISK, type ProcessedFoodDetail } from '@/lib/api/processedFoodAdapter';
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
 import { PackagedReviews } from '@/features/processedFood/PackagedReviews';
+import { detectedCodes, IngredientsText, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand } from '@/features/processedFood/PackagedVerdict';
 
 const GUTTER = 20;
 export const PHOTO_RATIO = 223 / 335; // 시안 사진 슬롯 335×223(원본 500×333 비율)
@@ -72,44 +73,17 @@ function IngredientsPreview({ d, showTranslation }: { d: ProcessedFoodDetail; sh
   );
 }
 
-/** 펼침(시안 09·38·51·52) — 제자리. SAFE 회원만 "Your avoid list"(나머지는 위 판정 문장이 있다 — 예진 10/22 Q4) */
-function Expanded({ d, showTranslation, showAvoidList }: { d: ProcessedFoodDetail; showTranslation: boolean; showAvoidList: boolean }) {
+/** 펼침(시안 09·38·51·52) — 제자리. KB-914(R-137): 판정은 위 띠가 말한다(구 SAFE "Your avoid list" 블록 소멸) · 원재료 = 한 체계(IngredientsText) */
+function Expanded({ d, showTranslation }: { d: ProcessedFoodDetail; showTranslation: boolean }) {
   const { t } = useTranslation();
   const imageCredit = d.image ? IMAGE_CREDIT[d.image.attributionKey] : undefined;
   const c002 = d.sourceProvider === 'C002';
-  const translated = showTranslation ? d.ingredients.translated : null;
   return (
     <View style={s.expanded} testID="pf-expanded">
-      {showAvoidList && (
-        <View style={s.block} testID="pf-your-avoid">
-          <Text style={s.h2}>{t('packaged.yourAvoidList')}</Text>
-          <Text style={s.body}>{t('packaged.noAvoidMatches')}</Text>
-        </View>
-      )}
       <View style={s.block} testID="pf-ingredients">
         <Text style={s.h2}>{t('packaged.ingredientsHeading')}</Text>
-        {translated ? (
-          <View>
-            <Text style={s.body}>{t('packaged.translationLabel')}</Text>
-            <Text style={s.body}>{translated}</Text>
-          </View>
-        ) : d.ingredients.original ? (
-          // 번역 없음 = 원문을 본문으로(소제목 "English translation" 없음 — QA AQ2). KB-901(T-003): 한국어 아닌 사용자에겐 원문 라벨("Korean original")을
-          // 붙인다 — 번역처럼 보이지 않게(서버가 원문을 translated로 채우던 건 어댑터 realTranslation이 거른다)
-          <View>
-            {showTranslation && <Text style={s.body} testID="pf-raw-label">{t('packaged.koreanOriginal')}</Text>}
-            <Text style={s.body} testID="pf-raw">{d.ingredients.original}</Text>
-          </View>
-        ) : (
-          <Text style={s.body} testID="pf-no-raw">{t('packaged.noIngredients')}</Text>
-        )}
+        <IngredientsText translated={d.ingredients.translated} original={d.ingredients.original} showTranslation={showTranslation} emptyLabel={t('packaged.noIngredients')} testID="pf-raw" />
       </View>
-      {!!translated && !!d.ingredients.original && (
-        <View style={s.block} testID="pf-original">
-          <Text style={s.h2}>{t('packaged.koreanOriginal')}</Text>
-          <Text style={s.body} testID="pf-raw">{d.ingredients.original}</Text>
-        </View>
-      )}
       {!!d.allergenStatement && (
         <View style={s.block} testID="pf-allergens">
           <Text style={s.h2}>{t('packaged.allergenTitle')}</Text>
@@ -139,28 +113,14 @@ function Expanded({ d, showTranslation, showAvoidList }: { d: ProcessedFoodDetai
   );
 }
 
-/** 회원 판정 문장(시안 10·11·11b) — 서버 verdict + matches 그대로(앱 판정 0) */
-function VerdictText({ d }: { d: ProcessedFoodDetail }) {
+/** 판정 근거(KB-901 T-053 — "Egg: 난각칼슘") — 띠 아래 작은 글자. 근거가 없으면 줄 없음 */
+function MatchEvidence({ d }: { d: ProcessedFoodDetail }) {
   const { t } = useTranslation();
-  let title: string;
-  let body: string;
-  if (d.verdict === 'AVOID') {
-    title = t('packaged.avoidMatchTitle');
-    body = t('packaged.avoidMatchBody', { names: namesOf(d.avoidMatches.map((m) => m.code)) });
-  } else if (d.verdict === 'CAUTION') {
-    title = t('packaged.crossContactTitle');
-    body = t('packaged.crossContactBody', { names: namesOf(d.mayContainMatches.map((m) => m.code)) });
-  } else {
-    title = t('packaged.unclearTitle');
-    body = t('packaged.unclearBody', { items: d.unclearIngredients.join(', ') });
-  }
-  // KB-901(T-053): 어느 원재료 때문에 걸렸는지(서버 evidence — "Egg: 난각칼슘") — 문장 아래 작은 글자. 근거가 없으면 줄 없음
   const matches = d.verdict === 'AVOID' ? d.avoidMatches : d.verdict === 'CAUTION' ? d.mayContainMatches : [];
   const evidence = matches.filter((m) => m.evidence.length > 0);
+  if (evidence.length === 0) return null;
   return (
-    <View style={s.block} testID={`pf-verdict-${(d.verdict ?? '').toLowerCase()}`}>
-      <Text style={s.h2} accessibilityRole="header">{title}</Text>
-      <Text style={s.body}>{body}</Text>
+    <View testID="pf-evidence">
       {evidence.map((m) => (
         <Text key={m.code} style={s.disclaimer} testID={`pf-evidence-${m.code}`}>
           {t('packaged.matchEvidence', { name: restrictionLabel(m.code), evidence: m.evidence.join(', ') })}
@@ -270,8 +230,8 @@ export function ProcessedFoodDetailScreen() {
     // Codex #338 R5(커맨드 규칙): 서버가 회원 기준으로 계산해 보낸 verdict가 있으면 프로필 상태와 무관하게 그린다(비회원은 서버가 늘 null).
     // 회피를 바꾼 직후의 옛 판정은 캐시 키(회피 코드·언어)가 막는다(R3) — 여기서 member로 다시 거르면 프로필이 늦을 때 판정이 통째로 빠진다
     const hasVerdict = !guest && d.verdict != null;
-    const risk = hasVerdict && d.verdict ? VERDICT_RISK[d.verdict] : null;
     const verdictText = hasVerdict && (d.verdict === 'AVOID' || d.verdict === 'CAUTION' || d.verdict === 'SAFE_WITH_NOTE');
+    const canWrite = FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && FLAGS.packagedReviewWrite;
     body = (
       <ScrollView
         contentContainerStyle={[s.pad, { paddingBottom: insets.bottom + 32 }]}
@@ -291,7 +251,6 @@ export function ProcessedFoodDetailScreen() {
           ) : (
             <PackagedPlaceholder type={d.type} foodType={d.foodType} style={StyleSheet.absoluteFill} />
           )}
-          {risk && <View style={s.badge}><RiskBadge state={risk} size={22} flat testID={`pf-badge-${risk}`} /></View>}
         </View>
         <View style={s.titleBlock}>
           {!!d.maker && <Text style={s.maker}>{d.maker}</Text>}
@@ -308,14 +267,17 @@ export function ProcessedFoodDetailScreen() {
           {freeStarted && <PackagedFreeExplain />}
         </View>
 
-        {verdictText ? (
-          <VerdictText d={d} />
-        ) : hasVerdict ? null /* SAFE = 문장 없이 미리보기(시안 08) */ : !guest && !me ? (
+        {/* KB-914(R-137): 판정 = 음식 상세와 같은 띠(VerdictBand) — 서버 verdict 그대로. 판정을 확인할 수 없으면 회색(unable) 띠 */}
+        {hasVerdict && d.verdict ? (
+          <View style={s.block}>
+            <PackagedVerdictBand d={{ ...d, verdict: d.verdict }} safeReason={t('packaged.noAvoidMatches')} style={s.band} testID={`pf-verdict-${d.verdict.toLowerCase()}`} />
+            <MatchEvidence d={d} />
+          </View>
+        ) : !guest && !me ? (
           // Codex #338: 로그인했는데 프로필 대기·실패 + verdict 없음 = 판정 영역을 비우지 않는다 — 대기 = 자리 스켈레톤, 실패 = 보수적 "확인 못 함"(주요 알레르기 있으면 함께)
           meQ.isError ? (
-            <View style={s.block} testID="pf-profile-unavailable">
-              <Text style={s.h2}>{t('packaged.notVerified')}</Text>
-              <Text style={s.body}>{t('packaged.notVerifiedBody')}</Text>
+            <View style={s.block}>
+              <PackagedUnableBand title={t('packaged.notVerified')} reason={t('packaged.notVerifiedBody')} style={s.band} testID="pf-profile-unavailable" />
               {!!d.majorAllergens?.length && <Text style={s.body} testID="pf-profile-unavailable-major">{t('packaged.containsNames', { names: namesOf(d.majorAllergens) })}</Text>}
             </View>
           ) : (
@@ -324,16 +286,21 @@ export function ProcessedFoodDetailScreen() {
         ) : guest || m0 ? (
           <MajorAllergens d={d} guest={guest} onAction={() => (guest ? setGate(true) : router.push('/profile/restrictions' as Href))} />
         ) : member ? (
-          // 원재료·알레르기 표시가 둘 다 없는 제품 = 회원도 verdict null — 리본 없이 "확인 못 함"(#457)
-          <View style={s.block} testID="pf-not-verified">
-            <Text style={s.h2}>{t('packaged.notVerified')}</Text>
-            <Text style={s.body}>{t('packaged.notVerifiedBody')}</Text>
-          </View>
+          // 원재료·알레르기 표시가 둘 다 없는 제품 = 회원도 verdict null — 판정 없이 "확인 못 함"(#457) = 회색 띠
+          <PackagedUnableBand title={t('packaged.notVerified')} reason={t('packaged.notVerifiedBody')} style={s.band} testID="pf-not-verified" />
         ) : null}
+
+        {/* KB-914(R-137): 감지 재료 = 음식 상세 재료 타일과 같은 부품 · 마크는 회원 판정이 있을 때만 */}
+        {detectedCodes(d).length > 0 && (
+          <View style={s.block}>
+            <Text style={s.h2} accessibilityRole="header">{t('packaged.detectedTitle')}</Text>
+            <PackagedDetectedTiles d={d} personalized={hasVerdict} testID="pf-detected" />
+          </View>
+        )}
 
         {expanded ? (
           <>
-            <Expanded d={d} showTranslation={showTranslation} showAvoidList={hasVerdict && d.verdict === 'SAFE'} />
+            <Expanded d={d} showTranslation={showTranslation} />
             <Pressable style={s.seeLess} onPress={() => toggle(false, 'see_less')} accessibilityRole="button" testID="pf-see-less">
               <Text style={s.seeLessText}>{t('packaged.seeLess')}</Text>
             </Pressable>
@@ -349,9 +316,20 @@ export function ProcessedFoodDetailScreen() {
         )}
 
         {/* 롤백 스위치(reviewsLiveEnabled off) = 가공식품 리뷰는 목 경로가 없어 목록이 비는데 서버 요약은 남는다 — 섹션째 숨김(Codex #314 R2) */}
-        {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} loadMoreRef={loadMoreReviews} />}
+        {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} loadMoreRef={loadMoreReviews} writeInBar={canWrite} />}
       </ScrollView>
     );
+    // KB-914(R-137): 하단 고정 CTA = 음식 상세와 같은 알약(구 리뷰 섹션 텍스트 링크 — 섹션 링크는 이 바가 있을 때 숨김)
+    if (canWrite) {
+      body = (
+        <>
+          {body}
+          <View style={[s.bar, { paddingBottom: insets.bottom + 12 }]}>
+            <Btn onPress={() => { track(EVENTS.review_write_tap, { source: 'detail', target_type: 'packaged' }); router.push(`/processed-foods/${d.id}/review` as Href); }} testID="pf-write-review-bar">{t('reviews.writeReview')}</Btn>
+          </View>
+        </>
+      );
+    }
   }
   return (
     <View style={s.root}>
@@ -369,7 +347,8 @@ const s = StyleSheet.create({
   pad: { paddingHorizontal: GUTTER, paddingTop: 20, gap: 20 },
   photo: { width: '100%', aspectRatio: 1 / PHOTO_RATIO, borderRadius: radius.md, backgroundColor: C.surface2, overflow: 'hidden' },
   photoImage: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
-  badge: { position: 'absolute', left: 10, top: 0 },
+  band: { marginHorizontal: -GUTTER }, // 띠 = 화면 폭(음식 상세와 같음) — 페이지 좌우 여백 밖으로
+  bar: { paddingHorizontal: GUTTER, paddingTop: 12, backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.hair },
   titleBlock: { gap: 4 },
   maker: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
   name: { fontFamily: font.bodyBold, fontSize: 28, lineHeight: 34, color: C.ink },

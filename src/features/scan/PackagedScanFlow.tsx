@@ -333,7 +333,6 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   }
 
   if (step.kind === 'candidates') {
-    const sel = step.candidates.find((c) => c.id === step.selectedId) ?? null;
     return (
       <>
       <CandidateScreen
@@ -343,9 +342,15 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         subtitle={t('packagedScan.possibleMatches', { count: step.candidates.length })}
         note={m0 ? t('packagedScan.personalNote') : null}
         items={step.candidates}
-        selectedId={step.selectedId}
-        onSelect={(id) => setStep({ ...step, selectedId: id })}
-        onConfirm={() => { if (sel) void confirm(step.analysisId, sel.reportNo, step); }}
+        pickingId={step.selectedId}
+        // KB-914(R-138): 줄 탭 = 바로 확정(구 선택 → 하단 확정 버튼). 확정 화면(here)은 고른 줄을 기억한 후보 단계 — 한도에 걸리면 그대로 돌아온다
+        onPick={(c) => {
+          const cand = step.candidates.find((x) => x.id === c.id);
+          if (!cand) return;
+          const here = { ...step, selectedId: cand.id };
+          setStep(here);
+          void confirm(step.analysisId, cand.reportNo, here);
+        }}
         onNone={() => {
           track(EVENTS.food_packaged_scan_handoff, { from: 'rejected' });
           goStep({ kind: 'another', analysisId: step.analysisId, ocrText: step.ocrText, from: 'rejected', back: step });
@@ -557,7 +562,6 @@ function NameSearchStep({ initial, personalized, m0, busy, onConfirm, onNone, on
     tracked.current = query;
     track(EVENTS.food_packaged_search, { query_length: Array.from(query.trim()).length, result_count: items.length }); // 검색어 원문 0
   }, [q.isSuccess, query, items.length]);
-  const sel = items.find((it) => it.id === selectedId) ?? null;
   return (
     <CandidateScreen
       testID="pscan-name-search"
@@ -567,11 +571,11 @@ function NameSearchStep({ initial, personalized, m0, busy, onConfirm, onNone, on
       note={m0 ? t('packagedScan.personalNote') : null}
       search={<NameSearchBox value={draft} onChange={setDraft} onSubmit={() => { if (busy) return; setQuery(draft); setSelectedId(null); }} />}
       items={items}
-      selectedId={selectedId}
-      onSelect={setSelectedId}
+      pickingId={selectedId}
+      // KB-914(R-138): 줄 탭 = 바로 확정(reportNo 없는 항목은 위에서 걸렀다)
+      onPick={(it) => { setSelectedId(it.id); if (it.reportNo) onConfirm(it.reportNo); }}
       // Codex #339: 20개씩 페이지 — 끝 근처에서 다음 페이지(목록 화면과 같은 가드)
       onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage && !q.isFetchNextPageError) void q.fetchNextPage(); }}
-      onConfirm={() => { if (sel?.reportNo) onConfirm(sel.reportNo); }}
       onNone={onNone}
       onBack={onBack}
       personalized={personalized}
