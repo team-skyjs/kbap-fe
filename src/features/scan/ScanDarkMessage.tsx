@@ -15,7 +15,7 @@ import { color as C, font, radius, type } from '@/lib/theme';
 /** lightStatusBar = 상태바 아이콘을 밝게(어두운 바탕 — Codex #369). 호출측이 포커스일 때만 켠다(위에 다른 화면이 쌓이면 빠져 기본 복원 — 카메라 단계와 같은 규칙).
  *  메뉴판 scan.tsx는 화면 단위 lightBar가 이미 맡아 넘기지 않는다 */
 export function ScanDarkMessage({ label, title, body, overlay, footer, children, testID, lightStatusBar = false }: {
-  label: string; title: string; body?: string | null; overlay?: React.ReactNode; footer?: React.ReactNode; children?: React.ReactNode; testID?: string; lightStatusBar?: boolean;
+  label: string; title: string; body?: string | null; overlay?: React.ReactNode; footer?: React.ReactNode; children?: React.ReactNode; testID: string; lightStatusBar?: boolean;
 }) {
   return (
     <View style={dark.root} testID={testID}>

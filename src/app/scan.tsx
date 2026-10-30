@@ -1210,6 +1210,7 @@ export default function Scan() {
     return (
       // KB-914(R-139): 화면 틀 = 공용 ScanDarkMessage(가공식품 후보 없음·못 읽음·오류와 같은 화면) — 라벨·문장·버튼 분기는 그대로
       <ScanDarkMessage
+        testID="scan-error"
         overlay={<>{Close}{GateSheet}</>}
         // P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체)
         label={stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}
