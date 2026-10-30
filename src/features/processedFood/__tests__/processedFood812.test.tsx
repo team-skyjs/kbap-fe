@@ -220,8 +220,11 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(ids(c)).toEqual(expect.arrayContaining(['badge-caution', 'pf-verdict-caution']));
     expect(text(c)).toContain('packaged.crossContactBody:{\\"names\\":\\"L(PEANUT)\\"}');
     const n = detail({ verdict: 'SAFE_WITH_NOTE' });
-    expect(ids(n)).toEqual(expect.arrayContaining(['badge-safe', 'pf-verdict-safe_with_note']));
-    expect(text(n)).toContain('packaged.unclearBody:{\\"items\\":\\"합성착향료\\"}');
+    // KB-921: SAFE_WITH_NOTE = 주의 톤 + 일부 성분 확인 안 됨 · 부제 = 서버 목록
+    expect(ids(n)).toEqual(expect.arrayContaining(['badge-caution', 'pf-verdict-safe_with_note']));
+    expect(ids(n)).not.toContain('badge-safe');
+    expect(text(n)).toContain('packaged.unverifiedTitle');
+    expect(text(n)).toContain('합성착향료');
   });
   // KB-901(T-003·T-012): dev 2453 실측 — 번역이 없으면 서버가 translated에 원문을 그대로 채운다("English translation" 아래 한국어 · 알레르기 문장 2번)
   it('KB-901 T-003·T-012: 원문과 같은 "번역" = 번역 없음 — Ingredients 소제목 "English translation" 0 · 원문 라벨(Korean original) · 알레르기 문장 1번', () => {
@@ -650,20 +653,21 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     expect(ids(t).some((i) => i.startsWith('badge-'))).toBe(false);
   });
 
-  it('Codex #336: SAFE_WITH_NOTE = safe 리본 + 스크린리더 단서(내용 불명) · 그냥 SAFE엔 단서 없음', async () => {
+  it('Codex #336 → KB-921: SAFE_WITH_NOTE = 주의 리본 + 스크린리더 단서(내용 불명) · 그냥 SAFE엔 단서 없음', async () => {
     mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] };
     mockGet.mockResolvedValueOnce(V4([{ id: 10, productName: 'Choco Pie', imageUrl: null, verdict: 'SAFE_WITH_NOTE' }]));
     const t = await mount();
     const label = (id: string) => t.root.findAll((n) => n.props?.testID === `packaged-item-${id}` && typeof n.type === 'string')[0].props.accessibilityLabel as string;
-    expect(label('10')).toContain('risk.safe');
+    expect(label('10')).toContain('risk.caution');
+    expect(label('10')).not.toContain('risk.safe');
     expect(label('10')).toContain('packaged.unclearNoteA11y');
     expect(label('7')).not.toContain('packaged.unclearNoteA11y');
   });
 
-  it('어댑터: 모르는 verdict = null(앱이 SAFE를 만들지 않음) · SAFE_WITH_NOTE = safe 리본 · 구서버(필드 없음) = 전부 null', () => {
+  it('어댑터: 모르는 verdict = null(앱이 SAFE를 만들지 않음) · SAFE_WITH_NOTE = 주의 리본(KB-921) · 구서버(필드 없음) = 전부 null', () => {
     expect(adaptProcessedSummary({ id: 1, productName: 'x', verdict: 'SAFEISH' }).verdict).toBeNull();
     expect(adaptProcessedSummary({ id: 1, productName: 'x', verdict: 'SAFE_WITH_NOTE' }).verdict).toBe('SAFE_WITH_NOTE');
-    expect(VERDICT_RISK.SAFE_WITH_NOTE).toBe('safe');
+    expect(VERDICT_RISK.SAFE_WITH_NOTE).toBe('caution');
     expect(VERDICT_RISK.CAUTION).toBe('caution');
     const legacy = adaptProcessedSummary({ id: 1, productName: 'x' });
     expect([legacy.verdict, legacy.nameKo, legacy.rating]).toEqual([null, null, null]);

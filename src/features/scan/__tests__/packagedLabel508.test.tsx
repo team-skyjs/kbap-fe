@@ -188,7 +188,7 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
   it('결과 문장 = 서버 verdict별(CAUTION 주의 재료 · SAFE_WITH_NOTE 불명확 · SAFE 1면/여러 면 · null 확인 못 함) · 리본 = 서버 verdict만', async () => {
     const cases: [object, string, string | null][] = [
       [{ verdict: 'CAUTION', avoidMatches: [], mayContainMatches: [{ code: 'MILK', evidence: ['우유'] }] }, 'packagedScan.resultCaution:{"names":"L(MILK)"}', 'caution'],
-      [{ verdict: 'SAFE_WITH_NOTE', avoidMatches: [], unclearIngredients: ['향료'] }, 'packagedScan.resultUnclear:{"items":"향료"}', 'safe'],
+      [{ verdict: 'SAFE_WITH_NOTE', avoidMatches: [], unclearIngredients: ['향료'] }, '향료', 'caution'], // KB-921: 주의 톤 · 부제 = 목록
       [{ verdict: 'SAFE', avoidMatches: [] }, 'packaged.noAvoidMatches', 'safe'],
       [{ verdict: null, avoidMatches: [], avoidance: [] }, 'packaged.notVerifiedBody', null], // 옛 응답 일치도 없음 = 확인 못 함
     ];

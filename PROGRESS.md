@@ -11,6 +11,12 @@
 - Codex #369 2R P1: 가공 SAFE 띠 제목 = 매칭 범위 키(구 음식 상세 detail.verdictSafe "안심하고 드세요" — 보장 표현 금지) · 가공 띠 제목 전부 가공 전용 키
 - 신규 ko 문구(K-항목 — 안전 문구, 예진 승인 대상): `packaged.noAvoidMatchTitle` = 피하는 재료와 겹치는 것 없음 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
+## 2026-10-30 · P-550 KB-921 가공식품 SAFE_WITH_NOTE 띠 = 주의 톤 (R-147)
+- VERDICT_RISK.SAFE_WITH_NOTE safe → caution(한 표) — 상세 띠·성분표 결과 띠·검색 카드 리본·후보 줄 리본이 함께 주의(색+형태). "모름"을 초록으로 그리지 않음(false-safe 0).
+- 띠 제목 = packaged.unverifiedTitle(10로케일) · 부제 = 서버 unclearIngredients 쉼표 나열(비면 생략). 옛 키 unclearTitle·unclearBody·packagedScan.resultUnclear 제거.
+- 신규 ko(K-항목 — 판정 띠 제목, 안전 문구, 예진 승인 대상): packaged.unverifiedTitle = 일부 성분을 확인할 수 없어요(Codex #371 P1 해요체)
+- 잠금: safeWithNoteBand921(4판정 톤·제목 키) + 812·508·813 갱신. 캡처 = 회원 판정 필요(게스트 verdict null) — QA 위임 문의.
+
 ## 2026-10-30 · P-549 KB-915 사장님 주문 카드 영어·한국어 면 동기화
 - 재현: 회피 목록에 81종(로컬 카탈로그) 미등재 코드(레거시 ing:slug·카탈로그 신규)가 섞이면 한국어 면(avoidNoticeKo)은 거르고 미러는 avoidNames 전부 나열 → 영어 면에만 재료가 더 보임. 요청 문구도 달랐다(한국어 "못 먹어요, 들어간 메뉴면 알려주세요" ↔ 미러 "Please leave out").
 - 수정: orderCard.ts buildOrderCard 단일 모델(항목 줄·맺음·회피 코드↔한국어 라벨↔리더 이름 짝) → 두 면이 같은 모델을 렌더. 미러 요청 = order.mirrorAvoidNotice(한국어 면과 같은 뜻) + 재료 줄(구 order.mirrorAvoid 제거).

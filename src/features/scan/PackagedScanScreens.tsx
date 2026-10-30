@@ -243,7 +243,7 @@ export function LabelResultScreen({ result, photoUri, pages, member, stale = fal
   else if (member) {
     if (result.verdict === 'AVOID') avoid = t('packagedScan.resultAvoid', { names: namesOf(result.avoidMatches.map((m) => m.code)) });
     else if (result.verdict === 'CAUTION') avoid = t('packagedScan.resultCaution', { names: namesOf(result.mayContainMatches.map((m) => m.code)) });
-    else if (result.verdict === 'SAFE_WITH_NOTE') avoid = t('packagedScan.resultUnclear', { items: result.unclearIngredients.join(', ') });
+    else if (result.verdict === 'SAFE_WITH_NOTE') avoid = result.unclearIngredients.join(', ') || null; // KB-921: 상세 띠와 같은 부제(목록만, 비면 생략)
     else if (result.verdict === 'SAFE') avoid = t(pages > 1 ? 'packagedScan.resultSafeAll' : 'packaged.noAvoidMatches');
     else if (legacyAvoid.length) avoid = t('packagedScan.resultAvoid', { names: namesOf(legacyAvoid) });
     else avoid = t('packaged.notVerifiedBody');
