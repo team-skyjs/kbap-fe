@@ -102,6 +102,8 @@ export function ReviewFeed() {
     const author = r.author?.memberId ?? r.memberId;
     return author == null || !blockedIds.has(author);
   });
+  // KB-941(예진 10/30): 첫 API 묶음(pages[0])만 자동 번역 — 정렬·필터·당겨서 새로고침으로 새 첫 페이지가 오면 그 묶음이 대상, 다음 묶음부터는 탭
+  const firstPageIds = new Set((feed.data?.pages[0]?.items ?? []).map((r) => r.id));
   const rows = withFeedAds(reviews, (r) => r.id, REVIEW_FEED_AD_EVERY); // KB-816: 5개마다 · KB-739: 광고 행 key 순번 고정(페이지 추가에도 앞 행 identity 유지)
   const loadMore = () => {
     // Codex #58 P2-2: 에러 푸터가 콘텐츠 높이를 바꿔 onEndReached가 재발화 →
@@ -197,6 +199,7 @@ export function ReviewFeed() {
             review={row.item}
             t={t}
             photoVariant="peek" // KB-817: 리뷰 탭만
+            autoTranslate={firstPageIds.has(row.item.id)}
             mine={row.item.memberId != null && row.item.memberId === myId}
             onOpenFood={() => { const href = reviewTargetHref(row.item, 'feed'); if (href) router.push(href); }} /* KB-812 2차: 가공식품 리뷰 = 제품 상세 */
             onGuestHelpful={() => setGateOpen('helpful')}
