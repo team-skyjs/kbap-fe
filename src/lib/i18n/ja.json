@@ -1278,7 +1278,8 @@
     "containsNames": "{{names}}を含む",
     "mayContainNames": "{{names}}混入の可能性",
     "signInToPersonalize": "ログインして自分向けに見る",
-    "setAvoidIngredients": "避けたい食材を設定"
+    "setAvoidIngredients": "避けたい食材を設定",
+    "noAvoidMatchTitle": "避けたい食材との一致なし"
   },
   "scanMode": {
     "menu": "メニュー",

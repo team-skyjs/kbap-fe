@@ -8,7 +8,7 @@
  */
 import * as React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { PackagedFreeExplain } from './packagedFreeHour';
+import { FreeBadge, PackagedFreeExplain } from './packagedFreeHour';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,68 +18,83 @@ import { Btn } from '@/components/Btn';
 import { SubHeader } from '@/components/SubHeader';
 import { RiskBadge } from '@/components/RiskBadge';
 import { RemoteImage } from '@/components/RemoteImage';
-import { IconCamera, IconSearch, Input, OverallRating } from '@/components';
+import { IconCamera, IconChevron, IconSearch, Input, OverallRating, Spinner } from '@/components';
+import { DarkBackButton, ScanDarkMessage } from './ScanDarkMessage';
+import { richStyles, WarnChips } from './ScanRichList';
+import { ProductName } from '@/features/processedFood/ProductName';
+import { useProcessedDetail } from '@/lib/data/useProcessedFoods';
 import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
-import { color as C, font, radius } from '@/lib/theme';
+import { color as C, font, radius, type } from '@/lib/theme';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { VERDICT_RISK, type LabelScanResult, type ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
+import { detectedCodes, IngredientsText, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand } from '@/features/processedFood/PackagedVerdict';
 
 const namesOf = (codes: string[]) => codes.map((c) => restrictionLabel(c)).join(', ');
 
-/** 시안 16 실측: 카드 335×168 r16 · 안쪽 12 · 사진 128×144 r12 #F7F8FA(상품 8 안쪽 contain) · 글자 열 x172 · 카드 사이 16 */
-export function CandidateCard({ item, selected, personalized, onPress, testID, disabled = false }: { item: ProcessedFoodSummary; selected: boolean; personalized: boolean; onPress: () => void; testID: string; disabled?: boolean }) {
+/** KB-914(R-138): 후보 줄 = 메뉴판 결과 줄(RichRow) 문법 — 썸네일 118 + 판정 리본(같은 자리) + 이름(ProductName: 영어 굵게 + 한국어 작게) + 제조사·평점 + 회피 칩 1줄.
+ *  **줄 탭 = 바로 확정**(하단 확정 버튼 소멸, 뒤로 = 앞 화면). 회피 칩 = 메뉴판처럼 줄마다 상세 프리페치(서버 후보 항목엔 일치 코드가 없다) — 회원 판정이 있을 때만.
+ *  비회원·회피 0개(시안 45) = 칩 대신 주요 알레르기 함유 줄(응답에 없으면 줄 숨김 — 없음 단정 0) */
+export function CandidateRow({ item, personalized, picking, onPress, testID, disabled = false }: { item: ProcessedFoodSummary; personalized: boolean; picking: boolean; onPress: () => void; testID: string; disabled?: boolean }) {
   const { t } = useTranslation();
   const [failed, setFailed] = React.useState(false);
   const risk = personalized && item.verdict ? VERDICT_RISK[item.verdict] : null;
-  // 비회원·회피 0개(시안 45): 판정 대신 주요 알레르기 함유 줄 — 응답에 없으면 줄 숨김(없음 단정 0)
+  // 회원 + 위험 판정(AVOID·CAUTION)일 때만 상세를 당겨 칩 이름을 얻는다(SAFE = 칩 없음 — 요청 0)
+  const detail = useProcessedDetail(risk === 'danger' || risk === 'caution' ? item.id : undefined);
+  const dd = detail.data;
+  const warns = dd
+    ? [...dd.avoidMatches.map((m) => ({ code: m.code, name: restrictionLabel(m.code), risk: 'danger' as const })), ...dd.mayContainMatches.map((m) => ({ code: `may-${m.code}`, name: restrictionLabel(m.code), risk: 'caution' as const }))]
+    : [];
   const contains = !personalized && item.majorAllergens && item.majorAllergens.length > 0 ? t('packaged.containsNames', { names: namesOf(item.majorAllergens) }) : null;
   return (
     <Pressable
-      style={[sc.card, selected ? sc.cardOn : sc.cardOff]}
+      style={richStyles.row}
       onPress={disabled ? undefined : onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ selected, checked: selected, disabled }}
+      accessibilityRole="button"
+      accessibilityState={{ disabled, busy: picking }}
       // SAFE_WITH_NOTE = 리본은 safe지만 스크린리더엔 단서(ProductCard와 같은 규칙 — Codex #339)
       accessibilityLabel={[item.name, item.nameKo, item.maker, risk && t(`risk.${risk}`), risk && item.verdict === 'SAFE_WITH_NOTE' && t('packaged.unclearNoteA11y'), contains].filter(Boolean).join(', ')}
       testID={testID}
       uiTarget="pscan-candidate"
     >
-      <View style={sc.photo}>
-        {item.imageUrl && !failed ? (
-          <RemoteImage uri={item.imageUrl} style={sc.photoImage} contentFit="contain" recyclingKey={`pc-${item.id}`} hideUntilLoaded onError={() => setFailed(true)} />
-        ) : (
-          <PackagedPlaceholder type={item.type} foodType={item.foodType} style={StyleSheet.absoluteFill} />
-        )}
-        {risk && <View style={sc.badge}><RiskBadge state={risk} size={22} flat testID={`pscan-verdict-${item.id}`} /></View>}
+      <View style={richStyles.thumbWrap}>
+        <View style={[richStyles.thumb, sc.rowThumb]}>
+          {item.imageUrl && !failed ? (
+            <RemoteImage uri={item.imageUrl} style={sc.rowImage} contentFit="contain" recyclingKey={`pc-${item.id}`} hideUntilLoaded onError={() => setFailed(true)} />
+          ) : (
+            <PackagedPlaceholder type={item.type} foodType={item.foodType} style={StyleSheet.absoluteFill} />
+          )}
+        </View>
+        {risk && <View style={richStyles.thumbBadge}><RiskBadge state={risk} testID={`pscan-verdict-${item.id}`} /></View>}
       </View>
-      <View style={sc.textCol}>
-        {!!item.maker && <Text style={sc.maker} numberOfLines={1}>{item.maker}</Text>}
-        <Text style={sc.name} numberOfLines={2} lineBreakStrategyIOS="hangul-word">{item.name}</Text>
-        {!!item.nameKo && <Text style={sc.nameKo} numberOfLines={1}>{item.nameKo}</Text>}
-        {item.rating && <OverallRating average={item.rating.average} count={item.rating.count} style={sc.rating} />}
-        {!!contains && <Text style={sc.contains} testID={`pscan-contains-${item.id}`}>{contains}</Text>}
+      <View style={sc.rowText}>
+        <ProductName name={item.name} nameKo={item.nameKo} />
+        {!!item.maker && <Text style={sc.rowMeta} numberOfLines={1}>{item.maker}</Text>}
+        {item.rating && <OverallRating average={item.rating.average} count={item.rating.count} />}
+        <WarnChips warns={warns} testID={`pscan-warn-${item.id}`} moreTestID={`pscan-warn-more-${item.id}`} />
+        {!!contains && <Text style={sc.rowMeta} testID={`pscan-contains-${item.id}`}>{contains}</Text>}
       </View>
+      {picking && <View style={sc.rowSpin} testID={`pscan-picking-${item.id}`}><Spinner size={20} /></View>}
     </Pressable>
   );
 }
 
-/** 후보·이름 찾기(16·19·45) — 제목 + 보조 줄 + (검색칸) + 카드 목록 + 확정 CTA + "None of these" 텍스트 동작 */
+/** 후보·이름 찾기(16·19·45) — 제목 + 보조 줄 + (검색칸) + 줄 목록(탭 = 확정) + 끝 줄 "None of these" */
 export function CandidateScreen({
-  title, subtitle, note, search, items, selectedId, onSelect, onConfirm, onNone, onBack, personalized, busy, empty, testID, onEndReached, banner,
+  title, subtitle, note, search, items, pickingId, onPick, onNone, onBack, personalized, busy, empty, testID, onEndReached, banner,
 }: {
-  title: string; subtitle: string | null; note: string | null; search?: React.ReactNode; items: ProcessedFoodSummary[]; selectedId: string | null;
-  onSelect: (id: string) => void; onConfirm: () => void; onNone: (() => void) | null; onBack: () => void; personalized: boolean; busy: boolean; empty?: React.ReactNode; testID: string; onEndReached?: () => void; banner?: React.ReactNode;
+  title: string; subtitle: string | null; note: string | null; search?: React.ReactNode; items: ProcessedFoodSummary[]; pickingId: string | null;
+  onPick: (item: ProcessedFoodSummary) => void; onNone: (() => void) | null; onBack: () => void; personalized: boolean; busy: boolean; empty?: React.ReactNode; testID: string; onEndReached?: () => void; banner?: React.ReactNode;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const viewH = React.useRef(0);
   return (
     <View style={sc.root} testID={testID}>
-      {/* Codex #339: 확정 대기 중 = 뒤로도 잠금(카드·None of these와 같은 이유 — 응답이 화면 밖에서 확정·이동) */}
+      {/* Codex #339: 확정 대기 중 = 뒤로도 잠금(줄·None of these와 같은 이유 — 응답이 화면 밖에서 확정·이동) */}
       <SubHeader title={t('packagedScan.chooseTitle')} onBack={busy ? () => {} : onBack} />
       <ScrollView
-        contentContainerStyle={sc.page}
+        contentContainerStyle={[sc.page, { paddingBottom: insets.bottom + 24 }]}
         keyboardShouldPersistTaps="handled"
         // 남은 높이가 화면 1.5개 이하면 다음 페이지 · 거른(reportNo 없는) 항목이 많아 화면을 못 채우면 스크롤이 없으니 내용 크기 변화로도 이어 조회
         onScroll={onEndReached ? (e) => { const { layoutMeasurement: l, contentOffset: o, contentSize: c } = e.nativeEvent; if (o.y + l.height * 2.5 >= c.height) onEndReached(); } : undefined}
@@ -93,23 +108,28 @@ export function CandidateScreen({
         {!!subtitle && <Text style={sc.sub}>{subtitle}</Text>}
         {!!note && <Text style={sc.body} testID="pscan-personal-note">{note}</Text>}
         {search}
-        <View style={sc.list} accessibilityRole="radiogroup">
+        <View>
           {items.map((c) => (
-            <CandidateCard key={c.id} item={c} selected={selectedId === c.id} personalized={personalized} onPress={() => onSelect(c.id)} disabled={busy} testID={`pscan-candidate-${c.id}`} />
+            // Codex #339: 확정 대기 중 = 다른 줄·None of these 잠금(늦은 응답이 다른 선택을 덮지 않게)
+            <CandidateRow key={c.id} item={c} personalized={personalized} picking={pickingId === c.id && busy} onPress={() => onPick(c)} disabled={busy} testID={`pscan-candidate-${c.id}`} />
           ))}
+          {/* KB-914(R-138): "None of these" = 목록 끝 줄(구 하단 텍스트 버튼) */}
+          {onNone && items.length > 0 && (
+            <Pressable style={sc.noneRow} onPress={busy ? undefined : onNone} disabled={busy} accessibilityRole="button" accessibilityState={{ disabled: busy }} testID="pscan-none-of-these">
+              <Text style={sc.noneLabel}>{t('packagedScan.noneOfThese')}</Text>
+              <IconChevron size={16} color={C.ink3} />
+            </Pressable>
+          )}
         </View>
         {empty}
-      </ScrollView>
-      <View style={[sc.bottom, { paddingBottom: insets.bottom + 12 }]}>
-        <Btn busy={busy} variant={selectedId ? 'primary' : 'off'} onPress={() => { if (selectedId) onConfirm(); }} testID="pscan-confirm">{t('packagedScan.confirmProduct')}</Btn>
-        {onNone && (
-          // 시안: 확인 CTA 다음 테두리 없는 텍스트 동작(README)
-          // Codex #339: 확정 대기 중 = 선택·거절 잠금(늦은 응답이 다른 선택을 덮지 않게)
-          <Pressable style={sc.textAction} onPress={busy ? undefined : onNone} disabled={busy} accessibilityRole="button" accessibilityState={{ disabled: busy }} testID="pscan-none-of-these">
-            <Text style={sc.textActionLabel}>{t('packagedScan.noneOfThese')}</Text>
+        {/* 후보 0개(이름 찾기 검색 전·0건)에도 다른 길은 남긴다 — 끝 줄 대신 같은 동작 */}
+        {onNone && items.length === 0 && (
+          <Pressable style={sc.noneRow} onPress={busy ? undefined : onNone} disabled={busy} accessibilityRole="button" testID="pscan-none-of-these">
+            <Text style={sc.noneLabel}>{t('packagedScan.noneOfThese')}</Text>
+            <IconChevron size={16} color={C.ink3} />
           </Pressable>
         )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -132,26 +152,26 @@ function SearchInput({ value, onChange, onSubmit, placeholder }: { value: string
   );
 }
 
-/** 안내 페이지(17·18·29b·39) — 시안 실측: 아트 상자 335×148 r16 #F7F8FA(카메라 36) → 제목 28 bold(위 24) → 본문 16/26 gray-700(위 18) · 아래 버튼 48 둘(간격 8) */
-/** busy = 이 화면에서 시작한 요청(성분표 전 거절 확정) 대기 — 다른 동작·뒤로 잠금, 보조 버튼에 스피너(Codex #339) */
-export function MessagePage({ headerTitle, title, body, primary, secondary, onBack, testID, busy = false }: {
+/** 안내·오류 페이지(17·18·29b·39) — KB-914(R-139): 메뉴판 'Not a menu'와 같은 어두운 전체 화면(ScanDarkMessage) · 가운데 정렬 · 버튼 세로 쌓기.
+ *  주황 라벨 = 이 화면의 맥락(구 헤더 제목) · 흰 문장 = 제목 · 보조 문장 = 본문 · 왼쪽 위 = 뒤로(메뉴판 닫기 자리)
+ *  busy = 이 화면에서 시작한 요청(성분표 전 거절 확정) 대기 — 다른 동작·뒤로 잠금, 보조 버튼에 스피너(Codex #339) */
+export function MessagePage({ headerTitle, title, body, primary, secondary, onBack, testID, busy = false, focused = true }: {
   headerTitle: string; title: string; body: string; primary: { label: string; onPress: () => void; testID: string; busy?: boolean };
-  secondary: { label: string; onPress: () => void; testID: string } | null; onBack: () => void; testID: string; busy?: boolean;
+  secondary: { label: string; onPress: () => void; testID: string } | null; onBack: () => void; testID: string; busy?: boolean; focused?: boolean;
 }) {
-  const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   return (
-    <View style={sc.root} testID={testID}>
-      <SubHeader title={headerTitle} onBack={busy ? () => {} : onBack} />
-      <ScrollView contentContainerStyle={sc.page}>
-        <View style={sc.art}><IconCamera size={36} color="#000000" /></View>
-        <Text style={sc.h1Big} accessibilityRole="header">{title}</Text>
-        <Text style={sc.lead}>{body}</Text>
-      </ScrollView>
-      <View style={[sc.bottom, { paddingBottom: insets.bottom + 12 }]}>
-        <Btn busy={primary.busy} disabled={busy} onPress={busy ? () => {} : primary.onPress} testID={primary.testID}>{primary.label}</Btn>
-        {secondary && <Btn variant="ghost" busy={busy} onPress={busy ? () => {} : secondary.onPress} testID={secondary.testID}>{secondary.label}</Btn>}
-      </View>
-    </View>
+    <ScanDarkMessage
+      testID={testID}
+      lightStatusBar={focused}
+      label={headerTitle}
+      title={title}
+      body={body}
+      overlay={<DarkBackButton onPress={busy ? undefined : onBack} label={t('common.goBack')} testID={`${testID}-back`} />}
+    >
+      <Btn busy={primary.busy} disabled={busy} onPress={busy ? () => {} : primary.onPress} testID={primary.testID}>{primary.label}</Btn>
+      {secondary && <Btn variant="ghost" busy={busy} onPress={busy ? () => {} : secondary.onPress} testID={secondary.testID}>{secondary.label}</Btn>}
+    </ScanDarkMessage>
   );
 }
 
@@ -238,49 +258,69 @@ export function LabelResultScreen({ result, photoUri, pages, member, stale = fal
         : t(result.labelSource === 'NONE' ? 'packaged.majorUnavailable' : 'packaged.majorNoneFound')
     : null;
   const may = result.mayContain;
+  const [open, setOpen] = React.useState(false); // KB-914(R-137): 원재료·알레르기 원문 = 접힘(음식 상세처럼 판정·재료가 먼저)
+  // 띠: 회원 + 서버 verdict = 판정 띠 · 회원인데 기준이 바뀜(stale)·옛 응답 회피 일치 = 회색/위험 띠 · 비회원 = 띠 없이 주요 알레르기 섹션
+  const verdictBand = member && !stale && result.verdict ? (
+    <PackagedVerdictBand d={{ ...result, verdict: result.verdict }} safeReason={t(pages > 1 ? 'packagedScan.resultSafeAll' : 'packaged.noAvoidMatches')} reason={avoid} style={sc.band} testID={`pscan-result-band-${risk ?? 'none'}`} />
+  ) : member && !stale && legacyAvoid.length ? (
+    <PackagedVerdictBand d={{ ...result, verdict: 'AVOID', avoidMatches: legacyAvoid.map((code) => ({ code, evidence: [] })) }} safeReason="" reason={avoid} style={sc.band} testID="pscan-result-band-danger" />
+  ) : member ? (
+    <PackagedUnableBand title={t('packaged.notVerified')} reason={avoid ?? t('packaged.notVerifiedBody')} style={sc.band} testID="pscan-result-band-unable" />
+  ) : null;
   return (
     <View style={sc.root} testID="pscan-label-result">
       <SubHeader title={t('packagedScan.resultTitle')} onBack={onDone} />
       <ScrollView contentContainerStyle={[sc.page, { gap: 24 }]}>
         {/* KB-877: 이번 분석이 차감하며 창을 열었으면 안내 한 줄, 아니면 남은 분(창 안이면) */}
         {freeStarted ? (
-          <View style={{ gap: 2 }}>
-            <Text style={sc.freeStarted} testID="pscan-free-started">{t('packagedScan.freeStarted')}</Text>
+          // KB-914(R-141): 시작 안내도 같은 무료 배지(구 주황 굵은 문장)
+          <View style={{ gap: 6 }}>
+            <FreeBadge text={t('packagedScan.freeStarted')} testID="pscan-free-started" />
             <PackagedFreeExplain />
           </View>
         ) : banner}
-        <PhotoSlot uri={photoUri} label={t('packagedScan.labelBox')} style={sc.resultSlot}>
-          {risk && <View style={sc.badge}><RiskBadge state={risk} size={22} flat testID={`pscan-result-badge-${risk}`} /></View>}
-        </PhotoSlot>
-        {member ? (
-          <Section title={t('packaged.yourAvoidList')} testID="pscan-result-avoid"><Text style={sc.body}>{avoid}</Text></Section>
-        ) : (
+        <PhotoSlot uri={photoUri} label={t('packagedScan.labelBox')} style={sc.resultSlot} />
+        {/* KB-914(R-137): 판정 = 음식 상세와 같은 띠(구 사진 위 작은 리본 + "Your avoid list" 문장) */}
+        {verdictBand ?? (
           <Section title={t('packaged.majorAllergensTitle')} testID="pscan-result-major"><Text style={sc.body}>{major}</Text></Section>
         )}
-        <Section title={t('packaged.ingredientsHeading')} testID="pscan-result-ingredients">
-          {translated ? <Text style={sc.body}>{translated}</Text> : result.ingredients.original ? <Text style={sc.body}>{result.ingredients.original}</Text> : <Text style={sc.body}>{t('packaged.noIngredients')}</Text>}
-        </Section>
-        {!!translated && !!result.ingredients.original && (
-          <Section title={t('packaged.koreanOriginal')} testID="pscan-result-original"><Text style={sc.body}>{result.ingredients.original}</Text></Section>
-        )}
-        {!!result.allergenStatement && (
-          <Section title={t('packaged.allergenTitle')} testID="pscan-result-allergens">
-            <View>
-              {showTranslation && !!result.allergenStatement.translated && <Text style={sc.body}>{result.allergenStatement.translated}</Text>}
-              <Text style={sc.body}>{result.allergenStatement.original}</Text>
-            </View>
+        {detectedCodes(result).length > 0 && (
+          <Section title={t('packaged.detectedTitle')} testID="pscan-result-detected-section">
+            <PackagedDetectedTiles d={result} personalized={member && !stale && result.verdict != null} testID="pscan-result-detected" />
           </Section>
         )}
-        {may.length > 0 && (
-          <Section title={t('packaged.mayContainTitle')} testID="pscan-result-may">
-            <View>
-              <Text style={sc.body}>{t('packaged.mayContainNames', { names: namesOf(may.map((m) => m.code)) })}</Text>
-              {may.map((m) => m.evidence).filter(Boolean).map((e, i) => <Text key={i} style={sc.body}>{e}</Text>)}
-            </View>
-          </Section>
+        {open ? (
+          <>
+            <Section title={t('packaged.ingredientsHeading')} testID="pscan-result-ingredients">
+              <IngredientsText translated={translated} original={result.ingredients.original} showTranslation={showTranslation} emptyLabel={t('packaged.noIngredients')} testID="pscan-result-raw" />
+            </Section>
+            {!!result.allergenStatement && (
+              <Section title={t('packaged.allergenTitle')} testID="pscan-result-allergens">
+                <View>
+                  {showTranslation && !!result.allergenStatement.translated && <Text style={sc.body}>{result.allergenStatement.translated}</Text>}
+                  <Text style={sc.body}>{result.allergenStatement.original}</Text>
+                </View>
+              </Section>
+            )}
+            {may.length > 0 && (
+              <Section title={t('packaged.mayContainTitle')} testID="pscan-result-may">
+                <View>
+                  <Text style={sc.body}>{t('packaged.mayContainNames', { names: namesOf(may.map((m) => m.code)) })}</Text>
+                  {may.map((m) => m.evidence).filter(Boolean).map((e, i) => <Text key={i} style={sc.body}>{e}</Text>)}
+                </View>
+              </Section>
+            )}
+            <Pressable style={sc.textAction} onPress={() => setOpen(false)} accessibilityRole="button" testID="pscan-result-see-less">
+              <Text style={sc.textActionLabel}>{t('packaged.seeLess')}</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Btn variant="ghost" onPress={() => setOpen(true)} testID="pscan-result-ingredients-open">{t('packaged.ingredientsHeading')}</Btn>
         )}
       </ScrollView>
       <View style={[sc.bottom, { paddingBottom: insets.bottom + 12 }]}>
+        {/* KB-914(R-137): 하단 고정 = 주 동작(Done) 알약 + 보조 동작 테두리(구 둘 다 테두리) */}
+        <Btn onPress={onDone} testID="pscan-label-done">{t('packagedScan.done')}</Btn>
         {!member ? (
           <Btn variant="ghost" onPress={onSetAvoid} testID="pscan-result-set-avoid">{t('packaged.setAvoidIngredients')}</Btn>
         ) : stale || pages >= max ? (
@@ -288,7 +328,6 @@ export function LabelResultScreen({ result, photoUri, pages, member, stale = fal
         ) : (
           <Btn variant="ghost" onPress={onAddSide} testID="pscan-label-more">{t('packagedScan.labelAddPage')}</Btn>
         )}
-        <Btn variant="ghost" onPress={onDone} testID="pscan-label-done">{t('packagedScan.done')}</Btn>
       </View>
     </View>
   );
@@ -308,31 +347,26 @@ const sc = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.card },
   page: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24, gap: 16 },
   h1: { fontFamily: font.bodyBold, fontSize: 22, lineHeight: 28, color: C.ink },
-  h1Big: { fontFamily: font.bodyBold, fontSize: 28, lineHeight: 34, color: C.ink, marginTop: 8 },
   h2: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 26, color: C.ink },
   sub: { fontFamily: font.body, fontSize: 16, lineHeight: 21, color: C.ink2 },
   lead: { fontFamily: font.body, fontSize: 16, lineHeight: 26, color: C.ink2 },
   body: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink },
-  list: { gap: 16 },
+  // KB-914(R-138): 후보 줄(메뉴판 줄 치수 richStyles + 아래 몇 가지)
+  // QA Q-369 a): 줄 = 메뉴판 richStyles.row 그대로(보더 0 — 구 1pt 보더가 151로 키웠다) · 썸네일 = richStyles.thumb 회색 타일(구 흰 바탕 = 사진 가장자리가 안 보여 사진–글자 사이가 넓어 보였다)
+  rowThumb: { overflow: 'hidden' },
+  rowImage: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
+  rowText: { flex: 1, minWidth: 0, gap: 4 },
+  rowMeta: { ...type.meta, fontWeight: '400', color: C.ink2 },
+  rowSpin: { justifyContent: 'center' },
+  noneRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 56, paddingVertical: 12 },
+  noneLabel: { ...type.button, color: C.ink },
   // 테두리 = 양 상태 같은 1(미선택 투명) — 선택 전환은 색만(P-151)
-  card: { flexDirection: 'row', gap: 24, padding: 11, borderWidth: 1, borderRadius: radius.lg, minHeight: 168 },
-  cardOn: { borderColor: C.primary, backgroundColor: C.surface2 },
-  cardOff: { borderColor: 'transparent', backgroundColor: 'transparent' },
-  photo: { width: 128, height: 144, borderRadius: radius.md, backgroundColor: C.surface2, overflow: 'hidden' },
-  photoImage: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
   badge: { position: 'absolute', left: 10, top: 0 },
-  textCol: { flex: 1, minWidth: 0, paddingTop: 2 },
-  maker: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
-  name: { fontFamily: font.bodyBold, fontSize: 17, lineHeight: 24, color: C.ink, marginTop: 5 },
-  nameKo: { fontFamily: font.ko, fontSize: 16, lineHeight: 23, color: C.ink2, marginTop: 3 },
-  rating: { marginTop: 7 },
-  contains: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink, marginTop: 8 },
   bottom: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: C.card, gap: 8 },
   textAction: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, justifyContent: 'center' },
   textActionLabel: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
   search: { height: 48, borderRadius: radius.md, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
   searchInput: { flex: 1, height: 48, fontSize: 16, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
-  art: { height: 148, borderRadius: radius.lg, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   slot: { borderRadius: radius.lg, backgroundColor: C.hair, overflow: 'hidden' },
   slotEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   slotLabel: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink2 },
@@ -341,5 +375,6 @@ const sc = StyleSheet.create({
   sideSlot: { flex: 1, height: 100 },
   sideSlotGap: { flex: 1 },
   resultSlot: { height: 180 },
+  band: { marginHorizontal: -20 }, // 띠 = 화면 폭(음식 상세와 같음)
   section: { gap: 10 },
 });

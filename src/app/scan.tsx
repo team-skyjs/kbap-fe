@@ -1,6 +1,7 @@
 import { armScanExitPrompt, fireScanExitPrompt } from '@/features/scan/ScanExitPrompts';
 import { ScanModeTabs, type ScanMode } from '@/features/scan/ScanModeTabs';
 import { CameraSlot, PackagedScanFlow, type ScanCamOpts } from '@/features/scan/PackagedScanFlow';
+import { ScanDarkMessage } from '@/features/scan/ScanDarkMessage';
 import { ScanLoading } from '@/features/scan/ScanLoading';
 import { UnlockCelebration } from '@/features/scan/UnlockCelebration';
 import { hasUnlockPending, hasObservedUnlockTransition, setUnlockScanFocused, subscribeUnlock } from '@/features/scan/unlockCelebrationStore';
@@ -1207,16 +1208,27 @@ export default function Scan() {
   const renderError = () => {
     const stage = error?.stage ?? 'be';
     return (
-      <View style={[styles.root, styles.center]}>
-        {Close}
-        {GateSheet}
-        <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
-        {/* P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체) */}
-        <Text style={styles.errStage}>{stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}</Text>
-        <Text style={styles.statusText}>{t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'ready' ? 'scan.unlockedBody' : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
-        {/* P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자
-            노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만. */}
-        <View style={styles.errBtns}>
+      // KB-914(R-139): 화면 틀 = 공용 ScanDarkMessage(가공식품 후보 없음·못 읽음·오류와 같은 화면) — 라벨·문장·버튼 분기는 그대로
+      <ScanDarkMessage
+        testID="scan-error"
+        overlay={<>{Close}{GateSheet}</>}
+        // P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체)
+        label={stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}
+        // P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자 노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만.
+        title={t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'ready' ? 'scan.unlockedBody' : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}
+        footer={quotaPicker && (
+          <TagPickerSheet
+            context="review"
+            kind="food"
+            foodTags={[]}
+            placeTag={null}
+            onToggleFood={(f) => { setQuotaPicker(false); router.push(`/food/${f.foodId}/review` as Href); }}
+            onTogglePlace={() => {}}
+            onClose={() => setQuotaPicker(false)}
+            t={t}
+          />
+        )}
+      >
           {/* P-219: 분기별 행동 — 메뉴판 아님·촬영 실패 = 재촬영(사용자 행동),
               인식 실패(503)·업로드 실패 = 재시도(같은 사진으로 다시) */}
           {/* P-222 재량: network도 재시도 대상 — 사진은 그대로이고 연결만 회복하면 되는
@@ -1247,22 +1259,7 @@ export default function Scan() {
           ) : (
             <Btn variant="ghost" onPress={() => setPhase('camera')} testID="scan-err-retake">{t('scan.retake')}</Btn>
           )}
-        </View>
-        {/* P-250: 무료 소진 → 리뷰 픽커(P-245 자격 UX 그대로 — 스캔분만 선택 가능).
-            작성 성공 후 스캔 재진입 시 새 티켓 발급부터(해금 즉시 반영 — 가이드 C). */}
-        {quotaPicker && (
-          <TagPickerSheet
-            context="review"
-            kind="food"
-            foodTags={[]}
-            placeTag={null}
-            onToggleFood={(f) => { setQuotaPicker(false); router.push(`/food/${f.foodId}/review` as Href); }}
-            onTogglePlace={() => {}}
-            onClose={() => setQuotaPicker(false)}
-            t={t}
-          />
-        )}
-      </View>
+      </ScanDarkMessage>
     );
   };
 

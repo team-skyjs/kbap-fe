@@ -172,9 +172,13 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3', mayContain: [{ code: 'SOY', evidence: '대두' }] }));
     await press(t, 'pscan-label-analyze');
     expect(labelCalls()[0][1]).toEqual({ analysisId: 'A3', pages: [{ ocrText: LABEL_P1 }, { ocrText: LABEL_P2 }], lang: 'en' });
-    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-label-result', 'pscan-result-badge-danger', 'pscan-result-avoid', 'pscan-result-ingredients', 'pscan-result-original', 'pscan-result-allergens', 'pscan-result-may', 'pscan-label-more']));
+    // KB-914(R-137): 판정 = 음식 상세와 같은 띠(결과 전용 문장 그대로) + 감지 재료 타일 · 원재료·알레르기 원문 = 접힘 → 펼치면
+    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-label-result', 'pscan-result-band-danger', 'pscan-result-detected', 'pscan-result-ingredients-open', 'pscan-label-more']));
     expect(ids(t)).not.toContain('pscan-result-major');
+    expect(ids(t)).not.toContain('pscan-result-ingredients'); // 처음엔 접힘
     expect(texts(t)).toContain('packagedScan.resultAvoid:{"names":"L(SHRIMP)"}');
+    await press(t, 'pscan-result-ingredients-open');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-result-ingredients', 'pscan-result-raw-original', 'pscan-result-allergens', 'pscan-result-may', 'pscan-result-see-less']));
     expect(texts(t)).toContain('Wheat flour, shrimp 10%, soybean oil');
     expect(joined(t)).not.toMatch(/scanUsed|noScanUsed|labelFreeRetry|labelNoExtra/); // 차감 문구 0
     expect(inv).toHaveBeenCalledWith({ queryKey: ['me'] });
@@ -194,8 +198,9 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
       mockPost.mockResolvedValueOnce(RESULT(over));
       await press(t, 'pscan-label-analyze');
       expect(texts(t)).toContain(sentence);
-      const badges = ids(t).filter((i) => i.startsWith('pscan-result-badge-'));
-      expect(badges).toEqual(badge ? [`pscan-result-badge-${badge}`] : []);
+      // KB-914: 판정 = 띠 하나(상태색) — 판정 없음 = 회색 unable 띠(판정 리본 0)
+      const bands = ids(t).filter((i) => i.startsWith('pscan-result-band-'));
+      expect(bands).toEqual([`pscan-result-band-${badge ?? 'unable'}`]);
     }
   });
   it('Codex #339: verdict 없는 옛 응답 = 서버 회피 일치(avoidance DETECTED) 숨김 0 — 회피 문장 + 위험 리본 · M0 = 검출 코드로 주요 알레르기', async () => {
@@ -205,7 +210,7 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     mockPost.mockResolvedValueOnce(RESULT(legacy));
     await press(t, 'pscan-label-analyze');
     expect(texts(t)).toContain('packagedScan.resultAvoid:{"names":"L(SHRIMP)"}');
-    expect(ids(t)).toContain('pscan-result-badge-danger');
+    expect(ids(t)).toContain('pscan-result-band-danger');
     expect(texts(t)).not.toContain('packaged.notVerifiedBody');
     mockRestrictions = [];
     const t2 = flow(true);
@@ -221,7 +226,8 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     await shoot(t, LABEL_P1);
     mockPost.mockResolvedValueOnce(RESULT());
     await press(t, 'pscan-label-analyze');
-    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-result-badge-danger', 'pscan-result-avoid']));
+    expect(ids(t)).toContain('pscan-result-band-danger');
+    expect(texts(t)).toContain('packagedScan.resultAvoid:{"names":"L(SHRIMP)"}');
     expect(ids(t)).not.toContain('pscan-result-major');
     const t2 = flow(true);
     await shoot(t2, LABEL_P1);
@@ -241,15 +247,14 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     await press(t, 'pscan-result-set-avoid');
     mockRestrictions = [{ code: 'SHRIMP' }]; // 회피 저장 뒤 돌아옴
     act(() => { t.update(<QueryClientProvider client={qc}>{el()}</QueryClientProvider>); }); // 새 요소 = 실제 재렌더(프로필 갱신)
-    expect(ids(t)).toContain('pscan-result-avoid');
-    expect(ids(t).some((i) => i.startsWith('pscan-result-badge-'))).toBe(false);
+    expect(ids(t).filter((i) => i.startsWith('pscan-result-band-'))).toEqual(['pscan-result-band-unable']); // KB-914: 옛 판정 = 회색 띠(판정 리본 0)
     expect(texts(t)).toContain('packaged.notVerifiedBody');
     expect(texts(t)).not.toContain('packaged.noAvoidMatches');
     await press(t, 'pscan-result-review');
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L40' })); // 새 기준 = AVOID(SHRIMP)
     await press(t, 'pscan-label-analyze');
     expect(labelCalls()[1][1]).toMatchObject({ analysisId: 'L40' });
-    expect(ids(t)).toContain('pscan-result-badge-danger');
+    expect(ids(t)).toContain('pscan-result-band-danger');
     expect(texts(t)).toContain('packagedScan.resultAvoid:{"names":"L(SHRIMP)"}');
   });
   it('KB-877: 성분표 분석이 차감하며 창을 엶 = 결과에 "다음 1시간 무료" 한 줄 · 창 안 무료 분석(charged false) = 그 줄 0, 남은 분 줄', async () => {
@@ -275,7 +280,7 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     mockPost.mockResolvedValueOnce(RESULT());
     await press(t, 'pscan-label-analyze');
     expect(ids(t)).toEqual(expect.arrayContaining(['pscan-result-major', 'pscan-result-set-avoid']));
-    expect(ids(t).some((i) => i.startsWith('pscan-result-badge-') || i === 'pscan-result-avoid')).toBe(false);
+    expect(ids(t).some((i) => i.startsWith('pscan-result-band-'))).toBe(false); // KB-914: 회피 0개 = 판정 띠 0(주요 알레르기 섹션)
     expect(joined(t)).toContain('packagedScan.resultMajorSet');
     await press(t, 'pscan-result-set-avoid');
     expect(mockPush).toHaveBeenCalledWith('/profile/restrictions');

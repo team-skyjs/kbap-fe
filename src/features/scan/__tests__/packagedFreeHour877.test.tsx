@@ -21,7 +21,8 @@ const T0 = Date.parse('2026-10-27T03:00:00Z');
 const iso = (ms: number) => new Date(ms).toISOString();
 const trees: ReactTestRenderer[] = [];
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(el); }); trees.push(t); return t; };
-const line = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'pscan-free-line' && typeof n.props.children === 'string')[0]?.props.children as string | undefined;
+// KB-914(R-141): 무료 창 = 배지(View) 안 글자
+const line = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'pscan-free-line' && typeof n.type === 'string')[0]?.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0]?.props.children as string | undefined;
 beforeEach(() => { jest.useFakeTimers({ now: T0 }); mockUntil = null; });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.useRealTimers(); jest.restoreAllMocks(); });
 

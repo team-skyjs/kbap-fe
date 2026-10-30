@@ -35,6 +35,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { CandidateScreen, LabelPhotosScreen, LabelResultScreen, MessagePage, NameSearchBox } from './PackagedScanScreens';
+import { DarkBackButton, ScanDarkMessage } from './ScanDarkMessage';
 import { PackagedFreeLine, applyFreeUntil } from './packagedFreeHour';
 import { confirmProcessedScan, LABEL_PAGES_MAX, scanFailureOf, scanProcessedLabel, scanProcessedName, type ScanFailure } from '@/lib/data/useProcessedScan';
 import type { LabelScanResult, ScanCandidate } from '@/lib/api/processedFoodAdapter';
@@ -333,7 +334,6 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   }
 
   if (step.kind === 'candidates') {
-    const sel = step.candidates.find((c) => c.id === step.selectedId) ?? null;
     return (
       <>
       <CandidateScreen
@@ -343,9 +343,15 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         subtitle={t('packagedScan.possibleMatches', { count: step.candidates.length })}
         note={m0 ? t('packagedScan.personalNote') : null}
         items={step.candidates}
-        selectedId={step.selectedId}
-        onSelect={(id) => setStep({ ...step, selectedId: id })}
-        onConfirm={() => { if (sel) void confirm(step.analysisId, sel.reportNo, step); }}
+        pickingId={step.selectedId}
+        // KB-914(R-138): 줄 탭 = 바로 확정(구 선택 → 하단 확정 버튼). 확정 화면(here)은 고른 줄을 기억한 후보 단계 — 한도에 걸리면 그대로 돌아온다
+        onPick={(c) => {
+          const cand = step.candidates.find((x) => x.id === c.id);
+          if (!cand) return;
+          const here = { ...step, selectedId: cand.id };
+          setStep(here);
+          void confirm(step.analysisId, cand.reportNo, here);
+        }}
         onNone={() => {
           track(EVENTS.food_packaged_scan_handoff, { from: 'rejected' });
           goStep({ kind: 'another', analysisId: step.analysisId, ocrText: step.ocrText, from: 'rejected', back: step });
@@ -362,6 +368,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   if (step.kind === 'another') {
     return (
       <MessagePage
+        focused={focused}
         testID={step.from === 'none' ? 'pscan-none' : 'pscan-another'}
         busy={guard.busy}
         headerTitle={t('packagedScan.title')}
@@ -377,6 +384,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   if (step.kind === 'frontUnreadable') {
     return (
       <MessagePage
+        focused={focused}
         testID="pscan-front-unreadable"
         headerTitle={t('packagedScan.title')}
         title={t('packagedScan.frontUnreadableTitle')}
@@ -448,7 +456,6 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     const retake = () => goStep({ kind: 'handoff', analysisId, pages: pages.slice(0, -1), photos: photos.slice(0, -1), from }); // 마지막 면을 다시 찍는다
     return (
       <LabelPhotosScreen
-        banner={<PackagedFreeLine />}
         photos={photos}
         count={pages.length}
         max={LABEL_PAGES_MAX}
@@ -491,6 +498,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       const hasPages = back.kind === 'handoff' && (back.pages?.length ?? 0) > 0;
       return (
         <MessagePage
+          focused={focused}
           testID="pscan-error-unreadable"
           headerTitle={t('packagedScan.labelTitle')}
           title={t('packagedScan.err.unreadableTitle')}
@@ -501,23 +509,26 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         />
       );
     }
+    // KB-914(R-139): 일반 오류(네트워크·만료·충돌·한도 등)도 메뉴판과 같은 어두운 전체 화면 — 문장·버튼 분기는 그대로
     return (
-      <View style={st.root} testID={`pscan-error-${f}`}>
-        <SubHeader title={t('packagedScan.title')} onBack={() => goStep({ kind: 'capture' })} />
-        <View style={[st.page, { gap: 16 }]}>
-          <Text style={st.h1}>{t(`packagedScan.err.${f}Title`)}</Text>
-          {/* 확정 전송 실패 = 차감 여부 미상 — 단정하지 않는다(문구는 응답 후 결과가 정한다) */}
-          <Text style={st.body}>{t(`packagedScan.err.${f}Body`)}</Text>
-          {f === 'network' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-retry">{t('common.tryAgain')}</Btn>}
-          {/* P-508: 409 PFOOD-007 = 이 분석엔 더 못 붙임 → 새 분석(성공 1회 — 본문이 알린다) */}
-          {f === 'newAnalysis' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-new-analysis">{t('packagedScan.newAnalysisCta')}</Btn>}
-          {f === 'quota' ? (
-            <Btn variant="ghost" onPress={onClose} testID="pscan-close">{t('common.close')}</Btn>
-          ) : (
-            <Btn variant="ghost" onPress={() => goStep(step.labelBack ?? { kind: 'capture' })} testID="pscan-retake">{t('packagedScan.retake')}</Btn>
-          )}
-        </View>
-      </View>
+      <ScanDarkMessage
+        testID={`pscan-error-${f}`}
+        lightStatusBar={focused}
+        label={t('packagedScan.title')}
+        title={t(`packagedScan.err.${f}Title`)}
+        // 확정 전송 실패 = 차감 여부 미상 — 단정하지 않는다(문구는 응답 후 결과가 정한다)
+        body={t(`packagedScan.err.${f}Body`)}
+        overlay={<DarkBackButton onPress={() => goStep({ kind: 'capture' })} label={t('common.goBack')} testID={`pscan-error-${f}-back`} />}
+      >
+        {f === 'network' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-retry">{t('common.tryAgain')}</Btn>}
+        {/* P-508: 409 PFOOD-007 = 이 분석엔 더 못 붙임 → 새 분석(성공 1회 — 본문이 알린다) */}
+        {f === 'newAnalysis' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-new-analysis">{t('packagedScan.newAnalysisCta')}</Btn>}
+        {f === 'quota' ? (
+          <Btn variant="ghost" onPress={onClose} testID="pscan-close">{t('common.close')}</Btn>
+        ) : (
+          <Btn variant="ghost" onPress={() => goStep(step.labelBack ?? { kind: 'capture' })} testID="pscan-retake">{t('packagedScan.retake')}</Btn>
+        )}
+      </ScanDarkMessage>
     );
   }
 
@@ -557,21 +568,19 @@ function NameSearchStep({ initial, personalized, m0, busy, onConfirm, onNone, on
     tracked.current = query;
     track(EVENTS.food_packaged_search, { query_length: Array.from(query.trim()).length, result_count: items.length }); // 검색어 원문 0
   }, [q.isSuccess, query, items.length]);
-  const sel = items.find((it) => it.id === selectedId) ?? null;
   return (
     <CandidateScreen
       testID="pscan-name-search"
-      banner={<PackagedFreeLine />}
       title={t('packagedScan.findTitle')}
       subtitle={t('packagedScan.findSubtitle')}
       note={m0 ? t('packagedScan.personalNote') : null}
       search={<NameSearchBox value={draft} onChange={setDraft} onSubmit={() => { if (busy) return; setQuery(draft); setSelectedId(null); }} />}
       items={items}
-      selectedId={selectedId}
-      onSelect={setSelectedId}
+      pickingId={selectedId}
+      // KB-914(R-138): 줄 탭 = 바로 확정(reportNo 없는 항목은 위에서 걸렀다)
+      onPick={(it) => { setSelectedId(it.id); if (it.reportNo) onConfirm(it.reportNo); }}
       // Codex #339: 20개씩 페이지 — 끝 근처에서 다음 페이지(목록 화면과 같은 가드)
       onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage && !q.isFetchNextPageError) void q.fetchNextPage(); }}
-      onConfirm={() => { if (sel?.reportNo) onConfirm(sel.reportNo); }}
       onNone={onNone}
       onBack={onBack}
       personalized={personalized}
@@ -598,7 +607,7 @@ function FrontDebug({ onRun }: { onRun: (text: string) => void }) {
 // 시안 실측(2x): 본문 좌우 20 · 안내 eyebrow 15 primary · 제목 28 bold · 본문 15/22 · 촬영 상자 335×264 r24 #2F3137(아이콘 + 18 semibold 흰 글자)
 // · 아웃라인 40 · 하단 고정 버튼 · 후보 시트 = 어두운 띠 200 위 흰 시트 r24
 const st = StyleSheet.create({
-  camFree: { color: C.surface, textAlign: 'center' }, // KB-877: 카메라 어두운 바 위(힌트와 같은 흰 글자)
+  camFree: { alignSelf: 'center' }, // KB-914(R-141): 카메라 = 배지 가운데(구 흰 문장)
   root: { flex: 1, backgroundColor: C.card },
   page: { paddingHorizontal: 20, paddingTop: 24, gap: 20 },
   eyebrow: { fontFamily: font.body, fontSize: 16, lineHeight: 21, color: C.primary },

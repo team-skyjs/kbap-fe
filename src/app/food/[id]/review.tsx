@@ -32,6 +32,7 @@ import { useFoodDetail } from '@/lib/data/useFoods';
 import { findCachedReview, reviewWriteClosed, useCreateProcessedReview, useCreateReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { useFoodReviews, useProcessedReviews } from '@/lib/data/useFoodReviews';
 import { processedUnavailable, useProcessedDetail } from '@/lib/data/useProcessedFoods';
+import { ProductName } from '@/features/processedFood/ProductName';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { imageUrlToPath } from '@/lib/api/reviewAdapter';
 import { ApiError, foodHiddenReason, type FoodHiddenReason } from '@/lib/api/client';
@@ -485,7 +486,12 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
             <View style={styles.foodPh} testID="food-ph" />
           )}
           <View style={{ flex: 1, minWidth: 0, gap: 4 }}>{/* A-RW-02 */}
-            <Text style={styles.foodName} numberOfLines={1}>{targetName}</Text>
+            {packaged ? (
+              // KB-914(R-140): 가공식품 이름 = 공용 ProductName(영어 굵게 + 한국어 작게 — 후보·검색·탭·상세와 같은 규칙)
+              <ProductName name={targetName} nameKo={product?.nameKo ?? null} size="chip" lines={1} testID="review-product-name" />
+            ) : (
+              <Text style={styles.foodName} numberOfLines={1}>{targetName}</Text>
+            )}
             {/* P-352(KB-514): count 0 = 리뷰 수 숨김(한글명 없으면 줄 생략), n≥1 = 한글명 + n reviews.
                 KB-907(T-107): 세로 막대 구분자 → 간격(gap 8) */}
             {(() => {

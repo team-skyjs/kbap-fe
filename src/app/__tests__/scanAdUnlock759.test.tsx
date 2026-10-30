@@ -491,8 +491,7 @@ it('Codex #339: 가공식품 확정 소진 덮개 → 나중에 → 메뉴로 �
     await press('scan-mode-packaged');
     act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
     await press('pscan-ocr-debug-run');
-    await press('pscan-candidate-11');
-    await press('pscan-confirm');
+    await press('pscan-candidate-11'); // KB-914(R-138): 줄 탭 = 바로 확정
     expect(tree.root.findAll((n) => n.props?.testID === 'pscan-quota-overlay').length).toBeGreaterThan(0);
     await press('scan-quota-later');
     act(() => tree.root.findAll((n) => typeof n.props?.onBack === 'function')[0].props.onBack()); // 후보 → 앞면 카메라

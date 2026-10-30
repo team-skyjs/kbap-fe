@@ -100,7 +100,8 @@ function mockCamera(o: ScanCamOpts) {
 const mockOnQuota = jest.fn();
 const flow = () => render(<PackagedScanFlow mode="packaged" onMode={jest.fn()} onClose={jest.fn()} renderCamera={mockCamera} onQuota={mockOnQuota} />);
 /** 후보 고르기(테두리) → 확정 CTA */
-const pick = async (t: ReactTestRenderer, id: number) => { await press(t, `pscan-candidate-${id}`); await press(t, 'pscan-confirm'); };
+// KB-914(R-138): 줄 탭 = 바로 확정(구 고르고 → 하단 확정 버튼)
+const pick = async (t: ReactTestRenderer, id: number) => { await press(t, `pscan-candidate-${id}`); };
 const texts = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
 
 describe('어댑터·요청·오류', () => {
@@ -147,8 +148,8 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(texts(t)).toContain('packagedScan.matchTitle');
     expect(JSON.stringify(texts(t))).not.toMatch(/usedOnSuccess|noScanUsed|scanUsed/); // README: 차감 문구 0
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_name', { candidate_count: 2, photo_attached: false });
-    // 선택 전 확정 = 요청 0
-    await press(t, 'pscan-confirm');
+    // KB-914(R-138): 확정 버튼 0 — 줄 탭이 곧 확정
+    expect(ids(t)).not.toContain('pscan-confirm');
     expect(mockPost).toHaveBeenCalledTimes(1);
     await pick(t, 12);
     expect(mockPost.mock.calls[1]).toEqual(['/api/processed-foods/scan/confirm', { analysisId: 'A1', reportNo: 'R2' }, { headers: { 'X-API-Version': '3.2' } }]);
@@ -177,19 +178,26 @@ describe('흐름(KB-865 ③ v4)', () => {
     await press(t, 'scan-leave-go');
     expect(mockNavDispatch).toHaveBeenCalledWith(action);
   });
-  it('선택 = 색만(P-151): 테두리 폭·안쪽 여백·라운딩 무변 — 선택 전후 스타일 메트릭 비교', async () => {
-    const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+  it('KB-914(R-138): 후보 줄 = 메뉴판 결과 줄 문법 — 선택 상태 0 · 탭 1번 = 확정 요청 1번 · "None of these" = 목록 끝 줄 · 확정 대기 중인 줄에 스피너', async () => {
+    let release!: (v: unknown) => void;
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
-    mockPost.mockResolvedValueOnce({ analysisId: 'A9', state: 'CANDIDATES', candidates: [cand(11, 'R1')] });
+    mockPost
+      .mockResolvedValueOnce({ analysisId: 'A9', state: 'CANDIDATES', candidates: [cand(11, 'R1'), cand(12, 'R2')] })
+      .mockReturnValueOnce(new Promise((r) => (release = r)));
     const t = flow();
     await press(t, 'pscan-take-photo');
-    const card = () => StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === 'pscan-candidate-11' && typeof n.type === 'string')[0].props.style) as Record<string, unknown>;
-    const m = (st: Record<string, unknown>) => ({ bw: st.borderWidth, p: st.padding, r: st.borderRadius, h: st.minHeight });
-    const before = card();
+    const order = ids(t).filter((i) => /^pscan-(candidate-\d+|none-of-these)$/.test(i));
+    expect(order).toEqual(['pscan-candidate-11', 'pscan-candidate-12', 'pscan-none-of-these']); // 끝 줄
+    const row = t.root.findAll((n) => n.props?.testID === 'pscan-candidate-11' && n.props?.accessibilityState)[0];
+    expect(row.props.accessibilityRole).toBe('button');
+    expect(row.props.accessibilityState).not.toHaveProperty('selected');
     await press(t, 'pscan-candidate-11');
-    const after = card();
-    expect(m(after)).toEqual(m(before));
-    expect([before.borderColor, after.borderColor]).toEqual(['transparent', '#FF7134']);
+    expect(mockPost).toHaveBeenCalledTimes(2);
+    expect(mockPost.mock.calls[1][1]).toEqual({ analysisId: 'A9', reportNo: 'R1' });
+    expect(ids(t)).toContain('pscan-picking-11');
+    expect(ids(t)).not.toContain('pscan-picking-12');
+    await act(async () => { release({ analysisId: 'A9', state: 'CONFIRMED', charged: true, product: DETAIL }); });
+    expect(mockPush).toHaveBeenCalledWith('/processed-foods/11?scan=1&charged=1');
   });
   it('"None of these" = 서버 호출 없이 시안 17(이름으로 찾기 / 성분표) · 이름으로 찾기 = 읽은 글자로 채운 검색 → 고르고 확정 = 같은 분석 + 그 항목 reportNo(후보 밖)', async () => {
     mockOcr.mockResolvedValueOnce([{ text: '빙그레' }, { text: '바나나맛우유' }, { text: '240ml' }]);
@@ -270,11 +278,10 @@ describe('흐름(KB-865 ③ v4)', () => {
       .mockReturnValueOnce(new Promise((r) => (release = r)));
     const t = flow();
     await press(t, 'pscan-take-photo');
-    await press(t, 'pscan-candidate-11');
-    act(() => { void t.root.findAll((n) => n.props?.testID === 'pscan-confirm' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    act(() => { void t.root.findAll((n) => n.props?.testID === 'pscan-candidate-11' && typeof n.props?.onPress === 'function')[0].props.onPress(); }); // KB-914: 줄 탭 = 확정
     const card12 = t.root.findAll((n) => n.props?.testID === 'pscan-candidate-12' && n.props?.accessibilityState)[0];
     expect(card12.props.accessibilityState).toMatchObject({ disabled: true });
-    expect(t.root.findAll((n) => n.props?.testID === 'pscan-candidate-12' && n.props?.accessibilityRole === 'radio' && typeof n.props?.onPress === 'function')).toHaveLength(0); // 실제 Pressable
+    expect(t.root.findAll((n) => n.props?.testID === 'pscan-candidate-12' && n.props?.accessibilityRole === 'button' && typeof n.props?.onPress === 'function')).toHaveLength(0); // 실제 Pressable
     expect(t.root.findAll((n) => n.props?.testID === 'pscan-none-of-these' && typeof n.props?.onPress === 'function')).toHaveLength(0);
     // 헤더 뒤로·하드웨어 뒤로도 잠금(Codex #339 R5) — 화면 그대로, 하드웨어 back은 삼킴(true)
     act(() => t.root.findAll((n) => n.props?.title === 'packagedScan.chooseTitle' && typeof n.props?.onBack === 'function')[0].props.onBack()); // 헤더(SubHeader)
@@ -302,7 +309,8 @@ describe('흐름(KB-865 ③ v4)', () => {
       await press(t, 'pscan-none-of-these');
       act(() => { t.root.findAll((n) => n.props?.testID === 'pscan-to-label' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
       await press(t, 'pscan-find-by-name');
-      act(() => t.root.findAll((n) => n.props?.title === 'packagedScan.title' && typeof n.props?.onBack === 'function')[0].props.onBack());
+      // KB-914(R-139): 어두운 안내 화면의 뒤로(구 헤더) — 대기 중엔 눌리지 않는다(핸들러 0)
+      expect(t.root.findAll((n) => n.props?.testID === 'pscan-another-back' && typeof n.props?.onPress === 'function')).toHaveLength(0);
       expect(ids(t)).toContain('pscan-another');
       expect(ids(t)).not.toContain('pscan-name-search');
       expect(mockTrack).not.toHaveBeenCalledWith('food_packaged_scan_find_by_name', expect.anything());
@@ -317,7 +325,7 @@ describe('흐름(KB-865 ③ v4)', () => {
     mockPost.mockResolvedValueOnce({ analysisId: 'A25', state: 'CANDIDATES', candidates: [{ ...cand(11, 'R1'), verdict: 'SAFE_WITH_NOTE' }, { ...cand(12, 'R2'), verdict: 'SAFE' }] });
     const t = flow();
     await press(t, 'pscan-take-photo');
-    const label = (id: number) => t.root.findAll((n) => n.props?.testID === `pscan-candidate-${id}` && n.props?.accessibilityRole === 'radio')[0].props.accessibilityLabel as string;
+    const label = (id: number) => t.root.findAll((n) => n.props?.testID === `pscan-candidate-${id}` && n.props?.accessibilityRole === 'button')[0].props.accessibilityLabel as string;
     expect(label(11)).toContain('risk.safe, packaged.unclearNoteA11y');
     expect(label(12)).toContain('risk.safe');
     expect(label(12)).not.toContain('packaged.unclearNoteA11y');
@@ -374,9 +382,7 @@ describe('흐름(KB-865 ③ v4)', () => {
     await pick(t, 12);
     expect(mockOnQuota).toHaveBeenCalledTimes(1);
     expect(ids(t)).toContain('pscan-candidates');
-    const card = t.root.findAll((n) => n.props?.testID === 'pscan-candidate-12' && n.props?.accessibilityState)[0];
-    expect(card.props.accessibilityState).toMatchObject({ selected: true });
-    await press(t, 'pscan-confirm'); // 해제 뒤 같은 선택으로 다시
+    await pick(t, 12); // 해제 뒤 같은 줄을 다시 탭(KB-914 — 구 같은 선택 유지 + 확정 버튼)
     expect(mockPost.mock.calls[2][1]).toEqual({ analysisId: 'A10', reportNo: 'R2' });
     expect(mockPush).toHaveBeenCalledWith('/processed-foods/11?scan=1&charged=1');
   });
@@ -543,7 +549,7 @@ describe('흐름(KB-865 ③ v4)', () => {
     await press(t, 'pscan-take-photo');
     await pick(t, 11);
     expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/11?scan=1&charged=1');
-    await press(t, 'pscan-confirm'); // 상세에서 뒤로 와서 다시
+    await pick(t, 11); // 상세에서 뒤로 와서 같은 줄 다시
     expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/11?scan=1&charged=1');
   });
   it('시안 18: OCR이 글자를 못 읽음 = 서버 호출 0 · "글자를 읽지 못했어요" → 다시 찍기 = 앞면 카메라', async () => {
@@ -597,13 +603,14 @@ describe('KB-877 가공식품 1시간 무료 창(서버 freeUntil)', () => {
       AppState.addEventListener = orig;
     }
   });
-  it('상세: 스캔 확정 + free=1 = "다음 1시간 무료" 한 줄 · free 없음(창 안 무료 확정·일반 진입) = 0', () => {
+  it('KB-914(R-141): 상세 = 무료 창 문장 0(스캔 확정 + free=1이어도) — 무료 배지는 카메라·후보·결과만', () => {
     const { adaptProcessedDetail } = jest.requireActual('@/lib/api/processedFoodAdapter');
     qc.setQueryData(['processedFoods', 'detail', '11', 'en|member:SHRIMP'], adaptProcessedDetail(DETAIL));
     mockParams = { id: '11', scan: '1', charged: '1', free: '1' };
     const t = render(<Detail />);
-    expect(ids(t)).toContain('pf-free-started');
-    expect(texts(t)).toContain('packagedScan.freeStarted');
+    expect(ids(t)).not.toContain('pf-free-started');
+    expect(texts(t)).not.toContain('packagedScan.freeStarted');
+    expect(ids(t)).not.toContain('pscan-free-explain');
     mockParams = { id: '11', scan: '1', charged: '0' };
     expect(ids(render(<Detail />))).not.toContain('pf-free-started');
     mockParams = { id: '11', free: '1' }; // 스캔 밖 진입 = 무시

@@ -162,8 +162,6 @@ function RichRow({
         .filter((i) => i.risk === 'danger' || i.risk === 'caution')
         .map((i) => ({ code: i.code, name: i.name, risk: i.risk }));
   const warns = [...warnSource].sort((a, b) => (a.risk === b.risk ? 0 : a.risk === 'danger' ? -1 : 1));
-  const [warnW, setWarnW] = React.useState(0);
-  const { shown: shownWarns, rest: restWarns } = fitAvoidChips(warns, warnW);
   const converted = dish.priceKrw != null ? convertKrw(dish.priceKrw, currency, fx) : null; // P-242: v2 = 실환율
   const added = qty > 0;
 
@@ -223,33 +221,8 @@ function RichRow({
         {dish.matched && !!food?.description && (
           <Text style={styles.desc} numberOfLines={1} testID={`desc-${dish.itemId}`}>{food.description}</Text>
         )}
-        {/* 기피 경고 — 칩 재사용(flex-wrap, 여러 개여도 안 밀림) */}
-        {warns.length > 0 && (
-          <View
-            style={styles.warnWrap}
-            testID={`warn-${dish.itemId}`}
-            onLayout={(e) => setWarnW(e.nativeEvent.layout.width)}
-          >
-            {/* P-160: "May contain" 라벨 제거 — solid 칩 색이 위험도를 말한다.
-                P-171: 1줄 고정 — 들어가는 만큼(danger 우선)+"+n" 접기, 탭(행 전체) = 상세
-                (What's inside가 전체 재료+사유 담당 — 인라인 펼침 대신 기존 화면 재활용). */}
-            {/* P-223: 칩 비주얼 = 색+형태 둘 다(헌법·색맹 접근성) — 1줄 접기에서도
-                caution/danger가 구분된다. 구 solid AvoidChip은 사용처 0 확인 후 삭제(P-230). */}
-            {/* KB-432 §1-1: 칩 = h26 pad 4/6 border #EAEBEE r37 — 마크 16 + 12/700 #2F3137
-                (형태 채널 = RiskMark 글리프, 틴트 배경 소멸 — 시안 그대로) */}
-            {shownWarns.map((w) => (
-              <View key={w.code} style={styles.warnChip}>
-                <RiskMark state={w.risk} size={16} />
-                <Text style={styles.warnChipText} numberOfLines={1}>{w.name}</Text>
-              </View>
-            ))}
-            {restWarns > 0 && (
-              <View style={styles.moreChip} testID={`warn-more-${dish.itemId}`}>
-                <Text style={styles.moreChipText}>+{restWarns}</Text>
-              </View>
-            )}
-          </View>
-        )}
+        {/* 기피 경고 — 칩 1줄(들어가는 만큼 + "+n") · KB-914: 공용 WarnChips(가공식품 후보 줄과 같은 부품) */}
+        <WarnChips warns={warns} testID={`warn-${dish.itemId}`} moreTestID={`warn-more-${dish.itemId}`} />
         {/* P-226 ⑤: 미등록 행 — 등록 예정 안내 + 외부 검색 딥링크(구글/네이버, 한글 키워드) */}
         {!dish.matched && (
           <View style={styles.missRow} testID={`miss-${dish.itemId}`}>
@@ -302,6 +275,29 @@ function RichRow({
         </View>
       </View>
     </Pressable>
+  );
+}
+
+/** 기피 경고 칩 1줄(KB-432 §1-1 · P-171 접기 · P-223 색+형태) — 메뉴판 결과 줄과 가공식품 후보 줄(KB-914 R-138)이 같이 쓴다.
+ *  warns는 호출측이 danger 우선으로 정렬해 넘긴다. 칩 = 마크 16 + 이름 · 넘치면 "+n" */
+export function WarnChips({ warns, testID, moreTestID }: { warns: { code: string; name: string; risk: RiskState }[]; testID: string; moreTestID: string }) {
+  const [warnW, setWarnW] = React.useState(0);
+  const { shown, rest } = fitAvoidChips(warns, warnW);
+  if (warns.length === 0) return null;
+  return (
+    <View style={styles.warnWrap} testID={testID} onLayout={(e) => setWarnW(e.nativeEvent.layout.width)}>
+      {shown.map((w) => (
+        <View key={w.code} style={styles.warnChip}>
+          <RiskMark state={w.risk} size={16} />
+          <Text style={styles.warnChipText} numberOfLines={1}>{w.name}</Text>
+        </View>
+      ))}
+      {rest > 0 && (
+        <View style={styles.moreChip} testID={moreTestID}>
+          <Text style={styles.moreChipText}>+{rest}</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -371,3 +367,5 @@ const styles = StyleSheet.create({
   pillRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
   pillCount: { fontFamily: font.body, fontSize: 16, color: '#fff', opacity: 0.85 },
 });
+
+export { styles as richStyles }; // KB-914(R-138): 가공식품 후보 줄이 같은 줄 치수(썸네일 118·배지 자리·줄 간격)를 쓴다

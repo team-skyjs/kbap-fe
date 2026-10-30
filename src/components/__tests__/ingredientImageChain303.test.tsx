@@ -71,7 +71,7 @@ it('P-341 소스 잠금 — 누끼 = contain+18% 인셋·흰 배경(실패만 ti
   expect(av).toContain("photoCut: { position: 'absolute', top: '13%', right: '13%', bottom: '13%', left: '13%' }"); // P-344: 74%
   expect(av).toContain("backgroundColor: failed ? tint : '#FFFFFF'");
   expect(av).toContain("contentFit={isCutout ? 'contain' : 'cover'}");
-  const fd = fsx.readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
+  const fd = fsx.readFileSync('src/components/IngredientTile.tsx', 'utf8') as string; // KB-914: IngChainImage 이동
   expect(fd).toContain("contentFit={isCutout ? 'contain' : undefined}");
   // Codex #102 P2: 상세 재료 이미지도 누끼 = 흰 바닥(부모 surface2는 실패 폴백만)
   expect(fd).toMatch(/isCutout && <View style=\{\[StyleSheet\.absoluteFill, \{ backgroundColor: '#FFFFFF' \}\]\}/);
@@ -89,11 +89,14 @@ it('배선 소스 잠금 — 상세 타일·시트 = IngChainImage(공유 체인
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('fs');
   const detail = fs.readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
-  expect(detail).toContain("import { useIngredientImageChain } from '@/components/AvoidTile';");
-  expect((detail.match(/<IngChainImage /g) ?? []).length).toBe(2); // 타일(48)+시트(56)
-  expect(detail).toContain('size={48} iconSize={28}');
+  // KB-914: IngChainImage·타일 = 공용 IngredientTile(체인 import는 거기) — 상세 = 타일 부품 + 시트 IngChainImage
+  const shared = fs.readFileSync('src/components/IngredientTile.tsx', 'utf8') as string;
+  expect(shared).toContain("import { useIngredientImageChain } from '@/components/AvoidTile';");
+  expect(shared).toContain('size={48} iconSize={28}');
+  expect(detail).toContain("import { IngChainImage, IngredientTile, tile } from '@/components/IngredientTile';");
+  expect((detail.match(/<IngChainImage /g) ?? []).length).toBe(1); // 시트(56) — 타일(48)은 IngredientTile 안
   expect(detail).toContain('size={56} iconSize={32}');
-  expect(detail).toContain('onError={nextSource}');
+  expect(shared).toContain('onError={nextSource}'); // KB-914: 체인 전환은 공용 IngChainImage
   // 구 단독 경로(cat.imageUrl 삼항 → RemoteImage 직행) 잔존 0
   expect(detail).not.toMatch(/img \? \(\s*<RemoteImage/);
   const remote = fs.readFileSync('src/components/RemoteImage.tsx', 'utf8') as string;

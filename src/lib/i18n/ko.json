@@ -1278,7 +1278,8 @@
     "containsNames": "{{names}} 함유",
     "mayContainNames": "{{names}} 혼입 가능",
     "signInToPersonalize": "로그인하고 내 기준으로 보기",
-    "setAvoidIngredients": "피하는 재료 설정하기"
+    "setAvoidIngredients": "피하는 재료 설정하기",
+    "noAvoidMatchTitle": "피하는 재료와 겹치는 것 없음"
   },
   "scanMode": {
     "menu": "메뉴판",

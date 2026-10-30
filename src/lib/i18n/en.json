@@ -1274,7 +1274,8 @@
     "containsNames": "Contains {{names}}",
     "mayContainNames": "May contain {{names}}",
     "signInToPersonalize": "Sign in to personalize",
-    "setAvoidIngredients": "Set avoid ingredients"
+    "setAvoidIngredients": "Set avoid ingredients",
+    "noAvoidMatchTitle": "No matches to your avoid list"
   },
   "scanMode": {
     "menu": "Menu",

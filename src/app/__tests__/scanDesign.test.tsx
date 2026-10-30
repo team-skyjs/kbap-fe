@@ -777,17 +777,15 @@ describe('KB-845 공통 카메라', () => {
     await pressId(tree, 'pscan-ocr-debug-run');
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(byId(tree, 'pscan-candidates').length).toBeGreaterThan(0);
-    await pressId(tree, 'pscan-candidate-11');
     const flowNode = tree.root.findAll((n) => n.props?.testID === 'pscan-candidates')[0];
     const before = mockCamMounts.n;
-    await pressId(tree, 'pscan-confirm');
+    await pressId(tree, 'pscan-candidate-11'); // KB-914(R-138): 줄 탭 = 바로 확정
     expect(mockConfirm).toHaveBeenCalledWith('A1', 'R1');
     expect(byId(tree, 'pscan-quota-overlay').length).toBeGreaterThan(0);
     expect(tree.root.findAll((n) => n.props?.testID === 'pscan-candidates')[0]).toBe(flowNode); // 같은 인스턴스 = 상태 유지
     await pressId(tree, 'scan-quota-later');
     expect(byId(tree, 'pscan-quota-overlay')).toHaveLength(0);
-    const card = tree.root.findAll((n) => n.props?.testID === 'pscan-candidate-11' && n.props?.accessibilityState)[0];
-    expect(card.props.accessibilityState).toMatchObject({ selected: true });
+    expect(byId(tree, 'pscan-candidate-11').length).toBeGreaterThan(0); // 같은 후보 화면으로 복귀(다시 탭 = 같은 후보 재확정)
     expect(mockCamMounts.n).toBe(before);
   });
 });

@@ -24,6 +24,8 @@ import { color as C, font, radius } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
 import { browseUnsupported, useProcessedSearch } from '@/lib/data/useProcessedFoods';
 import { PACKAGED_TYPES, packagedTypeKey, VERDICT_RISK, type PackagedType, type ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
+import { SearchScanButton } from '@/features/food/FoodExplorer';
+import { ProductName } from './ProductName';
 
 export type FoodSegment = 'dishes' | 'packaged';
 
@@ -112,9 +114,8 @@ export function ProductCard({ item, width, onOpen, personalized = true }: { item
         {risk && <View style={card.badge}><RiskBadge state={risk} size={22} flat testID={`packaged-verdict-${item.id}`} /></View>}
       </View>
       {!!item.maker && <Text style={card.maker} numberOfLines={1}>{item.maker}</Text>}
-      {/* QA AQ(큰 글씨): 한국어 이름이 글자 단위로 끊겨 '우'만 다음 줄로 — iOS는 어절 단위 줄바꿈(Android는 기본 단어 단위) */}
-      <Text style={card.name} numberOfLines={2} lineBreakStrategyIOS="hangul-word">{item.name}</Text>
-      {!!item.nameKo && <Text style={card.nameKo} numberOfLines={1} lineBreakStrategyIOS="hangul-word">{item.nameKo}</Text>}
+      {/* KB-914(R-140): 이름 = 공용 ProductName(영어 굵게 + 한국어 작게, hangul-word — QA AQ 어절 줄바꿈 그대로) */}
+      <ProductName name={item.name} nameKo={item.nameKo} style={card.nameBox} testID={`packaged-name-${item.id}`} />
       {item.rating && (
         <View testID={`packaged-rating-${item.id}`}>
           <OverallRating average={item.rating.average} count={item.rating.count} style={card.rating} />
@@ -186,6 +187,9 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   const header = (
     <View>
       {top}
+      {/* KB-914(R-142): 상단 = Dishes와 같은 검색 행(검색칸 + 주황 스캔 버튼 — 가공식품 모드로) · 둘째 줄 = 유형 칩.
+          판정 칩(All·Safe·Avoid·Caution)은 서버 verdict 필터 대기 — 클라 필터 금지(받은 페이지만 걸러 0건처럼 보인다) */}
+      <View style={st.searchRow}>
       <View style={st.searchBox}>
         <Input
           ref={inputRef}
@@ -206,6 +210,8 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
         <Pressable onPress={submit} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('packaged.searchPlaceholder')} testID="packaged-search-submit">
           <IconSearch size={20} color={C.inkMute} />
         </Pressable>
+      </View>
+      <SearchScanButton onPress={() => router.navigate(`/scan?mode=packaged&t=${Date.now()}` as Href)} testID="packaged-scan" />
       </View>
       {v4 && (
         // KB-901(T-017): 바깥 목록만 handled면 안쪽 가로 칩 줄의 첫 탭은 키보드 닫기에 쓰였다(✕ 뒤 Drinks 첫 탭 무반응)
@@ -298,8 +304,7 @@ const card = StyleSheet.create({
   image: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
   badge: { position: 'absolute', left: 10, top: 0 },
   maker: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2, marginTop: 6 },
-  name: { fontFamily: font.bodyBold, fontSize: 17, lineHeight: 24, color: C.ink, marginTop: 5 },
-  nameKo: { fontFamily: font.ko, fontSize: 16, lineHeight: 23, color: C.ink2, marginTop: 3 },
+  nameBox: { marginTop: 5 }, // KB-914(R-140): 이름 글자 = ProductName(row 16 굵게 + 14) — 구 17/24 · 16/23
   rating: { marginTop: 7 }, // 음식 목록 카드 평점 줄(18) 그대로(예진 10/22) — 시안 평점 줄 중심(이름 열 아래)에 맞춤
   // 시안 05: 사진 #F2F3F6(=hair, Shimmer 바탕) · 막대 r 알약
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, paddingHorizontal: 20 },
@@ -327,7 +332,8 @@ const ph = StyleSheet.create({
 // R-95 실측: 검색 335×48(세그먼트 아래 24) · 행 72(썸네일 72 r8) 간격 20 · 이름 16 bold ink · 제조사 14 gray-600 · 카드 보더 #EAEBEE
 const st = StyleSheet.create({
   // 시안 01: 탭 구분선 아래 16 · 335×48 · 칩 줄(36) 위 16 · 제목(20 bold) 위 26·아래 16
-  searchBox: { marginTop: 16, marginHorizontal: 20, height: 48, borderRadius: radius.md, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, paddingHorizontal: 20 }, // KB-914: Dishes 검색 행(A-HM-02)과 같은 줄
+  searchBox: { flex: 1, height: 48, borderRadius: radius.md, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
   searchInput: { flex: 1, height: 48, fontSize: 16, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
   chips: { marginTop: 16, flexGrow: 0 },
   chipsRow: { paddingHorizontal: 20, gap: 8 },
