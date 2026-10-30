@@ -11,6 +11,13 @@
 - Codex #369 2R P1: 가공 SAFE 띠 제목 = 매칭 범위 키(구 음식 상세 detail.verdictSafe "안심하고 드세요" — 보장 표현 금지) · 가공 띠 제목 전부 가공 전용 키
 - 신규 ko 문구(K-항목 — 안전 문구, 예진 승인 대상): `packaged.noAvoidMatchTitle` = 피하는 재료와 겹치는 것 없음 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
+## 2026-10-30 · P-557 KB-931 큐레이션 카드 블러 1장 + 커버 프리페치
+- 흐림 띠: 띠마다 반경이 다른 블러 8장(카드당 디코드·변환 9회) → 블러 1장(최대 반경) + 선명 원본 띠 7(위 0.875 → 아래 0.125). 본 사진 onLoad 뒤 마운트(메모리 캐시 공유). 블러 변환 = 카드당 1회.
+  - (a) 같은 반경 블러 8장 안은 iOS SDWebImage가 동시 요청을 각자 캐시 미스로 변환할 수 있어 (a')로. MaskedView 그라디언트 마스크 = 다음 네이티브 빌드 후보.
+- 홈 큐레이션 섹션이 공개로 그려지면 모음 3개 상세(같은 캐시 키, 5분) → 앞 2장씩 = 6장 Image.prefetch.
+- 표시용 1080 WebP URL(KB-930): dev Swagger에 아직 필드 없음 — 사진 URL은 curationAdapter에서만 읽어 필드 이름이 정해지면 어댑터 한 줄.
+- 측정(시뮬, 디스크 캐시 있음·앱 재실행): 상세 진입 → 앞 2장 띠 준비 평균(2~5회차) 1532 → 1362ms, 범위 안 5장 2618 → 2067ms.
+
 ## 2026-10-30 · P-560 KB-629 push_open(type) 재발주(#187 닫힘 — R-157)
 - 이벤트 push_open, 속성 type(PUSH_TYPES 정확 일치만 — 미지·없음 = 속성 생략). ALLOWED ['type'].
 - pushAdapter.addNotificationTapListener 콜백 3번째 인자 = 유형 → 루트 레이아웃 탭 콜백에서 track 1줄. 콜드 스타트(getLastNotificationResponse)·리스너 이중 전달은 기존 routed(identifier) Set이 차단 → 탭 1번 = 1회.

@@ -20,7 +20,7 @@ import { Shimmer } from '@/components/Skeleton';
 import { Btn } from '@/components/Btn';
 import { IconArrowLeft, IconChevron } from '@/components/icons';
 import { color as C, font, radius } from '@/lib/theme';
-import { useCurationIndex, type CurationCard } from '@/lib/data/useCurations';
+import { useCurationCoverPrefetch, useCurationIndex, type CurationCard } from '@/lib/data/useCurations';
 import { trackHomeCardClick, useImpressionRef } from '@/features/home/homeImpressions';
 import { BlurCaptionCard, CARD_SPACER } from '@/features/curation/BlurCaptionCard';
 
@@ -34,6 +34,8 @@ export function CurationSection() {
   const q = useCurationIndex();
   const sectionRef = useImpressionRef(q.data?.published ? 'curation' : null);
   const bannerW = useWindowDimensions().width - BANNER_GUTTER * 2;
+  // KB-931: 섹션이 공개 상태로 그려지면 상세 첫 화면 사진(모음당 2장 = 최대 6장)을 미리 받는다 — 진입 직후 카드 사진 대기 줄이기
+  useCurationCoverPrefetch(q.data?.published ? q.data.cards.map((c) => c.key) : null);
 
   if (q.isPending) {
     // 첫 로딩 = 스켈레톤(공백 금지). 미게시로 판명되면 사라진다

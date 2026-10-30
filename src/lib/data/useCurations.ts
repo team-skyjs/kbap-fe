@@ -9,7 +9,9 @@
  * - 사진 출처 캡션은 표시 의무가 있을 때만 문자열(어댑터가 빈 값을 null로) → 있을 때만 그린다.
  * - 상세 404(CURATION-001) = 공개되지 않은 모음(빈 상태 "더 이상 볼 수 없어요"), 503 = 조회 실패(다시 시도).
  */
-import { useQuery } from '@tanstack/react-query';
+import * as React from 'react';
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { api, apiLang, ApiError } from '../api/client';
 import { adaptCurationDetail, adaptCurationIndex, type CurationDetail, type CurationIndex, type DetailWire, type IndexWire } from '../api/curationAdapter';
 import { useAppLanguage } from '../i18n/useAppLanguage';
@@ -34,6 +36,35 @@ export function isCurationUnavailable(e: unknown): boolean {
 export function useCurationIndex() {
   const lang = useAppLanguage(); // 구독 — 언어 전환 시 재조회(KB-695)
   return useQuery({ queryKey: ['curations', 'seoul', lang], queryFn: fetchCurationIndex, retry: false });
+}
+
+/** KB-931: 홈 큐레이션 섹션이 그려지면 모음 상세 첫 화면 사진을 미리 받는다 — 모음마다 상세(같은 캐시 키)를 받아 앞 PREFETCH_PER_COLLECTION장.
+ *  상세는 언어별 캐시라 세션에 모음당 1번 · 실패는 조용히(진입하면 화면이 다시 시도) */
+export const PREFETCH_PER_COLLECTION = 2;
+export async function prefetchCurationCovers(qc: QueryClient, keys: readonly string[], lang: string): Promise<string[]> {
+  const urls = (
+    await Promise.all(
+      keys.map((key) =>
+        qc
+          .fetchQuery({ queryKey: ['curations', 'seoul', key, lang], queryFn: () => fetchCurationDetail(key), staleTime: 5 * 60_000, retry: false })
+          // Codex #376 P2: 카드가 그리는 사진 = images[0](galleryOf — 서버 images[] 우선, 없으면 imageUrl) — 같은 것을 받는다
+          .then((d) => d.items.slice(0, PREFETCH_PER_COLLECTION).map((it) => it.images[0]?.url).filter((u): u is string => !!u && !!u.trim()))
+          .catch(() => [] as string[]),
+      ),
+    )
+  ).flat();
+  if (urls.length) await Image.prefetch(urls).catch(() => false);
+  return urls;
+}
+
+/** 섹션용 — 공개 모음 키가 바뀔 때만(같은 키 = 다시 안 받음) */
+export function useCurationCoverPrefetch(keys: readonly string[] | null) {
+  const qc = useQueryClient();
+  const lang = useAppLanguage();
+  const joined = keys?.join('|') ?? '';
+  React.useEffect(() => {
+    if (joined) void prefetchCurationCovers(qc, joined.split('|'), lang);
+  }, [joined, qc, lang]);
 }
 
 export function useCurationDetail(key: string | undefined) {
