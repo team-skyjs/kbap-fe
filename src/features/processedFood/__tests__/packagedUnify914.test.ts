@@ -99,12 +99,13 @@ describe('2차 R-141 무료 배지 = 카메라·후보·결과 3곳만', () => {
 });
 
 describe('2차 R-142 Packaged 탭 상단', () => {
-  it('Dishes와 같은 검색 행(검색칸 + 주황 스캔 버튼 = 가공식품 모드) · 둘째 줄 = 유형 칩 · 판정 칩 0(서버 verdict 필터 대기 — 클라 필터 금지)', () => {
+  it('Dishes와 같은 검색 행(검색칸 + 주황 스캔 버튼 = 가공식품 모드) · 판정 칩(KB-927 서버 verdict) → 유형 칩 순 · 클라 필터 0', () => {
     const ex = read('src/features/processedFood/PackagedExplorer.tsx');
     expect(ex).toContain("<SearchScanButton onPress={() => router.navigate(`/scan?mode=packaged&t=${Date.now()}` as Href)} testID=\"packaged-scan\" />");
     expect(read('src/features/food/FoodExplorer.tsx')).toContain('<SearchScanButton onPress={() => router.navigate(\'/scan\')} testID="home-scan" />');
-    expect(ex.indexOf('testID="packaged-scan"')).toBeLessThan(ex.indexOf('testID="packaged-types"'));
-    expect(ex).not.toMatch(/verdict=|packaged-verdict-chip|\.filter\(\(it\) => it\.verdict/);
+    expect(ex.indexOf('testID="packaged-scan"')).toBeLessThan(ex.indexOf('scrollTestID="packaged-verdicts"'));
+    expect(ex.indexOf('scrollTestID="packaged-verdicts"')).toBeLessThan(ex.indexOf('scrollTestID="packaged-types"'));
+    expect(ex).not.toMatch(/\.filter\(\(it\) => it\.verdict|items\.filter\(/); // 받은 페이지를 판정으로 거르지 않는다(서버 verdict 파라미터만)
   });
 });
 

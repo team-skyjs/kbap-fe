@@ -5,14 +5,14 @@ const src = fs.readFileSync('src/features/food/FoodExplorer.tsx', 'utf8');
 
 it('① 칩 줄 = 홈·Food 탭 모두 한 줄 가로 스크롤(줄바꿈 칩 그룹 0)', () => {
   expect(src).not.toMatch(/chipGroup|flexWrap: 'wrap', gap: 6 \}/);
-  expect(src.match(/<ScrollView\s+ref=\{chipScrollRef\}\s+horizontal/g)).toHaveLength(1); // 두 변형이 같은 스크롤 하나
+  expect(src.match(/<ChipScrollRow\s+scrollRef=\{chipScrollRef\}/g)).toHaveLength(1); // 두 변형이 같은 스크롤 하나(KB-927: 공용 ChipScrollRow — 한 줄 가로 스크롤)
   expect(src).toContain("<View style={variant === 'screen' ? [styles.chipRowScreen, sortOwnRow && styles.chipRowScreenStack] : styles.chipRowHome}>");
   expect(src).toContain("{variant === 'screen' && <Chip label={t('saved.title')}"); // Saved 칩은 Food 탭만(홈 무변)
 });
 
 it('② 큰 글씨(fontScale > 1) = 정렬 버튼 자기 줄(칩 줄 전폭) · 기본 = 한 줄', () => {
   expect(src).toContain('export const sortOnOwnRow = (fontScale: number): boolean => fontScale > 1;'); // 기본(1) = 한 줄 · iOS XXL(1.235) = 자기 줄
-  expect(src).toContain("<View style={variant === 'screen' && !sortOwnRow ? styles.chipLineWrap : styles.chipLineFull}>");
+  expect(src).toContain("style={variant === 'screen' && !sortOwnRow ? styles.chipLineWrap : styles.chipLineFull}"); // KB-927: ChipScrollRow 바깥 폭
   // Q-367b: 줄바꿈(flexWrap)이 아니라 세로 흐름 — flexWrap 둘째 줄은 행 높이에 안 잡혀 그리드가 정렬 버튼을 덮었다(XXL)
   expect(src).toContain("<View style={variant === 'screen' ? [styles.chipRowScreen, sortOwnRow && styles.chipRowScreenStack] : styles.chipRowHome}>");
   expect(src).toContain("chipRowScreenStack: { flexDirection: 'column', alignItems: 'stretch' },");

@@ -28,6 +28,7 @@ import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
 import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/food/foodFilterParams';
 import { railCardW } from '@/features/food/railLayout';
 import { LinearGradient } from 'expo-linear-gradient';
+import { CHIP_FADE_W, ChipScrollRow, useMoreOnRight } from '@/components/ChipScrollRow';
 import { SectionHead } from '@/components/SectionHead';
 import { useInfiniteFoods, usePrefetchOtherFoodSorts, FOODS_PAGE_SIZE } from '@/lib/data/useFoods';
 import type { FoodNameSort } from '@/lib/data/foodNameSort';
@@ -46,8 +47,8 @@ export type GridTab = 'popular' | 'saved' | 'food';
  *  P-318: See all 파라미터(RiskChipParam)와 같은 유니언 — 홈→음식 탭 승계 무변환. */
 type RiskChip = RiskChipParam;
 const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
-/** KB-707: Food 탭 칩 줄 끝 페이드 폭 — 칩 줄 끝 여백도 이만큼(끝까지 밀면 마지막 칩이 페이드 밖으로 완전히 나온다) */
-export const CHIP_FADE_W = 24;
+// KB-927: 칩 줄(가로 스크롤·끝 여백·페이드)은 components/ChipScrollRow — 기존 import 경로 유지용 재수출
+export { CHIP_FADE_W, chipFadeShown } from '@/components/ChipScrollRow';
 /** Food 탭 칩 줄 높이(시안 34). KB-708: 큰 글자에선 칩 라벨 줄 높이가 늘어난 만큼 같이 늘어난다 — 기본 크기 = 34 그대로.
  *  RN은 lineHeight도 글자 배율(상한 MAX_FONT_SCALE)만큼 키우므로 칩은 스스로 커지는데, 줄이 34로 고정이라 잘렸다(XXXL QA). */
 export const CHIP_ROW_H = 34;
@@ -65,37 +66,6 @@ export function SearchScanButton({ onPress, testID }: { onPress: () => void; tes
 
 /** KB-909(Q-367): 큰 글씨(fontScale > 1 — BlurCaptionCard captionLargeText와 같은 기준)면 Food 탭 정렬 버튼을 칩 아래 자기 줄로 */
 export const sortOnOwnRow = (fontScale: number): boolean => fontScale > 1;
-/** KB-707: 끝 페이드("더 있다" 표시)는 아직 오른쪽에 숨은 칩이 있을 때만 — 끝까지 밀었거나 다 들어가면 숨김(마지막 칩을 덮지 않게) */
-export function chipFadeShown(scrollX: number, contentW: number, viewW: number): boolean {
-  return contentW - viewW - scrollX > 1;
-}
-
-/** KB-707: 가로 스크롤 줄 공용 — "오른쪽에 숨은 것이 있나"(끝 페이드 표시) + 바운스 끔. 칩 줄·홈 세그먼트 탭이 같이 쓴다.
- *  scrollProps를 ScrollView에 펼치고, more가 참일 때만 끝 페이드를 그린다. */
-function useMoreOnRight() {
-  const m = React.useRef({ x: 0, content: 0, view: 0 });
-  const [more, setMore] = React.useState(false);
-  const update = () => setMore(chipFadeShown(m.current.x, m.current.content, m.current.view));
-  const scrollProps = {
-    scrollEventThrottle: 32,
-    // 다 들어가는 언어에서 줄이 좌우로 튕기지 않게(iOS 기본 바운스 · Android 오버스크롤 글로우)
-    alwaysBounceHorizontal: false,
-    overScrollMode: 'never' as const,
-    onScroll: (e: { nativeEvent: { contentOffset: { x: number } } }) => {
-      m.current.x = e.nativeEvent.contentOffset.x;
-      update();
-    },
-    onContentSizeChange: (w: number) => {
-      m.current.content = w;
-      update();
-    },
-    onLayout: (e: { nativeEvent: { layout: { width: number } } }) => {
-      m.current.view = e.nativeEvent.layout.width;
-      update();
-    },
-  };
-  return { more, scrollProps, metrics: m };
-}
 
 /** P-318 정렬 — new는 서버 정렬 파라미터 부재로 시트에서 비활성(선택 불가, P-385 실측).
  *  P-335(9/8 예진): 클라 A–Z 제거(커서 페이지 위 클라 정렬 = 항목 튐) → KB-821: 서버 3.1 sort=name_asc|name_desc로 재도입
@@ -280,7 +250,6 @@ export function FoodExplorer({
   const chipScrollRef = React.useRef<ScrollView | null>(null);
   const { fontScale } = useWindowDimensions(); // KB-708: 칩 줄 높이가 큰 글자를 따라감
   // KB-707: 칩 줄이 정렬 버튼 왼쪽에서 끝나는 스크롤 영역 — 오른쪽에 숨은 칩이 있을 때만 끝 페이드(홈 탭과 공용 판정)
-  const chipLine = useMoreOnRight();
   const sortOwnRow = sortOnOwnRow(fontScale); // KB-909(Q-367): 큰 글씨 = 정렬 버튼 자기 줄
   // KB-707: 홈 세그먼트 탭 줄 — 같은 판정 + 누른 탭을 화면 안으로
   const tabLine = useMoreOnRight();
@@ -442,39 +411,25 @@ export function FoodExplorer({
       {/* KB-909(Q-367): 홈(embedded)도 Food 탭과 같은 한 줄 가로 스크롤 + 끝 페이드(줄바꿈 금지 — XXL에서 Caution만 둘째 줄로 내려갔다).
           Food 탭 정렬 버튼은 큰 글씨(fontScale > 1)면 칩 아래 오른쪽 자기 줄 — 칩 줄이 정렬 버튼 폭만큼 좁아져 칩이 잘려 보였다 */}
       <View style={variant === 'screen' ? [styles.chipRowScreen, sortOwnRow && styles.chipRowScreenStack] : styles.chipRowHome}>
-        <View style={variant === 'screen' && !sortOwnRow ? styles.chipLineWrap : styles.chipLineFull}>
-          <ScrollView
-            ref={chipScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.chipScrollContent, { minHeight: chipRowHeight(fontScale) }]}
-            testID="food-chip-scroll"
-            {...chipLine.scrollProps}
-          >
-            {RISK_CHIPS.map((c) => (
-              <Chip
-                key={c}
-                label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
-                selected={riskChip === c}
-                onPress={() => onChip(c)}
-                testID={`home-chip-${c}`}
-                risk={c === 'all' ? undefined : c} // P-391: all만 중립, 나머지는 상태색
-              />
-            ))}
-            {variant === 'screen' && <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />}
-          </ScrollView>
-          {/* 우측 흰→투명 페이드 — 스크롤 가능함을 암시(터치 투과). KB-707: 오른쪽에 숨은 칩이 있을 때만 */}
-          {chipLine.more && (
-            <LinearGradient
-              colors={['rgba(255,255,255,0)', '#FFFFFF']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.chipFade}
-              pointerEvents="none"
-              testID="food-chip-fade"
+        <ChipScrollRow
+          scrollRef={chipScrollRef}
+          style={variant === 'screen' && !sortOwnRow ? styles.chipLineWrap : styles.chipLineFull}
+          minHeight={chipRowHeight(fontScale)}
+          scrollTestID="food-chip-scroll"
+          fadeTestID="food-chip-fade"
+        >
+          {RISK_CHIPS.map((c) => (
+            <Chip
+              key={c}
+              label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
+              selected={riskChip === c}
+              onPress={() => onChip(c)}
+              testID={`home-chip-${c}`}
+              risk={c === 'all' ? undefined : c} // P-391: all만 중립, 나머지는 상태색
             />
-          )}
-        </View>
+          ))}
+          {variant === 'screen' && <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />}
+        </ChipScrollRow>
         {variant === 'screen' && (
           <Pressable style={[styles.sortBtn, sortOwnRow && styles.sortBtnOwnRow]} onPress={() => setSortSheet(true)} testID="food-sort">
             <Text style={styles.sortLabel} numberOfLines={1}>{t(`food.sort_${sort}`)}</Text>
@@ -748,11 +703,10 @@ const styles = StyleSheet.create({
   // P-340 2-A: 한 줄 고정(칩 34) + pad 14/12 + 하단 헤어라인 — 정렬 버튼은 스크롤 밖 우측
   chipRowScreen: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // P-351 ②(#114 P2): 헤어라인 아래 12 — top은 ListHeader라 contentContainer paddingTop은 헤더째 밀림
   // KB-707: 오른쪽 끝 여백 = 페이드 폭 — 끝까지 밀면 마지막 칩이 페이드·정렬 버튼에 가리지 않는다(옛 8 < 페이드 24 → 마지막 칩 끝 16pt가 늘 덮였다)
-  chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: CHIP_FADE_W }, // 최소 높이 = chipRowHeight(fontScale) 인라인 — KB-903(T-101): 고정 height면 칩(라벨 줄 + 여백 + 보더)이 눌려 라벨이 아래로 넘치고 ✓/✗만 가운데(Android 2.0)
-  chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: CHIP_FADE_W },
   // P-342 ②: 정렬 시트 NEW "준비 중" 칩(DS 소형 pill)
   soonChip: { backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 2, paddingHorizontal: 8 },
   soonChipText: { fontSize: 13, fontWeight: '500', color: '#6A6F7C' },
+  chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: CHIP_FADE_W }, // 홈 세그먼트 탭 줄 끝 페이드(칩 줄은 ChipScrollRow 안)
   chipLineWrap: { flex: 1, minWidth: 0 },
   chipLineFull: { alignSelf: 'stretch' }, // KB-909: 홈·큰 글씨 Food 탭 = 칩 줄이 전폭(정렬 버튼은 다음 줄 오른쪽)
   // KB-909 Q-367b: 큰 글씨 = 세로 흐름(칩 줄 → 정렬 버튼). 구 flexWrap 줄바꿈은 둘째 줄이 행 높이에 안 잡혀 그리드가 정렬 버튼을 덮었다(XXL)
