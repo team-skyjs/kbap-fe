@@ -186,7 +186,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (!FLAGS.pushEnabled || !entryChecked) return;
     const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
-    const unsub = push.addNotificationTapListener((href, notificationId) => {
+    const unsub = push.addNotificationTapListener((href, notificationId, type) => {
+      track(EVENTS.push_open, type ? { type } : {}); // KB-629: 탭 1번 = 1회(어댑터 routed가 콜드 스타트·리스너 이중 전달 차단) · 미지 유형 = 속성 생략
       void onPushTapped(notificationId); // KB-499: 이 기기 알림 행 읽음 처리 + 재조회(게스트 = 이동만)
       // KB-735: 보류 없이 즉시 이동. 닫을 수 없는 모달을 다시 두면 라우팅 유예(KB-729의 "모달이 닫힌 뒤 실행" 헬퍼)를 함께 복원할 것 — 그 위로 fullScreenModal이 열리면 KB-377류 교착
       if (href) openNotificationRoute(router, href); // href null = 이동 없는 유형(KB-498) · KB-573: 홈 = 스택 리셋

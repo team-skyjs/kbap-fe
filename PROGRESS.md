@@ -11,6 +11,11 @@
 - Codex #369 2R P1: 가공 SAFE 띠 제목 = 매칭 범위 키(구 음식 상세 detail.verdictSafe "안심하고 드세요" — 보장 표현 금지) · 가공 띠 제목 전부 가공 전용 키
 - 신규 ko 문구(K-항목 — 안전 문구, 예진 승인 대상): `packaged.noAvoidMatchTitle` = 피하는 재료와 겹치는 것 없음 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
+## 2026-10-30 · P-560 KB-629 push_open(type) 재발주(#187 닫힘 — R-157)
+- 이벤트 push_open, 속성 type(PUSH_TYPES 정확 일치만 — 미지·없음 = 속성 생략). ALLOWED ['type'].
+- pushAdapter.addNotificationTapListener 콜백 3번째 인자 = 유형 → 루트 레이아웃 탭 콜백에서 track 1줄. 콜드 스타트(getLastNotificationResponse)·리스너 이중 전달은 기존 routed(identifier) Set이 차단 → 탭 1번 = 1회.
+- 잠금: pushAdapter192(유형 전달·미지 생략·이중 0·레이아웃 track 1줄) · analytics.test(sanitize = type만).
+
 ## 2026-10-30 · P-559 KB-934 홈 레일 리본 윗변 잘림
 - 원인: 리본이 사진 위로 4pt 걸치는데(gbadge top −4) 홈 Popular dishes 레일은 가로 ScrollView라 자기 경계에서 잘림(Food 그리드는 세로 흐름이라 안 잘림).
 - 수정: 레일 contentContainer 위 여백 4 + 레일 marginTop −4(카드 자리 무변). overflow visible은 ScrollView에선 iOS·Android 모두 안 먹어 여백으로.
