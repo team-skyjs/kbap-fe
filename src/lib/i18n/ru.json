@@ -1318,7 +1318,8 @@
     "mayContainNames": "Может содержать: {{names}}",
     "signInToPersonalize": "Войдите для персонализации",
     "setAvoidIngredients": "Выбрать исключения",
-    "noAvoidMatchTitle": "Нет совпадений со списком исключений"
+    "noAvoidMatchTitle": "Нет совпадений со списком исключений",
+    "findMore": "Искать дальше"
   },
   "scanMode": {
     "menu": "Меню",

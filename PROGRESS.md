@@ -16,6 +16,12 @@
 - pointerEvents 보이는 동안 auto → box-none: 이제 보이는 아래 콘텐츠라 띠 바탕 탭은 그 콘텐츠로(KB-903 T-019 반대 결정 — 커맨드 보고).
 - 스크롤 아래 여백(띠 실높이 + 16, useBottomBand) 그대로 — 끝까지 스크롤 시 마지막 줄 알약 위. 리뷰 작성(bandStatic 흐름 안)·가공식품 상세(흐름 안 바) 대상 아님.
 
+## 2026-10-30 · P-556 KB-927 Packaged 판정 필터 칩(서버 verdict) + 칩 줄 공통화
+- 판정 칩 All·Safe·Avoid·Caution(회피 1개 이상 회원 + v4만 — 비회원·회피 0개는 서버가 무시해 숨김) → `verdict` 반복 키. 매핑 = VERDICT_RISK 역매핑(verdictsForRisk: Caution = CAUTION + SAFE_WITH_NOTE). 캐시 키에 정렬한 verdicts.
+- 빈 페이지: 0건 + hasNext면 자동 이어 부르기(연속 3번, emptyPageAction) → "더 찾아보기"(누르면 다시 3번). "결과 없음" = hasNext=false && 누적 0건만. 자동 효과 deps에 페이지 수 — 도착이 한 렌더로 묶이면 둘째 빈 페이지 뒤 멈췄다(jest 재현).
+- 칩 줄 공용 components/ChipScrollRow(Dishes에서 추출 — 가로 스크롤·끝 여백 24·숨은 칩 페이드). Dishes 정렬 자기 줄 규칙은 FoodExplorer에 남김(Packaged엔 정렬 없음). Packaged 유형 칩도 같은 줄(간격 8 → 6).
+- 신규 ko: `packaged.findMore` = 더 찾아보기
+
 ## 2026-10-30 · P-555 KB-926 리본 그림자 실루엣 + 검색 스캔 버튼 radius + 정렬 알약 패딩
 - ① RiskBadge 그림자 = 리본 경로(흰 보더 폭 스트로크 포함) 반투명 두 겹, 1/1 오프셋 뒤 Svg — 구 shBadge(컨테이너 View 그림자)는 직사각형. shBadge 토큰 제거. flat(가공식품 카드)은 그대로 그림자 없음.
 - ② SearchScanButton radius pill → md(KB-909 직전 8 → 토큰 12, 커맨드 결정 (a)) — 홈·Food·Packaged 공용. 탭바 스캔 원형 무변.
