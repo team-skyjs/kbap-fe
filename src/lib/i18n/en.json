@@ -344,7 +344,7 @@
     "mirrorTitle": "This is what staff will read",
     "estimatedTotal": "Estimated total",
     "done": "Done",
-    "mirrorAvoid": "Please leave out: {{list}}",
+    "mirrorAvoidNotice": "I can't eat the ingredients below. Please tell me if any dish has them.",
     "title": "Your order",
     "headerSub_one": "{{count}} dish",
     "headerSub_other": "{{count}} dishes",
