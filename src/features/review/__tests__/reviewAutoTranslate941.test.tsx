@@ -172,6 +172,29 @@ describe('KB-941 후속 — 서버 동봉 번역(KB-940) 캐시 시드', () => {
     expect(out(t)).toContain('Really good soup');
   });
 
+  it('Codex #380 P2: 시드 항목 = gcTime ∞ — 5분+ 지나도(카드가 내려간 뒤) 남아 다른 표면(수동) 탭 = POST 0 · 즉시 번역문', async () => {
+    jest.useFakeTimers();
+    try {
+      const tick = (ms: number) => act(async () => { for (let i = 0; i < 5; i++) { jest.advanceTimersByTime(ms); await Promise.resolve(); } });
+      const seeded = adaptReview(wire({ translation: { text: 'とても美味しいスープ', sourceLanguage: 'en' } }), 'ja');
+      const review = { ...REVIEW(), serverTranslation: seeded.serverTranslation };
+      const t = render([review]);
+      await tick(10);
+      expect(out(t)).toContain('とても美味しいスープ');
+      const client = qc;
+      act(() => t.unmount()); // 첫 묶음 카드가 화면에서 내려감
+      await tick(6 * 60_000); // 기본 gcTime(5분) 넘김
+      let t2!: ReactTestRenderer;
+      act(() => { t2 = renderer.create(<QueryClientProvider client={client}>{[<FeedCard key="m" review={REVIEW()} t={(k) => k} mine={false} onOpenFood={jest.fn()} onGuestHelpful={jest.fn()} onMore={jest.fn()} />]}</QueryClientProvider>); });
+      await act(async () => { btn(t2).props.onPress(); });
+      await tick(10);
+      expect(mockPost).not.toHaveBeenCalled();
+      expect(out(t2)).toContain('とても美味しいスープ');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('동봉 번역이 다른 요청 언어(ko)로 왔으면 시드 안 함 = 현행 자동 요청 · 동봉 없음(구 서버) = 자동 요청', async () => {
     const seededKo = adaptReview(wire({ translation: { text: '정말 맛있는 수프' } }), 'ko');
     mockPost.mockReturnValueOnce(ok('とても美味しいスープ'));

@@ -66,7 +66,9 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
     if (!auto || data != null) return;
     // KB-941(서버 KB-940): 첫 페이지에 번역이 동봉돼 왔고 지금 요청 언어와 같으면 그걸로 캐시를 채운다 — 자동 요청 0
     if (seed && seed.lang === apiLang()) {
-      qc.setQueryData(queryKey, seed.value);
+      // Codex #380 P2: setQueryData = 기본 gcTime 5분 — 관찰자 없는 구독(useSyncExternalStore)이라 5분 뒤 지워져 다른 표면에서 재요청됐다.
+      // 요청 경로와 같은 옵션(staleTime·gcTime ∞)으로 항목을 만든다 — queryFn은 받은 값만 돌려준다(네트워크 0)
+      void qc.fetchQuery({ queryKey, queryFn: () => Promise.resolve(seed.value), staleTime: Infinity, gcTime: Infinity, retry: 0 });
       return;
     }
     void runLimited(() => qc.fetchQuery({ queryKey, queryFn: () => fetchTranslation(targetType, targetId), staleTime: Infinity, gcTime: Infinity, retry: 0 }))
