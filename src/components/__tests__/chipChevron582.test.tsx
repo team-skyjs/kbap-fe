@@ -106,9 +106,10 @@ describe('위험도 칩 색 = 마크 색', () => {
     expect(src).not.toMatch(/#(1FA[0-9A-F]|E2580C|CF3A2C)/i); // 위험도 계열 hex 직접 사용 금지
   });
 
-  it('두 호출처(홈 embedded·음식 탭)가 같은 배선', () => {
+  it('두 호출처(홈 embedded·음식 탭)가 같은 배선 — KB-909(Q-367): 한 칩 줄을 두 변형이 같이 쓴다(배선 1곳)', () => {
     const src = read('src/features/food/FoodExplorer.tsx');
-    expect(src.match(/risk=\{c === 'all' \? undefined : c\}/g)).toHaveLength(2);
+    expect(src.match(/risk=\{c === 'all' \? undefined : c\}/g)).toHaveLength(1);
+    expect(src).toContain("<View style={variant === 'screen' ? styles.chipRowScreen : styles.chipRowHome}>");
   });
 });
 
