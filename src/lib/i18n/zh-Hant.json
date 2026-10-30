@@ -348,7 +348,7 @@
     "mirrorTitle": "店員將看到的內容",
     "estimatedTotal": "預計總額",
     "done": "完成",
-    "mirrorAvoid": "請去掉：{{list}}",
+    "mirrorAvoidNotice": "我不能吃下面的食材。如果有菜品含有這些，請告訴我。",
     "title": "您的訂單",
     "headerSub_one": "{{count}} 道菜",
     "headerSub_other": "{{count}} 道菜",

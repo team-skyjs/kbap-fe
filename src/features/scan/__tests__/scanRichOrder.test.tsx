@@ -354,3 +354,21 @@ it('KB-780: 예상 합계 + Done = ScrollView 밖 하단 고정 바(긴 카드�
   expect(inside(scroll, 'flip-card')).toBe(true);
   expect(inside(scroll, 'order-mirror')).toBe(true);
 });
+
+it('KB-915: 렌더된 두 면 — 한국어 줄 수 = 미러 줄 수, 미러 재료 = 한국어 면 재료(미등재 코드 양쪽 0) · 미러 요청 = 한국어 면과 같은 뜻 키', () => {
+  const items = [
+    { nameKo: '제육볶음', name: 'Spicy Stir-fried Pork', qty: 1, priceKrw: 10000 },
+    { nameKo: '새우튀김', name: 'Fried Shrimp', qty: 1, priceKrw: 12000 },
+    { nameKo: '떡볶이', name: 'Spicy Rice Cakes', qty: 1, priceKrw: 6000 },
+  ];
+  const tree = render(
+    <FlippedOrderCard items={items} avoidCodes={['SHRIMP', 'ing:legacy', 'EGG']} avoidNames={['Shrimp', 'Legacy', 'Egg']} currency="USD" onDone={() => {}} t={t} />,
+  );
+  const ids = (re: RegExp) => tree.root.findAll((n) => typeof n.props?.testID === 'string' && re.test(n.props.testID) && typeof n.type === 'string');
+  const txt = (id: string) => [tree.root.find((n) => n.props?.testID === id)].map((n) => [n.props.children].flat(9).join(''))[0];
+  expect(ids(/^ko-line-\d+$/).length).toBe(3);
+  expect(ids(/^mirror-line-\d+$/).length).toBe(3);
+  expect(txt('mirror-avoid-list')).toBe('Shrimp, Egg');
+  expect(txt('ko-avoid-list').replace(/⁠/g, '')).toBe(avoidNoticeKo(['SHRIMP', 'EGG'])!.list);
+  expect(txt('mirror-avoid')).toBe('order.mirrorAvoidNotice');
+});

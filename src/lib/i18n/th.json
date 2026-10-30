@@ -348,7 +348,7 @@
     "mirrorTitle": "นี่คือสิ่งที่พนักงานจะอ่าน",
     "estimatedTotal": "ยอดรวมโดยประมาณ",
     "done": "เสร็จ",
-    "mirrorAvoid": "กรุณาไม่ใส่: {{list}}",
+    "mirrorAvoidNotice": "ฉันกินวัตถุดิบด้านล่างไม่ได้ ถ้ามีเมนูไหนใส่ไว้ กรุณาบอกด้วย",
     "title": "ออเดอร์ของคุณ",
     "headerSub_one": "{{count}} จาน",
     "headerSub_other": "{{count}} จาน",

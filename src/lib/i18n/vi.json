@@ -348,7 +348,7 @@
     "mirrorTitle": "Đây là nội dung nhân viên sẽ đọc",
     "estimatedTotal": "Tổng ước tính",
     "done": "Xong",
-    "mirrorAvoid": "Vui lòng bỏ: {{list}}",
+    "mirrorAvoidNotice": "Tôi không ăn được các nguyên liệu dưới đây. Nếu món nào có, xin cho tôi biết.",
     "title": "Đơn của bạn",
     "headerSub_one": "{{count}} món",
     "headerSub_other": "{{count}} món",
