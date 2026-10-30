@@ -47,16 +47,6 @@ exports[`① 토큰 스냅샷 — 4차 신값 잠금(키 유지·값 교체 + �
     "shadowOpacity": 0.07,
     "shadowRadius": 7.3,
   },
-  "shBadge": {
-    "elevation": 3,
-    "shadowColor": "#000000",
-    "shadowOffset": {
-      "height": 1,
-      "width": 1,
-    },
-    "shadowOpacity": 0.6,
-    "shadowRadius": 3.7,
-  },
   "surface": "#FFFFFF",
   "surface2": "#F7F8FA",
 }

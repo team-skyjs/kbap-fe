@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   filterToggle: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-RL-07
   filterLbl: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 8 },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 14 }, // KB-926: 좌우 = 필터 칩(Chip 14)과 같게 — 8이면 알약 곡선에 글자가 붙어 잘릴 듯 보였다
   sortLabel: { fontSize: 16, fontWeight: '700', color: C.ink2 },
 
   // 시안 Button/Toggle md 44×24 — off 트랙 #D1D3D8 / on 트랙 primary, 노브 20 흰

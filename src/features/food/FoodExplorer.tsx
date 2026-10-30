@@ -728,7 +728,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, // A-HM-02
   },
   searchPh: { flex: 1, fontSize: 16, fontWeight: '500', color: '#D1D3D8', marginRight: 8 }, // A-HM-02(scanBtn bg는 C 이관)
-  scanBtn: { width: 48, height: 48, borderRadius: radius.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  // KB-926: 둥근 사각 복원(KB-909 직전 8 → 토큰 md 12) — 홈·Food·Packaged 검색 줄 공용. 하단 탭바 스캔(원형)은 다른 부품
+  scanBtn: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
 
   // 언더라인 탭 (§1-3)
   tabsScroll: { flexGrow: 0, marginTop: 14 }, // KB-707: 가로 스크롤(세로로 자라지 않게 flexGrow 0 — P-319)
@@ -756,7 +757,7 @@ const styles = StyleSheet.create({
   chipLineFull: { alignSelf: 'stretch' }, // KB-909: 홈·큰 글씨 Food 탭 = 칩 줄이 전폭(정렬 버튼은 다음 줄 오른쪽)
   // KB-909 Q-367b: 큰 글씨 = 세로 흐름(칩 줄 → 정렬 버튼). 구 flexWrap 줄바꿈은 둘째 줄이 행 높이에 안 잡혀 그리드가 정렬 버튼을 덮었다(XXL)
   chipRowScreenStack: { flexDirection: 'column', alignItems: 'stretch' },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 8 },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 14 }, // KB-926: 좌우 = 필터 칩(Chip 14)과 같게 — 8이면 알약 곡선에 글자가 붙어 잘릴 듯 보였다
   sortBtnOwnRow: { alignSelf: 'flex-end' }, // 자기 줄 = 오른쪽(칩 줄 아래)
   sortLabel: { fontSize: 16, fontWeight: '700', color: '#4B4F58' },
 
