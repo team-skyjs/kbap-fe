@@ -11,6 +11,10 @@
 - Codex #369 2R P1: 가공 SAFE 띠 제목 = 매칭 범위 키(구 음식 상세 detail.verdictSafe "안심하고 드세요" — 보장 표현 금지) · 가공 띠 제목 전부 가공 전용 키
 - 신규 ko 문구(K-항목 — 안전 문구, 예진 승인 대상): `packaged.noAvoidMatchTitle` = 피하는 재료와 겹치는 것 없음 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
+## 2026-10-30 · P-554 KB-924 한국어 문구 승인 반영(ko 10키)
+- 예진 승인(10/30) 안전·법적 5키(packaged.noAvoidMatchTitle·detail.verdictMayContain·gate.photoRemovalTitle·ugc.consentAgree·gate.photoRemovalSub) + Codex 권고 5키(states.offlineBody·community.blockConfirmBody·saved.emptyBody·packagedScan.freeExplain·profile.languageHintAndroid) ko 값만 교체. 다른 로케일·코드 0.
+- 잠금: copyApproved924(10키 값·{{list}} 토큰·직선 따옴표·가운데 점 0) + 914·907 단언 갱신.
+
 ## 2026-10-30 · P-550 KB-921 가공식품 SAFE_WITH_NOTE 띠 = 주의 톤 (R-147)
 - VERDICT_RISK.SAFE_WITH_NOTE safe → caution(한 표) — 상세 띠·성분표 결과 띠·검색 카드 리본·후보 줄 리본이 함께 주의(색+형태). "모름"을 초록으로 그리지 않음(false-safe 0).
 - 띠 제목 = packaged.unverifiedTitle(10로케일) · 부제 = 서버 unclearIngredients 쉼표 나열(비면 생략). 옛 키 unclearTitle·unclearBody·packagedScan.resultUnclear 제거.

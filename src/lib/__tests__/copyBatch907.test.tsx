@@ -56,7 +56,7 @@ describe('T-030·T-035·T-037 문구', () => {
   });
   it('Saved 빈 상태 = 별(아이콘과 일치)', () => {
     expect(get('en', 'saved.emptyBody')).toBe('Tap the star on any dish to keep it here.');
-    expect(get('ko', 'saved.emptyBody')).toBe('음식의 별을 누르면 여기에 모여요. 안심하고 맛있게 먹을 나만의 리스트예요.'); // Codex #366 P1: 완결 문장(대시·명사 조각 끝 0)
+    expect(get('ko', 'saved.emptyBody')).toBe('음식의 별을 누르면 여기에 모여요.'); // Codex #366 → KB-924 둘째 문장 삭제 P1: 완결 문장(대시·명사 조각 끝 0)
     for (const l of LOCALES) expect(String(get(l, 'saved.emptyBody'))).not.toMatch(/bookmark|북마크|ブックマーク|收藏图标|收藏圖示|dấu trang|penanda|บุ๊กมาร์ก|закладк|marcador/i);
   });
 });
