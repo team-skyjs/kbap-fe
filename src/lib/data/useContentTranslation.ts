@@ -34,7 +34,7 @@ export interface ContentTranslation {
   toggle: () => void;
 }
 
-export function useContentTranslation(targetType: TranslationTargetType, targetId: string, text: string, opts: { auto?: boolean } = {}): ContentTranslation {
+export function useContentTranslation(targetType: TranslationTargetType, targetId: string, text: string, opts: { auto?: boolean; seed?: { lang: string; value: Translation } } = {}): ContentTranslation {
   const auto = !!opts.auto && !!text.trim();
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
@@ -61,8 +61,14 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
   // 자동 로딩 = 파생값(effect 안 동기 setState 0): 켜져 있고·캐시 없고·이 키가 실패하지 않았으면 "가는 중"
   const [autoFailedKey, setAutoFailedKey] = React.useState<string | null>(null);
   const autoPending = auto && data == null && autoFailedKey !== keyStr;
+  const seed = opts.seed;
   React.useEffect(() => {
     if (!auto || data != null) return;
+    // KB-941(서버 KB-940): 첫 페이지에 번역이 동봉돼 왔고 지금 요청 언어와 같으면 그걸로 캐시를 채운다 — 자동 요청 0
+    if (seed && seed.lang === apiLang()) {
+      qc.setQueryData(queryKey, seed.value);
+      return;
+    }
     void runLimited(() => qc.fetchQuery({ queryKey, queryFn: () => fetchTranslation(targetType, targetId), staleTime: Infinity, gcTime: Infinity, retry: 0 }))
       .then((tr) => { track(EVENTS.review_translate_toggle, { action: 'translate', target: targetType.toLowerCase(), result: tr.sameLanguage ? 'same' : 'ok', source: 'auto' }); })
       .catch(() => {
@@ -71,7 +77,7 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
         setAutoFailedKey(queryKey.join('|')); // 로딩 라벨 끝(원문 + "번역 보기")
       });
     // data가 차면 위에서 바로 끝난다(재요청 0) · 실패는 data가 그대로라 재실행 0 — 다음 시도는 키가 바뀔 때·수동 탭
-  }, [auto, data, qc, queryKey, targetId, targetType]);
+  }, [auto, data, qc, queryKey, seed, targetId, targetType]);
   const target = targetType.toLowerCase(); // 계측 enum(review|post …) — 공용 훅이라 하드코딩 금지
 
   const toggle = React.useCallback(() => {

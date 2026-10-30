@@ -150,7 +150,7 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
     bookmarked: wire.bookmarked === true, // 계약: 비회원 항상 false (KB-142)
     // P-239: 신스키마 인라인 최신 5건 — 있으면 상세가 목록 호출 생략(요청 1개 절감).
     // 부재(prod 구스키마) = undefined → 화면이 기존 목록 호출 폴백.
-    recentReviews: Array.isArray(wire.recentReviews) ? wire.recentReviews.map(adaptReview) : undefined,
+    recentReviews: Array.isArray(wire.recentReviews) ? wire.recentReviews.map((w) => adaptReview(w)) : undefined,
     // P-251(BE #185): 리뷰 자격 서버 정본 — boolean만 통과(부재 = undefined = 게이트 없음,
     // prod 구응답·강제 미배포 호환). 클라 이력 추정 금지.
     reviewEligible: typeof wire.reviewEligible === 'boolean' ? wire.reviewEligible : undefined,

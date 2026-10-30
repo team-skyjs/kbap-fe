@@ -147,3 +147,38 @@ it('리뷰 탭 배선: 첫 API 묶음(pages[0])만 autoTranslate — 정렬·필
     if (fs.existsSync(p)) expect(fs.readFileSync(p, 'utf8')).not.toContain('autoTranslate');
   }
 });
+
+describe('KB-941 후속 — 서버 동봉 번역(KB-940) 캐시 시드', () => {
+  const { adaptReview, adaptReviewPage } = jest.requireActual('@/lib/api/reviewAdapter') as typeof import('@/lib/api/reviewAdapter');
+  const wire = (over: object = {}) => ({ reviewId: 53, rating: 5, body: 'Really good soup', createdAt: '2026-10-01', language: 'en', ...over }) as Parameters<typeof adaptReview>[0];
+
+  it('어댑터: translation 키 → serverTranslation(요청 lang · 원문 언어 = 번역 어댑터 규칙) · 키 없음·빈 본문·요청 lang 모름 = 없음', () => {
+    const r = adaptReview(wire({ translation: { text: 'とても美味しいスープ', sourceLanguage: 'en' } }), 'ja');
+    expect(r.serverTranslation).toEqual({ lang: 'ja', value: { text: 'とても美味しいスープ', source: { kind: 'known', code: 'en' }, sameLanguage: false } });
+    expect(adaptReview(wire({ translation: { text: 'x', sourceLanguage: null } }), 'ja').serverTranslation?.value.source).toEqual({ kind: 'unknown' });
+    expect(adaptReview(wire(), 'ja').serverTranslation).toBeUndefined(); // 구 서버(키 없음)
+    expect(adaptReview(wire({ translation: { text: '  ' } }), 'ja').serverTranslation).toBeUndefined();
+    expect(adaptReview(wire({ translation: { text: 'x' } })).serverTranslation).toBeUndefined(); // 요청 lang 모름 = 시드 안 함
+    expect(adaptReviewPage({ items: [wire({ translation: { text: 't' } })], hasNext: false } as never, 'ja').items[0].serverTranslation?.lang).toBe('ja');
+  });
+
+  it('동봉 번역 + 같은 요청 언어 = POST 0 · 처음부터 번역문 · 원문 보기 토글 그대로', async () => {
+    const seeded = adaptReview(wire({ translation: { text: 'とても美味しいスープ', sourceLanguage: 'en' } }), 'ja');
+    const t = render([{ ...REVIEW(), serverTranslation: seeded.serverTranslation }]);
+    await flush();
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(out(t)).toContain('とても美味しいスープ');
+    await act(async () => { btn(t).props.onPress(); });
+    expect(out(t)).toContain('Really good soup');
+  });
+
+  it('동봉 번역이 다른 요청 언어(ko)로 왔으면 시드 안 함 = 현행 자동 요청 · 동봉 없음(구 서버) = 자동 요청', async () => {
+    const seededKo = adaptReview(wire({ translation: { text: '정말 맛있는 수프' } }), 'ko');
+    mockPost.mockReturnValueOnce(ok('とても美味しいスープ'));
+    const t = render([{ ...REVIEW(), serverTranslation: seededKo.serverTranslation }]);
+    await flush();
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    expect(out(t)).not.toContain('정말 맛있는 수프');
+    expect(out(t)).toContain('とても美味しいスープ');
+  });
+});
