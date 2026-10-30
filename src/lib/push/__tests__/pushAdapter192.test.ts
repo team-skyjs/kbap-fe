@@ -126,7 +126,7 @@ it('알림 탭 구독 — 응답 data로 라우팅 콜백 + 포그라운드 핸�
   expect(mockNotifications.setNotificationHandler).toHaveBeenCalled();
   const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
   handler({ notification: { request: { content: { data: { type: 'HELPFUL' } } } } });
-  expect(onRoute).toHaveBeenCalledWith('/profile/reviews', undefined); // KB-498: notificationId 없음 = undefined
+  expect(onRoute).toHaveBeenCalledWith('/profile/reviews', undefined, 'HELPFUL'); // KB-498: notificationId 없음 = undefined · KB-629: 유형
 });
 
 it('KB-498: 탭 콜백 2번째 인자 = 서버 notificationId 그대로(형 변환 0) · 없으면 undefined · 경로 없는 유형도 (null, id)로 호출', () => {
@@ -134,17 +134,17 @@ it('KB-498: 탭 콜백 2번째 인자 = 서버 notificationId 그대로(형 변�
   addNotificationTapListener(onRoute);
   const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
   handler({ notification: { request: { identifier: 'r1', content: { data: { type: 'REVIEW_REMINDER', orderId: 12, notificationId: 456 } } } } });
-  expect(onRoute).toHaveBeenLastCalledWith('/profile/order/12', 456);
+  expect(onRoute).toHaveBeenLastCalledWith('/profile/order/12', 456, 'REVIEW_REMINDER');
   handler({ notification: { request: { identifier: 'r2', content: { data: { type: 'REVIEW_REMINDER', orderId: 12, notificationId: '9' } } } } });
-  expect(onRoute).toHaveBeenLastCalledWith('/profile/order/12', '9'); // 문자열도 그대로 — 후속 작업이 판단
+  expect(onRoute).toHaveBeenLastCalledWith('/profile/order/12', '9', 'REVIEW_REMINDER'); // 문자열도 그대로 — 후속 작업이 판단
   handler({ notification: { request: { identifier: 'r3', content: { data: { type: 'REVIEW_REMINDER', orderId: 12 } } } } });
-  expect(onRoute).toHaveBeenLastCalledWith('/profile/order/12', undefined); // notificationId 없는 발송
+  expect(onRoute).toHaveBeenLastCalledWith('/profile/order/12', undefined, 'REVIEW_REMINDER'); // notificationId 없는 발송
   handler({ notification: { request: { identifier: 'r4', content: { data: { type: 'NEWS', notificationId: 3 } } } } });
-  expect(onRoute).toHaveBeenLastCalledWith(null, 3); // Codex #149: 이동 없어도 id 전달(읽음 처리)
+  expect(onRoute).toHaveBeenLastCalledWith(null, 3, 'NEWS'); // Codex #149: 이동 없어도 id 전달(읽음 처리)
   handler({ notification: { request: { identifier: 'r5', content: { data: { type: 'MEAL_TIME', notificationId: 4 } } } } });
-  expect(onRoute).toHaveBeenLastCalledWith('/(tabs)', 4); // KB-573: 홈 — id도 그대로
+  expect(onRoute).toHaveBeenLastCalledWith('/(tabs)', 4, 'MEAL_TIME'); // KB-573: 홈 — id도 그대로
   handler({ notification: { request: { identifier: 'r6', content: { data: { type: 'UNKNOWN_FUTURE', notificationId: 5 } } } } });
-  expect(onRoute).toHaveBeenLastCalledWith(null, 5); // 미지 유형도 탭 사실은 전달
+  expect(onRoute).toHaveBeenLastCalledWith(null, 5, undefined); // 미지 유형도 탭 사실은 전달(KB-629 유형 = 생략)
   expect(onRoute).toHaveBeenCalledTimes(6);
 });
 
@@ -155,7 +155,7 @@ it('KB-498: 콜드 스타트 = 마지막 응답 1회 전달 — 리스너로 같
   addNotificationTapListener(onRoute);
   await new Promise((r) => setTimeout(r, 0)); // track(getLast…).then(emit)
   expect(onRoute).toHaveBeenCalledTimes(1);
-  expect(onRoute).toHaveBeenCalledWith('/profile/order/3', 7);
+  expect(onRoute).toHaveBeenCalledWith('/profile/order/3', 7, 'REVIEW_REMINDER');
   const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
   handler(cold); // 일부 플랫폼: 부팅 탭이 리스너로도 전달
   expect(onRoute).toHaveBeenCalledTimes(1);
@@ -278,4 +278,22 @@ describe('KB-770: OS 권한 판정 — Android 13+ 미요청(denied+canAskAgain)
     perm({ status: 'undetermined', canAskAgain: true });
     expect(await getPermissionStatus()).toBe('undetermined');
   });
+});
+
+it('KB-629 push_open: 탭 콜백 3번째 인자 = 푸시 유형(PUSH_TYPES 정확 일치) · 미지·없음 = undefined · 콜드 스타트 + 리스너 같은 탭 = 1회', async () => {
+  const cold = { notification: { request: { identifier: 'c629', content: { data: { type: 'NEWS', notificationId: 1 } } } } };
+  mockNotifications.getLastNotificationResponseAsync.mockResolvedValueOnce(cold);
+  const onRoute = jest.fn();
+  addNotificationTapListener(onRoute);
+  await new Promise((r) => setTimeout(r, 0));
+  const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls.at(-1)[0] as (r: unknown) => void;
+  handler(cold); // 같은 탭이 리스너로도 — 이중 집계 0
+  expect(onRoute.mock.calls.map((c) => c[2])).toEqual(['NEWS']);
+  handler({ notification: { request: { identifier: 'u1', content: { data: { type: 'news', notificationId: 2 } } } } }); // 대소문자 다름 = 미지
+  handler({ notification: { request: { identifier: 'u2', content: { data: { notificationId: 3 } } } } }); // 유형 없음
+  expect(onRoute.mock.calls.map((c) => c[2])).toEqual(['NEWS', undefined, undefined]);
+  // 루트 레이아웃: 탭 콜백에서 push_open 1줄(유형 있을 때만 속성)
+  const layout = jest.requireActual<typeof import('fs')>('fs').readFileSync('src/app/_layout.tsx', 'utf8');
+  expect(layout).toMatch(/addNotificationTapListener\(\(href, notificationId, type\) => \{\n\s+track\(EVENTS\.push_open, type \? \{ type \} : \{\}\);/);
+  expect(layout.match(/EVENTS\.push_open/g)).toHaveLength(1);
 });

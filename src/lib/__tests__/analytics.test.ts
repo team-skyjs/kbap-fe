@@ -106,6 +106,9 @@ it('P-144: CSV 이벤트·속성 스키마 1:1 — 신규 7종 + 확장 2종', (
   expect(a.sanitize(a.EVENTS.search_query, { keyword: 'kimchi', result_count: 4 })).toEqual({ keyword: 'kimchi', result_count: 4 });
   expect(a.sanitize(a.EVENTS.review_write_tap, { source: 'detail' })).toEqual({ source: 'detail' });
   expect(a.sanitize(a.EVENTS.food_bookmark_toggle, { on: true })).toEqual({ on: true });
+  // KB-629: push_open = type만(알림 id·경로 등 그 외 드롭) · 속성 없이도 통과
+  expect(a.sanitize(a.EVENTS.push_open, { type: 'NEWS', notificationId: 3, href: '/x' })).toEqual({ type: 'NEWS' });
+  expect((a.EVENTS as Record<string, string>).push_open).toBe('push_open');
   // 확장: scan_complete success/fail_reason · review_submit has_photos/photo_count/rating
   expect(a.sanitize(a.EVENTS.scan_complete, { success: false, fail_reason: 'ocr', item_count: 0, degraded: false })).toEqual({ success: false, fail_reason: 'ocr', item_count: 0, degraded: false });
   expect(a.sanitize(a.EVENTS.review_submit, { has_photos: true, photo_count: 3, rating: 5 })).toEqual({ has_photos: true, photo_count: 3, rating: 5 });
