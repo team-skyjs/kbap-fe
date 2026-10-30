@@ -14,9 +14,9 @@ import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { color as C, font, type } from '@/lib/theme';
 import { VERDICT_RISK, type ProcessedDetection, type ProcessedVerdict } from '@/lib/api/processedFoodAdapter';
-import { detectedCodes, tileRisk, type VerdictFields } from './packagedVerdictLogic';
+import { detectedCodes, tileRisk, unclearSubtitle, type VerdictFields } from './packagedVerdictLogic';
 
-export { detectedCodes, tileRisk };
+export { detectedCodes, tileRisk, unclearSubtitle };
 
 const namesOf = (codes: string[]) => codes.map((c) => restrictionLabel(c)).join(', ');
 
@@ -29,8 +29,8 @@ export function PackagedVerdictBand({ d, safeReason, reason: reasonOverride, sty
   const [title, reason] =
     d.verdict === 'AVOID' ? [t('packaged.avoidMatchTitle'), t('packaged.avoidMatchBody', { names: namesOf(d.avoidMatches.map((m) => m.code)) })]
     : d.verdict === 'CAUTION' ? [t('packaged.crossContactTitle'), t('packaged.crossContactBody', { names: namesOf(d.mayContainMatches.map((m) => m.code)) })]
-    // KB-921: 제목 = 일부 성분 확인 안 됨 · 부제 = 서버 unclearIngredients 나열(비면 생략)
-    : d.verdict === 'SAFE_WITH_NOTE' ? [t('packaged.unverifiedTitle'), d.unclearIngredients.join(', ') || null]
+    // KB-921: 제목 = 일부 성분 확인 안 됨 · KB-936: 부제 = 서버 라벨(사용자 언어) → 구서버면 원문 → 비면 생략
+    : d.verdict === 'SAFE_WITH_NOTE' ? [t('packaged.unverifiedTitle'), unclearSubtitle(d)]
     // Codex #369 2R P1: SAFE 제목 = 매칭 범위(회피 목록과 겹침 없음) — 음식 상세 띠 제목 같은 보장 표현 금지(성분표 대조 ≠ 안전 보장, AGENTS F1)
     : [t('packaged.noAvoidMatchTitle'), safeReason];
   return <VerdictBand state={state} title={title} reason={reasonOverride ?? reason} style={style} testID={testID} />;

@@ -1,8 +1,8 @@
 /** KB-914(R-137) 감지 재료 타일 판정 — 순수 함수(화면 부품과 분리 — 유닛 잠금). false-safe 0: 판정이 없으면 마크 0 */
-import type { ProcessedDetection, ProcessedMatch, ProcessedVerdict } from '@/lib/api/processedFoodAdapter';
+import type { ProcessedDetection, ProcessedMatch, ProcessedVerdict, UnclearLabel } from '@/lib/api/processedFoodAdapter';
 import type { RiskState } from '@/lib/theme';
 
-export type VerdictFields = { verdict: ProcessedVerdict | null; avoidMatches: ProcessedMatch[]; mayContainMatches: ProcessedMatch[]; unclearIngredients: string[] };
+export type VerdictFields = { verdict: ProcessedVerdict | null; avoidMatches: ProcessedMatch[]; mayContainMatches: ProcessedMatch[]; unclearIngredients: string[]; unclearIngredientLabels: UnclearLabel[] };
 
 /** 타일에 그릴 코드 — 감지 + 회피 일치 + 혼입 일치(중복 제거, 서버 순서) */
 export function detectedCodes(d: { detections: ProcessedDetection[]; avoidMatches: ProcessedMatch[]; mayContainMatches: ProcessedMatch[] }): string[] {
@@ -17,3 +17,9 @@ export function tileRisk(code: string, d: VerdictFields, personalized: boolean):
   return 'safe';
 }
 
+
+/** KB-936 SAFE_WITH_NOTE 부제 — 서버 라벨(사용자 언어, 같은 label 중복 제거) → 없으면(구서버·빈 배열) 원문 unclearIngredients → 그것도 비면 null(생략) */
+export function unclearSubtitle(d: { unclearIngredients: string[]; unclearIngredientLabels: UnclearLabel[] }): string | null {
+  const labels = [...new Set(d.unclearIngredientLabels.map((l) => l.label))];
+  return (labels.length ? labels : d.unclearIngredients).join(', ') || null;
+}

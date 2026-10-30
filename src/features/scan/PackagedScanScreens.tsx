@@ -28,7 +28,7 @@ import { color as C, font, radius, type } from '@/lib/theme';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { VERDICT_RISK, type LabelScanResult, type ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
-import { detectedCodes, IngredientsText, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand } from '@/features/processedFood/PackagedVerdict';
+import { detectedCodes, IngredientsText, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand, unclearSubtitle } from '@/features/processedFood/PackagedVerdict';
 
 const namesOf = (codes: string[]) => codes.map((c) => restrictionLabel(c)).join(', ');
 
@@ -243,7 +243,7 @@ export function LabelResultScreen({ result, photoUri, pages, member, stale = fal
   else if (member) {
     if (result.verdict === 'AVOID') avoid = t('packagedScan.resultAvoid', { names: namesOf(result.avoidMatches.map((m) => m.code)) });
     else if (result.verdict === 'CAUTION') avoid = t('packagedScan.resultCaution', { names: namesOf(result.mayContainMatches.map((m) => m.code)) });
-    else if (result.verdict === 'SAFE_WITH_NOTE') avoid = result.unclearIngredients.join(', ') || null; // KB-921: 상세 띠와 같은 부제(목록만, 비면 생략)
+    else if (result.verdict === 'SAFE_WITH_NOTE') avoid = unclearSubtitle(result); // KB-921·936: 상세 띠와 같은 부제(라벨 → 원문 폴백, 비면 생략)
     else if (result.verdict === 'SAFE') avoid = t(pages > 1 ? 'packagedScan.resultSafeAll' : 'packaged.noAvoidMatches');
     else if (legacyAvoid.length) avoid = t('packagedScan.resultAvoid', { names: namesOf(legacyAvoid) });
     else avoid = t('packaged.notVerifiedBody');
