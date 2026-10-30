@@ -192,8 +192,9 @@ function getProjectId(): string | undefined {
  * KB-498: 탭마다 항상 호출 — href는 이동 없는 유형(NEWS·orderId 없는 리마인더)이면 null.
  * 2번째 인자 = 서버 알림 id(기기 단위, data.notificationId 그대로 — 형 변환 없음). 경로가 없어도 id는 전달(읽음 처리용).
  * 읽음 처리는 루트 레이아웃이 onPushTapped(id)로 수행(KB-499). Android는 여기서 activity(MAX)·news(HIGH) 채널을 1회 설정.
+ * KB-629: 3번째 인자 = 푸시 유형(PUSH_TYPES 정확 일치만 — 미지·없음 = undefined). 루트 레이아웃이 push_open 계측에 쓴다(탭 1번 = 호출 1번 — 아래 routed가 이중 전달 차단).
  */
-export function addNotificationTapListener(onRoute: (href: string | null, notificationId?: number | string) => void): () => void {
+export function addNotificationTapListener(onRoute: (href: string | null, notificationId?: number | string, type?: PushType) => void): () => void {
   const N = loadNotifications();
   if (!N) return () => {};
   // KB-499: 서버 알림함 재조회 트리거 — 수신(포그라운드)·알림센터 잔존분(부팅)·탭 진입 모두 목록 invalidate.
@@ -231,9 +232,9 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
         if (routed.has(id)) return;
         routed.add(id);
       }
-      const data = resp?.notification.request.content.data as { notificationId?: number | string } | undefined;
+      const data = resp?.notification.request.content.data as { notificationId?: number | string; type?: unknown } | undefined;
       if (!resp) return;
-      onRoute(routeForNotificationData(data), data?.notificationId); // 경로 null이어도 호출 — id 보존(Codex #149)
+      onRoute(routeForNotificationData(data), data?.notificationId, isPushType(data?.type) ? data.type : undefined); // 경로 null이어도 호출 — id 보존(Codex #149)
     };
     const sub = N.addNotificationResponseReceivedListener(emit);
     // 포그라운드 발화 즉시 재조회

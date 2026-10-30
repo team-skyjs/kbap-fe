@@ -95,6 +95,7 @@ export const EVENTS = {
   push_permission: 'push_permission', // OS 팝업 결과·설정 열기
   push_consent_response: 'push_consent_response', // 광고성 동의 시트 클릭
   push_settings_tap: 'push_settings_tap', // 알림 설정 화면 보조 클릭(토글은 push_pref_toggle)
+  push_open: 'push_open', // KB-629: 푸시 알림 탭으로 앱 진입(콜드 스타트·백그라운드 공통, 탭 1번 = 1회)
   profile_avoid_update: 'profile_avoid_update',
   community_post_submit: 'community_post_submit',
   community_comment_submit: 'community_comment_submit',
@@ -219,6 +220,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   push_permission: ['state'], // grant|deny|settings_open
   push_consent_response: ['action', 'target'], // action: check|uncheck|full_text|blocked|later · target: privacy|receive(check·uncheck·full_text만)
   push_settings_tap: ['target'], // news_off_cancel|consent_full|retry_save|retry_load
+  push_open: ['type'], // KB-629: PUSH_TYPES 값만(HELPFUL|SCAN_SUGGESTION|REVIEW_REMINDER|NEWS|MEAL_TIME) — 미지 유형 = 속성 생략
   profile_avoid_update: ['count', 'delta', 'via'], // via: manual|preset (항목명 금지 — 개수만)
   community_post_submit: ['photo_count', 'food_tag_count', 'has_place'], // 장소명 금지 — boolean만
   community_comment_submit: ['is_reply'],

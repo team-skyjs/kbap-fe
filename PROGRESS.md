@@ -18,6 +18,16 @@
 - 표시용 1080 WebP URL(KB-930): dev Swagger에 아직 필드 없음 — 사진 URL은 curationAdapter에서만 읽어 필드 이름이 정해지면 어댑터 한 줄.
 - 측정(시뮬, 디스크 캐시 있음·앱 재실행): 상세 진입 → 앞 2장 띠 준비 평균(2~5회차) 1532 → 1362ms, 범위 안 5장 2618 → 2067ms.
 
+## 2026-10-30 · P-560 KB-629 push_open(type) 재발주(#187 닫힘 — R-157)
+- 이벤트 push_open, 속성 type(PUSH_TYPES 정확 일치만 — 미지·없음 = 속성 생략). ALLOWED ['type'].
+- pushAdapter.addNotificationTapListener 콜백 3번째 인자 = 유형 → 루트 레이아웃 탭 콜백에서 track 1줄. 콜드 스타트(getLastNotificationResponse)·리스너 이중 전달은 기존 routed(identifier) Set이 차단 → 탭 1번 = 1회.
+- 잠금: pushAdapter192(유형 전달·미지 생략·이중 0·레이아웃 track 1줄) · analytics.test(sanitize = type만).
+
+## 2026-10-30 · P-559 KB-934 홈 레일 리본 윗변 잘림
+- 원인: 리본이 사진 위로 4pt 걸치는데(gbadge top −4) 홈 Popular dishes 레일은 가로 ScrollView라 자기 경계에서 잘림(Food 그리드는 세로 흐름이라 안 잘림).
+- 수정: 레일 contentContainer 위 여백 4 + 레일 marginTop −4(카드 자리 무변). overflow visible은 ScrollView에선 iOS·Android 모두 안 먹어 여백으로.
+- 잠금 railRibbonClip934. 캡처 = 회원 리본이라 QA.
+
 ## 2026-10-30 · P-558 KB-932 음식 상세 하단 CTA 띠 투명
 - pillCta.band(떠 있는 바) 흰 바탕 → 투명(예진 TestFlight — 흰 띠가 "What's inside" 등 콘텐츠를 잘라 보이게 함). 알약만 뜬다. 스크림 0(완전 투명 우선).
 - pointerEvents 보이는 동안 auto → box-none: 이제 보이는 아래 콘텐츠라 띠 바탕 탭은 그 콘텐츠로(KB-903 T-019 반대 결정 — 커맨드 보고).
