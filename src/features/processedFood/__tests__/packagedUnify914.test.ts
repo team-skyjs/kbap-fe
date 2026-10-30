@@ -56,6 +56,9 @@ describe('R-138 후보 줄', () => {
     expect(s).toContain("useProcessedDetail(risk === 'danger' || risk === 'caution' ? item.id : undefined)");
     expect(s).toContain('<WarnChips warns={warns}');
     expect(s).not.toContain('testID="pscan-confirm"');
+    // QA Q-369 a): 줄 치수 = 메뉴판 결과 줄 그대로(덧댄 보더·흰 썸네일 바탕 0)
+    expect(s).toContain('style={richStyles.row}');
+    expect(s).not.toMatch(/rowGap|rowThumb: \{[^}]*backgroundColor/);
     expect(read('src/features/scan/ScanRichList.tsx')).toContain('<WarnChips warns={warns} testID={`warn-${dish.itemId}`}');
   });
 });
@@ -102,5 +105,16 @@ describe('2차 R-142 Packaged 탭 상단', () => {
     expect(read('src/features/food/FoodExplorer.tsx')).toContain('<SearchScanButton onPress={() => router.navigate(\'/scan\')} testID="home-scan" />');
     expect(ex.indexOf('testID="packaged-scan"')).toBeLessThan(ex.indexOf('testID="packaged-types"'));
     expect(ex).not.toMatch(/verdict=|packaged-verdict-chip|\.filter\(\(it\) => it\.verdict/);
+  });
+});
+
+describe('Codex #369 P2 · R-139 어두운 페이지 상태바', () => {
+  it('안내·못 읽음·일반 오류 = 포커스일 때 light 상태바(떠나면 빠져 기본 복원) · 일반 오류도 어두운 화면', () => {
+    const dm = read('src/features/scan/ScanDarkMessage.tsx');
+    expect(dm).toContain('{lightStatusBar && <StatusBar style="light" />}');
+    expect(read('src/features/scan/PackagedScanScreens.tsx')).toContain('lightStatusBar={focused}');
+    const flow = read('src/features/scan/PackagedScanFlow.tsx');
+    expect(flow.match(/<MessagePage\s+focused=\{focused\}/g)).toHaveLength(3); // another · frontUnreadable · 성분표 못 읽음
+    expect(flow).toMatch(/<ScanDarkMessage\s+testID=\{`pscan-error-\$\{f\}`\}\s+lightStatusBar=\{focused\}/);
   });
 });

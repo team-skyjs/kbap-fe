@@ -5,15 +5,21 @@
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
-import { IconScanLines } from '@/components';
-import { color as C, font, type } from '@/lib/theme';
+import { IconArrowLeft, IconScanLines } from '@/components';
+import { color as C, font, radius, type } from '@/lib/theme';
 
-export function ScanDarkMessage({ label, title, body, overlay, footer, children, testID }: {
-  label: string; title: string; body?: string | null; overlay?: React.ReactNode; footer?: React.ReactNode; children?: React.ReactNode; testID?: string;
+/** lightStatusBar = 상태바 아이콘을 밝게(어두운 바탕 — Codex #369). 호출측이 포커스일 때만 켠다(위에 다른 화면이 쌓이면 빠져 기본 복원 — 카메라 단계와 같은 규칙).
+ *  메뉴판 scan.tsx는 화면 단위 lightBar가 이미 맡아 넘기지 않는다 */
+export function ScanDarkMessage({ label, title, body, overlay, footer, children, testID, lightStatusBar = false }: {
+  label: string; title: string; body?: string | null; overlay?: React.ReactNode; footer?: React.ReactNode; children?: React.ReactNode; testID?: string; lightStatusBar?: boolean;
 }) {
   return (
     <View style={dark.root} testID={testID}>
+      {lightStatusBar && <StatusBar style="light" />}
       {overlay}
       <View style={dark.center}>
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
@@ -27,7 +33,18 @@ export function ScanDarkMessage({ label, title, body, overlay, footer, children,
   );
 }
 
+/** 어두운 화면 왼쪽 위 뒤로(메뉴판 오류 화면 닫기 버튼과 같은 자리·모양) — 가공식품 안내·오류 페이지 */
+export function DarkBackButton({ onPress, label, testID }: { onPress?: () => void; label: string; testID: string }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <Pressable style={[dark.back, { top: insets.top + 8 }]} onPress={onPress} disabled={!onPress} hitSlop={8} accessibilityRole="button" accessibilityLabel={label} testID={testID}>
+      <IconArrowLeft size={22} color="#fff" />
+    </Pressable>
+  );
+}
+
 export const dark = StyleSheet.create({
+  back: { position: 'absolute', left: 16, zIndex: 40, width: 40, height: 40, borderRadius: radius.pill, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
   root: { flex: 1, backgroundColor: '#16110d' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
   // Codex #44 2차: 다크 배경 = 원색이 대비 우위(primaryText는 흰 바탕용)

@@ -35,6 +35,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { CandidateScreen, LabelPhotosScreen, LabelResultScreen, MessagePage, NameSearchBox } from './PackagedScanScreens';
+import { DarkBackButton, ScanDarkMessage } from './ScanDarkMessage';
 import { PackagedFreeLine, applyFreeUntil } from './packagedFreeHour';
 import { confirmProcessedScan, LABEL_PAGES_MAX, scanFailureOf, scanProcessedLabel, scanProcessedName, type ScanFailure } from '@/lib/data/useProcessedScan';
 import type { LabelScanResult, ScanCandidate } from '@/lib/api/processedFoodAdapter';
@@ -367,6 +368,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   if (step.kind === 'another') {
     return (
       <MessagePage
+        focused={focused}
         testID={step.from === 'none' ? 'pscan-none' : 'pscan-another'}
         busy={guard.busy}
         headerTitle={t('packagedScan.title')}
@@ -382,6 +384,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   if (step.kind === 'frontUnreadable') {
     return (
       <MessagePage
+        focused={focused}
         testID="pscan-front-unreadable"
         headerTitle={t('packagedScan.title')}
         title={t('packagedScan.frontUnreadableTitle')}
@@ -495,6 +498,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       const hasPages = back.kind === 'handoff' && (back.pages?.length ?? 0) > 0;
       return (
         <MessagePage
+          focused={focused}
           testID="pscan-error-unreadable"
           headerTitle={t('packagedScan.labelTitle')}
           title={t('packagedScan.err.unreadableTitle')}
@@ -505,23 +509,26 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         />
       );
     }
+    // KB-914(R-139): 일반 오류(네트워크·만료·충돌·한도 등)도 메뉴판과 같은 어두운 전체 화면 — 문장·버튼 분기는 그대로
     return (
-      <View style={st.root} testID={`pscan-error-${f}`}>
-        <SubHeader title={t('packagedScan.title')} onBack={() => goStep({ kind: 'capture' })} />
-        <View style={[st.page, { gap: 16 }]}>
-          <Text style={st.h1}>{t(`packagedScan.err.${f}Title`)}</Text>
-          {/* 확정 전송 실패 = 차감 여부 미상 — 단정하지 않는다(문구는 응답 후 결과가 정한다) */}
-          <Text style={st.body}>{t(`packagedScan.err.${f}Body`)}</Text>
-          {f === 'network' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-retry">{t('common.tryAgain')}</Btn>}
-          {/* P-508: 409 PFOOD-007 = 이 분석엔 더 못 붙임 → 새 분석(성공 1회 — 본문이 알린다) */}
-          {f === 'newAnalysis' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-new-analysis">{t('packagedScan.newAnalysisCta')}</Btn>}
-          {f === 'quota' ? (
-            <Btn variant="ghost" onPress={onClose} testID="pscan-close">{t('common.close')}</Btn>
-          ) : (
-            <Btn variant="ghost" onPress={() => goStep(step.labelBack ?? { kind: 'capture' })} testID="pscan-retake">{t('packagedScan.retake')}</Btn>
-          )}
-        </View>
-      </View>
+      <ScanDarkMessage
+        testID={`pscan-error-${f}`}
+        lightStatusBar={focused}
+        label={t('packagedScan.title')}
+        title={t(`packagedScan.err.${f}Title`)}
+        // 확정 전송 실패 = 차감 여부 미상 — 단정하지 않는다(문구는 응답 후 결과가 정한다)
+        body={t(`packagedScan.err.${f}Body`)}
+        overlay={<DarkBackButton onPress={() => goStep({ kind: 'capture' })} label={t('common.goBack')} testID={`pscan-error-${f}-back`} />}
+      >
+        {f === 'network' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-retry">{t('common.tryAgain')}</Btn>}
+        {/* P-508: 409 PFOOD-007 = 이 분석엔 더 못 붙임 → 새 분석(성공 1회 — 본문이 알린다) */}
+        {f === 'newAnalysis' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-new-analysis">{t('packagedScan.newAnalysisCta')}</Btn>}
+        {f === 'quota' ? (
+          <Btn variant="ghost" onPress={onClose} testID="pscan-close">{t('common.close')}</Btn>
+        ) : (
+          <Btn variant="ghost" onPress={() => goStep(step.labelBack ?? { kind: 'capture' })} testID="pscan-retake">{t('packagedScan.retake')}</Btn>
+        )}
+      </ScanDarkMessage>
     );
   }
 

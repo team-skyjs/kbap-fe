@@ -18,8 +18,8 @@ import { Btn } from '@/components/Btn';
 import { SubHeader } from '@/components/SubHeader';
 import { RiskBadge } from '@/components/RiskBadge';
 import { RemoteImage } from '@/components/RemoteImage';
-import { IconArrowLeft, IconCamera, IconChevron, IconSearch, Input, OverallRating, Spinner } from '@/components';
-import { ScanDarkMessage } from './ScanDarkMessage';
+import { IconCamera, IconChevron, IconSearch, Input, OverallRating, Spinner } from '@/components';
+import { DarkBackButton, ScanDarkMessage } from './ScanDarkMessage';
 import { richStyles, WarnChips } from './ScanRichList';
 import { ProductName } from '@/features/processedFood/ProductName';
 import { useProcessedDetail } from '@/lib/data/useProcessedFoods';
@@ -48,7 +48,7 @@ export function CandidateRow({ item, personalized, picking, onPress, testID, dis
   const contains = !personalized && item.majorAllergens && item.majorAllergens.length > 0 ? t('packaged.containsNames', { names: namesOf(item.majorAllergens) }) : null;
   return (
     <Pressable
-      style={[richStyles.row, sc.rowGap]}
+      style={richStyles.row}
       onPress={disabled ? undefined : onPress}
       accessibilityRole="button"
       accessibilityState={{ disabled, busy: picking }}
@@ -155,23 +155,19 @@ function SearchInput({ value, onChange, onSubmit, placeholder }: { value: string
 /** 안내·오류 페이지(17·18·29b·39) — KB-914(R-139): 메뉴판 'Not a menu'와 같은 어두운 전체 화면(ScanDarkMessage) · 가운데 정렬 · 버튼 세로 쌓기.
  *  주황 라벨 = 이 화면의 맥락(구 헤더 제목) · 흰 문장 = 제목 · 보조 문장 = 본문 · 왼쪽 위 = 뒤로(메뉴판 닫기 자리)
  *  busy = 이 화면에서 시작한 요청(성분표 전 거절 확정) 대기 — 다른 동작·뒤로 잠금, 보조 버튼에 스피너(Codex #339) */
-export function MessagePage({ headerTitle, title, body, primary, secondary, onBack, testID, busy = false }: {
+export function MessagePage({ headerTitle, title, body, primary, secondary, onBack, testID, busy = false, focused = true }: {
   headerTitle: string; title: string; body: string; primary: { label: string; onPress: () => void; testID: string; busy?: boolean };
-  secondary: { label: string; onPress: () => void; testID: string } | null; onBack: () => void; testID: string; busy?: boolean;
+  secondary: { label: string; onPress: () => void; testID: string } | null; onBack: () => void; testID: string; busy?: boolean; focused?: boolean;
 }) {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   return (
     <ScanDarkMessage
       testID={testID}
+      lightStatusBar={focused}
       label={headerTitle}
       title={title}
       body={body}
-      overlay={
-        <Pressable style={[sc.darkBack, { top: insets.top + 8 }]} onPress={busy ? undefined : onBack} disabled={busy} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('common.goBack')} testID={`${testID}-back`}>
-          <IconArrowLeft size={22} color="#fff" />
-        </Pressable>
-      }
+      overlay={<DarkBackButton onPress={busy ? undefined : onBack} label={t('common.goBack')} testID={`${testID}-back`} />}
     >
       <Btn busy={primary.busy} disabled={busy} onPress={busy ? () => {} : primary.onPress} testID={primary.testID}>{primary.label}</Btn>
       {secondary && <Btn variant="ghost" busy={busy} onPress={busy ? () => {} : secondary.onPress} testID={secondary.testID}>{secondary.label}</Btn>}
@@ -356,9 +352,9 @@ const sc = StyleSheet.create({
   lead: { fontFamily: font.body, fontSize: 16, lineHeight: 26, color: C.ink2 },
   body: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink },
   // KB-914(R-138): 후보 줄(메뉴판 줄 치수 richStyles + 아래 몇 가지)
-  rowGap: { borderBottomWidth: 1, borderBottomColor: C.hair },
-  rowThumb: { overflow: 'hidden', backgroundColor: '#FFFFFF' },
-  rowImage: { position: 'absolute', top: 6, left: 6, right: 6, bottom: 6 },
+  // QA Q-369 a): 줄 = 메뉴판 richStyles.row 그대로(보더 0 — 구 1pt 보더가 151로 키웠다) · 썸네일 = richStyles.thumb 회색 타일(구 흰 바탕 = 사진 가장자리가 안 보여 사진–글자 사이가 넓어 보였다)
+  rowThumb: { overflow: 'hidden' },
+  rowImage: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
   rowText: { flex: 1, minWidth: 0, gap: 4 },
   rowMeta: { ...type.meta, fontWeight: '400', color: C.ink2 },
   rowSpin: { justifyContent: 'center' },
@@ -371,8 +367,6 @@ const sc = StyleSheet.create({
   textActionLabel: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
   search: { height: 48, borderRadius: radius.md, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
   searchInput: { flex: 1, height: 48, fontSize: 16, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
-  // 메뉴판 오류 화면 닫기 버튼과 같은 자리·모양(scan.tsx styles.close)
-  darkBack: { position: 'absolute', left: 16, zIndex: 40, width: 40, height: 40, borderRadius: radius.pill, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
   slot: { borderRadius: radius.lg, backgroundColor: C.hair, overflow: 'hidden' },
   slotEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   slotLabel: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink2 },
