@@ -451,7 +451,7 @@ function Registered({
         </Pressable>
       ) : (
         // KB-914(R-137): 띠 = 공용 VerdictBand(가공식품 상세·성분표 결과와 같은 부품)
-        <VerdictBand state={dishRisk} title={t(VERDICT_TITLE[dishRisk])} reason={verdictReason} onPress={() => setCoachOpen(true)} />
+        <VerdictBand state={dishRisk} title={t(VERDICT_TITLE[dishRisk])} reason={verdictReason} onPress={() => setCoachOpen(true)} testID="detail-verdict" />
       )}
 
       {/* §1-2: 헤더 블록 — 좌 컬럼 + 우 북마크 36(4129:10698) */}
