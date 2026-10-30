@@ -793,7 +793,8 @@
     },
     "countryLabel": "Quốc gia",
     "popularCountries": "Phổ biến",
-    "searchNoResults": "Không có kết quả. Hãy thử cách viết khác."
+    "searchNoResults": "Không có kết quả. Hãy thử cách viết khác.",
+    "readFullSafety": "Xem toàn văn Lưu ý an toàn"
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",

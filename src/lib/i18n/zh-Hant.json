@@ -793,7 +793,8 @@
     },
     "countryLabel": "國家",
     "popularCountries": "熱門國家",
-    "searchNoResults": "找不到結果。換個寫法試試。"
+    "searchNoResults": "找不到結果。換個寫法試試。",
+    "readFullSafety": "查看安全須知全文"
   },
   "editProfile": {
     "title": "編輯個人資料",
