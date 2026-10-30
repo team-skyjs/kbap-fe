@@ -227,8 +227,8 @@ export function LabelPhotosScreen({ photos, count, max, reanalyze, onRetake, onA
 
 /** 성분표 결과(27·28·29·41·44·48) — 판정은 서버 verdict·matches만(앱 판정 0). member = 회피 1개 이상 회원 */
 /** stale = 결과 뒤 판정 기준(회피·언어)이 바뀜 — 옛 verdict는 개인 판정으로 쓰지 않는다: 리본 0 · "확인 못 함" · 면 검토(같은 분석 다시 분석)로 */
-export function LabelResultScreen({ result, photoUri, pages, member, stale = false, freeStarted = false, banner, onAddSide, onReview, onSetAvoid, onDone, max }: {
-  result: LabelScanResult; photoUri: string | null; pages: number; member: boolean; stale?: boolean; freeStarted?: boolean; banner?: React.ReactNode; onAddSide: () => void; onReview: () => void; onSetAvoid: () => void; onDone: () => void; max: number;
+export function LabelResultScreen({ result, photoUri, pages, member, stale = false, freeStarted = false, banner, onAddSide, onReview, onDone, max }: {
+  result: LabelScanResult; photoUri: string | null; pages: number; member: boolean; stale?: boolean; freeStarted?: boolean; banner?: React.ReactNode; onAddSide: () => void; onReview: () => void; onDone: () => void; max: number;
 }) {
   const { t } = useTranslation();
   const lang = useAppLanguage(); // 구독으로(KB-695)
@@ -321,9 +321,8 @@ export function LabelResultScreen({ result, photoUri, pages, member, stale = fal
       <View style={[sc.bottom, { paddingBottom: insets.bottom + 12 }]}>
         {/* KB-914(R-137): 하단 고정 = 주 동작(Done) 알약 + 보조 동작 테두리(구 둘 다 테두리) */}
         <Btn onPress={onDone} testID="pscan-label-done">{t('packagedScan.done')}</Btn>
-        {!member ? (
-          <Btn variant="ghost" onPress={onSetAvoid} testID="pscan-result-set-avoid">{t('packaged.setAvoidIngredients')}</Btn>
-        ) : stale || pages >= max ? (
+        {/* KB-945: 회피 0개 = Done만(피할 재료 설정 유도 버튼 제거 — 예진 10/31) */}
+        {!member ? null : stale || pages >= max ? (
           <Btn variant="ghost" onPress={onReview} testID="pscan-result-review">{t('packagedScan.reviewPhotos', { count: pages })}</Btn>
         ) : (
           <Btn variant="ghost" onPress={onAddSide} testID="pscan-label-more">{t('packagedScan.labelAddPage')}</Btn>

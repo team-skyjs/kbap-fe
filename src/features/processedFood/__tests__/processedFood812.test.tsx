@@ -159,52 +159,61 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
   const member = () => { mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] }; };
   const press = (t: ReactTestRenderer, id: string) => act(() => t.root.findAll((n) => n.props?.testID === id && typeof n.props.onPress === 'function')[0].props.onPress());
 
-  it('비회원(12): 주요 알레르기 함유 + 혼입 가능 · 가입 유도 = 게이트 · 리본 0 · 원재료 미리보기 + See detail · 처음엔 접힘', () => {
+  // KB-945·947(예진 10/31): 음식 상세 순서 · What's inside 한 그리드(감지 + 주요 알레르기 + 혼입 가능) · 설정·로그인 유도 0 · 회피 미설정 = Safe 띠(표시 없는 제품은 확인 못 함)
+  const tiles = (t: ReactTestRenderer) => ids(t).filter((i) => /^pf-detected-[A-Z]+$/.test(i));
+  it('비회원: Safe 띠(KB-947) · What\'s inside = 감지 + 주요 알레르기 + 혼입 가능 한 그리드(칩 0) · 주요 알레르기 문단·가입 유도·미리보기 0 · 원재료는 접힘', () => {
     const t = detail();
-    expect(ids(t)).toEqual(expect.arrayContaining(['pf-major', 'pf-major-contains', 'pf-major-may', 'pf-sign-in', 'pf-ingredients-preview', 'pf-see-detail']));
-    expect(text(t)).toContain('packaged.containsNames:{\\"names\\":\\"L(MILK)\\"}');
-    expect(text(t)).toContain('packaged.mayContainNames:{\\"names\\":\\"L(PEANUT)\\"}');
-    expect(ids(t).some((i) => i.startsWith('badge-'))).toBe(false);
-    expect(ids(t)).not.toContain('pf-expanded');
-    press(t, 'pf-sign-in');
-    expect(ids(t)).toContain('gate-open');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-verdict-safe-unset', 'badge-safe', 'pf-inside', 'pf-ingredients-source']));
+    expect(text(t)).toContain('packaged.noAvoidMatchTitle');
+    expect(tiles(t)).toEqual(['pf-detected-WHEAT', 'pf-detected-SOY', 'pf-detected-MILK', 'pf-detected-EGG', 'pf-detected-PEANUT']);
+    expect(text(t)).toContain("detail.insideTitle");
+    for (const gone of ['pf-major', 'pf-sign-in', 'pf-set-avoid', 'pf-ingredients-preview', 'pf-see-detail', 'pf-expanded', 'pf-ing-chip-all']) expect(ids(t)).not.toContain(gone);
+    expect(text(t)).not.toContain('packaged.setAvoidIngredients');
+    expect(text(t)).not.toContain('packaged.signInToPersonalize');
   });
-  it('회피 0개 회원(13): 같은 화면 + "피하는 재료 설정" → 회피 설정 화면', () => {
+  it('회피 0개 회원: 같은 Safe 띠 · 설정 버튼 0', () => {
     mockGuest = false; mockMe = { id: '41', restrictions: [] };
     const t = detail();
-    expect(ids(t)).toContain('pf-set-avoid');
-    press(t, 'pf-set-avoid');
-    expect(mockPush).toHaveBeenCalledWith('/profile/restrictions');
+    expect(ids(t)).toContain('pf-verdict-safe-unset');
+    expect(ids(t)).not.toContain('pf-set-avoid');
   });
-  it('Codex #338 P1: majorAllergens 필드 없음(구서버·부분 배포) = 모름 — 검출 코드를 함유로(보수) · 검출도 없으면 "확인할 수 없음"(표기 없음 0)', () => {
+  it('KB-947 false-safe 0: 원재료·알레르기 표시가 둘 다 없는 제품 = 회피 미설정이어도 Safe 0 → 확인 못 함 · 프로필 대기(로그인) = Safe 0', () => {
+    const bare = detail({ rawMaterials: null, ingredients: null, allergenStatement: null, labelSource: 'NONE' });
+    expect(ids(bare)).toContain('pf-not-verified');
+    expect(ids(bare)).not.toContain('badge-safe');
+    mockGuest = false; mockMe = undefined;
+    const pending = detail({ verdict: null });
+    expect(ids(pending)).toContain('pf-profile-pending');
+    expect(ids(pending)).not.toContain('badge-safe');
+  });
+  it('Codex #338: 비회원 = 서버 verdict가 와도 회원 판정 0(위험 리본 0) · majorAllergens 필드 없음 = null(모름)', () => {
+    mockGuest = true; mockMe = undefined;
+    expect(ids(detail({ verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: [] }] })).some((i) => i === 'badge-danger')).toBe(false);
     const wire = { ...V4 } as Partial<DetailWire>;
     delete wire.majorAllergens;
     expect(adaptProcessedDetail(wire as DetailWire).majorAllergens).toBeNull();
-    const withDet = detail({ majorAllergens: undefined });
-    expect(text(withDet)).toContain('packaged.containsNames');
-    expect(text(withDet)).not.toContain('packaged.majorNoneFound');
-    const bare = detail({ majorAllergens: undefined, detections: [] });
-    expect(text(bare)).toContain('packaged.majorUnavailable');
-    expect(text(bare)).not.toContain('packaged.majorNoneFound');
   });
-  it('Codex #338: 비회원 = 서버 verdict가 와도 리본 0(비회원 화면) · 회피 설정 변경 뒤 옛 판정은 캐시 키(회피 코드·언어)가 막는다(R3·R4 테스트)', () => {
-    mockGuest = true; mockMe = undefined;
-    expect(ids(detail({ verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: [] }] })).some((i) => i.startsWith('badge-'))).toBe(false);
+  it('회원 판정 있음 = 음식 상세 칩 필터(All·Safe·Avoid·Caution) → 그 마크 타일만', () => {
+    member();
+    const t = detail({ verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: [] }], mayContainMatches: [{ code: 'PEANUT', evidence: [] }] });
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-ing-chip-all', 'pf-ing-chip-safe', 'pf-ing-chip-danger', 'pf-ing-chip-caution']));
+    press(t, 'pf-ing-chip-danger');
+    expect(tiles(t)).toEqual(['pf-detected-MILK']);
+    press(t, 'pf-ing-chip-caution');
+    expect(tiles(t)).toEqual(['pf-detected-PEANUT']);
+    press(t, 'pf-ing-chip-all');
+    expect(tiles(t).length).toBeGreaterThan(2);
   });
-  it('주요 알레르기 0개 = "없음" 단정 금지 — 판독 근거 없음(NONE) = 확인 불가 · 있으면 "찾지 못함"', () => {
-    expect(text(detail({ majorAllergens: [], labelSource: 'NONE' }))).toContain('packaged.majorUnavailable');
-    expect(text(detail({ majorAllergens: [] }))).toContain('packaged.majorNoneFound');
-  });
-  it('회원 SAFE(08) → KB-914: safe 띠(음식 상세와 같은 부품, "회피 일치 없음") · 미리보기 + See detail → 제자리 펼침(원재료·원문·출처 — 구 Your avoid list는 띠가 대신) → See less + 계측(id만)', () => {
+  it('회원 SAFE(08) → KB-914: safe 띠(음식 상세와 같은 부품, "회피 일치 없음") · KB-945 Ingredients and source → 제자리 펼침(원재료·원문·출처 — 구 Your avoid list는 띠가 대신) → See less + 계측(id만)', () => {
     member();
     const t = detail({ verdict: 'SAFE' });
     expect(ids(t)).toEqual(expect.arrayContaining(['badge-safe', 'pf-verdict-safe']));
     expect(text(t)).toContain('packaged.noAvoidMatches');
-    press(t, 'pf-see-detail');
+    press(t, 'pf-ingredients-source');
     expect(ids(t)).toEqual(expect.arrayContaining(['pf-expanded', 'pf-ingredients', 'pf-raw', 'pf-source', 'pf-source-disclaimer', 'pf-see-less'])); // 번역 전 = 원재료 본문이 원문
     expect(ids(t)).not.toContain('pf-your-avoid');
-    expect(ids(t)).not.toContain('pf-see-detail');
-    expect(mockTrack).toHaveBeenCalledWith('food_packaged_detail_expand', { product_id: '10201', action: 'see_detail' });
+    expect(ids(t)).not.toContain('pf-ingredients-source');
+    expect(mockTrack).toHaveBeenCalledWith('food_packaged_detail_expand', { product_id: '10201', action: 'ingredients_source' });
     press(t, 'pf-see-less');
     expect(ids(t)).not.toContain('pf-expanded');
   });
@@ -231,7 +240,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     const ko = '*면/소맥분(미국산,호주산),난각칼슘';
     const al = '밀,대두,돼지고기,계란,쇠고기 함유';
     const t = detail({ labelSource: 'DECLARED', ingredients: { translated: ko, original: ko }, allergenStatement: { translated: al, original: al } });
-    press(t, 'pf-see-detail');
+    press(t, 'pf-ingredients-source');
     expect(text(t)).not.toContain('packaged.translationLabel');
     expect(ids(t)).toEqual(expect.arrayContaining(['pf-raw-original-label', 'pf-raw-original', 'pf-allergens'])); // KB-914: 원재료 한 체계(IngredientsText)
     expect(text(t)).toContain('packaged.koreanOriginal');
@@ -239,7 +248,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(allergen.findAll((n) => typeof n.type === 'string' && n.props.children === al)).toHaveLength(1);
     // 진짜 번역(lang=en: "Wheat, Soy…") = 번역 먼저 + 원문
     const w = detail({ labelSource: 'DECLARED', allergenStatement: { translated: 'Wheat, Soy contained', original: al } });
-    press(w, 'pf-see-detail');
+    press(w, 'pf-ingredients-source');
     const a2 = w.root.findAll((n) => n.props?.testID === 'pf-allergens' && typeof n.type === 'string')[0];
     expect(a2.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children)).toEqual(['packaged.allergenTitle', 'Wheat, Soy contained', al]);
   });
@@ -257,37 +266,36 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(ids(t).filter((i) => /^badge-(safe|caution|danger)$/.test(i))).toEqual([]); // 판정 리본 0 — unable만
     expect(ids(t)).toContain('badge-unable');
   });
-  it('QA AQ2: 번역 없음(#462 전) = 미리보기 원문 2줄 · 펼침 Ingredients 본문 = 원문(빈 제목 0) · "English translation"·별도 Korean original 0', () => {
+  it('QA AQ2: 번역 없음(#462 전) = 펼침 Ingredients 본문 = 원문(빈 제목 0) · "English translation"·별도 Korean original 0 (KB-945: 미리보기 소멸)', () => {
     const t = detail({ ingredients: { translated: null, original: '감자,식물성유지,조미료' } });
-    const prev = t.root.findAll((n) => n.props?.testID === 'pf-ingredients-preview' && typeof n.type === 'string')[0];
-    expect(prev.findAll((n) => n.props?.numberOfLines === 2).length).toBeGreaterThan(0);
-    press(t, 'pf-see-detail');
+    press(t, 'pf-ingredients-source');
     const ing = t.root.findAll((n) => n.props?.testID === 'pf-ingredients' && typeof n.type === 'string')[0];
     expect(JSON.stringify(ing.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children))).toContain('감자,식물성유지,조미료');
     expect(text(t)).not.toContain('packaged.translationLabel');
     expect(ids(t)).not.toContain('pf-raw-translation-label');
     // 번역 있음 = 번역 1줄 + 원문 1줄(시안), 펼침 = 번역 + 별도 원문
     const w = detail({ ingredients: { translated: 'Potato, oil', original: '감자,식물성유지' } });
-    const p2 = w.root.findAll((n) => n.props?.testID === 'pf-ingredients-preview' && typeof n.type === 'string')[0];
-    expect(p2.findAll((n) => n.props?.numberOfLines === 2)).toHaveLength(0);
-    press(w, 'pf-see-detail');
+    press(w, 'pf-ingredients-source');
     expect(text(w)).toContain('packaged.translationLabel');
     expect(ids(w)).toEqual(expect.arrayContaining(['pf-raw-translation-label', 'pf-raw-original-label', 'pf-raw-original'])); // KB-914: 같은 섹션 안 같은 위계(구 별도 Korean original 섹션)
   });
   it('원재료: 번역(#462) 있으면 번역 + 원문 · 번역 전 = 원문만 · 한국어 사용자 = 번역 줄 생략', () => {
     const t = detail({ ingredients: { translated: 'Milk, water, sugar', original: '원유,정제수,백설탕' } });
+    expect(text(t)).not.toContain('Milk, water, sugar'); // KB-945: 원재료 글은 접힌 상태로만
+    press(t, 'pf-ingredients-source');
     expect(text(t)).toContain('Milk, water, sugar');
     jest.requireMock('@/lib/i18n').default.language = 'ko';
     const k = detail({ ingredients: { translated: 'Milk, water, sugar', original: '원유,정제수,백설탕' } });
+    press(k, 'pf-ingredients-source');
     expect(text(k)).not.toContain('Milk, water, sugar');
     expect(text(k)).toContain('원유,정제수,백설탕');
   });
   it('출처 = HACCP 두 줄 · C002(#455) = 품목제조보고 한 줄(사진 null = 유형 대체 그림)', () => {
     const h = detail();
-    press(h, 'pf-see-detail');
+    press(h, 'pf-ingredients-source');
     expect(text(h)).toContain('packaged.sourceData1');
     const c = detail({ source: { provider: 'C002', attributionKey: 'processedFood.source.c002' }, image: null, imageUrl: null });
-    press(c, 'pf-see-detail');
+    press(c, 'pf-ingredients-source');
     expect(ids(c)).toContain('pf-source-c002');
     expect(text(c)).not.toContain('packaged.sourceData1');
     expect(ids(c)).toContain('packaged-placeholder');
@@ -647,11 +655,20 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     expect(mockGet).toHaveBeenCalledTimes(2);
   });
 
-  it('Codex #338 P1: 목록 리본도 회피 1개 이상 회원만 — 회피 0개·비회원은 응답에 verdict가 남아 있어도 리본 0', async () => {
+  it('Codex #338 P1 → KB-947(예진 10/31): 회피 0개·비회원 = 응답 verdict 무시하고 safe 리본만 · 로그인 + 프로필 대기 = 리본 0', async () => {
+    const badges = (t: ReactTestRenderer) => ids(t).filter((i) => i.startsWith('badge-'));
     mockGuest = false; mockMe = { id: '41', restrictions: [] };
     mockGet.mockResolvedValueOnce(V4());
-    const t = await mount();
-    expect(ids(t).some((i) => i.startsWith('badge-'))).toBe(false);
+    const m0 = await mount();
+    expect(badges(m0).length).toBeGreaterThan(0);
+    expect(new Set(badges(m0))).toEqual(new Set(['badge-safe']));
+    act(() => m0.unmount());
+    mockGuest = true; mockMe = undefined;
+    mockGet.mockResolvedValueOnce(V4());
+    expect(new Set(badges(await mount()))).toEqual(new Set(['badge-safe']));
+    mockGuest = false; mockMe = undefined;
+    mockGet.mockResolvedValueOnce(V4());
+    expect(badges(await mount())).toEqual([]);
   });
 
   it('Codex #336 → KB-921: SAFE_WITH_NOTE = 주의 리본 + 스크린리더 단서(내용 불명) · 그냥 SAFE엔 단서 없음', async () => {

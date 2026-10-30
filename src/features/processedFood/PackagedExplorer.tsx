@@ -90,11 +90,12 @@ export function ProductRow({ item, onOpen }: { item: ProcessedFoodSummary; onOpe
 
 /** v4 상품 카드(시안 01 12371:70305 — 2열 161.5 · 사진 161.5×176 r12 #F7F8FA, 상품은 8 안쪽 contain · 판정 리본 22×29 좌상단 x10 y0 그림자 없음
  *  → 제조사 → 표시명 → 한국어명 → 빈 별 18 + "4.7 (12)"). 판정·한국어명·평점은 서버 v4 필드가 있을 때만(없으면 줄째 숨김). */
-export function ProductCard({ item, width, onOpen, personalized = true }: { item: ProcessedFoodSummary; width: number; onOpen: () => void; personalized?: boolean }) {
+export function ProductCard({ item, width, onOpen, personalized = true, unset = false }: { item: ProcessedFoodSummary; width: number; onOpen: () => void; personalized?: boolean; unset?: boolean }) {
   const { t } = useTranslation();
   const [failed, setFailed] = React.useState(false);
-  // 리본 = 회피 1개 이상 회원만(Codex #338 P1 — 회피를 비운 직후 남은 판정 캐시를 그리지 않는다)
-  const risk = personalized && item.verdict ? VERDICT_RISK[item.verdict] : null;
+  // 리본 = 회피 1개 이상 회원은 서버 판정(Codex #338 P1 — 회피를 비운 직후 남은 판정 캐시를 그리지 않는다)
+  // KB-947(예진 10/31 결정): 회피 미설정(비회원·회피 0개 회원 — 프로필 확인 뒤) = safe 리본. 프로필 대기·실패 = 리본 0
+  const risk = personalized ? (item.verdict ? VERDICT_RISK[item.verdict] : null) : unset ? 'safe' : null;
   const rating = item.rating ? `${item.rating.average.toFixed(1)} (${item.rating.count})` : null; // 스크린리더 라벨용
   return (
     <Pressable
@@ -155,6 +156,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   const guest = useIsGuest();
   const { data: me } = useMe();
   const personalized = !guest && !!me && me.restrictions.length > 0;
+  const unset = guest || (!!me && me.restrictions.length === 0); // KB-947: 회피 미설정이 확인된 사용자만(로그인 + 프로필 대기 = false)
   const inputRef = React.useRef<React.ComponentRef<typeof Input>>(null);
   // v4 판별 = 검색어 없는 둘러보기 1페이지의 성패(구서버 400). 확인 전·구서버 = 유형 칩 없음(구서버는 type을 무시해 거른 척이 된다)
   const browse = useProcessedSearch('');
@@ -314,7 +316,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
       numColumns={2}
       columnWrapperStyle={st.columns}
       keyExtractor={(it: ProcessedFoodSummary) => it.id}
-      renderItem={({ item }: { item: ProcessedFoodSummary }) => <ProductCard item={item} width={cardW} personalized={personalized} onOpen={() => router.push(`/processed-foods/${item.id}` as Href)} />}
+      renderItem={({ item }: { item: ProcessedFoodSummary }) => <ProductCard item={item} width={cardW} personalized={personalized} unset={unset} onOpen={() => router.push(`/processed-foods/${item.id}` as Href)} />}
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       ListFooterComponent={

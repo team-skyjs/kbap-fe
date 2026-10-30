@@ -1,4 +1,7 @@
 /**
+ * KB-945(P-564·565, 예진 10/31): 섹션 순서 = 음식 상세(Registered) — 사진 → 판정 띠(화면 폭) → 이름 → 굵은 구분선 → What's inside(음식 상세 칩 필터 + 재료 타일 한 그리드:
+ * 감지·일치 + 주요 알레르기 + 혼입 가능 — 구 감지 카드·Major allergens 문단·원재료 미리보기를 합침) → 원재료 원문·출처는 접힌 "Ingredients and source"로만 → 굵은 구분선 → 리뷰.
+ * 피할 재료 설정·로그인 유도 버튼 제거. KB-947: 비회원·회피 0개 회원 = Safe 띠(예진 결정) — 단 원재료·알레르기 표시가 둘 다 없는 제품은 회원과 같이 "확인 못 함"(false-safe 0).
  * 가공식품 상세 — KB-865 v4(P-523 ②, Figma 12371:70304 시안 08~13·34~38·51·52, 예진 10/22 Q1~Q4): 아래 v4 규칙이 위 KB-812 규칙을 대체한다.
  * - 판정 = 서버 verdict(+ avoidMatches·mayContainMatches·unclearIngredients). 회원 SAFE = 원재료 미리보기 + See detail /
  *   AVOID·CAUTION·SAFE_WITH_NOTE = 판정 제목·문장 + Ingredients and source. 둘 다 같은 제자리 펼침(처음 접힘) → See less.
@@ -29,7 +32,7 @@ import { Btn } from '@/components/Btn';
 import { Pressable } from '@/components/Pressable';
 import { RemoteImage } from '@/components/RemoteImage';
 import { Shimmer } from '@/components/Skeleton';
-import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { Chip } from '@/components/Chip';
 import { color as C, font, radius } from '@/lib/theme';
 import { MessageErrorBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -43,9 +46,11 @@ import { packagedTypeKey, type ProcessedFoodDetail } from '@/lib/api/processedFo
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
 import { PackagedReviews } from '@/features/processedFood/PackagedReviews';
 import { ProductName } from '@/features/processedFood/ProductName';
-import { detectedCodes, IngredientsText, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand } from '@/features/processedFood/PackagedVerdict';
+import { IngredientsText, insideCodes, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand } from '@/features/processedFood/PackagedVerdict';
 
 const GUTTER = 20;
+type IngChip = 'all' | 'safe' | 'danger' | 'caution';
+const ING_CHIPS: IngChip[] = ['all', 'safe', 'danger', 'caution']; // 음식 상세와 같은 순서
 export const PHOTO_RATIO = 223 / 335; // 시안 사진 슬롯 335×223(원본 500×333 비율)
 /** 출처 고지 키 → 문구 키. 모르는 키도 자료 출처 문구는 항상(고지 3종 상시). */
 const IMAGE_CREDIT: Record<string, string> = { 'processedFood.image.haccp': 'packaged.imageHaccp', 'processedFood.image.off': 'packaged.imageOff' };
@@ -56,21 +61,6 @@ export default FLAGS.processedFoodEnabled ? ProcessedFoodDetailScreen : GoneHome
 
 /** 코드 → 표시 이름 목록(회피 재료 라벨) */
 const namesOf = (codes: string[]) => codes.map((c) => restrictionLabel(c)).join(', ');
-
-/** 원재료 미리보기(시안 08·12: 번역 1줄 + 원문 1줄, 말줄임) — 번역 전(#462)·한국어 사용자 = 원문 1줄 */
-function IngredientsPreview({ d, showTranslation }: { d: ProcessedFoodDetail; showTranslation: boolean }) {
-  const { t } = useTranslation();
-  const { original } = d.ingredients;
-  const translated = showTranslation ? d.ingredients.translated : null;
-  if (!translated && !original) return <Text style={s.body} testID="pf-no-raw">{t('packaged.noIngredients')}</Text>;
-  return (
-    <View testID="pf-ingredients-preview">
-      {!!translated && <Text style={s.preview} numberOfLines={1}>{translated}</Text>}
-      {/* 번역 전(#462)·한국어 사용자 = 원문 2줄(QA AQ2: 제목만 있고 비어 보였다) · 번역 있음 = 번역 1줄 + 원문 1줄(시안) */}
-      {!!original && <Text style={s.preview} numberOfLines={translated ? 1 : 2}>{original}</Text>}
-    </View>
-  );
-}
 
 /** 펼침(시안 09·38·51·52) — 제자리. KB-914(R-137): 판정은 위 띠가 말한다(구 SAFE "Your avoid list" 블록 소멸) · 원재료 = 한 체계(IngredientsText) */
 function Expanded({ d, showTranslation }: { d: ProcessedFoodDetail; showTranslation: boolean }) {
@@ -129,32 +119,6 @@ function MatchEvidence({ d }: { d: ProcessedFoodDetail }) {
   );
 }
 
-/** 비회원·회피 0개(시안 12·13): 주요 알레르기(함유) + 혼입 가능(#457 mayContain) + 가입·설정 유도 */
-function MajorAllergens({ d, guest, onAction }: { d: ProcessedFoodDetail; guest: boolean; onAction: () => void }) {
-  const { t } = useTranslation();
-  // 필드 없음(null) = 모름 → 보수적 폴백: 검출(detections) 코드를 함유로 · 그것도 없으면 "확인할 수 없음"(없음 단정 0, Codex #338 P1)
-  const contains = d.majorAllergens ?? (d.detections.length ? [...new Set(d.detections.map((x) => x.code))] : null);
-  const text =
-    contains == null ? t('packaged.majorUnavailable')
-    : contains.length > 0 ? t('packaged.containsNames', { names: namesOf(contains) })
-    : t(d.labelSource === 'NONE' ? 'packaged.majorUnavailable' : 'packaged.majorNoneFound');
-  return (
-    <View style={s.block} testID="pf-major">
-      <Text style={s.h2}>{t('packaged.majorAllergensTitle')}</Text>
-      <View>
-        {/* 비어 있어도 "없음" 단정 금지 — 판독 근거가 없으면 확인 불가, 있으면 "찾지 못함" */}
-        <Text style={s.body} testID="pf-major-contains">{text}</Text>
-        {d.mayContain.length > 0 && (
-          <Text style={s.body} testID="pf-major-may">{t('packaged.mayContainNames', { names: namesOf(d.mayContain.map((m) => m.code)) })}</Text>
-        )}
-      </View>
-      <Btn variant="ghost" onPress={onAction} testID={guest ? 'pf-sign-in' : 'pf-set-avoid'}>
-        {t(guest ? 'packaged.signInToPersonalize' : 'packaged.setAvoidIngredients')}
-      </Btn>
-    </View>
-  );
-}
-
 export function ProcessedFoodDetailScreen() {
   const { t } = useTranslation();
   const lang = useAppLanguage(); // 구독으로(KB-695 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 굳힌다)
@@ -166,7 +130,7 @@ export function ProcessedFoodDetailScreen() {
   const guest = useIsGuest();
   const meQ = useMe();
   const me = meQ.data;
-  const [gate, setGate] = React.useState(false);
+  const [ingChip, setIngChip] = React.useState<IngChip>('all'); // 음식 상세 What's inside 칩과 같은 필터
   const [expanded, setExpanded] = React.useState(false); // 처음엔 접힘(예진 10/22 Q2)
   const loadMoreReviews = React.useRef<(() => void) | null>(null); // 리뷰 섹션이 채운다 — 바닥 근처 스크롤 = 다음 페이지(무한 스크롤, Read reviews 버튼 없음)
   const back = () => (router.canGoBack() ? router.back() : router.navigate('/(tabs)/food' as Href));
@@ -182,7 +146,7 @@ export function ProcessedFoodDetailScreen() {
     track(EVENTS.food_packaged_detail_view, { product_id: d.id, label_source: d.labelSource });
   }, [d]);
 
-  const toggle = (open: boolean, via: 'see_detail' | 'ingredients_source' | 'see_less') => {
+  const toggle = (open: boolean, via: 'ingredients_source' | 'see_less') => {
     setExpanded(open);
     if (d) track(EVENTS.food_packaged_detail_expand, { product_id: d.id, action: via });
   };
@@ -228,8 +192,10 @@ export function ProcessedFoodDetailScreen() {
     // Codex #338 R5(커맨드 규칙): 서버가 회원 기준으로 계산해 보낸 verdict가 있으면 프로필 상태와 무관하게 그린다(비회원은 서버가 늘 null).
     // 회피를 바꾼 직후의 옛 판정은 캐시 키(회피 코드·언어)가 막는다(R3) — 여기서 member로 다시 거르면 프로필이 늦을 때 판정이 통째로 빠진다
     const hasVerdict = !guest && d.verdict != null;
-    const verdictText = hasVerdict && (d.verdict === 'AVOID' || d.verdict === 'CAUTION' || d.verdict === 'SAFE_WITH_NOTE');
+    // 원재료·알레르기 표시가 둘 다 없음 = 회원도 verdict null인 제품(#457) — 회피 미설정이어도 Safe로 그리지 않는다
+    const noLabel = !d.ingredients.original && !d.allergenStatement;
     const canWrite = FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && FLAGS.packagedReviewWrite;
+    const codes = insideCodes(d);
     body = (
       <ScrollView
         contentContainerStyle={[s.pad, { paddingBottom: insets.bottom + 32 }]}
@@ -241,7 +207,7 @@ export function ProcessedFoodDetailScreen() {
         testID="pf-detail"
       >
         {/* KB-865 ③(시안 20): 스캔 확정 결과 = 일반 상세와 같은 화면 — "스캔 결과" 띠·불꽃·차감 문구 없음(README) */}
-        {/* 시안 08: 사진 335×223 r16 #F7F8FA(상품 8 안쪽 contain) · 판정 리본 22×29 좌상단 x10 y0 그림자 없음(목록 카드와 같은 배지) */}
+        {/* 시안 08: 사진 335×223 r16 #F7F8FA(상품 8 안쪽 contain) */}
         <View style={s.photo}>
           {d.imageUrl ? (
             // QA #338: 다른 제품 사진이 잠깐 비치던 것 — 상세 전용 recyclingKey + 이번 사진이 뜰 때까지 투명(판정 화면에 엉뚱한 사진 0)
@@ -250,19 +216,8 @@ export function ProcessedFoodDetailScreen() {
             <PackagedPlaceholder type={d.type} foodType={d.foodType} style={StyleSheet.absoluteFill} />
           )}
         </View>
-        <View style={s.titleBlock}>
-          {!!d.maker && <Text style={s.maker}>{d.maker}</Text>}
-          {/* KB-914(R-140): 이름 = 공용 ProductName(영어 굵게 + 한국어 작게 — 어느 경로로 와도 같은 표기) · 유형은 그 아래 */}
-          <ProductName name={d.name} nameKo={d.nameKo} size="title" lines={4} header testID="pf-name" />
-          {(!!d.type || !!d.foodType) && (
-            <View style={s.metaRow} testID="pf-meta">
-              <Text style={s.meta}>{d.type ? t(packagedTypeKey(d.type)) : d.foodType}</Text>
-            </View>
-          )}
-          {/* KB-914(R-141): 무료 창 문장 = 상세에서 제거(배지는 카메라·후보·결과만) */}
-        </View>
 
-        {/* KB-914(R-137): 판정 = 음식 상세와 같은 띠(VerdictBand) — 서버 verdict 그대로. 판정을 확인할 수 없으면 회색(unable) 띠 */}
+        {/* KB-945: 판정 띠 = 사진 바로 아래(음식 상세 순서) · KB-914(R-137) 공용 VerdictBand — 서버 verdict 그대로. 판정을 확인할 수 없으면 회색(unable) 띠 */}
         {hasVerdict && d.verdict ? (
           <View style={s.block}>
             <PackagedVerdictBand d={{ ...d, verdict: d.verdict }} safeReason={t('packaged.noAvoidMatches')} style={s.band} testID={`pf-verdict-${d.verdict.toLowerCase()}`} />
@@ -278,21 +233,44 @@ export function ProcessedFoodDetailScreen() {
           ) : (
             <View testID="pf-profile-pending"><Shimmer style={s.skelRow} /></View>
           )
-        ) : guest || m0 ? (
-          <MajorAllergens d={d} guest={guest} onAction={() => (guest ? setGate(true) : router.push('/profile/restrictions' as Href))} />
-        ) : member ? (
+        ) : (guest || m0) && !noLabel ? (
+          // KB-947(예진 10/31 결정): 회피 미설정(비회원·회피 0개) = Safe 띠 — 제목·이유 = 가공 SAFE 키 그대로(보장 표현 0, 새 문구 0)
+          <PackagedVerdictBand d={{ ...d, verdict: 'SAFE' }} safeReason={t('packaged.noAvoidMatches')} style={s.band} testID="pf-verdict-safe-unset" />
+        ) : guest || m0 || member ? (
           // 원재료·알레르기 표시가 둘 다 없는 제품 = 회원도 verdict null — 판정 없이 "확인 못 함"(#457) = 회색 띠
           <PackagedUnableBand title={t('packaged.notVerified')} reason={t('packaged.notVerifiedBody')} style={s.band} testID="pf-not-verified" />
         ) : null}
 
-        {/* KB-914(R-137): 감지 재료 = 음식 상세 재료 타일과 같은 부품 · 마크는 회원 판정이 있을 때만 */}
-        {detectedCodes(d).length > 0 && (
-          <View style={s.block}>
-            <Text style={s.h2} accessibilityRole="header">{t('packaged.detectedTitle')}</Text>
-            <PackagedDetectedTiles d={d} personalized={hasVerdict} testID="pf-detected" />
-          </View>
+        <View style={s.titleBlock}>
+          {!!d.maker && <Text style={s.maker}>{d.maker}</Text>}
+          {/* KB-914(R-140): 이름 = 공용 ProductName(영어 굵게 + 한국어 작게 — 어느 경로로 와도 같은 표기) · 유형은 그 아래 */}
+          <ProductName name={d.name} nameKo={d.nameKo} size="title" lines={4} header testID="pf-name" />
+          {(!!d.type || !!d.foodType) && (
+            <View style={s.metaRow} testID="pf-meta">
+              <Text style={s.meta}>{d.type ? t(packagedTypeKey(d.type)) : d.foodType}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* KB-945: What's inside = 음식 상세와 같은 제목·칩 필터(판정 있을 때만)·재료 타일 그리드 — 마크는 회원 판정이 있을 때만 */}
+        {codes.length > 0 && (
+          <>
+            <View style={s.thickDivider} />
+            <View style={s.block} testID="pf-inside">
+              <Text style={s.h2} accessibilityRole="header">{t('detail.insideTitle')}</Text>
+              {hasVerdict && (
+                <View style={s.chipRow}>
+                  {ING_CHIPS.map((c) => (
+                    <Chip key={c} label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)} selected={ingChip === c} onPress={() => setIngChip(c)} testID={`pf-ing-chip-${c}`} />
+                  ))}
+                </View>
+              )}
+              <PackagedDetectedTiles d={d} codes={codes} personalized={hasVerdict} only={hasVerdict && ingChip !== 'all' ? ingChip : null} testID="pf-detected" />
+            </View>
+          </>
         )}
 
+        {/* KB-945: 원재료 원문·알레르기 표시·출처 = 접힌 상태로만(처음 접힘) */}
         {expanded ? (
           <>
             <Expanded d={d} showTranslation={showTranslation} />
@@ -300,16 +278,11 @@ export function ProcessedFoodDetailScreen() {
               <Text style={s.seeLessText}>{t('packaged.seeLess')}</Text>
             </Pressable>
           </>
-        ) : verdictText ? (
-          <Btn variant="ghost" onPress={() => toggle(true, 'ingredients_source')} testID="pf-ingredients-source">{t('packaged.ingredientsAndSource')}</Btn>
         ) : (
-          <View style={s.block}>
-            <Text style={s.h2}>{t('packaged.ingredientsHeading')}</Text>
-            <IngredientsPreview d={d} showTranslation={showTranslation} />
-            <Btn variant="ghost" onPress={() => toggle(true, 'see_detail')} testID="pf-see-detail">{t('packaged.seeDetail')}</Btn>
-          </View>
+          <Btn variant="ghost" onPress={() => toggle(true, 'ingredients_source')} testID="pf-ingredients-source">{t('packaged.ingredientsAndSource')}</Btn>
         )}
 
+        {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <View style={s.thickDivider} />}
         {/* 롤백 스위치(reviewsLiveEnabled off) = 가공식품 리뷰는 목 경로가 없어 목록이 비는데 서버 요약은 남는다 — 섹션째 숨김(Codex #314 R2) */}
         {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} loadMoreRef={loadMoreReviews} writeInBar={canWrite} />}
       </ScrollView>
@@ -330,7 +303,6 @@ export function ProcessedFoodDetailScreen() {
     <View style={s.root}>
       <SubHeader title={t('packaged.detailTitle')} onBack={back} />
       {body}
-      <AuthGateSheet context="risk" open={gate} onClose={() => setGate(false)} />
     </View>
   );
 }
@@ -356,6 +328,8 @@ const s = StyleSheet.create({
   disclaimer: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
   seeLess: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, justifyContent: 'center' },
   seeLessText: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
+  thickDivider: { height: 8, backgroundColor: '#F5F5F5', marginHorizontal: -GUTTER }, // 음식 상세 thickDivider와 같은 값 — 화면 폭
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 }, // 음식 상세 ingChipRow(좌우 여백은 페이지가)
   skelLine: { height: 14, borderRadius: radius.xs },
   skelRow: { height: 63, borderRadius: radius.xs },
 });

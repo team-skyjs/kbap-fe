@@ -12,11 +12,11 @@ import { VerdictBand } from '@/components/VerdictBand';
 import { IngredientTile, tile } from '@/components/IngredientTile';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { restrictionLabel } from '@/lib/onboarding/data';
-import { color as C, font, type } from '@/lib/theme';
+import { color as C, font, type, type RiskState } from '@/lib/theme';
 import { VERDICT_RISK, type ProcessedDetection, type ProcessedVerdict } from '@/lib/api/processedFoodAdapter';
-import { detectedCodes, tileRisk, unclearSubtitle, type VerdictFields } from './packagedVerdictLogic';
+import { detectedCodes, insideCodes, tileRisk, unclearSubtitle, type VerdictFields } from './packagedVerdictLogic';
 
-export { detectedCodes, tileRisk, unclearSubtitle };
+export { detectedCodes, insideCodes, tileRisk, unclearSubtitle };
 
 const namesOf = (codes: string[]) => codes.map((c) => restrictionLabel(c)).join(', ');
 
@@ -42,11 +42,12 @@ export function PackagedUnableBand({ title, reason, style, testID }: { title: st
 }
 
 /** 감지 재료 타일 그리드(음식 상세 재료 타일과 같은 부품·격자) — 코드가 없으면 null(호출측 섹션째 숨김). 제목은 호출측 섹션 부품이 단다 */
-export function PackagedDetectedTiles({ d, personalized, testID }: {
-  d: VerdictFields & { detections: ProcessedDetection[] }; personalized: boolean; testID: string;
+export function PackagedDetectedTiles({ d, personalized, codes: codesIn, only = null, testID }: {
+  d: VerdictFields & { detections: ProcessedDetection[] }; personalized: boolean; codes?: string[]; only?: RiskState | null; testID: string;
 }) {
   const cat = useIngredientCatalog();
-  const codes = detectedCodes(d);
+  // KB-945: codes = 호출측 목록(상세 = insideCodes) · only = 음식 상세 칩 필터(판정 있을 때만 호출측이 넘김)
+  const codes = (codesIn ?? detectedCodes(d)).filter((c) => only == null || tileRisk(c, d, personalized) === only);
   if (codes.length === 0) return null;
   return (
     <View style={[tile.grid, st.grid]} testID={testID}>
