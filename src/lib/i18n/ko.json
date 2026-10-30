@@ -62,8 +62,8 @@
     "profileSub": "가입하면 기피 성분 저장, 스캔 기록, 랭킹 쌓기가 가능해요.",
     "saveTitle": "먹어보고 싶은 음식을 저장하세요",
     "saveSub": "가입하면 음식을 북마크해서 나만의 안심 리스트를 만들 수 있어요.",
-    "photoRemovalTitle": "사진 삭제를 요청해 주세요",
-    "photoRemovalSub": "가입하면 리뷰 사진의 삭제를 요청할 수 있어요.",
+    "photoRemovalTitle": "리뷰 사진 삭제 요청",
+    "photoRemovalSub": "가입하면 리뷰 사진 삭제를 요청할 수 있어요.",
     "keepBrowsing": "계속 둘러보기"
   },
   "lock": {
@@ -177,7 +177,7 @@
     "reasonOtherPlaceholder": "자세히 알려주세요",
     "reportSubmit": "신고 제출",
     "blockConfirmTitle": "{{name}}님을 차단할까요?",
-    "blockConfirmBody": "그 사용자의 리뷰가 더 이상 보이지 않아요. 프로필의 차단한 사용자에서 언제든 해제할 수 있어요.",
+    "blockConfirmBody": "그 사용자의 리뷰가 더 이상 보이지 않아요. 프로필의 '차단한 사용자'에서 언제든 차단을 해제할 수 있어요.",
     "blockConfirmCta": "차단",
     "blocking": "차단하는 중…",
     "viewDetails": "상세 보기",
@@ -368,7 +368,7 @@
     "seeAll": "전체 보기",
     "accountTitle": "계정",
     "language": "언어",
-    "languageHintAndroid": "앱 설정이 열려요. 거기서 언어를 눌러 주세요.",
+    "languageHintAndroid": "앱 설정이 열려요. '언어'를 눌러 주세요.",
     "safetyNotice": "안전 고지",
     "logout": "로그아웃",
     "nicknameUnset": "닉네임 미설정",
@@ -781,7 +781,7 @@
       "cta": "영상으로 확인하기",
       "a11y": "이 음식을 먹는 K-POP 아이돌 영상 열기"
     },
-    "verdictMayContain": "들어 있을 수 있는 못 먹는 재료: {{list}}"
+    "verdictMayContain": "못 먹는 재료가 들어 있을 수 있어요: {{list}}"
   },
   "states": {
     "catalogTitle": "상태",
@@ -792,7 +792,7 @@
     "errorTitle": "문제가 생겼어요",
     "errorBody": "지금은 불러올 수 없어요. 회원님 잘못이 아니라 저희 쪽 문제예요.",
     "offlineTitle": "오프라인 상태예요",
-    "offlineBody": "메뉴 스캔과 리뷰 로드는 인터넷 연결이 필요해요.",
+    "offlineBody": "메뉴 스캔과 리뷰 불러오기에는 인터넷 연결이 필요해요.",
     "linkFailed": "링크를 열 수 없어요",
     "settingsFailed": "설정을 열 수 없어요"
   },
@@ -968,7 +968,7 @@
     "newestFirst": "최신순",
     "swipeHint": "카드를 왼쪽으로 밀면 삭제할 수 있어요",
     "emptyTitle": "아직 저장한 음식이 없어요",
-    "emptyBody": "음식의 별을 누르면 여기에 모여요. 안심하고 맛있게 먹을 나만의 리스트예요.",
+    "emptyBody": "음식의 별을 누르면 여기에 모여요.",
     "emptyCta": "음식 둘러보기",
     "removed": "저장됨에서 삭제했어요",
     "undo": "되돌리기",
@@ -1278,7 +1278,7 @@
     "mayContainNames": "{{names}} 혼입 가능",
     "signInToPersonalize": "로그인하고 내 기준으로 보기",
     "setAvoidIngredients": "피하는 재료 설정하기",
-    "noAvoidMatchTitle": "피하는 재료와 겹치는 것 없음"
+    "noAvoidMatchTitle": "확인한 성분 중 피하는 재료 없음"
   },
   "scanMode": {
     "menu": "메뉴판",
@@ -1370,7 +1370,7 @@
     "freeFor_one": "가공식품 무료 스캔 시간이 {{count}}분 남았어요",
     "freeFor_other": "가공식품 무료 스캔 시간이 {{count}}분 남았어요",
     "freeStarted": "다음 가공식품 스캔은 1시간 동안 무료예요.",
-    "freeExplain": "이 시간 동안은 가공식품을 횟수 걱정 없이 스캔할 수 있어요. 메뉴판 스캔은 해당되지 않아요."
+    "freeExplain": "이 시간 동안은 가공식품을 횟수 제한 없이 스캔할 수 있어요. 메뉴판 스캔은 해당되지 않아요."
   },
   "scanCamera": {
     "title": "스캔",
@@ -1398,7 +1398,7 @@
     "consentTitle": "직접 촬영한 사진만 올려 주세요",
     "consentNoStock": "쇼핑몰이나 검색에서 찾은 이미지는 올릴 수 없어요.",
     "consentRemoval": "권리 문제가 있는 사진은 삭제될 수 있어요.",
-    "consentAgree": "확인하고 선택",
+    "consentAgree": "확인하고 사진 선택",
     "photoRemovalRequest": "사진 삭제 요청",
     "photoRemovalPrefill": "사진 삭제 요청: {{product}} 리뷰 {{reviewId}}"
   }
