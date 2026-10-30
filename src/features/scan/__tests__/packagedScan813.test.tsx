@@ -603,13 +603,14 @@ describe('KB-877 가공식품 1시간 무료 창(서버 freeUntil)', () => {
       AppState.addEventListener = orig;
     }
   });
-  it('상세: 스캔 확정 + free=1 = "다음 1시간 무료" 한 줄 · free 없음(창 안 무료 확정·일반 진입) = 0', () => {
+  it('KB-914(R-141): 상세 = 무료 창 문장 0(스캔 확정 + free=1이어도) — 무료 배지는 카메라·후보·결과만', () => {
     const { adaptProcessedDetail } = jest.requireActual('@/lib/api/processedFoodAdapter');
     qc.setQueryData(['processedFoods', 'detail', '11', 'en|member:SHRIMP'], adaptProcessedDetail(DETAIL));
     mockParams = { id: '11', scan: '1', charged: '1', free: '1' };
     const t = render(<Detail />);
-    expect(ids(t)).toContain('pf-free-started');
-    expect(texts(t)).toContain('packagedScan.freeStarted');
+    expect(ids(t)).not.toContain('pf-free-started');
+    expect(texts(t)).not.toContain('packagedScan.freeStarted');
+    expect(ids(t)).not.toContain('pscan-free-explain');
     mockParams = { id: '11', scan: '1', charged: '0' };
     expect(ids(render(<Detail />))).not.toContain('pf-free-started');
     mockParams = { id: '11', free: '1' }; // 스캔 밖 진입 = 무시

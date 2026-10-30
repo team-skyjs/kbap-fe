@@ -453,7 +453,6 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     const retake = () => goStep({ kind: 'handoff', analysisId, pages: pages.slice(0, -1), photos: photos.slice(0, -1), from }); // 마지막 면을 다시 찍는다
     return (
       <LabelPhotosScreen
-        banner={<PackagedFreeLine />}
         photos={photos}
         count={pages.length}
         max={LABEL_PAGES_MAX}
@@ -565,7 +564,6 @@ function NameSearchStep({ initial, personalized, m0, busy, onConfirm, onNone, on
   return (
     <CandidateScreen
       testID="pscan-name-search"
-      banner={<PackagedFreeLine />}
       title={t('packagedScan.findTitle')}
       subtitle={t('packagedScan.findSubtitle')}
       note={m0 ? t('packagedScan.personalNote') : null}
@@ -602,7 +600,7 @@ function FrontDebug({ onRun }: { onRun: (text: string) => void }) {
 // 시안 실측(2x): 본문 좌우 20 · 안내 eyebrow 15 primary · 제목 28 bold · 본문 15/22 · 촬영 상자 335×264 r24 #2F3137(아이콘 + 18 semibold 흰 글자)
 // · 아웃라인 40 · 하단 고정 버튼 · 후보 시트 = 어두운 띠 200 위 흰 시트 r24
 const st = StyleSheet.create({
-  camFree: { color: C.surface, textAlign: 'center' }, // KB-877: 카메라 어두운 바 위(힌트와 같은 흰 글자)
+  camFree: { alignSelf: 'center' }, // KB-914(R-141): 카메라 = 배지 가운데(구 흰 문장)
   root: { flex: 1, backgroundColor: C.card },
   page: { paddingHorizontal: 20, paddingTop: 24, gap: 20 },
   eyebrow: { fontFamily: font.body, fontSize: 16, lineHeight: 21, color: C.primary },

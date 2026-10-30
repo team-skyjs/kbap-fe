@@ -77,7 +77,7 @@ describe('T-104·T-106·T-034 배선', () => {
   it('무료 창 뜻 한 줄 = 결과 배너·시작 안내 · 카메라 위 짧은 안내는 제외', () => {
     expect(read('src/features/scan/PackagedScanFlow.tsx').match(/<PackagedFreeLine style=\{st\.camFree\} explain=\{false\} \/>/g)).toHaveLength(2);
     expect(read('src/features/scan/PackagedScanScreens.tsx')).toContain('<PackagedFreeExplain />');
-    expect(read('src/app/processed-foods/[id].tsx')).toContain('{freeStarted && <PackagedFreeExplain />}');
+    expect(read('src/app/processed-foods/[id].tsx')).not.toContain('PackagedFreeExplain'); // KB-914(R-141): 상세 무료 문장 0 — 배지(+뜻 한 줄)는 카메라·후보·결과만
   });
   it('"{국가} only" 토글 세 곳 모두 설명 한 줄(나라 이름)', () => {
     for (const f of ['src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx', 'src/features/community/ReviewFeed.tsx']) expect(read(f)).toMatch(/<CountryOnlyHint code=\{/);

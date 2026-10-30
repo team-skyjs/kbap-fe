@@ -20,7 +20,6 @@
  */
 import * as React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { PackagedFreeExplain } from '@/features/scan/packagedFreeHour';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,6 +42,7 @@ import { processedUnavailable, useProcessedDetail } from '@/lib/data/useProcesse
 import { packagedTypeKey, type ProcessedFoodDetail } from '@/lib/api/processedFoodAdapter';
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
 import { PackagedReviews } from '@/features/processedFood/PackagedReviews';
+import { ProductName } from '@/features/processedFood/ProductName';
 import { detectedCodes, IngredientsText, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand } from '@/features/processedFood/PackagedVerdict';
 
 const GUTTER = 20;
@@ -161,7 +161,6 @@ export function ProcessedFoodDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string; scan?: string; charged?: string; free?: string }>();
-  const freeStarted = params.scan === '1' && params.free === '1'; // KB-877: 이 확정이 차감하며 1시간 무료 창을 열었다(스캔 흐름이 응답으로 판단해 넘김)
   const id = typeof params.id === 'string' ? params.id : undefined;
   const q = useProcessedDetail(id);
   const guest = useIsGuest();
@@ -253,17 +252,14 @@ export function ProcessedFoodDetailScreen() {
         </View>
         <View style={s.titleBlock}>
           {!!d.maker && <Text style={s.maker}>{d.maker}</Text>}
-          <Text style={s.name} accessibilityRole="header" lineBreakStrategyIOS="hangul-word">{d.name}</Text>
-          {/* 한국어명 + 유형 — KB-907(T-107): 세로 막대 구분자 → 간격(gap 8, 줄이 넘치면 다음 줄로) */}
-          {(!!d.nameKo || !!d.type || !!d.foodType) && (
+          {/* KB-914(R-140): 이름 = 공용 ProductName(영어 굵게 + 한국어 작게 — 어느 경로로 와도 같은 표기) · 유형은 그 아래 */}
+          <ProductName name={d.name} nameKo={d.nameKo} size="title" lines={4} header testID="pf-name" />
+          {(!!d.type || !!d.foodType) && (
             <View style={s.metaRow} testID="pf-meta">
-              {[d.nameKo, d.type ? t(packagedTypeKey(d.type)) : d.foodType].filter(Boolean).map((m, i) => (
-                <Text key={i} style={s.meta}>{m}</Text>
-              ))}
+              <Text style={s.meta}>{d.type ? t(packagedTypeKey(d.type)) : d.foodType}</Text>
             </View>
           )}
-          {freeStarted && <Text style={s.freeStarted} testID="pf-free-started">{t('packagedScan.freeStarted')}</Text>}
-          {freeStarted && <PackagedFreeExplain />}
+          {/* KB-914(R-141): 무료 창 문장 = 상세에서 제거(배지는 카메라·후보·결과만) */}
         </View>
 
         {/* KB-914(R-137): 판정 = 음식 상세와 같은 띠(VerdictBand) — 서버 verdict 그대로. 판정을 확인할 수 없으면 회색(unable) 띠 */}
@@ -350,10 +346,8 @@ const s = StyleSheet.create({
   bar: { paddingHorizontal: GUTTER, paddingTop: 12, backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.hair },
   titleBlock: { gap: 4 },
   maker: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
-  name: { fontFamily: font.bodyBold, fontSize: 28, lineHeight: 34, color: C.ink },
   meta: { fontFamily: font.body, fontSize: 16, lineHeight: 21, color: C.ink2 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 8 },
-  freeStarted: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 23, color: C.primaryText, marginTop: 8 }, // KB-877
   block: { gap: 10 },
   h2: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 26, color: C.ink },
   body: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink },

@@ -68,3 +68,39 @@ describe('R-139 어두운 안내·오류 화면', () => {
     expect(s).not.toContain('<SubHeader title={headerTitle}'); // 구 밝은 헤더 페이지
   });
 });
+
+describe('2차 R-140 이름 한 부품', () => {
+  it('후보·이름 찾기(CandidateRow)·탭 카드·상세 제목·리뷰 칩 = 모두 ProductName(영어 굵게 + 한국어 작게, 같으면 한 줄)', () => {
+    const pn = read('src/features/processedFood/ProductName.tsx');
+    expect(pn).toContain('const ko = nameKo && nameKo !== name ? nameKo : null;');
+    expect(read('src/features/scan/PackagedScanScreens.tsx')).toContain('<ProductName name={item.name} nameKo={item.nameKo} />');
+    expect(read('src/features/processedFood/PackagedExplorer.tsx')).toContain('<ProductName name={item.name} nameKo={item.nameKo}');
+    expect(read('src/app/processed-foods/[id].tsx')).toContain('<ProductName name={d.name} nameKo={d.nameKo} size="title"');
+    expect(read('src/app/food/[id]/review.tsx')).toContain('<ProductName name={targetName} nameKo={product?.nameKo ?? null} size="chip"');
+    // 상세 메타 줄에 한국어명이 다시 나오지 않는다(이름 부품이 맡음)
+    expect(read('src/app/processed-foods/[id].tsx')).not.toContain('[d.nameKo, d.type');
+  });
+});
+
+describe('2차 R-141 무료 배지 = 카메라·후보·결과 3곳만', () => {
+  it('배지 부품 하나(FreeBadge) · 흐름의 무료 줄 = 후보·카메라 2·결과 · 면 검토·이름 찾기·상세 0', () => {
+    const flow = read('src/features/scan/PackagedScanFlow.tsx');
+    expect(flow.match(/<PackagedFreeLine/g)).toHaveLength(4); // 후보 배너 · 앞면·성분표 카메라 · 결과 배너
+    expect(flow.match(/<PackagedFreeLine style=\{st\.camFree\} explain=\{false\} \/>/g)).toHaveLength(2);
+    const names = [...flow.matchAll(/<(\w+Screen)[\s\S]{0,400}?banner=\{<PackagedFreeLine \/>\}/g)].map((m) => m[1]);
+    expect(names).toEqual(['CandidateScreen', 'LabelResultScreen']);
+    expect(read('src/app/processed-foods/[id].tsx')).not.toMatch(/PackagedFreeExplain|freeStarted/);
+    expect(read('src/features/scan/packagedFreeHour.tsx')).toContain('const line = <FreeBadge');
+    expect(read('src/features/scan/PackagedScanScreens.tsx')).toContain('<FreeBadge text={t(\'packagedScan.freeStarted\')}');
+  });
+});
+
+describe('2차 R-142 Packaged 탭 상단', () => {
+  it('Dishes와 같은 검색 행(검색칸 + 주황 스캔 버튼 = 가공식품 모드) · 둘째 줄 = 유형 칩 · 판정 칩 0(서버 verdict 필터 대기 — 클라 필터 금지)', () => {
+    const ex = read('src/features/processedFood/PackagedExplorer.tsx');
+    expect(ex).toContain("<SearchScanButton onPress={() => router.navigate(`/scan?mode=packaged&t=${Date.now()}` as Href)} testID=\"packaged-scan\" />");
+    expect(read('src/features/food/FoodExplorer.tsx')).toContain('<SearchScanButton onPress={() => router.navigate(\'/scan\')} testID="home-scan" />');
+    expect(ex.indexOf('testID="packaged-scan"')).toBeLessThan(ex.indexOf('testID="packaged-types"'));
+    expect(ex).not.toMatch(/verdict=|packaged-verdict-chip|\.filter\(\(it\) => it\.verdict/);
+  });
+});

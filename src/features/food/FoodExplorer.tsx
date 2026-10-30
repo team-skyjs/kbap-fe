@@ -54,6 +54,15 @@ export const CHIP_ROW_H = 34;
 export function chipRowHeight(fontScale: number): number {
   return CHIP_ROW_H + CHIP_LABEL_LH * (Math.min(Math.max(fontScale, 1), MAX_FONT_SCALE) - 1);
 }
+/** 검색 행 오른쪽 주황 스캔 버튼(A-HM-02) — Dishes와 Packaged 탭(KB-914 R-142)이 같은 부품 */
+export function SearchScanButton({ onPress, testID }: { onPress: () => void; testID: string }) {
+  return (
+    <Pressable style={styles.scanBtn} onPress={onPress} testID={testID}>
+      <IconTabScan size={24} color="#FFFFFF" />
+    </Pressable>
+  );
+}
+
 /** KB-909(Q-367): 큰 글씨(fontScale > 1 — BlurCaptionCard captionLargeText와 같은 기준)면 Food 탭 정렬 버튼을 칩 아래 자기 줄로 */
 export const sortOnOwnRow = (fontScale: number): boolean => fontScale > 1;
 /** KB-707: 끝 페이드("더 있다" 표시)는 아직 오른쪽에 숨은 칩이 있을 때만 — 끝까지 밀었거나 다 들어가면 숨김(마지막 칩을 덮지 않게) */
@@ -367,9 +376,7 @@ export function FoodExplorer({
           </Text>
           <IconSearch size={20} color={C.ink3} />
         </Pressable>
-        <Pressable style={styles.scanBtn} onPress={() => router.navigate('/scan')} testID="home-scan">
-          <IconTabScan size={24} color="#FFFFFF" />
-        </Pressable>
+        <SearchScanButton onPress={() => router.navigate('/scan')} testID="home-scan" />
       </View>
 
       {/* 언더라인 탭 (4123:3884): Popular | Saved | Food — P-318: 홈(embedded) 전용,

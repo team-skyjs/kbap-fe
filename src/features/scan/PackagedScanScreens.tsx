@@ -8,7 +8,7 @@
  */
 import * as React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { PackagedFreeExplain } from './packagedFreeHour';
+import { FreeBadge, PackagedFreeExplain } from './packagedFreeHour';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -277,8 +277,9 @@ export function LabelResultScreen({ result, photoUri, pages, member, stale = fal
       <ScrollView contentContainerStyle={[sc.page, { gap: 24 }]}>
         {/* KB-877: 이번 분석이 차감하며 창을 열었으면 안내 한 줄, 아니면 남은 분(창 안이면) */}
         {freeStarted ? (
-          <View style={{ gap: 2 }}>
-            <Text style={sc.freeStarted} testID="pscan-free-started">{t('packagedScan.freeStarted')}</Text>
+          // KB-914(R-141): 시작 안내도 같은 무료 배지(구 주황 굵은 문장)
+          <View style={{ gap: 6 }}>
+            <FreeBadge text={t('packagedScan.freeStarted')} testID="pscan-free-started" />
             <PackagedFreeExplain />
           </View>
         ) : banner}
