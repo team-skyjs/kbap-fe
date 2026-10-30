@@ -47,7 +47,8 @@ export async function prefetchCurationCovers(qc: QueryClient, keys: readonly str
       keys.map((key) =>
         qc
           .fetchQuery({ queryKey: ['curations', 'seoul', key, lang], queryFn: () => fetchCurationDetail(key), staleTime: 5 * 60_000, retry: false })
-          .then((d) => d.items.slice(0, PREFETCH_PER_COLLECTION).map((it) => it.imageUrl).filter((u) => !!u && u.trim()))
+          // Codex #376 P2: 카드가 그리는 사진 = images[0](galleryOf — 서버 images[] 우선, 없으면 imageUrl) — 같은 것을 받는다
+          .then((d) => d.items.slice(0, PREFETCH_PER_COLLECTION).map((it) => it.images[0]?.url).filter((u): u is string => !!u && !!u.trim()))
           .catch(() => [] as string[]),
       ),
     )

@@ -26,6 +26,15 @@ describe('prefetchCurationCovers', () => {
     await prefetchCurationCovers(qc, ['a', 'b', 'c'], 'en');
     expect(mockGet).toHaveBeenCalledTimes(3); // 캐시(5분) 안 = 상세 재요청 0
   });
+  it('Codex #376 P2: 카드와 같은 사진 — images[0] ≠ imageUrl이면 images[0]을 받는다 · images 없으면 imageUrl', async () => {
+    mockGet.mockImplementation(() => Promise.resolve({ ...detail('a'), items: [
+      { ...item('a', 1), images: [{ url: 'https://cdn/a/gallery-1.jpg' }, { url: 'https://cdn/a/gallery-1b.jpg' }] },
+      item('a', 2),
+    ] }));
+    const urls = await prefetchCurationCovers(new QueryClient(), ['a'], 'en');
+    expect(urls).toEqual(['https://cdn/a/gallery-1.jpg', 'https://cdn/a/2.jpg']);
+    expect(urls).not.toContain('https://cdn/a/1.jpg');
+  });
   it('한 모음 상세 실패 = 그 모음만 빠짐(조용히) · 전부 실패 = prefetch 호출 0', async () => {
     mockGet.mockImplementation((url: string) => (url.includes('/b?') ? Promise.reject(new Error('503')) : Promise.resolve(detail(/seoul\/(\w+)/.exec(url)![1]))));
     const urls = await prefetchCurationCovers(new QueryClient(), ['a', 'b'], 'en');
