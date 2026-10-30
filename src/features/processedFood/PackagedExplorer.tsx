@@ -329,7 +329,8 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
         ) : null
       }
       onEndReachedThreshold={0.6}
-      onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage && !q.isFetchNextPageError) void q.fetchNextPage(); }}
+      // Codex #374 P2: "더 찾아보기"가 떠 있으면(빈 페이지 3번) 바닥에 다시 닿아도 부르지 않는다 — 버튼만 이어 부른다
+      onEndReached={() => { if (q.hasNextPage && emptyAction !== 'button' && !q.isFetchingNextPage && !q.isFetchNextPageError) void q.fetchNextPage(); }}
       contentContainerStyle={{ paddingTop: topPad, paddingBottom: 110 }}
       keyboardShouldPersistTaps="handled"
       onScroll={onScroll}

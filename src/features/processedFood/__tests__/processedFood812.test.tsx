@@ -746,6 +746,20 @@ describe('KB-927 Packaged 판정 칩 — 서버 verdict 필터 · 빈 페이지 
     expect(ids(t)).toContain('packaged-find-more');
   });
 
+  it('Codex #374 P2: "더 찾아보기"가 떠 있는 동안 목록 끝(onEndReached) = 요청 0 — 버튼만 이어 부른다', async () => {
+    serve((n) => (n === 0 ? { items: [ITEM], hasNext: true, nextCursor: 'c1' } : { items: [], hasNext: true, nextCursor: `c${n + 1}` }));
+    const t = await mount();
+    await press(t, 'packaged-verdict-safe');
+    // 1쪽(1건) 뒤 목록 끝 → 빈 페이지 3번 자동 → 버튼
+    await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-list' && typeof n.props.onEndReached === 'function')[0].props.onEndReached(); });
+    await flush();
+    expect(ids(t)).toContain('packaged-find-more');
+    const before = verdictCalls().length;
+    await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-list' && typeof n.props.onEndReached === 'function')[0].props.onEndReached(); });
+    await flush();
+    expect(verdictCalls()).toHaveLength(before);
+  });
+
   it('빈 페이지 뒤 건이 오면 목록 — "결과 없음"은 hasNext=false && 누적 0건일 때만', async () => {
     serve((n) => (n === 0 ? { items: [], hasNext: true, nextCursor: 'c1' } : { items: [ITEM], hasNext: false, nextCursor: null }));
     const t = await mount();
