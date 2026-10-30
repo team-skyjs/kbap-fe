@@ -17,10 +17,10 @@ describe('KB-921 판정 → 띠 톤·제목', () => {
     const v = read('src/features/processedFood/PackagedVerdict.tsx');
     expect(v).toMatch(/'AVOID' \? \[t\('packaged\.avoidMatchTitle'\)/);
     expect(v).toMatch(/'CAUTION' \? \[t\('packaged\.crossContactTitle'\)/);
-    expect(v).toContain("'SAFE_WITH_NOTE' ? [t('packaged.unverifiedTitle'), d.unclearIngredients.join(', ') || null]");
+    expect(v).toContain("'SAFE_WITH_NOTE' ? [t('packaged.unverifiedTitle'), unclearSubtitle(d)]"); // KB-936: 부제 = 라벨 → 원문 폴백
     expect(v).toContain("[t('packaged.noAvoidMatchTitle'), safeReason]");
     // 성분표 결과도 같은 부제(구 "일치하는 재료는 없어요…" 문장 0)
-    expect(read('src/features/scan/PackagedScanScreens.tsx')).toContain("avoid = result.unclearIngredients.join(', ') || null");
+    expect(read('src/features/scan/PackagedScanScreens.tsx')).toContain("avoid = unclearSubtitle(result)");
   });
 
   it('unverifiedTitle 10로케일(en 폴백 0) · ko = 일부 성분을 확인할 수 없어요 · 옛 키 제거', () => {

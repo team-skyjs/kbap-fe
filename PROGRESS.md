@@ -1,3 +1,8 @@
+## 2026-10-31 · P-562 KB-936 SAFE_WITH_NOTE 부제 사용자 언어 라벨(서버 #505)
+- 어댑터: 상세(이름 스캔 확정 상세 포함)·성분표 스캔 결과에 `unclearIngredientLabels` [{term, label}] 파싱(필드 없음 = [], 빈 label 버림). unclearIngredients 유지.
+- 부제 = 공용 `unclearSubtitle` — label 중복 제거 후 ", " 연결 → 라벨 0(구서버·빈 배열)이면 원문 unclearIngredients → 그것도 비면 생략. 상세 띠·성분표 결과 둘 다 같은 함수.
+- 신규 ko 0 · 라벨 문구 = 서버 데이터(K-130). 기기 미검증(QA 위임 — en·ja SAFE_WITH_NOTE 상품).
+
 ## 2026-10-30 — P-548 / KB-914 가공식품 화면 메뉴판 스캔과 통일 (R-137~R-142)
 
 - 공용 부품 추출(무변 이동): 음식 상세 판정 띠 → `components/VerdictBand` · 재료 타일 → `components/IngredientTile`(IngChainImage 포함) · 메뉴판 회피 칩 줄 → `ScanRichList` `WarnChips` · 메뉴판 오류 화면 → `features/scan/ScanDarkMessage`

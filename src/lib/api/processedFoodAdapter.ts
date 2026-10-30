@@ -59,6 +59,8 @@ export type ProcessedFoodDetail = ProcessedFoodSummary & {
   mayContain: ProcessedMayContain[];
   /** 내용 불명 원재료(서버 사전) — 한국어 원문 */
   unclearIngredients: string[];
+  /** KB-936(서버 #505): 내용 불명 용어의 요청 언어 라벨 — 구서버 = [] */
+  unclearIngredientLabels: UnclearLabel[];
   /** 비회원·회피 0개: 한국 표시 의무 주요 알레르기 중 포함된 코드. **필드 없음(구서버·부분 배포) = null = 모름** — 빈 배열(서버가 확인한 0)과 구별(Codex #338 P1) */
   majorAllergens: string[] | null;
   /** 원재료 — 번역(#462, 요청 언어) 없으면 null(원문만). 원문 = rawMaterials */
@@ -106,6 +108,7 @@ export type DetailWire = SummaryWire & {
   mayContainMatches?: MatchWire[] | null;
   mayContain?: { code: string; source?: string; evidence: string }[] | null;
   unclearIngredients?: string[] | null;
+  unclearIngredientLabels?: { term?: string | null; label?: string | null }[] | null;
   majorAllergens?: string[] | null;
   ingredients?: { translated?: string | null; original?: string | null } | null;
   allergenStatement?: { translated?: string | null; original?: string | null } | null;
@@ -177,6 +180,10 @@ export type VerdictChipRisk = 'safe' | 'caution' | 'danger';
 export const verdictsForRisk = (risk: VerdictChipRisk): ProcessedVerdict[] => VERDICTS.filter((v) => VERDICT_RISK[v] === risk);
 
 // 판정 원소 변환 — 상세(GET /processed-foods/{id})와 성분표 분석(scan/label)이 같은 모양이라 한 벌로
+export type UnclearLabel = { term: string; label: string };
+/** KB-936: 필드 없음(구서버) = [] · 빈 term/label 항목은 버림 */
+const adaptUnclearLabels = (ls: DetailWire['unclearIngredientLabels']): UnclearLabel[] =>
+  (ls ?? []).map((l) => ({ term: (l.term ?? '').trim(), label: (l.label ?? '').trim() })).filter((l) => l.label);
 const adaptDetections = (ds: DetailWire['detections'] | null | undefined): ProcessedDetection[] =>
   (ds ?? []).map((d) => ({ code: d.code, evidence: d.evidence, fromLabel: d.source === 'ALLERGEN_DECLARATION' }));
 const adaptAvoidance = (as: NonNullable<DetailWire['avoidance']>): ProcessedAvoidance[] =>
@@ -217,6 +224,7 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     mayContainMatches: adaptMatches(w.mayContainMatches),
     mayContain: (w.mayContain ?? []).map((m) => ({ code: m.code, evidence: m.evidence })),
     unclearIngredients: (w.unclearIngredients ?? []).map((u) => u.trim()).filter(Boolean),
+    unclearIngredientLabels: adaptUnclearLabels(w.unclearIngredientLabels),
     majorAllergens: w.majorAllergens == null ? null : w.majorAllergens,
     // #462 전 = 원문만(번역 null). 원문은 서버 ingredients.original → 없으면 rawMaterials
     ingredients: ingredientsOf(w.ingredients, blankToNull(w.rawMaterials)),
@@ -263,6 +271,7 @@ export type LabelScanResult = {
   avoidMatches: ProcessedMatch[];
   mayContainMatches: ProcessedMatch[];
   unclearIngredients: string[];
+  unclearIngredientLabels: UnclearLabel[];
   majorAllergens: string[] | null;
   ingredients: { translated: string | null; original: string | null };
   allergenStatement: { translated: string | null; original: string } | null;
@@ -289,6 +298,7 @@ export type LabelScanWire = {
   avoidMatches?: MatchWire[] | null;
   mayContainMatches?: MatchWire[] | null;
   unclearIngredients?: string[] | null;
+  unclearIngredientLabels?: { term?: string | null; label?: string | null }[] | null;
   majorAllergens?: string[] | null;
   ingredients?: { translated?: string | null; original?: string | null } | null;
   allergenStatement?: { translated?: string | null; original?: string | null } | null;
@@ -303,6 +313,7 @@ export function adaptLabelScan(w: LabelScanWire): LabelScanResult {
     avoidMatches: adaptMatches(w.avoidMatches),
     mayContainMatches: adaptMatches(w.mayContainMatches),
     unclearIngredients: (w.unclearIngredients ?? []).map((u) => u.trim()).filter(Boolean),
+    unclearIngredientLabels: adaptUnclearLabels(w.unclearIngredientLabels),
     majorAllergens: w.majorAllergens == null ? null : w.majorAllergens,
     // 원문 = 서버 ingredients.original → 없으면 읽은 원문(rawText)
     ingredients: ingredientsOf(w.ingredients, rawText),
