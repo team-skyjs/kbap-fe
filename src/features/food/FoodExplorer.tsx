@@ -434,7 +434,7 @@ export function FoodExplorer({
           스크롤 밖 우측 고정. */}
       {/* KB-909(Q-367): 홈(embedded)도 Food 탭과 같은 한 줄 가로 스크롤 + 끝 페이드(줄바꿈 금지 — XXL에서 Caution만 둘째 줄로 내려갔다).
           Food 탭 정렬 버튼은 큰 글씨(fontScale > 1)면 칩 아래 오른쪽 자기 줄 — 칩 줄이 정렬 버튼 폭만큼 좁아져 칩이 잘려 보였다 */}
-      <View style={variant === 'screen' ? styles.chipRowScreen : styles.chipRowHome}>
+      <View style={variant === 'screen' ? [styles.chipRowScreen, sortOwnRow && styles.chipRowScreenStack] : styles.chipRowHome}>
         <View style={variant === 'screen' && !sortOwnRow ? styles.chipLineWrap : styles.chipLineFull}>
           <ScrollView
             ref={chipScrollRef}
@@ -469,7 +469,7 @@ export function FoodExplorer({
           )}
         </View>
         {variant === 'screen' && (
-          <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="food-sort">
+          <Pressable style={[styles.sortBtn, sortOwnRow && styles.sortBtnOwnRow]} onPress={() => setSortSheet(true)} testID="food-sort">
             <Text style={styles.sortLabel} numberOfLines={1}>{t(`food.sort_${sort}`)}</Text>
             <IconChevronDown size={16} color="#4B4F58" />
           </Pressable>
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
   // A-HM-04: 홈 칩 줄 위아래 18/14(좌우 여백은 스크롤 콘텐츠 paddingLeft 20·끝 페이드 폭)
   chipRowHome: { paddingTop: 18, paddingBottom: 14 },
   // P-340 2-A: 한 줄 고정(칩 34) + pad 14/12 + 하단 헤어라인 — 정렬 버튼은 스크롤 밖 우측
-  chipRowScreen: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // P-351 ②(#114 P2): 헤어라인 아래 12 — top은 ListHeader라 contentContainer paddingTop은 헤더째 밀림
+  chipRowScreen: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // P-351 ②(#114 P2): 헤어라인 아래 12 — top은 ListHeader라 contentContainer paddingTop은 헤더째 밀림
   // KB-707: 오른쪽 끝 여백 = 페이드 폭 — 끝까지 밀면 마지막 칩이 페이드·정렬 버튼에 가리지 않는다(옛 8 < 페이드 24 → 마지막 칩 끝 16pt가 늘 덮였다)
   chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: CHIP_FADE_W }, // 최소 높이 = chipRowHeight(fontScale) 인라인 — KB-903(T-101): 고정 height면 칩(라벨 줄 + 여백 + 보더)이 눌려 라벨이 아래로 넘치고 ✓/✗만 가운데(Android 2.0)
   chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: CHIP_FADE_W },
@@ -746,8 +746,11 @@ const styles = StyleSheet.create({
   soonChip: { backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 2, paddingHorizontal: 8 },
   soonChipText: { fontSize: 13, fontWeight: '500', color: '#6A6F7C' },
   chipLineWrap: { flex: 1, minWidth: 0 },
-  chipLineFull: { width: '100%' }, // KB-909: 홈·큰 글씨 Food 탭 = 칩 줄이 전폭(정렬 버튼은 다음 줄 오른쪽)
+  chipLineFull: { alignSelf: 'stretch' }, // KB-909: 홈·큰 글씨 Food 탭 = 칩 줄이 전폭(정렬 버튼은 다음 줄 오른쪽)
+  // KB-909 Q-367b: 큰 글씨 = 세로 흐름(칩 줄 → 정렬 버튼). 구 flexWrap 줄바꿈은 둘째 줄이 행 높이에 안 잡혀 그리드가 정렬 버튼을 덮었다(XXL)
+  chipRowScreenStack: { flexDirection: 'column', alignItems: 'stretch' },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 8 },
+  sortBtnOwnRow: { alignSelf: 'flex-end' }, // 자기 줄 = 오른쪽(칩 줄 아래)
   sortLabel: { fontSize: 16, fontWeight: '700', color: '#4B4F58' },
 
   // P-317 홈 레일(그리드 카드 동일 비율 — 폭 174 고정, gap 12, 좌우 20)
