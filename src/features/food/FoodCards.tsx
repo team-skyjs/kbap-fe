@@ -86,6 +86,12 @@ export function FoodGridCard({
               {food.nameKo}
             </Text>
           )}
+          {/* KB-948(예진 10/31): 리뷰가 있으면 한국어 줄 아래 "★ 4.5 (12)" — 0건이면 줄째 없음(자리 확보 0) */}
+          {FLAGS.reviewsEnabled && food.overall.count > 0 && (
+            <View testID={`food-card-rating-${food.foodId}`}>
+              <OverallRating average={food.overall.average} count={food.overall.count} />
+            </View>
+          )}
           {!guest && <Text style={[styles.gstatus, { color: riskTextStrong[risk] } /* P-284: 12/700 상태 텍스트 = 대비 토큰 */]}>{riskLabel}</Text>}
         </View>
         <Pressable style={[styles.gbm, saved && styles.gbmSaved]} onPress={onBookmark} hitSlop={6} testID={`home-bm-${food.foodId}`}>

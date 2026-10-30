@@ -53,7 +53,7 @@ import type { FoodCard } from '@/lib/api/types';
 
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 const FOOD = (id: string): FoodCard => ({
-  foodId: id, name: `Food ${id}`, nameKo: `음식 ${id}`, photoUrl: null, risk: 'safe',
+  foodId: id, name: `Food ${id}`, nameKo: `음식 ${id}`, photoUrl: null, risk: 'safe', overall: { average: null, count: 0 },
 } as FoodCard);
 
 it('P-333 ① padOddGrid — 홀수 = 자리표시자 1개로 마지막 행 2셀 유지 · 짝수 = 무변', () => {
