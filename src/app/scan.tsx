@@ -1438,7 +1438,7 @@ const styles = StyleSheet.create({
   swOn: { backgroundColor: C.primary },
   knob: { width: 20, height: 20, borderRadius: radius.pill, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
   knobOn: { alignSelf: 'flex-end' },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 8 },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 14 }, // KB-926: 좌우 = 필터 칩(Chip 14)과 같게 — 8이면 알약 곡선에 글자가 붙어 잘릴 듯 보였다
   sortLabel: { fontSize: 16, fontWeight: '700', color: '#4B4F58' },
   // P-161: 확인 모달 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 전사
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },

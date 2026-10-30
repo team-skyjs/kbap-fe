@@ -62,7 +62,6 @@ it('① 토큰 스냅샷 — 4차 신값 잠금(키 유지·값 교체 + 신규 
     riskToneLine: riskTone.caution.line,
     riskTextSafe: riskText.safe,
     sh1: shadow.sh1,
-    shBadge: shadow.shBadge,
     glow: shadowGlow('#FFC700'),
   }).toMatchSnapshot();
 });

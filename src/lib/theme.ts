@@ -8,7 +8,7 @@
 
 /** KB-429(P-274) 디자인 4차: 값 = 커맨드 센터 Figma 실측(노드 ID는 발주문) —
  *  키는 전부 유지, 값만 교체. 신규 키 = inkMute·inkDisabled·line2(+아래
- *  riskText·shadowGlow·shBadge·type). */
+ *  riskText·shadowGlow·type). */
 export const color = {
   primary: '#FF7134', // Button/Primary 4123:3985 · FAB 4095:1858
   primaryPress: '#BE460F', // P-284: 최종본 Main color-pressed(2209:997) — 9/6 예진 'A 시안대로'
@@ -139,14 +139,6 @@ export const shadow = {
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 8 },
     elevation: 12,
-  },
-  // risk 썸네일 배지(4095:1430): 1/1 blur 3.7 op 0.6
-  shBadge: {
-    shadowColor: '#000000',
-    shadowOpacity: 0.6,
-    shadowRadius: 3.7,
-    shadowOffset: { width: 1, height: 1 },
-    elevation: 3,
   },
 } as const;
 

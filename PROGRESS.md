@@ -11,6 +11,12 @@
 - Codex #369 2R P1: 가공 SAFE 띠 제목 = 매칭 범위 키(구 음식 상세 detail.verdictSafe "안심하고 드세요" — 보장 표현 금지) · 가공 띠 제목 전부 가공 전용 키
 - 신규 ko 문구(K-항목 — 안전 문구, 예진 승인 대상): `packaged.noAvoidMatchTitle` = 피하는 재료와 겹치는 것 없음 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
 
+## 2026-10-30 · P-555 KB-926 리본 그림자 실루엣 + 검색 스캔 버튼 radius + 정렬 알약 패딩
+- ① RiskBadge 그림자 = 리본 경로(흰 보더 폭 스트로크 포함) 반투명 두 겹, 1/1 오프셋 뒤 Svg — 구 shBadge(컨테이너 View 그림자)는 직사각형. shBadge 토큰 제거. flat(가공식품 카드)은 그대로 그림자 없음.
+- ② SearchScanButton radius pill → md(KB-909 직전 8 → 토큰 12, 커맨드 결정 (a)) — 홈·Food·Packaged 공용. 탭바 스캔 원형 무변.
+- ③ 정렬 알약 4곳(Food·Reviews 피드·음식 리뷰 목록·스캔 결과) 좌우 8 → 14(Chip과 같게).
+- 잠금 ribbonShadowScanRadius926 + designParity315·design4Tokens429 갱신. 게스트 시뮬 전/후 캡처(스캔 버튼·정렬 알약, 큰 글자 포함). 리본은 회원 판정에서만 보여 캡처 QA.
+
 ## 2026-10-30 · P-554 KB-924 한국어 문구 승인 반영(ko 10키)
 - 예진 승인(10/30) 안전·법적 5키(packaged.noAvoidMatchTitle·detail.verdictMayContain·gate.photoRemovalTitle·ugc.consentAgree·gate.photoRemovalSub) + Codex 권고 5키(states.offlineBody·community.blockConfirmBody·saved.emptyBody·packagedScan.freeExplain·profile.languageHintAndroid) ko 값만 교체. 다른 로케일·코드 0.
 - 잠금: copyApproved924(10키 값·{{list}} 토큰·직선 따옴표·가운데 점 0) + 914·907 단언 갱신.

@@ -17,8 +17,10 @@ it('① 회색 띠 — 사진 컨테이너 정적 bg 제거(폴백만 유지)·�
   expect(cards).toContain('rthumb: { width: 100, height: 100, borderRadius: radius.md }');
   // P-353 ③: 아이콘 폴백 박스 소멸 — CardPhoto가 null/실패 시 기본 음식 이미지
   expect(cards).toContain('recyclingKey={food.foodId} borderRadius={radius.md} />'); // 그리드 라운딩
-  // 배지 그림자(shBadge)는 유지 — 시안 DROP 1,1 3.7 0.6 동일
-  expect(fs.readFileSync('src/components/RiskBadge.tsx', 'utf8')).toContain('shadow.shBadge');
+  // KB-926: 배지 그림자 = 리본 실루엣 경로(컨테이너 View 그림자 shBadge는 직사각형이라 폐기) — 시안 DROP 오프셋 1,1
+  const rb = fs.readFileSync('src/components/RiskBadge.tsx', 'utf8');
+  expect(rb).not.toContain('shadow.shBadge');
+  expect(rb).toContain('testID="risk-badge-shadow"');
 });
 
 it('② 랭킹 카드 — 그라데이션 #FF7134 α0→0.05·보더 hair·메달 글로우 제거·숫자 16/800', () => {
