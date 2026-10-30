@@ -2,6 +2,7 @@
 - 상세 순서 = 음식 상세: 사진 → 판정 띠(화면 폭) → 이름 → 굵은 구분선 → What's inside(음식 상세 제목 키·칩 필터·재료 타일 한 그리드 = 감지·일치 + 주요 알레르기 + 혼입 가능, insideCodes) → 접힌 "Ingredients and source"(원재료 원문·알레르기 표시·출처) → 굵은 구분선 → 리뷰. 구 감지 카드·Major allergens 문단·원재료 미리보기·See detail 소멸.
 - 피할 재료 설정·로그인 유도 버튼 제거(상세·성분표 결과 — 회피 0개 결과 = Done만). 이름 스캔 후보 단계 = 제목 + 목록 + None of these(무료 배지·설명, "N possible matches", 개인화 안내 제거 — 무료 차감은 서버 그대로).
 - KB-947(예진 10/31 결정): 비회원·회피 0개 회원 = Packaged 카드 safe 리본 + 상세 Safe 띠(가공 SAFE 키 그대로). 로그인 + 프로필 대기·실패 = 리본 0, 원재료·알레르기 표시 둘 다 없는 제품 = 확인 못 함(false-safe 0). 판정 칩·음식 리본 무변.
+- Codex #383 1R P1: 카드 safe 리본 = 서버 labelKnown(S-928 가칭, 원재료·알레르기 표시 근거 있음) true만 — false·필드 없음(구서버) = 리본 0. 서버 필드 dev 반영 전엔 미설정 사용자 카드 리본 0이 정상.
 - 안 쓰게 된 키 10로케일 정리: packaged.setAvoidIngredients·signInToPersonalize·seeDetail, packagedScan.possibleMatches. 신규 ko 0. 기기 미검증(QA 위임).
 
 ## 2026-10-31 · P-562 KB-936 SAFE_WITH_NOTE 부제 사용자 언어 라벨(서버 #505)

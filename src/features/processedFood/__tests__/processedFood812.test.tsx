@@ -655,19 +655,26 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     expect(mockGet).toHaveBeenCalledTimes(2);
   });
 
-  it('Codex #338 P1 → KB-947(예진 10/31): 회피 0개·비회원 = 응답 verdict 무시하고 safe 리본만 · 로그인 + 프로필 대기 = 리본 0', async () => {
+  it('Codex #338 P1 → KB-947(예진 10/31): 회피 0개·비회원 = 응답 verdict 무시 · safe 리본은 labelKnown true만(Codex #383 P1 — false·필드 없음 = 리본 0) · 로그인 + 프로필 대기 = 리본 0', async () => {
     const badges = (t: ReactTestRenderer) => ids(t).filter((i) => i.startsWith('badge-'));
+    // id 7 = 표시 근거 있음 · 8 = 없음(false) · 9 = 필드 없음(구서버)
+    const known = () => { const r = V4(); r.items[0] = { ...r.items[0], labelKnown: true } as typeof r.items[0]; r.items[1] = { ...r.items[1], labelKnown: false } as typeof r.items[1]; return r; };
     mockGuest = false; mockMe = { id: '41', restrictions: [] };
-    mockGet.mockResolvedValueOnce(V4());
+    mockGet.mockResolvedValueOnce(known());
     const m0 = await mount();
-    expect(badges(m0).length).toBeGreaterThan(0);
-    expect(new Set(badges(m0))).toEqual(new Set(['badge-safe']));
+    expect(badges(m0)).toEqual(['badge-safe']); // 7만 — AVOID(8)·필드 없음(9) 리본 0
     act(() => m0.unmount());
     mockGuest = true; mockMe = undefined;
-    mockGet.mockResolvedValueOnce(V4());
-    expect(new Set(badges(await mount()))).toEqual(new Set(['badge-safe']));
+    mockGet.mockResolvedValueOnce(known());
+    const g = await mount();
+    expect(badges(g)).toEqual(['badge-safe']);
+    act(() => g.unmount());
+    mockGet.mockResolvedValueOnce(V4()); // 구서버 = 필드 전부 없음
+    const old = await mount();
+    expect(badges(old)).toEqual([]);
+    act(() => old.unmount());
     mockGuest = false; mockMe = undefined;
-    mockGet.mockResolvedValueOnce(V4());
+    mockGet.mockResolvedValueOnce(known());
     expect(badges(await mount())).toEqual([]);
   });
 
