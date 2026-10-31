@@ -9,6 +9,11 @@ export function detectedCodes(d: { detections: ProcessedDetection[]; avoidMatche
   return [...new Set([...d.avoidMatches.map((m) => m.code), ...d.mayContainMatches.map((m) => m.code), ...d.detections.map((x) => x.code)])];
 }
 
+/** KB-945 "What's inside" 한 그리드 = 감지·일치 + 주요 알레르기(비회원·회피 0개) + 혼입 가능 — 구 감지 카드·주요 알레르기 문단을 합침(중복 제거, 서버 순서) */
+export function insideCodes(d: { detections: ProcessedDetection[]; avoidMatches: ProcessedMatch[]; mayContainMatches: ProcessedMatch[]; majorAllergens: string[] | null; mayContain: { code: string }[] }): string[] {
+  return [...new Set([...detectedCodes(d), ...(d.majorAllergens ?? []), ...d.mayContain.map((m) => m.code)])];
+}
+
 /** 코드 → 타일 마크(판정이 있을 때만). 회피 일치가 혼입 일치보다 먼저(더 보수적인 쪽) */
 export function tileRisk(code: string, d: VerdictFields, personalized: boolean): RiskState | null {
   if (!personalized || d.verdict == null) return null;

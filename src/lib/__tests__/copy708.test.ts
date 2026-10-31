@@ -18,7 +18,7 @@ const PLURAL_BASES = ['search.resultCount', 'scan.freeLeft', 'saved.count', 'myF
   // KB-907(T-103): 나가기 확인 "2 added item(s)" → 복수형
   'scan.retakeBodyWithCart',
   'ranking.ptsTo',
-  'packagedScan.possibleMatches', 'packagedScan.reviewPhotos', 'packagedScan.freeFor'] // KB-865 ③: 후보 n개 · 사진 n장 보기 / KB-777 B3-6: 남은 점수; // KB-765: 광고 n편 보기 · KB-781: 작성 시각
+  'packagedScan.reviewPhotos', 'packagedScan.freeFor'] // KB-865 ③: 후보 n개 · 사진 n장 보기 / KB-777 B3-6: 남은 점수; // KB-765: 광고 n편 보기 · KB-781: 작성 시각
 const get = (l: string, path: string): string | undefined => {
   const [sec, key] = path.split('.');
   return (load(l) as unknown as Record<string, Record<string, string>>)[sec]?.[key];

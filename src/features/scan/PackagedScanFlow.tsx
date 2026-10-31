@@ -338,10 +338,10 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       <>
       <CandidateScreen
         testID="pscan-candidates"
-        banner={<PackagedFreeLine />}
+        // KB-945(예진 10/31): 후보 단계 = 제목 + 후보 목록 + None of these만 — 무료 배지·설명 줄·"N possible matches"·회피 설정 안내 제거(무료 창 차감 자체는 서버 그대로)
         title={t('packagedScan.matchTitle')}
-        subtitle={t('packagedScan.possibleMatches', { count: step.candidates.length })}
-        note={m0 ? t('packagedScan.personalNote') : null}
+        subtitle={null}
+        note={null}
         items={step.candidates}
         pickingId={step.selectedId}
         // KB-914(R-138): 줄 탭 = 바로 확정(구 선택 → 하단 확정 버튼). 확정 화면(here)은 고른 줄을 기억한 후보 단계 — 한도에 걸리면 그대로 돌아온다
@@ -484,7 +484,6 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         banner={<PackagedFreeLine />}
         onAddSide={() => goStep({ kind: 'handoff', analysisId: result.analysisId, pages, photos, from: step })}
         onReview={() => goStep({ kind: 'labelPages', analysisId: result.analysisId, pages, photos, from: step })}
-        onSetAvoid={() => router.push('/profile/restrictions' as Href)}
         onDone={onClose}
       />
     );
