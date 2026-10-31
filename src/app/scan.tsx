@@ -58,6 +58,7 @@ import { segmentMenu, formatKrw, orderNameKo, scanPriceParam, type MenuDish, typ
 // P-219→P-220: 실패 분류·계측 사유 매핑은 순수 모듈 한 곳(전수 유닛 대상)
 import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/lib/scan/scanErrors';
 import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
+import { upscaleLongSide, wysiwygCropRect } from '@/lib/scan/coverCrop'; // KB-946: 본문 중간 import에서 위로
 
 // P-354(KB-516): 정렬 라벨 — 메뉴판 순 → 가격 높은순 → 가격 낮은순(시트 순서 동일)
 import { recordScanSuccess } from '@/lib/reviewPrompt';
@@ -68,7 +69,6 @@ const SORT_LABEL_KEY: Record<ResultSortMode, string> = {
   priceAsc: 'scan.sortPriceAsc',
 };
 import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
-import { wysiwygCropRect } from '@/lib/scan/coverCrop';
 import { dismissNudge, isNudgeDismissed } from '@/lib/scan/nudgeSession';
 import { personalRisk } from '@/lib/risk';
 import { spring } from '@/lib/motion';
@@ -605,6 +605,24 @@ export default function Scan() {
     }
   }
 
+  /** KB-946: 갤러리 이미지가 작으면(긴 변 < 2000) 비율 그대로 키운 JPEG — 카메라 크롭본과 비슷한 OCR 입력. 미탑재·실패 = 원본(cropToPreview와 같은 규칙).
+   *  ponytail: 투명 PNG 흰 배경 합성은 생략(실측 원인 = 해상도) — 투명 배경 실패가 보이면 extent로 추가 */
+  async function upscaleForOcr(pic: NonNullable<Photo>): Promise<NonNullable<Photo>> {
+    const size = upscaleLongSide(pic.width, pic.height);
+    if (!size) return pic;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ImageManipulator, SaveFormat } = require('expo-image-manipulator') as typeof import('expo-image-manipulator');
+      const rendered = await ImageManipulator.manipulate(pic.uri).resize(size).renderAsync();
+      const saved = await rendered.saveAsync({ compress: 0.9, format: SaveFormat.JPEG });
+      console.log('[scan] gallery OCR upscale', JSON.stringify({ from: { w: pic.width, h: pic.height }, to: size }));
+      return { uri: saved.uri, width: saved.width ?? size.width, height: saved.height ?? size.height };
+    } catch (e) {
+      console.log('[scan] gallery upscale 생략:', (e as Error)?.message ?? e);
+      return pic;
+    }
+  }
+
   async function pickFromGallery(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, menu = true) {
     if (capturingRef.current) return; // P-062⓪: 셔터와 동일 동기 가드
     if (isGuest) return setGateOpen(true);
@@ -624,7 +642,9 @@ export default function Scan() {
       });
       if (result.canceled || !result.assets?.length) return;
       const a = result.assets[0];
-      await onShot({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });
+      const picked = { uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 };
+      // KB-946: 가공식품·성분표(온디바이스 OCR) = 작은 이미지는 OCR 전 키움 — 메뉴판 스캔은 무변
+      await onShot(menu ? picked : await upscaleForOcr(picked));
     } catch (e) {
       if (menu) fail('capture', (e as Error)?.message ?? String(e));
       else console.log('[scan] packaged library pick failed:', (e as Error)?.message ?? e);
