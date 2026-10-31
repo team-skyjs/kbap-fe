@@ -1,3 +1,7 @@
+## 2026-10-31 · P-568 KB-948 후속 — 카드 평점 줄을 한국어 이름 줄 스타일로(예진 실기 teamtest 0f5f2db)
+- OverallRating 카드 변형(textStyle·starSize prop): 평균·개수 = 같은 글자 하나(평균만 굵게 0) · 행 minHeight 없음 = 그 글자 lineHeight를 따름(큰 글자 대응 유지). 음식 카드 = gko(16/500 ink2)·별 13 · Packaged 카드 = ProductName rowKo(meta 14/400 ink2)·별 12.
+- 다른 사용처(Top rated 행·이름 스캔 후보 줄) = prop 없음 = 기존 16/700·13/700·minHeight 18 그대로. 줄 간격(marginTop)은 무변. 신규 ko 0. 기기 미검증(QA 보통·큰 글자).
+
 ## 2026-10-31 · P-567 KB-948 음식·가공식품 2열 카드 정리(예진 Mobbin 벤치마킹)
 - 공용 FoodGridCard(Dishes 그리드·홈 레일·검색·저장) = 한국어 줄 아래 리뷰 있으면 OverallRating "★ 4.5 (12)" 한 줄(reviewsEnabled · count 0 = 줄째 없음). 영어 2줄 말줄임·한국어 1줄은 기존 그대로.
 - Packaged ProductCard = 제조사 줄 제거(스크린리더 라벨엔 유지) · 이름 상자 위 간격 10(음식 카드 gmeta와 같음) · 평점 줄 기존 그대로(rating null = 없음).

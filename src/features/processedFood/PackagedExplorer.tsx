@@ -26,7 +26,7 @@ import { browseUnsupported, emptyPageAction, endReachedShouldFetch, useProcessed
 import { PACKAGED_TYPES, packagedTypeKey, VERDICT_RISK, verdictsForRisk, type PackagedType, type ProcessedFoodSummary, type VerdictChipRisk } from '@/lib/api/processedFoodAdapter';
 import { chipRowHeight, SearchScanButton } from '@/features/food/FoodExplorer';
 import { ChipScrollRow } from '@/components/ChipScrollRow';
-import { ProductName } from './ProductName';
+import { ProductName, productNameKoRowStyle } from './ProductName';
 
 export type FoodSegment = 'dishes' | 'packaged';
 
@@ -121,7 +121,7 @@ export function ProductCard({ item, width, onOpen, personalized = true, unset = 
       <ProductName name={item.name} nameKo={item.nameKo} style={card.nameBox} testID={`packaged-name-${item.id}`} />
       {item.rating && (
         <View testID={`packaged-rating-${item.id}`}>
-          <OverallRating average={item.rating.average} count={item.rating.count} style={card.rating} />
+          <OverallRating average={item.rating.average} count={item.rating.count} style={card.rating} textStyle={productNameKoRowStyle} starSize={12} /* P-568: 한국어 이름 줄 글자(meta 14) · 별도 그 크기로 */ />
         </View>
       )}
     </Pressable>

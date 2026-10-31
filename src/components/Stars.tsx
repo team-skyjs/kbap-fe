@@ -5,7 +5,7 @@
  * 플랫폼 사고라 클립 의존 자체를 없애 양 플랫폼 동일 경로로 만든다).
  */
 import * as React from 'react';
-import { View } from 'react-native';
+import { View, type TextStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { color as C, font } from '@/lib/theme';
 import { Txt } from './Txt';
@@ -76,15 +76,21 @@ export function Star({
 
 /** 음식 목록 카드(Top rated)의 종합 평점 줄 — 채운 별 14 + 평균(14/700) + (개수)(12/700). KB-865: 가공식품 카드도 같은 표시(예진 10/22 "기존 별 그대로").
  *  평균 null = 빈 별 + 대시. */
-export function OverallRating({ average, count, numTestID, style }: { average: number | null; count: number; numTestID?: string; style?: object }) {
+export function OverallRating({ average, count, numTestID, style, textStyle, starSize = 14 }: {
+  average: number | null; count: number; numTestID?: string; style?: object;
+  /** KB-948 후속(P-568) 카드 변형: 평균·개수 = 이 글자 스타일 하나(같은 굵기 — 카드 한국어 이름 줄 토큰). 넘기면 행 높이 = 그 글자 lineHeight(minHeight 0) */
+  textStyle?: TextStyle;
+  starSize?: number;
+}) {
+  const card = textStyle != null;
   return (
     // KB-948 QA: 높이 고정 18 = 큰 글자에서 평균 숫자 하단 잘림 → minHeight + 글자 lineHeight 18(기본 크기 18 그대로, 큰 글자면 lineHeight가 같이 커져 줄이 늘어남)
-    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 18 }, style]} testID="overall-rating-row">
-      <Star size={14} fillPct={average == null ? 0 : 100} />
-      <Txt style={{ fontSize: 16, lineHeight: 18, fontWeight: '700', color: average == null ? C.inkMute : C.ink }} testID={numTestID}>
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 4 }, !card && { minHeight: 18 }, style]} testID="overall-rating-row">
+      <Star size={starSize} fillPct={average == null ? 0 : 100} />
+      <Txt style={card ? [textStyle, average == null && { color: C.inkMute }] : { fontSize: 16, lineHeight: 18, fontWeight: '700', color: average == null ? C.inkMute : C.ink }} testID={numTestID}>
         {average == null ? '\u2014' : average.toFixed(1)}
       </Txt>
-      <Txt style={{ fontSize: 13, lineHeight: 18, fontWeight: '700', color: C.ink2 }}>({count})</Txt>
+      <Txt style={card ? textStyle : { fontSize: 13, lineHeight: 18, fontWeight: '700', color: C.ink2 }}>({count})</Txt>
     </View>
   );
 }

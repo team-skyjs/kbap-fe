@@ -31,3 +31,6 @@ const st = StyleSheet.create({
   chip: { ...type.button, fontFamily: font.bodyBold, fontWeight: '700', lineHeight: 22, color: C.ink },
   chipKo: { ...type.meta, fontFamily: font.ko, fontWeight: '400', lineHeight: 19, color: C.ink2 },
 });
+
+/** KB-948 후속(P-568): 카드 평점 줄 = 한국어 이름 줄과 같은 글자(Packaged 카드) */
+export const productNameKoRowStyle = st.rowKo;
