@@ -114,3 +114,29 @@ describe('KB-948 QA: 큰 글자에서 평점 줄 잘림', () => {
     for (const n of texts) expect(StyleSheet.flatten(n.props.style).lineHeight).toBe(18);
   });
 });
+
+describe('KB-948 후속(P-568): 카드 평점 줄 = 한국어 이름 줄 글자', () => {
+  const flatTexts = (t: ReactTestRenderer) => t.root.findAll((n) => n.type === 'Text').map((n) => ({ text: [n.props.children].flat().join(''), style: StyleSheet.flatten(n.props.style) }));
+  it('음식 카드: 평균·개수 = 한국어 이름 줄(gko)과 같은 fontSize·fontWeight·color · 평균만 굵게 0 · 별 13 · 행 minHeight 0', () => {
+    const t = card({ average: 5, count: 1 });
+    const all = flatTexts(t);
+    const ko = all.find((x) => x.text === '비빔밥')!.style;
+    for (const label of ['5.0', '(1)']) {
+      const st = all.find((x) => x.text === label)!.style;
+      expect([st.fontSize, st.fontWeight, st.color, st.fontFamily]).toEqual([ko.fontSize, ko.fontWeight, ko.color, ko.fontFamily]);
+    }
+    const r = t.root.findAllByType(OverallRating)[0];
+    expect(r.props.starSize).toBe(13);
+    const row = r.findAll((n) => typeof n.type === 'string' && n.props.testID === 'overall-rating-row')[0];
+    const rs = StyleSheet.flatten(row.props.style);
+    expect([rs.height, rs.minHeight]).toEqual([undefined, undefined]); // 글자 lineHeight를 따름(큰 글자 대응)
+  });
+  it('다른 사용처(변형 없음) = 기존 그대로: 평균 16/700 · 개수 13/700 · lineHeight 18 · 행 minHeight 18 · 별 14', () => {
+    const t = render(<OverallRating average={4.2} count={9} />);
+    const all = flatTexts(t);
+    expect(all.find((x) => x.text === '4.2')!.style).toMatchObject({ fontSize: 16, fontWeight: '700', lineHeight: 18 });
+    expect(all.find((x) => x.text === '(9)')!.style).toMatchObject({ fontSize: 13, fontWeight: '700', lineHeight: 18 });
+    const row = t.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'overall-rating-row')[0];
+    expect(StyleSheet.flatten(row.props.style).minHeight).toBe(18);
+  });
+});

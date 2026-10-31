@@ -6,6 +6,7 @@
 import * as fs from 'fs';
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { StyleSheet } from 'react-native';
 
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k}:${JSON.stringify(o)}` : k) }), initReactI18next: { type: '3rdParty', init: () => {} } }));
 jest.mock('react-native-reanimated', () => {
@@ -694,6 +695,12 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     const name7 = t.root.findAll((n) => n.props?.testID === 'packaged-name-7')[0];
     expect(name7.findAll((n) => n.props?.numberOfLines === 2).length).toBeGreaterThan(0);
     expect(name7.findAll((n) => n.props?.numberOfLines === 1 && n.props.children === '바나나맛우유').length).toBeGreaterThan(0);
+    // P-568: 평점 줄 글자 = 한국어 이름 줄과 같은 글자(평균·개수 같은 굵기)
+    const flat = (n: { props: { style: unknown } }) => StyleSheet.flatten(n.props.style as never) as { fontSize?: number; fontWeight?: string; color?: string };
+    const ko = flat(name7.findAll((n) => n.type === 'Text' && n.props.children === '바나나맛우유')[0]);
+    const rating = t.root.findAll((n) => n.props?.testID === 'packaged-rating-7')[0].findAll((n) => n.type === 'Text');
+    expect(rating.map((n) => [n.props.children].flat().join(''))).toEqual(['4.7', '(12)']);
+    for (const n of rating) expect([flat(n).fontSize, flat(n).fontWeight, flat(n).color]).toEqual([ko.fontSize, ko.fontWeight, ko.color]);
   });
 
   it('Codex #336 → KB-921: SAFE_WITH_NOTE = 주의 리본 + 스크린리더 단서(내용 불명) · 그냥 SAFE엔 단서 없음', async () => {
