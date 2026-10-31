@@ -33,6 +33,8 @@ export type ProcessedFoodSummary = {
   majorAllergens: string[] | null;
   /** 품목보고번호 — 스캔 "이름으로 찾기"에서 고른 제품을 확정할 때(후보 밖 선택 — 진입 플로우 ②). 없으면 null(그 항목은 확정 불가) */
   reportNo: string | null;
+  /** KB-947 Codex #383 P1(서버 S-928 확정): 표시 근거 있음 = 상세 labelSource != NONE과 같은 서버 함수(혼입 문장뿐·"알수없음" 자리표시 = false). 필드 없음(구서버) = null = 모름 */
+  labelKnown: boolean | null;
 };
 
 export type ProcessedDetection = { code: string; evidence: string; fromLabel: boolean };
@@ -90,6 +92,7 @@ type SummaryWire = {
   name?: string | null;
   majorAllergens?: string[] | null;
   reportNo?: string | number | null;
+  labelKnown?: boolean | null; // S-928 — 목록·검색·이름 스캔 후보 공통, 늘 실림
 };
 export type SearchPageWire = { items: SummaryWire[]; hasNext: boolean; nextCursor?: string | null };
 export type DetailWire = SummaryWire & {
@@ -169,6 +172,7 @@ export function adaptProcessedSummary(w: SummaryWire): ProcessedFoodSummary {
     verdict: verdictOf(w.verdict),
     majorAllergens: w.majorAllergens == null ? null : w.majorAllergens,
     reportNo: w.reportNo == null || w.reportNo === '' ? null : String(w.reportNo),
+    labelKnown: typeof w.labelKnown === 'boolean' ? w.labelKnown : null,
   };
 }
 

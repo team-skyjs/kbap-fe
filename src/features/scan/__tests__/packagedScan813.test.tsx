@@ -394,13 +394,15 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(mockPost.mock.calls[2][1]).toEqual({ analysisId: 'A10', reportNo: 'R2' });
     expect(mockPush).toHaveBeenCalledWith('/processed-foods/11?scan=1&charged=1');
   });
-  it('회피 0개 회원(시안 45) = 후보 위 개인화 안내 · 리본 0', async () => {
+  it('회피 0개 회원(시안 45) = 리본 0 · KB-945 후보 단계 = 제목 + 목록 + None of these만(개인화 안내·"N possible matches" 0)', async () => {
     mockRestrictions = [];
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
     mockPost.mockResolvedValueOnce({ analysisId: 'A11', state: 'CANDIDATES', candidates: [{ ...cand(11, 'R1'), verdict: 'SAFE', majorAllergens: ['WHEAT'] }] });
     const t = flow();
     await press(t, 'pscan-take-photo');
-    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-personal-note', 'pscan-contains-11']));
+    expect(ids(t)).toContain('pscan-contains-11');
+    expect(ids(t)).not.toContain('pscan-personal-note');
+    expect(texts(t).some((x) => x.startsWith('packagedScan.possibleMatches'))).toBe(false);
     expect(ids(t).some((i) => i.startsWith('pscan-verdict-'))).toBe(false);
   });
   it('Codex #339 R2: 프로필 대기·실패 = 서버 verdict 리본 그대로(주요 알레르기 경로로 강등 0) · 개인화 안내 0', async () => {
@@ -624,14 +626,16 @@ describe('KB-877 가공식품 1시간 무료 창(서버 freeUntil)', () => {
     mockParams = { id: '11', free: '1' }; // 스캔 밖 진입 = 무시
     expect(ids(render(<Detail />))).not.toContain('pf-free-started');
   });
-  it('남은 분 = 앞면 카메라·후보 화면에 한 줄(창 있을 때만)', async () => {
+  it('남은 분 = 앞면 카메라에 한 줄(창 있을 때만) · KB-945 후보 화면엔 무료 배지·설명 0', async () => {
     mockFreeUntil = new Date(Date.now() + 42 * 60_000 + 30_000).toISOString();
     const t = flow();
     expect(texts(t)).toContain('packagedScan.freeFor:{"count":43}');
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
     mockPost.mockResolvedValueOnce({ analysisId: 'F3', state: 'CANDIDATES', candidates: [cand(11, 'R1')] });
     await press(t, 'pscan-take-photo');
-    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-candidates', 'pscan-free-line']));
+    expect(ids(t)).toContain('pscan-candidates');
+    expect(ids(t)).not.toContain('pscan-free-line');
+    expect(ids(t)).not.toContain('pscan-free-explain');
     mockFreeUntil = null;
     expect(ids(flow())).not.toContain('pscan-free-line');
   });

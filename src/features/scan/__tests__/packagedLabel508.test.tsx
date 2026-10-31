@@ -244,8 +244,7 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L40', verdict: 'SAFE', avoidMatches: [], avoidance: [] })); // 회피 0개 때 계산
     await press(t, 'pscan-label-analyze');
     expect(ids(t)).toContain('pscan-result-major');
-    await press(t, 'pscan-result-set-avoid');
-    mockRestrictions = [{ code: 'SHRIMP' }]; // 회피 저장 뒤 돌아옴
+    mockRestrictions = [{ code: 'SHRIMP' }]; // 프로필에서 회피 저장 뒤 돌아옴(KB-945: 결과의 설정 버튼은 제거)
     act(() => { t.update(<QueryClientProvider client={qc}>{el()}</QueryClientProvider>); }); // 새 요소 = 실제 재렌더(프로필 갱신)
     expect(ids(t).filter((i) => i.startsWith('pscan-result-band-'))).toEqual(['pscan-result-band-unable']); // KB-914: 옛 판정 = 회색 띠(판정 리본 0)
     expect(texts(t)).toContain('packaged.notVerifiedBody');
@@ -273,17 +272,17 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     expect(ids(t2)).not.toContain('pscan-free-started');
     expect(texts(t2)).toContain('packagedScan.freeFor:{"count":60}');
   });
-  it('회피 0개 회원(M0) = 주요 알레르기 문장 + "회피 재료 설정"(리본·회피 문장 0) · 주요 알레르기 null = 확인 불가(없음 단정 금지)', async () => {
+  it('회피 0개 회원(M0) = 주요 알레르기 문장(리본·회피 문장 0) · KB-945 회피 설정 버튼 0(Done만) · 주요 알레르기 null = 확인 불가(없음 단정 금지)', async () => {
     mockRestrictions = [];
     const t = flow(true);
     await shoot(t, LABEL_P1);
     mockPost.mockResolvedValueOnce(RESULT());
     await press(t, 'pscan-label-analyze');
-    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-result-major', 'pscan-result-set-avoid']));
+    expect(ids(t)).toContain('pscan-result-major');
+    expect(ids(t)).not.toContain('pscan-result-set-avoid');
+    expect(joined(t)).not.toContain('packaged.setAvoidIngredients');
     expect(ids(t).some((i) => i.startsWith('pscan-result-band-'))).toBe(false); // KB-914: 회피 0개 = 판정 띠 0(주요 알레르기 섹션)
     expect(joined(t)).toContain('packagedScan.resultMajorSet');
-    await press(t, 'pscan-result-set-avoid');
-    expect(mockPush).toHaveBeenCalledWith('/profile/restrictions');
     const t2 = flow(true);
     await shoot(t2, LABEL_P1);
     mockPost.mockResolvedValueOnce(RESULT({ majorAllergens: null, detections: [] })); // 검출도 없음 = 확인 불가
