@@ -4,6 +4,13 @@
 - QA(#385): 큰 글자에서 평균 숫자 하단 잘림 → OverallRating 행 height 18 고정 → minHeight 18 + 글자 lineHeight 18(기본 크기 그대로, 큰 글자면 줄이 늘어남). 사용처 4곳(음식 카드·Top rated·가공 카드·스캔 후보 줄) 모두 높이 덮어쓰기 0.
 - 리본·판정·사진 윗선 정렬 무변, 텍스트 아래 높이 차이 허용. 스켈레톤은 이미 이름·한국어(+음식 상태) 막대라 무변(평점 줄은 조건부라 막대 없음). 신규 ko 0. 기기 미검증(QA 위임 — 리뷰 있는/없는 카드 같은 행, 큰 글자).
 
+## 2026-10-31 · P-564 KB-945 가공식품 상세 = 음식 상세 구성 + P-565 KB-947 회피 미설정 Safe
+- 상세 순서 = 음식 상세: 사진 → 판정 띠(화면 폭) → 이름 → 굵은 구분선 → What's inside(음식 상세 제목 키·칩 필터·재료 타일 한 그리드 = 감지·일치 + 주요 알레르기 + 혼입 가능, insideCodes) → 접힌 "Ingredients and source"(원재료 원문·알레르기 표시·출처) → 굵은 구분선 → 리뷰. 구 감지 카드·Major allergens 문단·원재료 미리보기·See detail 소멸.
+- 피할 재료 설정·로그인 유도 버튼 제거(상세·성분표 결과 — 회피 0개 결과 = Done만). 이름 스캔 후보 단계 = 제목 + 목록 + None of these(무료 배지·설명, "N possible matches", 개인화 안내 제거 — 무료 차감은 서버 그대로).
+- KB-947(예진 10/31 결정): 비회원·회피 0개 회원 = Packaged 카드 safe 리본 + 상세 Safe 띠(가공 SAFE 키 그대로). 로그인 + 프로필 대기·실패 = 리본 0, 원재료·알레르기 표시 둘 다 없는 제품 = 확인 못 함(false-safe 0). 판정 칩·음식 리본 무변.
+- Codex #383 1R P1: 카드 safe 리본 = 서버 labelKnown(S-928 확정, 상세 labelSource != NONE과 같은 규칙) true만 · 상세 표시 없음 판정도 labelSource NONE으로 맞춤 — false·필드 없음(구서버) = 리본 0. 서버 필드 dev 반영 전엔 미설정 사용자 카드 리본 0이 정상.
+- 안 쓰게 된 키 10로케일 정리: packaged.setAvoidIngredients·signInToPersonalize·seeDetail, packagedScan.possibleMatches. 신규 ko 0. 기기 미검증(QA 위임).
+
 ## 2026-10-31 · P-563 KB-944 이름 스캔 후보 탭 시 이름 줄바꿈 튐 수정
 - 확정 대기 스피너 = 썸네일 위에 겹침(흰 원 36 + 스피너 20) — 구 = 줄 오른쪽에 새 칸이 생겨 이름 폭이 줄고 줄바꿈이 바뀌었다(예진 화면 녹화). 줄 직계 칸 수 불변·스피너 absolute 잠금(packagedScan813).
 - ①(카드 이름 두 줄·행 높이)은 P-563 변경으로 보류 — 카드 UI 벤치마킹 중. 신규 ko 0. 기기 미검증(QA 위임).
@@ -304,7 +311,6 @@
 > [x] 리뷰 목록 화면(G2) — `app/food/[id]/reviews`: 평점요약·같은국적 토글·익명·빈상태. 디테일 평점카드 화살표→연결.
 > [x] G2 번역 UX(FR-023 c63daf1): 전역토글 제거 → **리뷰별 개별 번역**. useReviewTranslation seam(프리번역 즉시/온디맨드 로딩·에러·재시도, MOCK 지연+플래키), SVG Spinner, 원문↔번역 개별토글, reader=원문 리뷰엔 버튼 미표시. web 대조 OK(즉시/온디맨드/에러→재시도).
 > 미구현: 9개 다국어 i18n(영어만). menuName vs id 리컨실은 BE 회의 대기(방향: BE가 foodId 실어주고 [id] 유지).
-
 
 ## ✅ 헤더 = hide-on-scroll (Blind 패턴, §6 갱신 d63068e)
 - 스펙 해석차였음(버그 아님): §6이 "always-pinned"→"hide-on-scroll"로 정식 변경됨.
@@ -1696,7 +1702,6 @@
 - [x] 테스트: nav573 +5(홈 dismissAll→navigate 순서·canDismiss false·throw 방어·내 리뷰·음식 상세) · pushAdapter192 매핑 3케이스 교체 + 레이아웃 소스 잠금(entryChecked 게이트·헬퍼 경유·router.push 0) · landingRemoved573 +3. tsc 0 · jest 220스위트 1601/1601. 동승 정리 2건: pushSurfaces192 레이아웃 소스 잠금을 새 게이트 문자열로 · prodFlagSurfaces436의 앱 버전 기대 1.0.2→1.0.3(e53b63d 범프 이후 develop에서 이미 깨져 있던 기존 실패).
 - [x] 문서: specs/002 spec.md(개요·AS 1·2·5·FR-002)·contracts §2 표 갱신. push-landing 언급 0.
 - [ ] 실기(종한, iOS·Android): quickstart D-1~D-10 — **D-3·D-4(콜드 스타트) 필수**. 완료 전 OTA 발행 금지(OTA 게이트 커밋).
-
 
 ## KB-631 첫 설치 로그인 화면 OS 알림 권한 즉시 요청 — 카메라 권한과 같은 방식 (2026-09-22, 워크트리 feat/kb631-login-push-prompt · spec 006)
 
