@@ -682,6 +682,20 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     expect(badges(await mount())).toEqual([]);
   });
 
+  it('KB-948(예진 10/31): 카드 = 제조사 줄 0 · 이름(영어 2줄 + 한국어 1줄) 아래 리뷰 있으면 평점 줄 · 리뷰 0·필드 없음 = 줄째 없음', async () => {
+    mockGet.mockResolvedValueOnce(V4());
+    const t = await mount();
+    const childTexts = t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+    expect(childTexts).not.toContain('Binggrae'); // 제조사 줄 소멸(스크린리더 라벨엔 남음)
+    expect(childTexts).not.toContain('Nongshim');
+    expect(ids(t)).toContain('packaged-rating-7');
+    expect(ids(t)).not.toContain('packaged-rating-8'); // count 0
+    expect(ids(t)).not.toContain('packaged-rating-9'); // 필드 없음
+    const name7 = t.root.findAll((n) => n.props?.testID === 'packaged-name-7')[0];
+    expect(name7.findAll((n) => n.props?.numberOfLines === 2).length).toBeGreaterThan(0);
+    expect(name7.findAll((n) => n.props?.numberOfLines === 1 && n.props.children === '바나나맛우유').length).toBeGreaterThan(0);
+  });
+
   it('Codex #336 → KB-921: SAFE_WITH_NOTE = 주의 리본 + 스크린리더 단서(내용 불명) · 그냥 SAFE엔 단서 없음', async () => {
     mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] };
     mockGet.mockResolvedValueOnce(V4([{ id: 10, productName: 'Choco Pie', imageUrl: null, verdict: 'SAFE_WITH_NOTE' }]));

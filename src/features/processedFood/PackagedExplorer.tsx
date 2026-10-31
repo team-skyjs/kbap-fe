@@ -116,7 +116,7 @@ export function ProductCard({ item, width, onOpen, personalized = true, unset = 
         )}
         {risk && <View style={card.badge}><RiskBadge state={risk} size={22} flat testID={`packaged-verdict-${item.id}`} /></View>}
       </View>
-      {!!item.maker && <Text style={card.maker} numberOfLines={1}>{item.maker}</Text>}
+      {/* KB-948(예진 10/31): 제조사 줄 제거 — 사진 → 이름(영어 2줄 + 한국어 1줄) → 리뷰 있으면 평점 */}
       {/* KB-914(R-140): 이름 = 공용 ProductName(영어 굵게 + 한국어 작게, hangul-word — QA AQ 어절 줄바꿈 그대로) */}
       <ProductName name={item.name} nameKo={item.nameKo} style={card.nameBox} testID={`packaged-name-${item.id}`} />
       {item.rating && (
@@ -353,8 +353,7 @@ const card = StyleSheet.create({
   photo: { aspectRatio: 161.5 / 176, borderRadius: radius.md, backgroundColor: C.surface2, overflow: 'hidden' },
   image: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
   badge: { position: 'absolute', left: 10, top: 0 },
-  maker: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2, marginTop: 6 },
-  nameBox: { marginTop: 5 }, // KB-914(R-140): 이름 글자 = ProductName(row 16 굵게 + 14) — 구 17/24 · 16/23
+  nameBox: { marginTop: 10 }, // KB-948: 제조사 줄이 빠져 사진 바로 아래(음식 카드 gmeta marginTop 10과 같은 간격) · 글자 = ProductName(row 16 굵게 + 14)
   rating: { marginTop: 7 }, // 음식 목록 카드 평점 줄(18) 그대로(예진 10/22) — 시안 평점 줄 중심(이름 열 아래)에 맞춤
   // 시안 05: 사진 #F2F3F6(=hair, Shimmer 바탕) · 막대 r 알약
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, paddingHorizontal: 20 },
