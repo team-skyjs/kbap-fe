@@ -64,6 +64,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 /* eslint-disable import/first -- jest.mock 뒤 */
 import { FoodGridCard, CARD_TITLE } from '@/features/food/FoodCards';
 import { OverallRating } from '@/components/Stars';
+import { StyleSheet } from 'react-native';
 import type { FoodCard } from '@/lib/api/types';
 /* eslint-enable import/first */
 
@@ -98,5 +99,18 @@ describe('KB-948 음식 카드 평점 줄', () => {
     const t = card({ average: null, count: 0 });
     const ko = t.root.findAll((n) => typeof n.type === 'string' && n.props.children === '비빔밥')[0];
     expect(ko.props.numberOfLines).toBe(1);
+  });
+});
+
+describe('KB-948 QA: 큰 글자에서 평점 줄 잘림', () => {
+  it('행 = 고정 height 없음(minHeight 18) · 평균·개수 글자 = lineHeight 18 — 기본 크기 18 그대로, 큰 글자면 글자 lineHeight가 커져 행이 늘어남', () => {
+    const t = render(<OverallRating average={5} count={3} />);
+    const row = t.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'overall-rating-row')[0];
+    const rs = StyleSheet.flatten(row.props.style);
+    expect(rs.height).toBeUndefined();
+    expect(rs.minHeight).toBe(18);
+    const texts = t.root.findAll((n) => n.type === 'Text');
+    expect(texts.map((n) => [n.props.children].flat().join(''))).toEqual(['5.0', '(3)']);
+    for (const n of texts) expect(StyleSheet.flatten(n.props.style).lineHeight).toBe(18);
   });
 });

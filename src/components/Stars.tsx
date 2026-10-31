@@ -78,12 +78,13 @@ export function Star({
  *  평균 null = 빈 별 + 대시. */
 export function OverallRating({ average, count, numTestID, style }: { average: number | null; count: number; numTestID?: string; style?: object }) {
   return (
-    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, height: 18 }, style]}>
+    // KB-948 QA: 높이 고정 18 = 큰 글자에서 평균 숫자 하단 잘림 → minHeight + 글자 lineHeight 18(기본 크기 18 그대로, 큰 글자면 lineHeight가 같이 커져 줄이 늘어남)
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 18 }, style]} testID="overall-rating-row">
       <Star size={14} fillPct={average == null ? 0 : 100} />
-      <Txt style={{ fontSize: 16, fontWeight: '700', color: average == null ? C.inkMute : C.ink }} testID={numTestID}>
+      <Txt style={{ fontSize: 16, lineHeight: 18, fontWeight: '700', color: average == null ? C.inkMute : C.ink }} testID={numTestID}>
         {average == null ? '\u2014' : average.toFixed(1)}
       </Txt>
-      <Txt style={{ fontSize: 13, fontWeight: '700', color: C.ink2 }}>({count})</Txt>
+      <Txt style={{ fontSize: 13, lineHeight: 18, fontWeight: '700', color: C.ink2 }}>({count})</Txt>
     </View>
   );
 }
