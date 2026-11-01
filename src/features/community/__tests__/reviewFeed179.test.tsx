@@ -76,7 +76,10 @@ const mockMe = jest.fn(() => ({ data: { id: '9', nationality: 'US' } as { id: st
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 })); // KB-499: 헤더 배지 = react-query 훅 — 이 스위트는 Provider 없이 렌더
 const mockFeed = jest.fn();
-jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: (enabled: boolean, filters: unknown) => mockFeed(enabled, filters) }));
+jest.mock('@/lib/data/useFoodReviews', () => ({
+  useGlobalReviews: (enabled: boolean, filters: unknown) => mockFeed(enabled, filters),
+  globalReviewsKey: jest.requireActual('@/lib/data/useFoodReviews').globalReviewsKey, // KB-958: 첫 장 줄이기 = 활성 피드 키(실제 키 규칙)
+}));
 
 import { ReviewFeed } from '../ReviewFeed';
 
@@ -224,6 +227,20 @@ describe('KB-954(P-570): 탭바 재탭·진입 = 첫 페이지만 재조회(다�
     expect(refetch).toHaveBeenCalledTimes(1);
     const d = queryClient.getQueryData<{ pages: unknown[]; pageParams: unknown[] }>(KEY)!;
     expect([d.pages.length, d.pageParams]).toEqual([1, [null]]);
+  });
+  it('KB-958(Codex #388 2R P2): 첫 장 줄이기 = 지금 보는 피드 키만 — 비활성 정렬·국적 변형은 페이지·updatedAt·isInvalidated 무변', () => {
+    const refetch = jest.fn().mockResolvedValue(undefined);
+    feedWith(refetch);
+    twoPages(); // 활성(latest·국적 없음)
+    const OTHER = ['reviews', 'global', 'KR', 'all', 'popular', 0, 5];
+    queryClient.setQueryData(OTHER, { pages: [{ items: [] }, { items: [] }], pageParams: [null, 'x2'] });
+    const before = queryClient.getQueryState(OTHER)!;
+    render();
+    act(() => emitTabPress('community', 'enter'));
+    expect(queryClient.getQueryData<{ pages: unknown[] }>(KEY)!.pages).toHaveLength(1);
+    const after = queryClient.getQueryState(OTHER)!;
+    expect(queryClient.getQueryData<{ pages: unknown[] }>(OTHER)!.pages).toHaveLength(2);
+    expect([after.dataUpdatedAt, after.isInvalidated]).toEqual([before.dataUpdatedAt, before.isInvalidated]);
   });
   it('이미 Reviews에서 재탭(reselect) = 같은 첫 페이지 재조회 + 스피너(RefreshControl refreshing) · 다른 탭 신호엔 반응 0', async () => {
     let done!: () => void;

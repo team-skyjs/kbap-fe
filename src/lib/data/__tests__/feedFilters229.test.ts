@@ -49,8 +49,9 @@ it('배선 소스 잠금 — 쿼리키 프리픽스·클라 소팅 부재 (KB-43
   expect(feed).not.toMatch(/reviews\s*\.\s*sort\(/);
   const hook = fs.readFileSync('src/lib/data/useFoodReviews.ts', 'utf8') as string;
   // 프리픽스 유지 — 좋아요 낙관·작성 무효화의 프리픽스 매칭 안전(P-237에서 sort·rating 키 확장)
-  expect(hook).toContain("'reviews', 'global',");
-  expect(hook).toContain("filters.sort ?? 'latest', filters.minRating ?? 0, filters.maxRating ?? 5,");
+  // KB-958: 키는 globalReviewsKey 한 곳(훅·Reviews 첫 장 줄이기 공유) — 프리픽스·순서 그대로
+  expect(hook).toContain("['reviews', 'global', filters.countryCode ?? 'all', filters.foodId ?? 'all', filters.sort ?? 'latest', filters.minRating ?? 0, filters.maxRating ?? 5] as const;");
+  expect(hook).toContain('queryKey: globalReviewsKey(filters),');
 });
 
 /* ---- P-237(KB-346): 소팅 5종 + 별점 필터 ---- */

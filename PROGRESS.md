@@ -1,3 +1,6 @@
+## 2026-11-02 · KB-958 Reviews 첫 장 줄이기를 활성 피드 쿼리만(Codex #388 2R P2 후속)
+- 구 = setQueriesData(['reviews','global'] 접두) → 비활성 정렬·국적 변형까지 첫 장으로 줄이며 갱신 시각이 바뀌어 신선도 리셋. 신 = globalReviewsKey(지금 필터) 정확한 키 하나만 getQueryData → 2장 이상이면 setQueryData. 훅과 같은 키 함수(useFoodReviews globalReviewsKey).
+
 ## 2026-11-02 · P-570 KB-954 새로고침 공백·리뷰 후 카드 평점·회피 변경 재조회·탭바 재탭
 - 회피 변경(useUpdateMe)·온보딩 완료 = resetPersonalizedQueries — 위험도 키(home·foods·food·bookmarks·processedFoods)는 resetQueries(재조회 동안 옛 Safe 대신 스켈레톤, 실패 = 오류), 나머지는 invalidate. 온보딩 clear()(마운트된 탭 재조회 0, P-205 족보) 제거.
 - 리뷰 작성·수정·삭제 무효화 + foods·bookmarks·processedFoods search(KB-948 카드 평점 공백).
