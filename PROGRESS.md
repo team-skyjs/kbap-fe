@@ -1,3 +1,9 @@
+## 2026-11-02 · P-573 KB-957 음식 탭 상단 정리·기본 Packaged(예진 11/2 실기)
+- Dishes | Packaged = 헤더 로고 줄 안(StickyHeader center 슬롯 — 다른 화면 무변) · 글자·밑줄 = 구 세그먼트 그대로(16 semibold·2pt), 칸 폭 = 글자 폭 · 큰 글자 = 줄임표 대신 글자 배율 상한 SEG_MAX_SCALE 1.15. 별도 세그먼트 줄·Dishes 머리 간격 소멸.
+- Packaged "Popular picks"·유형명 제목 소멸(유형은 밑줄 탭 선택 상태) — 검색 결과일 때만 제목, 그 밖엔 칩 → 그리드 간격 16. Dishes엔 같은 제목 없음.
+- 유형 밑줄 탭 = 한 단계 작게: type.meta 14(선택 = semibold) · 밑줄 2 → 1.5 · 글자–밑줄 6 → 4. 칩 라벨 토큰은 16/500이라 "칩 크기급"이면 지금과 같은 크기 — 위계를 위해 meta 14로(보고).
+- 첫 진입 기본 = Packaged(defaultFoodSegment — 운영 채널 processedFoodEnabled off = Dishes) · See all·딥링크 전이 무변. 신규 ko 0. 기기 미검증(QA).
+
 ## 2026-11-01 · P-569 KB-949 음식·가공식품 탭 필터 — 카테고리 밑줄 탭 + 안전도 아이콘 칩(예진 11/1, Mobbin 1순위안)
 - Packaged: 위 = 유형 밑줄 탭(가로 스크롤 ChipScrollRow 안 — 글자·밑줄 = 상단 Dishes/Packaged 세그먼트 seg 스타일 그대로, 비선택도 투명 밑줄로 자리 유지, All 탭 유지, accessibilityRole tab) · 아래 = 판정 칩 Safe·Avoid·Caution(All 칩 삭제 — 안 고름 = 전체, 다시 누르면 해제, 단일 선택).
 - Dishes(음식 탭) + 홈(embedded, 커맨드 추가 지시 — "안전도 필터 모양 통일"): 위험 칩 All 삭제 + 같은 토글(RISK_CHIPS 하나) · Saved 칩·정렬 버튼 그대로. 저장 목록(profile/saved)도 같은 RISK_CHIPS(FoodCards로 옮겨 공유)·토글·위험도 마크(구 = 중립 칩)로 통일(커맨드 추가 지시).

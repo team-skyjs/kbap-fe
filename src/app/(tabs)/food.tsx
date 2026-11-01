@@ -15,12 +15,13 @@ import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useUnreadCount } from '@/lib/data/useNotifications';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
-import { parseFoodFilterParams } from '@/features/food/foodFilterParams';
+import { parseFoodFilterParams, defaultFoodSegment } from '@/features/food/foodFilterParams';
 import { FoodSegmentRow, PackagedExplorer, type FoodSegment } from '@/features/processedFood/PackagedExplorer';
 import { useState } from 'react';
 
-// KB-812: 세그먼트 선택 유지(앱 세션 동안 — 탭 화면이 다시 마운트돼도). 기본 Dishes.
-let lastSegment: FoodSegment = 'dishes';
+// KB-812: 세그먼트 선택 유지(앱 세션 동안 — 탭 화면이 다시 마운트돼도).
+// KB-957(예진 11/2): 첫 진입 기본 = Packaged(운영 채널 = 가공식품 없음 → Dishes). 홈 See all(t·view)·딥링크 우선순위는 아래 전이 그대로
+let lastSegment: FoodSegment = defaultFoodSegment(FLAGS.processedFoodEnabled);
 const rememberSegment = (s: FoodSegment) => { lastSegment = s; };
 
 export default function Food() {
@@ -43,15 +44,15 @@ export default function Food() {
     if (seeAllKey) { rememberSegment('dishes'); setFoodSegmentState('dishes'); }
   }
   // KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 세그먼트째 없음 → Dishes 고정(main과 같은 화면)
+  // KB-957: Dishes | Packaged = 헤더 로고 줄 안(별도 세그먼트 줄 소멸)
   const segRow = FLAGS.processedFoodEnabled ? <FoodSegmentRow value={foodSegment} onChange={setFoodSegment} /> : null;
 
   return (
     <View style={styles.root}>
       {segRow && foodSegment === 'packaged' ? (
-        <PackagedExplorer top={segRow} topPad={headerH} onScroll={onScroll} />
+        <PackagedExplorer top={null} topPad={headerH} onScroll={onScroll} />
       ) : (
       <FoodExplorer
-        headTop={segRow ? <View style={styles.segGap}>{segRow}</View> : undefined}
         variant="screen"
         guest={isGuest}
         initialSaved={segment === 'saved'}
@@ -63,6 +64,7 @@ export default function Food() {
       />
       )}
       <StickyHeader
+        center={segRow}
         hidden={hidden}
         atTop={atTop}
         mode="brand"
@@ -76,5 +78,4 @@ export default function Food() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  segGap: { marginBottom: 24 }, // R-95: 세그먼트 → 검색 24
 });
