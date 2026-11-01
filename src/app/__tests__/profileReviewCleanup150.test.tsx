@@ -164,6 +164,8 @@ import MyReviews from '../profile/reviews';
 import Profile from '../(tabs)/profile';
 import { IconBookmark } from '@/components/icons';
 import { Stars } from '@/components/Stars';
+const REACT_ELS = [Symbol.for('react.element'), Symbol.for('react.transitional.element')];
+const safeJson = (v: unknown) => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && REACT_ELS.includes((x as { $$typeof?: symbol }).$$typeof as symbol) ? undefined : x)); // KB-954: refreshControl 엘리먼트 prop(순환 참조)만 제외
 
 function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
@@ -172,7 +174,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
   });
   return tree;
 }
-const flatJson = (t2: ReactTestRenderer) => JSON.stringify(t2.toJSON());
+const flatJson = (t2: ReactTestRenderer) => safeJson(t2.toJSON());
 
 /** KB-891: 커서 추종 가시 높이 = 뷰포트 − 떠 있는 알약(측정 전 48 + 바닥 여백 12) */
 // KB-891 → KB-903(T-071): 알약 바가 ScrollView 아래 흐름 안 — 뷰포트(svH)가 이미 바를 뺀 높이라 바 몫 차감·여백 0

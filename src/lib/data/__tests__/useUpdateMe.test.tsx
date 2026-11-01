@@ -74,12 +74,18 @@ function seededClient() {
 const isInvalidated = (qc: QueryClient, key: unknown[]) =>
   qc.getQueryCache().find({ queryKey: key })?.state.isInvalidated ?? false;
 
-it('restrictions 변경 → 개인화 쿼리(홈·목록·상세)가 전부 invalidated 된다', async () => {
+it('restrictions 변경 → KB-954: 위험도 쿼리(홈·목록·상세·북마크·가공식품)는 reset(옛 판정 데이터 0 — 재조회 동안 스켈레톤) · 나머지는 invalidated(데이터 유지)', async () => {
   const qc = seededClient();
+  qc.setQueryData(['bookmarks'], []);
+  qc.setQueryData(['processedFoods', 'search', '', null, 'en|member:', null], { pages: [] });
+  qc.setQueryData(['curations', 'seoul', 'en'], { items: ['c1'] }); // 위험도 없는 키
   await runMutation(qc, { restrictions: [{ kind: 'allergy', code: 'PEANUT' }] });
-  expect(isInvalidated(qc, ['home', 'en'])).toBe(true);
-  expect(isInvalidated(qc, ['foods', 'list', 'en'])).toBe(true);
-  expect(isInvalidated(qc, ['food', 'bibimbap', 'en'])).toBe(true);
+  await new Promise((r) => setTimeout(r, 0));
+  for (const key of [['home', 'en'], ['foods', 'list', 'en'], ['food', 'bibimbap', 'en'], ['bookmarks'], ['processedFoods', 'search', '', null, 'en|member:', null]]) {
+    expect({ key, data: qc.getQueryData(key) }).toEqual({ key, data: undefined }); // reset = 옛 Safe를 보여 줄 데이터가 없다
+  }
+  expect(isInvalidated(qc, ['curations', 'seoul', 'en'])).toBe(true);
+  expect(qc.getQueryData(['curations', 'seoul', 'en'])).toEqual({ items: ['c1'] });
 });
 
 it('닉네임만 변경 → 개인화 쿼리는 invalidate되지 않는다 (비범위 보호)', async () => {

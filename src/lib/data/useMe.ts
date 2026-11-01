@@ -20,6 +20,7 @@ import { api, apiLang } from '../api/client';
 import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api/memberAdapter';
 import { adaptReviewPage, type ReviewPageWire } from '../api/reviewAdapter';
 import { hasBeSession } from '../auth/beAuth';
+import { resetPersonalizedQueries } from '../queryClient';
 import { currentGen } from '../auth/beTokens';
 import { setSentryUser } from '../sentry';
 import { setAnalyticsUser } from '../analytics';
@@ -158,8 +159,9 @@ export function useUpdateMe() {
       // 언마운트되지 않으므로 홈이 stale 판정을 계속 보여주는 false-safe.
       // invalidateQueries()는 전체를 stale 마킹하고 활성 쿼리를 즉시 재조회.
       // mock 경로(무세션)는 캐시 병합이 진실이라 전면 무효화 시 수정 증발 → 제외.
+      // KB-954(P-570): 위험도 키는 reset(재조회 동안 옛 Safe 대신 스켈레톤·실패 = 오류 — false-safe 창 제거), 나머지는 전면 invalidate 그대로
       if (patch.restrictions !== undefined && (await hasBeSession())) {
-        void qc.invalidateQueries();
+        void resetPersonalizedQueries(qc);
         return;
       }
       // 닉네임/국가/언어 등 비개인화 필드는 기존 범위 유지 (반려 비범위)

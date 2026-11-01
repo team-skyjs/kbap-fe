@@ -21,3 +21,16 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+/** KB-954(P-570): 위험도·판정을 담은 키 접두 — 회피 기준이 바뀌면 옛 값을 보여 주면 안 되는 것들 */
+export const RISK_QUERY_KEYS = [['home'], ['foods'], ['food'], ['bookmarks'], ['processedFoods']] as const;
+const isRiskKey = (key: readonly unknown[]) => RISK_QUERY_KEYS.some((p) => p.every((v, i) => key[i] === v));
+
+/** 회피 기준 변경(프로필 저장·온보딩 완료) — 위험도 키는 reset(재조회 동안 옛 Safe 대신 스켈레톤, 실패 = 오류 → false-safe 창 0,
+ *  무한 목록은 첫 페이지부터), 나머지는 invalidate(활성 재조회). clear()와 달리 마운트된 옵저버도 다시 받는다. */
+export function resetPersonalizedQueries(qc: QueryClient = queryClient): Promise<unknown> {
+  return Promise.all([
+    ...RISK_QUERY_KEYS.map((queryKey) => qc.resetQueries({ queryKey })),
+    qc.invalidateQueries({ predicate: (q) => !isRiskKey(q.queryKey) }),
+  ]);
+}

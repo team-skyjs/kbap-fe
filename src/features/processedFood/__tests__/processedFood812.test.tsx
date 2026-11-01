@@ -703,6 +703,19 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     for (const n of rating) expect([flat(n).fontSize, flat(n).fontWeight, flat(n).color]).toEqual([ko.fontSize, ko.fontWeight, ko.color]);
   });
 
+  it('KB-954(P-570 QA: 당겨도 요청 0): Packaged 당겨서 새로고침 = 목록 다시 요청 · 끝나면 스피너 해제', async () => {
+    mockGet.mockResolvedValue(V4());
+    const t = await mount();
+    const before = mockGet.mock.calls.length;
+    const list = () => t.root.findAll((n) => n.props?.testID === 'packaged-list' && n.props?.refreshControl)[0];
+    await act(async () => { list().props.refreshControl.props.onRefresh(); });
+    await until(() => mockGet.mock.calls.length > before);
+    expect(mockGet.mock.calls.length).toBeGreaterThan(before);
+    await until(() => list().props.refreshControl.props.refreshing === false);
+    expect(list().props.refreshControl.props.refreshing).toBe(false);
+    mockGet.mockReset();
+  });
+
   it('Codex #336 → KB-921: SAFE_WITH_NOTE = 주의 리본 + 스크린리더 단서(내용 불명) · 그냥 SAFE엔 단서 없음', async () => {
     mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] };
     mockGet.mockResolvedValueOnce(V4([{ id: 10, productName: 'Choco Pie', imageUrl: null, verdict: 'SAFE_WITH_NOTE' }]));

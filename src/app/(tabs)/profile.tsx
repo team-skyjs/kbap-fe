@@ -10,8 +10,10 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { airbridge } from '@/lib/airbridge';
-import { useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Platform, RefreshControl, StyleSheet, View, type ScrollView } from 'react-native';
+import { usePullRefresh } from '@/lib/data/usePullRefresh';
+import { useTabPress } from '@/lib/tabPress';
 import { Alert } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { openAppSettings } from '@/lib/openExternal';
@@ -118,6 +120,14 @@ export default function Profile() {
   }
 
   // P-196 ②: 에러/오프라인 = 화면 기준 정중앙(4탭 공용 기준) — 스크롤/헤더 패딩 밖
+  // KB-954: 당겨서 새로고침 = 내 정보(['me'] — 내 리뷰·랭킹 포함 접두) · 탭 재탭 = 맨 위 + 같은 새로고침
+  const pull = usePullRefresh([]);
+  const scrollRef = useRef<ScrollView>(null);
+  useTabPress('profile', (kind) => {
+    if (kind !== 'reselect') return;
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+    pull.onRefresh();
+  });
   if (!isGuest && !meLoading && meError) {
     return (
       <View style={styles.root}>
@@ -136,6 +146,8 @@ export default function Profile() {
   return (
     <View style={styles.root}>
       <Animated.ScrollView
+        ref={scrollRef}
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={C.ink3} progressViewOffset={headerH} />}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}

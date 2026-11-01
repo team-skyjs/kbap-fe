@@ -13,6 +13,7 @@ import { initAds } from '@/lib/ads/adsSession';
 import { whenSplashDone } from '@/lib/bootGate';
 import * as React from 'react';
 import { Tabs, useFocusEffect, useRouter } from 'expo-router';
+import { emitTabPress } from '@/lib/tabPress';
 import { useTranslation } from 'react-i18next';
 import { TabBar, type TabKey } from '@/components';
 import { EVENTS, track } from '@/lib/analytics';
@@ -108,6 +109,7 @@ export default function TabsLayout() {
               const target = props.state.routes.find((r) => r.name === name);
               const focused = props.state.routes[props.state.index]?.name === name;
               const e = props.navigation.emit({ type: 'tabPress', target: target?.key, canPreventDefault: true });
+              emitTabPress(name, focused ? 'reselect' : 'enter'); // KB-954: 재탭 = 맨 위 + 새로고침 · 진입 = Reviews 첫 페이지 재조회
               if (!focused && !e.defaultPrevented) props.navigation.navigate(name as never);
             }}
           />

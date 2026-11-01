@@ -70,7 +70,7 @@ import { flagEmoji } from '@/lib/flagEmoji';
 import i18n from '@/lib/i18n';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, resetPersonalizedQueries } from '@/lib/queryClient';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { airbridge } from '@/lib/airbridge';
 import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
@@ -248,7 +248,8 @@ export default function Onboarding() {
       });
       // 제출 전 fetch된 홈/프로필 캐시(개인화 빈 값)가 staleTime(60s) 동안
       // 살아남아 "저장 안 된 것처럼" 보이는 버그 방지 — 전부 fresh로.
-      queryClient.clear();
+      // KB-954(P-570): clear()는 이미 마운트된 탭 옵저버를 재조회시키지 않는다(P-205 족보) → 회피 변경과 같은 reset·invalidate
+      void resetPersonalizedQueries(queryClient);
       // KB-497: 온보딩 직후 푸시 프라이머 제거(UX 리서치 B안) — OS 권한 요청은 첫 스캔 결과 시트 1곳.
       // P-080: SuccessCheck는 요약 카드 진입 연출로 결합(스펙) — 완료 오버레이 없이 직행
       router.replace('/(tabs)');

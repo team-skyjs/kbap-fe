@@ -12,7 +12,8 @@
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { usePullRefresh } from '@/lib/data/usePullRefresh';
 import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
@@ -141,10 +142,12 @@ export default function FoodDetailScreen() {
   // Codex #97 3R P2 → KB-851: 알약 줄 실높이(큰 글씨·긴 번역이면 커짐) + 바닥 여백만큼 콘텐츠 하단 여백 — 마지막 리뷰를 가리지 않게(측정 전 폴백 48)
   // KB-903: 띠(불투명 바) 실높이 → 스크롤 아래 여백 — 하단 바 화면 공통 규칙(useBottomBand)
   const band = useBottomBand(insets.bottom);
+  const pull = usePullRefresh([['food', id]]); // KB-954: 상세·리뷰(['food', id] 접두) + ['me']
 
   return (
     <View style={styles.root}>
       <ScrollView
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={C.ink3} />}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}

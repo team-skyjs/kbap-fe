@@ -11,6 +11,9 @@
  */
 import * as React from 'react';
 import { FlatList, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useRefreshClient } from '@/lib/data/usePullRefresh';
+import { useTabPress } from '@/lib/tabPress';
+import type { InfiniteData } from '@tanstack/react-query';
 import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
@@ -114,10 +117,25 @@ export function ReviewFeed() {
 
   // P-194: 당겨서 새로고침 + 탭 포커스 시 stale 재조회(폴링 아님)
   const [refreshing, setRefreshing] = React.useState(false);
+  const qc = useRefreshClient(); // KB-954
+  // KB-954(P-570): 첫 페이지만 새로 — 불러온 페이지를 1장으로 줄인 뒤 refetch(옛 데이터는 그대로 보여 스켈레톤 깜빡임 0, 전 페이지 순차 재요청 0)
+  const refetchFirstPage = () => {
+    qc.setQueriesData<InfiniteData<unknown, unknown>>({ queryKey: ['reviews', 'global'] }, (d) =>
+      d && d.pages.length > 1 ? { pages: d.pages.slice(0, 1), pageParams: d.pageParams.slice(0, 1) } : d,
+    );
+    return feed.refetch();
+  };
   const onRefresh = () => {
     setRefreshing(true);
-    void feed.refetch().finally(() => setRefreshing(false));
+    // KB-954: + ['me'](다른 기기 회피 변경·쿼터)
+    void Promise.all([refetchFirstPage(), qc.invalidateQueries({ queryKey: ['me'] })]).finally(() => setRefreshing(false));
   };
+  // KB-954(예진 실기: 다른 폰 리뷰가 GNB를 눌러도 안 보임): 재탭 = 맨 위(useScrollToTop) + 새로고침(스피너) · 다른 탭에서 진입 = stale 여부와 무관하게 첫 페이지 재조회(맨 위로 — 새 리뷰는 위에 온다)
+  useTabPress('community', (kind) => {
+    if (kind === 'reselect') { onRefresh(); return; }
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+    void refetchFirstPage();
+  });
   const staleRef = React.useRef(false);
   // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
   React.useLayoutEffect(() => {
@@ -126,8 +144,9 @@ export function ReviewFeed() {
   const refetch = feed.refetch;
   useFocusEffect(
     React.useCallback(() => {
-      if (staleRef.current) void refetch();
-    }, [refetch]),
+      // KB-954: 탭바 진입이 방금 첫 페이지 재조회를 걸었으면 겹쳐 부르지 않는다(진행 중 = 건너뜀)
+      if (staleRef.current && qc.isFetching({ queryKey: ['reviews', 'global'] }) === 0) void refetch();
+    }, [refetch, qc]),
   );
 
   const onPickFood = (f: FoodTagRef) => {

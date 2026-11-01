@@ -37,7 +37,8 @@ import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { HomeQuotaBadge, BADGE_GAP } from '@/features/scan/HomeQuotaBadge';
-import { useUnreadCount } from '@/lib/data/useNotifications';
+import { NOTIFICATIONS_KEY, useUnreadCount } from '@/lib/data/useNotifications';
+import { useTabPress } from '@/lib/tabPress';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { HomeImpressionContext, ImpressionTracker, trackHomeCardClick, useImpressionRef, useImpressionScrollProps } from '@/features/home/homeImpressions';
 
@@ -108,8 +109,11 @@ function HomeBody() {
       queryClient.invalidateQueries({ queryKey: ['foods'] }),
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] }),
       queryClient.invalidateQueries({ queryKey: ['curations'] }), // KB-796(Codex #303 P2): 게시·내림·수정 반영 — 포커스 재조회가 꺼져 있다
+      queryClient.invalidateQueries({ queryKey: ['me'] }), // KB-954: 다른 기기 회피 변경·쿼터
+      queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY }), // KB-954: 알림 수(종)
     ]).finally(() => setRefreshing(false));
   }, []);
+  useTabPress('index', (kind) => { if (kind === 'reselect') onRefresh(); }); // KB-954: 재탭 = 맨 위(useScrollToTop) + 새로고침(스피너)
 
   if (isError && !isLoading) {
     return (
