@@ -3,6 +3,7 @@
 - 헤더 = SectionHead(라벨 packaged.segmentPackaged 재사용 + 제목 home.cvsTitle 신규) + 오른쪽 See all(home.seeAll) → /food?view=packaged(음식 탭이 Packaged 세그먼트로 — 운영 채널은 Dishes).
 - 카드 = Packaged ProductCard 그대로(리본·평점 규칙 동일) · 폭 = railCardW · 10개 · 데이터 = useProcessedSearch('')(Packaged 둘러보기와 같은 키 = 캐시 공유, verdictKey).
 - 로딩 = ProductCardSkeleton(그리드와 공유) · 실패·0개 = 섹션째 없음 · home_section_view(cvs)·home_card_click(cvs·position·product_id — ALLOWED에 product_id 추가) · 홈 당겨서 새로고침 + ['processedFoods','search'].
+- QA Q-389: 음식 탭을 한 번도 안 연 채 See all(view=packaged)로 들어오면 첫 마운트의 t가 곧 prevSeeAll이라 전이가 없어 Dishes로 열렸다 → 세그먼트 초기값에도 t·view 적용.
 - 신규 문구(K-항목): home.cvsTitle ko "편의점 인기 간식"(10로케일). 기기 미검증(QA).
 
 ## 2026-11-01 · P-569 KB-949 음식·가공식품 탭 필터 — 카테고리 밑줄 탭 + 안전도 아이콘 칩(예진 11/1, Mobbin 1순위안)

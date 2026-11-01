@@ -46,3 +46,15 @@ it('Packaged 선택 → 같은 화면 재렌더엔 유지 · 새 See all(t) = Di
   expect(has(t, 'dishes')).toBe(true);
   act(() => t.unmount());
 });
+
+it('QA Q-389: 음식 탭 첫 마운트 + See all(view=packaged, t) = Packaged · 첫 마운트 + See all(t만) = Dishes', () => {
+  mockParams = { view: 'packaged', t: '9' };
+  let t!: ReactTestRenderer;
+  act(() => { t = renderer.create(<Food />); });
+  expect(has(t, 'packaged')).toBe(true); // 구 = 첫 마운트 t가 곧 prevSeeAll이라 전이 0 → 이전 세그먼트(Dishes)
+  act(() => t.unmount());
+  mockParams = { segment: 'saved', t: '10' };
+  act(() => { t = renderer.create(<Food />); });
+  expect(has(t, 'dishes')).toBe(true);
+  act(() => t.unmount());
+});

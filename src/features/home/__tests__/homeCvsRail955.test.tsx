@@ -105,7 +105,7 @@ describe('KB-955 배선(소스)', () => {
     expect(home).toContain("queryClient.invalidateQueries({ queryKey: ['processedFoods', 'search'] })");
   });
   it('음식 탭 view=packaged = Packaged 세그먼트(운영 채널 = Dishes)', () => {
-    expect(read('src/app/(tabs)/food.tsx')).toContain("const target: FoodSegment = one(raw.view) === 'packaged' && FLAGS.processedFoodEnabled ? 'packaged' : 'dishes';");
+    expect(read('src/app/(tabs)/food.tsx')).toContain("const seeAllTarget: FoodSegment = one(raw.view) === 'packaged' && FLAGS.processedFoodEnabled ? 'packaged' : 'dishes';");
   });
   it('제목 = 10로케일(en 폴백 0) · 이모지 0 · 가운데점 0', () => {
     const en = JSON.parse(read('src/lib/i18n/en.json')).home.cvsTitle as string;
