@@ -80,6 +80,8 @@ jest.mock('@/lib/data/useMe', () => ({
 
 import Profile from '../(tabs)/profile';
 import { DIET_PRESETS, presetSubstanceCodes } from '@/lib/onboarding/dietPresets';
+const REACT_ELS = [Symbol.for('react.element'), Symbol.for('react.transitional.element')];
+const safeJson = (v: unknown) => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && REACT_ELS.includes((x as { $$typeof?: symbol }).$$typeof as symbol) ? undefined : x)); // KB-954: refreshControl 엘리먼트 prop(순환 참조)만 제외
 
 const NO_ALCOHOL_CODES = [...presetSubstanceCodes(DIET_PRESETS.find((p) => p.id === 'NO_ALCOHOL')!)];
 
@@ -104,7 +106,7 @@ afterEach(() => {
   // 타이머 누수 방지(관례) — 렌더 트리 정리
   while (trees.length) act(() => trees.pop()!.unmount());
 });
-const flat = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
+const flat = (t: ReactTestRenderer) => safeJson(t.toJSON());
 
 beforeEach(() => {
   jest.clearAllMocks();

@@ -12,6 +12,8 @@
  */
 import * as React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useRefreshClient } from '@/lib/data/usePullRefresh';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
 import { MAX_FONT_SCALE, Txt as Text } from '@/components/Txt';
@@ -166,6 +168,7 @@ export function FoodExplorer({
   // P-349 ③(KB-512): 당겨서 새로고침 — #112 3R ②: 활성 쿼리만(browse는 Saved 활성 중
   // enabled:false인데 refetch가 이를 우회해 휴면 쿼리를 깨움 → 명시 분기).
   const [refreshing, setRefreshing] = React.useState(false);
+  const qc = useRefreshClient(); // KB-954
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     const jobs: Promise<unknown>[] = savedOnly
@@ -173,9 +176,16 @@ export function FoodExplorer({
         ? [saved.refetch()] // 5R ②: 같은 키 두 관찰자 — refetch 1회 (KB-821 이름 정렬이면 키가 갈라져 둘 다)
         : [savedList.refetch(), saved.refetch()] // 목록 + 북마크 판정 소스
       : [browse.refetch()];
+    jobs.push(qc.invalidateQueries({ queryKey: ['me'] })); // KB-954: 다른 기기 회피 변경·쿼터
     void Promise.all(jobs).finally(() => setRefreshing(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedOnly, riskChip, nameSort, browse.refetch, saved.refetch, savedList.refetch]);
+  }, [savedOnly, riskChip, nameSort, browse.refetch, saved.refetch, savedList.refetch, qc]);
+  // KB-954: 음식 탭(screen) 재탭 = 맨 위 + 새로고침(스피너) — 홈 embedded는 홈 화면 핸들러가 맡는다
+  const gridRef = React.useRef<React.ComponentRef<typeof Animated.FlatList<FoodCard>>>(null);
+  useTabPress('food', (kind) => {
+    if (kind !== 'reselect') return;
+    topThenRefresh(() => gridRef.current?.scrollToOffset({ offset: 0, animated: false }), onRefresh);
+  }, variant === 'screen');
 
   // P-350 ③: 얇은 페이지 — risk 지정 목록은 hasNext=true·items 미만(0 포함)이 정상.
   // onEndReached만으론 빈 화면에서 다음 페이지가 안 당겨짐 → 화면을 채울 때까지
@@ -471,6 +481,7 @@ export function FoodExplorer({
     return (
       <>
         <Animated.FlatList
+          ref={gridRef}
           data={padOddGrid(gridFoods)}
           keyExtractor={(f) => f.foodId}
           numColumns={2}
