@@ -30,7 +30,7 @@ export default function Food() {
   const isGuest = useIsGuest();
   const unread = useUnreadCount();
   // P-318: 홈 See all 파라미터 수신 — 배열형(중복 쿼리)은 첫 값, 미지값은 파서가 강등
-  const raw = useLocalSearchParams<{ segment?: string | string[]; risk?: string | string[]; t?: string | string[] }>();
+  const raw = useLocalSearchParams<{ segment?: string | string[]; risk?: string | string[]; t?: string | string[]; view?: string | string[] }>();
   const one = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
   const { segment, risk } = parseFoodFilterParams({ segment: one(raw.segment), risk: one(raw.risk) });
   const [foodSegment, setFoodSegmentState] = useState<FoodSegment>(() => lastSegment);
@@ -40,7 +40,9 @@ export default function Food() {
   const [prevSeeAll, setPrevSeeAll] = useState(seeAllKey);
   if (seeAllKey !== prevSeeAll) {
     setPrevSeeAll(seeAllKey);
-    if (seeAllKey) { rememberSegment('dishes'); setFoodSegmentState('dishes'); }
+    // KB-955: 홈 편의점 줄 See all = view=packaged → Packaged 세그먼트(운영 채널 = 세그먼트 없음 → Dishes 그대로)
+    const target: FoodSegment = one(raw.view) === 'packaged' && FLAGS.processedFoodEnabled ? 'packaged' : 'dishes';
+    if (seeAllKey) { rememberSegment(target); setFoodSegmentState(target); }
   }
   // KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 세그먼트째 없음 → Dishes 고정(main과 같은 화면)
   const segRow = FLAGS.processedFoodEnabled ? <FoodSegmentRow value={foodSegment} onChange={setFoodSegment} /> : null;

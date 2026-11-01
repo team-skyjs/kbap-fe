@@ -190,7 +190,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   ui_click: ['screen', 'target'],
   home_section_view: ['section'],
   home_card_view: ['section', 'position', 'food_id'],
-  home_card_click: ['section', 'position', 'food_id', 'collection_key'], // KB-796: section=curation이면 collection_key(서버 모음 키)
+  home_card_click: ['section', 'position', 'food_id', 'collection_key', 'product_id'], // KB-796: section=curation이면 collection_key(서버 모음 키) · KB-955: section=cvs면 product_id
   home_curation_link_click: ['collection_key', 'position'],
   food_packaged_search: ['query_length', 'result_count'],
   food_packaged_detail_view: ['product_id', 'label_source'],

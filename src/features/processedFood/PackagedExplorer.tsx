@@ -129,16 +129,21 @@ export function ProductCard({ item, width, onOpen, personalized = true, unset = 
 }
 
 /** 시안 05 — 사진 자리 + 막대 130×16 · 90×12(각 8 아래), 2열 2줄(로딩 스피너 중복 없음) */
+/** 카드 한 장 자리(사진 + 막대 2) — 그리드·홈 편의점 줄(KB-955)이 같이 쓴다 */
+export function ProductCardSkeleton({ width }: { width: number }) {
+  return (
+    <View style={[card.root, { width }]}>
+      <Shimmer style={[card.photo, card.skelPhoto]} />
+      <Shimmer style={card.skelBar1} />
+      <Shimmer style={card.skelBar2} />
+    </View>
+  );
+}
+
 function SkeletonGrid({ width }: { width: number }) {
   return (
     <View style={card.skelGrid} testID="packaged-skeleton">
-      {[0, 1, 2, 3].map((i) => (
-        <View key={i} style={[card.root, { width }]}>
-          <Shimmer style={[card.photo, card.skelPhoto]} />
-          <Shimmer style={card.skelBar1} />
-          <Shimmer style={card.skelBar2} />
-        </View>
-      ))}
+      {[0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} width={width} />)}
     </View>
   );
 }

@@ -1,3 +1,10 @@
+## 2026-11-02 · P-571 KB-955 홈 편의점 인기 가공식품 줄(예진 11/2)
+- 위치 = Popular|Saved|Food 레일 바로 아래(afterRail 맨 앞), 아이돌 픽·큐레이션 위 · 운영 채널(processedFoodEnabled off) = 마운트 0.
+- 헤더 = SectionHead(라벨 packaged.segmentPackaged 재사용 + 제목 home.cvsTitle 신규) + 오른쪽 See all(home.seeAll) → /food?view=packaged(음식 탭이 Packaged 세그먼트로 — 운영 채널은 Dishes).
+- 카드 = Packaged ProductCard 그대로(리본·평점 규칙 동일) · 폭 = railCardW · 10개 · 데이터 = useProcessedSearch('')(Packaged 둘러보기와 같은 키 = 캐시 공유, verdictKey).
+- 로딩 = ProductCardSkeleton(그리드와 공유) · 실패·0개 = 섹션째 없음 · home_section_view(cvs)·home_card_click(cvs·position·product_id — ALLOWED에 product_id 추가) · 홈 당겨서 새로고침 + ['processedFoods','search'].
+- 신규 문구(K-항목): home.cvsTitle ko "편의점 인기 간식"(10로케일). 기기 미검증(QA).
+
 ## 2026-11-01 · P-569 KB-949 음식·가공식품 탭 필터 — 카테고리 밑줄 탭 + 안전도 아이콘 칩(예진 11/1, Mobbin 1순위안)
 - Packaged: 위 = 유형 밑줄 탭(가로 스크롤 ChipScrollRow 안 — 글자·밑줄 = 상단 Dishes/Packaged 세그먼트 seg 스타일 그대로, 비선택도 투명 밑줄로 자리 유지, All 탭 유지, accessibilityRole tab) · 아래 = 판정 칩 Safe·Avoid·Caution(All 칩 삭제 — 안 고름 = 전체, 다시 누르면 해제, 단일 선택).
 - Dishes(음식 탭) + 홈(embedded, 커맨드 추가 지시 — "안전도 필터 모양 통일"): 위험 칩 All 삭제 + 같은 토글(RISK_CHIPS 하나) · Saved 칩·정렬 버튼 그대로. 저장 목록(profile/saved)도 같은 RISK_CHIPS(FoodCards로 옮겨 공유)·토글·위험도 마크(구 = 중립 칩)로 통일(커맨드 추가 지시).
