@@ -7,7 +7,9 @@
  * - 로딩 = 시안 loading(335×104 회색 4장) · 결과 0 = 시안 empty(유형 플레이스홀더 + 문구, 성분표 촬영 버튼은 F2 전까지 숨김).
  */
 import * as React from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { usePullRefresh } from '@/lib/data/usePullRefresh';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -154,6 +156,13 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   const [verdictChip, setVerdictChip] = React.useState<'all' | VerdictChipRisk>('all');
   const [searchSeq, setSearchSeq] = React.useState(0); // 제출 회차 — 같은 검색어를 다시 제출해도 1회로 센다(Codex #308 R2)
   const [gate, setGate] = React.useState(false);
+  // KB-954(P-570 QA: 당겨도 스피너·요청 0): ['processedFoods'] 접두 = 목록·판정·리뷰 + ['me']
+  const pull = usePullRefresh([['processedFoods']]);
+  const listRef = React.useRef<React.ComponentRef<typeof Animated.FlatList<ProcessedFoodSummary>>>(null);
+  useTabPress('food', (kind) => { // KB-954: 음식 탭 재탭(Packaged 세그먼트) = 맨 위 + 새로고침
+    if (kind !== 'reselect') return;
+    topThenRefresh(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }), pull.onRefresh);
+  });
   const guest = useIsGuest();
   const { data: me } = useMe();
   const personalized = !guest && !!me && me.restrictions.length > 0;
@@ -325,6 +334,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   return (
     <>
     <Animated.FlatList
+      ref={listRef}
       data={items}
       numColumns={2}
       columnWrapperStyle={st.columns}
@@ -349,6 +359,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
       onEndReached={() => { if (endReachedShouldFetch({ hasNext: q.hasNextPage, emptyAction, fetching: q.isFetchingNextPage, nextError: q.isFetchNextPageError })) void q.fetchNextPage(); }}
       contentContainerStyle={{ paddingTop: topPad, paddingBottom: 110 }}
       keyboardShouldPersistTaps="handled"
+      refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={C.ink3} progressViewOffset={topPad} />}
       onScroll={onScroll}
       scrollEventThrottle={16}
       showsVerticalScrollIndicator={false}

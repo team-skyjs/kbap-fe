@@ -69,6 +69,8 @@ jest.mock('@/lib/data/useMe', () => ({
 
 import Profile from '../(tabs)/profile';
 import DeleteAccount from '../delete-account';
+const REACT_ELS = [Symbol.for('react.element'), Symbol.for('react.transitional.element')];
+const safeJson = (v: unknown) => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && REACT_ELS.includes((x as { $$typeof?: symbol }).$$typeof as symbol) ? undefined : x)); // KB-954: refreshControl 엘리먼트 prop(순환 참조)만 제외
 
 const ME = {
   data: {
@@ -95,7 +97,7 @@ beforeEach(() => {
 });
 
 it('① 메뉴 행 순서 스냅샷 — My Foods→Saved→My reviews→Language→Safety→Blocked→Log out→Delete', () => {
-  const s = JSON.stringify(render(<Profile />).toJSON());
+  const s = safeJson(render(<Profile />).toJSON());
   const order = [
     'profile.myFoods', 'profile.saved', 'myReviews.title', 'profile.language',
     'profile.safetyNotice', 'community.blockedTitle', 'profile.logout', 'profile.deleteAccount',
@@ -129,7 +131,7 @@ it('①-b KB-434 후속: rank null(계약 드리프트 방어) = 랭킹 카드 �
   mockUseMe.mockReturnValue({ ...ME, data: { ...ME.data, rank: null } });
   const tree = render(<Profile />);
   expect(tree.root.findAll((n) => n.props?.testID === 'profile-rank-card')).toHaveLength(0);
-  const s = JSON.stringify(tree.toJSON());
+  const s = safeJson(tree.toJSON());
   expect(s).toContain('profile.restrictionsTitle'); // 화면 전체 에러 아님 — 섹션만 미렌더
   expect(s).toContain('profile.saved');
 });

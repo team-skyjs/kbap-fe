@@ -22,7 +22,8 @@
  * 그 밖 실패 = 다시 시도.
  */
 import * as React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { usePullRefresh } from '@/lib/data/usePullRefresh';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,6 +43,7 @@ import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { processedUnavailable, useProcessedDetail } from '@/lib/data/useProcessedFoods';
+import { processedReviewsKey } from '@/lib/data/useFoodReviews';
 import { packagedTypeKey, type ProcessedFoodDetail } from '@/lib/api/processedFoodAdapter';
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
 import { PackagedReviews } from '@/features/processedFood/PackagedReviews';
@@ -127,6 +129,8 @@ export function ProcessedFoodDetailScreen() {
   const params = useLocalSearchParams<{ id?: string; scan?: string; charged?: string; free?: string }>();
   const id = typeof params.id === 'string' ? params.id : undefined;
   const q = useProcessedDetail(id);
+  // KB-954: 상세(판정 — 회피 코드 키 전부) + 이 제품 리뷰 + ['me']
+  const pull = usePullRefresh([['processedFoods', 'detail', id], processedReviewsKey(id ?? '')]);
   const guest = useIsGuest();
   const meQ = useMe();
   const me = meQ.data;
@@ -198,6 +202,7 @@ export function ProcessedFoodDetailScreen() {
     const codes = insideCodes(d);
     body = (
       <ScrollView
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={C.ink3} />}
         contentContainerStyle={[s.pad, { paddingBottom: insets.bottom + 32 }]}
         scrollEventThrottle={64}
         onScroll={(e) => {

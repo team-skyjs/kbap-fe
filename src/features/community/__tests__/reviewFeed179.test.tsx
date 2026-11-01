@@ -203,6 +203,46 @@ it('소스 잠금(P-289 재잠금) — 리뷰 생존 분기가 coming-soon 가�
   expect(tab).toContain('PostCard'); // 글 피드 코드 보존
 });
 
+describe('KB-954(P-570): 탭바 재탭·진입 = 첫 페이지만 재조회(다른 폰 리뷰가 GNB를 눌러도 안 보이던 것)', () => {
+  const { queryClient } = jest.requireActual('@/lib/queryClient') as typeof import('@/lib/queryClient');
+  const { emitTabPress } = jest.requireActual('@/lib/tabPress') as typeof import('@/lib/tabPress');
+  const KEY = ['reviews', 'global', 'all', 'all', 'latest', 0, 5];
+  const twoPages = () => queryClient.setQueryData(KEY, { pages: [{ items: [REVIEW] }, { items: [] }], pageParams: [null, 'c2'] });
+  const feedWith = (refetch: jest.Mock) => mockFeed.mockReturnValue({
+    data: { pages: [{ items: [REVIEW], hasNext: true, nextCursor: 'c2' }] },
+    isLoading: false, isError: false, error: null, refetch, isStale: false,
+    hasNextPage: true, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+  });
+  afterEach(() => queryClient.removeQueries({ queryKey: ['reviews', 'global'] }));
+
+  it('다른 탭에서 진입(enter) = stale 아니어도 재조회 · 불러온 페이지는 첫 장만 남김(전 페이지 순차 재요청 0, 데이터는 유지)', () => {
+    const refetch = jest.fn().mockResolvedValue(undefined);
+    feedWith(refetch);
+    twoPages();
+    render();
+    act(() => emitTabPress('community', 'enter'));
+    expect(refetch).toHaveBeenCalledTimes(1);
+    const d = queryClient.getQueryData<{ pages: unknown[]; pageParams: unknown[] }>(KEY)!;
+    expect([d.pages.length, d.pageParams]).toEqual([1, [null]]);
+  });
+  it('이미 Reviews에서 재탭(reselect) = 같은 첫 페이지 재조회 + 스피너(RefreshControl refreshing) · 다른 탭 신호엔 반응 0', async () => {
+    let done!: () => void;
+    const refetch = jest.fn(() => new Promise<void>((r) => { done = r; }));
+    feedWith(refetch);
+    twoPages();
+    const tree = render();
+    act(() => emitTabPress('index', 'reselect'));
+    expect(refetch).not.toHaveBeenCalled();
+    act(() => emitTabPress('community', 'reselect'));
+    await act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); }); // QA Q-388 ②: 맨 위 이동 → 다음 프레임 새로고침
+    expect(refetch).toHaveBeenCalledTimes(1);
+    const { RefreshControl } = jest.requireActual('react-native') as typeof import('react-native');
+    expect(tree.root.findAllByType(RefreshControl)[0].props.refreshing).toBe(true);
+    await act(async () => { done(); await Promise.resolve(); await Promise.resolve(); });
+    expect(tree.root.findAllByType(RefreshControl)[0].props.refreshing).toBe(false);
+  });
+});
+
 describe('P-194: 당겨서 새로고침 + 포커스 stale 재조회', () => {
   it('RefreshControl 존재 — 당김 = refetch(1페이지부터)', () => {
     const refetch = jest.fn().mockResolvedValue(undefined);
