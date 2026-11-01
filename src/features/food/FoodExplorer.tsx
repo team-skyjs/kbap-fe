@@ -24,7 +24,7 @@ import { EmptyBlock } from '@/components/StateBlock';
 import { Shimmer } from '@/components/Skeleton';
 import { ActionSheet } from '@/components/ActionSheet';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
+import { FoodGridCard, isGridPad, padOddGrid, RISK_CHIPS } from '@/features/food/FoodCards'; // KB-949: 위험 칩 목록 = 저장 목록과 공통
 import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/food/foodFilterParams';
 import { railCardW } from '@/features/food/railLayout';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,8 +46,6 @@ export type GridTab = 'popular' | 'saved' | 'food';
 /** 위험 칩 4종 — All + personalRisk 3상태(라벨은 현 위험 키: Avoid=danger·Warning=caution).
  *  P-318: See all 파라미터(RiskChipParam)와 같은 유니언 — 홈→음식 탭 승계 무변환. */
 type RiskChip = RiskChipParam;
-// KB-949(예진 11/1 "안전도 필터 모양 통일"): All 칩 없음 — 안 고름(riskChip 'all') = 전체, 다시 누르면 해제. 음식 탭·홈 공통
-const RISK_CHIPS: Exclude<RiskChip, 'all'>[] = ['safe', 'danger', 'caution'];
 // KB-927: 칩 줄(가로 스크롤·끝 여백·페이드)은 components/ChipScrollRow — 기존 import 경로 유지용 재수출
 export { CHIP_FADE_W, chipFadeShown } from '@/components/ChipScrollRow';
 /** Food 탭 칩 줄 높이(시안 34). KB-708: 큰 글자에선 칩 라벨 줄 높이가 늘어난 만큼 같이 늘어난다 — 기본 크기 = 34 그대로.

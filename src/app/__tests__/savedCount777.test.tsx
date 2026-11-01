@@ -41,6 +41,7 @@ jest.mock('@/lib/data/bookmarks', () => ({
   useSavedIds: () => ({ ids: new Set<string>(), ready: true }),
 }));
 jest.mock('@/features/food/FoodCards', () => ({
+  RISK_CHIPS: jest.requireActual('@/features/food/FoodCards').RISK_CHIPS, // KB-949: 칩 목록은 실제 값(홈·음식 탭과 공통)
   FoodGridCard: () => null,
   padOddGrid: (a: unknown[]) => a,
   isGridPad: () => false,
@@ -49,14 +50,16 @@ jest.mock('@/features/food/FoodCards', () => ({
 // eslint-disable-next-line import/first -- jest.mock 뒤
 import Saved from '../profile/saved';
 
-it('KB-777 B3-5: 전체 = 11 · Avoid 칩 = 2 · 다시 전체 = 11 (헤더 개수 = 보이는 개수)', () => {
+it('KB-777 B3-5 → KB-949: 전체 = 11 · Avoid 칩 = 2 · 다시 누르면 해제 = 11 (헤더 개수 = 보이는 개수) · All 칩 0 · 칩 = 위험도 마크', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = renderer.create(<Saved />); });
   const count = () => tree.root.findAll((n) => n.props?.testID === 'saved-count' && typeof n.type === 'string')[0].props.children;
   expect(count()).toBe('saved.count:11');
   act(() => tree.root.findAll((n) => n.props?.testID === 'saved-chip-danger' && typeof n.props?.onPress === 'function')[0].props.onPress());
   expect(count()).toBe('saved.count:2');
-  act(() => tree.root.findAll((n) => n.props?.testID === 'saved-chip-all' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  act(() => tree.root.findAll((n) => n.props?.testID === 'saved-chip-danger' && typeof n.props?.onPress === 'function')[0].props.onPress()); // 다시 누름 = 해제
   expect(count()).toBe('saved.count:11');
+  expect(tree.root.findAll((n) => n.props?.testID === 'saved-chip-all')).toHaveLength(0);
+  expect(['safe', 'danger', 'caution'].every((c) => tree.root.findAll((n) => n.props?.testID === `saved-chip-${c}-mark`).length > 0)).toBe(true);
   act(() => tree.unmount());
 });
