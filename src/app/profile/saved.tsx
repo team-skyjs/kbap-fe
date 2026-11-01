@@ -26,11 +26,10 @@ import { useBookmarks, useRemoveBookmark, useRestoreBookmark, type BookmarkSnaps
 import type { FoodCard } from '@/lib/api/types';
 import { personalRisk } from '@/lib/risk';
 import type { RiskState } from '@/lib/theme';
-import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
+import { FoodGridCard, isGridPad, padOddGrid, RISK_CHIPS } from '@/features/food/FoodCards';
 
 const UNDO_MS = 5000;
-type RiskChip = 'all' | RiskState;
-const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
+type RiskChip = 'all' | RiskState; // 'all' = 안 고름(KB-949 — All 칩은 없다)
 
 export default function SavedScreen() {
   const router = useRouter();
@@ -111,15 +110,16 @@ export default function SavedScreen() {
                 <Text style={styles.metaCount} testID="saved-count">{t('saved.count', { count: items.length })}</Text>
                 <Text style={styles.metaSub}>{t('saved.newestFirst')}</Text>
               </View>
-              {/* 위험 칩 필터(@y146) — D-2 홈과 동일 칩·순서 */}
+              {/* 위험 칩 필터(@y146) — KB-949: 홈·음식 탭과 같은 칩·토글(All 칩 없음 — 다시 누르면 해제, 위험도 마크·색) */}
               <View style={styles.chipRow}>
                 {RISK_CHIPS.map((c) => (
                   <Chip
                     key={c}
-                    label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
+                    label={t(`risk.${c}`)}
                     selected={chip === c}
-                    onPress={() => setChip(c)}
+                    onPress={() => setChip(chip === c ? 'all' : c)}
                     testID={`saved-chip-${c}`}
+                    risk={c}
                   />
                 ))}
               </View>

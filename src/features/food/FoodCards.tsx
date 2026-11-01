@@ -27,6 +27,9 @@ export function padOddGrid<T>(items: T[]): (T | GridPad)[] {
   return items.length % 2 === 1 ? [...items, { foodId: '__gridPad486', __pad: true } as GridPad] : items;
 }
 
+/** KB-949(예진 11/1 "안전도 필터 모양 통일"): 위험 칩 = Safe·Avoid·Caution(All 칩 없음 — 안 고름 = 전체, 다시 누르면 해제). 홈·음식 탭·저장 목록 공통 */
+export const RISK_CHIPS = ['safe', 'danger', 'caution'] as const;
+
 /** 2열 그리드 카드 (4150:13806) — 히어로 이미지 + RiskBadge + 북마크 버튼. */
 /** 카드 제목 공통 — KB-909(Q-367): 자동 축소 끔(XXL에서 "Spicy Crab"만 작아져 이웃 카드와 글자 크기가 달랐다) · 2줄 + 말줄임.
  *  (구 KB-903 "넘치면 축소" 규칙 — 2줄에 들어가면 축소가 안 걸려 "Jajangmyeo / n"이 그대로 쪼개졌다) */

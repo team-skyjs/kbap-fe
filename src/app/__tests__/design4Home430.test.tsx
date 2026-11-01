@@ -167,7 +167,7 @@ it('① 홈 섹션 순서 — 검색→탭→칩→레일→Recent 헤드→Revi
   const tree = render(<Home />);
   const flat = safeFlat(tree);
   // 시각 순서 = 소스 내 testID/키 등장 순서로 잠금(전부 단일 스크롤 스택)
-  const order = ['home-search', 'home-scan', 'home-tab-popular', 'home-chip-all', 'home-food-', 'home-recent-head', 'home-recent-r1', 'home.disclaimer'];
+  const order = ['home-search', 'home-scan', 'home-tab-popular', 'home-chip-safe', 'home-food-', 'home-recent-head', 'home-recent-r1', 'home.disclaimer'];
   let last = -1;
   for (const key of order) {
     const at = flat.indexOf(key);
@@ -180,7 +180,7 @@ it('① 홈 섹션 순서 — 검색→탭→칩→레일→Recent 헤드→Revi
   }
 });
 
-it('② 위험 칩 — danger 선택 시 personalRisk=danger 카드만, All 복귀 시 전체(레일 상한 10 내)', () => {
+it('② 위험 칩 — danger 선택 시 personalRisk=danger 카드만, KB-949 다시 누르면 해제 = 전체(레일 상한 10 내) · All 칩 0', () => {
   const tree = render(<Home />);
   act(() => {
     byId(tree, 'home-tab-food')[0].props.onPress();
@@ -192,9 +192,10 @@ it('② 위험 칩 — danger 선택 시 personalRisk=danger 카드만, All 복�
   });
   expect(uniqueIds(tree, 'home-food-')).toEqual(['home-food-2']); // danger 1건만
   act(() => {
-    byId(tree, 'home-chip-all')[0].props.onPress();
+    byId(tree, 'home-chip-danger')[0].props.onPress(); // KB-949: 다시 누름 = 해제
   });
   expect(uniqueIds(tree, 'home-food-').length).toBe(6);
+  expect(byId(tree, 'home-chip-all')).toHaveLength(0);
 });
 
 it('③ 알림 — unread 행 = primaryTint 배경 + 점, read 행 = 흰 배경 + 점 없음(프레임 불변)', () => {

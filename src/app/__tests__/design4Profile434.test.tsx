@@ -190,11 +190,12 @@ it('Codex #33 P2 4건 — 진행 바 티어 상대·식이 진입 복원·영수
   expect(detail).not.toContain('Alert.alert'); // 네이티브 목록 소멸 잠금
 });
 
-it('④ 저장 목록 — FoodGridCard 2열 그리드 + 위험 칩(All·Safe·Avoid·Warning) 소스 잠금', () => {
+it('④ 저장 목록 — FoodGridCard 2열 그리드 + 위험 칩(KB-949: 홈·음식 탭과 같은 RISK_CHIPS — All 없음) 소스 잠금', () => {
   const src = require('fs').readFileSync('src/app/profile/saved.tsx', 'utf8') as string;
   expect(src).toContain('<FoodGridCard'); // D-2 카드 재사용
   expect(src).toContain('numColumns={2}');
-  expect(src).toContain("['all', 'safe', 'danger', 'caution']"); // 칩 순서 = D-2 홈 동일
+  expect(src).toContain("RISK_CHIPS } from '@/features/food/FoodCards'"); // KB-949: 칩 목록 = 홈·음식 탭과 같은 상수(순서 동일)
+  expect(src).not.toMatch(/RISK_CHIPS: RiskChip\[\] = \[/); // 자체 목록 0
   expect(src).toContain('onBookmark={() => onRemove(item)}'); // 별 = 해제 토글(Undo 무변)
   expect(src).not.toContain('Swipeable'); // 구 스와이프 행 소멸
 });
