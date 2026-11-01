@@ -1,6 +1,6 @@
 ## 2026-11-01 · P-569 KB-949 음식·가공식품 탭 필터 — 카테고리 밑줄 탭 + 안전도 아이콘 칩(예진 11/1, Mobbin 1순위안)
 - Packaged: 위 = 유형 밑줄 탭(가로 스크롤 ChipScrollRow 안 — 글자·밑줄 = 상단 Dishes/Packaged 세그먼트 seg 스타일 그대로, 비선택도 투명 밑줄로 자리 유지, All 탭 유지, accessibilityRole tab) · 아래 = 판정 칩 Safe·Avoid·Caution(All 칩 삭제 — 안 고름 = 전체, 다시 누르면 해제, 단일 선택).
-- Dishes(음식 탭 variant screen): 위험 칩 All 삭제 + 같은 토글 · Saved 칩·정렬 버튼 그대로. 홈(embedded) 칩 줄은 기존 All 칩 그대로(발주 범위 = 음식 탭).
+- Dishes(음식 탭) + 홈(embedded, 커맨드 추가 지시 — "안전도 필터 모양 통일"): 위험 칩 All 삭제 + 같은 토글(RISK_CHIPS 하나) · Saved 칩·정렬 버튼 그대로. 저장 목록(profile/saved) 칩 줄은 지시 밖이라 그대로(보고).
 - 칩 모양 = 기존 Chip(risk 마크·외곽선 / 선택 = 위험도 틴트 채움 + 같은 색 테두리) 그대로. 필터 로직·API 무변. 신규 ko 0. 기기 미검증(QA — 큰 글자·긴 로케일 가로 스크롤·한 줄).
 
 ## 2026-10-31 · P-568 KB-948 후속 — 카드 평점 줄을 한국어 이름 줄 스타일로(예진 실기 teamtest 0f5f2db)

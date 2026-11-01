@@ -46,7 +46,8 @@ export type GridTab = 'popular' | 'saved' | 'food';
 /** 위험 칩 4종 — All + personalRisk 3상태(라벨은 현 위험 키: Avoid=danger·Warning=caution).
  *  P-318: See all 파라미터(RiskChipParam)와 같은 유니언 — 홈→음식 탭 승계 무변환. */
 type RiskChip = RiskChipParam;
-const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
+// KB-949(예진 11/1 "안전도 필터 모양 통일"): All 칩 없음 — 안 고름(riskChip 'all') = 전체, 다시 누르면 해제. 음식 탭·홈 공통
+const RISK_CHIPS: Exclude<RiskChip, 'all'>[] = ['safe', 'danger', 'caution'];
 // KB-927: 칩 줄(가로 스크롤·끝 여백·페이드)은 components/ChipScrollRow — 기존 import 경로 유지용 재수출
 export { CHIP_FADE_W, chipFadeShown } from '@/components/ChipScrollRow';
 /** Food 탭 칩 줄 높이(시안 34). KB-708: 큰 글자에선 칩 라벨 줄 높이가 늘어난 만큼 같이 늘어난다 — 기본 크기 = 34 그대로.
@@ -140,7 +141,6 @@ export function FoodExplorer({
   const [gridTab, setGridTab] = React.useState<GridTab>(initialTab);
   // P-318: 딥링크 초기값 — 게스트는 개인화 상태 강등(칩 게이트·저장 게이트 우회 방지)
   const [riskChip, setRiskChip] = React.useState<RiskChip>(guest ? 'all' : (initialRisk ?? 'all'));
-  const riskChips = variant === 'screen' ? RISK_CHIPS.filter((c) => c !== 'all') : RISK_CHIPS; // KB-949: 음식 탭 = All 칩 없음
   const [savedOnly, setSavedOnly] = React.useState(initialSaved === true && !guest);
   // Codex #299 P2: 정렬 컨트롤은 음식 탭(screen)에만 — 홈(embedded) 레일은 기억된 정렬을 물려받지 않고 기본 순서 그대로
   const sortable = variant === 'screen';
@@ -273,7 +273,7 @@ export function FoodExplorer({
   };
   React.useEffect(() => {
     if (variant !== 'screen') return;
-    const idx = savedOnly ? riskChips.length : riskChips.indexOf(riskChip);
+    const idx = savedOnly ? RISK_CHIPS.length : riskChip === 'all' ? -1 : RISK_CHIPS.indexOf(riskChip);
     if (idx > 1) chipScrollRef.current?.scrollTo({ x: idx * 72, animated: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variant, riskChip, savedOnly, paramsKey]);
@@ -421,15 +421,15 @@ export function FoodExplorer({
           scrollTestID="food-chip-scroll"
           fadeTestID="food-chip-fade"
         >
-          {/* KB-949(예진 11/1): 음식 탭 = All 칩 없음(안 고름 = 전체, 다시 누르면 해제 — Packaged 판정 칩과 같은 칩) · 홈(embedded)은 기존 All 칩 그대로 */}
-          {riskChips.map((c) => (
+          {/* KB-949: Packaged 판정 칩과 같은 칩·토글(All 칩 없음 — 다시 누르면 해제) */}
+          {RISK_CHIPS.map((c) => (
             <Chip
               key={c}
-              label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
+              label={t(`risk.${c}`)}
               selected={riskChip === c}
-              onPress={() => onChip(variant === 'screen' && riskChip === c ? 'all' : c)}
+              onPress={() => onChip(riskChip === c ? 'all' : c)}
               testID={`home-chip-${c}`}
-              risk={c === 'all' ? undefined : c} // P-391: all만 중립, 나머지는 상태색
+              risk={c} // P-391: 상태색·마크
             />
           ))}
           {variant === 'screen' && <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />}
