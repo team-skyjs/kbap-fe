@@ -30,17 +30,24 @@ export default function Food() {
   const isGuest = useIsGuest();
   const unread = useUnreadCount();
   // P-318: 홈 See all 파라미터 수신 — 배열형(중복 쿼리)은 첫 값, 미지값은 파서가 강등
-  const raw = useLocalSearchParams<{ segment?: string | string[]; risk?: string | string[]; t?: string | string[] }>();
+  const raw = useLocalSearchParams<{ segment?: string | string[]; risk?: string | string[]; t?: string | string[]; view?: string | string[] }>();
   const one = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
   const { segment, risk } = parseFoodFilterParams({ segment: one(raw.segment), risk: one(raw.risk) });
-  const [foodSegment, setFoodSegmentState] = useState<FoodSegment>(() => lastSegment);
-  const setFoodSegment = (s: FoodSegment) => { rememberSegment(s); setFoodSegmentState(s); };
   // Codex #308 P2: 홈 "See all"(새 t 파라미터) = 요리 카탈로그 요청 — Packaged에 있었어도 Dishes로(렌더 중 전이 비교, KB-603)
+  // KB-955: 홈 편의점 줄 See all = view=packaged → Packaged 세그먼트(운영 채널 = 세그먼트 없음 → Dishes 그대로)
   const seeAllKey = one(raw.t) ?? '';
+  const seeAllTarget: FoodSegment = one(raw.view) === 'packaged' && FLAGS.processedFoodEnabled ? 'packaged' : 'dishes';
+  // QA Q-389: 음식 탭을 한 번도 안 연 채 See all로 들어오면 첫 마운트의 t가 곧 prevSeeAll이라 "바뀜"이 없어 view가 무시됐다 → 첫 마운트에도 적용
+  const [foodSegment, setFoodSegmentState] = useState<FoodSegment>(() => {
+    if (!seeAllKey) return lastSegment;
+    rememberSegment(seeAllTarget);
+    return seeAllTarget;
+  });
+  const setFoodSegment = (s: FoodSegment) => { rememberSegment(s); setFoodSegmentState(s); };
   const [prevSeeAll, setPrevSeeAll] = useState(seeAllKey);
   if (seeAllKey !== prevSeeAll) {
     setPrevSeeAll(seeAllKey);
-    if (seeAllKey) { rememberSegment('dishes'); setFoodSegmentState('dishes'); }
+    if (seeAllKey) { rememberSegment(seeAllTarget); setFoodSegmentState(seeAllTarget); }
   }
   // KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 세그먼트째 없음 → Dishes 고정(main과 같은 화면)
   const segRow = FLAGS.processedFoodEnabled ? <FoodSegmentRow value={foodSegment} onChange={setFoodSegment} /> : null;

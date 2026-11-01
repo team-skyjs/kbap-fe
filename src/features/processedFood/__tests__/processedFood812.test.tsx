@@ -372,7 +372,8 @@ describe('Food 탭 세그먼트·목록', () => {
   it('Food 탭 배선: 기본 Dishes · 선택 유지(모듈 상태) · Packaged = 가공식품 목록 · Dishes 화면은 그대로(세그먼트만 머리에)', () => {
     const src = fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8');
     expect(src).toContain("let lastSegment: FoodSegment = 'dishes';");
-    expect(src).toContain('useState<FoodSegment>(() => lastSegment)');
+    expect(src).toContain('useState<FoodSegment>(() => {'); // QA Q-389: 첫 마운트 See all(t) 적용 — 없으면 lastSegment
+    expect(src).toContain('if (!seeAllKey) return lastSegment;');
     expect(src).toContain("segRow && foodSegment === 'packaged' ? ("); // KB-870: 운영 채널 = 세그먼트째 없음
     expect(src).toContain('headTop={segRow ? <View style={styles.segGap}>{segRow}</View> : undefined}');
   });

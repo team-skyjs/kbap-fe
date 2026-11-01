@@ -1,3 +1,11 @@
+## 2026-11-02 · P-571 KB-955 홈 편의점 인기 가공식품 줄(예진 11/2)
+- 위치 = Popular|Saved|Food 레일 바로 아래(afterRail 맨 앞), 아이돌 픽·큐레이션 위 · 운영 채널(processedFoodEnabled off) = 마운트 0.
+- 헤더 = SectionHead(라벨 packaged.segmentPackaged 재사용 + 제목 home.cvsTitle 신규) + 오른쪽 See all(home.seeAll) → /food?view=packaged(음식 탭이 Packaged 세그먼트로 — 운영 채널은 Dishes).
+- 카드 = Packaged ProductCard 그대로(리본·평점 규칙 동일) · 폭 = railCardW · 10개 · 데이터 = useProcessedSearch('')(Packaged 둘러보기와 같은 키 = 캐시 공유, verdictKey).
+- 로딩 = ProductCardSkeleton(그리드와 공유) · 실패·0개 = 섹션째 없음 · home_section_view(cvs)·home_card_click(cvs·position·product_id — ALLOWED에 product_id 추가) · 홈 당겨서 새로고침 + ['processedFoods','search'].
+- QA Q-389: 음식 탭을 한 번도 안 연 채 See all(view=packaged)로 들어오면 첫 마운트의 t가 곧 prevSeeAll이라 전이가 없어 Dishes로 열렸다 → 세그먼트 초기값에도 t·view 적용.
+- 신규 문구(K-항목): home.cvsTitle ko "편의점 인기 간식"(10로케일). 기기 미검증(QA).
+
 ## 2026-11-02 · P-570 KB-954 새로고침 공백·리뷰 후 카드 평점·회피 변경 재조회·탭바 재탭
 - 회피 변경(useUpdateMe)·온보딩 완료 = resetPersonalizedQueries — 위험도 키(home·foods·food·bookmarks·processedFoods)는 resetQueries(재조회 동안 옛 Safe 대신 스켈레톤, 실패 = 오류), 나머지는 invalidate. 온보딩 clear()(마운트된 탭 재조회 0, P-205 족보) 제거.
 - 리뷰 작성·수정·삭제 무효화 + foods·bookmarks·processedFoods search(KB-948 카드 평점 공백).
