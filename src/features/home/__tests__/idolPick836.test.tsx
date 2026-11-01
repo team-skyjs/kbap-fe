@@ -365,7 +365,7 @@ describe('상세 V1 카드', () => {
 
 describe('무효화', () => {
   it('기피 성분 변경 = useMe → resetPersonalizedQueries(KB-954) → [idolPicks, lang]은 위험도 키가 아니라 invalidate(데이터 유지·추가 코드 없음)', async () => {
-    expect(fs.readFileSync('src/lib/data/useMe.ts', 'utf8')).toMatch(/patch\.restrictions !== undefined[\s\S]{0,80}void resetPersonalizedQueries\(qc\);/);
+    expect(fs.readFileSync('src/lib/data/useMe.ts', 'utf8')).toMatch(/patch\.restrictions !== undefined[\s\S]{0,260}void resetPersonalizedQueries\(qc\);/);
     const { resetPersonalizedQueries } = jest.requireActual('@/lib/queryClient') as typeof import('@/lib/queryClient');
     qc.setQueryData(idolPicksKey('en'), [pick(491)]);
     await resetPersonalizedQueries(qc);

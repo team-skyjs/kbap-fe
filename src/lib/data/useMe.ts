@@ -20,7 +20,7 @@ import { api, apiLang } from '../api/client';
 import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api/memberAdapter';
 import { adaptReviewPage, type ReviewPageWire } from '../api/reviewAdapter';
 import { hasBeSession } from '../auth/beAuth';
-import { resetPersonalizedQueries } from '../queryClient';
+import { queryClient, resetPersonalizedQueries } from '../queryClient';
 import { currentGen } from '../auth/beTokens';
 import { setSentryUser } from '../sentry';
 import { setAnalyticsUser } from '../analytics';
@@ -36,6 +36,20 @@ import { REVIEW_READ_HEADERS } from './useFoodReviews';
 /** Codex #291 R4: request order, not completion order, feeds the unlock transition (an older false must not erase a newer true). */
 let meRequestSeq = 0;
 let meAppliedSeq = 0;
+
+/** Codex #388 P1: 위험도 캐시(home·foods·food·bookmarks·processedFoods)가 기준으로 삼은 회피 집합(코드 정렬).
+ *  다른 기기에서 회피를 바꾼 뒤 당김·탭 재탭·앱 복귀 등으로 프로필만 새로 오면 판정 캐시는 옛 기준 그대로였다(false-safe) —
+ *  프로필이 오는 모든 경로가 지나는 fetchMe 한 곳에서 비교해 다르면 위험도 키만 reset. null = 아직 기준 없음(첫 프로필은 기준만 잡는다). */
+let appliedRestrictionKey: string | null = null;
+const restrictionKeyOf = (codes: string[]) => [...codes].sort().join(',');
+/** 이 기기의 회피 저장(useUpdateMe)은 스스로 reset하므로 새 기준을 먼저 적어 둔다 — 뒤따르는 프로필 재조회가 한 번 더 reset하지 않게 */
+export function noteAppliedRestrictions(codes: string[]): void {
+  appliedRestrictionKey = restrictionKeyOf(codes);
+}
+/** 테스트용 */
+export function resetAppliedRestrictionsForTest(): void {
+  appliedRestrictionKey = null;
+}
 
 /** 내 프로필 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
 export async function fetchMe(): Promise<User> {
@@ -54,6 +68,11 @@ export async function fetchMe(): Promise<User> {
     setAirbridgeUser(user.id); // KB-783: 같은 지점·같은 값(회원 번호만 — 이메일 등 PII 금지)
     if (seq > meAppliedSeq) { meAppliedSeq = seq; observeUnlock(user.id, user.scanQuota?.unlocked, gen); }
     observeScanQuota(user.id, user.scanQuota?.unlocked); // KB-783 ⑮: 리뷰 해제 = 서버 프로필 전이로만 안다
+    const key = restrictionKeyOf(user.restrictions.map((r) => r.code));
+    const changed = appliedRestrictionKey != null && appliedRestrictionKey !== key;
+    appliedRestrictionKey = key;
+    // 이 응답이 캐시에 들어간 뒤(다음 틱) 위험도 키만 reset — 재조회 동안 옛 Safe 대신 스켈레톤
+    if (changed) setTimeout(() => void resetPersonalizedQueries(queryClient, { riskOnly: true }), 0);
   }
   return user;
 }
@@ -161,6 +180,7 @@ export function useUpdateMe() {
       // mock 경로(무세션)는 캐시 병합이 진실이라 전면 무효화 시 수정 증발 → 제외.
       // KB-954(P-570): 위험도 키는 reset(재조회 동안 옛 Safe 대신 스켈레톤·실패 = 오류 — false-safe 창 제거), 나머지는 전면 invalidate 그대로
       if (patch.restrictions !== undefined && (await hasBeSession())) {
+        noteAppliedRestrictions(patch.restrictions.map((r) => toBeCode(r.code) ?? r.code)); // 뒤따르는 프로필 재조회가 같은 기준이면 reset 0
         void resetPersonalizedQueries(qc);
         return;
       }

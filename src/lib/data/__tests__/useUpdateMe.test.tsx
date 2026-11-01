@@ -8,6 +8,7 @@
  * 않는다 → invalidateQueries()로 교체. 그래서 단언도 "캐시 제거"가 아니라
  * "invalidated 마킹"(활성 쿼리는 즉시 재조회되는 상태)을 본다.
  */
+import * as fs from 'fs';
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -190,4 +191,45 @@ it('P-165(#145): currency 패치 → PATCH body 포함 · null(해제)도 전송
   expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { currency: 'THB' }, { headers: { 'X-API-Version': '1.1' } });
   await runMutation(seededClient(), { currency: null });
   expect(api.patch).toHaveBeenLastCalledWith('/members/me/profile', { currency: null }, { headers: { 'X-API-Version': '1.1' } });
+});
+
+describe('Codex #388 P1: 프로필 재조회가 바뀐 회피를 발견하면 위험도 캐시 reset(다른 기기 변경 → 당김·재탭·앱 복귀)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { fetchMe, noteAppliedRestrictions, resetAppliedRestrictionsForTest } = require('../useMe') as typeof import('../useMe');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { queryClient } = require('@/lib/queryClient') as typeof import('@/lib/queryClient');
+  const wire = (codes: string[]) => ({ memberId: 41, nickname: 'A', countryCode: 'US', avoidanceSubstanceCodes: codes, ranking: null });
+  const seed = () => {
+    queryClient.setQueryData(['home', 'en'], { recommended: [] });
+    queryClient.setQueryData(['foods', 'list', 'en'], []);
+    queryClient.setQueryData(['curations', 'seoul', 'en'], { items: ['c1'] });
+  };
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  beforeEach(() => { resetAppliedRestrictionsForTest(); queryClient.clear(); });
+
+  it('첫 프로필 = 기준만(reset 0) · 같은 집합(순서만 다름) = reset 0 · 다른 집합 = 위험도 키만 reset(나머지·me 재조회 0)', async () => {
+    seed();
+    api.get.mockResolvedValueOnce(wire(['PEANUT', 'MILK']));
+    await fetchMe(); await tick();
+    expect(queryClient.getQueryData(['home', 'en'])).toEqual({ recommended: [] }); // 첫 프로필 = 기준만
+    api.get.mockResolvedValueOnce(wire(['MILK', 'PEANUT']));
+    await fetchMe(); await tick();
+    expect(queryClient.getQueryData(['home', 'en'])).toEqual({ recommended: [] }); // 같은 집합
+    api.get.mockResolvedValueOnce(wire(['MILK', 'PEANUT', 'SHRIMP'])); // 다른 기기에서 SHRIMP 추가
+    await fetchMe(); await tick();
+    expect(queryClient.getQueryData(['home', 'en'])).toBeUndefined(); // reset = 옛 판정 데이터 0
+    expect(queryClient.getQueryData(['foods', 'list', 'en'])).toBeUndefined();
+    expect(queryClient.getQueryData(['curations', 'seoul', 'en'])).toEqual({ items: ['c1'] }); // 위험도 아닌 키 무변
+    expect(queryClient.getQueryState(['curations', 'seoul', 'en'])?.isInvalidated).toBe(false); // riskOnly — 루프 0
+  });
+  it('이 기기의 회피 저장 = 새 기준을 먼저 적어 둠 → 뒤따르는 프로필 재조회는 reset 0(중복 reset 0)', async () => {
+    api.get.mockResolvedValueOnce(wire(['MILK']));
+    await fetchMe(); await tick();
+    noteAppliedRestrictions(['SHRIMP', 'MILK']); // useUpdateMe onSuccess가 하는 일
+    seed();
+    api.get.mockResolvedValueOnce(wire(['MILK', 'SHRIMP']));
+    await fetchMe(); await tick();
+    expect(queryClient.getQueryData(['home', 'en'])).toEqual({ recommended: [] });
+    expect(fs.readFileSync('src/lib/data/useMe.ts', 'utf8')).toMatch(/noteAppliedRestrictions\(patch\.restrictions[\s\S]{0,140}void resetPersonalizedQueries\(qc\);/);
+  });
 });
