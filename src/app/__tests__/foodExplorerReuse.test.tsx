@@ -224,16 +224,32 @@ it('⑥ P-321 Safe picks 2×2 그리드 — 회원+회피≥1+Popular+All에서�
   expect(grid(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />))).toHaveLength(0);
 });
 
-it('④ 게스트 칩 — 4개 렌더 · 개인화 칩 탭 = 게이트 + 선택 All 유지(필터 미적용)', () => {
+it('④ 게스트 칩 — KB-949 음식 탭 = 3개(All 칩 없음) · 홈 = 4개 그대로 · 개인화 칩 탭 = 게이트 + 필터 미적용', () => {
   const tree = render(<FoodExplorer variant="screen" guest initialTab="food" srcTag="list" />);
-  for (const c of ['all', 'safe', 'danger', 'caution']) {
+  for (const c of ['safe', 'danger', 'caution']) {
     expect(tree.root.findAll((n) => n.props?.testID === `home-chip-${c}`).length).toBeGreaterThanOrEqual(1);
   }
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-chip-all')).toHaveLength(0);
+  const home = render(<FoodExplorer variant="embedded" guest srcTag="home" />);
+  expect(home.root.findAll((n) => n.props?.testID === 'home-chip-all').length).toBeGreaterThanOrEqual(1);
   const before = cardIds(tree).size;
   const safe = tree.root.findAll((n) => n.props?.testID === 'home-chip-safe' && typeof n.props?.onPress === 'function')[0];
   act(() => safe.props.onPress());
   expect(tree.root.findAll((n) => n.props?.testID === 'auth-gate-open').length).toBeGreaterThanOrEqual(1); // 게이트
   expect(cardIds(tree).size).toBe(before); // 필터 미적용(All 유지)
+});
+
+it('KB-949 음식 탭 위험 칩 = 단일 선택 토글 — 안 고름 = 전체 · 누르면 그 위험도 · 다시 누르면 해제 · 다른 칩 = 바꿈', () => {
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialTab="food" srcTag="list" />);
+  expect(cardIds(tree).size).toBe(10);
+  press(tree, 'home-chip-danger');
+  expect(cardIds(tree).size).toBe(5);
+  press(tree, 'home-chip-danger'); // 해제
+  expect(cardIds(tree).size).toBe(10);
+  press(tree, 'home-chip-danger');
+  press(tree, 'home-chip-safe'); // 바꿈(단일 선택)
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-chip-danger' && n.props?.selected === true)).toHaveLength(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-chip-safe' && n.props?.selected === true).length).toBeGreaterThanOrEqual(1);
 });
 
 it('⑧ Codex #80 P1 — initialRisk 초기 적용(회원), 게스트는 all 강등', () => {
@@ -301,7 +317,9 @@ it('⑬ Codex #80 3R P2 — 세션 상태 전환은 파라미터 재적용이 �
   const tree = render(<FoodExplorer variant="screen" guest initialRisk="danger" srcTag="list" />);
   expect(cardIds(tree).size).toBe(10); // 강등 all
   act(() => tree.update(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />));
-  expect(tree.root.findAll((n) => n.props?.testID === 'home-chip-all' && n.props?.selected === true).length).toBeGreaterThanOrEqual(1);
+  // KB-949: 음식 탭엔 All 칩이 없다 — 강등 all = 아무 칩도 선택 안 됨 + 전 카드
+  expect(tree.root.findAll((n) => /^home-chip-/.test(n.props?.testID ?? '') && n.props?.selected === true)).toHaveLength(0);
+  expect(cardIds(tree).size).toBe(10);
   // 반대로 만료(→게스트)는 개인화 필터 강등
   const t2 = render(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />);
   expect([...cardIds(t2)].length).toBe(5); // danger 5

@@ -237,26 +237,38 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
       </View>
       <SearchScanButton onPress={() => router.navigate(`/scan?mode=packaged&t=${Date.now()}` as Href)} testID="packaged-scan" />
       </View>
-      {/* KB-927: 칩 줄 = Dishes와 같은 공용 줄(가로 스크롤·끝 여백·숨은 칩 페이드). 첫 줄 판정 칩(회원 판정이 있을 때만) · 둘째 줄 유형 칩(항상) */}
-      {verdictChips && (
-        <ChipScrollRow style={st.chips} minHeight={chipRowHeight(fontScale)} keyboardShouldPersistTaps="handled" scrollTestID="packaged-verdicts" fadeTestID="packaged-verdicts-fade">
-          {(['all', 'safe', 'danger', 'caution'] as const).map((c) => (
-            <Chip
-              key={c}
-              label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
-              selected={verdictChip === c}
-              onPress={() => pickVerdict(c)}
-              testID={`packaged-verdict-${c}`}
-              risk={c === 'all' ? undefined : c} // 리본·Dishes 칩과 같은 상태색·마크
-            />
+      {/* KB-949(예진 11/1, Mobbin): 위 = 유형 밑줄 탭(가로 스크롤 — Dishes/Packaged 상단 탭과 같은 글자·밑줄, All 탭 유지) · 아래 = 판정 아이콘 칩(All 칩 없음 — 안 고름 = 전체, 다시 누르면 해제).
+          KB-901(T-017): 바깥 목록만 handled면 안쪽 가로 줄의 첫 탭은 키보드 닫기에 쓰였다(✕ 뒤 Drinks 첫 탭 무반응) */}
+      {v4 && (
+        <ChipScrollRow style={st.chips} minHeight={0} keyboardShouldPersistTaps="handled" scrollTestID="packaged-types" fadeTestID="packaged-types-fade">
+          {([null, ...PACKAGED_TYPES] as (PackagedType | null)[]).map((k) => (
+            <Pressable
+              key={k ?? 'all'}
+              style={cat.tab}
+              onPress={() => pickType(k)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: type === k }}
+              testID={k ? `packaged-type-${k.toLowerCase()}` : 'packaged-type-all'}
+            >
+              <Text style={[seg.label, type === k && seg.labelOn]} numberOfLines={1}>{k ? t(packagedTypeKey(k)) : t('food.categories.all')}</Text>
+              {/* 밑줄 = 비선택도 투명으로 자리 유지(프레임 불변 P-151) */}
+              <View style={[seg.bar, type === k && seg.barOn]} />
+            </Pressable>
           ))}
         </ChipScrollRow>
       )}
-      {v4 && (
-        // KB-901(T-017): 바깥 목록만 handled면 안쪽 가로 칩 줄의 첫 탭은 키보드 닫기에 쓰였다(✕ 뒤 Drinks 첫 탭 무반응)
-        <ChipScrollRow style={verdictChips ? st.chipsSecond : st.chips} minHeight={chipRowHeight(fontScale)} keyboardShouldPersistTaps="handled" scrollTestID="packaged-types" fadeTestID="packaged-types-fade">
-          <Chip label={t('food.categories.all')} selected={type == null} onPress={() => pickType(null)} testID="packaged-type-all" />
-          {PACKAGED_TYPES.map((k) => <Chip key={k} label={t(packagedTypeKey(k))} selected={type === k} onPress={() => pickType(k)} testID={`packaged-type-${k.toLowerCase()}`} />)}
+      {verdictChips && (
+        <ChipScrollRow style={v4 ? st.chipsSecond : st.chips} minHeight={chipRowHeight(fontScale)} keyboardShouldPersistTaps="handled" scrollTestID="packaged-verdicts" fadeTestID="packaged-verdicts-fade">
+          {(['safe', 'danger', 'caution'] as const).map((c) => (
+            <Chip
+              key={c}
+              label={t(`risk.${c}`)}
+              selected={verdictChip === c}
+              onPress={() => pickVerdict(verdictChip === c ? 'all' : c)}
+              testID={`packaged-verdict-${c}`}
+              risk={c} // 리본·Dishes 칩과 같은 상태색·마크
+            />
+          ))}
         </ChipScrollRow>
       )}
       {/* KB-901(T-105): 유형 칩을 고르면 제목 = 그 유형명(Drinks인데 "Popular picks"였다) */}
@@ -373,6 +385,11 @@ const seg = StyleSheet.create({
   divider: { height: 0.5, backgroundColor: C.line2 },
 });
 
+// KB-949: 유형 밑줄 탭 — 글자·밑줄 = seg(상단 Dishes/Packaged 탭) 그대로, 칸 폭 = 글자 폭(가로 스크롤)
+const cat = StyleSheet.create({
+  tab: { alignItems: 'stretch', gap: 6, marginRight: 12 }, // 글자 사이 18(줄 gap 6 + 12) · 첫 탭 = 페이지 여백 20에 맞춤 · 밑줄 = 글자 폭
+});
+
 const ph = StyleSheet.create({
   box: { backgroundColor: C.hair, alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden' },
   label: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2, paddingHorizontal: 6 },
@@ -385,7 +402,7 @@ const st = StyleSheet.create({
   searchBox: { flex: 1, height: 48, borderRadius: radius.md, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
   searchInput: { flex: 1, height: 48, fontSize: 16, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
   chips: { marginTop: 16 },
-  chipsSecond: { marginTop: 8 }, // KB-927: 판정 줄 아래 유형 줄
+  chipsSecond: { marginTop: 8 }, // KB-949: 유형 탭 아래 판정 칩 줄
   findMorePad: { paddingHorizontal: 20, paddingVertical: 16, alignItems: 'center' },
   heading: { fontFamily: font.bodyBold, fontSize: 22, lineHeight: 28, color: C.ink, marginTop: 26, marginBottom: 16, marginHorizontal: 20 },
   columns: { paddingHorizontal: 20, gap: 12 },

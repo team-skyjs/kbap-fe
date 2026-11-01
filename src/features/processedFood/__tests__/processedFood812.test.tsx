@@ -768,18 +768,29 @@ describe('KB-927 Packaged 판정 칩 — 서버 verdict 필터 · 빈 페이지 
     }
   });
 
-  it('회원: 판정 칩 줄 + 유형 칩 줄 · Safe = verdict=SAFE · Caution = CAUTION·SAFE_WITH_NOTE · All = 파라미터 0', async () => {
+  it('KB-949 회원: 유형 밑줄 탭 + 판정 칩 줄(All 칩 없음) · 안 고름 = 전체 · Safe = verdict=SAFE · Caution = CAUTION·SAFE_WITH_NOTE · 다시 누르면 해제 = 파라미터 0', async () => {
     serve(() => ({ items: [ITEM], hasNext: false, nextCursor: null }));
     const t = await mount();
-    expect(ids(t)).toEqual(expect.arrayContaining(['packaged-verdicts', 'packaged-verdict-all', 'packaged-verdict-safe', 'packaged-verdict-danger', 'packaged-verdict-caution', 'packaged-types']));
+    expect(ids(t)).toEqual(expect.arrayContaining(['packaged-verdicts', 'packaged-verdict-safe', 'packaged-verdict-danger', 'packaged-verdict-caution', 'packaged-types']));
+    expect(ids(t)).not.toContain('packaged-verdict-all');
+    expect(verdictCalls()).toHaveLength(0); // 안 고름 = 전체(verdict 파라미터 0)
     await press(t, 'packaged-verdict-safe');
     expect(verdictCalls().at(-1)).toMatch(/verdict=SAFE(&|$)/);
     expect(verdictCalls().at(-1)).not.toMatch(/verdict=(AVOID|CAUTION|SAFE_WITH_NOTE)/);
-    await press(t, 'packaged-verdict-caution');
+    await press(t, 'packaged-verdict-caution'); // 단일 선택 — Safe → Caution으로 바뀜
     expect(verdictCalls().at(-1)).toContain('verdict=CAUTION&verdict=SAFE_WITH_NOTE');
+    const sel = (id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
     const before = verdictCalls().length;
-    await press(t, 'packaged-verdict-all');
-    expect(verdictCalls()).toHaveLength(before); // All = verdict 없는 요청
+    await press(t, 'packaged-verdict-caution'); // 다시 누름 = 해제 → verdict 없는 요청(캐시)
+    expect(verdictCalls()).toHaveLength(before);
+    expect(sel('packaged-verdict-caution')).toBeTruthy();
+    // 요청 수만으론 "해제"와 "그대로"를 못 가른다(둘 다 캐시) — 선택 상태로 판별
+    const selected = (id: string) => t.root.findAll((n) => n.props?.testID === id && 'selected' in (n.props ?? {}))[0].props.selected;
+    expect(['safe', 'danger', 'caution'].map((c) => selected(`packaged-verdict-${c}`))).toEqual([false, false, false]);
+    // 유형 = 밑줄 탭(탭 역할·선택 상태) · All 탭 유지
+    const tab = (id: string) => t.root.findAll((n) => n.props?.testID === id && n.props?.accessibilityRole === 'tab')[0];
+    expect(tab('packaged-type-all').props.accessibilityState).toEqual({ selected: true });
+    expect(tab('packaged-type-ramen').props.accessibilityState).toEqual({ selected: false });
   });
 
   it('0건 + hasNext = 자동 이어 부르기 3번 → "더 찾아보기"(결과 없음 아님) · 누르면 다시 3번', async () => {

@@ -140,6 +140,7 @@ export function FoodExplorer({
   const [gridTab, setGridTab] = React.useState<GridTab>(initialTab);
   // P-318: 딥링크 초기값 — 게스트는 개인화 상태 강등(칩 게이트·저장 게이트 우회 방지)
   const [riskChip, setRiskChip] = React.useState<RiskChip>(guest ? 'all' : (initialRisk ?? 'all'));
+  const riskChips = variant === 'screen' ? RISK_CHIPS.filter((c) => c !== 'all') : RISK_CHIPS; // KB-949: 음식 탭 = All 칩 없음
   const [savedOnly, setSavedOnly] = React.useState(initialSaved === true && !guest);
   // Codex #299 P2: 정렬 컨트롤은 음식 탭(screen)에만 — 홈(embedded) 레일은 기억된 정렬을 물려받지 않고 기본 순서 그대로
   const sortable = variant === 'screen';
@@ -272,7 +273,7 @@ export function FoodExplorer({
   };
   React.useEffect(() => {
     if (variant !== 'screen') return;
-    const idx = savedOnly ? RISK_CHIPS.length : RISK_CHIPS.indexOf(riskChip);
+    const idx = savedOnly ? riskChips.length : riskChips.indexOf(riskChip);
     if (idx > 1) chipScrollRef.current?.scrollTo({ x: idx * 72, animated: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variant, riskChip, savedOnly, paramsKey]);
@@ -420,12 +421,13 @@ export function FoodExplorer({
           scrollTestID="food-chip-scroll"
           fadeTestID="food-chip-fade"
         >
-          {RISK_CHIPS.map((c) => (
+          {/* KB-949(예진 11/1): 음식 탭 = All 칩 없음(안 고름 = 전체, 다시 누르면 해제 — Packaged 판정 칩과 같은 칩) · 홈(embedded)은 기존 All 칩 그대로 */}
+          {riskChips.map((c) => (
             <Chip
               key={c}
               label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
               selected={riskChip === c}
-              onPress={() => onChip(c)}
+              onPress={() => onChip(variant === 'screen' && riskChip === c ? 'all' : c)}
               testID={`home-chip-${c}`}
               risk={c === 'all' ? undefined : c} // P-391: all만 중립, 나머지는 상태색
             />
