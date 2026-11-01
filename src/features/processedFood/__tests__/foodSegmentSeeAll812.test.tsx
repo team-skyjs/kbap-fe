@@ -51,6 +51,9 @@ it('KB-957: 첫 진입 기본 = Packaged · 세그먼트 = 헤더 안(본문 머
   mockParams = { segment: 'saved', t: '1' };
   act(() => t.update(<Food />));
   expect(has(t, 'dishes')).toBe(true); // 음식 레일 See all = 요리 카탈로그
+  mockParams = { view: 'packaged', t: '2' };
+  act(() => t.update(<Food />));
+  expect(has(t, 'packaged')).toBe(true); // KB-955 편의점 줄 See all(#389 병합 뒤 복원)
   press(t, 'to-dishes');
   act(() => t.update(<Food />)); // 같은 t = 전이 없음 → 고른 Dishes 유지
   expect(has(t, 'dishes')).toBe(true);
@@ -62,4 +65,16 @@ it('KB-957: 기본 세그먼트 = 가공식품 켜진 채널 Packaged · 운영 
   expect([defaultFoodSegment(true), defaultFoodSegment(false)]).toEqual(['packaged', 'dishes']);
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   expect((require('fs') as typeof import('fs')).readFileSync('src/app/(tabs)/food.tsx', 'utf8')).toContain('let lastSegment: FoodSegment = defaultFoodSegment(FLAGS.processedFoodEnabled);');
+});
+
+it('QA Q-389: 음식 탭 첫 마운트 + See all(view=packaged, t) = Packaged · 첫 마운트 + See all(t만) = Dishes', () => {
+  mockParams = { view: 'packaged', t: '9' };
+  let t!: ReactTestRenderer;
+  act(() => { t = renderer.create(<Food />); });
+  expect(has(t, 'packaged')).toBe(true); // 구 = 첫 마운트 t가 곧 prevSeeAll이라 전이 0 → 이전 세그먼트(Dishes)
+  act(() => t.unmount());
+  mockParams = { segment: 'saved', t: '10' };
+  act(() => { t = renderer.create(<Food />); });
+  expect(has(t, 'dishes')).toBe(true);
+  act(() => t.unmount());
 });

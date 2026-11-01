@@ -8,7 +8,8 @@
  * risk = personalRisk() false-safe 가드 경유(칩 필터도 동일 값 기준).
  */
 import { useRef, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { usePullRefresh } from '@/lib/data/usePullRefresh';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +37,7 @@ export default function SavedScreen() {
   const bottomInset = useBottomInset(); // KB-900: 탭 바 없는 화면 — Undo 스낵바가 3버튼 내비 바에 덮였다
   const { t } = useTranslation();
   const isGuest = useIsGuest();
+  const pull = usePullRefresh([['bookmarks']]); // KB-954
   const { data: list, isLoading, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useBookmarks(); // P-164
   const { data: me } = useMe();
   const remove = useRemoveBookmark();
@@ -82,6 +84,8 @@ export default function SavedScreen() {
       ) : isLoading ? null : (
         /* P-287(4003:6696): 빈 상태 = 목록 자리(메타·칩 유지) — 공용 EmptyBlock(버튼 없음) */
         <FlatList
+          // KB-954(P-570 QA: 당겨도 요청 0): 북마크 + ['me']
+          refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={C.ink3} />}
           data={padOddGrid(items)}
           keyExtractor={(b) => b.foodId}
           numColumns={2}

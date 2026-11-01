@@ -4,6 +4,23 @@
 - 유형 밑줄 탭 = 한 단계 작게: type.meta 14(선택 = semibold) · 밑줄 2 → 1.5 · 글자–밑줄 6 → 4. 칩 라벨 토큰은 16/500이라 "칩 크기급"이면 지금과 같은 크기 — 위계를 위해 meta 14로(보고).
 - 첫 진입 기본 = Packaged(defaultFoodSegment — 운영 채널 processedFoodEnabled off = Dishes) · See all·딥링크 전이 무변. 신규 ko 0. 기기 미검증(QA).
 
+## 2026-11-02 · P-571 KB-955 홈 편의점 인기 가공식품 줄(예진 11/2)
+- 위치 = Popular|Saved|Food 레일 바로 아래(afterRail 맨 앞), 아이돌 픽·큐레이션 위 · 운영 채널(processedFoodEnabled off) = 마운트 0.
+- 헤더 = SectionHead(라벨 packaged.segmentPackaged 재사용 + 제목 home.cvsTitle 신규) + 오른쪽 See all(home.seeAll) → /food?view=packaged(음식 탭이 Packaged 세그먼트로 — 운영 채널은 Dishes).
+- 카드 = Packaged ProductCard 그대로(리본·평점 규칙 동일) · 폭 = railCardW · 10개 · 데이터 = useProcessedSearch('')(Packaged 둘러보기와 같은 키 = 캐시 공유, verdictKey).
+- 로딩 = ProductCardSkeleton(그리드와 공유) · 실패·0개 = 섹션째 없음 · home_section_view(cvs)·home_card_click(cvs·position·product_id — ALLOWED에 product_id 추가) · 홈 당겨서 새로고침 + ['processedFoods','search'].
+- QA Q-389: 음식 탭을 한 번도 안 연 채 See all(view=packaged)로 들어오면 첫 마운트의 t가 곧 prevSeeAll이라 전이가 없어 Dishes로 열렸다 → 세그먼트 초기값에도 t·view 적용.
+- 신규 문구(K-항목): home.cvsTitle ko "편의점 인기 간식"(10로케일). 기기 미검증(QA).
+
+## 2026-11-02 · P-570 KB-954 새로고침 공백·리뷰 후 카드 평점·회피 변경 재조회·탭바 재탭
+- 회피 변경(useUpdateMe)·온보딩 완료 = resetPersonalizedQueries — 위험도 키(home·foods·food·bookmarks·processedFoods)는 resetQueries(재조회 동안 옛 Safe 대신 스켈레톤, 실패 = 오류), 나머지는 invalidate. 온보딩 clear()(마운트된 탭 재조회 0, P-205 족보) 제거.
+- 리뷰 작성·수정·삭제 무효화 + foods·bookmarks·processedFoods search(KB-948 카드 평점 공백).
+- 당겨서 새로고침: Packaged(['processedFoods'])·저장 목록(bookmarks)·음식 상세(['food', id])·가공 상세(detail id + 리뷰)·Profile — 공용 usePullRefresh(+ me, 스피너 = 활성 재조회 끝까지, Provider 없으면 앱 싱글턴). 홈 = + me·알림 수, Dishes·Reviews = + me.
+- 탭바(P-570 추가): AppTabBar가 lib/tabPress 신호(reselect·enter) — 재탭 = 맨 위 + 새로고침(홈·음식 Dishes/Packaged·Reviews·Profile) · Reviews 진입 = stale 무관 첫 페이지 재조회(맨 위로). Reviews 재조회 = 불러온 페이지를 첫 장으로 줄인 뒤 refetch(옛 데이터 유지 — 깜빡임 0, 전 페이지 순차 재요청 0), 포커스 stale 재조회는 진행 중이면 건너뜀.
+- Codex #388 P1: 다른 기기 회피 변경 → 당김·재탭·앱 복귀로 프로필만 새로 오면 판정 캐시는 옛 기준(false-safe) → fetchMe 한 곳에서 회피 집합(정렬) 비교, 다르면 위험도 키만 reset(riskOnly — me·나머지 재조회 0). 이 기기 저장은 noteAppliedRestrictions로 새 기준을 먼저 적어 중복 reset 0.
+- QA Q-388 수정: ① 음식 상세 당김 스피너가 상태 표시줄·다이내믹 아일랜드 뒤(히어로가 화면 맨 위부터) → Android progressViewOffset · iOS 헤더 줄 아래 Spinner(refreshing 동안). ② 재탭 맨 위 이동이 중간에 멈춤(애니메이션 스크롤 + refreshing 동시) → topThenRefresh: 애니메이션 없이 맨 위 → 다음 프레임 새로고침(5탭 공통).
+- 테스트 하네스: refreshControl 엘리먼트 prop 순환 참조 → JSON 직렬화에서 React 엘리먼트만 제외. 신규 ko 0. 기기 미검증(QA).
+
 ## 2026-11-01 · P-569 KB-949 음식·가공식품 탭 필터 — 카테고리 밑줄 탭 + 안전도 아이콘 칩(예진 11/1, Mobbin 1순위안)
 - Packaged: 위 = 유형 밑줄 탭(가로 스크롤 ChipScrollRow 안 — 글자·밑줄 = 상단 Dishes/Packaged 세그먼트 seg 스타일 그대로, 비선택도 투명 밑줄로 자리 유지, All 탭 유지, accessibilityRole tab) · 아래 = 판정 칩 Safe·Avoid·Caution(All 칩 삭제 — 안 고름 = 전체, 다시 누르면 해제, 단일 선택).
 - Dishes(음식 탭) + 홈(embedded, 커맨드 추가 지시 — "안전도 필터 모양 통일"): 위험 칩 All 삭제 + 같은 토글(RISK_CHIPS 하나) · Saved 칩·정렬 버튼 그대로. 저장 목록(profile/saved)도 같은 RISK_CHIPS(FoodCards로 옮겨 공유)·토글·위험도 마크(구 = 중립 칩)로 통일(커맨드 추가 지시).

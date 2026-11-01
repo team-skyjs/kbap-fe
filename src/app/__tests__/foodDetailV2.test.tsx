@@ -169,7 +169,9 @@ function render(el: React.ReactElement): ReactTestRenderer {
   });
   return tree;
 }
-const flat = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
+const REACT_ELS = [Symbol.for('react.element'), Symbol.for('react.transitional.element')];
+const safeJson = (v: unknown) => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && REACT_ELS.includes((x as { $$typeof?: symbol }).$$typeof as symbol) ? undefined : x)); // KB-954: refreshControl 엘리먼트 prop(순환 참조)만 제외
+const flat = (t: ReactTestRenderer) => safeJson(t.toJSON());
 const byId = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id);
 
 /** KB-626: 숨김 신호(hiddenFoods)는 **실물**이다 — 화면은 이 신호 하나로 판정한다. 실제 앱에선 FOOD-001을

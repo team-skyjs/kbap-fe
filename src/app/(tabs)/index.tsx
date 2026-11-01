@@ -30,6 +30,7 @@ import { RecentRow, TopRatedRow } from '@/features/food/FoodCards';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { CurationSection } from '@/features/curation/CurationSection';
 import { IdolPickBanner } from '@/features/home/IdolPickBanner';
+import { HomeCvsRail } from '@/features/home/HomeCvsRail';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
@@ -37,7 +38,8 @@ import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { HomeQuotaBadge, BADGE_GAP } from '@/features/scan/HomeQuotaBadge';
-import { useUnreadCount } from '@/lib/data/useNotifications';
+import { NOTIFICATIONS_KEY, useUnreadCount } from '@/lib/data/useNotifications';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { HomeImpressionContext, ImpressionTracker, trackHomeCardClick, useImpressionRef, useImpressionScrollProps } from '@/features/home/homeImpressions';
 
@@ -108,8 +110,13 @@ function HomeBody() {
       queryClient.invalidateQueries({ queryKey: ['foods'] }),
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] }),
       queryClient.invalidateQueries({ queryKey: ['curations'] }), // KB-796(Codex #303 P2): 게시·내림·수정 반영 — 포커스 재조회가 꺼져 있다
+      queryClient.invalidateQueries({ queryKey: ['processedFoods', 'search'] }), // KB-955: 편의점 인기 줄
+      queryClient.invalidateQueries({ queryKey: ['me'] }), // KB-954: 다른 기기 회피 변경·쿼터
+      queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY }), // KB-954: 알림 수(종)
     ]).finally(() => setRefreshing(false));
   }, []);
+  // KB-954: 재탭 = 맨 위 + 새로고침(스피너) — QA Q-388 ②: useScrollToTop의 애니메이션 스크롤을 애니메이션 없는 이동으로 덮고 다음 프레임에 새로고침
+  useTabPress('index', (kind) => { if (kind === 'reselect') topThenRefresh(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }), onRefresh); });
 
   if (isError && !isLoading) {
     return (
@@ -144,7 +151,7 @@ function HomeBody() {
           popularLoading={isPending}
           onScanRowBottom={setScanRowBottom}
           // KB-796: 음식 레일 뒤·Safe picks 앞 · KB-836: 정적 배너 → 큐레이션 순서(세 탭 모두, D1)
-          afterRail={<>{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}</>}
+          afterRail={<>{FLAGS.processedFoodEnabled && <HomeCvsRail />}{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}</>} /* KB-955: 편의점 줄 = 레일 바로 아래, 아이돌·큐레이션 위 · 운영 채널 off = 0 */
         />
       </View>
 

@@ -35,6 +35,10 @@ function useInvalidateReviews() {
     // KB-812 2차: 가공식품 리뷰 — 제품 리뷰 목록·상세 요약(reviewSummary). 피드·내 리뷰 발 수정·삭제는 제품 id를 모르니 프리픽스 전부(활성 쿼리만 재조회)
     void qc.invalidateQueries({ queryKey: ['processedFoods', 'reviews'] });
     void qc.invalidateQueries({ queryKey: ['processedFoods', 'detail'] });
+    // KB-954(P-570): KB-948로 2열 카드에 평점 줄이 생겼다 — 목록 키도(포커스 재조회 off라 빠지면 무기한 옛 평점)
+    void qc.invalidateQueries({ queryKey: ['foods'] }); // Dishes 그리드·홈 Food 레일·검색
+    void qc.invalidateQueries({ queryKey: ['bookmarks'] }); // 저장 목록
+    void qc.invalidateQueries({ queryKey: ['processedFoods', 'search'] }); // Packaged 그리드
   };
 }
 

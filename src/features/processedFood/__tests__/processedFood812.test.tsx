@@ -372,7 +372,8 @@ describe('Food 탭 세그먼트·목록', () => {
   it('Food 탭 배선: KB-957 기본 Packaged(운영 채널 = Dishes) · 선택 유지(모듈 상태) · 세그먼트 = 헤더 center(본문 머리 0)', () => {
     const src = fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8');
     expect(src).toContain('let lastSegment: FoodSegment = defaultFoodSegment(FLAGS.processedFoodEnabled);');
-    expect(src).toContain('useState<FoodSegment>(() => lastSegment)');
+    expect(src).toContain('useState<FoodSegment>(() => {'); // QA Q-389: 첫 마운트 See all(t) 적용 — 없으면 lastSegment(KB-957 기본 Packaged)
+    expect(src).toContain('if (!seeAllKey) return lastSegment;');
     expect(src).toContain("segRow && foodSegment === 'packaged' ? ("); // KB-870: 운영 채널 = 세그먼트째 없음
     expect(src).toContain('center={segRow}');
     expect(src).not.toContain('headTop={segRow');
@@ -725,6 +726,19 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     expect([bars(catTab)[0], bars(segTab)[0]]).toEqual([1.5, 2]);
     expect(segText.props.maxFontSizeMultiplier).toBe(SEG_MAX_SCALE);
     expect(SEG_MAX_SCALE).toBeLessThan(1.3); // 앱 전역 상한(MAX_FONT_SCALE 1.3)보다 작게
+  });
+
+  it('KB-954(P-570 QA: 당겨도 요청 0): Packaged 당겨서 새로고침 = 목록 다시 요청 · 끝나면 스피너 해제', async () => {
+    mockGet.mockResolvedValue(V4());
+    const t = await mount();
+    const before = mockGet.mock.calls.length;
+    const list = () => t.root.findAll((n) => n.props?.testID === 'packaged-list' && n.props?.refreshControl)[0];
+    await act(async () => { list().props.refreshControl.props.onRefresh(); });
+    await until(() => mockGet.mock.calls.length > before);
+    expect(mockGet.mock.calls.length).toBeGreaterThan(before);
+    await until(() => list().props.refreshControl.props.refreshing === false);
+    expect(list().props.refreshControl.props.refreshing).toBe(false);
+    mockGet.mockReset();
   });
 
   it('Codex #336 → KB-921: SAFE_WITH_NOTE = 주의 리본 + 스크린리더 단서(내용 불명) · 그냥 SAFE엔 단서 없음', async () => {
