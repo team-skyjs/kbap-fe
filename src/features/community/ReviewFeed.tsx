@@ -12,7 +12,7 @@
 import * as React from 'react';
 import { FlatList, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useRefreshClient } from '@/lib/data/usePullRefresh';
-import { useTabPress } from '@/lib/tabPress';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import type { InfiniteData } from '@tanstack/react-query';
 import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
@@ -132,7 +132,7 @@ export function ReviewFeed() {
   };
   // KB-954(예진 실기: 다른 폰 리뷰가 GNB를 눌러도 안 보임): 재탭 = 맨 위(useScrollToTop) + 새로고침(스피너) · 다른 탭에서 진입 = stale 여부와 무관하게 첫 페이지 재조회(맨 위로 — 새 리뷰는 위에 온다)
   useTabPress('community', (kind) => {
-    if (kind === 'reselect') { onRefresh(); return; }
+    if (kind === 'reselect') { topThenRefresh(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }), onRefresh); return; } // QA Q-388 ②
     listRef.current?.scrollToOffset({ offset: 0, animated: false });
     void refetchFirstPage();
   });

@@ -9,7 +9,7 @@
 import * as React from 'react';
 import { RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { usePullRefresh } from '@/lib/data/usePullRefresh';
-import { useTabPress } from '@/lib/tabPress';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -161,8 +161,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   const listRef = React.useRef<React.ComponentRef<typeof Animated.FlatList<ProcessedFoodSummary>>>(null);
   useTabPress('food', (kind) => { // KB-954: 음식 탭 재탭(Packaged 세그먼트) = 맨 위 + 새로고침
     if (kind !== 'reselect') return;
-    listRef.current?.scrollToOffset({ offset: 0, animated: true });
-    pull.onRefresh();
+    topThenRefresh(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }), pull.onRefresh);
   });
   const guest = useIsGuest();
   const { data: me } = useMe();

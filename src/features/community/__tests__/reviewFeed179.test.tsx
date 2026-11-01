@@ -234,6 +234,7 @@ describe('KB-954(P-570): 탭바 재탭·진입 = 첫 페이지만 재조회(다�
     act(() => emitTabPress('index', 'reselect'));
     expect(refetch).not.toHaveBeenCalled();
     act(() => emitTabPress('community', 'reselect'));
+    await act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); }); // QA Q-388 ②: 맨 위 이동 → 다음 프레임 새로고침
     expect(refetch).toHaveBeenCalledTimes(1);
     const { RefreshControl } = jest.requireActual('react-native') as typeof import('react-native');
     expect(tree.root.findAllByType(RefreshControl)[0].props.refreshing).toBe(true);

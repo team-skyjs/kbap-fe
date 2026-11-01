@@ -12,7 +12,7 @@
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
 import { useEffect, useRef, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Platform, RefreshControl, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { usePullRefresh } from '@/lib/data/usePullRefresh';
 import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { CountryOnlyHint } from '@/features/review/CountryOnlyHint';
 import { color as C, font, shadow, type RiskState, radius } from '@/lib/theme';
 import { ingredientLabel, isCatalogIngredient } from '@/lib/mocks/ingredients';
-import { RiskMark, CardPhoto, Chip, NewBadge, Star, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft } from '@/components';
+import { RiskMark, CardPhoto, Chip, NewBadge, Star, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft, Spinner } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
@@ -147,7 +147,9 @@ export default function FoodDetailScreen() {
   return (
     <View style={styles.root}>
       <ScrollView
-        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={C.ink3} />}
+        // QA Q-388 ①: 히어로가 화면 맨 위(상태 표시줄 아래까지)라 기본 스피너가 상태 표시줄·다이내믹 아일랜드 뒤에 가려졌다 —
+        // Android = progressViewOffset으로 헤더 아래, iOS(offset 미지원) = 헤더 아래에 같은 Spinner를 따로 그린다(아래 detail-pull-spinner)
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={C.ink3} progressViewOffset={insets.top + 48} />}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
@@ -245,6 +247,12 @@ export default function FoodDetailScreen() {
               : () => { track(EVENTS.owner_ask_open, { source: 'cta', food_id: id ?? '' }); router.push(`/food/${id}/owner` as Href); }
           }
         />
+      )}
+
+      {Platform.OS === 'ios' && pull.refreshing && (
+        <View style={[styles.pullSpin, { top: insets.top + 52 }]} pointerEvents="none" testID="detail-pull-spinner">
+          <Spinner size={20} />
+        </View>
       )}
 
       {/* P-139 ②: 플로팅 헤더 — 사진 위 반투명 원 back(제목 없음) → 솔리드+타이틀 */}
@@ -867,6 +875,7 @@ const styles = StyleSheet.create({
   // KB-891: 알약 정의 = features/food/pillCta 한 곳(리뷰 작성 하단과 공용)
   pillPrimary: pillCta.pillPrimary,
   pillPrimaryText: pillCta.pillPrimaryText,
+  pullSpin: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 5 }, // QA Q-388 ①: 당김 새로고침 스피너(iOS) — 플로팅 헤더 줄 바로 아래
   pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
   pillOutlineText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink, textAlign: 'center' },
 

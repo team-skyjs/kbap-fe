@@ -5,7 +5,7 @@
 import * as fs from 'fs';
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import { emitTabPress, useTabPress, type TabPressKind } from '../tabPress';
+import { emitTabPress, topThenRefresh, useTabPress, type TabPressKind } from '../tabPress';
 
 const read = (p: string) => fs.readFileSync(p, 'utf8');
 
@@ -27,12 +27,28 @@ describe('KB-954 탭바 신호(useTabPress)', () => {
   it('탭 바가 누를 때마다 신호를 낸다 — 지금 탭 = reselect · 다른 탭 = enter', () => {
     expect(read('src/app/(tabs)/_layout.tsx')).toContain("emitTabPress(name, focused ? 'reselect' : 'enter');");
   });
-  it('홈·음식(Dishes·Packaged)·Reviews·Profile 전부 재탭 구독', () => {
-    expect(read('src/app/(tabs)/index.tsx')).toContain("useTabPress('index', (kind) => { if (kind === 'reselect') onRefresh(); });");
-    expect(read('src/features/food/FoodExplorer.tsx')).toMatch(/useTabPress\('food', \(kind\) => \{[\s\S]{0,160}onRefresh\(\);\s*\}, variant === 'screen'\);/);
-    expect(read('src/features/processedFood/PackagedExplorer.tsx')).toMatch(/useTabPress\('food', \(kind\) => \{[\s\S]{0,200}pull\.onRefresh\(\);/);
-    expect(read('src/features/community/ReviewFeed.tsx')).toContain("useTabPress('community', (kind) => {");
-    expect(read('src/app/(tabs)/profile.tsx')).toMatch(/useTabPress\('profile', \(kind\) => \{[\s\S]{0,160}pull\.onRefresh\(\);/);
+  it('홈·음식(Dishes·Packaged)·Reviews·Profile 전부 재탭 = 애니메이션 없는 맨 위 → 다음 프레임 새로고침(QA Q-388 ②)', () => {
+    expect(read('src/app/(tabs)/index.tsx')).toContain("topThenRefresh(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }), onRefresh)");
+    expect(read('src/features/food/FoodExplorer.tsx')).toContain('topThenRefresh(() => gridRef.current?.scrollToOffset({ offset: 0, animated: false }), onRefresh);');
+    expect(read('src/features/processedFood/PackagedExplorer.tsx')).toContain('topThenRefresh(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }), pull.onRefresh);');
+    expect(read('src/features/community/ReviewFeed.tsx')).toContain("if (kind === 'reselect') { topThenRefresh(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }), onRefresh); return; }");
+    expect(read('src/app/(tabs)/profile.tsx')).toContain('topThenRefresh(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), pull.onRefresh);');
+    for (const f of ['src/app/(tabs)/profile.tsx', 'src/features/food/FoodExplorer.tsx', 'src/features/processedFood/PackagedExplorer.tsx']) expect(read(f)).not.toMatch(/scroll(To|ToOffset)\(\{[^}]*animated: true \}\);\s*(pull\.)?onRefresh\(\)/);
+  });
+  it('topThenRefresh = 맨 위 이동이 먼저(동기) · 새로고침은 다음 프레임', () => {
+    jest.useFakeTimers();
+    const order: string[] = [];
+    topThenRefresh(() => order.push('top'), () => order.push('refresh'));
+    expect(order).toEqual(['top']);
+    jest.runOnlyPendingTimers();
+    expect(order).toEqual(['top', 'refresh']);
+    jest.useRealTimers();
+  });
+  it('QA Q-388 ①: 음식 상세 당김 스피너 = 히어로가 상태 표시줄까지 올라가 기본 스피너가 가려짐 → Android offset · iOS 헤더 아래 Spinner', () => {
+    const src = read('src/app/food/[id]/index.tsx');
+    expect(src).toContain('progressViewOffset={insets.top + 48}');
+    expect(src).toContain("{Platform.OS === 'ios' && pull.refreshing && (");
+    expect(src).toContain('testID="detail-pull-spinner"');
   });
 });
 

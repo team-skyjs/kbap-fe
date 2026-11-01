@@ -13,7 +13,7 @@ import { airbridge } from '@/lib/airbridge';
 import { useRef, useState } from 'react';
 import { Platform, RefreshControl, StyleSheet, View, type ScrollView } from 'react-native';
 import { usePullRefresh } from '@/lib/data/usePullRefresh';
-import { useTabPress } from '@/lib/tabPress';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import { Alert } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { openAppSettings } from '@/lib/openExternal';
@@ -125,8 +125,7 @@ export default function Profile() {
   const scrollRef = useRef<ScrollView>(null);
   useTabPress('profile', (kind) => {
     if (kind !== 'reselect') return;
-    scrollRef.current?.scrollTo({ y: 0, animated: true });
-    pull.onRefresh();
+    topThenRefresh(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), pull.onRefresh);
   });
   if (!isGuest && !meLoading && meError) {
     return (

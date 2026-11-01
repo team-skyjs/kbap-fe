@@ -38,7 +38,7 @@ import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { HomeQuotaBadge, BADGE_GAP } from '@/features/scan/HomeQuotaBadge';
 import { NOTIFICATIONS_KEY, useUnreadCount } from '@/lib/data/useNotifications';
-import { useTabPress } from '@/lib/tabPress';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { HomeImpressionContext, ImpressionTracker, trackHomeCardClick, useImpressionRef, useImpressionScrollProps } from '@/features/home/homeImpressions';
 
@@ -113,7 +113,8 @@ function HomeBody() {
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY }), // KB-954: 알림 수(종)
     ]).finally(() => setRefreshing(false));
   }, []);
-  useTabPress('index', (kind) => { if (kind === 'reselect') onRefresh(); }); // KB-954: 재탭 = 맨 위(useScrollToTop) + 새로고침(스피너)
+  // KB-954: 재탭 = 맨 위 + 새로고침(스피너) — QA Q-388 ②: useScrollToTop의 애니메이션 스크롤을 애니메이션 없는 이동으로 덮고 다음 프레임에 새로고침
+  useTabPress('index', (kind) => { if (kind === 'reselect') topThenRefresh(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }), onRefresh); });
 
   if (isError && !isLoading) {
     return (

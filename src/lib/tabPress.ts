@@ -30,3 +30,9 @@ export function useTabPress(tab: TabName, fn: (kind: TabPressKind) => void, enab
     };
   }, [tab, enabled]);
 }
+
+/** QA Q-388 ②: 재탭 = 맨 위 이동을 먼저(애니메이션 없이 — 애니메이션 스크롤과 RefreshControl refreshing이 동시에 걸리면 iOS에서 스크롤이 중간에 멈췄다) → 다음 프레임에 새로고침 */
+export function topThenRefresh(scrollTop: () => void, refresh: () => void): void {
+  scrollTop();
+  requestAnimationFrame(refresh);
+}

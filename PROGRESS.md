@@ -3,6 +3,7 @@
 - 리뷰 작성·수정·삭제 무효화 + foods·bookmarks·processedFoods search(KB-948 카드 평점 공백).
 - 당겨서 새로고침: Packaged(['processedFoods'])·저장 목록(bookmarks)·음식 상세(['food', id])·가공 상세(detail id + 리뷰)·Profile — 공용 usePullRefresh(+ me, 스피너 = 활성 재조회 끝까지, Provider 없으면 앱 싱글턴). 홈 = + me·알림 수, Dishes·Reviews = + me.
 - 탭바(P-570 추가): AppTabBar가 lib/tabPress 신호(reselect·enter) — 재탭 = 맨 위 + 새로고침(홈·음식 Dishes/Packaged·Reviews·Profile) · Reviews 진입 = stale 무관 첫 페이지 재조회(맨 위로). Reviews 재조회 = 불러온 페이지를 첫 장으로 줄인 뒤 refetch(옛 데이터 유지 — 깜빡임 0, 전 페이지 순차 재요청 0), 포커스 stale 재조회는 진행 중이면 건너뜀.
+- QA Q-388 수정: ① 음식 상세 당김 스피너가 상태 표시줄·다이내믹 아일랜드 뒤(히어로가 화면 맨 위부터) → Android progressViewOffset · iOS 헤더 줄 아래 Spinner(refreshing 동안). ② 재탭 맨 위 이동이 중간에 멈춤(애니메이션 스크롤 + refreshing 동시) → topThenRefresh: 애니메이션 없이 맨 위 → 다음 프레임 새로고침(5탭 공통).
 - 테스트 하네스: refreshControl 엘리먼트 prop 순환 참조 → JSON 직렬화에서 React 엘리먼트만 제외. 신규 ko 0. 기기 미검증(QA).
 
 ## 2026-11-01 · P-569 KB-949 음식·가공식품 탭 필터 — 카테고리 밑줄 탭 + 안전도 아이콘 칩(예진 11/1, Mobbin 1순위안)

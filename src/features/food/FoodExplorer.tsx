@@ -13,7 +13,7 @@
 import * as React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useRefreshClient } from '@/lib/data/usePullRefresh';
-import { useTabPress } from '@/lib/tabPress';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
 import { MAX_FONT_SCALE, Txt as Text } from '@/components/Txt';
@@ -184,8 +184,7 @@ export function FoodExplorer({
   const gridRef = React.useRef<React.ComponentRef<typeof Animated.FlatList<FoodCard>>>(null);
   useTabPress('food', (kind) => {
     if (kind !== 'reselect') return;
-    gridRef.current?.scrollToOffset({ offset: 0, animated: true });
-    onRefresh();
+    topThenRefresh(() => gridRef.current?.scrollToOffset({ offset: 0, animated: false }), onRefresh);
   }, variant === 'screen');
 
   // P-350 ③: 얇은 페이지 — risk 지정 목록은 hasNext=true·items 미만(0 포함)이 정상.
