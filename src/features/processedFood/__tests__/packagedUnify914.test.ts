@@ -86,13 +86,11 @@ describe('2차 R-140 이름 한 부품', () => {
 });
 
 describe('2차 R-141 → KB-959 무료 배지 = 카메라 2곳만', () => {
-  it('배지 부품 하나(FreeBadge) · 흐름의 무료 줄 = 앞면·성분표 카메라만(KB-945 후보 · KB-959 결과 배너·시작 안내 제거) · 면 검토·이름 찾기·상세 0', () => {
+  it('KB-963: 무료 배지 전부 소멸(카메라 2곳 포함 — 가공식품 차감 없음) · 상세·화면 0', () => {
     const flow = read('src/features/scan/PackagedScanFlow.tsx');
-    expect(flow.match(/<PackagedFreeLine/g)).toHaveLength(2);
-    expect(flow.match(/<PackagedFreeLine style=\{st\.camFree\} explain=\{false\} \/>/g)).toHaveLength(2);
-    expect(flow).not.toMatch(/banner=\{<PackagedFreeLine/);
+    expect(flow).not.toMatch(/PackagedFreeLine|FreeBadge/);
     expect(read('src/app/processed-foods/[id].tsx')).not.toMatch(/PackagedFreeExplain|freeStarted/);
-    expect(read('src/features/scan/packagedFreeHour.tsx')).toContain('const line = <FreeBadge');
+    expect(fs.existsSync('src/features/scan/packagedFreeHour.tsx')).toBe(false); // KB-963: 무료 창 모듈 소멸
     const screens = read('src/features/scan/PackagedScanScreens.tsx');
     expect(screens).not.toMatch(/FreeBadge|PackagedFreeExplain|packagedScan\.freeStarted/);
   });

@@ -1358,10 +1358,7 @@
     "done": "Done",
     "resultAvoid": "Matches your avoid list: {{names}}.",
     "resultCaution": "A shared-facility statement mentions: {{names}}.",
-    "resultMajorSet": "{{contains}}. Set your avoid ingredients to see a personal result.",
-    "freeFor_one": "Free packaged scans for {{count}} min",
-    "freeFor_other": "Free packaged scans for {{count}} min",
-    "freeExplain": "Scan as many packaged products as you like during this time. Menu scans aren't included."
+    "resultMajorSet": "{{contains}}. Set your avoid ingredients to see a personal result."
   },
   "scanCamera": {
     "title": "Scan",

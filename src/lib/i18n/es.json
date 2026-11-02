@@ -1362,10 +1362,7 @@
     "done": "Listo",
     "resultAvoid": "Coincide con tu lista para evitar: {{names}}.",
     "resultCaution": "Una declaración de planta compartida menciona: {{names}}.",
-    "resultMajorSet": "{{contains}}. Elige ingredientes a evitar para ver un resultado personal.",
-    "freeFor_one": "Escaneos de envasados gratis por {{count}} min",
-    "freeFor_other": "Escaneos de envasados gratis por {{count}} min",
-    "freeExplain": "Durante este tiempo puedes escanear envasados sin límite. No incluye los escaneos de menús."
+    "resultMajorSet": "{{contains}}. Elige ingredientes a evitar para ver un resultado personal."
   },
   "scanCamera": {
     "title": "Escanear",

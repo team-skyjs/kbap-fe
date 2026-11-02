@@ -1,3 +1,10 @@
+## 2026-11-02 · P-577 KB-963 가공식품 스캔 차감 없음·Food photo 숨김(예진 11/2 실기, 서버 S-937)
+- 스캔 진입 게이트: 메뉴 쿼터가 소진돼도 스캔 화면은 열림(진입 시 프로필 소진·선발급 SCAN-004 = 기록만). 소진 안내(P-250 쿼터 화면 재사용) = 메뉴 모드 촬영 시도(셔터·갤러리·시스템 카메라)에서만 — 가공식품 촬영은 통과. 나중에 = 카메라 복귀(모드 탭에서 가공식품). 진입 경로(홈·탭바·Packaged 탭)는 전부 /scan이라 게이트는 scan.tsx 한 곳. 기본 진입 모드 = 기존 규칙 유지(메뉴, mode=packaged면 가공식품).
+- 가공식품 무료 창·차감 표시 소멸: 카메라 배지 2곳(앞면·성분표) · packagedFreeHour 모듈(applyFreeUntil·PackagedFreeLine·FreeBadge) 삭제 · 상세 링크 &free=1 · labelResult freeStarted. 서버 charged는 계측·프로필 재조회에만 남음. i18n packagedScan.freeFor_*·freeExplain 10로케일 삭제(err.quota*는 구 서버 403 대비 유지).
+- 스캔 모드 탭 Food photo 숨김 = FLAGS.foodPhotoMode(false) — Menu · Packaged food 두 칸(칸 최소 폭 = 화면 ÷ 칸 수).
+- OCR text (test only) 입력칸 = showOcrDebug(__DEV__ || isDiagnosticChannel — development·teamtest·teamtest-prod만, production·preview 0) 확인만.
+- 신규 문구 0.
+
 ## 2026-11-02 · P-576 KB-962 홈 See all 원형 화살표 버튼(예진 11/2, Mobbin Uber Eats·DoorDash)
 - 공용 SeeAllCircle(components) — 연회색 원(C.hair) + 검은 → (신규 IconArrowRight = lucide arrow-right), 지름 32 · hitSlop 6 · 접근성 라벨 home.seeAll(기존 키).
 - 홈 Popular|Saved|Food 탭 줄 오른쪽 끝 = 원형 버튼(고정 칸 flexShrink 0, 탭은 남은 폭 — 긴 언어는 기존 가로 스크롤) · 이동 = 구 레일 끝 카드와 같음(foodTabHref 탭·칩 승계, testID home-rail-see-all 유지). 레일 끝 See all 카드 삭제(seeAllCard·seeAllText 스타일 제거).

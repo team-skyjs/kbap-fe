@@ -180,12 +180,14 @@ it('P-255: 선발급 부재(null/미전달) = 현행 자체 발급 폴백(흐름
   expect(opts.headers['X-Scan-Ticket']).toBe('T-1');
 });
 
-it('P-255 배선 소스 잠금 — 진입 선발급(focus)·004 즉시 잠금·계측 미발화·1회용 소모·게스트 상위', () => {
+it('P-255 배선 소스 잠금 — 진입 선발급(focus)·004 기록 → 메뉴 촬영 시 잠금(KB-963)·계측 미발화·1회용 소모·게스트 상위', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
   expect(src).toContain('useFocusEffect'); // 진입·복귀 시 선발급(시나리오 C 복귀 재발급 겸)
   expect(src).toContain("if (isGuest) return; // 게스트 가드 상위(순서 유지)");
-  expect(src).toContain("setError({ stage: 'quota', detail: 'preflight SCAN-004' })"); // 즉시 잠금(카메라 미표시)
+  // KB-963: 004 = 진입 잠금이 아니라 기록(menuQuota004Ref) → 메뉴 촬영 시도에서 쿼터 화면(가공식품은 차감 없음이라 카메라 유지)
+  expect(src).toContain('menuQuota004Ref.current = { quota };');
+  expect(src).toContain("lockFromProfile(menuQuota004Ref.current ? 'preflight SCAN-004' : 'profile scanRemaining 0');");
   // fail() 미경유 = scan_complete 계측 오염 0(진입 잠금은 스캔 시도가 아님)
   const pre = src.split('const preflight')[1].split('useFocusEffect')[0];
   expect(pre).not.toContain('fail(');

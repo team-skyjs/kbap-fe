@@ -190,6 +190,11 @@ export const FLAGS = {
    */
   packagedLabelScan: DEV_SERVER_CHANNEL,
   /**
+   * KB-963(예진 11/2): 스캔 모드 탭의 Food photo(음식 사진 — 기능 미완, 자리만 "준비 중") 노출. 꺼짐 = Menu · Packaged food 두 칸.
+   * 기능이 생기면 이 줄을 켠다(탭 자리·문구 scanMode.food는 그대로 남아 있음).
+   */
+  foodPhotoMode: false,
+  /**
    * KB-873 lifecycle ②b: 화면 체류 송신(screen_visible_time — 보임 = 앱 앞·덮개 0·방문 중, 공용 1초 틱·15초 checkpoint).
    * **채널 게이트 의도(커맨드 10/27)**: dev 서버 채널만 명시 허용(development·teamtest-dev). teamtest-prod·production·preview OFF —
    * 양 OS Amplitude 실수신(③) 확인 전. OFF = 방문 시작만(②a 이전과 같음), 타이머 0.

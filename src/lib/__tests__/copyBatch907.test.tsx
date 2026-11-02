@@ -12,7 +12,7 @@ const HANGUL = /[가-힣]/;
 const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}️]/u;
 
 describe('새 키 = 10로케일 전부 · 이모지·가운데 점 0', () => {
-  const NEW = ['ranking.vipEyebrow', 'detail.verdictMayContain', 'scan.viewOrderAction', 'scan.orderCount_one', 'scan.orderCount_other', 'scan.retakeBodyWithCart_one', 'scan.retakeBodyWithCart_other', 'packagedScan.freeExplain', 'reviews.countryOnlyHint'];
+  const NEW = ['ranking.vipEyebrow', 'detail.verdictMayContain', 'scan.viewOrderAction', 'scan.orderCount_one', 'scan.orderCount_other', 'scan.retakeBodyWithCart_one', 'scan.retakeBodyWithCart_other', 'reviews.countryOnlyHint']; // KB-963: packagedScan.freeExplain 삭제(가공식품 차감 없음)
   it.each(LOCALES)('%s', (l) => {
     for (const k of NEW) {
       const v = get(l, k);
@@ -74,8 +74,8 @@ describe('T-103 주문 pill', () => {
 });
 
 describe('T-104·T-106·T-034 배선', () => {
-  it('무료 창 = 카메라 위 짧은 배지만(뜻 한 줄 없음) · KB-959 결과 배너·시작 안내 소멸', () => {
-    expect(read('src/features/scan/PackagedScanFlow.tsx').match(/<PackagedFreeLine style=\{st\.camFree\} explain=\{false\} \/>/g)).toHaveLength(2);
+  it('KB-963: 무료 창 표시 0(카메라 배지 포함) · KB-959 결과 배너·시작 안내 소멸', () => {
+    expect(read('src/features/scan/PackagedScanFlow.tsx')).not.toContain('PackagedFreeLine');
     expect(read('src/features/scan/PackagedScanScreens.tsx')).not.toContain('<PackagedFreeExplain />');
     expect(read('src/app/processed-foods/[id].tsx')).not.toContain('PackagedFreeExplain'); // KB-914(R-141): 상세 무료 문장 0 — 배지(+뜻 한 줄)는 카메라·후보·결과만
   });

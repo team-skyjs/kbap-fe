@@ -9,7 +9,9 @@
  *   후보 없음·해당 없음에서 오면 **같은 analysisId**(추가 차감 0 — "같은 분석" 문구는 이 경로만), 촬영 화면·상세에서 바로 오면 새 분석(성공 1회).
  *   결과의 "면 추가" = 같은 ID 재분석(첫 성공 뒤 30분·3회까지 차감 0 — 서버 규칙), 넘으면 409 PFOOD-007 → "새로 분석"(1회).
  *   못 읽음 400 PFOOD-006 = 차감 0, 다시 찍기. 촬영 버튼은 FLAGS.packagedLabelScan(꺼진 채널 = "곧 지원" 안내).
- * - 한도: 스캔 화면 진입 시 기존 게이트(쿼터 잠금)가 먼저 막는다. 확정에서 403이 와도 대비(안내 + 닫기).
+ * - KB-963(예진 11/2 · 서버 S-937): 가공식품 스캔은 **차감 없음**(charged 늘 false · freeUntil 늘 null) — 무료 창·차감 표시는 전부 소멸,
+ *   위 차감 서술은 계측(charged)·구 서버 대비로만 남는다. 메뉴 쿼터가 소진돼도 이 흐름은 열린다(소진 안내 = 메뉴 촬영 시점만, scan.tsx).
+ *   확정에서 403(SCAN-004)이 와도 대비(안내 + 나중에 = 흐름 복귀).
  * - OCR 주입(개발·진단 채널 전용): 시뮬엔 카메라 OCR이 없어 텍스트를 직접 넣는 디버그 입력.
  */
 import * as React from 'react';
@@ -36,7 +38,6 @@ import { useMe } from '@/lib/data/useMe';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { CandidateScreen, LabelPhotosScreen, LabelResultScreen, MessagePage, NameSearchBox } from './PackagedScanScreens';
 import { DarkBackButton, ScanDarkMessage } from './ScanDarkMessage';
-import { PackagedFreeLine, applyFreeUntil } from './packagedFreeHour';
 import { confirmProcessedScan, LABEL_PAGES_MAX, scanFailureOf, scanProcessedLabel, scanProcessedName, type ScanFailure } from '@/lib/data/useProcessedScan';
 import type { LabelScanResult, ScanCandidate } from '@/lib/api/processedFoodAdapter';
 import type { ScanMode } from './ScanModeTabs';
@@ -88,7 +89,7 @@ type Step =
 
 /** used·chargeUnknown = 이 분석의 차감 상태(문구는 v4에서 없앴지만 프로필 재조회 판단에 쓴다) */
 /** verdictKey = 결과를 받을 때의 판정 기준(언어·회피 코드) — 회피를 바꾸고 돌아오면 옛 verdict를 개인 판정으로 보이지 않는다(Codex #339) */
-type LabelResultStep = { kind: 'labelResult'; result: LabelScanResult; pages: string[]; photos: (string | null)[]; used: boolean; chargeUnknown: boolean; verdictKey: string; freeStarted: boolean };
+type LabelResultStep = { kind: 'labelResult'; result: LabelScanResult; pages: string[]; photos: (string | null)[]; used: boolean; chargeUnknown: boolean; verdictKey: string; };
 
 /** 카메라 자리 — renderCamera를 **이 컴포넌트의 렌더**에서 부른다. 흐름 컴포넌트가 렌더 중 직접 부르면 ref를 읽는 콜백을 렌더 중 함수 호출에
  *  넘기는 것으로 잡혀(react-hooks/refs) 컴파일러가 흐름 전체를 건너뛴다 — 콜백은 props로만 건넨다 */
@@ -126,7 +127,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   const { t } = useTranslation();
   const router = useRouter();
   const qc = useQueryClient();
-  // KB-877: 무료 창(freeUntil)은 서버 프로필이 정본 — 흐름 진입·포그라운드 복귀 때 다시 읽는다(창 계산은 앱이 하지 않는다)
+  // 흐름 진입·포그라운드 복귀 때 프로필 재조회 — 판정 기준(회피)·쿼터가 서버 정본. KB-963: 가공식품 무료 창(freeUntil)·차감 표시는 소멸(서버 S-937 — 차감 없음)
   React.useEffect(() => {
     void qc.invalidateQueries({ queryKey: ['me'] });
     const sub = AppState.addEventListener('change', (s) => { if (s === 'active') void qc.invalidateQueries({ queryKey: ['me'] }); });
@@ -247,9 +248,8 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       if (r.charged || chargeUnknown || fresh) void qc.invalidateQueries({ queryKey: ['me'] }); // 남은 횟수 = 서버 재조회
       if (r.charged || fresh) chargedIds.current.add(r.analysisId);
       const used = chargedIds.current.has(r.analysisId);
-      applyFreeUntil(qc, r.freeUntil); // KB-877: 응답의 창을 바로 표시(프로필 재조회 전)
       // 첫 차감 성공 = 이번 호출이 차감했고 창이 열림 — 창 안의 무료 분석엔 안 보인다
-      setStep({ kind: 'labelResult', result: r, pages, photos, used, chargeUnknown: chargeUnknown && !used, verdictKey, freeStarted: r.charged && r.freeUntil != null });
+      setStep({ kind: 'labelResult', result: r, pages, photos, used, chargeUnknown: chargeUnknown && !used, verdictKey });
     } catch (e) {
       if (my !== reqSeq.current) return;
       const failure = scanFailureOf(e);
@@ -271,7 +271,6 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         const r = await confirmProcessedScan(analysisId, reportNo);
         if (my !== reqSeq.current) return; // 그 사이 뒤로 감 — 이동 0
         track(EVENTS.food_packaged_scan_confirm, { charged: r.charged, rejected: r.rejected });
-        applyFreeUntil(qc, r.freeUntil); // KB-877
         if (r.rejected || !r.product) {
           settledIds.current.add(analysisId);
           track(EVENTS.food_packaged_scan_handoff, { from: 'rejected' });
@@ -285,7 +284,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         if (r.charged) chargedIds.current.add(analysisId);
         const charge = r.charged || chargedIds.current.has(analysisId) ? '1' : chargeUnknown ? 'u' : '0';
         // KB-877: 이번 확정이 차감했고 창이 열림 = 상세에 "다음 1시간 무료" 한 줄(창 안 무료 확정엔 0)
-        router.push(`/processed-foods/${r.product.id}?scan=1&charged=${charge}${r.charged && r.freeUntil ? '&free=1' : ''}` as Href);
+        router.push(`/processed-foods/${r.product.id}?scan=1&charged=${charge}` as Href);
       } catch (e) {
         if (my !== reqSeq.current) return;
         const failure = scanFailureOf(e);
@@ -423,7 +422,6 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
             render={renderCamera}
             o={{
             kind: 'ingredient',
-            notice: <PackagedFreeLine style={st.camFree} explain={false} />,
             // 모은 면이 있으면 n/4(QA Z5) · 그 밖 디자인 힌트(차감 문구 없음 — README)
             hint: pages.length ? t('packagedScan.labelPagesCount', { count: pages.length, max: LABEL_PAGES_MAX }) : undefined,
             onShot: (photo: ScanPhoto) => onLabelShot(cam, photo),
@@ -538,7 +536,6 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         render={renderCamera}
         o={{
         kind: 'package',
-        notice: <PackagedFreeLine style={st.camFree} explain={false} />,
         onShot: onFrontShot,
         link: labelEnabled
           ? { label: t('packagedScan.labelInstead'), onPress: () => { track(EVENTS.food_packaged_scan_handoff, { from: 'capture' }); goStep({ kind: 'handoff', analysisId: null }); }, testID: 'pscan-label-instead' }
@@ -605,7 +602,6 @@ function FrontDebug({ onRun }: { onRun: (text: string) => void }) {
 // 시안 실측(2x): 본문 좌우 20 · 안내 eyebrow 15 primary · 제목 28 bold · 본문 15/22 · 촬영 상자 335×264 r24 #2F3137(아이콘 + 18 semibold 흰 글자)
 // · 아웃라인 40 · 하단 고정 버튼 · 후보 시트 = 어두운 띠 200 위 흰 시트 r24
 const st = StyleSheet.create({
-  camFree: { alignSelf: 'center' }, // KB-914(R-141): 카메라 = 배지 가운데(구 흰 문장)
   root: { flex: 1, backgroundColor: C.card },
   page: { paddingHorizontal: 20, paddingTop: 24, gap: 20 },
   eyebrow: { fontFamily: font.body, fontSize: 16, lineHeight: 21, color: C.primary },

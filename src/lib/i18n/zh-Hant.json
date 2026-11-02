@@ -1362,10 +1362,7 @@
     "done": "完成",
     "resultAvoid": "與要避免的食材相符：{{names}}。",
     "resultCaution": "同工廠標示中提到：{{names}}。",
-    "resultMajorSet": "{{contains}}。設定要避免的食材後可查看個人結果。",
-    "freeFor_one": "加工食品掃描免費，還剩{{count}}分鐘",
-    "freeFor_other": "加工食品掃描免費，還剩{{count}}分鐘",
-    "freeExplain": "在此期間可不限次數掃描加工食品。掃描菜單不在此列。"
+    "resultMajorSet": "{{contains}}。設定要避免的食材後可查看個人結果。"
   },
   "scanCamera": {
     "title": "掃描",

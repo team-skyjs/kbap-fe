@@ -1362,10 +1362,7 @@
     "done": "Selesai",
     "resultAvoid": "Cocok dengan daftar hindari: {{names}}.",
     "resultCaution": "Pernyataan fasilitas bersama menyebut: {{names}}.",
-    "resultMajorSet": "{{contains}}. Atur bahan yang dihindari untuk hasil pribadi.",
-    "freeFor_one": "Pindai produk kemasan gratis {{count}} menit lagi",
-    "freeFor_other": "Pindai produk kemasan gratis {{count}} menit lagi",
-    "freeExplain": "Selama waktu ini, kamu bisa memindai produk kemasan sepuasnya. Pindai menu tidak termasuk."
+    "resultMajorSet": "{{contains}}. Atur bahan yang dihindari untuk hasil pribadi."
   },
   "scanCamera": {
     "title": "Pindai",
