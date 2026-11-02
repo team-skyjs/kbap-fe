@@ -1,3 +1,9 @@
+## 2026-11-02 · P-573 KB-957 음식 탭 상단 정리·기본 Packaged(예진 11/2 실기)
+- Dishes | Packaged = 헤더 로고 줄 안(StickyHeader center 슬롯 — 다른 화면 무변) · 글자·밑줄 = 구 세그먼트 그대로(16 semibold·2pt), 칸 폭 = 글자 폭 · 큰 글자 = 줄임표 대신 글자 배율 상한 SEG_MAX_SCALE 1.15. 별도 세그먼트 줄·Dishes 머리 간격 소멸.
+- Packaged "Popular picks"·유형명 제목 소멸(유형은 밑줄 탭 선택 상태) — 검색 결과일 때만 제목, 그 밖엔 칩 → 그리드 간격 16. Dishes엔 같은 제목 없음.
+- 유형 밑줄 탭 = 한 단계 작게: type.meta 14(선택 = semibold) · 밑줄 2 → 1.5 · 글자–밑줄 6 → 4. 칩 라벨 토큰은 16/500이라 "칩 크기급"이면 지금과 같은 크기 — 위계를 위해 meta 14로(보고).
+- 첫 진입 기본 = Packaged(defaultFoodSegment — 운영 채널 processedFoodEnabled off = Dishes) · See all·딥링크 전이 무변. 신규 ko 0. 기기 미검증(QA).
+
 ## 2026-11-02 · P-571 KB-955 홈 편의점 인기 가공식품 줄(예진 11/2)
 - 위치 = Popular|Saved|Food 레일 바로 아래(afterRail 맨 앞), 아이돌 픽·큐레이션 위 · 운영 채널(processedFoodEnabled off) = 마운트 0.
 - 헤더 = SectionHead(라벨 packaged.segmentPackaged 재사용 + 제목 home.cvsTitle 신규) + 오른쪽 See all(home.seeAll) → /food?view=packaged(음식 탭이 Packaged 세그먼트로 — 운영 채널은 Dishes).

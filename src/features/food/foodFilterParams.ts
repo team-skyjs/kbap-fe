@@ -22,3 +22,8 @@ export function parseFoodFilterParams(p: { segment?: string; risk?: string }): {
     risk: (RISK_CHIP_PARAMS as string[]).includes(p.risk ?? '') ? (p.risk as RiskChipParam) : 'all',
   };
 }
+
+/** KB-957(예진 11/2): 음식 탭 첫 진입 세그먼트 — 가공식품이 켜진 채널 = Packaged, 운영 채널(processedFoodEnabled off) = Dishes */
+export function defaultFoodSegment(processedFoodEnabled: boolean): 'dishes' | 'packaged' {
+  return processedFoodEnabled ? 'packaged' : 'dishes';
+}
