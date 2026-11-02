@@ -3,12 +3,11 @@
  */
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
-it('① 홈 레일 See all = 텍스트+chevron(점선 카드 소멸)', () => {
+it('① 홈 레일 See all = 점선 카드 소멸 → KB-962 탭 줄 원형 버튼(레일 끝 카드 0)', () => {
   const fx = read('src/features/food/FoodExplorer.tsx');
   expect(fx).not.toContain("borderStyle: 'dashed'");
-  // P-396(KB-590)에서 주황 포인트가 붙었다 — 비율·gap·패딩(프레임)만 계속 잠근다
-  expect(fx).toMatch(/seeAllCard: \{\s*aspectRatio: 174 \/ 203,[^}]*gap: 2,\s*paddingHorizontal: 12,/);
-  expect(fx).toMatch(/seeAllText[^}]*\}>\{t\('home\.seeAll'\)\}<\/Text>\s*<IconChevron size=\{16\}/);
+  expect(fx).not.toContain('seeAllCard');
+  expect(fx).toContain('<SeeAllCircle');
 });
 
 it('② ⋯ 전 카드 — 탈퇴 리뷰 포함(FeedCard anon 게이트 소멸)·차단은 익명/reportOnly 미노출 (KB-800: 홈 피드·신고 플로우 제거)', () => {

@@ -969,7 +969,7 @@
     "newestFirst": "최신순",
     "swipeHint": "카드를 왼쪽으로 밀면 삭제할 수 있어요",
     "emptyTitle": "아직 저장한 음식이 없어요",
-    "emptyBody": "음식의 별을 누르면 여기에 모여요.",
+    "emptyBody": "음식 상세에서 저장하면 여기에 모여요.",
     "emptyCta": "음식 둘러보기",
     "removed": "저장됨에서 삭제했어요",
     "toast": "내 리스트에 저장했어요",

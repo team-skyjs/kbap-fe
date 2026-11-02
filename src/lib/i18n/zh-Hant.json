@@ -969,7 +969,7 @@
     "newestFirst": "最新優先",
     "swipeHint": "向左滑動卡片即可移除",
     "emptyTitle": "還沒有收藏",
-    "emptyBody": "點按任一菜色上的星號即可儲存到這裡——你的安心美味清單。",
+    "emptyBody": "在菜色詳情頁儲存後，會集中顯示在這裡。",
     "emptyCta": "探索美食",
     "removed": "已從收藏中移除",
     "toast": "已儲存到你的清單",

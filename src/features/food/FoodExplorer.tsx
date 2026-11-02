@@ -13,6 +13,7 @@
 import * as React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { nameSortOf, type FoodSort } from './foodSort'; // KB-956: 정렬 매핑 = 순수 모듈
+import { SeeAllCircle } from '@/components/SeeAllCircle';
 import { useRefreshClient } from '@/lib/data/usePullRefresh';
 import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import { Pressable } from '@/components/Pressable';
@@ -20,9 +21,9 @@ import Animated from 'react-native-reanimated';
 import { MAX_FONT_SCALE, Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, primaryTint, radius } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { CHIP_LABEL_LH } from '@/components/Chip';
-import { Btn, Chip, IconSearch, IconTabScan, IconChevron, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
+import { Btn, Chip, IconSearch, IconTabScan, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
 import { EmptyBlock } from '@/components/StateBlock';
 import { Shimmer } from '@/components/Skeleton';
 import { ActionSheet } from '@/components/ActionSheet';
@@ -349,6 +350,8 @@ export function FoodExplorer({
           음식 탭은 세그먼트 소멸(v2 정본 — 카탈로그 단일 뷰 + 필터·정렬) */}
       {variant === 'embedded' && (
         <>
+          {/* KB-962(예진 11/2): 탭 줄 오른쪽 끝 = See all 원형 버튼(고정 칸) — 탭은 남은 폭(긴 언어는 아래 가로 스크롤 그대로) */}
+          <View style={styles.tabsHead}>
           {/* KB-707: 긴 언어(ru·id)에서 셋째 탭이 말줄임 없이 화면 밖으로 잘렸다 — 줄이지 않고 가로 스크롤로 도달 가능하게(다 들어가면 모양 동일) */}
           <View style={styles.tabsScroll}>
           <ScrollView
@@ -397,6 +400,13 @@ export function FoodExplorer({
               testID="home-tabs-fade"
             />
           )}
+          </View>
+          {/* 이동 = 구 레일 끝 See all 카드와 같음(지금 탭·안전도 칩 그대로 음식 탭으로) */}
+          <SeeAllCircle
+            onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam, Date.now()) as Href)}
+            style={styles.tabsSeeAll}
+            testID="home-rail-see-all"
+          />
           </View>
           <View style={styles.tabsDivider} />
         </>
@@ -605,15 +615,8 @@ export function FoodExplorer({
           contentContainerStyle={styles.railContent}
           testID="home-rail"
         >
+          {/* KB-962: 레일은 마지막 카드로 끝(구 끝 See all 카드 → 탭 줄 오른쪽 원형 버튼) */}
           {gridFoods.map((item, i) => card(item, { width: cardW }, gridTab, i))}
-          <Pressable
-            style={[styles.seeAllCard, { width: cardW }]}
-            onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam, Date.now()) as Href)}
-            testID="home-rail-see-all"
-          >
-            <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>
-            <IconChevron size={16} color={C.primaryText} />
-          </Pressable>
         </ScrollView>
         </View>
       )}
@@ -684,7 +687,9 @@ const styles = StyleSheet.create({
   scanBtn: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
 
   // 언더라인 탭 (§1-3)
-  tabsScroll: { flexGrow: 0, marginTop: 14 }, // KB-707: 가로 스크롤(세로로 자라지 않게 flexGrow 0 — P-319)
+  tabsHead: { flexDirection: 'row', alignItems: 'center', marginTop: 14, paddingRight: 20 }, // KB-962: 탭(남은 폭) + See all 원형(고정 칸)
+  tabsScroll: { flex: 1, minWidth: 0 }, // KB-707: 가로 스크롤 · KB-962: 원형 버튼 옆 남은 폭(세로 성장은 행이 막는다 — P-319)
+  tabsSeeAll: { marginLeft: 8, flexShrink: 0 },
   tabsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 4 }, // A-HM-03
   // A-DS-03(KB-486): 라벨 14/700 · 비활성 #9196A1 · 패딩 10
   tab: { paddingHorizontal: 10, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
@@ -721,26 +726,6 @@ const styles = StyleSheet.create({
   rail: { flexGrow: 0, marginTop: -RAIL_RIBBON_OVERHANG },
   railContent: { paddingHorizontal: 20, gap: 12, paddingTop: RAIL_RIBBON_OVERHANG },
   // 폭은 렌더 시 cardW로 주입(P-319) — 비율·모양만 여기서
-  // P-339 ①(KB-494) → P-396(KB-590): 레일 끝 더보기가 눈에 안 띈다는 실기 피드백 —
-  // 주황 포인트로 승격. 배경·보더는 DS에 이미 있는 primary 쌍(온보딩 선택 타일과 같은
-  // `primaryTint` + `C.primary` 보더) 그대로, 새 hex 0. 비율·폭·탭 동작은 무변이고
-  // RN 보더는 박스 안쪽이라 카드 크기도 그대로다.
-  seeAllCard: {
-    aspectRatio: 174 / 203,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    paddingHorizontal: 12,
-    backgroundColor: primaryTint,
-    borderWidth: 1,
-    borderColor: C.primary,
-    borderRadius: radius.md,
-  },
-  // 텍스트·chevron은 `C.primaryText`. 발주는 `C.primary`였지만 그 값은 이 틴트 위에서
-  // 대비 2.61로 AA(4.5)는커녕 비텍스트 3:1도 못 넘는다 — P-284가 "12~14px primary 텍스트는
-  // primaryText"로 이미 정해둔 이유가 이것이고, primaryText는 같은 배경에서 4.91이다.
-  seeAllText: { fontSize: 16, fontWeight: '600', color: C.primaryText },
   // P-321 레일 상태 블록(전부 ScrollView 밖 세로 배치 — 줄바꿈 보장)
   railSkel: { flexDirection: 'row', gap: 12, paddingHorizontal: 20 },
   // 디자이너 빈 상태(4003:6689) = 중앙 정렬 — EmptyBlock과 본문·CTA 정렬 통일

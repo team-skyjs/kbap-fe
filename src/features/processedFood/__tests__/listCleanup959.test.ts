@@ -54,12 +54,12 @@ describe('KB-959 Ramen → Ramyeon(예진 11/2 — ramen은 일본식 라멘)', 
   });
 });
 
-describe('KB-959 홈 섹션 헤더 See all = 진한 글자', () => {
-  it('편의점 줄 See all 글자·화살표 = C.ink(구 primaryText 주황) · 음식 레일 끝 See all 카드는 무변(별도 발주)', () => {
+describe('KB-959 → KB-962 홈 섹션 See all = 원형 화살표 버튼(검은 화살표)', () => {
+  it('편의점 줄 See all = SeeAllCircle(검은 화살표 · 주황 0) · 음식 레일 끝 See all 카드 소멸(탭 줄 원형 버튼으로)', () => {
     const rail = read('src/features/home/HomeCvsRail.tsx');
-    expect(rail).toContain('seeAllText: { ...type.button, color: C.ink }');
-    expect(rail).toContain('<IconChevron size={16} color={C.ink} />');
+    expect(rail).toContain('<SeeAllCircle');
     expect(rail).not.toContain('C.primaryText');
-    expect(read('src/features/food/FoodExplorer.tsx')).toContain("seeAllText: { fontSize: 16, fontWeight: '600', color: C.primaryText }");
+    expect(read('src/components/SeeAllCircle.tsx')).toContain('<IconArrowRight size={18} color={C.ink} />');
+    expect(read('src/features/food/FoodExplorer.tsx')).not.toContain('seeAllCard');
   });
 });

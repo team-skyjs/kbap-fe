@@ -171,6 +171,16 @@ it('③-b 홈(embedded) = 가로 레일 상한(Popular=소스 8 · Food=HOME_RAI
   expect(tree.root.findAll((n) => n.props?.testID === 'home-grid-more')).toHaveLength(0);
 });
 
+it('KB-962(예진 11/2): See all = 탭 줄 오른쪽 원형 버튼(레일 밖) · 접근성 라벨 = home.seeAll · 레일은 마지막 카드로 끝', () => {
+  const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  const rail = tree.root.findAll((n) => n.props?.testID === 'home-rail' && n.props?.horizontal === true)[0];
+  expect(rail.findAll((n) => n.props?.testID === 'home-rail-see-all')).toHaveLength(0);
+  const btn = tree.root.findAll((n) => n.props?.testID === 'home-rail-see-all' && typeof n.type === 'string')[0];
+  expect(btn.props.accessibilityLabel).toBe('home.seeAll');
+  const tabs = tree.root.findAll((n) => n.props?.testID === 'home-tabs-scroll')[0];
+  expect(tabs.findAll((n) => n.props?.testID === 'home-rail-see-all')).toHaveLength(0); // 스크롤 탭 밖 고정 칸
+});
+
 it('⑤ P-317 See all — 현재 세그먼트·칩 상태가 음식 탭 쿼리로 승계', () => {
   const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
   press(tree, 'home-rail-see-all');
@@ -365,7 +375,8 @@ it('⑮ P-319/320 — 메인 레일 = ScrollView(flexGrow:0·FlatList prop 부�
   const { railCardW } = require('@/features/food/railLayout') as typeof import('@/features/food/railLayout');
   const w = railCardW(width);
   expect(JSON.stringify(tree.root.findAll((n) => n.props?.testID === 'home-food-1')[0].props.style)).toContain(`"width":${w}`);
-  expect(JSON.stringify(tree.root.findAll((n) => n.props?.testID === 'home-rail-see-all')[0].props.style)).toContain(`"width":${w}`);
+  // KB-962: See all = 탭 줄 원형 버튼(지름 32 고정) — 레일 끝 카드 소멸(카드 폭 공유 0)
+  expect(JSON.stringify(tree.root.findAll((n) => n.props?.testID === 'home-rail-see-all' && typeof n.type === 'string')[0].props.style)).toContain('"width":32');
 });
 
 it('⑯ P-321 레일 상태 — 로딩 스켈레톤 / 에러 / Saved 0건 CTA / 칩 전부 걸러짐(전부 ScrollView 밖)', () => {
