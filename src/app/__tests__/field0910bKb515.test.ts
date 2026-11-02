@@ -29,20 +29,19 @@ it('#116 P2 ①② — 판정 드레인 = 공용 useSavedIds(중복 배선 0), �
   const bm = read('src/lib/data/bookmarks.ts');
   expect(bm).toContain('export function useSavedIds(opts?: { enabled?: boolean }): { ids: Set<string>; ready: boolean } {'); // KB-779: 홈은 Saved 탭 활성 시에만
   expect(bm).toContain('void fetchNextPage({ cancelRefetch: false });'); // P-332 문법 승계(KB-779 Codex ④: enabled 가드 + 구조분해)
+  // KB-959(예진 11/2): 카드 저장 버튼 소멸 → 홈·음식 탭·검색은 판정 드레인(useSavedIds)·카드 토글·검색 저장 게이트를 더 안 쓴다(상세가 정본)
   const fe = read('src/features/food/FoodExplorer.tsx');
-  expect(fe).toContain('const { ids: savedIds, ready: savedReady } = useSavedIds({ enabled: bookmarksOn });'); // KB-779
+  expect(fe).not.toContain('useSavedIds(');
   expect(fe).not.toContain('saved.fetchNextPage({ cancelRefetch: false })'); // 자체 드레인 소멸
   const sr = read('src/app/search.tsx');
-  expect(sr).toContain('const { ids: savedIds, ready: savedReady } = useSavedIds();');
-  expect(sr).toContain('if (isGuest) return setGate(true);');
-  expect(sr).toContain('<AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />');
+  expect(sr).not.toContain('useSavedIds(');
+  expect(sr).not.toContain('<AuthGateSheet context="save"');
 });
 
 it('#116 2R — ready(드레인 완료) 전 토글 무시(POST 오발 방지) + 스캔 썸네일 CardPhoto 경유', () => {
   const bm = read('src/lib/data/bookmarks.ts');
   expect(bm).toContain('return { ids, ready: !saved.hasNextPage && !saved.isFetching };');
-  expect(read('src/features/food/FoodExplorer.tsx')).toContain("if (variant === 'screen' && !savedReady) return;"); // KB-779: 홈은 카드 bookmarked가 방향 — 가드 불필요
-  expect(read('src/app/search.tsx')).toContain('if (!savedReady) return;');
+  // KB-959: 카드 토글 소멸 — 드레인 전 토글 가드는 상세(useToggleBookmark 경로)만 남음
   const rich = read('src/features/scan/ScanRichList.tsx');
   expect(rich).toContain('<CardPhoto uri={thumb} borderRadius={radius.md} />'); // 깨진 URL = 기본 이미지 폴백
 });

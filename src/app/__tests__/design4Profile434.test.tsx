@@ -198,6 +198,6 @@ it('④ 저장 목록 — FoodGridCard 2열 그리드 + 위험 칩(KB-949: 홈·
   expect(src).toContain('numColumns={2}');
   expect(src).toContain("RISK_CHIPS } from '@/features/food/FoodCards'"); // KB-949: 칩 목록 = 홈·음식 탭과 같은 상수(순서 동일)
   expect(src).not.toMatch(/RISK_CHIPS: RiskChip\[\] = \[/); // 자체 목록 0
-  expect(src).toContain('onBookmark={() => onRemove(item)}'); // 별 = 해제 토글(Undo 무변)
+  expect(src).not.toContain('onBookmark='); // KB-959(예진 11/2): 카드 별(해제 토글)·Undo 소멸 — 해제는 상세에서
   expect(src).not.toContain('Swipeable'); // 구 스와이프 행 소멸
 });

@@ -479,9 +479,8 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         pages={pages.length}
         max={LABEL_PAGES_MAX}
         member={personalized}
+        avoidCount={me?.restrictions.length ?? 0} // KB-959: Safe 부제 근거
         stale={step.verdictKey !== verdictKey}
-        freeStarted={step.freeStarted}
-        banner={<PackagedFreeLine />}
         onAddSide={() => goStep({ kind: 'handoff', analysisId: result.analysisId, pages, photos, from: step })}
         onReview={() => goStep({ kind: 'labelPages', analysisId: result.analysisId, pages, photos, from: step })}
         onDone={onClose}

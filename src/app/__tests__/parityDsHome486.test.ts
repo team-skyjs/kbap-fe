@@ -11,8 +11,7 @@ it('A-DS — SectionHead 11/700·22/700, 세그먼트 탭 14/700 #9196A1, 북마
   const fx = read('src/features/food/FoodExplorer.tsx');
   expect(fx).toContain("tabLabel: { fontSize: 16, fontWeight: '700', color: '#9196A1' }");
   const cards = read('src/features/food/FoodCards.tsx');
-  expect(cards).toContain("borderColor: 'transparent'");
-  expect(cards).toContain("gbmSaved: { borderColor: '#EAEBEE' }");
+  expect(cards).not.toContain('gbm'); // KB-959(예진 11/2): 카드 북마크 버튼·보더 스타일 소멸
 });
 
 it('A-FC — card gap 8·who gap 4·아바타 0.5 스트로크·케밥 20 #262C31·음식 칩 gap 4', () => {

@@ -8,7 +8,6 @@
  */
 import * as React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { FreeBadge, PackagedFreeExplain } from './packagedFreeHour';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,7 +27,7 @@ import { color as C, font, radius, type } from '@/lib/theme';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { VERDICT_RISK, type LabelScanResult, type ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
-import { detectedCodes, IngredientsText, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand, unclearSubtitle } from '@/features/processedFood/PackagedVerdict';
+import { detectedCodes, IngredientsText, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand, unclearSubtitle, safeBasis } from '@/features/processedFood/PackagedVerdict';
 
 const namesOf = (codes: string[]) => codes.map((c) => restrictionLabel(c)).join(', ');
 
@@ -228,8 +227,8 @@ export function LabelPhotosScreen({ photos, count, max, reanalyze, onRetake, onA
 
 /** 성분표 결과(27·28·29·41·44·48) — 판정은 서버 verdict·matches만(앱 판정 0). member = 회피 1개 이상 회원 */
 /** stale = 결과 뒤 판정 기준(회피·언어)이 바뀜 — 옛 verdict는 개인 판정으로 쓰지 않는다: 리본 0 · "확인 못 함" · 면 검토(같은 분석 다시 분석)로 */
-export function LabelResultScreen({ result, photoUri, pages, member, stale = false, freeStarted = false, banner, onAddSide, onReview, onDone, max }: {
-  result: LabelScanResult; photoUri: string | null; pages: number; member: boolean; stale?: boolean; freeStarted?: boolean; banner?: React.ReactNode; onAddSide: () => void; onReview: () => void; onDone: () => void; max: number;
+export function LabelResultScreen({ result, photoUri, pages, member, avoidCount = 0, stale = false, onAddSide, onReview, onDone, max }: {
+  result: LabelScanResult; photoUri: string | null; pages: number; member: boolean; avoidCount?: number; stale?: boolean; onAddSide: () => void; onReview: () => void; onDone: () => void; max: number;
 }) {
   const { t } = useTranslation();
   const lang = useAppLanguage(); // 구독으로(KB-695)
@@ -245,7 +244,7 @@ export function LabelResultScreen({ result, photoUri, pages, member, stale = fal
     if (result.verdict === 'AVOID') avoid = t('packagedScan.resultAvoid', { names: namesOf(result.avoidMatches.map((m) => m.code)) });
     else if (result.verdict === 'CAUTION') avoid = t('packagedScan.resultCaution', { names: namesOf(result.mayContainMatches.map((m) => m.code)) });
     else if (result.verdict === 'SAFE_WITH_NOTE') avoid = unclearSubtitle(result); // KB-921·936: 상세 띠와 같은 부제(라벨 → 원문 폴백, 비면 생략)
-    else if (result.verdict === 'SAFE') avoid = t(pages > 1 ? 'packagedScan.resultSafeAll' : 'packaged.noAvoidMatches');
+    else if (result.verdict === 'SAFE') avoid = safeBasis(t, avoidCount); // KB-959: 근거 부제(제목 반복 0) — 여러 면이어도 같은 근거
     else if (legacyAvoid.length) avoid = t('packagedScan.resultAvoid', { names: namesOf(legacyAvoid) });
     else avoid = t('packaged.notVerifiedBody');
   }
@@ -262,7 +261,7 @@ export function LabelResultScreen({ result, photoUri, pages, member, stale = fal
   const [open, setOpen] = React.useState(false); // KB-914(R-137): 원재료·알레르기 원문 = 접힘(음식 상세처럼 판정·재료가 먼저)
   // 띠: 회원 + 서버 verdict = 판정 띠 · 회원인데 기준이 바뀜(stale)·옛 응답 회피 일치 = 회색/위험 띠 · 비회원 = 띠 없이 주요 알레르기 섹션
   const verdictBand = member && !stale && result.verdict ? (
-    <PackagedVerdictBand d={{ ...result, verdict: result.verdict }} safeReason={t(pages > 1 ? 'packagedScan.resultSafeAll' : 'packaged.noAvoidMatches')} reason={avoid} style={sc.band} testID={`pscan-result-band-${risk ?? 'none'}`} />
+    <PackagedVerdictBand d={{ ...result, verdict: result.verdict }} safeReason={safeBasis(t, avoidCount)} reason={avoid} style={sc.band} testID={`pscan-result-band-${risk ?? 'none'}`} />
   ) : member && !stale && legacyAvoid.length ? (
     <PackagedVerdictBand d={{ ...result, verdict: 'AVOID', avoidMatches: legacyAvoid.map((code) => ({ code, evidence: [] })) }} safeReason="" reason={avoid} style={sc.band} testID="pscan-result-band-danger" />
   ) : member ? (
@@ -272,14 +271,7 @@ export function LabelResultScreen({ result, photoUri, pages, member, stale = fal
     <View style={sc.root} testID="pscan-label-result">
       <SubHeader title={t('packagedScan.resultTitle')} onBack={onDone} />
       <ScrollView contentContainerStyle={[sc.page, { gap: 24 }]}>
-        {/* KB-877: 이번 분석이 차감하며 창을 열었으면 안내 한 줄, 아니면 남은 분(창 안이면) */}
-        {freeStarted ? (
-          // KB-914(R-141): 시작 안내도 같은 무료 배지(구 주황 굵은 문장)
-          <View style={{ gap: 6 }}>
-            <FreeBadge text={t('packagedScan.freeStarted')} testID="pscan-free-started" />
-            <PackagedFreeExplain />
-          </View>
-        ) : banner}
+        {/* KB-959(예진 11/2): 결과 상단 무료 시간 배너("다음 1시간 무료"·남은 분) 제거 — 무료 창 차감 자체는 서버 그대로 */}
         <PhotoSlot uri={photoUri} label={t('packagedScan.labelBox')} style={sc.resultSlot} />
         {/* KB-914(R-137): 판정 = 음식 상세와 같은 띠(구 사진 위 작은 리본 + "Your avoid list" 문장) */}
         {verdictBand ?? (
@@ -343,7 +335,6 @@ function Section({ title, children, testID }: { title: string; children: React.R
 }
 
 const sc = StyleSheet.create({
-  freeStarted: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 23, color: C.primaryText }, // KB-877
   root: { flex: 1, backgroundColor: C.card },
   page: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24, gap: 16 },
   h1: { fontFamily: font.bodyBold, fontSize: 22, lineHeight: 28, color: C.ink },

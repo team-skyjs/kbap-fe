@@ -972,7 +972,6 @@
     "emptyBody": "Toca la estrella en cualquier plato para guardarlo aquí: tu lista para comer rico y seguro.",
     "emptyCta": "Explorar comida",
     "removed": "Eliminado de Guardados",
-    "undo": "Deshacer",
     "toast": "Guardado en tu lista",
     "view": "Ver",
     "filterEmpty": "Ningún plato guardado coincide con este filtro"
@@ -989,7 +988,7 @@
       "0": "Sin picante — arroz blanco",
       "1": "Suave — kimchi ligero",
       "2": "Kimchi jjigae",
-      "3": "Ramen buldak de fuego",
+      "3": "Ramyeon buldak de fuego",
       "4": "Cheongyang al máximo"
     },
     "foodNone": "No picante"
@@ -1197,7 +1196,7 @@
   "packaged": {
     "segmentDishes": "Platos",
     "segmentPackaged": "Envasados",
-    "searchPlaceholder": "Buscar snacks, ramen…",
+    "searchPlaceholder": "Buscar snacks, ramyeon…",
     "clearSearch": "Borrar búsqueda",
     "popularPicks": "Populares",
     "searchResults": "Resultados de búsqueda",
@@ -1248,7 +1247,7 @@
     "backToList": "Volver",
     "type": {
       "snacks": "Snacks",
-      "ramen": "Ramen",
+      "ramen": "Ramyeon",
       "bread": "Pan",
       "drinks": "Bebidas",
       "ice_cream": "Helados",
@@ -1261,7 +1260,6 @@
     "seeLess": "Ver menos",
     "ingredientsAndSource": "Ingredientes y fuente",
     "yourAvoidList": "Tu lista para evitar",
-    "noAvoidMatches": "No hay coincidencias con tu lista para evitar actual.",
     "translationLabel": "Traducción al español",
     "sourceTitle": "Fuente",
     "sourceC002": "Datos: Ministerio de Seguridad de Alimentos y Medicamentos, informes de fabricación de Food Safety Korea",
@@ -1277,6 +1275,8 @@
     "containsNames": "Contiene {{names}}",
     "mayContainNames": "Puede contener {{names}}",
     "noAvoidMatchTitle": "Sin coincidencias con tu lista",
+    "safeBasis_one": "Comparamos la etiqueta con {{count}} ingrediente que evitas.",
+    "safeBasis_other": "Comparamos la etiqueta con {{count}} ingredientes que evitas.",
     "findMore": "Buscar más"
   },
   "scanMode": {
@@ -1362,11 +1362,9 @@
     "done": "Listo",
     "resultAvoid": "Coincide con tu lista para evitar: {{names}}.",
     "resultCaution": "Una declaración de planta compartida menciona: {{names}}.",
-    "resultSafeAll": "Sin coincidencias en todas las fotos de etiqueta que añadiste.",
     "resultMajorSet": "{{contains}}. Elige ingredientes a evitar para ver un resultado personal.",
     "freeFor_one": "Escaneos de envasados gratis por {{count}} min",
     "freeFor_other": "Escaneos de envasados gratis por {{count}} min",
-    "freeStarted": "Tus próximos escaneos de envasados son gratis durante 1 hora.",
     "freeExplain": "Durante este tiempo puedes escanear envasados sin límite. No incluye los escaneos de menús."
   },
   "scanCamera": {

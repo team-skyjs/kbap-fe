@@ -9,10 +9,10 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, riskTextStrong, shadow, type RiskState, radius } from '@/lib/theme';
+import { color as C, riskTextStrong, type RiskState, radius } from '@/lib/theme';
 import { Btn, CardPhoto, NewBadge, RiskBadge, IconChevron } from '@/components';
 import { useIsNewFood } from '@/lib/newFood';
-import { BookmarkStar, OverallRating, Stars } from '@/components/Stars';
+import { OverallRating, Stars } from '@/components/Stars';
 import { FLAGS } from '@/lib/flags';
 import type { FoodCard, TopRatedFood } from '@/lib/api/types';
 
@@ -39,20 +39,16 @@ export function FoodGridCard({
   food,
   risk,
   guest,
-  saved,
   riskLabel,
   onPress,
-  onBookmark,
   style,
   ref,
 }: {
   food: FoodCard;
   risk: RiskState;
   guest: boolean;
-  saved: boolean;
   riskLabel: string;
   onPress: () => void;
-  onBookmark: () => void;
   /** KB-434 저장 그리드(FlatList 셀) — 홈 flexWrap 폭(47%) 오버라이드용 */
   style?: StyleProp<ViewStyle>;
   /** KB-784: 홈 카드 노출 측정(measureInWindow) — 홈 밖은 미전달 */
@@ -97,10 +93,7 @@ export function FoodGridCard({
           )}
           {!guest && <Text style={[styles.gstatus, { color: riskTextStrong[risk] } /* P-284: 12/700 상태 텍스트 = 대비 토큰 */]}>{riskLabel}</Text>}
         </View>
-        <Pressable style={[styles.gbm, saved && styles.gbmSaved]} onPress={onBookmark} hitSlop={6} testID={`home-bm-${food.foodId}`}>
-          {/* 9/5 판정: 북마크 별(4129:10698/10701) — 저장됨 = #FFE812/#E5D64D */}
-          <BookmarkStar saved={saved} size={16} />
-        </Pressable>
+        {/* KB-959(예진 11/2): 카드 저장(별) 버튼 제거 — 저장·해제는 상세에서만. 이름 열이 카드 폭을 다 쓴다 */}
       </View>
     </Pressable>
   );
@@ -235,18 +228,6 @@ const styles = StyleSheet.create({
   gstatus: { fontSize: 13, fontWeight: '700', marginTop: 0 }, // A-HM-05
   // A-DS-02(KB-486): 기본 = 흰 + sh1(보더 제거), 저장 상태만 #EAEBEE 1(2072:2510).
   // 프레임 불변(P-151): 비저장도 같은 폭의 투명 보더로 자리 유지.
-  gbm: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.xs,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadow.sh1,
-  },
-  gbmSaved: { borderColor: '#EAEBEE' },
 
   // A-HM-07: cross center(구 flex-start)
   rrow: {

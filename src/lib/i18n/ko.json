@@ -972,7 +972,6 @@
     "emptyBody": "음식의 별을 누르면 여기에 모여요.",
     "emptyCta": "음식 둘러보기",
     "removed": "저장됨에서 삭제했어요",
-    "undo": "되돌리기",
     "toast": "내 리스트에 저장했어요",
     "view": "보기",
     "filterEmpty": "이 필터에 맞는 저장된 메뉴가 없어요"
@@ -1261,7 +1260,6 @@
     "seeLess": "접기",
     "ingredientsAndSource": "원재료와 출처",
     "yourAvoidList": "내 피하는 재료",
-    "noAvoidMatches": "지금 피하는 재료와 일치하는 것이 없어요.",
     "translationLabel": "번역",
     "sourceTitle": "출처",
     "sourceC002": "자료: 식품의약품안전처 식품안전나라 품목제조보고",
@@ -1277,6 +1275,8 @@
     "containsNames": "{{names}} 함유",
     "mayContainNames": "{{names}} 혼입 가능",
     "noAvoidMatchTitle": "확인한 성분 중 피하는 재료 없음",
+    "safeBasis_one": "피하는 재료 {{count}}개와 성분표를 대조했어요.",
+    "safeBasis_other": "피하는 재료 {{count}}개와 성분표를 대조했어요.",
     "findMore": "더 찾아보기"
   },
   "scanMode": {
@@ -1362,11 +1362,9 @@
     "done": "완료",
     "resultAvoid": "피하는 재료와 일치해요: {{names}}.",
     "resultCaution": "같은 제조시설 표기에 있어요: {{names}}.",
-    "resultSafeAll": "담은 성분표 사진 전부에서 일치하는 재료가 없어요.",
     "resultMajorSet": "{{contains}}. 피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요.",
     "freeFor_one": "가공식품 무료 스캔 시간이 {{count}}분 남았어요",
     "freeFor_other": "가공식품 무료 스캔 시간이 {{count}}분 남았어요",
-    "freeStarted": "다음 가공식품 스캔은 1시간 동안 무료예요.",
     "freeExplain": "이 시간 동안은 가공식품을 횟수 제한 없이 스캔할 수 있어요. 메뉴판 스캔은 해당되지 않아요."
   },
   "scanCamera": {

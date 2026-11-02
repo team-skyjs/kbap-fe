@@ -147,9 +147,10 @@ describe('배선 잠금(소스) — 홈 섹션 7종·카드 클릭·스크롤 �
       expect({ s, has: home.includes(s) }).toEqual({ s, has: true });
     }
   });
-  it('FoodExplorer: 레일(탭 = 섹션)·safe·most_reviewed 섹션 · 카드 위치 · 가로 정지 props · 홈 카드 하트 = food_bookmark_toggle(기존 이름·속성)', () => {
-    for (const s of ["useImpressionRef(variant === 'embedded' ? gridTab : null)", "'safe', safePicks.indexOf(item)", "'most_reviewed', mostReviewed.indexOf(item)", 'card(item, { width: cardW }, gridTab, i)', '{...railScrollProps}', 'track(EVENTS.food_bookmark_toggle, { on: !isSaved(f) });', 'trackHomeCardClick(section, position, rest.food.foodId)']) {
+  it('FoodExplorer: 레일(탭 = 섹션)·safe·most_reviewed 섹션 · 카드 위치 · 가로 정지 props · KB-959 카드 하트(저장 토글) 소멸', () => {
+    for (const s of ["useImpressionRef(variant === 'embedded' ? gridTab : null)", "'safe', safePicks.indexOf(item)", "'most_reviewed', mostReviewed.indexOf(item)", 'card(item, { width: cardW }, gridTab, i)', '{...railScrollProps}', 'trackHomeCardClick(section, position, rest.food.foodId)']) {
       expect({ s, has: fx.includes(s) }).toEqual({ s, has: true });
     }
+    expect(fx).not.toContain('food_bookmark_toggle'); // 저장 이벤트는 상세에서만
   });
 });

@@ -8,7 +8,6 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { api } from '@/lib/api/client'; // jest.mock 호이스팅 — 아래 팩토리의 mock
 import { FoodExplorer } from '@/features/food/FoodExplorer';
-import { FoodGridCard } from '@/features/food/FoodCards';
 import type { FoodCard } from '@/lib/api/types';
 
 jest.mock('react-native-reanimated', () => {
@@ -77,8 +76,6 @@ const client = () => new QueryClient({ defaultOptions: { queries: { retry: false
 const flush = () => act(async () => { await new Promise((r) => setTimeout(r, 8)); });
 const press = (t: ReactTestRenderer, testID: string) =>
   act(async () => { t.root.findAll((n) => n.props?.testID === testID && typeof n.props?.onPress === 'function')[0].props.onPress(); });
-const savedOf = (t: ReactTestRenderer, foodId: string) =>
-  t.root.findAllByType(FoodGridCard).find((n) => n.props.food.foodId === foodId)?.props.saved;
 
 async function mount(popular: FoodCard[]) {
   const qc = client();
@@ -110,28 +107,25 @@ it('① 회원 홈 콜드 스타트(Popular·All) = GET /bookmarks 0회 · Saved
   expect(bookmarkCalls()).toBeGreaterThan(0);
 });
 
-it('② 레일 별 = /home 카드의 bookmarked (북마크 목록 없이)', async () => {
+// KB-959(예진 11/2): 카드 저장(별) 버튼 소멸 — 저장·해제는 상세에서만. 홈 레일·Food 탭 카드엔 별 0, 카드에서 북마크 요청 0
+const stars = (t: Awaited<ReturnType<typeof mount>>) => t.root.findAll((n) => /^home-bm-/.test(n.props?.testID ?? ''));
+it('② 레일 카드 = 저장 여부와 무관하게 별 0', async () => {
   const t = await mount([CARD('30', true), CARD('31', false)]);
-  expect(savedOf(t, '30')).toBe(true);
-  expect(savedOf(t, '31')).toBe(false);
+  expect(stars(t)).toHaveLength(0);
 });
 
-it('③ 토글 방향 = 카드 bookmarked — 저장된 카드 = PATCH(해제) · 미저장 = POST(등록), 드레인 대기 없음', async () => {
+it('③ 카드 저장 토글 경로 소멸 — 홈·Food 탭 어느 카드에서도 POST·PATCH /bookmarks 0', async () => {
   const t = await mount([CARD('30', true), CARD('31', false)]);
-  await press(t, 'home-bm-30');
-  await flush();
-  expect(api.patch).toHaveBeenCalledWith('/bookmarks/30');
+  await press(t, 'home-tab-food');
+  await flush(); await flush();
+  expect(stars(t)).toHaveLength(0);
   expect(api.post).not.toHaveBeenCalled();
-  await press(t, 'home-bm-31');
-  await flush();
-  expect(api.post).toHaveBeenCalledWith('/bookmarks', { foodId: 31 });
+  expect(api.patch).not.toHaveBeenCalled();
 });
 
-it('④ Food 탭(/foods 소스) 카드 별도 응답의 bookmarked — 드레인 0', async () => {
+it('④ Food 탭(/foods 소스) = 드레인 0(카드 별이 없어 북마크 판정 목록이 필요 없다)', async () => {
   const t = await mount([CARD('30', true)]);
   await press(t, 'home-tab-food');
   await flush(); await flush();
-  expect(savedOf(t, '11')).toBe(true);
-  expect(savedOf(t, '12')).toBe(false);
   expect(bookmarkCalls()).toBe(0);
 });

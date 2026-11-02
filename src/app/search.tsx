@@ -25,8 +25,6 @@ import { Spinner, QueryErrorBlock, classifyQueryError, CardPhoto, PressScale, Ic
 import { EmptyBlock } from '@/components/StateBlock';
 import { useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
 import { CARD_TITLE, FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
-import { useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
-import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { AdBanner } from '@/features/ads/AdBanner';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { placeholderKeyword, popularPhotoFoods } from '@/lib/search/discovery';
@@ -63,18 +61,7 @@ export default function Search() {
   const probe = useInfiniteFoods();
   const offline = probe.isError && classifyQueryError(probe.error) === 'offline';
 
-  // P-353 ⑤(KB-515) → #116 P2 ①②: 판정 = 공용 useSavedIds(드레인 포함), 게스트 = AuthGateSheet
-  const toggleBookmark = useToggleBookmark();
-  const { ids: savedIds, ready: savedReady } = useSavedIds();
-  const [gate, setGate] = useState(false);
-  const onBookmark = (f: FoodCard) => {
-    if (isGuest) return setGate(true); // 홈/음식 탭 문법 그대로 — 무동작 금지
-    if (!savedReady) return; // #116 2R ①: 드레인 완료 전 무시
-    toggleBookmark.mutate({
-      snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
-      add: !savedIds.has(f.foodId),
-    });
-  };
+  // KB-959(예진 11/2): 결과 카드 저장 버튼 제거 — 저장은 상세에서만(구 P-353 ⑤ 카드 별·게스트 게이트 소멸)
 
   // P-143: 검색 유도 — placeholder 시드(진입 시마다 로테이션·재량 보고)+인기 사진
   // 섹션. 큐레이션·스왑 지점은 discovery.ts 격리(BE ⑥ 배포 시 그쪽만 교체).
@@ -264,10 +251,8 @@ export default function Search() {
                   food={item}
                   risk={riskOf(item)}
                   guest={isGuest}
-                  saved={savedIds.has(item.foodId)}
                   riskLabel={t(`risk.${riskOf(item)}`)}
                   onPress={() => openFood(item.foodId)}
-                  onBookmark={() => onBookmark(item)}
                   style={styles.gridCellCard}
                 />
               </View>
@@ -275,7 +260,6 @@ export default function Search() {
           }
       />
       {/* #116 P2 ②: 게스트 북마크 = 저장 게이트(홈/음식 탭 동일) */}
-      <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
     </View>
   );
 }
