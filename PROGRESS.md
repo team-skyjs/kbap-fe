@@ -1,3 +1,6 @@
+## 2026-11-02 · KB-958 Reviews 첫 장 줄이기를 활성 피드 쿼리만(Codex #388 2R P2 후속)
+- 구 = setQueriesData(['reviews','global'] 접두) → 비활성 정렬·국적 변형까지 첫 장으로 줄이며 갱신 시각이 바뀌어 신선도 리셋. 신 = globalReviewsKey(지금 필터) 정확한 키 하나만 getQueryData → 2장 이상이면 setQueryData. 훅과 같은 키 함수(useFoodReviews globalReviewsKey).
+
 ## 2026-11-02 · P-572 KB-956 음식 탭 Popular = 리뷰 많은 순(서버 #521, dev 7248dc52)
 - 정렬 시트 Popular(라벨 그대로) → GET /foods sort=reviews(리뷰 수↓·평균↓·id↓) — 이름 정렬과 같은 3.1 헤더·불투명 커서·재시작 경로(409 FOOD-022 = 리뷰가 늘어 revision 변경 → 첫 페이지부터). 구 = Popular·New 둘 다 파라미터 없음(id↓ = 최신순)이라 이름과 실제가 달랐다.
 - 게이트 = FLAGS.popularByReviews(DEV_SERVER_CHANNEL) — 운영 서버는 모르는 sort면 INVALID_REQUEST, 서버 운영 배포 뒤 다음 OTA에서 플래그만 연다. off = 기존 기본 정렬.

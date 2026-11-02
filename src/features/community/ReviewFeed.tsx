@@ -26,7 +26,7 @@ import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/Stat
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { useGlobalReviews, type FeedSort } from '@/lib/data/useFoodReviews';
+import { useGlobalReviews, type FeedSort, globalReviewsKey } from '@/lib/data/useFoodReviews';
 import { useBlockedUsers } from '@/lib/community/hooks';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
@@ -80,7 +80,8 @@ export function ReviewFeed() {
     setPrevFilterKey(filterKey);
     if ((isGuest || !myNat) && profileFilter) setProfileFilter(false);
   }
-  const feed = useGlobalReviews(true, { sort, countryCode: filterActive ? myNat : undefined });
+  const feedFilters = { sort, countryCode: filterActive ? myNat : undefined };
+  const feed = useGlobalReviews(true, feedFilters);
   const deleteReview = useDeleteReview();
   const myId = me?.id;
   const unread = useUnreadCount();
@@ -120,9 +121,10 @@ export function ReviewFeed() {
   const qc = useRefreshClient(); // KB-954
   // KB-954(P-570): 첫 페이지만 새로 — 불러온 페이지를 1장으로 줄인 뒤 refetch(옛 데이터는 그대로 보여 스켈레톤 깜빡임 0, 전 페이지 순차 재요청 0)
   const refetchFirstPage = () => {
-    qc.setQueriesData<InfiniteData<unknown, unknown>>({ queryKey: ['reviews', 'global'] }, (d) =>
-      d && d.pages.length > 1 ? { pages: d.pages.slice(0, 1), pageParams: d.pageParams.slice(0, 1) } : d,
-    );
+    // KB-958(Codex #388 2R P2): 지금 보는 피드 키만 — 접두 전체를 줄이면 비활성 정렬·국적 변형의 갱신 시각까지 바뀌어 신선도가 리셋됐다
+    const key = globalReviewsKey(feedFilters);
+    const d = qc.getQueryData<InfiniteData<unknown, unknown>>(key);
+    if (d && d.pages.length > 1) qc.setQueryData(key, { pages: d.pages.slice(0, 1), pageParams: d.pageParams.slice(0, 1) });
     return feed.refetch();
   };
   const onRefresh = () => {

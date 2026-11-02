@@ -87,6 +87,10 @@ export async function fetchGlobalReviewsPage(cursor: string | null, filters: Glo
   return filters.foodId ? trackReadyFood(filters.foodId, fetchPage) : fetchPage();
 }
 
+/** KB-958: 전역 피드 쿼리 키 — 훅과 Reviews 첫 장 줄이기(활성 피드만)가 같은 키를 쓴다 */
+export const globalReviewsKey = (filters: GlobalFeedFilters = {}) =>
+  ['reviews', 'global', filters.countryCode ?? 'all', filters.foodId ?? 'all', filters.sort ?? 'latest', filters.minRating ?? 0, filters.maxRating ?? 5] as const;
+
 export function useGlobalReviews(enabled = true, filters: GlobalFeedFilters = {}) {
   return useInfiniteQuery({
     // ⚠️ ['reviews','global'] 프리픽스 유지 — 좋아요 낙관 반영(likeInfiniteQueries)·
@@ -94,11 +98,7 @@ export function useGlobalReviews(enabled = true, filters: GlobalFeedFilters = {}
     // 🔴 커서 규약(스웨거): 불투명 토큰 — 정렬·필터가 바뀌면 기존 커서 무효.
     // 쿼리키에 sort·rating 포함 = react-query 키 분리로 첫 페이지부터 자연 재조회
     // (수동 리셋 금지 — 구 커서가 새 정렬에 전달될 경로 자체가 없다).
-    queryKey: [
-      'reviews', 'global',
-      filters.countryCode ?? 'all', filters.foodId ?? 'all',
-      filters.sort ?? 'latest', filters.minRating ?? 0, filters.maxRating ?? 5,
-    ],
+    queryKey: globalReviewsKey(filters),
     queryFn: ({ pageParam }) => fetchGlobalReviewsPage(pageParam, filters),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasNext ? last.nextCursor : undefined),
