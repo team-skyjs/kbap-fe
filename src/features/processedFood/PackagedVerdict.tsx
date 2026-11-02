@@ -14,16 +14,16 @@ import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { color as C, font, type, type RiskState } from '@/lib/theme';
 import { VERDICT_RISK, type ProcessedDetection, type ProcessedVerdict } from '@/lib/api/processedFoodAdapter';
-import { detectedCodes, insideCodes, tileRisk, unclearSubtitle, type VerdictFields } from './packagedVerdictLogic';
+import { detectedCodes, insideCodes, safeBasis, tileRisk, unclearSubtitle, type VerdictFields } from './packagedVerdictLogic';
 
-export { detectedCodes, insideCodes, tileRisk, unclearSubtitle };
+export { detectedCodes, insideCodes, safeBasis, tileRisk, unclearSubtitle };
 
 const namesOf = (codes: string[]) => codes.map((c) => restrictionLabel(c)).join(', ');
 
 
 /** 서버 판정 → 띠(제목·이유). 제목 = 전부 가공 전용 키(보장·확정 표현 0): AVOID·CAUTION = 기존 판정 키 · SAFE_WITH_NOTE = unverifiedTitle(주의 톤, KB-921) · SAFE = noAvoidMatchTitle */
 /** reason = 호출측 문장(성분표 결과는 결과 전용 문장 키 그대로 — 문구 무변). 없으면 상세 판정 문장 */
-export function PackagedVerdictBand({ d, safeReason, reason: reasonOverride, style, testID }: { d: VerdictFields & { verdict: ProcessedVerdict }; safeReason: string; reason?: string | null; style?: ViewStyle; testID: string }) {
+export function PackagedVerdictBand({ d, safeReason, reason: reasonOverride, style, testID }: { d: VerdictFields & { verdict: ProcessedVerdict }; safeReason: string | null; reason?: string | null; style?: ViewStyle; testID: string }) {
   const { t } = useTranslation();
   const state = VERDICT_RISK[d.verdict];
   const [title, reason] =

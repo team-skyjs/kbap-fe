@@ -55,8 +55,8 @@ describe('T-030·T-035·T-037 문구', () => {
     for (const l of LOCALES) expect(String(get(l, 'community.blockConfirmBody'))).toContain(String(get(l, 'community.blockedTitle')).replace(/\s+/g, ' '));
   });
   it('Saved 빈 상태 = 별(아이콘과 일치)', () => {
-    expect(get('en', 'saved.emptyBody')).toBe('Tap the star on any dish to keep it here.');
-    expect(get('ko', 'saved.emptyBody')).toBe('음식의 별을 누르면 여기에 모여요.'); // Codex #366 → KB-924 둘째 문장 삭제 P1: 완결 문장(대시·명사 조각 끝 0)
+    expect(get('en', 'saved.emptyBody')).toBe('Save dishes from their detail page to keep them here.'); // KB-962: 카드 별 제거(KB-959) — 저장은 상세
+    expect(get('ko', 'saved.emptyBody')).toBe('음식 상세에서 저장하면 여기에 모여요.'); // Codex #366 → KB-924 둘째 문장 삭제 P1: 완결 문장(대시·명사 조각 끝 0)
     for (const l of LOCALES) expect(String(get(l, 'saved.emptyBody'))).not.toMatch(/bookmark|북마크|ブックマーク|收藏图标|收藏圖示|dấu trang|penanda|บุ๊กมาร์ก|закладк|marcador/i);
   });
 });
@@ -74,9 +74,9 @@ describe('T-103 주문 pill', () => {
 });
 
 describe('T-104·T-106·T-034 배선', () => {
-  it('무료 창 뜻 한 줄 = 결과 배너·시작 안내 · 카메라 위 짧은 안내는 제외', () => {
+  it('무료 창 = 카메라 위 짧은 배지만(뜻 한 줄 없음) · KB-959 결과 배너·시작 안내 소멸', () => {
     expect(read('src/features/scan/PackagedScanFlow.tsx').match(/<PackagedFreeLine style=\{st\.camFree\} explain=\{false\} \/>/g)).toHaveLength(2);
-    expect(read('src/features/scan/PackagedScanScreens.tsx')).toContain('<PackagedFreeExplain />');
+    expect(read('src/features/scan/PackagedScanScreens.tsx')).not.toContain('<PackagedFreeExplain />');
     expect(read('src/app/processed-foods/[id].tsx')).not.toContain('PackagedFreeExplain'); // KB-914(R-141): 상세 무료 문장 0 — 배지(+뜻 한 줄)는 카메라·후보·결과만
   });
   it('"{국가} only" 토글 세 곳 모두 설명 한 줄(나라 이름)', () => {

@@ -25,8 +25,7 @@ it('기본 24 · bottom 넘기면 그 값', () => {
   expect(rootBottom(<Snackbar text="x" bottom={72} />)).toBe(72);
 });
 
-it('Saved = 24 + 하단 인셋', () => {
+it('KB-959: Saved = Undo 스낵바 소멸(카드 해제 버튼이 없어 되돌릴 동작 0)', () => {
   const src = fs.readFileSync('src/app/profile/saved.tsx', 'utf8');
-  expect(src).toContain('bottom={24 + bottomInset}');
-  expect(src).toContain('const bottomInset = useBottomInset();');
+  expect(src).not.toContain('<Snackbar');
 });

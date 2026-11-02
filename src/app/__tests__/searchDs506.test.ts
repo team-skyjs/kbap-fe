@@ -29,7 +29,7 @@ it('③ P-345 → P-353 ⑤: 결과 = 음식 탭 2열 FoodGridCard(dish-item 폐
   expect(s).toContain('numColumns={2}');
   expect(s).toContain("gridRowWrap: { columnGap: 16, paddingHorizontal: 20 }"); // FoodExplorer 값 그대로
   expect(s).toContain('<FoodGridCard');
-  expect(s).toContain('onBookmark={() => onBookmark(item)}');
+  expect(s).not.toContain('onBookmark='); // KB-959: 결과 카드 저장 버튼 소멸(저장 = 상세)
   expect(s).not.toContain('ResultCard'); // dish-item 소멸
   expect(s).not.toContain('<RiskPill');
   expect(s).not.toContain('food.blurb');

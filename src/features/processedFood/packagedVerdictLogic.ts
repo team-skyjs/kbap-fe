@@ -28,3 +28,9 @@ export function unclearSubtitle(d: { unclearIngredients: string[]; unclearIngred
   const labels = [...new Set(d.unclearIngredientLabels.map((l) => l.label))];
   return (labels.length ? labels : d.unclearIngredients).join(', ') || null;
 }
+
+/** KB-959(예진 11/2): Safe 띠 부제 = 판정 근거("회피 N개와 성분표 대조") — 제목("회피 목록과 겹침 없음")의 반복 금지 · 안전 단정 0.
+ *  회피 0개·비회원(KB-947 Safe) = 근거로 셀 회피가 없으니 부제 없음(null) — 설정 유도 문구도 넣지 않는다(예진 10/31) */
+export function safeBasis(t: (k: string, o?: Record<string, unknown>) => string, avoidCount: number): string | null {
+  return avoidCount > 0 ? t('packaged.safeBasis', { count: avoidCount }) : null;
+}

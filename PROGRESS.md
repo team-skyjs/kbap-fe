@@ -1,7 +1,15 @@
 ## 2026-11-02 · P-576 KB-962 홈 See all 원형 화살표 버튼(예진 11/2, Mobbin Uber Eats·DoorDash)
 - 공용 SeeAllCircle(components) — 연회색 원(C.hair) + 검은 → (신규 IconArrowRight = lucide arrow-right), 지름 32 · hitSlop 6 · 접근성 라벨 home.seeAll(기존 키).
 - 홈 Popular|Saved|Food 탭 줄 오른쪽 끝 = 원형 버튼(고정 칸 flexShrink 0, 탭은 남은 폭 — 긴 언어는 기존 가로 스크롤) · 이동 = 구 레일 끝 카드와 같음(foodTabHref 탭·칩 승계, testID home-rail-see-all 유지). 레일 끝 See all 카드 삭제(seeAllCard·seeAllText 스타일 제거).
-- 편의점 줄 헤더 See all 텍스트 → 같은 원형 버튼(이동 = Packaged 그대로). 신규 ko 0. 기기 미검증(QA — 큰 글자·ru 탭 줄 겹침).
+- 편의점 줄 헤더 See all 텍스트 → 같은 원형 버튼(이동 = Packaged 그대로).
+- (추가) 저장 빈 상태 안내 saved.emptyBody(홈 Saved 탭·음식 탭 Saved) = 카드 별 제거(KB-959)에 맞춰 "Save dishes from their detail page to keep them here." / "음식 상세에서 저장하면 여기에 모여요." 10로케일(K-항목, 키 이름 유지). 기기 미검증(QA — 큰 글자·ru 탭 줄 겹침).
+
+## 2026-11-02 · P-575 KB-959 목록 저장 버튼 제거·성분표 무료 배너·Safe 띠 문구(+ Ramyeon·See all 색)
+- 카드 저장(별) 버튼 제거: FoodGridCard(홈 레일 Popular·Food·Saved 탭·음식 그리드·검색 결과·저장 목록) — 이름 열이 카드 폭 전부. Packaged 카드는 원래 별 없음. 저장·해제 = 상세만. 따라 죽은 경로 정리: FoodExplorer 카드 토글·판정 드레인(useSavedIds)·카드 하트 계측, 검색 카드 토글·저장 게이트, 저장 목록 해제 토글·Undo 스낵바(saved.undo 키 10로케일 삭제). Saved 칩·홈 Saved 탭·저장 목록 화면 유지.
+- 성분표 분석 결과 상단 무료 시간 배너(시작 안내 freeStarted·남은 분 배너) 제거 — packagedScan.freeStarted 10로케일 삭제. 남은 무료 시간 표시 = 앞면·성분표 카메라 배지 2곳(보고 — 판단은 커맨드).
+- Safe 띠 부제 = 근거: 회피 N개 회원 = packaged.safeBasis(복수형 10로케일, ru 네 형태 같은 문구) "We checked the label against your {{count}} avoided ingredients." · 회피 0개·비회원 Safe = 부제 없음. 구 packaged.noAvoidMatches·packagedScan.resultSafeAll 삭제.
+- (추가) Ramen → Ramyeon: 유형 탭·Packaged 검색 힌트·맵기 예시 — 라틴 = Ramyeon(vi Mì ramyeon) · ja ラミョン · zh-Hans 韩国拉面 · zh-Hant 韓國泡麵 · th บะหมี่เกาหลี · ru Рамён · ko 라면. 서버 enum RAMEN·계측 값 무변.
+- (추가) 홈 편의점 줄 헤더 See all = C.ink(구 주황). 음식 레일 끝 See all 카드 무변(별도 발주 예정). 신규 문구 = K-항목.
 
 ## 2026-11-02 · KB-958 Reviews 첫 장 줄이기를 활성 피드 쿼리만(Codex #388 2R P2 후속)
 - 구 = setQueriesData(['reviews','global'] 접두) → 비활성 정렬·국적 변형까지 첫 장으로 줄이며 갱신 시각이 바뀌어 신선도 리셋. 신 = globalReviewsKey(지금 필터) 정확한 키 하나만 getQueryData → 2장 이상이면 setQueryData. 훅과 같은 키 함수(useFoodReviews globalReviewsKey).

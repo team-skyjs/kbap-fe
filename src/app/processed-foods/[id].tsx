@@ -48,7 +48,7 @@ import { packagedTypeKey, type ProcessedFoodDetail } from '@/lib/api/processedFo
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
 import { PackagedReviews } from '@/features/processedFood/PackagedReviews';
 import { ProductName } from '@/features/processedFood/ProductName';
-import { IngredientsText, insideCodes, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand } from '@/features/processedFood/PackagedVerdict';
+import { IngredientsText, insideCodes, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand, safeBasis } from '@/features/processedFood/PackagedVerdict';
 
 const GUTTER = 20;
 type IngChip = 'all' | 'safe' | 'danger' | 'caution';
@@ -225,7 +225,7 @@ export function ProcessedFoodDetailScreen() {
         {/* KB-945: 판정 띠 = 사진 바로 아래(음식 상세 순서) · KB-914(R-137) 공용 VerdictBand — 서버 verdict 그대로. 판정을 확인할 수 없으면 회색(unable) 띠 */}
         {hasVerdict && d.verdict ? (
           <View style={s.block}>
-            <PackagedVerdictBand d={{ ...d, verdict: d.verdict }} safeReason={t('packaged.noAvoidMatches')} style={s.band} testID={`pf-verdict-${d.verdict.toLowerCase()}`} />
+            <PackagedVerdictBand d={{ ...d, verdict: d.verdict }} safeReason={safeBasis(t, me?.restrictions.length ?? 0)} style={s.band} testID={`pf-verdict-${d.verdict.toLowerCase()}`} />
             <MatchEvidence d={d} />
           </View>
         ) : !guest && !me ? (
@@ -240,7 +240,7 @@ export function ProcessedFoodDetailScreen() {
           )
         ) : (guest || m0) && !noLabel ? (
           // KB-947(예진 10/31 결정): 회피 미설정(비회원·회피 0개) = Safe 띠 — 제목·이유 = 가공 SAFE 키 그대로(보장 표현 0, 새 문구 0)
-          <PackagedVerdictBand d={{ ...d, verdict: 'SAFE' }} safeReason={t('packaged.noAvoidMatches')} style={s.band} testID="pf-verdict-safe-unset" />
+          <PackagedVerdictBand d={{ ...d, verdict: 'SAFE' }} safeReason={null} style={s.band} testID="pf-verdict-safe-unset" /> /* KB-959: 회피 없음 = 부제 없음(제목 반복 0) */
         ) : guest || m0 || member ? (
           // 원재료·알레르기 표시가 둘 다 없는 제품 = 회원도 verdict null — 판정 없이 "확인 못 함"(#457) = 회색 띠
           <PackagedUnableBand title={t('packaged.notVerified')} reason={t('packaged.notVerifiedBody')} style={s.band} testID="pf-not-verified" />

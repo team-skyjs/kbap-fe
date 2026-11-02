@@ -969,10 +969,9 @@
     "newestFirst": "最新优先",
     "swipeHint": "向左滑动卡片即可移除",
     "emptyTitle": "还没有收藏",
-    "emptyBody": "点按任意菜品上的星标即可保存到这里——你的安心美味清单。",
+    "emptyBody": "在菜品详情页保存后，会集中显示在这里。",
     "emptyCta": "去逛逛美食",
     "removed": "已从收藏中移除",
-    "undo": "撤销",
     "toast": "已保存到你的清单",
     "view": "查看",
     "filterEmpty": "没有符合此筛选的已保存菜品"
@@ -1197,7 +1196,7 @@
   "packaged": {
     "segmentDishes": "菜品",
     "segmentPackaged": "包装食品",
-    "searchPlaceholder": "搜索零食、拉面…",
+    "searchPlaceholder": "搜索零食、韩国拉面…",
     "clearSearch": "清除搜索",
     "popularPicks": "热门商品",
     "searchResults": "搜索结果",
@@ -1248,7 +1247,7 @@
     "backToList": "返回",
     "type": {
       "snacks": "零食",
-      "ramen": "拉面",
+      "ramen": "韩国拉面",
       "bread": "面包",
       "drinks": "饮料",
       "ice_cream": "冰淇淋",
@@ -1261,7 +1260,6 @@
     "seeLess": "收起",
     "ingredientsAndSource": "配料与来源",
     "yourAvoidList": "我要避免的食材",
-    "noAvoidMatches": "没有找到与你当前避免清单匹配的食材。",
     "translationLabel": "中文翻译",
     "sourceTitle": "来源",
     "sourceC002": "资料：韩国食品医药品安全处 食品安全国度 品目制造报告",
@@ -1277,6 +1275,8 @@
     "containsNames": "含{{names}}",
     "mayContainNames": "可能含有{{names}}",
     "noAvoidMatchTitle": "与避免清单无匹配",
+    "safeBasis_one": "已将标签与你要避免的 {{count}} 种食材进行比对。",
+    "safeBasis_other": "已将标签与你要避免的 {{count}} 种食材进行比对。",
     "findMore": "继续查找"
   },
   "scanMode": {
@@ -1362,11 +1362,9 @@
     "done": "完成",
     "resultAvoid": "与要避免的食材一致：{{names}}。",
     "resultCaution": "同工厂标示中提到：{{names}}。",
-    "resultSafeAll": "你添加的所有照片中均未发现一致的食材。",
     "resultMajorSet": "{{contains}}。设置要避免的食材后可查看个人结果。",
     "freeFor_one": "加工食品扫描免费，还剩{{count}}分钟",
     "freeFor_other": "加工食品扫描免费，还剩{{count}}分钟",
-    "freeStarted": "接下来1小时内，加工食品扫描免费。",
     "freeExplain": "在此期间可不限次数扫描加工食品。扫描菜单不在此列。"
   },
   "scanCamera": {

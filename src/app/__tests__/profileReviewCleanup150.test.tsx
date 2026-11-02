@@ -343,7 +343,7 @@ it('P-157 ②: 저장 아이콘 별 전면 통일 — 프로필에 북마크 글
   expect(tree.root.findAllByType(IconBookmark).length).toBe(0);
   const src = require('fs').readFileSync('src/app/profile/saved.tsx', 'utf8') as string;
   expect(src).not.toContain('IconBookmark');
-  expect(src).toContain('IconStar');
+  expect(src).not.toContain('IconStar'); // KB-959: 저장 목록 카드 별·Undo 스낵바 별 소멸(저장 해제 = 상세)
 });
 
 it('P-287: 저장 빈 상태 = 공용 EmptyBlock(버튼 없음) — 필터 결과 0은 별도 문구(Codex #47)', () => {

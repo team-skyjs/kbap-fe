@@ -969,10 +969,9 @@
     "newestFirst": "Terbaru dulu",
     "swipeHint": "Geser kartu ke kiri untuk menghapus",
     "emptyTitle": "Belum ada yang disimpan",
-    "emptyBody": "Ketuk ikon bintang pada hidangan mana pun untuk menyimpannya di sini — daftar pendekmu untuk makan enak dan aman.",
+    "emptyBody": "Simpan hidangan dari halaman detailnya agar tersimpan di sini.",
     "emptyCta": "Jelajahi makanan",
     "removed": "Dihapus dari Tersimpan",
-    "undo": "Urungkan",
     "toast": "Disimpan ke daftarmu",
     "view": "Lihat",
     "filterEmpty": "Tidak ada hidangan tersimpan yang cocok dengan filter ini"
@@ -1197,7 +1196,7 @@
   "packaged": {
     "segmentDishes": "Hidangan",
     "segmentPackaged": "Kemasan",
-    "searchPlaceholder": "Cari camilan, ramen…",
+    "searchPlaceholder": "Cari camilan, ramyeon…",
     "clearSearch": "Hapus pencarian",
     "popularPicks": "Pilihan populer",
     "searchResults": "Hasil pencarian",
@@ -1248,7 +1247,7 @@
     "backToList": "Kembali",
     "type": {
       "snacks": "Camilan",
-      "ramen": "Ramen",
+      "ramen": "Ramyeon",
       "bread": "Roti",
       "drinks": "Minuman",
       "ice_cream": "Es krim",
@@ -1261,7 +1260,6 @@
     "seeLess": "Lebih sedikit",
     "ingredientsAndSource": "Bahan dan sumber",
     "yourAvoidList": "Daftar hindari",
-    "noAvoidMatches": "Tidak ada yang cocok dengan daftar hindari kamu saat ini.",
     "translationLabel": "Terjemahan bahasa Indonesia",
     "sourceTitle": "Sumber",
     "sourceC002": "Data: Kementerian Keamanan Pangan dan Obat Korea, laporan produksi Food Safety Korea",
@@ -1277,6 +1275,8 @@
     "containsNames": "Mengandung {{names}}",
     "mayContainNames": "Mungkin mengandung {{names}}",
     "noAvoidMatchTitle": "Tidak cocok dengan daftar hindari",
+    "safeBasis_one": "Kami sudah mencocokkan label dengan {{count}} bahan yang kamu hindari.",
+    "safeBasis_other": "Kami sudah mencocokkan label dengan {{count}} bahan yang kamu hindari.",
     "findMore": "Cari lagi"
   },
   "scanMode": {
@@ -1362,11 +1362,9 @@
     "done": "Selesai",
     "resultAvoid": "Cocok dengan daftar hindari: {{names}}.",
     "resultCaution": "Pernyataan fasilitas bersama menyebut: {{names}}.",
-    "resultSafeAll": "Tidak ada yang cocok di semua foto label yang kamu tambahkan.",
     "resultMajorSet": "{{contains}}. Atur bahan yang dihindari untuk hasil pribadi.",
     "freeFor_one": "Pindai produk kemasan gratis {{count}} menit lagi",
     "freeFor_other": "Pindai produk kemasan gratis {{count}} menit lagi",
-    "freeStarted": "Pindai produk kemasan berikutnya gratis selama 1 jam.",
     "freeExplain": "Selama waktu ini, kamu bisa memindai produk kemasan sepuasnya. Pindai menu tidak termasuk."
   },
   "scanCamera": {

@@ -969,10 +969,9 @@
     "newestFirst": "Mới nhất trước",
     "swipeHint": "Vuốt thẻ sang trái để xóa",
     "emptyTitle": "Chưa lưu món nào",
-    "emptyBody": "Chạm vào ngôi sao trên món bất kỳ để lưu vào đây — danh sách để ăn ngon và an toàn của bạn.",
+    "emptyBody": "Lưu món ăn từ trang chi tiết để xem lại tại đây.",
     "emptyCta": "Khám phá món ăn",
     "removed": "Đã xóa khỏi Đã lưu",
-    "undo": "Hoàn tác",
     "toast": "Đã lưu vào danh sách của bạn",
     "view": "Xem",
     "filterEmpty": "Không có món đã lưu phù hợp với bộ lọc này"
@@ -1197,7 +1196,7 @@
   "packaged": {
     "segmentDishes": "Món ăn",
     "segmentPackaged": "Đóng gói",
-    "searchPlaceholder": "Tìm snack, mì ramen…",
+    "searchPlaceholder": "Tìm snack, mì ramyeon…",
     "clearSearch": "Xóa tìm kiếm",
     "popularPicks": "Sản phẩm phổ biến",
     "searchResults": "Kết quả tìm kiếm",
@@ -1248,7 +1247,7 @@
     "backToList": "Quay lại",
     "type": {
       "snacks": "Snack",
-      "ramen": "Mì ramen",
+      "ramen": "Mì ramyeon",
       "bread": "Bánh mì",
       "drinks": "Đồ uống",
       "ice_cream": "Kem",
@@ -1261,7 +1260,6 @@
     "seeLess": "Thu gọn",
     "ingredientsAndSource": "Thành phần và nguồn",
     "yourAvoidList": "Danh sách cần tránh",
-    "noAvoidMatches": "Không có gì khớp với danh sách cần tránh hiện tại của bạn.",
     "translationLabel": "Bản dịch tiếng Việt",
     "sourceTitle": "Nguồn",
     "sourceC002": "Dữ liệu: Bộ An toàn Thực phẩm và Dược phẩm, báo cáo sản xuất của Food Safety Korea",
@@ -1277,6 +1275,8 @@
     "containsNames": "Chứa {{names}}",
     "mayContainNames": "Có thể chứa {{names}}",
     "noAvoidMatchTitle": "Không khớp danh sách cần tránh",
+    "safeBasis_one": "Chúng tôi đã đối chiếu nhãn với {{count}} nguyên liệu bạn cần tránh.",
+    "safeBasis_other": "Chúng tôi đã đối chiếu nhãn với {{count}} nguyên liệu bạn cần tránh.",
     "findMore": "Tìm thêm"
   },
   "scanMode": {
@@ -1362,11 +1362,9 @@
     "done": "Xong",
     "resultAvoid": "Khớp với danh sách cần tránh: {{names}}.",
     "resultCaution": "Ghi chú cơ sở sản xuất chung có nêu: {{names}}.",
-    "resultSafeAll": "Không có gì khớp trong tất cả ảnh nhãn bạn thêm.",
     "resultMajorSet": "{{contains}}. Đặt nguyên liệu cần tránh để xem kết quả riêng.",
     "freeFor_one": "Quét thực phẩm đóng gói miễn phí còn {{count}} phút",
     "freeFor_other": "Quét thực phẩm đóng gói miễn phí còn {{count}} phút",
-    "freeStarted": "Các lần quét thực phẩm đóng gói tiếp theo miễn phí trong 1 giờ.",
     "freeExplain": "Trong thời gian này, bạn có thể quét thực phẩm đóng gói bao nhiêu lần tùy thích. Không áp dụng cho quét thực đơn."
   },
   "scanCamera": {

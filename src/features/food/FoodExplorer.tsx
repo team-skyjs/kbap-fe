@@ -35,12 +35,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { CHIP_FADE_W, ChipScrollRow, useMoreOnRight } from '@/components/ChipScrollRow';
 import { SectionHead } from '@/components/SectionHead';
 import { useInfiniteFoods, usePrefetchOtherFoodSorts, FOODS_PAGE_SIZE } from '@/lib/data/useFoods';
-import { useBookmarks, useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
+import { useBookmarks } from '@/lib/data/bookmarks';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { popularPhotoFoods } from '@/lib/search/discovery';
 import type { FoodCard } from '@/lib/api/types';
-import { EVENTS, track } from '@/lib/analytics';
 import { trackHomeCardClick, useImpressionRef, useImpressionScrollProps, type HomeSection } from '@/features/home/homeImpressions';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900
@@ -164,7 +163,6 @@ export function FoodExplorer({
   // KB-956: /bookmarks엔 reviews 정렬이 없다(서버 #521은 /foods만) — 저장 목록은 이름 정렬만 넘기고 Popular는 기본 정렬
   const bookmarkSort = nameSort === 'reviews' ? undefined : nameSort;
   const savedList = useBookmarks(savedTabActive ? riskChip : 'all', { enabled: bookmarksOn, sort: bookmarkSort });
-  const toggleBookmark = useToggleBookmark();
 
   // P-349 ③(KB-512): 당겨서 새로고침 — #112 3R ②: 활성 쿼리만(browse는 Saved 활성 중
   // enabled:false인데 refetch가 이를 우회해 휴면 쿼리를 깨움 → 명시 분기).
@@ -291,8 +289,6 @@ export function FoodExplorer({
   // (P-332 가드 문법 포함 — 중복 배선 금지, 검색 등 다른 표면과 공유).
   const savedFoods = saved.data ?? []; // 무필터 — 북마크 판정 소스(savedIds)·저장 0건 판단
   const savedListFoods = savedList.data ?? []; // Saved 목록 소스(risk 적용분)
-  const { ids: savedIds, ready: savedReady } = useSavedIds({ enabled: bookmarksOn });
-  const isSaved = (f: FoodCard) => (variant === 'embedded' ? f.bookmarked === true : savedIds.has(f.foodId)); // KB-779
   // KB-712: 홈 Popular + All = /home 랜덤(로딩 중이거나 1건 이상일 때) — 비었으면 기존 경로로 폴백.
   // 로딩 중 홈은 popular={undefined}를 넘긴다(빈 배열 아님) — `popular != null`로 걸면 /foods가 먼저 보였다 바뀌는 팝인(#237 공부)
   const homePopular = variant === 'embedded' && gridTab === 'popular' && riskChip === 'all' && (popularLoading || (popular?.length ?? 0) > 0);
@@ -320,17 +316,7 @@ export function FoodExplorer({
   const mostReviewedImpressionRef = useImpressionRef(variant === 'embedded' ? 'most_reviewed' : null);
   const railScrollProps = useImpressionScrollProps();
 
-  const onBookmark = (f: FoodCard) => {
-    if (guest) return setGate({ ctx: 'save', open: true });
-    if (variant === 'screen' && !savedReady) return; // #116 2R ①: 드레인 완료 전 = 방향 오판 위험 — 무시(KB-779: 홈은 카드값이 방향)
-    // KB-784(감사 §5): 홈·음식 탭 카드 하트 = 기존 도메인 이벤트 그대로(이름·속성 무변) — 상세·저장 목록만 집계되던 과소 보정.
-    // 방향 = 실제 뮤테이션과 같은 판정(isSaved — KB-779 홈 카드값/화면 savedIds)
-    track(EVENTS.food_bookmark_toggle, { on: !isSaved(f) });
-    toggleBookmark.mutate({
-      snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
-      add: !isSaved(f),
-    });
-  };
+  // KB-959(예진 11/2): 카드 저장 버튼 제거 — 저장·해제는 상세에서만(Saved 칩·홈 Saved 탭 목록은 유지)
 
   // 9/5 발주: 게스트 칩 = 렌더하되 개인화 칩 탭 = 게이트(선택 All 유지)
   const onChip = (c: RiskChip) => {
@@ -471,10 +457,8 @@ export function FoodExplorer({
       food={item}
       risk={personalRisk(item.risk, hasR)}
       guest={guest}
-      saved={isSaved(item)}
       riskLabel={t(`risk.${personalRisk(item.risk, hasR)}`)}
       onPress={() => openFood(item.foodId)}
-      onBookmark={() => onBookmark(item)}
       style={cellStyle}
     />
   );

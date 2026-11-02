@@ -213,7 +213,8 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     member();
     const t = detail({ verdict: 'SAFE' });
     expect(ids(t)).toEqual(expect.arrayContaining(['badge-safe', 'pf-verdict-safe']));
-    expect(text(t)).toContain('packaged.noAvoidMatches');
+    expect(text(t)).toContain('packaged.safeBasis:{\\"count\\":1}'); // KB-959: 부제 = 근거(회피 1개와 대조) — 제목 반복 0
+    expect(text(t)).not.toContain('packaged.noAvoidMatches');
     press(t, 'pf-ingredients-source');
     expect(ids(t)).toEqual(expect.arrayContaining(['pf-expanded', 'pf-ingredients', 'pf-raw', 'pf-source', 'pf-source-disclaimer', 'pf-see-less'])); // 번역 전 = 원재료 본문이 원문
     expect(ids(t)).not.toContain('pf-your-avoid');
@@ -447,7 +448,7 @@ describe('Food 탭 세그먼트·목록', () => {
     const keys = Object.keys(en);
     for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'es', 'id', 'ru', 'th', 'vi']) {
       const p = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).packaged;
-      expect(Object.keys(p).sort()).toEqual([...keys].sort());
+      expect(Object.keys(p).filter((k) => !/_(few|many)$/.test(k)).sort()).toEqual([...keys].sort()); // ru 복수형 few·many = copy708 규칙(네 형태 같은 문구)
       expect(JSON.stringify(p)).not.toContain('·');
     }
     const ko = JSON.parse(fs.readFileSync('src/lib/i18n/ko.json', 'utf8')).packaged;

@@ -189,7 +189,7 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     const cases: [object, string, string | null][] = [
       [{ verdict: 'CAUTION', avoidMatches: [], mayContainMatches: [{ code: 'MILK', evidence: ['우유'] }] }, 'packagedScan.resultCaution:{"names":"L(MILK)"}', 'caution'],
       [{ verdict: 'SAFE_WITH_NOTE', avoidMatches: [], unclearIngredients: ['향료'] }, '향료', 'caution'], // KB-921: 주의 톤 · 부제 = 목록
-      [{ verdict: 'SAFE', avoidMatches: [] }, 'packaged.noAvoidMatches', 'safe'],
+      [{ verdict: 'SAFE', avoidMatches: [] }, 'packaged.safeBasis:{"count":1}', 'safe'], // KB-959: 부제 = 근거(회피 N개와 대조 — 제목 반복 0)
       [{ verdict: null, avoidMatches: [], avoidance: [] }, 'packaged.notVerifiedBody', null], // 옛 응답 일치도 없음 = 확인 못 함
     ];
     for (const [over, sentence, badge] of cases) {
@@ -256,21 +256,22 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     expect(ids(t)).toContain('pscan-result-band-danger');
     expect(texts(t)).toContain('packagedScan.resultAvoid:{"names":"L(SHRIMP)"}');
   });
-  it('KB-877: 성분표 분석이 차감하며 창을 엶 = 결과에 "다음 1시간 무료" 한 줄 · 창 안 무료 분석(charged false) = 그 줄 0, 남은 분 줄', async () => {
+  it('KB-877 → KB-959(예진 11/2): 결과 화면 무료 시간 표시 0 — 창을 연 분석(시작 안내)·창 안 분석(남은 분) 둘 다(차감 규칙은 서버 그대로)', async () => {
     const FREE = new Date(Date.now() + 59 * 60_000 + 30_000).toISOString();
     const t = flow(true);
     await shoot(t, LABEL_P1);
     mockPost.mockResolvedValueOnce(RESULT({ charged: true, freeUntil: FREE }));
     await press(t, 'pscan-label-analyze');
-    expect(ids(t)).toContain('pscan-free-started');
-    expect(texts(t)).toContain('packagedScan.freeStarted');
+    expect(ids(t)).toContain('pscan-label-result');
+    expect(ids(t)).not.toContain('pscan-free-started');
+    expect(ids(t)).not.toContain('pscan-free-line');
     mockFreeUntil = FREE; // 프로필도 창을 안다
     const t2 = flow(true);
     await shoot(t2, LABEL_P1);
     mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'L2', charged: false, freeUntil: FREE }));
     await press(t2, 'pscan-label-analyze');
-    expect(ids(t2)).not.toContain('pscan-free-started');
-    expect(texts(t2)).toContain('packagedScan.freeFor:{"count":60}');
+    expect(ids(t2)).toContain('pscan-label-result');
+    expect(texts(t2).some((x) => x.startsWith('packagedScan.freeFor'))).toBe(false);
   });
   it('회피 0개 회원(M0) = 주요 알레르기 문장(리본·회피 문장 0) · KB-945 회피 설정 버튼 0(Done만) · 주요 알레르기 null = 확인 불가(없음 단정 금지)', async () => {
     mockRestrictions = [];
