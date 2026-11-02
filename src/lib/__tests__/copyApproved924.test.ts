@@ -16,7 +16,6 @@ const APPROVED: Record<string, string> = {
   'states.offlineBody': '메뉴 스캔과 리뷰 불러오기에는 인터넷 연결이 필요해요.',
   'community.blockConfirmBody': "그 사용자의 리뷰가 더 이상 보이지 않아요. 프로필의 '차단한 사용자'에서 언제든 차단을 해제할 수 있어요.",
   'saved.emptyBody': '음식 상세에서 저장하면 여기에 모여요.', // KB-962(P-576): 카드 별 제거(KB-959)로 안내 갱신 — K-항목
-  'packagedScan.freeExplain': '이 시간 동안은 가공식품을 횟수 제한 없이 스캔할 수 있어요. 메뉴판 스캔은 해당되지 않아요.',
   'profile.languageHintAndroid': "앱 설정이 열려요. '언어'를 눌러 주세요.",
 };
 

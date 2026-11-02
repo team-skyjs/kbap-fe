@@ -1362,10 +1362,7 @@
     "done": "完了",
     "resultAvoid": "避けたい食材と一致: {{names}}。",
     "resultCaution": "同じ製造施設の表示に記載: {{names}}。",
-    "resultMajorSet": "{{contains}}。避けたい食材を設定すると、自分向けの結果を見られます。",
-    "freeFor_one": "加工食品スキャン無料 残り{{count}}分",
-    "freeFor_other": "加工食品スキャン無料 残り{{count}}分",
-    "freeExplain": "この間は加工食品を回数を気にせずスキャンできます。メニューのスキャンは対象外です。"
+    "resultMajorSet": "{{contains}}。避けたい食材を設定すると、自分向けの結果を見られます。"
   },
   "scanCamera": {
     "title": "スキャン",

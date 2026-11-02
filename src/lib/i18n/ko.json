@@ -1362,10 +1362,7 @@
     "done": "완료",
     "resultAvoid": "피하는 재료와 일치해요: {{names}}.",
     "resultCaution": "같은 제조시설 표기에 있어요: {{names}}.",
-    "resultMajorSet": "{{contains}}. 피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요.",
-    "freeFor_one": "가공식품 무료 스캔 시간이 {{count}}분 남았어요",
-    "freeFor_other": "가공식품 무료 스캔 시간이 {{count}}분 남았어요",
-    "freeExplain": "이 시간 동안은 가공식품을 횟수 제한 없이 스캔할 수 있어요. 메뉴판 스캔은 해당되지 않아요."
+    "resultMajorSet": "{{contains}}. 피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요."
   },
   "scanCamera": {
     "title": "스캔",

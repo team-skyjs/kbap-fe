@@ -1362,10 +1362,7 @@
     "done": "Xong",
     "resultAvoid": "Khớp với danh sách cần tránh: {{names}}.",
     "resultCaution": "Ghi chú cơ sở sản xuất chung có nêu: {{names}}.",
-    "resultMajorSet": "{{contains}}. Đặt nguyên liệu cần tránh để xem kết quả riêng.",
-    "freeFor_one": "Quét thực phẩm đóng gói miễn phí còn {{count}} phút",
-    "freeFor_other": "Quét thực phẩm đóng gói miễn phí còn {{count}} phút",
-    "freeExplain": "Trong thời gian này, bạn có thể quét thực phẩm đóng gói bao nhiêu lần tùy thích. Không áp dụng cho quét thực đơn."
+    "resultMajorSet": "{{contains}}. Đặt nguyên liệu cần tránh để xem kết quả riêng."
   },
   "scanCamera": {
     "title": "Quét",

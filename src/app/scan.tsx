@@ -278,19 +278,24 @@ export default function Scan() {
     phaseRef.current = phase;
   });
   const canLockQuota = () => phaseRef.current === 'camera' || phaseRef.current === 'error';
-  const lockFromProfile = useCallback(() => {
-    const quota = quotaRef.current;
-    // KB-877: 가공식품 모드 = 미리 잠그지 않는다 — 서버 1시간 무료 창이면 남은 0이어도 통과하므로 확정·성분표 응답(SCAN-004 → 덮개)이 정한다
-    if (!canLockQuota() || !isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current || packagedHoldRef.current || scanModeRef.current === 'packaged') return;
+  // KB-963(예진 11/2): 가공식품 스캔은 차감 없음(서버 S-937) — 메뉴 쿼터가 소진돼도 스캔 화면은 열고(가공식품 바로 사용),
+  // 소진 안내(P-250 쿼터 화면)는 **메뉴 모드에서 촬영하려 할 때만**. 진입 시 판정은 기록만: 프로필 소진(live) · 서버 SCAN-004(menuQuota004Ref).
+  const menuQuota004Ref = useRef(false);
+  const lockFromProfile = useCallback((detail = 'profile scanRemaining 0') => {
+    if (!canLockQuota() || quotaLockRef.current) return;
     quotaLockRef.current = true;
-    setError({ stage: 'quota', detail: 'profile scanRemaining 0' });
+    setError({ stage: 'quota', detail });
     setPhase('error');
   }, []);
-  // Codex #159 P2: 포커스 유지 중 재조회로 소진이 도착해도(3번째 스캔 성공 → 다시 찍기) 촬영 전에 안내.
-  // 카메라 단계에서만 — 스캔 중·결과 화면은 끊지 않는다.
-  useEffect(() => {
-    if (phase === 'camera' && !isGuest && scanV2Enabled()) lockFromProfile();
-  }, [phase, me?.scanQuota, isGuest, lockFromProfile, scanMode]); // KB-877: 가공식품 → 메뉴 전환 때 다시 판정
+  /** 메뉴 촬영 직전 — 소진(프로필 소진이 반증되지 않았거나 서버 004)이면 쿼터 화면을 띄우고 true(촬영 중단) */
+  const blockMenuShot = (): boolean => {
+    if (!scanV2Enabled()) return false;
+    const quota = quotaRef.current;
+    const profileOut = isScanQuotaExhausted(quota) && quota !== disprovenQuota.current;
+    if (!profileOut && !menuQuota004Ref.current) return false;
+    lockFromProfile(menuQuota004Ref.current ? 'preflight SCAN-004' : 'profile scanRemaining 0');
+    return true;
+  };
   // KB-759(QA 로그 판독): 해제 응답 뒤 preflight가 쥔 quota는 프로필 재조회 전의 **옛 스냅샷**(소진)일 수 있고, 복원이 티켓 200에만
   // 기대고 있었다(실패는 catch가 조용히 삼킴 → 제한 화면에 광고 버튼만 사라진 채 잔류). `unlocked` = 서버가 scanUnlocked:true를 돌려준 직후:
   // ① 옛 스냅샷은 반증 처리(재잠금 0) — 서버가 정본 ② 티켓 성공이면 잠금 ref와 무관하게 카메라 ③ 티켓 실패(비-004 포함)는 '다시 시도' 상태로 노출.
@@ -307,8 +312,6 @@ export default function Scan() {
     if (unlocked) {
       disprovenQuota.current = quota;
       if (forError) setUnlock({ kind: 'opening', forError });
-    } else {
-      lockFromProfile();
     }
     // KB-759 진단(개발 번들만): 잠금 상태·티켓 결과를 Metro 로그로
     if (__DEV__) console.log('[scan] preflight', JSON.stringify({ phase: phaseRef.current, lock: quotaLockRef.current, unlocked, quota }));
@@ -316,6 +319,7 @@ export default function Scan() {
       const ticket = await issueScanTicket();
       if (generation !== currentGen() || epoch !== ticketEpoch.current) return;
       preTicket.current = ticket;
+      menuQuota004Ref.current = false; // KB-963: 서버가 티켓을 줬다 = 메뉴 촬영 가능
       if (__DEV__) console.log('[scan] preflight ticket ok', JSON.stringify({ lock: quotaLockRef.current, phase: phaseRef.current, unlocked }));
       if (isScanQuotaExhausted(quota)) disprovenQuota.current = quota;
       if (unlocked && errorRef.current !== forError) return; // 그새 화면이 바뀌었다(늦은 응답) — 덮지 않는다
@@ -343,10 +347,8 @@ export default function Scan() {
       }
       if (code === 'SCAN-004') {
         preTicket.current = null;
-        if (!canLockQuota() || scanModeRef.current === 'packaged') return; // KB-877: 가공식품은 서버 응답이 정한다(메뉴로 돌아가면 프로필 잠금이 다시 판정)
-        quotaLockRef.current = true;
-        setError({ stage: 'quota', detail: 'preflight SCAN-004' });
-        setPhase('error'); // 카메라 미표시 — 즉시 쿼터 잠금(P-250 quota UI 재사용)
+        // KB-963: 진입 잠금 0 — 기록만 하고 메뉴 촬영 시점에 쿼터 화면(가공식품은 그대로 사용). 이미 쿼터 화면(해제 대기)이면 그대로 둔다
+        menuQuota004Ref.current = true;
       } else if (code === 'MEMBER-003') {
         // KB-441 → KB-670: 서버가 모르는 회원(탈퇴·정지 — 서버 KB-669로 전 회원 API 확대)의 남은 토큰.
         // 세션 무효화는 client 훅(beAuth)이 하고, 세션이 만료되면 isGuest가 바뀌어 아래 라우트 가드가 게스트
@@ -582,6 +584,7 @@ export default function Scan() {
   async function capture(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, menu = true) {
     if (capturingRef.current) return; // P-062⓪: 동기 가드 — 리렌더 전 연타도 차단
     if (isGuest) return setGateOpen(true); // 스캔=회원 전용 (게이트)
+    if (menu && blockMenuShot()) return; // KB-963: 메뉴 쿼터 소진 = 촬영 시점에 안내(가공식품 촬영은 통과)
     // P-131: 가로 촬영 허용 (KB-141 가드 폐기 — 캡슐 전환으로 겹침 사유 소멸)
     const cam = cameraRef.current;
     if (!cam) return;
@@ -626,6 +629,7 @@ export default function Scan() {
   async function pickFromGallery(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, menu = true) {
     if (capturingRef.current) return; // P-062⓪: 셔터와 동일 동기 가드
     if (isGuest) return setGateOpen(true);
+    if (menu && blockMenuShot()) return; // KB-963
     capturingRef.current = true;
     setCapturing(true);
     importingGestureLock.set(true);
@@ -666,6 +670,7 @@ export default function Scan() {
   async function captureViaSystem() {
     if (capturingRef.current) return; // P-062⓪ 동기 가드 공유
     if (isGuest) return setGateOpen(true);
+    if (blockMenuShot()) return; // KB-963: 시스템 카메라 = 메뉴 스캔 전용
     capturingRef.current = true;
     setCapturing(true);
     setError(null);
@@ -1222,9 +1227,8 @@ export default function Scan() {
 
   // ---- error ----
   // 가공식품 소진(packagedHold) = 아래 가공식품 분기가 흐름 위에 덮어 그린다(같은 트리 자리 — 흐름 상태 유지). 나중에 = 흐름으로 복귀
-  const quotaLater = packagedHold
-    ? () => { quotaLockRef.current = false; setError(null); setPhase('camera'); }
-    : () => router.back();
+  // KB-963: 소진 안내는 메뉴 촬영 시점에만 뜬다 — 나중에 = 카메라로 복귀(모드 탭에서 가공식품 바로 사용). 가공식품 덮개(packagedHold)도 같음
+  const quotaLater = () => { quotaLockRef.current = false; setError(null); setPhase('camera'); };
   const renderError = () => {
     const stage = error?.stage ?? 'be';
     return (

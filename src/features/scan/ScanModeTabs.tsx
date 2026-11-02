@@ -11,9 +11,11 @@ import { useTranslation } from 'react-i18next';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font } from '@/lib/theme';
+import { FLAGS } from '@/lib/flags';
 
 export type ScanMode = 'menu' | 'food' | 'packaged';
-const MODES: ScanMode[] = ['menu', 'food', 'packaged'];
+// KB-963: Food photo = 플래그로 숨김(기능 미완) — 꺼지면 Menu · Packaged food 두 칸
+const MODES: ScanMode[] = FLAGS.foodPhotoMode ? ['menu', 'food', 'packaged'] : ['menu', 'packaged'];
 
 /** 활성 탭 가운데를 화면 가운데로 두는 스크롤 위치 — 0 ~ (줄 폭 − 화면 폭)으로 자른다(들어가는 줄 = 0) */
 export const activeTabOffset = (tab: { x: number; w: number }, viewW: number, contentW: number): number =>
@@ -22,7 +24,7 @@ export const activeTabOffset = (tab: { x: number; w: number }, viewW: number, co
 export function ScanModeTabs({ value, onChange, tone = 'light', disabled = false }: { value: ScanMode; onChange: (m: ScanMode) => void; tone?: 'light' | 'dark'; disabled?: boolean }) {
   const { t } = useTranslation();
   const dark = tone === 'dark';
-  const third = useWindowDimensions().width / 3;
+  const third = useWindowDimensions().width / MODES.length; // 칸 최소 폭 = 화면 ÷ 칸 수(KB-854)
   // Codex #325: 긴 번역으로 줄이 화면보다 넓을 때 활성 탭이 잘리지 않게 — 처음 그릴 때·값이 바뀔 때 활성 탭을 가운데 쪽으로 스크롤
   const scrollRef = React.useRef<ScrollView>(null);
   const [tabBox, setTabBox] = React.useState<Partial<Record<ScanMode, { x: number; w: number }>>>({});

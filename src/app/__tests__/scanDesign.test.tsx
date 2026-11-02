@@ -646,13 +646,13 @@ it('KB-854 카메라 v2 B: 위·아래 단색 바(gray-1000 불투명) 2개 · �
   const corners = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('scan-frame-corner-') && n.props?.width === 28);
   expect([...new Set(corners.map((c) => c.props.testID as string))].sort()).toEqual(['scan-frame-corner-bl', 'scan-frame-corner-br', 'scan-frame-corner-tl', 'scan-frame-corner-tr']);
   expect(tree.root.findAll((n) => n.props?.testID === 'scan-frame-corners')[0].props.pointerEvents).toBe('none'); // 안내일 뿐 — 핀치·탭 통과
-  // 긴 번역 = 탭 가로 스크롤(줄이지 않음) · 칸 최소 폭 = 화면 1/3
+  // 긴 번역 = 탭 가로 스크롤(줄이지 않음) · 칸 최소 폭 = 화면 ÷ 칸 수(KB-963: Food photo 숨김 = 두 칸 → 1/2)
   const tabsScroll = tree.root.findAll((n) => n.props?.testID === 'scan-mode-tabs-scroll' && n.type === RN.ScrollView);
   expect(tabsScroll).toHaveLength(1);
   expect(tabsScroll[0].props.horizontal).toBe(true);
   const w = RN.Dimensions.get('window').width;
   const menuTab = tree.root.findAll((n) => n.props?.testID === 'scan-mode-menu' && typeof n.type === 'string')[0];
-  expect(RN.StyleSheet.flatten(menuTab.props.style).minWidth).toBeCloseTo(w / 3, 5);
+  expect(RN.StyleSheet.flatten(menuTab.props.style).minWidth).toBeCloseTo(w / 2, 5);
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
@@ -666,15 +666,13 @@ describe('KB-845 공통 카메라', () => {
   const pressId = async (tree: ReactTestRenderer, id: string) => {
     await act(async () => { await tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); });
   };
-  it('KB-854 메뉴: "Scan" 헤더만 · 안내 문구·Photos·라이브러리 링크 제거 · 갤러리 아이콘("Choose photo") = 라이브러리 · 전환 = "Switch camera" · Food photo 탭 불가', async () => {
+  it('KB-854 메뉴: "Scan" 헤더만 · 안내 문구·Photos·라이브러리 링크 제거 · 갤러리 아이콘("Choose photo") = 라이브러리 · 전환 = "Switch camera" · Food photo 탭 숨김(KB-963)', async () => {
     const tree = render(<Scan />);
     expect(texts(tree, 'scanCamera.title')).toBeGreaterThan(0);
     for (const k of ['scanCamera.menuTitle', 'scanCamera.menuHint', 'scanCamera.photos', 'scanCamera.menuLink', 'scan.cameraHintLandscape']) expect(texts(tree, k)).toBe(0);
     expect(byId(tree, 'scan-library-link')).toHaveLength(0);
     expect(byId(tree, 'scan-cam-hint')).toHaveLength(0); // 메뉴 = 흐름 안내 없음
-    const food = tree.root.findAll((n) => n.props?.testID === 'scan-mode-food')[0];
-    expect(food.props.onPress).toBeUndefined();
-    expect(food.props.accessibilityState).toMatchObject({ disabled: true });
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-food')).toHaveLength(0); // KB-963: Food photo 탭 숨김(FLAGS.foodPhotoMode)
     expect(byId(tree, 'scan-flip')[0].props.accessibilityLabel).toBe('scanCamera.switchCamera');
     expect(byId(tree, 'scan-gallery')[0].props.accessibilityLabel).toBe('scanCamera.choosePhoto');
     await pressId(tree, 'scan-gallery'); // 갤러리 = 메뉴 스캔 시작(로딩 C로 넘어간다)

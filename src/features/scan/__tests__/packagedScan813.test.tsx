@@ -576,7 +576,7 @@ describe('흐름(KB-865 ③ v4)', () => {
 
 describe('KB-877 가공식품 1시간 무료 창(서버 freeUntil)', () => {
   const FREE = '2026-10-27T04:00:00.000Z';
-  it('확정이 차감하며 창을 엶(charged + freeUntil) = 상세 &free=1 · 응답 창을 프로필 캐시에 즉시 반영 · 창 안 무료 확정(charged false) = free 0', async () => {
+  it('KB-963: 서버가 charged + freeUntil을 보내도 무료 창 0 — 상세 링크에 free 0 · 프로필 캐시 무변', async () => {
     qc.setQueryData(['me', 'en'], { id: '41', restrictions: [], packagedFreeUntil: null });
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
     mockPost
@@ -585,8 +585,8 @@ describe('KB-877 가공식품 1시간 무료 창(서버 freeUntil)', () => {
     const t = flow();
     await press(t, 'pscan-take-photo');
     await pick(t, 11);
-    expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/11?scan=1&charged=1&free=1');
-    expect(qc.getQueryData(['me', 'en'])).toMatchObject({ packagedFreeUntil: FREE });
+    expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/11?scan=1&charged=1');
+    expect(qc.getQueryData(['me', 'en'])).toMatchObject({ packagedFreeUntil: null });
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
     mockPost
       .mockResolvedValueOnce({ analysisId: 'F2', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
@@ -626,10 +626,10 @@ describe('KB-877 가공식품 1시간 무료 창(서버 freeUntil)', () => {
     mockParams = { id: '11', free: '1' }; // 스캔 밖 진입 = 무시
     expect(ids(render(<Detail />))).not.toContain('pf-free-started');
   });
-  it('남은 분 = 앞면 카메라에 한 줄(창 있을 때만) · KB-945 후보 화면엔 무료 배지·설명 0', async () => {
+  it('KB-963: 서버가 무료 창(freeUntil)을 보내도 앞면 카메라·후보 화면에 무료 배지·설명 0(가공식품 차감 없음)', async () => {
     mockFreeUntil = new Date(Date.now() + 42 * 60_000 + 30_000).toISOString();
     const t = flow();
-    expect(texts(t)).toContain('packagedScan.freeFor:{"count":43}');
+    expect(texts(t).some((x) => x.startsWith('packagedScan.free'))).toBe(false);
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
     mockPost.mockResolvedValueOnce({ analysisId: 'F3', state: 'CANDIDATES', candidates: [cand(11, 'R1')] });
     await press(t, 'pscan-take-photo');
@@ -642,13 +642,13 @@ describe('KB-877 가공식품 1시간 무료 창(서버 freeUntil)', () => {
 });
 
 describe('모드 탭·상세 띠·배선', () => {
-  it('모드 탭: 메뉴판·가공식품 선택 · 음식 사진 = 비활성(준비 중)', () => {
+  it('모드 탭: 메뉴판·가공식품 선택 · KB-963 음식 사진 = 숨김(FLAGS.foodPhotoMode 꺼짐 — 두 칸)', () => {
     const onChange = jest.fn();
     const t = render(<ScanModeTabs value="menu" onChange={onChange} />);
     const tab = (m: string) => t.root.findAll((n) => n.props?.testID === `scan-mode-${m}` && n.props?.accessibilityState)[0];
     expect(tab('menu').props.accessibilityState).toEqual({ selected: true, disabled: false });
-    expect(tab('food').props.accessibilityState).toEqual({ selected: false, disabled: true });
-    expect(tab('food').props.onPress).toBeUndefined();
+    expect(tab('food')).toBeUndefined();
+    expect(t.root.findAll((n) => typeof n.type === 'string' && /^scan-mode-(menu|food|packaged)$/.test(n.props?.testID ?? '')).map((n) => n.props.testID)).toEqual(['scan-mode-menu', 'scan-mode-packaged']);
     act(() => tab('packaged').props.onPress());
     expect(onChange).toHaveBeenCalledWith('packaged');
   });
