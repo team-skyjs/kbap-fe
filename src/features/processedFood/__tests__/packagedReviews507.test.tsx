@@ -70,6 +70,13 @@ describe('① 어댑터', () => {
     const r = adaptReview({ ...BASE, targetType: 'PROCESSED_FOOD', servingSpeed: 0, staffKindness: 0, processedFood: { processedFoodId: 1711, reportNo: '19700001001', productName: '우유식빵', maker: '롯데제과', imageUrl: 'http://haccp/a.jpg' } });
     expect(r).toMatchObject({ target: 'packaged', processedFoodId: '1711', foodId: '', foodName: '우유식빵', foodImageUrl: 'https://haccp/a.jpg' });
   });
+  it('KB-966 연장: 번역 name 우선 · 없음/null/빈값 = productName 원문 폴백', () => {
+    const pfOf = (name?: string | null) => adaptReview({ ...BASE, targetType: 'PROCESSED_FOOD', processedFood: { processedFoodId: 1711, productName: '우유식빵', ...(name !== undefined ? { name } : {}) } }).foodName;
+    expect(pfOf('Milk Bread')).toBe('Milk Bread');
+    expect(pfOf()).toBe('우유식빵');
+    expect(pfOf(null)).toBe('우유식빵');
+    expect(pfOf('  ')).toBe('우유식빵');
+  });
   it('FOOD · 필드 없는 구응답 · PROCESSED_FOOD인데 요약 없음 = food 축 그대로', () => {
     const food = { foodId: 7, name: 'Kimbap', koreanName: '김밥', imageUrl: 'https://x/k.jpg' };
     expect(adaptReview({ ...BASE, targetType: 'FOOD', food })).toMatchObject({ target: 'food', foodId: '7', foodName: 'Kimbap' });

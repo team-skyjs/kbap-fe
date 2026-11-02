@@ -26,7 +26,8 @@ import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/Stat
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { useGlobalReviews, type FeedSort, globalReviewsKey } from '@/lib/data/useFoodReviews';
+import { useGlobalReviews, type FeedSort, globalReviewsKey, type ReviewTargetFilter } from '@/lib/data/useFoodReviews';
+import { Chip } from '@/components/Chip';
 import { useBlockedUsers } from '@/lib/community/hooks';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
@@ -80,7 +81,11 @@ export function ReviewFeed() {
     setPrevFilterKey(filterKey);
     if ((isGuest || !myNat) && profileFilter) setProfileFilter(false);
   }
-  const feedFilters = { sort, countryCode: filterActive ? myNat : undefined };
+  // KB-966(예진 11/2): 대상 세그먼트 All · Dishes · Packaged — 기본 All(통합). 세션 내 state(정렬·국적 필터와 같은 유지 규칙).
+  // 가공식품 꺼진 채널(운영) = 세그먼트 숨김 + 파라미터 0(현행 그대로)
+  const [target, setTarget] = React.useState<ReviewTargetFilter | null>(null);
+  const targetFilter = FLAGS.processedFoodEnabled ? target : null;
+  const feedFilters = { sort, countryCode: filterActive ? myNat : undefined, targetType: targetFilter };
   const feed = useGlobalReviews(true, feedFilters);
   const deleteReview = useDeleteReview();
   const myId = me?.id;
@@ -187,6 +192,14 @@ export function ReviewFeed() {
                 </Pressable>
               </View>
               {!isGuest && myNat ? <CountryOnlyHint code={myNat} style={styles.natHint} /> : null}
+              {FLAGS.processedFoodEnabled ? (
+                // KB-966: 키에 targetType 포함 = 바꾸면 커서 처음부터·기존 스켈레톤(정렬과 같은 문법)
+                <View style={styles.targetRow} testID="feed-target">
+                  {([[null, 'home.filterAll', 'all'], ['FOOD', 'packaged.segmentDishes', 'food'], ['PROCESSED_FOOD', 'packaged.segmentPackaged', 'packaged']] as const).map(([v, k, id]) => (
+                    <Chip key={id} label={t(k)} selected={targetFilter === v} onPress={() => setTarget(v)} testID={`feed-target-${id}`} />
+                  ))}
+                </View>
+              ) : null}
               {/* 9/5 예진 판정(Q1)·KB-435 쿼터 넛지 카드(4150:17089) — P-384(KB-442): 회원·무료 소진·미해금만 */}
               {!isGuest && isScanQuotaExhausted(me?.scanQuota) && (
                 <View style={styles.nudge} testID="quota-nudge">
@@ -357,6 +370,7 @@ const styles = StyleSheet.create({
   list: { gap: 0 },
   // KB-430 §2-2: 컨트롤 행(4150:17070 — 좌 토글 + 우 드롭다운)
   natHint: { paddingHorizontal: 20, marginTop: -4, paddingBottom: 8 }, // KB-907(T-106)
+  targetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, paddingBottom: 8 }, // KB-966: 큰 글자 = 줄바꿈(가로 넘침 0)
   controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 0, paddingBottom: 8 }, // A-RT-01(KB-486)
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-RT-02
   toggleLabel: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },
