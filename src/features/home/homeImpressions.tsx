@@ -13,7 +13,7 @@ import * as React from 'react';
 import type { View } from 'react-native';
 import { EVENTS, track } from '@/lib/analytics';
 
-export type HomeSection = 'popular' | 'saved' | 'food' | 'safe' | 'most_reviewed' | 'recent' | 'top_rated' | 'guest_cta' | 'curation' | 'idol_pick'; // KB-796 curation = 큐레이션 배너 · KB-836 idol_pick = K-POP & K-FOOD 배너
+export type HomeSection = 'popular' | 'saved' | 'food' | 'safe' | 'most_reviewed' | 'recent' | 'top_rated' | 'guest_cta' | 'curation' | 'idol_pick' | 'cvs'; // KB-955 cvs = 편의점 인기 가공식품 줄 · KB-796 curation = 큐레이션 배너 · KB-836 idol_pick = K-POP & K-FOOD 배너
 export type Rect = { x: number; y: number; width: number; height: number };
 export type Viewport = { top: number; bottom: number; left: number; right: number };
 
@@ -118,7 +118,7 @@ export class ImpressionTracker {
  *  KB-836: id 없음 = 음식 1개가 아닌 배너(idol_pick) — {section, position}만(가짜 food_id 로 음식별 분석을 오염시키지 않는다). */
 export function trackHomeCardClick(section: HomeSection, position: number, id?: string): void {
   if (id == null) track(EVENTS.home_card_click, { section, position });
-  else track(EVENTS.home_card_click, section === 'curation' ? { section, position, collection_key: id } : { section, position, food_id: id });
+  else track(EVENTS.home_card_click, section === 'curation' ? { section, position, collection_key: id } : section === 'cvs' ? { section, position, product_id: id } : { section, position, food_id: id });
 }
 
 /** 홈 밖(음식 탭 등 같은 컴포넌트 재사용)에선 null — 노출 계측 없음 */

@@ -1,6 +1,25 @@
 ## 2026-11-02 · KB-958 Reviews 첫 장 줄이기를 활성 피드 쿼리만(Codex #388 2R P2 후속)
 - 구 = setQueriesData(['reviews','global'] 접두) → 비활성 정렬·국적 변형까지 첫 장으로 줄이며 갱신 시각이 바뀌어 신선도 리셋. 신 = globalReviewsKey(지금 필터) 정확한 키 하나만 getQueryData → 2장 이상이면 setQueryData. 훅과 같은 키 함수(useFoodReviews globalReviewsKey).
 
+## 2026-11-02 · P-572 KB-956 음식 탭 Popular = 리뷰 많은 순(서버 #521, dev 7248dc52)
+- 정렬 시트 Popular(라벨 그대로) → GET /foods sort=reviews(리뷰 수↓·평균↓·id↓) — 이름 정렬과 같은 3.1 헤더·불투명 커서·재시작 경로(409 FOOD-022 = 리뷰가 늘어 revision 변경 → 첫 페이지부터). 구 = Popular·New 둘 다 파라미터 없음(id↓ = 최신순)이라 이름과 실제가 달랐다.
+- 게이트 = FLAGS.popularByReviews(DEV_SERVER_CHANNEL) — 운영 서버는 모르는 sort면 INVALID_REQUEST, 서버 운영 배포 뒤 다음 OTA에서 플래그만 연다. off = 기존 기본 정렬.
+- 저장 목록(/bookmarks)은 reviews 정렬이 없어(서버 #521 = /foods만) Popular일 때 기본 정렬(bookmarkSort). 정렬 선요청 목록에 reviews(플래그 on). 매핑 = features/food/foodSort.ts(순수). 신규 ko 0.
+
+## 2026-11-02 · P-573 KB-957 음식 탭 상단 정리·기본 Packaged(예진 11/2 실기)
+- Dishes | Packaged = 헤더 로고 줄 안(StickyHeader center 슬롯 — 다른 화면 무변) · 글자·밑줄 = 구 세그먼트 그대로(16 semibold·2pt), 칸 폭 = 글자 폭 · 큰 글자 = 줄임표 대신 글자 배율 상한 SEG_MAX_SCALE 1.15. 별도 세그먼트 줄·Dishes 머리 간격 소멸.
+- Packaged "Popular picks"·유형명 제목 소멸(유형은 밑줄 탭 선택 상태) — 검색 결과일 때만 제목, 그 밖엔 칩 → 그리드 간격 16. Dishes엔 같은 제목 없음.
+- 유형 밑줄 탭 = 한 단계 작게: type.meta 14(선택 = semibold) · 밑줄 2 → 1.5 · 글자–밑줄 6 → 4. 칩 라벨 토큰은 16/500이라 "칩 크기급"이면 지금과 같은 크기 — 위계를 위해 meta 14로(보고).
+- 첫 진입 기본 = Packaged(defaultFoodSegment — 운영 채널 processedFoodEnabled off = Dishes) · See all·딥링크 전이 무변. 신규 ko 0. 기기 미검증(QA).
+
+## 2026-11-02 · P-571 KB-955 홈 편의점 인기 가공식품 줄(예진 11/2)
+- 위치 = Popular|Saved|Food 레일 바로 아래(afterRail 맨 앞), 아이돌 픽·큐레이션 위 · 운영 채널(processedFoodEnabled off) = 마운트 0.
+- 헤더 = SectionHead(라벨 packaged.segmentPackaged 재사용 + 제목 home.cvsTitle 신규) + 오른쪽 See all(home.seeAll) → /food?view=packaged(음식 탭이 Packaged 세그먼트로 — 운영 채널은 Dishes).
+- 카드 = Packaged ProductCard 그대로(리본·평점 규칙 동일) · 폭 = railCardW · 10개 · 데이터 = useProcessedSearch('')(Packaged 둘러보기와 같은 키 = 캐시 공유, verdictKey).
+- 로딩 = ProductCardSkeleton(그리드와 공유) · 실패·0개 = 섹션째 없음 · home_section_view(cvs)·home_card_click(cvs·position·product_id — ALLOWED에 product_id 추가) · 홈 당겨서 새로고침 + ['processedFoods','search'].
+- QA Q-389: 음식 탭을 한 번도 안 연 채 See all(view=packaged)로 들어오면 첫 마운트의 t가 곧 prevSeeAll이라 전이가 없어 Dishes로 열렸다 → 세그먼트 초기값에도 t·view 적용.
+- 신규 문구(K-항목): home.cvsTitle ko "편의점 인기 간식"(10로케일). 기기 미검증(QA).
+
 ## 2026-11-02 · P-570 KB-954 새로고침 공백·리뷰 후 카드 평점·회피 변경 재조회·탭바 재탭
 - 회피 변경(useUpdateMe)·온보딩 완료 = resetPersonalizedQueries — 위험도 키(home·foods·food·bookmarks·processedFoods)는 resetQueries(재조회 동안 옛 Safe 대신 스켈레톤, 실패 = 오류), 나머지는 invalidate. 온보딩 clear()(마운트된 탭 재조회 0, P-205 족보) 제거.
 - 리뷰 작성·수정·삭제 무효화 + foods·bookmarks·processedFoods search(KB-948 카드 평점 공백).

@@ -113,6 +113,8 @@ export type StickyHeaderProps = {
   onBack?: () => void;
   onSearch?: () => void;
   onBookmark?: () => void;
+  /** KB-957: 로고 오른쪽 영역(음식 탭 Dishes|Packaged) — 미전달 화면은 무변 */
+  center?: React.ReactNode;
 };
 
 export function StickyHeader({
@@ -132,6 +134,7 @@ export function StickyHeader({
   onBack,
   onSearch,
   onBookmark,
+  center,
 }: StickyHeaderProps) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
@@ -175,6 +178,8 @@ export function StickyHeader({
             <AppBarMark height={20} />
           </View>
         )}
+
+        {center != null && <View style={styles.center} testID="header-center">{center}</View>}
 
         {title != null && (
           <View style={styles.titleWrap} pointerEvents="none">
@@ -268,6 +273,7 @@ const styles = StyleSheet.create({
   },
   titleKo: { fontFamily: font.koBold, fontSize: 13, color: C.ink3 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  center: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', marginLeft: 20 }, // KB-957: 로고 → 탭(왼쪽 정렬) → 벨
   iconBtn: {
     width: 40,
     height: 40,

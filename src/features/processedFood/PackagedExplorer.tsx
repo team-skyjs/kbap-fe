@@ -22,7 +22,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { RemoteImage } from '@/components/RemoteImage';
 import { Shimmer } from '@/components/Skeleton';
-import { color as C, font, radius } from '@/lib/theme';
+import { color as C, font, radius, type as T } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
 import { browseUnsupported, emptyPageAction, endReachedShouldFetch, useProcessedSearch, useProcessedSearchPaged } from '@/lib/data/useProcessedFoods';
 import { PACKAGED_TYPES, packagedTypeKey, VERDICT_RISK, verdictsForRisk, type PackagedType, type ProcessedFoodSummary, type VerdictChipRisk } from '@/lib/api/processedFoodAdapter';
@@ -32,32 +32,31 @@ import { ProductName, productNameKoRowStyle } from './ProductName';
 
 export type FoodSegment = 'dishes' | 'packaged';
 
-/** R-95 반응형 탭(9:4546) — 두 칸 반반, 활성 = 진한 글자 + 칸 폭 2pt 밑줄, 아래 0.5 구분선. 밑줄은 비활성도 투명으로 자리 유지(프레임 불변). */
+/** KB-957(예진 11/2): Dishes | Packaged = 헤더 로고 줄 안 탭(구 R-95 별도 세그먼트 줄 소멸) — 글자 칸 폭, 선택 = 진한 글자 + 2pt 밑줄(비선택도 투명 밑줄로 자리 유지 — 프레임 불변).
+ *  큰 글자: 벨과 겹치지 않게 줄임표 대신 글자 배율 상한(SEG_MAX_SCALE). */
+export const SEG_MAX_SCALE = 1.15;
 export function FoodSegmentRow({ value, onChange }: { value: FoodSegment; onChange: (s: FoodSegment) => void }) {
   const { t } = useTranslation();
   return (
-    <View>
-      <View style={seg.row} accessibilityRole="tablist">
-        {(['dishes', 'packaged'] as FoodSegment[]).map((s) => (
-          <Pressable
-            key={s}
-            style={seg.tab}
-            onPress={() => onChange(s)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: value === s }}
-            testID={`food-segment-${s}`}
-          >
-            <Text style={[seg.label, value === s && seg.labelOn]} numberOfLines={1}>{t(s === 'dishes' ? 'packaged.segmentDishes' : 'packaged.segmentPackaged')}</Text>
-            <View style={[seg.bar, value === s && seg.barOn]} />
-          </Pressable>
-        ))}
-      </View>
-      <View style={seg.divider} />
+    <View style={seg.row} accessibilityRole="tablist">
+      {(['dishes', 'packaged'] as FoodSegment[]).map((s) => (
+        <Pressable
+          key={s}
+          style={seg.tab}
+          onPress={() => onChange(s)}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: value === s }}
+          hitSlop={8}
+          testID={`food-segment-${s}`}
+        >
+          <Text style={[seg.label, value === s && seg.labelOn]} numberOfLines={1} maxFontSizeMultiplier={SEG_MAX_SCALE}>{t(s === 'dishes' ? 'packaged.segmentDishes' : 'packaged.segmentPackaged')}</Text>
+          <View style={[seg.bar, value === s && seg.barOn]} />
+        </Pressable>
+      ))}
     </View>
   );
 }
 
-/** 유형 플레이스홀더(시안: Ramen = soup 아이콘, 나머지 = camera 아이콘 + 유형 글자) — 목록 썸네일·상세 사진 자리 공용. */
 export function PackagedPlaceholder({ type, foodType, style }: { type: PackagedType | null; foodType: string | null; style: object }) {
   const { t } = useTranslation();
   const label = type ? t(packagedTypeKey(type)) : foodType;
@@ -131,16 +130,21 @@ export function ProductCard({ item, width, onOpen, personalized = true, unset = 
 }
 
 /** 시안 05 — 사진 자리 + 막대 130×16 · 90×12(각 8 아래), 2열 2줄(로딩 스피너 중복 없음) */
+/** 카드 한 장 자리(사진 + 막대 2) — 그리드·홈 편의점 줄(KB-955)이 같이 쓴다 */
+export function ProductCardSkeleton({ width }: { width: number }) {
+  return (
+    <View style={[card.root, { width }]}>
+      <Shimmer style={[card.photo, card.skelPhoto]} />
+      <Shimmer style={card.skelBar1} />
+      <Shimmer style={card.skelBar2} />
+    </View>
+  );
+}
+
 function SkeletonGrid({ width }: { width: number }) {
   return (
     <View style={card.skelGrid} testID="packaged-skeleton">
-      {[0, 1, 2, 3].map((i) => (
-        <View key={i} style={[card.root, { width }]}>
-          <Shimmer style={[card.photo, card.skelPhoto]} />
-          <Shimmer style={card.skelBar1} />
-          <Shimmer style={card.skelBar2} />
-        </View>
-      ))}
+      {[0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} width={width} />)}
     </View>
   );
 }
@@ -259,9 +263,9 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
               accessibilityState={{ selected: type === k }}
               testID={k ? `packaged-type-${k.toLowerCase()}` : 'packaged-type-all'}
             >
-              <Text style={[seg.label, type === k && seg.labelOn]} numberOfLines={1}>{k ? t(packagedTypeKey(k)) : t('food.categories.all')}</Text>
+              <Text style={[cat.label, type === k && cat.labelOn]} numberOfLines={1}>{k ? t(packagedTypeKey(k)) : t('food.categories.all')}</Text>
               {/* 밑줄 = 비선택도 투명으로 자리 유지(프레임 불변 P-151) */}
-              <View style={[seg.bar, type === k && seg.barOn]} />
+              <View style={[cat.bar, type === k && cat.barOn]} />
             </Pressable>
           ))}
         </ChipScrollRow>
@@ -280,12 +284,12 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
           ))}
         </ChipScrollRow>
       )}
-      {/* KB-901(T-105): 유형 칩을 고르면 제목 = 그 유형명(Drinks인데 "Popular picks"였다) */}
-      {!legacyGuide && (items.length > 0 || q.isPending) && (
-        <Text style={st.heading} accessibilityRole="header" testID="packaged-heading">
-          {term ? t('packaged.searchResults') : v4 && type ? t(packagedTypeKey(type)) : t('packaged.popularPicks')}
-        </Text>
-      )}
+      {/* KB-957(예진 11/2): "Popular picks"·유형명 제목 소멸(유형은 위 밑줄 탭이 말한다) — 검색 결과일 때만 제목 · 없으면 칩 → 그리드 간격만 */}
+      {!legacyGuide && (items.length > 0 || q.isPending) && (term ? (
+        <Text style={st.heading} accessibilityRole="header" testID="packaged-heading">{t('packaged.searchResults')}</Text>
+      ) : (
+        <View style={st.gridGap} testID="packaged-grid-gap" />
+      ))}
     </View>
   );
 
@@ -386,19 +390,24 @@ const card = StyleSheet.create({
 });
 
 // R-95 실측(2x PNG): 탭 높이 48(라벨 16/24 semibold · 밑줄 2) · 활성 #2F3137 · 비활성 gray-700 · 구분선 0.5 gray-300
+// KB-957: 헤더 안 탭 — 글자·색·밑줄 = 구 R-95 세그먼트 그대로, 칸 폭 = 글자 폭(헤더 줄 48 안)
 const seg = StyleSheet.create({
-  row: { flexDirection: 'row' },
-  tab: { flex: 1, height: 48, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  tab: { alignItems: 'stretch', gap: 4, paddingTop: 6 },
   label: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 24, color: C.ink2 },
   labelOn: { color: '#2F3137' },
-  bar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
+  bar: { height: 2, backgroundColor: 'transparent' },
   barOn: { backgroundColor: '#212124' },
-  divider: { height: 0.5, backgroundColor: C.line2 },
 });
 
 // KB-949: 유형 밑줄 탭 — 글자·밑줄 = seg(상단 Dishes/Packaged 탭) 그대로, 칸 폭 = 글자 폭(가로 스크롤)
+// KB-957: 유형 탭 = 한 단계 작게(meta 14/500 — 위 Dishes|Packaged 16 semibold와 위계) · 밑줄 2 → 1.5 · 글자–밑줄 6 → 4
 const cat = StyleSheet.create({
-  tab: { alignItems: 'stretch', gap: 6, marginRight: 12 }, // 글자 사이 18(줄 gap 6 + 12) · 첫 탭 = 페이지 여백 20에 맞춤 · 밑줄 = 글자 폭
+  tab: { alignItems: 'stretch', gap: 4, marginRight: 12 }, // 글자 사이 18(줄 gap 6 + 12) · 첫 탭 = 페이지 여백 20에 맞춤 · 밑줄 = 글자 폭
+  label: { ...T.meta, fontFamily: font.body, color: C.ink2 },
+  labelOn: { fontFamily: font.bodySemi, color: '#2F3137' },
+  bar: { height: 1.5, backgroundColor: 'transparent' },
+  barOn: { backgroundColor: '#212124' },
 });
 
 const ph = StyleSheet.create({
@@ -416,6 +425,7 @@ const st = StyleSheet.create({
   chipsSecond: { marginTop: 8 }, // KB-949: 유형 탭 아래 판정 칩 줄
   findMorePad: { paddingHorizontal: 20, paddingVertical: 16, alignItems: 'center' },
   heading: { fontFamily: font.bodyBold, fontSize: 22, lineHeight: 28, color: C.ink, marginTop: 26, marginBottom: 16, marginHorizontal: 20 },
+  gridGap: { height: 16 }, // KB-957: 제목이 없을 때 칩 → 그리드(구 제목 아래 간격 16)
   columns: { paddingHorizontal: 20, gap: 12 },
   row: { flexDirection: 'row', gap: 12, marginHorizontal: 20, marginBottom: 20 },
   thumb: { width: 72, height: 72, borderRadius: radius.md },

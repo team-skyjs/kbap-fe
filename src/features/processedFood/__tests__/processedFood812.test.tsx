@@ -76,7 +76,7 @@ import { ApiError } from '@/lib/api/client';
 import { adaptProcessedDetail, adaptProcessedSummary, packagedTypeOf, toHttps, VERDICT_RISK, type DetailWire } from '@/lib/api/processedFoodAdapter';
 import { fetchProcessedDetail, fetchProcessedSearch } from '@/lib/data/useProcessedFoods';
 import { ProcessedFoodDetailScreen as Detail } from '@/app/processed-foods/[id]'; // KB-870: 기본 내보내기 = 채널 게이트 — 화면 자체를 직접 렌더
-import { FoodSegmentRow, PackagedExplorer } from '../PackagedExplorer';
+import { FoodSegmentRow, SEG_MAX_SCALE, PackagedExplorer } from '../PackagedExplorer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FLAGS } from '@/lib/flags';
 /* eslint-enable import/first */
@@ -369,12 +369,15 @@ describe('Food 탭 세그먼트·목록', () => {
     act(() => tab('packaged').props.onPress());
     expect(onChange).toHaveBeenCalledWith('packaged');
   });
-  it('Food 탭 배선: 기본 Dishes · 선택 유지(모듈 상태) · Packaged = 가공식품 목록 · Dishes 화면은 그대로(세그먼트만 머리에)', () => {
+  it('Food 탭 배선: KB-957 기본 Packaged(운영 채널 = Dishes) · 선택 유지(모듈 상태) · 세그먼트 = 헤더 center(본문 머리 0)', () => {
     const src = fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8');
-    expect(src).toContain("let lastSegment: FoodSegment = 'dishes';");
-    expect(src).toContain('useState<FoodSegment>(() => lastSegment)');
+    expect(src).toContain('let lastSegment: FoodSegment = defaultFoodSegment(FLAGS.processedFoodEnabled);');
+    expect(src).toContain('useState<FoodSegment>(() => {'); // QA Q-389: 첫 마운트 See all(t) 적용 — 없으면 lastSegment(KB-957 기본 Packaged)
+    expect(src).toContain('if (!seeAllKey) return lastSegment;');
     expect(src).toContain("segRow && foodSegment === 'packaged' ? ("); // KB-870: 운영 채널 = 세그먼트째 없음
-    expect(src).toContain('headTop={segRow ? <View style={styles.segGap}>{segRow}</View> : undefined}');
+    expect(src).toContain('center={segRow}');
+    expect(src).not.toContain('headTop={segRow');
+    expect(src).toContain('<PackagedExplorer top={null}');
   });
   it('KB-865: 구서버(둘러보기 400) = 검색 안내 폴백(칩·제목 0) · 검색 → 결과 카드(https 사진) · 결과 0 = 빈 상태', async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -478,7 +481,8 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] }; // 리본 = 회피 1개 이상 회원
     mockGet.mockResolvedValueOnce(V4());
     const t = await mount();
-    expect(text(t)).toContain('packaged.popularPicks');
+    expect(text(t)).not.toContain('packaged.popularPicks'); // KB-957: 제목 소멸 — 칩 → 그리드 간격만
+    expect(ids(t)).toContain('packaged-grid-gap');
     expect(ids(t)).toEqual(expect.arrayContaining(['packaged-types', 'packaged-type-all', 'packaged-type-snacks', 'packaged-type-ramen', 'packaged-type-drinks', 'packaged-type-bread']));
     expect(ids(t).filter((i) => i.startsWith('badge-'))).toEqual(['badge-safe', 'badge-danger']); // verdict null(9) = 배지 0
     expect(text(t)).toContain('바나나맛우유');
@@ -529,7 +533,8 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const t = render(<QueryClientProvider client={qc}><PackagedExplorer top={null} /></QueryClientProvider>);
     expect(ids(t)).toContain('packaged-skeleton');
-    expect(text(t)).toContain('packaged.popularPicks');
+    expect(text(t)).not.toContain('packaged.popularPicks'); // KB-957
+    expect(ids(t)).toContain('packaged-grid-gap');
     await act(async () => { resolve({ items: [], hasNext: false, nextCursor: null }); });
     trees.splice(0).forEach((x) => act(() => x.unmount()));
     mockGet.mockRejectedValueOnce(new ApiError('down', 503));
@@ -596,15 +601,17 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     expect(mockTrack).toHaveBeenLastCalledWith('food_packaged_type_select', { type: 'all' });
   });
 
-  it('KB-901 T-016·T-105·T-017: 칩 고르면 제목 = 유형명 · 검색 + 칩 0건 → Show all products = 칩 All + 검색어도 지움 · 제출 = 키보드 내림 · 칩 줄 handled', async () => {
+  it('KB-901 T-016·T-017 → KB-957: 제목 없음(유형은 밑줄 탭 선택 상태가 말한다) · 검색 + 칩 0건 → Show all products = 칩 All + 검색어도 지움 · 제출 = 키보드 내림 · 칩 줄 handled', async () => {
     mockGet.mockResolvedValueOnce(V4());
     const t = await mount();
     const heading = () => t.root.findAll((n) => n.props?.testID === 'packaged-heading' && typeof n.type === 'string')[0]?.props.children;
-    expect(heading()).toBe('packaged.popularPicks');
+    const tabOn = (id: string) => t.root.findAll((n) => n.props?.testID === id && n.props?.accessibilityRole === 'tab')[0].props.accessibilityState.selected;
+    expect(heading()).toBeUndefined();
     mockGet.mockResolvedValueOnce(V4());
     await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-type-drinks' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
     await flush();
-    expect(heading()).toBe('packaged.type.drinks'); // T-105: "Popular picks" 아님
+    expect(heading()).toBeUndefined(); // KB-957: 유형명 제목 소멸
+    expect([tabOn('packaged-type-drinks'), tabOn('packaged-type-all')]).toEqual([true, false]);
     const chipRow = t.root.findAll((n) => n.props?.testID === 'packaged-types' && n.props?.horizontal)[0];
     expect(chipRow.props.keyboardShouldPersistTaps).toBe('handled'); // T-017: ✕ 뒤 칩 첫 탭이 키보드 닫기에 먹히지 않게
     const input = t.root.findAll((n) => n.props?.testID === 'packaged-search-input' && typeof n.props?.onChangeText === 'function')[0];
@@ -620,7 +627,8 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     expect(ids(t)).toContain('packaged-item-7'); // 두 번째 빈 화면 0
     expect(t.root.findAll((n) => n.props?.testID === 'packaged-search-input' && typeof n.props?.onChangeText === 'function')[0].props.value).toBe('');
     expect(mockGet.mock.calls.map((c) => c[0] as string).filter((u) => u.includes('zzzqqq'))).toHaveLength(1); // 검색어로 다시 조회 0
-    expect(heading()).toBe('packaged.popularPicks');
+    expect(heading()).toBeUndefined();
+    expect(tabOn('packaged-type-all')).toBe(true);
   });
 
   it('Codex #338 R3 P1: 판정 캐시 = 회피 코드 집합에 묶임 — 설정을 다른 목록으로 바꾸면 새로 받고, 받기 전엔 옛 판정(리본)을 그리지 않는다', async () => {
@@ -701,6 +709,23 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     const rating = t.root.findAll((n) => n.props?.testID === 'packaged-rating-7')[0].findAll((n) => n.type === 'Text');
     expect(rating.map((n) => [n.props.children].flat().join(''))).toEqual(['4.7', '(12)']);
     for (const n of rating) expect([flat(n).fontSize, flat(n).fontWeight, flat(n).color]).toEqual([ko.fontSize, ko.fontWeight, ko.color]);
+  });
+
+  it('KB-957 상단 4줄: Packaged 본문엔 Dishes|Packaged 줄 0(헤더로) · 유형 탭 글자(14) < 헤더 탭 글자(16) · 밑줄 1.5 < 2 · 헤더 탭 = 글자 배율 상한(벨과 겹침 방지)', async () => {
+    mockGet.mockResolvedValueOnce(V4());
+    const t = await mount();
+    expect(ids(t).filter((i) => i.startsWith('food-segment-'))).toEqual([]);
+    const flat = (n: { props: { style: unknown } }) => StyleSheet.flatten(n.props.style as never) as { fontSize?: number; height?: number };
+    const catTab = t.root.findAll((n) => n.props?.testID === 'packaged-type-all' && n.props?.accessibilityRole === 'tab')[0];
+    const catLabel = flat(catTab.findAll((n) => n.type === 'Text')[0]);
+    const seg = render(<FoodSegmentRow value="packaged" onChange={() => {}} />);
+    const segTab = seg.root.findAll((n) => n.props?.testID === 'food-segment-packaged' && n.props?.accessibilityRole === 'tab')[0];
+    const segText = segTab.findAll((n) => n.type === 'Text')[0];
+    expect([catLabel.fontSize, flat(segText).fontSize]).toEqual([14, 16]);
+    const bars = (x: typeof catTab) => x.findAll((n) => typeof n.type === 'string' && n.type !== 'Text' && flat(n).height != null && flat(n).height! < 3).map((n) => flat(n).height);
+    expect([bars(catTab)[0], bars(segTab)[0]]).toEqual([1.5, 2]);
+    expect(segText.props.maxFontSizeMultiplier).toBe(SEG_MAX_SCALE);
+    expect(SEG_MAX_SCALE).toBeLessThan(1.3); // 앱 전역 상한(MAX_FONT_SCALE 1.3)보다 작게
   });
 
   it('KB-954(P-570 QA: 당겨도 요청 0): Packaged 당겨서 새로고침 = 목록 다시 요청 · 끝나면 스피너 해제', async () => {
