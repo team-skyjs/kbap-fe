@@ -81,10 +81,9 @@ describe('④·⑦ 화이트리스트 = PII 방어선', () => {
 });
 
 describe('② ③ ④ 배선 소스 잠금 — 공용 1곳 원칙', () => {
-  it('② 저장 목록 스와이프 해제·되돌리기 = 기존 bookmark_toggle 재사용', () => {
-    const src = read('src/app/profile/saved.tsx');
-    expect(src).toContain('track(EVENTS.food_bookmark_toggle, { on: false })');
-    expect(src).toContain('track(EVENTS.food_bookmark_toggle, { on: true })');
+  it('② KB-959: 저장 해제·되돌리기 = 저장 목록에서 소멸 → 저장 이벤트는 상세 한 곳(기존 bookmark_toggle 그대로)', () => {
+    expect(read('src/app/profile/saved.tsx')).not.toContain('food_bookmark_toggle');
+    expect(read('src/app/food/[id]/index.tsx')).toContain('track(EVENTS.food_bookmark_toggle, { on: adding });');
   });
 
   it('③ 스캔 퍼널 — 담기/빼기·Done 확정·사장님 확인 3진입·권한 4상태', () => {

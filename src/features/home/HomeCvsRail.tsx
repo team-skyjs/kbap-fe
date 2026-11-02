@@ -51,7 +51,7 @@ export function HomeCvsRail() {
           testID="home-cvs-see-all"
         >
           <Text style={st.seeAllText}>{t('home.seeAll')}</Text>
-          <IconChevron size={16} color={C.primaryText} />
+          <IconChevron size={16} color={C.ink} />
         </Pressable>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.rail} contentContainerStyle={st.railContent} testID="home-cvs-rail">
@@ -79,7 +79,7 @@ const st = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'flex-end' },
   headText: { flex: 1, minWidth: 0 },
   seeAll: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingRight: RAIL_EDGE, paddingBottom: 10, minHeight: 44 },
-  seeAllText: { ...type.button, color: C.primaryText },
+  seeAllText: { ...type.button, color: C.ink }, // KB-959(예진 11/2): 섹션 헤더 See all = 본문 진한 글자(구 주황)
   rail: { flexGrow: 0 }, // P-319: 세로 목록 헤더 안 가로 ScrollView가 화면 높이만큼 늘어나지 않게
   railContent: { paddingHorizontal: RAIL_EDGE, gap: RAIL_GAP },
 });

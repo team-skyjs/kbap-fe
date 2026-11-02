@@ -177,6 +177,9 @@ it('③ 커서 미전진(hasNext 지속) 서버 경계에서도 드레인이 유
   expect((api.get as jest.Mock).mock.calls.length).toBeLessThanOrEqual(6);
 });
 
+const seenToggle = jest.fn();
+function TogglerProbe() { seenToggle(useToggleBookmark()); return null; }
+
 it('② 실제 FoodExplorer 2식(홈 embedded + 음식 탭 screen 동시 마운트) — 북마크 탭 후 유한 수렴', async () => {
   const qc = client();
   let tree!: ReactTestRenderer;
@@ -184,15 +187,16 @@ it('② 실제 FoodExplorer 2식(홈 embedded + 음식 탭 screen 동시 마운�
     <QueryClientProvider client={qc}>
       <FoodExplorer variant="embedded" guest={false} srcTag="home" />
       <FoodExplorer variant="screen" guest={false} srcTag="list" />
+      <TogglerProbe />
     </QueryClientProvider>
   );
   await act(async () => { tree = renderer.create(ui); });
   await flush(); await flush(); await flush();
+  expect(tree).toBeTruthy();
 
-  // 홈 카드 별(북마크) 탭 — 낙관 삽입 + onSettled invalidate 경로 실발화
-  const star = tree.root.findAll((n) => n.props?.testID === 'home-bm-11' && typeof n.props?.onPress === 'function')[0];
-  expect(star).toBeTruthy();
-  await act(async () => { star.props.onPress(); });
+  // KB-959: 카드 별이 사라져 저장 토글은 상세에서만 — 같은 뮤테이션(useToggleBookmark)을 두 목록이 마운트된 채로 실발화(낙관 삽입 + onSettled invalidate 경로)
+  const toggle = seenToggle.mock.calls.at(-1)![0] as ReturnType<typeof useToggleBookmark>;
+  await act(async () => { toggle.mutate({ snap: { foodId: '11', name: 'F11', nameKo: '푸11', risk: 'safe', photoUrl: null }, add: true }); });
   await flush(); await flush(); await flush(); await flush();
 
   // 프리징 = api.get 폭주(60 초과 시 mock이 던져 실패) — 수렴 상한 잠금

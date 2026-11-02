@@ -210,18 +210,11 @@ it('③ 알림 — unread 행 = primaryTint 배경 + 점, read 행 = 흰 배경 
   expect(src).not.toContain('icUnread');
 });
 
-it('⑤ 홈 레일 저장 별 = 카드의 bookmarked(KB-779 — 북마크 목록 드레인 아님): 저장 카드 = #FFE812 fill · 미저장 = 아웃라인', () => {
-  // 북마크 목록엔 id 2가 있어도 홈은 그 집합을 보지 않는다 — /foods 카드의 bookmarked(id 1만 true)가 정본
-  mockBookmarks.data = [mockFood('2', 'danger')];
+it('⑤ KB-959(예진 11/2): 홈 레일 카드 저장 별 소멸 — 저장 카드여도 카드엔 버튼 0(저장·해제 = 상세)', () => {
   mockCatalog[0].bookmarked = true;
   const tree = render(<Home />);
-  const fills = (id: string) => {
-    const bm = byId(tree, `home-bm-${id}`)[0];
-    expect(bm).toBeTruthy();
-    return bm.findAll((n) => n.props?.fill != null).map((n) => n.props.fill as string);
-  };
-  expect(fills('1')).toContain('#FFE812'); // 9/5 판정 4129:10701
-  expect(fills('2')).not.toContain('#FFE812');
+  expect(tree.root.findAll((n) => /^home-bm-/.test(n.props?.testID ?? ''))).toHaveLength(0);
+  expect(byId(tree, 'home-food-1').length).toBeGreaterThan(0); // 카드 자체는 그대로
   mockCatalog[0].bookmarked = false;
 });
 

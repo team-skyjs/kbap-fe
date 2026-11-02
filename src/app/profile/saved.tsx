@@ -1,66 +1,42 @@
 /**
  * Saved (bookmarks) — KB-434 D-6(4150:14448). AppBar "Saved" → 헤더 메타
  * ("n dishes · Newest first") → 위험 칩(All·Safe·Avoid·Warning — D-2 홈 동일 문법)
- * → 음식 카드 2열 그리드(4150:13816 — 홈 FoodGridCard 재사용, 북마크 별 = 해제 토글).
+ * → 음식 카드 2열 그리드(4150:13816 — 홈 FoodGridCard 재사용). KB-959: 카드 별(해제 토글)·Undo 스낵바 소멸 — 해제는 상세에서.
  *
- * Data: LIVE GET /bookmarks 커서 무한스크롤(KB-142) — 훅·언세이브(낙관적 제거+Undo
- * 스낵바) 무변. 구 스와이프 행 문법 소멸(시안 = 그리드 + 별 토글).
+ * Data: LIVE GET /bookmarks 커서 무한스크롤(KB-142). 구 스와이프 행 문법 소멸.
  * risk = personalRisk() false-safe 가드 경유(칩 필터도 동일 값 기준).
  */
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { usePullRefresh } from '@/lib/data/usePullRefresh';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, radius } from '@/lib/theme';
-import { SubHeader, Spinner, Btn, IconStar, IconFood } from '@/components';
+import { SubHeader, Spinner } from '@/components';
 import { Chip } from '@/components/Chip';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { EmptyBlock, QueryErrorBlock } from '@/components/StateBlock';
-import { Snackbar } from '@/components/Snackbar';
-import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
-import { EVENTS, track } from '@/lib/analytics';
-import { useBookmarks, useRemoveBookmark, useRestoreBookmark, type BookmarkSnapshot } from '@/lib/data/bookmarks';
+import { useBookmarks } from '@/lib/data/bookmarks';
 import type { FoodCard } from '@/lib/api/types';
 import { personalRisk } from '@/lib/risk';
 import type { RiskState } from '@/lib/theme';
 import { FoodGridCard, isGridPad, padOddGrid, RISK_CHIPS } from '@/features/food/FoodCards';
 
-const UNDO_MS = 5000;
 type RiskChip = 'all' | RiskState; // 'all' = 안 고름(KB-949 — All 칩은 없다)
 
 export default function SavedScreen() {
   const router = useRouter();
-  const bottomInset = useBottomInset(); // KB-900: 탭 바 없는 화면 — Undo 스낵바가 3버튼 내비 바에 덮였다
   const { t } = useTranslation();
   const isGuest = useIsGuest();
   const pull = usePullRefresh([['bookmarks']]); // KB-954
   const { data: list, isLoading, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useBookmarks(); // P-164
   const { data: me } = useMe();
-  const remove = useRemoveBookmark();
-  const restore = useRestoreBookmark();
   const [chip, setChip] = useState<RiskChip>('all');
 
-  // Undo snackbar: 마지막 제거 스냅샷을 ~5s 보관 (즉시 제거 + 되돌리기 — 확인 모달 없음)
-  const [undo, setUndo] = useState<BookmarkSnapshot | null>(null);
-  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const onRemove = (snap: BookmarkSnapshot) => {
-    track(EVENTS.food_bookmark_toggle, { on: false }); // P-214: 해제가 상세분만 잡히던 집계 왜곡 보정
-    remove.mutate(snap.foodId);
-    if (undoTimer.current) clearTimeout(undoTimer.current);
-    setUndo(snap);
-    undoTimer.current = setTimeout(() => setUndo(null), UNDO_MS);
-  };
-  const onUndo = () => {
-    if (!undo) return;
-    track(EVENTS.food_bookmark_toggle, { on: true }); // P-214: 되돌리기 = 재등록(기존 이벤트 재사용 — 신규 없음)
-    restore.mutate(undo);
-    if (undoTimer.current) clearTimeout(undoTimer.current);
-    setUndo(null);
-  };
+  // KB-959(예진 11/2): 카드 저장(별) 버튼 제거 — 저장 해제는 상세에서만(구 별 = 해제 토글 + Undo 스낵바 소멸)
 
   // 라우트 자체 가드 (⑧-b 패턴) — 진입로는 프로필 탭(게이트)뿐이지만 딥링크 이중 방어
   if (isGuest) {
@@ -137,10 +113,8 @@ export default function SavedScreen() {
                 food={item}
                 risk={personalRisk(item.risk, hasR)}
                 guest={false}
-                saved
                 riskLabel={t(`risk.${personalRisk(item.risk, hasR)}`)}
                 onPress={() => router.push(`/food/${item.foodId}?src=saved` as Href)}
-                onBookmark={() => onRemove(item)}
               />
             </View>
             )
@@ -148,15 +122,6 @@ export default function SavedScreen() {
         />
       )}
 
-      {undo && (
-        <Snackbar
-          icon={<IconStar size={15} color="#fff" />}
-          text={t('saved.removed')}
-          actionLabel={t('saved.undo')}
-          onAction={onUndo}
-          bottom={24 + bottomInset}
-        />
-      )}
     </View>
   );
 }

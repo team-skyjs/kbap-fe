@@ -968,7 +968,6 @@
     "emptyBody": "Tap the star on any dish to keep it here.",
     "emptyCta": "Browse food",
     "removed": "Removed from Saved",
-    "undo": "Undo",
     "toast": "Saved to your list",
     "view": "View",
     "filterEmpty": "No saved dishes match this filter"
@@ -985,7 +984,7 @@
       "0": "No heat — plain rice",
       "1": "Mild — gentle kimchi",
       "2": "Kimchi jjigae",
-      "3": "Buldak fire ramen",
+      "3": "Buldak fire ramyeon",
       "4": "Cheongyang overload"
     },
     "foodNone": "Not spicy"
@@ -1193,7 +1192,7 @@
   "packaged": {
     "segmentDishes": "Dishes",
     "segmentPackaged": "Packaged",
-    "searchPlaceholder": "Search snacks, ramen…",
+    "searchPlaceholder": "Search snacks, ramyeon…",
     "clearSearch": "Clear search",
     "popularPicks": "Popular picks",
     "searchResults": "Search results",
@@ -1244,7 +1243,7 @@
     "backToList": "Back",
     "type": {
       "snacks": "Snacks",
-      "ramen": "Ramen",
+      "ramen": "Ramyeon",
       "bread": "Bread",
       "drinks": "Drinks",
       "ice_cream": "Ice cream",
@@ -1257,7 +1256,6 @@
     "seeLess": "See less",
     "ingredientsAndSource": "Ingredients and source",
     "yourAvoidList": "Your avoid list",
-    "noAvoidMatches": "No matches found for your current avoid list.",
     "translationLabel": "English translation",
     "sourceTitle": "Source",
     "sourceC002": "Data: Ministry of Food and Drug Safety, Food Safety Korea product manufacturing reports",
@@ -1273,6 +1271,8 @@
     "containsNames": "Contains {{names}}",
     "mayContainNames": "May contain {{names}}",
     "noAvoidMatchTitle": "No matches to your avoid list",
+    "safeBasis_one": "We checked the label against your {{count}} avoided ingredient.",
+    "safeBasis_other": "We checked the label against your {{count}} avoided ingredients.",
     "findMore": "Find more"
   },
   "scanMode": {
@@ -1358,11 +1358,9 @@
     "done": "Done",
     "resultAvoid": "Matches your avoid list: {{names}}.",
     "resultCaution": "A shared-facility statement mentions: {{names}}.",
-    "resultSafeAll": "No matches found across all the label photos you added.",
     "resultMajorSet": "{{contains}}. Set your avoid ingredients to see a personal result.",
     "freeFor_one": "Free packaged scans for {{count}} min",
     "freeFor_other": "Free packaged scans for {{count}} min",
-    "freeStarted": "Your next packaged scans are free for 1 hour.",
     "freeExplain": "Scan as many packaged products as you like during this time. Menu scans aren't included."
   },
   "scanCamera": {

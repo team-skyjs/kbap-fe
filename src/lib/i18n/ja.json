@@ -972,7 +972,6 @@
     "emptyBody": "料理の星をタップするとここに保存されます。安心しておいしく食べるためのリストに。",
     "emptyCta": "料理をさがす",
     "removed": "保存済みから削除しました",
-    "undo": "元に戻す",
     "toast": "リストに保存しました",
     "view": "見る",
     "filterEmpty": "このフィルターに合う保存済みの料理はありません"
@@ -1197,7 +1196,7 @@
   "packaged": {
     "segmentDishes": "料理",
     "segmentPackaged": "加工食品",
-    "searchPlaceholder": "お菓子、ラーメンを検索…",
+    "searchPlaceholder": "お菓子、ラミョンを検索…",
     "clearSearch": "検索をクリア",
     "popularPicks": "人気の商品",
     "searchResults": "検索結果",
@@ -1248,7 +1247,7 @@
     "backToList": "戻る",
     "type": {
       "snacks": "お菓子",
-      "ramen": "ラーメン",
+      "ramen": "ラミョン",
       "bread": "パン",
       "drinks": "飲料",
       "ice_cream": "アイスクリーム",
@@ -1261,7 +1260,6 @@
     "seeLess": "閉じる",
     "ingredientsAndSource": "原材料と出典",
     "yourAvoidList": "避けたい食材",
-    "noAvoidMatches": "避けたい食材に一致するものは見つかりませんでした。",
     "translationLabel": "日本語訳",
     "sourceTitle": "出典",
     "sourceC002": "データ: 食品医薬品安全処 食品安全ナラ 品目製造報告",
@@ -1277,6 +1275,8 @@
     "containsNames": "{{names}}を含む",
     "mayContainNames": "{{names}}混入の可能性",
     "noAvoidMatchTitle": "避けたい食材との一致なし",
+    "safeBasis_one": "避けたい食材{{count}}件と表示を照合しました。",
+    "safeBasis_other": "避けたい食材{{count}}件と表示を照合しました。",
     "findMore": "さらに探す"
   },
   "scanMode": {
@@ -1362,11 +1362,9 @@
     "done": "完了",
     "resultAvoid": "避けたい食材と一致: {{names}}。",
     "resultCaution": "同じ製造施設の表示に記載: {{names}}。",
-    "resultSafeAll": "追加したすべての写真で一致はありません。",
     "resultMajorSet": "{{contains}}。避けたい食材を設定すると、自分向けの結果を見られます。",
     "freeFor_one": "加工食品スキャン無料 残り{{count}}分",
     "freeFor_other": "加工食品スキャン無料 残り{{count}}分",
-    "freeStarted": "この後1時間、加工食品のスキャンは無料です。",
     "freeExplain": "この間は加工食品を回数を気にせずスキャンできます。メニューのスキャンは対象外です。"
   },
   "scanCamera": {
