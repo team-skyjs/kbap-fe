@@ -214,6 +214,8 @@ export const FLAGS = {
    */
   curationEnabled: true,
   processedFoodEnabled: DEV_SERVER_CHANNEL,
+  /** KB-956(P-572): 음식 탭 Popular = 리뷰 많은 순(sort=reviews, 서버 #521). 운영 서버는 모르는 sort면 INVALID_REQUEST — 서버 운영 배포 뒤 다음 OTA에서 true로 */
+  popularByReviews: DEV_SERVER_CHANNEL,
   idolPicksEnabled: true,
   avoidGroupCodesEnabled: true,
 } as const;

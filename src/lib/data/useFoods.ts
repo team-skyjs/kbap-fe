@@ -26,6 +26,7 @@ import { trackReadyFood, useIsFoodHidden } from './hiddenFoods';
 import { adaptFoodDetail, adaptMenuSummary, unregisteredFoodDetail, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { MOCK_FOODS, MOCK_FOOD_DETAILS, MOCK_FOOD_UNREGISTERED } from '../mocks/foods';
 import { MOCK_MODE } from './config';
+import { FLAGS } from '../flags';
 import { fetchSortedPage, nameSortOptions, nameSortQuery, useRestartOnStaleCursor, type FoodNameSort, type SortedPage } from './foodNameSort';
 
 /**
@@ -120,8 +121,8 @@ export function useInfiniteFoods(risk?: RiskFilterChip, opts?: { enabled?: boole
   return q;
 }
 
-/** 서버 정렬 3종(인기 = 정렬 파라미터 없음 · 이름 A–Z · Z–A). NEW는 서버 정렬이 없어 비활성이라 제외. */
-export const SERVER_FOOD_SORTS: (FoodNameSort | undefined)[] = [undefined, 'name_asc', 'name_desc'];
+/** 서버 정렬(기본 = 정렬 파라미터 없음 · 이름 A–Z · Z–A · KB-956 리뷰 많은 순 — 플래그가 켜진 채널만). */
+export const SERVER_FOOD_SORTS: (FoodNameSort | undefined)[] = [undefined, 'name_asc', 'name_desc', ...(FLAGS.popularByReviews ? (['reviews'] as const) : [])];
 
 /**
  * KB-830: 정렬 전환을 즉시로 — 현재 목록의 첫 페이지가 도착한 **뒤**(ready), 같은 필터의 **다른 정렬** 첫 페이지만
