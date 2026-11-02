@@ -186,7 +186,7 @@ it('P-255 배선 소스 잠금 — 진입 선발급(focus)·004 기록 → 메�
   expect(src).toContain('useFocusEffect'); // 진입·복귀 시 선발급(시나리오 C 복귀 재발급 겸)
   expect(src).toContain("if (isGuest) return; // 게스트 가드 상위(순서 유지)");
   // KB-963: 004 = 진입 잠금이 아니라 기록(menuQuota004Ref) → 메뉴 촬영 시도에서 쿼터 화면(가공식품은 차감 없음이라 카메라 유지)
-  expect(src).toContain('menuQuota004Ref.current = true;');
+  expect(src).toContain('menuQuota004Ref.current = { quota };');
   expect(src).toContain("lockFromProfile(menuQuota004Ref.current ? 'preflight SCAN-004' : 'profile scanRemaining 0');");
   // fail() 미경유 = scan_complete 계측 오염 0(진입 잠금은 스캔 시도가 아님)
   const pre = src.split('const preflight')[1].split('useFocusEffect')[0];

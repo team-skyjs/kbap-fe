@@ -248,6 +248,24 @@ describe('반증·재조회', () => {
   });
 });
 
+it('Codex #395: 선발급 SCAN-004로 진입 → 카메라 중 해금 프로필 도착(광고·리뷰) = 메뉴 촬영 통과 · 대조: 같은 프로필 그대로면 안내', async () => {
+  for (const arrive of [true, false]) {
+    jest.clearAllMocks();
+    mockIssue.mockRejectedValue(Object.assign(new Error('quota'), { code: 'SCAN-004' }));
+    mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(1) } }); // 프로필은 아직 잔여(서버는 004)
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<Scan />); });
+    if (arrive) {
+      mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA('unlimited', true) } });
+      act(() => { tree.update(<Scan />); });
+    }
+    await shootMenu(tree);
+    expect({ arrive, quota: quotaShown(tree) }).toEqual({ arrive, quota: !arrive });
+    expect({ arrive, picked: mockPick.mock.calls.length > 0 }).toEqual({ arrive, picked: arrive });
+    act(() => tree.unmount());
+  }
+});
+
 describe('Codex #159 P1: 완료된 스캔 결과는 복귀 포커스로 쿼터 화면에 덮이지 않는다', () => {
   async function toResult() {
     let tree!: ReactTestRenderer;

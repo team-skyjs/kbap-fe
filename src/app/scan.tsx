@@ -280,7 +280,8 @@ export default function Scan() {
   const canLockQuota = () => phaseRef.current === 'camera' || phaseRef.current === 'error';
   // KB-963(예진 11/2): 가공식품 스캔은 차감 없음(서버 S-937) — 메뉴 쿼터가 소진돼도 스캔 화면은 열고(가공식품 바로 사용),
   // 소진 안내(P-250 쿼터 화면)는 **메뉴 모드에서 촬영하려 할 때만**. 진입 시 판정은 기록만: 프로필 소진(live) · 서버 SCAN-004(menuQuota004Ref).
-  const menuQuota004Ref = useRef(false);
+  // Codex #395: 004는 **그때의 프로필 객체**와 함께 기록 — 그 뒤 도착한 새 프로필이 소진이 아니면(해금·남은 횟수 있음 — 서버 정본 = 최신 프로필) 기록은 낡음
+  const menuQuota004Ref = useRef<{ quota: unknown } | null>(null);
   const lockFromProfile = useCallback((detail = 'profile scanRemaining 0') => {
     if (!canLockQuota() || quotaLockRef.current) return;
     quotaLockRef.current = true;
@@ -292,6 +293,8 @@ export default function Scan() {
     if (!scanV2Enabled()) return false;
     const quota = quotaRef.current;
     const profileOut = isScanQuotaExhausted(quota) && quota !== disprovenQuota.current;
+    const rejected = menuQuota004Ref.current;
+    if (rejected && rejected.quota !== quota && !isScanQuotaExhausted(quota)) menuQuota004Ref.current = null;
     if (!profileOut && !menuQuota004Ref.current) return false;
     lockFromProfile(menuQuota004Ref.current ? 'preflight SCAN-004' : 'profile scanRemaining 0');
     return true;
@@ -319,7 +322,7 @@ export default function Scan() {
       const ticket = await issueScanTicket();
       if (generation !== currentGen() || epoch !== ticketEpoch.current) return;
       preTicket.current = ticket;
-      menuQuota004Ref.current = false; // KB-963: 서버가 티켓을 줬다 = 메뉴 촬영 가능
+      menuQuota004Ref.current = null; // KB-963: 서버가 티켓을 줬다 = 메뉴 촬영 가능
       if (__DEV__) console.log('[scan] preflight ticket ok', JSON.stringify({ lock: quotaLockRef.current, phase: phaseRef.current, unlocked }));
       if (isScanQuotaExhausted(quota)) disprovenQuota.current = quota;
       if (unlocked && errorRef.current !== forError) return; // 그새 화면이 바뀌었다(늦은 응답) — 덮지 않는다
@@ -348,7 +351,7 @@ export default function Scan() {
       if (code === 'SCAN-004') {
         preTicket.current = null;
         // KB-963: 진입 잠금 0 — 기록만 하고 메뉴 촬영 시점에 쿼터 화면(가공식품은 그대로 사용). 이미 쿼터 화면(해제 대기)이면 그대로 둔다
-        menuQuota004Ref.current = true;
+        menuQuota004Ref.current = { quota };
       } else if (code === 'MEMBER-003') {
         // KB-441 → KB-670: 서버가 모르는 회원(탈퇴·정지 — 서버 KB-669로 전 회원 API 확대)의 남은 토큰.
         // 세션 무효화는 client 훅(beAuth)이 하고, 세션이 만료되면 isGuest가 바뀌어 아래 라우트 가드가 게스트
