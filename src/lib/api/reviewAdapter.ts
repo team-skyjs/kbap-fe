@@ -69,7 +69,8 @@ export interface ReviewWire {
   /** KB-812 2차(서버 #435, 3.2 응답만): 리뷰 대상 — 구응답·3.1 이하엔 없음(= FOOD) */
   targetType?: 'FOOD' | 'PROCESSED_FOOD' | string;
   /** 가공식품 리뷰에만 — 음식 리뷰에선 필드 자체가 생략 */
-  processedFood?: { processedFoodId: number; reportNo?: string; productName: string; maker?: string | null; imageUrl?: string | null } | null;
+  /** KB-966 연장(S-942): name = 요청 lang 번역(가산·빈값 가능), productName = 원문 — 가공식품 목록 계약과 같은 규칙 */
+  processedFood?: { processedFoodId: number; reportNo?: string; productName: string; name?: string | null; maker?: string | null; imageUrl?: string | null } | null;
 }
 
 export interface ReviewPageWire {
@@ -127,7 +128,7 @@ export function adaptReview(wire: ReviewWire, requestLang?: string): Review {
     memberId: memberId != null ? String(memberId) : undefined,
     author,
     // P-165: 서버 해석 음식 이름·썸네일(내 리뷰 화면 우선 소스) — 부재 시 화면이 캐시 폴백
-    foodName: pf ? pf.productName : wire.food?.name ?? null,
+    foodName: pf ? pf.name?.trim() || pf.productName : wire.food?.name ?? null,
     foodImageUrl: pf ? toHttps(pf.imageUrl) : wire.food?.imageUrl ?? null,
     // 파생 — 기존 화면 호환 축. P-181: 탈퇴 판정 = authorWithdrawn **서버 정본 우선**,
     // 필드 부재(구 응답)만 author==null 폴백. 렌더(익명)는 무변.

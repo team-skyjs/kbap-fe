@@ -1,3 +1,9 @@
+## 2026-11-02 · P-579 KB-966 연장 — 리뷰의 가공식품 이름 번역(서버 S-942)
+
+- 리뷰 응답 processedFood.name(요청 lang 번역, 가산) 우선, 없음·null·빈값이면 productName 원문 — 가공식품 목록 어댑터와 같은 규칙.
+- 리뷰 카드·상세·내 리뷰·상품 리뷰가 전부 adaptReview의 foodName을 쓰므로 어댑터 한 곳에서 처리. 세 리뷰 GET 모두 lang 이미 전송.
+- 테스트: packagedReviews507 ① 어댑터에 name 있음/없음/null/빈값 폴백(뮤테이션 확인 — 수정 되돌리면 실패).
+
 ## 2026-11-02 · P-578 KB-966 리뷰 탭 음식·가공식품 필터(예진 11/2, 서버 S-939)
 - 리뷰 탭 국적·정렬 줄 아래 세그먼트 All · Dishes · Packaged(공용 Chip — 선택 = 색만, 라벨 = 기존 home.filterAll·packaged.segmentDishes·segmentPackaged). 기본 All(통합 그대로). 유지 = 정렬·국적 필터처럼 세션 내 state.
 - GET /api/reviews targetType = FOOD | PROCESSED_FOOD(All 생략, 서버 기본 ALL) — globalReviewsKey 끝에 targetType(기본 'ALL') → 바꾸면 커서 처음부터·기존 스켈레톤, 프리픽스 유지라 좋아요·작성 무효화·첫 장 새로고침 무변.
