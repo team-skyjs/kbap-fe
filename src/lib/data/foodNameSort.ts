@@ -11,7 +11,8 @@ import { useQueryClient, type InfiniteData, type QueryKey } from '@tanstack/reac
 import { ApiError } from '../api/client';
 import type { PageMenuSummaryWire } from '../api/foodListTypes';
 
-export type FoodNameSort = 'name_asc' | 'name_desc';
+// KB-956: reviews = 리뷰 수↓·평균↓·id↓(서버 #521, GET /foods 3.1+) — 이름 정렬과 같은 3.1 헤더·불투명 커서·재시작(409 FOOD-022 = 리뷰가 늘어 revision 변경) 경로
+export type FoodNameSort = 'name_asc' | 'name_desc' | 'reviews';
 export const NAME_SORT_API_VERSION = '3.1';
 const RESTART_CODES = new Set(['FOOD-002', 'FOOD-022']);
 

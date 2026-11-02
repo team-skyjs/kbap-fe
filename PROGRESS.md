@@ -1,3 +1,8 @@
+## 2026-11-02 · P-572 KB-956 음식 탭 Popular = 리뷰 많은 순(서버 #521, dev 7248dc52)
+- 정렬 시트 Popular(라벨 그대로) → GET /foods sort=reviews(리뷰 수↓·평균↓·id↓) — 이름 정렬과 같은 3.1 헤더·불투명 커서·재시작 경로(409 FOOD-022 = 리뷰가 늘어 revision 변경 → 첫 페이지부터). 구 = Popular·New 둘 다 파라미터 없음(id↓ = 최신순)이라 이름과 실제가 달랐다.
+- 게이트 = FLAGS.popularByReviews(DEV_SERVER_CHANNEL) — 운영 서버는 모르는 sort면 INVALID_REQUEST, 서버 운영 배포 뒤 다음 OTA에서 플래그만 연다. off = 기존 기본 정렬.
+- 저장 목록(/bookmarks)은 reviews 정렬이 없어(서버 #521 = /foods만) Popular일 때 기본 정렬(bookmarkSort). 정렬 선요청 목록에 reviews(플래그 on). 매핑 = features/food/foodSort.ts(순수). 신규 ko 0.
+
 ## 2026-11-02 · P-573 KB-957 음식 탭 상단 정리·기본 Packaged(예진 11/2 실기)
 - Dishes | Packaged = 헤더 로고 줄 안(StickyHeader center 슬롯 — 다른 화면 무변) · 글자·밑줄 = 구 세그먼트 그대로(16 semibold·2pt), 칸 폭 = 글자 폭 · 큰 글자 = 줄임표 대신 글자 배율 상한 SEG_MAX_SCALE 1.15. 별도 세그먼트 줄·Dishes 머리 간격 소멸.
 - Packaged "Popular picks"·유형명 제목 소멸(유형은 밑줄 탭 선택 상태) — 검색 결과일 때만 제목, 그 밖엔 칩 → 그리드 간격 16. Dishes엔 같은 제목 없음.

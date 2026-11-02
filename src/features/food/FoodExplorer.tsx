@@ -12,6 +12,7 @@
  */
 import * as React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { nameSortOf, type FoodSort } from './foodSort'; // KB-956: 정렬 매핑 = 순수 모듈
 import { useRefreshClient } from '@/lib/data/usePullRefresh';
 import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import { Pressable } from '@/components/Pressable';
@@ -33,7 +34,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { CHIP_FADE_W, ChipScrollRow, useMoreOnRight } from '@/components/ChipScrollRow';
 import { SectionHead } from '@/components/SectionHead';
 import { useInfiniteFoods, usePrefetchOtherFoodSorts, FOODS_PAGE_SIZE } from '@/lib/data/useFoods';
-import type { FoodNameSort } from '@/lib/data/foodNameSort';
 import { useBookmarks, useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
@@ -73,9 +73,7 @@ export const sortOnOwnRow = (fontScale: number): boolean => fontScale > 1;
 /** P-318 정렬 — new는 서버 정렬 파라미터 부재로 시트에서 비활성(선택 불가, P-385 실측).
  *  P-335(9/8 예진): 클라 A–Z 제거(커서 페이지 위 클라 정렬 = 항목 튐) → KB-821: 서버 3.1 sort=name_asc|name_desc로 재도입
  *  (서버가 전체 순서·불투명 커서를 소유 — 클라는 받은 순서 그대로). popular = 기본 정렬(요청 무변). */
-type FoodSort = 'popular' | 'new' | FoodNameSort;
 const FOOD_SORTS: FoodSort[] = ['popular', 'new', 'name_asc', 'name_desc'];
-const nameSortOf = (s: FoodSort): FoodNameSort | undefined => (s === 'name_asc' || s === 'name_desc' ? s : undefined);
 /** KB-821: 선택 유지 = 세션 내(탭 전환·재진입 유지), 앱 재시작 시 기본 — KB-797 UX안에 유지 범위가 없어 발주 기본값. */
 let sessionSort: FoodSort = 'popular';
 const rememberSort = (s: FoodSort) => { sessionSort = s; };
@@ -162,7 +160,9 @@ export function FoodExplorer({
   const bookmarksOn = variant === 'screen' || savedTabActive;
   const saved = useBookmarks(undefined, { enabled: bookmarksOn });
   // KB-821: 이름 정렬은 Saved 목록(savedList)에만 — 북마크 판정 소스(saved, 드레인)는 기본 정렬 그대로
-  const savedList = useBookmarks(savedTabActive ? riskChip : 'all', { enabled: bookmarksOn, sort: nameSort });
+  // KB-956: /bookmarks엔 reviews 정렬이 없다(서버 #521은 /foods만) — 저장 목록은 이름 정렬만 넘기고 Popular는 기본 정렬
+  const bookmarkSort = nameSort === 'reviews' ? undefined : nameSort;
+  const savedList = useBookmarks(savedTabActive ? riskChip : 'all', { enabled: bookmarksOn, sort: bookmarkSort });
   const toggleBookmark = useToggleBookmark();
 
   // P-349 ③(KB-512): 당겨서 새로고침 — #112 3R ②: 활성 쿼리만(browse는 Saved 활성 중
@@ -172,14 +172,14 @@ export function FoodExplorer({
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     const jobs: Promise<unknown>[] = savedOnly
-      ? riskChip === 'all' && !nameSort
+      ? riskChip === 'all' && !bookmarkSort
         ? [saved.refetch()] // 5R ②: 같은 키 두 관찰자 — refetch 1회 (KB-821 이름 정렬이면 키가 갈라져 둘 다)
         : [savedList.refetch(), saved.refetch()] // 목록 + 북마크 판정 소스
       : [browse.refetch()];
     jobs.push(qc.invalidateQueries({ queryKey: ['me'] })); // KB-954: 다른 기기 회피 변경·쿼터
     void Promise.all(jobs).finally(() => setRefreshing(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedOnly, riskChip, nameSort, browse.refetch, saved.refetch, savedList.refetch, qc]);
+  }, [savedOnly, riskChip, bookmarkSort, browse.refetch, saved.refetch, savedList.refetch, qc]);
   // KB-954: 음식 탭(screen) 재탭 = 맨 위 + 새로고침(스피너) — 홈 embedded는 홈 화면 핸들러가 맡는다
   const gridRef = React.useRef<React.ComponentRef<typeof Animated.FlatList<FoodCard>>>(null);
   useTabPress('food', (kind) => {
