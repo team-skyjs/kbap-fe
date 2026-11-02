@@ -86,6 +86,13 @@ export const IconProfile = (p: IconProps) => (
 );
 export const IconSearch = (p: IconProps) => styled(<D4Search size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 /** P-138: 주문 카드 풀스크린 확대 — 네 모서리 확장(돋보기 아님, 시안 S2) */
+/** KB-962: 홈 See all 원형 버튼 화살표 — lucide arrow-right */
+export const IconArrowRight = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M5 12h14" />
+    <Path d="m12 5 7 7-7 7" />
+  </Glyph>
+);
 export const IconExpand = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M15 3h6v6" />

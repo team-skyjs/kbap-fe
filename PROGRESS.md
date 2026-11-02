@@ -1,3 +1,8 @@
+## 2026-11-02 · P-576 KB-962 홈 See all 원형 화살표 버튼(예진 11/2, Mobbin Uber Eats·DoorDash)
+- 공용 SeeAllCircle(components) — 연회색 원(C.hair) + 검은 → (신규 IconArrowRight = lucide arrow-right), 지름 32 · hitSlop 6 · 접근성 라벨 home.seeAll(기존 키).
+- 홈 Popular|Saved|Food 탭 줄 오른쪽 끝 = 원형 버튼(고정 칸 flexShrink 0, 탭은 남은 폭 — 긴 언어는 기존 가로 스크롤) · 이동 = 구 레일 끝 카드와 같음(foodTabHref 탭·칩 승계, testID home-rail-see-all 유지). 레일 끝 See all 카드 삭제(seeAllCard·seeAllText 스타일 제거).
+- 편의점 줄 헤더 See all 텍스트 → 같은 원형 버튼(이동 = Packaged 그대로). 신규 ko 0. 기기 미검증(QA — 큰 글자·ru 탭 줄 겹침).
+
 ## 2026-11-02 · KB-958 Reviews 첫 장 줄이기를 활성 피드 쿼리만(Codex #388 2R P2 후속)
 - 구 = setQueriesData(['reviews','global'] 접두) → 비활성 정렬·국적 변형까지 첫 장으로 줄이며 갱신 시각이 바뀌어 신선도 리셋. 신 = globalReviewsKey(지금 필터) 정확한 키 하나만 getQueryData → 2장 이상이면 setQueryData. 훅과 같은 키 함수(useFoodReviews globalReviewsKey).
 

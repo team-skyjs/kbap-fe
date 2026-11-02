@@ -9,11 +9,8 @@ import * as React from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable } from '@/components/Pressable';
-import { Txt as Text } from '@/components/Txt';
 import { SectionHead } from '@/components/SectionHead';
-import { IconChevron } from '@/components/icons';
-import { color as C, type } from '@/lib/theme';
+import { SeeAllCircle } from '@/components/SeeAllCircle';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { useProcessedSearch } from '@/lib/data/useProcessedFoods';
@@ -43,16 +40,8 @@ export function HomeCvsRail() {
         <View style={st.headText}>
           <SectionHead label={t('packaged.segmentPackaged')} title={t('home.cvsTitle')} testID="home-cvs-head" />
         </View>
-        <Pressable
-          style={st.seeAll}
-          onPress={() => router.push(`/food?view=packaged&t=${Date.now()}` as Href)}
-          accessibilityRole="button"
-          hitSlop={8}
-          testID="home-cvs-see-all"
-        >
-          <Text style={st.seeAllText}>{t('home.seeAll')}</Text>
-          <IconChevron size={16} color={C.primaryText} />
-        </Pressable>
+        {/* KB-962(예진 11/2): See all = 홈 공용 원형 화살표 버튼(탭 줄과 같은 부품) — 이동 = 음식 탭 Packaged */}
+        <SeeAllCircle onPress={() => router.push(`/food?view=packaged&t=${Date.now()}` as Href)} style={st.seeAll} testID="home-cvs-see-all" />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.rail} contentContainerStyle={st.railContent} testID="home-cvs-rail">
         {q.isPending
@@ -78,8 +67,7 @@ export function HomeCvsRail() {
 const st = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'flex-end' },
   headText: { flex: 1, minWidth: 0 },
-  seeAll: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingRight: RAIL_EDGE, paddingBottom: 10, minHeight: 44 },
-  seeAllText: { ...type.button, color: C.primaryText },
+  seeAll: { marginRight: RAIL_EDGE, marginBottom: 8, flexShrink: 0 }, // 제목 줄 아래쪽에 맞춤(SectionHead paddingBottom 8)
   rail: { flexGrow: 0 }, // P-319: 세로 목록 헤더 안 가로 ScrollView가 화면 높이만큼 늘어나지 않게
   railContent: { paddingHorizontal: RAIL_EDGE, gap: RAIL_GAP },
 });
