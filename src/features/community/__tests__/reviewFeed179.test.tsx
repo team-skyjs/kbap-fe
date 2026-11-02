@@ -209,7 +209,7 @@ it('소스 잠금(P-289 재잠금) — 리뷰 생존 분기가 coming-soon 가�
 describe('KB-954(P-570): 탭바 재탭·진입 = 첫 페이지만 재조회(다른 폰 리뷰가 GNB를 눌러도 안 보이던 것)', () => {
   const { queryClient } = jest.requireActual('@/lib/queryClient') as typeof import('@/lib/queryClient');
   const { emitTabPress } = jest.requireActual('@/lib/tabPress') as typeof import('@/lib/tabPress');
-  const KEY = ['reviews', 'global', 'all', 'all', 'latest', 0, 5];
+  const KEY = ['reviews', 'global', 'all', 'all', 'latest', 0, 5, 'ALL']; // KB-966: 끝 = targetType(All)
   const twoPages = () => queryClient.setQueryData(KEY, { pages: [{ items: [REVIEW] }, { items: [] }], pageParams: [null, 'c2'] });
   const feedWith = (refetch: jest.Mock) => mockFeed.mockReturnValue({
     data: { pages: [{ items: [REVIEW], hasNext: true, nextCursor: 'c2' }] },
@@ -232,7 +232,7 @@ describe('KB-954(P-570): 탭바 재탭·진입 = 첫 페이지만 재조회(다�
     const refetch = jest.fn().mockResolvedValue(undefined);
     feedWith(refetch);
     twoPages(); // 활성(latest·국적 없음)
-    const OTHER = ['reviews', 'global', 'KR', 'all', 'popular', 0, 5];
+    const OTHER = ['reviews', 'global', 'KR', 'all', 'popular', 0, 5, 'ALL'];
     queryClient.setQueryData(OTHER, { pages: [{ items: [] }, { items: [] }], pageParams: [null, 'x2'] });
     const before = queryClient.getQueryState(OTHER)!;
     render();
@@ -544,4 +544,51 @@ it('KB-903 T-022: 큰 글자(1.3배↑) = 처음부터 원형 · 스크롤 시�
   expect(label(bigText)).toBe(0);
   spy.mockRestore();
   jest.useRealTimers();
+});
+
+describe('KB-966(예진 11/2): 대상 세그먼트 All · Dishes · Packaged', () => {
+  const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { processedFoodEnabled: boolean } };
+  const prev = FLAGS.processedFoodEnabled;
+  afterEach(() => { FLAGS.processedFoodEnabled = prev; });
+  const chip = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === `feed-target-${id}` && typeof n.props?.onPress === 'function')[0];
+  const lastFilters = () => mockFeed.mock.calls.at(-1)?.[1] as { targetType?: string | null };
+  const PACKAGED = { ...REVIEW, id: 'p1', target: 'packaged', processedFoodId: '11', foodId: undefined, foodName: 'Shrimp Crackers' };
+
+  it('기본 All(파라미터 0) · Dishes = FOOD · Packaged = PROCESSED_FOOD · 다시 All = 생략 — 결과는 그 필터의 페이지', () => {
+    FLAGS.processedFoodEnabled = true;
+    mockFeed.mockImplementation((_e: boolean, f: { targetType?: string | null }) => ({
+      data: { pages: [{ items: f.targetType === 'PROCESSED_FOOD' ? [PACKAGED] : f.targetType === 'FOOD' ? [REVIEW] : [REVIEW, PACKAGED], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: false, error: null, refetch: jest.fn(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    }));
+    const t = render();
+    const shown = () => JSON.stringify(t.toJSON(), (_k, v) => (v && typeof v === 'object' && (v.$$typeof === Symbol.for('react.element') || v.$$typeof === Symbol.for('react.transitional.element')) ? undefined : v));
+    expect(lastFilters().targetType ?? null).toBeNull();
+    expect(chip(t, 'all').props).toBeDefined();
+    expect(shown()).toContain('Server Kimbap');
+    expect(shown()).toContain('Shrimp Crackers');
+    act(() => chip(t, 'food').props.onPress());
+    expect(lastFilters().targetType).toBe('FOOD');
+    expect(shown()).not.toContain('Shrimp Crackers');
+    act(() => chip(t, 'packaged').props.onPress());
+    expect(lastFilters().targetType).toBe('PROCESSED_FOOD');
+    expect(shown()).toContain('Shrimp Crackers');
+    expect(shown()).not.toContain('Server Kimbap');
+    act(() => chip(t, 'all').props.onPress());
+    expect(lastFilters().targetType ?? null).toBeNull();
+  });
+
+  it('선택 = 색만(프레임 불변 — 공용 Chip) · 라벨 = 기존 키 재사용(신규 문구 0)', () => {
+    FLAGS.processedFoodEnabled = true;
+    const t = render();
+    const chips = t.root.findAll((n) => typeof n.props?.label === 'string' && /^feed-target-/.test(n.props?.testID ?? ''));
+    expect(chips.map((n) => n.props.label)).toEqual(['home.filterAll', 'packaged.segmentDishes', 'packaged.segmentPackaged']);
+    expect(chips.map((n) => n.props.selected)).toEqual([true, false, false]);
+  });
+
+  it('processedFoodEnabled OFF(운영) = 세그먼트 미노출 · 파라미터 0', () => {
+    FLAGS.processedFoodEnabled = false;
+    const t = render();
+    expect(t.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('feed-target'))).toHaveLength(0);
+    expect(lastFilters().targetType ?? null).toBeNull();
+  });
 });
