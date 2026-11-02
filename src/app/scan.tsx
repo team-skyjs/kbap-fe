@@ -357,7 +357,7 @@ export default function Scan() {
         preTicket.current = null;
       }
     }
-  }, [lockFromProfile]);
+  }, []);
   useFocusEffect(
     useCallback(() => {
       if (isGuest) return; // 게스트 가드 상위(순서 유지) — 티켓 로직 미진입
