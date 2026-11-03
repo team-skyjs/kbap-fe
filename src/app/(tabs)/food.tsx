@@ -58,10 +58,12 @@ export default function Food() {
   // KB-971: 진입부터 Packaged 선택(view=packaged) · 탭 = 종료(선택 유지 — 아래 설정은 같은 값이라 무변)
   const foodCoach = usePackagedCoach('food', { next: () => setFoodSegment('packaged') });
   const showFoodCoach = foodCoach.show;
+  const abortFoodCoach = foodCoach.abort;
   useFocusEffect(
     useCallback(() => {
       if (takePackagedCoachStep2()) showFoodCoach();
-    }, [showFoodCoach]),
+      return () => abortFoodCoach(); // 2단계가 떠 있는 채 탭 전환 = 닫기(홈과 같은 규칙)
+    }, [showFoodCoach, abortFoodCoach]),
   );
 
   return (

@@ -37,6 +37,10 @@ export async function shouldShowPackagedCoach(): Promise<boolean> {
 export function markPackagedCoachSeen(): void {
   void AsyncStorage.setItem(SEEN_KEY, '1').catch(() => {});
 }
+/** 떠 있다가 화면 이탈로 닫힘 = 못 본 것 — 다음 포커스에 다시 */
+export function unmarkPackagedCoachSeen(): void {
+  void AsyncStorage.removeItem(SEEN_KEY).catch(() => {});
+}
 
 /** 조건이 참이 될 때까지(구독 알림마다 재판정) — 홈을 떠나면(큐 clear = abort) false. 상한 없음(Q-398: 20초 상한에 걸려 홈에 계속 있어도 안 떴다) */
 function waitUntil(ready: () => boolean, subscribe: (fn: () => void) => () => void, signal: AbortSignal): Promise<boolean> {
@@ -230,8 +234,20 @@ export function usePackagedCoach(step: CoachStep, after: { next: () => void }) {
     setOpen(true);
     track(EVENTS.food_packaged_coach_shown, { step });
   }, [step]);
+  // #398 Codex P2(머지 후속): 떠 있는 채 화면을 떠나면(warm 딥링크 등 탭 전환) Modal이 목적지 위에 남고 탭하면 음식 탭으로 끌고 갔다 →
+  // 블러에 닫는다. 끝까지 못 본 것 = "봤음" 기록 되돌림 → 다음 포커스에 다시 판정 · 흐름 해제 · 큐는 즉시 풀어 준다(done). 계측 없음
+  const abort = React.useCallback(() => {
+    const p = pending.current;
+    if (!p || p.closing) return; // 안 떠 있음 · 이미 닫는 중(다음 단계로 가는 탭 포함) = 그대로
+    pending.current = null;
+    flowActive = false;
+    setOpen(false);
+    unmarkPackagedCoachSeen();
+    p.done?.();
+  }, []);
   return {
     show,
+    abort,
     props: {
       step,
       open,

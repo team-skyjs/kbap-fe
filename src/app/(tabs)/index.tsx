@@ -94,11 +94,13 @@ function HomeBody() {
     next: () => { queuePackagedCoachStep2(); router.navigate(packagedCoachFoodHref(Date.now()) as Href); },
   });
   const showHomeCoach = homeCoach.show;
+  const abortHomeCoach = homeCoach.abort;
   useFocusEffect(
     useCallback(() => {
       modalQueue.add({ key: 'packagedCoach', present: (done, signal) => presentHomeCoach(showHomeCoach, done, signal) });
-      return () => modalQueue.clear();
-    }, [modalQueue, showHomeCoach]),
+      // 블러 = 대기 스텝 폐기 + 떠 있는 코치마크도 닫기(#398 Codex — 목적지 탭 위에 남지 않게)
+      return () => { modalQueue.clear(); abortHomeCoach(); };
+    }, [modalQueue, showHomeCoach, abortHomeCoach]),
   );
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];

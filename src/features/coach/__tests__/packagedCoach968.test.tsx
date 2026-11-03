@@ -36,6 +36,7 @@ import {
   PackagedCoachOverlay,
   bubbleX,
   holePath,
+  isPackagedCoachActive,
   markPackagedCoachSeen,
   packagedCoachFoodHref,
   presentHomeCoach,
@@ -398,5 +399,61 @@ describe('#398 Codex 1차', () => {
     tapBackdrop(food.tree, 'food'); // 흐름 끝
     await exit();
     expect(mockRequest).toHaveBeenCalled(); // 앞 테스트의 호스트도 구독 중이라 횟수 대신 "다시 뜸"만
+  });
+});
+
+describe('#398 Codex P2(머지 후속) — 떠 있는 채 화면 이탈', () => {
+  it('블러(abort) = 닫힘 · "봤음" 되돌림(다음 포커스 재판정) · 흐름 해제 · 큐 해제(done) · 다음 단계 없음 · 계측 없음', async () => {
+    setOS('ios');
+    const done = jest.fn();
+    let abort!: () => void;
+    function H({ next }: { next: () => void }) {
+      const c = usePackagedCoach('home', { next });
+      const { show, abort: a } = c;
+      React.useEffect(() => { abort = a; show(done); }, [show, a]);
+      return <PackagedCoachOverlay {...c.props} />;
+    }
+    const next = jest.fn();
+    let tree!: ReactTestRenderer;
+    act(() => { tree = renderer.create(<H next={next} />); });
+    await flush();
+    expect(modal(tree).props.visible).toBe(true);
+    expect(await AsyncStorage.getItem('kbap.packagedCoach.v1')).toBe('1');
+    expect(isPackagedCoachActive()).toBe(true);
+    mockTrack.mockClear();
+    act(() => abort());
+    await flush();
+    expect(modal(tree).props.visible).toBe(false); // 목적지 탭 위에 남지 않는다
+    expect(done).toHaveBeenCalledTimes(1); // iOS dismiss를 기다리지 않고 큐를 푼다(화면을 떠났다)
+    expect(next).not.toHaveBeenCalled(); // 음식 탭으로 끌고 가지 않는다
+    expect(isPackagedCoachActive()).toBe(false);
+    expect(await AsyncStorage.getItem('kbap.packagedCoach.v1')).toBeNull(); // 다음 홈 포커스에 다시
+    expect(mockTrack).not.toHaveBeenCalled();
+    act(() => { modal(tree).props.onDismiss?.(); }); // 늦게 온 dismiss = 아무것도 안 함
+    expect(next).not.toHaveBeenCalled();
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  it('iOS: 다음 단계로 가는 탭 뒤 dismiss 전에 블러가 와도 abort는 무시 — 2단계 이동·기록·흐름 그대로', async () => {
+    setOS('ios');
+    let abort!: () => void;
+    let show!: (d?: () => void) => void;
+    function H({ next }: { next: () => void }) {
+      const c = usePackagedCoach('home', { next });
+      const { show: s, abort: a } = c;
+      React.useEffect(() => { abort = a; show = s; }, [s, a]);
+      return <PackagedCoachOverlay {...c.props} />;
+    }
+    const next = jest.fn(() => queuePackagedCoachStep2());
+    let tree!: ReactTestRenderer;
+    act(() => { tree = renderer.create(<H next={next} />); });
+    act(() => show());
+    tapBackdrop(tree, 'home'); // 닫는 중(iOS = dismiss 대기)
+    act(() => abort()); // 그 사이 블러
+    await flush();
+    expect(await AsyncStorage.getItem('kbap.packagedCoach.v1')).toBe('1');
+    act(() => { modal(tree).props.onDismiss(); });
+    expect(next).toHaveBeenCalledTimes(1); // 2단계로 그대로
+    expect(isPackagedCoachActive()).toBe(true);
   });
 });
