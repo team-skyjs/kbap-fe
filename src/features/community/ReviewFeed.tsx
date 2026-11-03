@@ -196,7 +196,7 @@ export function ReviewFeed() {
                 // KB-966: 키에 targetType 포함 = 바꾸면 커서 처음부터·기존 스켈레톤(정렬과 같은 문법)
                 <View style={styles.targetRow} testID="feed-target">
                   {([[null, 'home.filterAll', 'all'], ['FOOD', 'packaged.segmentDishes', 'food'], ['PROCESSED_FOOD', 'packaged.segmentPackaged', 'packaged']] as const).map(([v, k, id]) => (
-                    <Chip key={id} label={t(k)} selected={targetFilter === v} onPress={() => setTarget(v)} testID={`feed-target-${id}`} />
+                    <Chip key={id} label={t(k)} selected={targetFilter === v} onPress={() => { if (v !== targetFilter) track(EVENTS.review_feed_target_select, { target: id }); setTarget(v); }} testID={`feed-target-${id}`} /* KB-973: 바뀔 때만 */ />
                   ))}
                 </View>
               ) : null}

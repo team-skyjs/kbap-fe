@@ -11,6 +11,7 @@ import { View, StyleSheet } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { StickyHeader, useStickyScroll, useHeaderHeight } from '@/components';
 import { color as C } from '@/lib/theme';
+import { EVENTS, track } from '@/lib/analytics';
 import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useUnreadCount } from '@/lib/data/useNotifications';
@@ -18,7 +19,7 @@ import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { parseFoodFilterParams, defaultFoodSegment } from '@/features/food/foodFilterParams';
 import { FoodSegmentRow, PackagedExplorer, type FoodSegment } from '@/features/processedFood/PackagedExplorer';
 import { PackagedCoachOverlay, takePackagedCoachStep2, usePackagedCoach } from '@/features/coach/PackagedCoach';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // KB-812: 세그먼트 선택 유지(앱 세션 동안 — 탭 화면이 다시 마운트돼도).
 // KB-957(예진 11/2): 첫 진입 기본 = Packaged(운영 채널 = 가공식품 없음 → Dishes). 홈 See all(t·view)·딥링크 우선순위는 아래 전이 그대로
@@ -32,7 +33,7 @@ export default function Food() {
   const isGuest = useIsGuest();
   const unread = useUnreadCount();
   // P-318: 홈 See all 파라미터 수신 — 배열형(중복 쿼리)은 첫 값, 미지값은 파서가 강등
-  const raw = useLocalSearchParams<{ segment?: string | string[]; risk?: string | string[]; t?: string | string[]; view?: string | string[] }>();
+  const raw = useLocalSearchParams<{ segment?: string | string[]; risk?: string | string[]; t?: string | string[]; view?: string | string[]; via?: string | string[] }>();
   const one = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
   const { segment, risk } = parseFoodFilterParams({ segment: one(raw.segment), risk: one(raw.risk) });
   // Codex #308 P2: 홈 "See all"(새 t 파라미터) = 요리 카탈로그 요청 — Packaged에 있었어도 Dishes로(렌더 중 전이 비교, KB-603)
@@ -53,7 +54,19 @@ export default function Food() {
   }
   // KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 세그먼트째 없음 → Dishes 고정(main과 같은 화면)
   // KB-957: Dishes | Packaged = 헤더 로고 줄 안(별도 세그먼트 줄 소멸)
-  const segRow = FLAGS.processedFoodEnabled ? <FoodSegmentRow value={foodSegment} onChange={setFoodSegment} /> : null;
+  // KB-973: 세그먼트 전환 계측 — 탭 = 바뀔 때만(source tap) · 링크 진입(새 t) = 진입마다 1회(source = 코치마크 via=coach | see_all)
+  const pickSegment = (s: FoodSegment) => {
+    if (s !== foodSegment) track(EVENTS.food_segment_select, { segment: s, source: 'tap' });
+    setFoodSegment(s);
+  };
+  const via = one(raw.via) === 'coach' ? 'coach' : 'see_all';
+  const segTrackedKey = useRef('');
+  useEffect(() => {
+    if (!seeAllKey || !FLAGS.processedFoodEnabled || segTrackedKey.current === seeAllKey) return;
+    segTrackedKey.current = seeAllKey;
+    track(EVENTS.food_segment_select, { segment: seeAllTarget, source: via });
+  }, [seeAllKey, seeAllTarget, via]);
+  const segRow = FLAGS.processedFoodEnabled ? <FoodSegmentRow value={foodSegment} onChange={pickSegment} /> : null;
   // KB-968: 코치마크 2단계 — 홈 1단계 탭으로 들어왔을 때만(포커스에서 가져감)
   // KB-971: 진입부터 Packaged 선택(view=packaged) · 탭 = 종료(선택 유지 — 아래 설정은 같은 값이라 무변)
   const foodCoach = usePackagedCoach('food', { next: () => setFoodSegment('packaged') });

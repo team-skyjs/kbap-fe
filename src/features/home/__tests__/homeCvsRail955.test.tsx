@@ -93,7 +93,7 @@ describe('KB-955 홈 편의점 인기 줄', () => {
     expect(mockPush.mock.calls[0][0]).toMatch(/^\/food\?view=packaged&t=\d+$/);
     press('packaged-item-2');
     expect(mockTrack).toHaveBeenCalledWith('home_card_click', { section: 'cvs', position: 1, product_id: '2' });
-    expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/2');
+    expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/2?src=home_cvs'); // KB-973 상세 진입 출처
   });
 });
 

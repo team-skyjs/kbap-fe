@@ -140,6 +140,11 @@ export const EVENTS = {
   food_packaged_coach_shown: 'food_packaged_coach_shown',
   food_packaged_coach_next: 'food_packaged_coach_next',
   food_packaged_coach_skip: 'food_packaged_coach_skip',
+  // KB-973 가공식품 출시 계측 보강 — 촬영 시작(scan_start는 메뉴 시계열 그대로 두고 따로)·이름 검색/확정 실패·세그먼트·리뷰 탭 대상 필터
+  food_packaged_scan_start: 'food_packaged_scan_start',
+  food_packaged_scan_fail: 'food_packaged_scan_fail',
+  food_segment_select: 'food_segment_select',
+  review_feed_target_select: 'review_feed_target_select',
   food_packaged_label_scan: 'food_packaged_label_scan', // P-508 성분표 분석 결과(pages 1~4 · charged = 서버값 · result ok|unreadable|newAnalysis|expired|quota|network… — OCR 원문 금지)
 } as const;
 
@@ -193,11 +198,11 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   screen_view: ['screen'],
   ui_click: ['screen', 'target'],
   home_section_view: ['section'],
-  home_card_view: ['section', 'position', 'food_id'],
+  home_card_view: ['section', 'position', 'food_id', 'product_id'], // KB-973: cvs = product_id(home_card_click과 같은 규칙 — food_id에 섞지 않는다)
   home_card_click: ['section', 'position', 'food_id', 'collection_key', 'product_id'], // KB-796: section=curation이면 collection_key(서버 모음 키) · KB-955: section=cvs면 product_id
   home_curation_link_click: ['collection_key', 'position'],
   food_packaged_search: ['query_length', 'result_count'],
-  food_packaged_detail_view: ['product_id', 'label_source'],
+  food_packaged_detail_view: ['product_id', 'label_source', 'source'], // KB-973 source: search|home_cvs|list|scan|review|deeplink
   home_curation_gallery_open: ['collection_key', 'entry_id'],
   home_curation_gallery_swipe: ['collection_key', 'entry_id', 'index'],
   home_curation_map_open: ['collection_key', 'entry_id'],
@@ -209,6 +214,10 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   home_idol_pick_list_view: ['count'],
   food_idol_video_open: ['food_id', 'platform', 'video_position'],
   food_packaged_label_scan: ['pages', 'charged', 'result'],
+  food_packaged_scan_start: ['mode', 'source'], // mode packaged(앞면)|label(성분표) · source camera|gallery(scan_start와 같은 값)
+  food_packaged_scan_fail: ['stage', 'result'], // stage name(이름 인식)|confirm(확정) · result = scanFailureOf(network|quota|… — 성분표 food_packaged_label_scan result와 같은 값)
+  food_segment_select: ['segment', 'source'], // segment dishes|packaged · source tap|coach|see_all
+  review_feed_target_select: ['target'], // all|food|packaged
   food_packaged_type_select: ['type'],
   food_packaged_coach_shown: ['step'],
   food_packaged_coach_next: ['step'],
@@ -273,6 +282,13 @@ export function sanitize(event: EventName, props?: Record<string, unknown>): Rec
   if (Object.hasOwn(ENGAGEMENT_EVENTS, event)) return sanitizeEngagement(event as EngagementEvent, props);
   const allowed = ALLOWED[event];
   return Object.fromEntries(Object.entries(props).filter(([k]) => allowed.includes(k)));
+}
+
+/** KB-973: 가공식품 상세 진입 출처 — 앱 안 진입점은 ?src= 태그, 스캔 확정은 ?scan=1, 그 밖(태그 없음) = deeplink(푸시·외부 링크) */
+export const PACKAGED_DETAIL_SOURCES = ['search', 'home_cvs', 'list', 'scan', 'review', 'deeplink'] as const;
+export function packagedDetailSource(src: string | undefined, scan: string | undefined): (typeof PACKAGED_DETAIL_SOURCES)[number] {
+  if (src === 'search' || src === 'home_cvs' || src === 'list' || src === 'review') return src;
+  return scan === '1' ? 'scan' : 'deeplink';
 }
 
 export function track(event: EventName, props?: Record<string, unknown>): void {

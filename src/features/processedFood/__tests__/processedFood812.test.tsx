@@ -356,7 +356,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     const t = detail();
     expect(ids(t).some((i) => i.startsWith('pf-unmapped'))).toBe(false);
     expect(ids(t)).not.toContain('pf-label-scan');
-    expect(mockTrack.mock.calls.filter((c) => c[0] === 'food_packaged_detail_view')).toEqual([['food_packaged_detail_view', { product_id: '10201', label_source: 'INGREDIENTS_ONLY' }]]);
+    expect(mockTrack.mock.calls.filter((c) => c[0] === 'food_packaged_detail_view')).toEqual([['food_packaged_detail_view', { product_id: '10201', label_source: 'INGREDIENTS_ONLY', source: 'deeplink' }]]); // KB-973: 태그 없는 진입 = deeplink
     const src = fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8');
     expect(src).not.toMatch(/needsChecking|unmappedBody/);
   });

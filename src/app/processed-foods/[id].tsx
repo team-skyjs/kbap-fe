@@ -42,7 +42,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 import { FLAGS } from '@/lib/flags';
-import { EVENTS, track } from '@/lib/analytics';
+import { EVENTS, track, packagedDetailSource } from '@/lib/analytics';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { processedUnavailable, useProcessedDetail } from '@/lib/data/useProcessedFoods';
 import { processedReviewsKey } from '@/lib/data/useFoodReviews';
@@ -127,7 +127,7 @@ export function ProcessedFoodDetailScreen() {
   const lang = useAppLanguage(); // 구독으로(KB-695 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 굳힌다)
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id?: string; scan?: string; charged?: string; free?: string }>();
+  const params = useLocalSearchParams<{ id?: string; scan?: string; charged?: string; free?: string; src?: string }>();
   const id = typeof params.id === 'string' ? params.id : undefined;
   const q = useProcessedDetail(id);
   // KB-954: 상세(판정 — 회피 코드 키 전부) + 이 제품 리뷰 + ['me']
@@ -150,8 +150,8 @@ export function ProcessedFoodDetailScreen() {
   React.useEffect(() => {
     if (!d || viewed.current === d.id) return;
     viewed.current = d.id;
-    track(EVENTS.food_packaged_detail_view, { product_id: d.id, label_source: d.labelSource });
-  }, [d]);
+    track(EVENTS.food_packaged_detail_view, { product_id: d.id, label_source: d.labelSource, source: packagedDetailSource(params.src, params.scan) }); // KB-973 진입 출처
+  }, [d, params.src, params.scan]); // 같은 제품 재발화는 viewed(d.id)가 막는다
 
   const toggle = (open: boolean, via: 'ingredients_source' | 'see_less') => {
     setExpanded(open);

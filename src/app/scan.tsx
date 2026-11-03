@@ -1,6 +1,6 @@
 import { armScanExitPrompt, fireScanExitPrompt } from '@/features/scan/ScanExitPrompts';
 import { ScanModeTabs, type ScanMode } from '@/features/scan/ScanModeTabs';
-import { CameraSlot, PackagedScanFlow, type ScanCamOpts } from '@/features/scan/PackagedScanFlow';
+import { CameraSlot, PackagedScanFlow, type ScanCamKind, type ScanCamOpts } from '@/features/scan/PackagedScanFlow';
 import { ScanDarkMessage } from '@/features/scan/ScanDarkMessage';
 import { ScanLoading } from '@/features/scan/ScanLoading';
 import { UnlockCelebration } from '@/features/scan/UnlockCelebration';
@@ -584,7 +584,11 @@ export default function Scan() {
   }
 
   /** KB-845: onShot = 크롭본을 받을 곳(메뉴 = scanImage, 가공식품·성분표 = PackagedScanFlow) · menu = scan_start 계측(메뉴만 — 가공식품은 자기 이벤트) */
-  async function capture(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, menu = true) {
+  /** KB-973: 가공식품 촬영 시작 = food_packaged_scan_start(mode) — scan_start는 메뉴 전용 시계열 그대로 */
+  const trackShotStart = (kind: ScanCamKind, source: 'camera' | 'gallery') =>
+    kind === 'menu' ? track(EVENTS.scan_start, { source }) /* P-144 */ : track(EVENTS.food_packaged_scan_start, { mode: kind === 'ingredient' ? 'label' : 'packaged', source });
+  async function capture(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, kind: ScanCamKind = 'menu') {
+    const menu = kind === 'menu';
     if (capturingRef.current) return; // P-062⓪: 동기 가드 — 리렌더 전 연타도 차단
     if (isGuest) return setGateOpen(true); // 스캔=회원 전용 (게이트)
     if (menu && blockMenuShot()) return; // KB-963: 메뉴 쿼터 소진 = 촬영 시점에 안내(가공식품 촬영은 통과)
@@ -594,7 +598,7 @@ export default function Scan() {
     capturingRef.current = true;
     setCapturing(true);
     setError(null);
-    if (menu) track(EVENTS.scan_start, { source: 'camera' }); // P-144
+    trackShotStart(kind, 'camera');
     try {
       const pic = await cam.takePictureAsync({ quality: 0.7, exif: true }); // P-338: Orientation 태그 — raw 치수 정규화용
       console.log('[scan] photo =', JSON.stringify({ uri: pic?.uri, w: pic?.width, h: pic?.height }));
@@ -629,7 +633,8 @@ export default function Scan() {
     }
   }
 
-  async function pickFromGallery(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, menu = true) {
+  async function pickFromGallery(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, kind: ScanCamKind = 'menu') {
+    const menu = kind === 'menu';
     if (capturingRef.current) return; // P-062⓪: 셔터와 동일 동기 가드
     if (isGuest) return setGateOpen(true);
     if (menu && blockMenuShot()) return; // KB-963
@@ -639,7 +644,7 @@ export default function Scan() {
     importingRef.current = true; // 리렌더 전 연속 입력도 차단
     setImporting(true); // P-191: 픽커 복귀~원본 준비(iCloud 다운로드 수 초) 구간 표시
     setError(null);
-    if (menu) track(EVENTS.scan_start, { source: 'gallery' }); // P-144
+    trackShotStart(kind, 'gallery');
     try {
       const result = await launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -787,8 +792,8 @@ export default function Scan() {
     const menu = o.kind === 'menu';
     // KB-854: 안내 제목·힌트 문구 제거(시안 B) — 흐름이 주는 한 줄(성분표 n/4 · 같은 분석 차감 안내)만 아래 바 위에 남긴다(P-510 규칙)
     const hint = o.hint ?? null;
-    const shoot = () => void capture(o.onShot, menu);
-    const library = () => void pickFromGallery(o.onShot, menu);
+    const shoot = () => void capture(o.onShot, o.kind);
+    const library = () => void pickFromGallery(o.onShot, o.kind);
     const off = capturing || !!o.shootDisabled; // Codex #318: 성분표 4면이 차면 더 찍지 못한다
     return (
       <View style={styles.camRoot} pointerEvents="box-none">

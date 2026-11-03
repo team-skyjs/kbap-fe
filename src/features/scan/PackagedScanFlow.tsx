@@ -179,7 +179,9 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       }
     } catch (e) {
       if (my !== reqSeq.current) return;
-      setStep({ kind: 'error', failure: scanFailureOf(e), retry: () => void runName(ocrText, photoUri, photoPath) });
+      const failure = scanFailureOf(e);
+      track(EVENTS.food_packaged_scan_fail, { stage: 'name', result: failure }); // KB-973
+      setStep({ kind: 'error', failure, retry: () => void runName(ocrText, photoUri, photoPath) });
     }
   };
 
@@ -288,6 +290,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       } catch (e) {
         if (my !== reqSeq.current) return;
         const failure = scanFailureOf(e);
+        track(EVENTS.food_packaged_scan_fail, { stage: 'confirm', result: failure }); // KB-973: 확정 성공(food_packaged_scan_confirm)과 분모를 섞지 않는다
         if (failure === 'quota') { onQuota?.(); return; } // 시안 21 — 화면(후보·선택)은 그대로
         // 전송 실패(응답 없음)는 서버가 확정·차감을 커밋했을 수 있다 → 차감 여부 미상, 같은 analysisId 재확정(멱등)으로 서버 값을 받는다
         const unknown = chargeUnknown || failure === 'network';

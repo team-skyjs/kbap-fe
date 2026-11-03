@@ -5,6 +5,16 @@
 - 상세 상단 = 음식 상세 히어로와 같은 구조: SubHeader("Product details") 제거 · 정방 풀블리드 사진(C.surface2 바탕, 누끼 contain, 위 = 상태 표시줄·뒤로 원 아래) · 사진 위 반투명 원 뒤로(음식 fBtn 값, 모든 상태). PHOTO_RATIO 제거.
 - 시뮬로 잡은 것: 히어로 높이가 음식보다 40pt 컸다(aspectRatio 1 + 음수 좌우 여백 = Yoga가 여백 전 폭으로 높이 계산 → 높이 = 창 폭 명시) · 사진과 잠금 행 사이 20pt 틈(목록 gap → 아래 -20 상쇄). ja + 글자 XXXL 잠금 행 잘림 0.
 
+## 2026-11-03 · P-584 KB-973 가공식품 출시 계측 보강(예진 11/03 "다 넣어줘")
+
+- ① 촬영 시작 = 신규 food_packaged_scan_start(mode packaged|label · source camera|gallery — scan_start와 같은 값). scan_start는 메뉴 전용 시계열 그대로(가공식품을 섞으면 기존 대시보드 수치가 바뀐다 — 발주 "속성 확장 권장" 대신 별 이벤트, 보고).
+- ② 실패 = 신규 food_packaged_scan_fail(stage name|confirm · result = scanFailureOf). 확정 성공 food_packaged_scan_confirm은 그대로(성공 분모 유지). 성분표는 기존 food_packaged_label_scan result가 이미 실패 포함.
+- ③ 홈 편의점 줄 카드 노출 home_card_view(section cvs · position · product_id — click과 같은 규칙) — 카드 바깥 View에 노출 노드 + 가로 스크롤 정지 판정.
+- ④ food_packaged_detail_view source(search|home_cvs|list|scan|review|deeplink) — 진입점 ?src= 태그(검색·홈 줄·Packaged 목록·리뷰 카드), 스캔 확정 = scan=1, 태그 없음 = deeplink(packagedDetailSource).
+- ⑤ review_feed_target_select(target all|food|packaged, 바뀔 때만) · food_segment_select(segment · source tap = 바뀔 때만 | coach(via=coach) | see_all = 링크 진입마다). deeplink 값은 없음 — kbap://food 딥링크가 쿼리를 버려 세그먼트를 못 바꾼다.
+- 기존 이벤트 이름·속성 제거 0(속성 추가: home_card_view product_id · food_packaged_detail_view source). 상세 링크 기대값 테스트 5곳 갱신. 뮤테이션 7종 확인.
+
+
 ## 2026-11-03 · KB-967 후속 — 통합 검색 All 섹션 See all은 두 요청 settle 뒤에만(Q-397 사소)
 
 - All 스켈레톤 동안 음식 응답 직후 Dishes 머리 See all이 0.3초 먼저 뜨던 것 → 두 섹션 See all 모두 allSettled 뒤에만(스켈레톤·순서 고정과 같은 조건).
