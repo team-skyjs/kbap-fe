@@ -1,3 +1,10 @@
+## 2026-11-04 · P-593 KB-978 OTA 즉시 적용 — 시작·복귀 때 확인 후 바로 다시 로드(예진 결정: P-316 변경)
+
+- 시작: OtaLaunchGate가 루트 트리(QueryClient·인증 부트스트랩) 마운트 **전**에 체크→fetch(상한 3초, 네이티브 스플래시 유지). 받으면 바로 reloadAsync(트리를 띄우지 않아 진행 중 요청 0 — P-347 창 없음). 없음·3초 초과·에러 = 현재 번들로 마운트. 3초 뒤 늦게 받으면 그 런타임에선 reload 0, 다음 복귀가 재체크 없이 적용.
+- 복귀: active 전환 순간부터 3초 창 안에서만 reload — 작업 화면 차단(스캔·리뷰 작성·로그인·온보딩·검색·프로필 편집 등, 로그인 시트·사진 선택기 복귀도 active)·네트워크 정적 500ms 게이트(P-347)·2분 스로틀 유지. 창이 닫히면 deferred(다음 복귀/콜드 스타트).
+- 운영·비운영 같은 로직: P-316 "운영 항상 defer"·isProdChannel 분기·부팅 8초 가드(P-304 — expo-modules-core 56 레이스, 57.0.0 수정) 삭제.
+- 계측 신규 app_ota_apply {result: applied|none|timeout|error|deferred, trigger: launch|resume}. 사용자 문구 추가 0. 네이티브 설정(fallbackToCacheTimeout) 무변 — 지문 불변.
+
 ## 2026-11-03 · P-590 KB-977 가공식품 상세·작성 다듬기 3건(예진 운영 실기)
 
 - ① 상세 판정 띠 아래 근거 줄(MatchEvidence "Milk: 원유") 제거 — 띠 본문 그대로. 키 packaged.matchEvidence는 사용처 0(로케일 파일엔 남김).
