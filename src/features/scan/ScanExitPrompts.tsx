@@ -14,7 +14,7 @@ import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
 import { useReviewPrompt } from '@/lib/useReviewPrompt';
 import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 import { PushPrimerModal } from '@/features/push/PushPrimerModal';
-import { shouldShowPackagedCoach } from '@/features/coach/PackagedCoach';
+import { isPackagedCoachActive, shouldShowPackagedCoach } from '@/features/coach/PackagedCoach';
 
 type Armed = { isGuest: boolean; ready: Promise<unknown> };
 let armed: Armed | null = null;
@@ -46,7 +46,8 @@ export function ScanExitPrompts() {
       InteractionManager.runAfterInteractions(() => {
         void (async () => {
           // KB-968: 가공식품 코치마크를 아직 안 봤으면 이번엔 건너뜀(코치마크 우선 — 홈에서 동시 노출 0, 빈도 판정은 다음 스캔에)
-          if (await shouldShowPackagedCoach()) { busy.current = false; return; }
+          // #398 Codex P2: 이미 떠 있는 흐름도(봤음 키는 표시 즉시 써진다) — 1단계 ~ 2단계 사이 전환까지
+          if (isPackagedCoachActive() || (await shouldShowPackagedCoach())) { busy.current = false; return; }
           const m = FLAGS.pushEnabled ? await decideScanNudge(a.isGuest).catch(() => null) : null;
           if (m) {
             setNudgeMode(m);

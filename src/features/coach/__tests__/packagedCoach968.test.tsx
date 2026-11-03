@@ -320,3 +320,31 @@ describe('직렬화 · 우선순위', () => {
     expect(mockRequest).toHaveBeenCalledWith('scan', expect.anything());
   });
 });
+
+describe('#398 Codex 1차', () => {
+  it('코치마크가 떠 있는 동안(봤음 키는 이미 기록) 스캔 뒤 넛지·리뷰 유도 없음 · 1→2단계 사이도 · 흐름이 끝나면 다시', async () => {
+    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation(((cb: () => void) => { cb(); return { then: () => {}, done: () => {}, cancel: () => {} }; }) as never);
+    FLAGS.pushEnabled = false;
+    mockRequest.mockResolvedValue(false);
+    setOS('android');
+    act(() => { renderer.create(<ScanExitPrompts />); });
+    const exit = async () => { armScanExitPrompt({ isGuest: false, ready: Promise.resolve() }); act(() => fireScanExitPrompt()); await flush(); };
+    const home = mount('home', jest.fn(() => queuePackagedCoachStep2()));
+    act(() => home.api.show!());
+    await flush();
+    expect(await AsyncStorage.getItem('kbap.packagedCoach.v1')).toBe('1'); // 키만 보면 통과했을 상황
+    await exit();
+    expect(mockRequest).not.toHaveBeenCalled();
+    tapBackdrop(home.tree, 'home'); // 1단계 탭 → 2단계 대기(음식 탭 전)
+    await exit();
+    expect(mockRequest).not.toHaveBeenCalled();
+    const food = mount('food', jest.fn());
+    expect(takePackagedCoachStep2()).toBe(true);
+    act(() => food.api.show!());
+    await exit();
+    expect(mockRequest).not.toHaveBeenCalled();
+    tapBackdrop(food.tree, 'food'); // 흐름 끝
+    await exit();
+    expect(mockRequest).toHaveBeenCalled(); // 앞 테스트의 호스트도 구독 중이라 횟수 대신 "다시 뜸"만
+  });
+});

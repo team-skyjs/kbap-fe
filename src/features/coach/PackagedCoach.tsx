@@ -54,12 +54,20 @@ export async function presentHomeCoach(show: (done: () => void) => void, done: (
 
 /** 1단계 탭 → 음식 탭 진입 시 2단계(모듈 상태 — 홈 오버레이가 완전히 닫힌 뒤 음식 탭이 가져간다) */
 let step2Pending = false;
+
+/** #398 Codex P2: 코치마크 흐름이 화면에 있음(1단계 표시 ~ 2단계 끝, 단계 사이 전환 포함). 저장 키("봤음")는 표시 즉시 써지므로
+ *  그 키만 보면 떠 있는 동안 스캔 뒤 넛지·리뷰 유도가 겹친다 — 다른 일회성 시트는 이 상태로 비켜 준다 */
+let flowActive = false;
+export function isPackagedCoachActive(): boolean {
+  return flowActive;
+}
 export function queuePackagedCoachStep2(): void {
   step2Pending = true;
 }
 export function takePackagedCoachStep2(): boolean {
   const v = step2Pending;
   step2Pending = false;
+  if (!v) flowActive = false; // 2단계 예약 없이 음식 탭 = 흐름 없음(잔존 방지)
   return v;
 }
 
@@ -188,6 +196,8 @@ export function usePackagedCoach(step: CoachStep, after: { next: () => void }) {
   const settle = () => {
     const p = pending.current;
     pending.current = null;
+    // 1단계 탭 = 2단계로 이어진다(음식 탭이 가져갈 때까지 흐름 유지) · 그 밖(건너뛰기·2단계 끝) = 흐름 끝
+    flowActive = step === 'home' && !!p?.next;
     p?.done?.();
     if (p?.next) after.next();
   };
@@ -203,6 +213,7 @@ export function usePackagedCoach(step: CoachStep, after: { next: () => void }) {
   // 포커스 효과 deps에 들어가므로 identity 고정(ref·setter만 씀)
   const show = React.useCallback((done?: () => void) => {
     markPackagedCoachSeen(); // 표시 즉시 기록 — 중간에 앱을 꺼도 다시 안 뜬다
+    flowActive = true;
     pending.current = { done, next: false, closing: false };
     setOpen(true);
     track(EVENTS.food_packaged_coach_shown, { step });
