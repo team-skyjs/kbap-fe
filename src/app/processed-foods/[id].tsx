@@ -29,7 +29,8 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VerdictLockRow } from '@/components/VerdictBand';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { IconArrowLeft } from '@/components/icons';
+import { IconArrowLeft, IconEdit } from '@/components/icons';
+import { PILL_MAX_SCALE, pillCta, useBottomBand } from '@/features/food/pillCta';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { Pressable } from '@/components/Pressable';
@@ -105,28 +106,12 @@ function Expanded({ d, showTranslation }: { d: ProcessedFoodDetail; showTranslat
   );
 }
 
-/** 판정 근거(KB-901 T-053 — "Egg: 난각칼슘") — 띠 아래 작은 글자. 근거가 없으면 줄 없음 */
-function MatchEvidence({ d }: { d: ProcessedFoodDetail }) {
-  const { t } = useTranslation();
-  const matches = d.verdict === 'AVOID' ? d.avoidMatches : d.verdict === 'CAUTION' ? d.mayContainMatches : [];
-  const evidence = matches.filter((m) => m.evidence.length > 0);
-  if (evidence.length === 0) return null;
-  return (
-    <View testID="pf-evidence">
-      {evidence.map((m) => (
-        <Text key={m.code} style={s.disclaimer} testID={`pf-evidence-${m.code}`}>
-          {t('packaged.matchEvidence', { name: restrictionLabel(m.code), evidence: m.evidence.join(', ') })}
-        </Text>
-      ))}
-    </View>
-  );
-}
-
 export function ProcessedFoodDetailScreen() {
   const { t } = useTranslation();
   const lang = useAppLanguage(); // 구독으로(KB-695 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 굳힌다)
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const band = useBottomBand(insets.bottom); // KB-977: 하단 알약 = 음식 상세와 같은 투명 띠(실높이 → 스크롤 아래 여백)
   const params = useLocalSearchParams<{ id?: string; scan?: string; charged?: string; free?: string; src?: string }>();
   const id = typeof params.id === 'string' ? params.id : undefined;
   const q = useProcessedDetail(id);
@@ -206,7 +191,7 @@ export function ProcessedFoodDetailScreen() {
     body = (
       <ScrollView
         refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={C.ink3} />}
-        contentContainerStyle={[s.pad, { paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[s.pad, { paddingBottom: canWrite ? band.scrollPad : insets.bottom + 32 }]}
         scrollEventThrottle={64}
         onScroll={(e) => {
           const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
@@ -229,7 +214,6 @@ export function ProcessedFoodDetailScreen() {
         {hasVerdict && d.verdict ? (
           <View style={s.block}>
             <PackagedVerdictBand d={{ ...d, verdict: d.verdict }} safeReason={safeBasis(t, me?.restrictions.length ?? 0)} style={s.band} testID={`pf-verdict-${d.verdict.toLowerCase()}`} />
-            <MatchEvidence d={d} />
           </View>
         ) : !guest && !me ? (
           // Codex #338: 로그인했는데 프로필 대기·실패 + verdict 없음 = 판정 영역을 비우지 않는다 — 대기 = 자리 스켈레톤, 실패 = 보수적 "확인 못 함"(주요 알레르기 있으면 함께)
@@ -299,12 +283,16 @@ export function ProcessedFoodDetailScreen() {
       </ScrollView>
     );
     // KB-914(R-137): 하단 고정 CTA = 음식 상세와 같은 알약(구 리뷰 섹션 텍스트 링크 — 섹션 링크는 이 바가 있을 때 숨김)
+    // KB-977(예진 운영 실기): 알약 뒤 흰 띠 제거 — 음식 상세(KB-932)와 같은 투명 떠 있는 띠 + 연필 아이콘 알약. 띠 바탕 탭은 아래 콘텐츠로(box-none)
     if (canWrite) {
       body = (
         <>
           {body}
-          <View style={[s.bar, { paddingBottom: insets.bottom + 12 }]}>
-            <Btn onPress={() => { track(EVENTS.review_write_tap, { source: 'detail', target_type: 'packaged' }); router.push(`/processed-foods/${d.id}/review` as Href); }} testID="pf-write-review-bar">{t('reviews.writeReview')}</Btn>
+          <View style={[pillCta.band, { paddingBottom: band.bottom }]} pointerEvents="box-none" onLayout={(e) => band.onHeight(e.nativeEvent.layout.height)} testID="pf-write-band">
+            <Pressable style={pillCta.pillPrimary} onPress={() => { track(EVENTS.review_write_tap, { source: 'detail', target_type: 'packaged' }); router.push(`/processed-foods/${d.id}/review` as Href); }} accessibilityRole="button" testID="pf-write-review-bar">
+              <IconEdit size={20} color="#FFFFFF" />
+              <Text style={pillCta.pillPrimaryText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={PILL_MAX_SCALE}>{t('reviews.writeReview')}</Text>
+            </Pressable>
           </View>
         </>
       );
@@ -334,7 +322,6 @@ const s = StyleSheet.create({
   photoImage: { position: 'absolute', left: HERO_INSET, right: HERO_INSET, bottom: HERO_INSET }, // top = 상태 표시줄 + 뒤로 원 아래(인라인 — 안전영역 실측)
   back: { position: 'absolute', left: 12, width: 36, height: 36, borderRadius: radius.pill, backgroundColor: 'rgba(20,24,31,0.38)', alignItems: 'center', justifyContent: 'center' }, // 음식 상세 fBtn과 같은 값
   band: { marginHorizontal: -GUTTER }, // 띠 = 화면 폭(음식 상세와 같음) — 페이지 좌우 여백 밖으로
-  bar: { paddingHorizontal: GUTTER, paddingTop: 12, backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.hair },
   titleBlock: { gap: 4 },
   maker: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
   meta: { fontFamily: font.body, fontSize: 16, lineHeight: 21, color: C.ink2 },

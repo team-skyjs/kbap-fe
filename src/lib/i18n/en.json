@@ -1261,7 +1261,6 @@
     "sourceC002": "Data: Ministry of Food and Drug Safety, Food Safety Korea product manufacturing reports",
     "avoidMatchTitle": "Avoid-list matches",
     "avoidMatchBody": "Listed in the ingredients or allergen statement: {{names}}.",
-    "matchEvidence": "{{name}}: {{evidence}}",
     "crossContactTitle": "Possible cross-contact",
     "crossContactBody": "The label says it may contain {{names}} from the same facility.",
     "unverifiedTitle": "Some ingredients can't be verified",
@@ -1384,9 +1383,6 @@
   },
   "ugc": {
     "consentTitle": "Only upload photos you took yourself",
-    "consentNoStock": "Images from shopping sites or web searches can't be uploaded.",
-    "consentRemoval": "Photos with rights issues may be removed.",
-    "consentAgree": "Got it, choose photos",
     "photoRemovalRequest": "Request photo removal",
     "photoRemovalPrefill": "Photo removal request: {{product}} review {{reviewId}}"
   },

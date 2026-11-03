@@ -1265,7 +1265,6 @@
     "sourceC002": "Dữ liệu: Bộ An toàn Thực phẩm và Dược phẩm, báo cáo sản xuất của Food Safety Korea",
     "avoidMatchTitle": "Khớp với danh sách cần tránh",
     "avoidMatchBody": "Có trong thành phần hoặc ghi chú dị ứng: {{names}}.",
-    "matchEvidence": "{{name}}: {{evidence}}",
     "crossContactTitle": "Có thể nhiễm chéo",
     "crossContactBody": "Nhãn ghi có thể chứa {{names}} từ cùng cơ sở sản xuất.",
     "unverifiedTitle": "Không xác minh được một số thành phần",
@@ -1388,9 +1387,6 @@
   },
   "ugc": {
     "consentTitle": "Chỉ tải lên ảnh do chính bạn chụp",
-    "consentNoStock": "Không thể tải lên ảnh lấy từ trang mua sắm hoặc kết quả tìm kiếm.",
-    "consentRemoval": "Ảnh có vấn đề về quyền có thể bị xóa.",
-    "consentAgree": "Đã hiểu, chọn ảnh",
     "photoRemovalRequest": "Yêu cầu xóa ảnh",
     "photoRemovalPrefill": "Yêu cầu xóa ảnh: {{product}} đánh giá {{reviewId}}"
   },

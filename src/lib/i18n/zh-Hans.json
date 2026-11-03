@@ -1265,7 +1265,6 @@
     "sourceC002": "资料：韩国食品医药品安全处 食品安全国度 品目制造报告",
     "avoidMatchTitle": "含有你要避免的食材",
     "avoidMatchBody": "在配料或过敏原标示中发现：{{names}}。",
-    "matchEvidence": "{{name}}：{{evidence}}",
     "crossContactTitle": "可能交叉接触",
     "crossContactBody": "标签注明同一工厂可能混入{{names}}。",
     "unverifiedTitle": "部分成分无法确认",
@@ -1388,9 +1387,6 @@
   },
   "ugc": {
     "consentTitle": "请只上传你亲自拍摄的照片",
-    "consentNoStock": "不能上传来自购物网站或搜索结果的图片。",
-    "consentRemoval": "存在版权问题的照片可能会被删除。",
-    "consentAgree": "知道了，去选择",
     "photoRemovalRequest": "申请删除照片",
     "photoRemovalPrefill": "申请删除照片: {{product}} 评价 {{reviewId}}"
   },

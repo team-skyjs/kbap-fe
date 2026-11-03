@@ -26,7 +26,7 @@ import { choosePhotoSource } from '@/lib/data/profileImage';
 import { foodSubtitle } from '@/lib/review/foodSubtitle';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
+import { color as C, font, primaryTint, radius, shadow, type as T } from '@/lib/theme';
 import { SubHeader, Btn, CardPhoto, Star, RiskMark, IconCamera, IconCheck, IconClose, IconMapPin, IconRetry, Input } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { findCachedReview, reviewWriteClosed, useCreateProcessedReview, useCreateReview, useUpdateReview } from '@/lib/data/useReviewMutations';
@@ -55,8 +55,6 @@ import { isUploadAborted } from '@/lib/api/uploadAbort';
 import { useReviewPrompt } from '@/lib/useReviewPrompt';
 import { useOneShotQueue } from '@/lib/oneShotQueue';
 import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
-import { PhotoConsentSheet } from '@/components/PhotoConsentSheet';
-import { grantPackagedPhotoConsent, hasPackagedPhotoConsent } from '@/lib/review/packagedPhotoConsent';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
 // ponytail: 이모지·예측 바 전환(+44~53pt)만 줄어든 만큼 내린다 — 키보드가 통째로 다시 올라오는 큰 축소(앱 복귀 등 ~300pt)는
@@ -181,8 +179,6 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   // 의존 = 비범위(TODO — 다음 네이티브 빌드).
   // P-375(KB-539): 제목만 리뷰 전용 키 — photo.sheetTitle은 "프로필 사진"이라 오문구였다.
   // KB-814 F3: 가공식품 = 촬영 권장(촬영 행 강조) · 갤러리는 '직접 촬영한 사진만' 동의 1회 뒤에만(동의 전 갤러리 열림 0)
-  const [consentOpen, setConsentOpen] = useState(false);
-  const consentAgreedRef = useRef(false); // 동의 → 시트가 완전히 닫힌 뒤 갤러리(닫힘 직후 present = iOS 프리즈)
   const importPhotos = async (src: 'camera' | 'gallery') => {
     const remaining = REVIEW_MAX_PHOTOS - photos.length;
     if (remaining <= 0) return;
@@ -231,16 +227,8 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
       ...(packaged ? { emphasizeCamera: true } : {}),
     });
     if (!src || src === 'remove') return; // 취소
-    if (packaged && src === 'gallery' && !(await hasPackagedPhotoConsent())) {
-      setConsentOpen(true);
-      return;
-    }
+    // KB-977(예진 운영 실기): 갤러리 전 동의 시트 폐기 — 같은 안내를 본문 아래 보조 글씨로 상시(음식·가공식품 공용)
     await importPhotos(src);
-  };
-  const onConsentClosed = () => {
-    if (!consentAgreedRef.current) return;
-    consentAgreedRef.current = false;
-    void importPhotos('gallery');
   };
 
   // P-085(KB-73): 사진 presigned 업로드(purpose REVIEW, 전송=path) → POST /reviews.
@@ -622,6 +610,8 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
               <Text style={styles.tag}>{t('review.charCount', { count: body.length })}</Text>
             )}
           </View>
+          {/* KB-977: 직접 찍은 사진 안내(구 PhotoConsentSheet 제목 문구) — 본문 아래 작은 보조 글씨 1줄 */}
+          <Text style={styles.photoNote} testID="review-photo-note">{t('ugc.consentTitle')}</Text>
           {/* §2-7(4150:16511): 장소 필 — 좌하단 pill h38(선택 = 장소명 + Clear) */}
           {FLAGS.reviewPlaceEnabled && !packaged && ( // KB-812 2차: 가공식품 = 식당 위치 없음
             place ? (
@@ -696,19 +686,6 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
       {/* P-168 ②: 완료 = P-162 주문 완료 모달 문법(화면 전환 없이) — 확인 = 상세 복귀 */}
       {/* KB-708: 작성 중 이탈 확인(커뮤니티 글쓰기와 같은 컴포넌트·문구) */}
       <LeaveConfirmModal {...leave.modal} />
-      {packaged && (
-        <PhotoConsentSheet
-          open={consentOpen}
-          onAnswer={(agreed) => {
-            if (agreed) {
-              consentAgreedRef.current = true;
-              void grantPackagedPhotoConsent();
-            }
-            setConsentOpen(false); // 취소 = 시트만 닫힘(사진 없이 작성 계속)
-          }}
-          onClosed={onConsentClosed}
-        />
-      )}
       <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} onShow={reviewPrompt.onShow} onClosed={reviewPrompt.onClosed} disabled={reviewPrompt.answered} />
       {/* KB-730: Done = 모달 표시만 접고(submitted 유지) iOS는 onDismiss(완전히 닫힌 뒤)에서 유도 시트 큐 — dismiss 직후 present = 프리즈(#236 2R) */}
       <Modal
@@ -796,6 +773,7 @@ const styles = StyleSheet.create({
   photoAdd: { width: 100, height: 100, borderRadius: radius.md, borderWidth: 1, borderColor: C.line2, backgroundColor: 'rgba(244,246,246,0.5)', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
   metaRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
   tag: { fontSize: 14, fontWeight: '500', color: C.ink3 },
+  photoNote: { ...T.caption, color: C.ink3 }, // 토큰 caption 13
   minLenHint: { flex: 1, fontSize: 14, fontWeight: '500', color: C.ink3 }, // KB-828: tag와 같은 메트릭 — 강조는 색만
   minLenStressed: { color: C.primaryText },
   // §2-7: 장소 필 h38 border #DCDEE3 r24 pad 8/12
