@@ -3,6 +3,21 @@
 - All 스켈레톤 동안 음식 응답 직후 Dishes 머리 See all이 0.3초 먼저 뜨던 것 → 두 섹션 See all 모두 allSettled 뒤에만(스켈레톤·순서 고정과 같은 조건).
 - searchUnified967 단언 추가(먼저 온 음식의 See all = 0), 뮤테이션 확인.
 
+## 2026-11-03 · P-583 KB-971 가공식품 코치마크 보완(예진 테플 피드백)
+
+- 2단계 말풍선 아이콘 = 과자봉지 SVG(IconSnackBag 신설 — 기존 세트에 스낵·패키지 계열 없음, Glyph 선 스타일) · 1단계 = 스캔 그대로.
+- 1단계 탭 → 음식 탭을 Packaged 선택 상태로(packagedCoachFoodHref = /food?view=packaged&t — 홈 편의점 See all과 같은 진입) → 2단계는 선택된 Packaged 탭 스포트라이트, 탭 = 종료(선택 유지).
+- X 제거(두 단계) — 딤 어디든 탭 = 다음/종료, 화면 전체 = 버튼(스크린리더 라벨 = 문구, activate = 진행). food_packaged_coach_skip은 Android 하드웨어 뒤로(onRequestClose)만 남음.
+- 같이 실음(#398 Codex P2, 머지 후속): 코치마크가 떠 있는 채 warm 딥링크 등으로 탭이 바뀌면 Modal이 목적지 위에 남고 탭하면 음식 탭으로 끌고 갔다 → 홈·음식 탭 블러에 abort(닫기 · 봤음 기록 되돌림 = 다음 포커스 재판정 · 흐름 해제 · 큐 즉시 해제, 계측 없음). 다음 단계로 가는 탭 뒤 dismiss 대기 중 블러는 무시.
+- 테스트: X 부재·아이콘·딤 탭 전이·진입 경로(view=packaged), 뮤테이션 확인.
+
+## 2026-11-03 · P-582 KB-970 OCR 테스트 입력칸 시뮬레이터 전용(예진 11/03 테플 스크린샷)
+
+- 가공식품 스캔 앞면·성분표 OCR 주입 입력칸(FrontDebug·LabelDebug) = 시뮬레이터에서만. 실기는 진단 채널·개발 번들이어도 숨김(카메라 위 입력칸이 성분표 글자를 가렸다). 스토어 채널 무변.
+- 판정 = lib/simulator(새 네이티브 0 — expo-device는 지문 회전): iOS expo-application 릴리스 유형 SIMULATOR(deviceInfo와 같은 지연 require), Android Platform.constants 지문·모델(generic·emulator·sdk_gphone·emu64·Android SDK built for). 모르면 실기 취급. 판정 전 = 숨김 → 시뮬이면 곧 표시.
+- 테스트 simulator970(iOS 유형별·Android 지문·노출 조합) + packagedScan813 실기 = 입력칸 없음 · 스캔 테스트 4개 = 시뮬 기준 목.
+
+
 ## 2026-11-03 · P-581 KB-968 가공식품 출시 홍보 코치마크 2단계(예진 11/03)
 
 - 1단계(홈) = 딤 + 탭바 스캔 버튼 구멍 + v3 말풍선(제목·본문) → 탭 = 음식 탭(Dishes) · 2단계 = 딤 + 헤더 Packaged 탭 구멍 + 말풍선 → 탭 = Packaged 선택. X = 전체 건너뛰기.
@@ -13,6 +28,7 @@
 - #398 Codex 1차 P2(11/03): 스캔 뒤 넛지·리뷰 유도 게이트 = 저장 키(표시 즉시 기록)만이 아니라 코치마크 흐름 활성(1단계 표시 ~ 2단계 끝, 단계 사이 포함)도 — 떠 있는 동안 시트 겹침 0.
 - React Compiler: `ref={obj.key}`(멤버 접근)는 "렌더 중 ref 읽기"로 TabBar를 건너뛰었다 → 대상 ref 콜백을 이름별 export(scanCoachAnchor·packagedCoachAnchor).
 - Amplitude food_packaged_coach_shown·next·skip(step) — 발주 이름 packaged_coach_*는 네이밍 규칙(도메인 접두) 위반이라 커맨드 확인 후 기존 가공식품 이벤트와 같은 food_ 접두로. 새 i18n 키 3개(packagedCoach.homeTitle·homeBody·foodBody, 10로케일).
+
 
 ## 2026-11-03 · P-580 KB-967 통합 검색 — 음식·가공식품 섹션(예진 11/03)
 

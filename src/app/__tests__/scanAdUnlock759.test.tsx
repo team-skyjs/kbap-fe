@@ -9,6 +9,7 @@ import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/prel
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 const mockRouterPush = jest.fn(); // KB-963: 가공식품 확정 → 상세 이동 확인
+jest.mock('@/lib/simulator', () => ({ ...jest.requireActual('@/lib/simulator'), useIsSimulator: () => true, isSimulator: async () => true })); // KB-970: OCR 주입 입력칸 = 시뮬 전용 — 이 파일은 시뮬 기준
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({
     name: (c: string) => (require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients')).ingredientLabel(c),
