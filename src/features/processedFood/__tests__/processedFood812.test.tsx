@@ -215,7 +215,9 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(bs).toMatchObject({ position: 'absolute', width: 36, height: 36, backgroundColor: 'rgba(20,24,31,0.38)' }); // 음식 상세 fBtn 값
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const src = (require('fs') as typeof import('fs')).readFileSync('src/app/processed-foods/[id].tsx', 'utf8');
-    expect(src).toContain("photo: { marginHorizontal: -GUTTER, marginTop: -20, aspectRatio: 1, backgroundColor: C.surface2, overflow: 'hidden' }");
+    expect(src).toContain("photo: { marginHorizontal: -GUTTER, marginTop: -20, marginBottom: -20, backgroundColor: C.surface2, overflow: 'hidden' }"); // 띠가 사진에 붙음
+    expect(src).toContain('<View style={[s.photo, { height: heroH }]}>'); // 높이 = 창 폭(정방)
+    expect(src).toContain('const heroH = useWindowDimensions().width;');
     expect(src).not.toContain('<SubHeader');
     mockDetail = q({ data: undefined, isPending: true }); // 로딩 중에도 뒤로가 있다(제목 줄이 없으니)
     expect(ids(render(<Detail />))).toContain('pf-back');

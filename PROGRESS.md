@@ -3,6 +3,7 @@
 - 비회원 = 가공식품 리본 0 — 공용 ProductCard 한 곳(useIsGuest)에서 막아 Packaged 목록·홈 편의점 줄·검색 Packaged 섹션이 같이 따른다(KB-947 "비회원 safe 리본" 결정 중 비회원만 뒤집음 — 회피 0개 회원은 그대로). 스캔 후보 행(PackagedScanScreens)은 회원 전용·이미 personalized만 · 리뷰 카드엔 판정 표시 없음.
 - 상세 비회원 = 판정 띠 대신 음식 상세와 같은 잠금 행 — 음식 상세 인라인 마크업을 공용 VerdictLockRow(VerdictBand.tsx)로 옮겨 둘이 같이 씀(키 detail.lockVerdict·intro.signUp, 새 키 0) · 탭 = AuthGateSheet(context risk) · 로그인 = 판정 띠 복귀. What's inside는 판정이 없으면 이미 중립(칩·마크 0).
 - 상세 상단 = 음식 상세 히어로와 같은 구조: SubHeader("Product details") 제거 · 정방 풀블리드 사진(C.surface2 바탕, 누끼 contain, 위 = 상태 표시줄·뒤로 원 아래) · 사진 위 반투명 원 뒤로(음식 fBtn 값, 모든 상태). PHOTO_RATIO 제거.
+- 시뮬로 잡은 것: 히어로 높이가 음식보다 40pt 컸다(aspectRatio 1 + 음수 좌우 여백 = Yoga가 여백 전 폭으로 높이 계산 → 높이 = 창 폭 명시) · 사진과 잠금 행 사이 20pt 틈(목록 gap → 아래 -20 상쇄). ja + 글자 XXXL 잠금 행 잘림 0.
 
 ## 2026-11-03 · KB-967 후속 — 통합 검색 All 섹션 See all은 두 요청 settle 뒤에만(Q-397 사소)
 

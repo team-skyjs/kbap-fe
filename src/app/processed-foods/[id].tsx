@@ -22,7 +22,7 @@
  * 그 밖 실패 = 다시 시도.
  */
 import * as React from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { usePullRefresh } from '@/lib/data/usePullRefresh';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -136,8 +136,9 @@ export function ProcessedFoodDetailScreen() {
   const meQ = useMe();
   const me = meQ.data;
   const [ingChip, setIngChip] = React.useState<IngChip>('all'); // 음식 상세 What's inside 칩과 같은 필터
-  const [expanded, setExpanded] = React.useState(false);
-  const [gate, setGate] = React.useState(false); // KB-974: 비회원 잠금 행 → 가입 게이트(음식 상세 context risk) // 처음엔 접힘(예진 10/22 Q2)
+  const [expanded, setExpanded] = React.useState(false); // 처음엔 접힘(예진 10/22 Q2)
+  const [gate, setGate] = React.useState(false); // KB-974: 비회원 잠금 행 → 가입 게이트(음식 상세 context risk)
+  const heroH = useWindowDimensions().width; // KB-974: 히어로 = 정방(음식 상세 hero aspectRatio 1과 같은 높이)
   const loadMoreReviews = React.useRef<(() => void) | null>(null); // 리뷰 섹션이 채운다 — 바닥 근처 스크롤 = 다음 페이지(무한 스크롤, Read reviews 버튼 없음)
   const back = () => (router.canGoBack() ? router.back() : router.navigate('/(tabs)/food' as Href));
   const d = q.data;
@@ -161,7 +162,7 @@ export function ProcessedFoodDetailScreen() {
   if (q.isPending) {
     body = (
       <View style={s.pad} testID="pf-skeleton">
-        <Shimmer style={s.photo} />
+        <Shimmer style={[s.photo, { height: heroH }]} />
         <Shimmer style={[s.skelLine, { width: '40%' }]} />
         <Shimmer style={[s.skelLine, { height: 24, width: '70%' }]} />
         <Shimmer style={s.skelRow} />
@@ -215,7 +216,7 @@ export function ProcessedFoodDetailScreen() {
       >
         {/* KB-865 ③(시안 20): 스캔 확정 결과 = 일반 상세와 같은 화면 — "스캔 결과" 띠·불꽃·차감 문구 없음(README) */}
         {/* 시안 08: 사진 335×223 r16 #F7F8FA(상품 8 안쪽 contain) */}
-        <View style={s.photo}>
+        <View style={[s.photo, { height: heroH }]}>
           {d.imageUrl ? (
             // QA #338: 다른 제품 사진이 잠깐 비치던 것 — 상세 전용 recyclingKey + 이번 사진이 뜰 때까지 투명(판정 화면에 엉뚱한 사진 0)
             <RemoteImage key={d.imageUrl} uri={d.imageUrl} style={[s.photoImage, { top: insets.top + 48 }]} contentFit="contain" recyclingKey={`pf-detail-${d.id}`} hideUntilLoaded />
@@ -328,7 +329,8 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.card },
   pad: { paddingHorizontal: GUTTER, paddingTop: 20, gap: 20 },
   // KB-974: 히어로 = 음식 상세 hero와 같은 정방 풀블리드(화면 폭 · 위 끝까지 — 페이지 여백·위 패딩 밖으로) · 밝은 바탕 위 누끼 contain(잘림 0)
-  photo: { marginHorizontal: -GUTTER, marginTop: -20, aspectRatio: 1, backgroundColor: C.surface2, overflow: 'hidden' },
+  // 높이 = 창 폭(인라인 heroH) — aspectRatio 1 + 음수 좌우 여백은 Yoga가 여백 전 폭으로 높이를 잡아 40pt 더 컸다(시뮬 실측 442 vs 음식 402)
+  photo: { marginHorizontal: -GUTTER, marginTop: -20, marginBottom: -20, backgroundColor: C.surface2, overflow: 'hidden' }, // 아래 -20 = 목록 gap 상쇄 → 판정 띠·잠금 행이 사진 바로 아래(음식 상세와 같이 붙음)
   photoImage: { position: 'absolute', left: HERO_INSET, right: HERO_INSET, bottom: HERO_INSET }, // top = 상태 표시줄 + 뒤로 원 아래(인라인 — 안전영역 실측)
   back: { position: 'absolute', left: 12, width: 36, height: 36, borderRadius: radius.pill, backgroundColor: 'rgba(20,24,31,0.38)', alignItems: 'center', justifyContent: 'center' }, // 음식 상세 fBtn과 같은 값
   band: { marginHorizontal: -GUTTER }, // 띠 = 화면 폭(음식 상세와 같음) — 페이지 좌우 여백 밖으로
