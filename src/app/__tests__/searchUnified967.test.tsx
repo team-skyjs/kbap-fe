@@ -260,6 +260,7 @@ describe('Q-397 보정', () => {
     submit(tree);
     expect(sectionOrder(tree)).toEqual(['search-section-dishes', 'search-section-packaged']);
     expect(idsWith(tree, 'home-food-')).toHaveLength(0); // 먼저 온 음식도 아직 안 그린다
+    expect(byId(tree, 'search-see-all-dishes')).toHaveLength(0); // Q-397 후속: 먼저 온 음식의 See all도 settle 뒤에만
     expect(byId(tree, 'skeleton-food-grid').length).toBeGreaterThan(0);
     mockPkg.mockReturnValue(pkgOk(8));
     act(() => tree.update(<Search />));
