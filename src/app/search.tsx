@@ -119,12 +119,13 @@ export default function Search() {
   useEffect(() => {
     // KB-786(#278 Codex P2): 요청이 **성공한** 검색만 — 실패(오프라인·5xx)를 "결과 0건"으로 남기지 않고, 같은 검색어 재시도 성공분이 기록되게
     if (!submitted || search.isLoading || !search.isSuccess || trackedFor.current === submitted) return;
+    if (packagedOn && pkg.isPending) return; // KB-967(Q-397): 가공식품도 끝난 뒤 1회 — result_count는 음식 건수 그대로(기존 대시보드 의미), 가공식품은 packaged_count로 따로
     trackedFor.current = submitted;
     const kw = searchKeywordProps(submitted, results.flatMap((f) => [f.name, f.nameKo].filter(Boolean) as string[]), results.length);
-    track(EVENTS.search_query, { ...kw, segment: seg });
+    track(EVENTS.search_query, { ...kw, segment: seg, ...(packagedOn && pkg.isSuccess ? { packaged_count: pkgItems.length } : {}) });
     airbridge.searchResults({ keyword: kw.keyword, resultCount: kw.result_count }); // KB-783 ⑦ — 같은 프라이버시 규칙(매칭값만)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submitted, search.isLoading, search.isSuccess]);
+  }, [submitted, search.isLoading, search.isSuccess, pkg.isPending]);
   const reset = () => {
     setQuery('');
     setSubmitted('');
@@ -133,9 +134,11 @@ export default function Search() {
 
   const showingSearch = submitted.length > 0;
   // All: 0건 섹션 숨김 · 실패 섹션은 남긴다(다시 시도) · 둘 다 0건이면 기존 빈 상태
-  const foodShown = search.isPending || search.isError || results.length > 0;
-  const pkgShown = pkg.isPending || pkg.isError || pkgItems.length > 0;
-  const foodFirst = Math.min(results.length, FOODS_PAGE_SIZE) >= Math.min(pkgItems.length, PROCESSED_PAGE_SIZE); // 첫 페이지 건수(두 쪽 다 20개 페이지)
+  // Q-397 ①: 두 요청이 다 끝날(성공·실패) 때까지 두 섹션 스켈레톤을 고정 순서(Dishes 위)로 — 먼저 온 쪽이 위에 그려졌다 뒤바뀌는 점프 0
+  const allSettled = !search.isPending && !pkg.isPending;
+  const foodShown = !allSettled || search.isError || results.length > 0;
+  const pkgShown = !allSettled || pkg.isError || pkgItems.length > 0;
+  const foodFirst = !allSettled || Math.min(results.length, FOODS_PAGE_SIZE) >= Math.min(pkgItems.length, PROCESSED_PAGE_SIZE); // 첫 페이지 건수(두 쪽 다 20개 페이지)
   const listData: (FoodCard | ProcessedFoodSummary)[] =
     !showingSearch || seg === 'all' ? [] :
     seg === 'packaged' ? (pkg.isSuccess ? pkgItems : []) :
@@ -144,7 +147,7 @@ export default function Search() {
   const dishesSection = foodShown ? (
     <View style={styles.section} testID="search-section-dishes">
       <SectionHead title={t('packaged.segmentDishes')} more={results.length > SECTION_PREVIEW || !!search.hasNextPage} onMore={() => pickSegment('dishes')} moreLabel={t('home.seeAll')} id="dishes" />
-      {search.isPending ? (
+      {!allSettled ? (
         <SkeletonFoodGrid rowStyle={styles.gridRowWrap} cellStyle={{ width: cellW }} />
       ) : search.isError ? (
         <View style={styles.sectionErr}><QueryErrorBlock error={search.error} onRetry={() => void search.refetch()} /></View>
@@ -162,7 +165,7 @@ export default function Search() {
   const packagedSection = pkgShown ? (
     <View style={styles.section} testID="search-section-packaged">
       <SectionHead title={t('packaged.segmentPackaged')} more={pkgItems.length > SECTION_PREVIEW || pkg.hasNextPage} onMore={() => pickSegment('packaged')} moreLabel={t('home.seeAll')} id="packaged" />
-      {pkg.isPending ? (
+      {!allSettled ? (
         <View style={[styles.gridRowWrap, styles.previewGrid]} testID="search-packaged-skeleton">
           {[0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} width={cellW} />)}
         </View>
@@ -324,7 +327,8 @@ export default function Search() {
               ) : pkg.isError ? (
                 <View style={styles.body}><QueryErrorBlock error={pkg.error} onRetry={() => void pkg.refetch()} /></View>
               ) : pkgItems.length > 0 ? (
-                <Text style={styles.count}>{t('search.resultCount', { count: pkgItems.length })}</Text>
+                // Q-397 ②: 서버 total이 없어 불러온 개수(20 → 40 …)만 셀 수 있다 — 결과 수 줄 숨김(자리만)
+                <View style={styles.countGap} testID="search-packaged-no-count" />
               ) : (
                 <View style={styles.body}><EmptyBlock label={t('search.noResultsTitle')} testID="search-empty" /></View>
               )
@@ -333,7 +337,7 @@ export default function Search() {
             ) : search.isError ? (
               <View style={styles.body}><QueryErrorBlock error={search.error} onRetry={() => void search.refetch()} /></View>
             ) : results.length > 0 ? (
-              <Text style={styles.count}>{t('search.resultCount', { count: results.length })}</Text>
+              <Text style={[styles.count, packagedOn && styles.countUnderChips]}>{t('search.resultCount', { count: results.length })}</Text>
             ) : (
               <View style={styles.body}><EmptyBlock label={t('search.noResultsTitle')} testID="search-empty" /></View>
             )}
@@ -434,7 +438,10 @@ const styles = StyleSheet.create({
   // P-345: dish-item(2200:21188) - pad12 gap12 r8 #EAEBEE 흰, 그림자 없음
 
   // KB-967: 결과 칩 줄(리뷰 탭 targetRow와 같은 칩) · All 섹션 = 제목 + 오른쪽 See all · 미리보기 2열 4장
-  segRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
+  segRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }, // 리뷰 탭 targetRow와 같은 아래 8
+  // Q-397 ②: 칩 → 첫 내용 = 리뷰 탭과 같은 30(칩 줄 8 + 리뷰 카드 위 패딩 22)
+  countUnderChips: { marginTop: 22 },
+  countGap: { height: 22 },
   section: { marginTop: 16 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 20, marginBottom: 12 },
   sectionTitle: { ...T.appBar, fontFamily: font.bodyBold, color: C.ink, flexShrink: 1 },

@@ -251,3 +251,67 @@ describe('KB-967 플래그 off · 계측', () => {
     expect(mockTrack.mock.calls.filter((c) => c[0] === 'search_query').at(-1)?.[1]).toMatchObject({ segment: 'dishes' });
   });
 });
+
+describe('Q-397 보정', () => {
+  const PENDING = { ...OK, ...PAGED, isSuccess: false, isPending: true, data: undefined };
+  it('① 한쪽만 도착 = 두 섹션 스켈레톤 고정 순서(Dishes 위) · 둘 다 끝난 뒤 한 번에 순서 결정', () => {
+    mockPkg.mockReturnValue(PENDING);
+    const tree = render();
+    submit(tree);
+    expect(sectionOrder(tree)).toEqual(['search-section-dishes', 'search-section-packaged']);
+    expect(idsWith(tree, 'home-food-')).toHaveLength(0); // 먼저 온 음식도 아직 안 그린다
+    expect(byId(tree, 'skeleton-food-grid').length).toBeGreaterThan(0);
+    mockPkg.mockReturnValue(pkgOk(8));
+    act(() => tree.update(<Search />));
+    expect(sectionOrder(tree)).toEqual(['search-section-packaged', 'search-section-dishes']);
+    expect(idsWith(tree, 'home-food-')).toHaveLength(4);
+  });
+
+  it('① 가공식품이 먼저 와도(음식 대기) Dishes 위 고정 — 음식이 끝난 뒤에야 Packaged가 위로', () => {
+    mockUseSearchFoods.mockReturnValue({ ...OK, ...PAGED, isSuccess: false, isPending: true, isLoading: true, data: undefined });
+    mockPkg.mockReturnValue(pkgOk(8));
+    const tree = render();
+    submit(tree);
+    expect(sectionOrder(tree)).toEqual(['search-section-dishes', 'search-section-packaged']);
+    expect(idsWith(tree, 'packaged-item-')).toHaveLength(0);
+    mockUseSearchFoods.mockReturnValue({ ...OK, ...PAGED, data: foods(6) });
+    act(() => tree.update(<Search />));
+    expect(sectionOrder(tree)).toEqual(['search-section-packaged', 'search-section-dishes']);
+  });
+
+  it('① 먼저 끝난 쪽이 0건·실패여도 다른 쪽이 끝날 때까지 자리 유지 — 끝나면 그때 숨김·결정', () => {
+    mockUseSearchFoods.mockReturnValue({ ...OK, ...PAGED, data: [] });
+    mockPkg.mockReturnValue(PENDING);
+    const tree = render();
+    submit(tree);
+    expect(sectionOrder(tree)).toEqual(['search-section-dishes', 'search-section-packaged']);
+    mockPkg.mockReturnValue({ ...OK, ...PAGED, isSuccess: false, isError: true, error: new Error('HTTP 500'), data: undefined });
+    act(() => tree.update(<Search />));
+    expect(sectionOrder(tree)).toEqual(['search-section-packaged']); // 음식 0건 = 숨김 · 가공식품 실패 = 다시 시도 섹션
+  });
+
+  it('② Packaged 칩 = 결과 수 줄 없음(불러온 개수일 뿐) · Dishes 칩 = 결과 수 + 칩 아래 리뷰 탭과 같은 간격', () => {
+    const tree = render();
+    submit(tree);
+    press(tree, 'search-seg-packaged');
+    expect(tree.root.findAll((n) => n.props?.children === 'search.resultCount').length).toBe(0);
+    expect(byId(tree, 'search-packaged-no-count').length).toBeGreaterThan(0);
+    press(tree, 'search-seg-dishes');
+    const count = tree.root.findAll((n) => n.props?.children === 'search.resultCount' && typeof n.type !== 'string')[0];
+    const st = Object.assign({}, ...[count.props.style].flat(3).filter(Boolean));
+    expect(st.marginTop).toBe(22);
+    expect(Object.assign({}, ...[byId(tree, 'search-segments')[0].props.style].flat(3).filter(Boolean)).paddingBottom).toBe(8);
+  });
+
+  it('계측: 가공식품도 끝난 뒤 1회 — result_count = 음식 건수 그대로 + packaged_count', () => {
+    mockPkg.mockReturnValue(PENDING);
+    const tree = render();
+    submit(tree);
+    expect(mockTrack.mock.calls.filter((c) => c[0] === 'search_query')).toHaveLength(0);
+    mockPkg.mockReturnValue(pkgOk(5));
+    act(() => tree.update(<Search />));
+    const ev = mockTrack.mock.calls.filter((c) => c[0] === 'search_query');
+    expect(ev).toHaveLength(1);
+    expect(ev[0][1]).toMatchObject({ result_count: 6, packaged_count: 5, segment: 'all' });
+  });
+});

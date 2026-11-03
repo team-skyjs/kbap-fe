@@ -5,6 +5,7 @@
 - Dishes = 기존 음식 결과 그대로 · Packaged = useProcessedSearchPaged 무한스크롤 + Packaged 탭 ProductCard(판정 리본 기준 동일).
 - processedFoodEnabled off = 칩·가공식품 요청 없음(useProcessedSearchPaged enabled 인자 추가). search_query에 segment(all|dishes|packaged).
 - 새 i18n 키 0. 테스트 searchUnified967(뮤테이션 5종 확인) + 기존 search 테스트 2개에 가공식품 목 추가.
+- Q-397 보정(11/03): ① All = 두 요청이 다 끝날 때까지 두 섹션 스켈레톤 고정 순서(Dishes 위) → 끝난 뒤 한 번에 순서·숨김 결정(0.3초 점프 제거) ② Packaged 칩 결과 수 줄 숨김(서버 total 없음 — 불러온 개수가 20→83로 늘던 것), Dishes 칩 = 칩 아래 30(리뷰 탭과 같은 8 + 22) ③ search_query = 가공식품도 끝난 뒤 1회, result_count는 음식 건수 그대로 + packaged_count.
 
 ## 2026-11-02 · P-579 KB-966 연장 — 리뷰의 가공식품 이름 번역(서버 S-942)
 
