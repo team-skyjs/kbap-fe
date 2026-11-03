@@ -11,14 +11,15 @@ import type { ReviewPage } from '@/lib/api/types';
 import { api, apiLang } from '@/lib/api/client';
 import { trackReadyFood } from './hiddenFoods';
 import { adaptReviewPage, type ReviewPageWire } from '@/lib/api/reviewAdapter';
-import { FLAGS, isDevServerChannel } from '@/lib/flags';
+import { FLAGS } from '@/lib/flags';
 import { mockFoodReviews } from '@/lib/mocks/reviews';
 import { PROCESSED_FOOD_API_VERSION } from './processedFoodApiVersion';
 
 /** KB-812 2차(서버 #435): 리뷰 **조회**는 3.2 — 이 버전부터 피드·내 리뷰에 가공식품 리뷰가 섞이고 응답에 targetType·processedFood가 온다
  *  (3.1 이하 = 음식 리뷰만). 파라미터·정렬은 두 버전 동일(서버 매핑 실측). 쓰기(작성·수정·삭제·좋아요)는 1.0+ 그대로. */
-/** KB-870(P-524): 운영 서버는 아직 3.2 리뷰 매핑이 없어 400(감사 실측) — dev 서버 채널만 3.2, 운영 채널은 헤더 없음(1.0, main과 같음). */
-export const REVIEW_READ_HEADERS = isDevServerChannel() ? { headers: { 'X-API-Version': PROCESSED_FOOD_API_VERSION } } : undefined;
+/** KB-870(P-524)엔 운영 서버에 3.2 리뷰 매핑이 없어 dev 서버 채널만 3.2였다. P-591(KB-966, 11/03): 운영 서버 26.11.2가 3.2 보유 —
+ *  운영이 헤더 없이(1.x) 부르면 가공식품 리뷰가 빠지고 targetType 필터가 무시돼 리뷰 탭 Packaged가 음식 리뷰를 그렸다 → 전 채널 3.2. */
+export const REVIEW_READ_HEADERS = { headers: { 'X-API-Version': PROCESSED_FOOD_API_VERSION } };
 /** 가공식품 리뷰 엔드포인트(/api/processed-foods/{id}/reviews)는 3.2+에만 매핑 — 채널 무관 3.2 고정(헤더 없으면 404). */
 export const PROCESSED_REVIEW_HEADERS = { headers: { 'X-API-Version': PROCESSED_FOOD_API_VERSION } };
 

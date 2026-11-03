@@ -4,6 +4,11 @@
 - 빈 검색: 스캔분(빠른 선택) 바로 아래 "편의점 인기 간식" 5개 — 홈 편의점 줄과 같은 쿼리 키(useProcessedSearchPaged(''), 캐시 공유) · 검색: 음식 결과(Dishes 제목) 아래 Packaged 5개 · Packaged 칩 = 첫 페이지 전부 · Dishes 칩 = 가공식품 구역 언마운트(요청 0). 음식 규칙(스캔분 우선·전체 검색) 무변.
 - 가공식품 행 = 시트 결과 행(원형 썸네일 누끼 contain·번역 이름·nameKo 보조, 사진 없음 = 과자봉지 아이콘) · 로딩 = 스켈레톤 3행 · 전체 칩 실패/0건 = 구역째 숨김 · Packaged 칩 0건/실패 = 안내. 선택 = 시트 닫고 /processed-foods/{id}/review + review_write_tap(source feed, target_type packaged).
 - 새 i18n 키 0(home.filterAll·packaged.segment*·home.cvsTitle·packaged.emptyTitle/emptyBody 재사용). 판정 리본은 행에 그리지 않는다(false-safe 표면 0).
+## 2026-11-03 · P-591 KB-966 핫픽스 — 리뷰 조회 3.2 헤더 전 채널(예진 운영 확인)
+
+- useFoodReviews REVIEW_READ_HEADERS = isDevServerChannel() ? 3.2 : 없음 → 전 채널 3.2. 운영이 1.x로 GET /api/reviews·/api/reviews/me를 불러 가공식품 리뷰가 빠지고 targetType 필터가 무시됐다(리뷰 탭 Packaged = 음식 리뷰). 운영 서버 26.11.2가 3.2 보유.
+- 사용처 3곳(리뷰 피드·음식별 리뷰·내 리뷰) 모두 이 상수 · 가공식품 리뷰 엔드포인트는 원래 3.2 고정. 남은 isDevServerChannel 버전 게이트 0(플래그 engagementDwell·packagedNameScanPhoto만 dev 서버 채널).
+- prodHide870 production·preview·teamtest-prod 잠금을 3.2로.
 
 ## 2026-11-03 · P-586 KB-974 가공식품 게스트 판정 숨김·상세 히어로 통일(예진 테플 피드백)
 

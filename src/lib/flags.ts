@@ -219,7 +219,7 @@ export const FLAGS = {
    * 운영 큐레이션 게시/GET·idol GET·회피 catalog/profile PATCH 왕복 확인 뒤 develop 머지/발행한다.
    * PF3종과 리뷰 버전은 DEV_SERVER_CHANNEL에 유지한다. 공용 dev 게이트를 켜지 않는다.
    * P-587(KB-807, 11/03): 운영 서버 26.11.2(가공식품 API 전체) 반영 → processedFoodEnabled·popularByReviews·packagedLabelScan 전 채널 true.
-   * packagedReviewWrite·리뷰 조회 헤더(isDevServerChannel)는 그대로.
+   * P-588: packagedReviewWrite 전 채널 · P-591(KB-966): 리뷰 조회 헤더 3.2 전 채널(useFoodReviews REVIEW_READ_HEADERS).
    */
   curationEnabled: true,
   processedFoodEnabled: true,
