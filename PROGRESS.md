@@ -3,6 +3,7 @@
 - ① 상세 판정 띠 아래 근거 줄(MatchEvidence "Milk: 원유") 제거 — 띠 본문 그대로. 키 packaged.matchEvidence는 사용처 0(로케일 파일엔 남김).
 - ② 하단 Write a review = 음식 상세(KB-932)와 같은 pillCta.band(투명·absolute·box-none) + 연필 아이콘 알약 · 스크롤 아래 여백 = useBottomBand(띠 실높이 + 16). 흰 바탕·상단 선 띠(s.bar) 삭제.
 - ③ 리뷰 작성(음식·가공식품 공용) 사진 버튼의 PhotoConsentSheet 폐기 → 갤러리 바로 열림 · 본문 입력 아래 보조 글씨 1줄 ugc.consentTitle("직접 촬영한 사진만 올려 주세요", 10로케일 기존 키 — 신규 키 0). PhotoConsentSheet·packagedPhotoConsent(기기 저장 키 ugc.packagedPhotoConsent.v1) 삭제. 동의 전용 계측 이벤트는 원래 없었다(제거할 계측 0).
+- 키 정리(DoD): 사용처 0이 된 ugc.consentNoStock·consentRemoval·consentAgree·packaged.matchEvidence 10로케일 삭제(copyApproved924·packagedLabels901 잠금 갱신).
 
 ## 2026-11-03 · P-591 KB-966 핫픽스 — 리뷰 조회 3.2 헤더 전 채널(예진 운영 확인)
 

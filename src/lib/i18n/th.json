@@ -1265,7 +1265,6 @@
     "sourceC002": "ข้อมูล: กระทรวงความปลอดภัยอาหารและยาเกาหลี รายงานการผลิตของ Food Safety Korea",
     "avoidMatchTitle": "พบสิ่งที่คุณหลีกเลี่ยง",
     "avoidMatchBody": "พบในส่วนผสมหรือฉลากสารก่อภูมิแพ้: {{names}}",
-    "matchEvidence": "{{name}}: {{evidence}}",
     "crossContactTitle": "อาจปนเปื้อนข้าม",
     "crossContactBody": "ฉลากระบุว่าอาจมี {{names}} จากโรงงานเดียวกัน",
     "unverifiedTitle": "ยืนยันส่วนผสมบางอย่างไม่ได้",
@@ -1388,9 +1387,6 @@
   },
   "ugc": {
     "consentTitle": "อัปโหลดเฉพาะรูปที่คุณถ่ายเอง",
-    "consentNoStock": "ไม่สามารถอัปโหลดรูปจากเว็บช้อปปิ้งหรือผลการค้นหาได้",
-    "consentRemoval": "รูปที่มีปัญหาด้านลิขสิทธิ์อาจถูกลบ",
-    "consentAgree": "เข้าใจแล้ว เลือกรูป",
     "photoRemovalRequest": "ขอให้ลบรูป",
     "photoRemovalPrefill": "ขอให้ลบรูป: {{product}} รีวิว {{reviewId}}"
   },
