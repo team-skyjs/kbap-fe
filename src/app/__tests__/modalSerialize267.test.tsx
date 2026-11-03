@@ -154,6 +154,10 @@ jest.mock('@/lib/push/pushAdapter', () => ({
 import Scan from '../scan';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { PushPrimerModal } from '@/features/push/PushPrimerModal';
+// eslint-disable-next-line import/first -- jest.mock 뒤
+import * as asMod from '@react-native-async-storage/async-storage';
+
+const AsyncStorage = ((asMod as { default?: unknown }).default ?? asMod) as { setItem: (k: string, v: string) => Promise<void> };
 
 // KB-908(T-010): 넛지·리뷰 유도 호스트는 루트에 — 스캔만 내려 "떠남"을 재현한다(같은 트리에서 호스트는 살아 있음)
 function App({ scan = true }: { scan?: boolean }) {
@@ -185,8 +189,10 @@ async function reachResult(tree: ReactTestRenderer) {
 const coachOpen = (t: ReactTestRenderer) => t.root.findAllByType(ScanCoachMark).some((n) => n.props.open === true);
 const primerOpen = (t: ReactTestRenderer) => t.root.findAllByType(PushPrimerModal).some((n) => n.props.open === true);
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  // P-587: 가공식품 전 채널 ON → 가공식품 코치마크 미시청이면 스캔 뒤 시트·프라이머를 건너뜀(KB-968 코치마크 우선) — 이 파일은 본 뒤 기준
+  await AsyncStorage.setItem('kbap.packagedCoach.v1', '1');
   mockShouldShowCoach.mockResolvedValue(true);
   mockGetPrimer.mockResolvedValue(null); // 미응답자 = 프라이머 후보
 });

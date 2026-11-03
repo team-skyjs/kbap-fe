@@ -56,29 +56,29 @@ describe('KB-830 다른 정렬 첫 페이지 선요청', () => {
     return { update: (n: React.ComponentProps<typeof Probe>) => act(() => tr.update(<QueryClientProvider client={qc}><Probe {...n} /></QueryClientProvider>)), unmount: () => act(() => tr.unmount()) };
   };
   const keys = () => spy.mock.calls.map((c) => JSON.stringify((c[0] as { queryKey: unknown }).queryKey));
-  const key = (risk: 'all' | 'safe' | 'danger' | undefined, sort?: 'name_asc' | 'name_desc') =>
+  const key = (risk: 'all' | 'safe' | 'danger' | undefined, sort?: 'name_asc' | 'name_desc' | 'reviews') =>
     JSON.stringify(foods.foodsListOptions('en', jest.requireActual('@/lib/api/foodAdapter').riskWireOf(risk), sort).queryKey);
 
-  it('현재 목록 첫 페이지 전(ready false) = 0 · 도착 뒤 = 현재 정렬 빼고 나머지 서버 정렬 2개(같은 필터 키)', () => {
+  it('현재 목록 첫 페이지 전(ready false) = 0 · 도착 뒤 = 현재 정렬 빼고 나머지 서버 정렬(같은 필터 키, P-587부터 리뷰순 포함 3개)', () => {
     const m = mount({ risk: 'safe', current: undefined, enabled: true, ready: false });
     expect(spy).not.toHaveBeenCalled();
     m.update({ risk: 'safe', current: undefined, enabled: true, ready: true });
-    expect(keys()).toEqual([key('safe', 'name_asc'), key('safe', 'name_desc')]);
+    expect(keys()).toEqual([key('safe', 'name_asc'), key('safe', 'name_desc'), key('safe', 'reviews')]);
     m.unmount();
   });
   it('이름 정렬 중이면 인기(정렬 없음)와 반대 이름 정렬 · 필터 변경 = 새 필터 키로 다시', () => {
     const m = mount({ risk: 'all', current: 'name_asc', enabled: true, ready: true });
-    expect(keys()).toEqual([key('all', undefined), key('all', 'name_desc')]);
+    expect(keys()).toEqual([key('all', undefined), key('all', 'name_desc'), key('all', 'reviews')]);
     spy.mockClear();
     m.update({ risk: 'danger', current: 'name_asc', enabled: true, ready: true });
-    expect(keys()).toEqual([key('danger', undefined), key('danger', 'name_desc')]);
+    expect(keys()).toEqual([key('danger', undefined), key('danger', 'name_desc'), key('danger', 'reviews')]);
     m.unmount();
   });
   it('첫 페이지만(pages: 1 명시 — 생략하면 오래된 캐시의 페이지 수만큼 재요청) · 화면 목록과 같은 정의(foodsListOptions) · 비활성(Saved·홈) = 0', () => {
     const m = mount({ risk: 'all', current: undefined, enabled: false, ready: true });
     expect(spy).not.toHaveBeenCalled();
     m.update({ risk: 'all', current: undefined, enabled: true, ready: true });
-    expect(spy).toHaveBeenCalledTimes(2);
+    expect(spy).toHaveBeenCalledTimes(3); // P-587: popularByReviews 전 채널 → 리뷰순도 선요청
     for (const c of spy.mock.calls) {
       const o = c[0] as Record<string, unknown>;
       expect(o.pages).toBe(1); // Codex #307: 생략 = 캐시 페이지 수만큼 재요청
@@ -91,7 +91,7 @@ describe('KB-830 다른 정렬 첫 페이지 선요청', () => {
     spy.mockImplementation(() => Promise.reject(new Error('net')));
     const m = mount({ risk: 'all', current: undefined, enabled: true, ready: true });
     await act(async () => { await Promise.resolve(); });
-    expect(spy).toHaveBeenCalledTimes(2);
+    expect(spy).toHaveBeenCalledTimes(3); // P-587: popularByReviews 전 채널 → 리뷰순도 선요청
     m.unmount();
   });
   it('음식 탭 배선 = 현재 목록 성공 뒤·정렬 가능한 화면·Saved 아닐 때만 · 목록 쿼리는 placeholderData 없음', () => {
