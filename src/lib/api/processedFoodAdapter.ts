@@ -359,18 +359,20 @@ export type VisionScanWire = {
 };
 const VISION_KINDS: readonly VisionKind[] = ['MENU', 'PACKAGE_FRONT', 'INGREDIENT_LABEL', 'OTHER'];
 const VISION_REASONS: readonly VisionReason[] = ['BLURRY', 'TOO_DARK', 'GLARE', 'CROPPED', 'NOT_FOOD'];
-/** 모르는 kind = OTHER(다시 찍기 — 판정을 지어내지 않는다) · 모르는 reason = null · 경로는 서버 state가 정본:
+/** 모르는 kind = OTHER(다시 찍기 — 판정을 지어내지 않는다) · 모르는 reason(UNKNOWN 포함 — #542 키 재시도 초과·만료) = null → 안내 unknown · 경로는 서버 state가 정본:
  *  CANDIDATES인데 후보 0 = 후보 없음 · LABEL_RESULT인데 label 없음 = 다시 찍기(판정 없는 결과 화면 금지) */
 export function adaptVisionScan(w: VisionScanWire): VisionScanResult {
   const kind = VISION_KINDS.find((k) => k === w.kind) ?? 'OTHER';
   const reason = VISION_REASONS.find((r) => r === w.reason) ?? null;
   const candidates = (w.front?.candidates ?? []).slice(0, 5).map((c) => ({ ...adaptProcessedSummary(c), reportNo: String(c.reportNo) }));
   const label = w.label ? adaptLabelScan(w.label) : null;
+  // #542 공부 반영: 같은 키 재전송 = CONFIRMED·REJECTED·LABEL_RESULT가 올 수 있다 · 키 재시도 초과·만료 = state OTHER + reason UNKNOWN(비전 호출 0).
+  // kind와 state가 어긋나거나 모르는 state면 다시 찍기 — 앞면이라도 state가 후보·후보 없음·거절이 아니면 "후보 없음"으로 보내지 않는다
   const route: VisionRoute =
     w.state === 'CONFIRMED' ? 'confirmed'
-    : kind === 'PACKAGE_FRONT' ? (w.state === 'CANDIDATES' && candidates.length > 0 ? 'candidates' : 'none')
-    : kind === 'INGREDIENT_LABEL' ? (label ? 'label' : 'other')
-    : kind === 'MENU' ? 'menu'
+    : kind === 'PACKAGE_FRONT' ? (w.state === 'CANDIDATES' && candidates.length > 0 ? 'candidates' : w.state === 'CANDIDATES' || w.state === 'NO_CANDIDATE' || w.state === 'REJECTED' ? 'none' : 'other')
+    : kind === 'INGREDIENT_LABEL' ? (label && w.state === 'LABEL_RESULT' ? 'label' : 'other')
+    : kind === 'MENU' && w.state === 'NOT_PACKAGED' ? 'menu'
     : 'other';
   const conf = typeof w.confidence === 'number' && Number.isFinite(w.confidence) ? Math.min(1, Math.max(0, w.confidence)) : 0;
   return {

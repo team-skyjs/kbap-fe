@@ -115,6 +115,17 @@ describe('KB-969 어댑터·요청·오류', () => {
     expect(adaptVisionScan(V({ kind: 'PACKAGE_FRONT', state: 'CONFIRMED' })).route).toBe('confirmed');
     expect(adaptVisionScan(V({ kind: 'OTHER', state: 'NOT_PACKAGED', confidence: 1.7, reason: 'GLARE' }))).toMatchObject({ confidence: 1, reason: 'GLARE' });
   });
+  it('#542 공부 반영: reason UNKNOWN·모르는 값 = null(안내 unknown) · kind와 어긋난·모르는 state = 다시 찍기 · 재전송 REJECTED = 후보 없음 · LABEL_RESULT 재전송 = 결과', () => {
+    const unknown = adaptVisionScan(V({ kind: 'OTHER', state: 'OTHER', reason: 'UNKNOWN' }));
+    expect(unknown).toMatchObject({ route: 'other', reason: null });
+    expect(visionReasonKey(unknown.reason)).toBe('unknown');
+    expect(visionReasonKey(adaptVisionScan(V({ kind: 'OTHER', state: 'NOT_PACKAGED', reason: 'SOMETHING_NEW' })).reason)).toBe('unknown');
+    expect(adaptVisionScan(V({ kind: 'PACKAGE_FRONT', state: 'OTHER', reason: 'UNKNOWN', front: { candidates: [cand(1, 'R1')] } })).route).toBe('other');
+    expect(adaptVisionScan(V({ kind: 'PACKAGE_FRONT', state: 'REJECTED', front: { candidates: [] } })).route).toBe('none');
+    expect(adaptVisionScan(V({ kind: 'INGREDIENT_LABEL', state: 'LABEL_RESULT', label: LABEL })).route).toBe('label');
+    expect(adaptVisionScan(V({ kind: 'INGREDIENT_LABEL', state: 'OTHER', label: LABEL })).route).toBe('other');
+    expect(adaptVisionScan(V({ kind: 'MENU', state: 'OTHER', reason: 'UNKNOWN' })).route).toBe('other');
+  });
   it('오류: PFOOD-013 = 하루 상한 · PFOOD-014 = 용량 · SCAN-006·008 = 혼잡 · 코드 없는 503·429는 기존 그대로 network(다른 스캔 문구 무변)', () => {
     expect(scanFailureOf(new ApiError('x', 429, 'PFOOD-013'))).toBe('visionLimit');
     expect(scanFailureOf(new ApiError('x', 400, 'PFOOD-014'))).toBe('tooLarge');
@@ -203,6 +214,17 @@ describe('KB-969 흐름(packagedVisionScan on)', () => {
     expect(texts(t)).toEqual(expect.arrayContaining(['packagedScan.vision.retakeTitle', key]));
     await press(t, 'pscan-retake');
     expect(ids(t)).toContain('cam-vision');
+  });
+  it('UNKNOWN(키 재시도 초과·만료) = unknown 안내 → 다시 찍기 = 새 촬영·새 clientRequestId', async () => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'OTHER', state: 'OTHER', reason: 'UNKNOWN' }));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    expect(texts(t)).toContain('packagedScan.vision.unknown');
+    await press(t, 'pscan-retake');
+    mockPost.mockResolvedValueOnce(V({ analysisId: 'uuid-2', kind: 'MENU', state: 'NOT_PACKAGED' }));
+    await press(t, 'cam-shutter');
+    expect(visionCalls().map((c) => (c[1] as { clientRequestId: string }).clientRequestId)).toEqual(['uuid-1', 'uuid-2']);
+    expect(mockVisionUpload).toHaveBeenCalledTimes(2);
   });
   it('전송 실패 → 다시 시도 = 같은 키·같은 경로(재업로드 0 — 서버 멱등)', async () => {
     mockPost.mockRejectedValueOnce(new Error('NETWORK: x'));

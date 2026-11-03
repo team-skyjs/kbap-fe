@@ -6,6 +6,7 @@
 - 오류: PFOOD-013 = 하루 상한(닫기만) · PFOOD-014 = 용량 · SCAN-006·008 = 혼잡(같은 키·같은 경로로 다시) · 전송 실패 = 같은 키 재시도 · PFOOD-006 = 다시 찍기. 매핑은 코드로만(상태 503·429로 넓히면 이름·성분표 기존 문구가 바뀐다).
 - 계측 신규 food_packaged_scan_vision(kind·state·confidence 구간·reason·side) · food_packaged_scan_start mode vision · food_packaged_scan_fail stage vision.
 - 시뮬 주입: 구 OCR 입력칸 자리 = VisionDebug(글자 → 실제 이름 스캔/성분표 분석으로 응답을 만들어 같은 분기, 다시 찍기 목).
+- #542 공부 반영(커맨드 11/03): reason UNKNOWN(키 재시도 초과·만료 — 비전 호출 0)·모르는 reason = 안내 unknown + 다시 찍기(새 키) · 재전송 REJECTED = 후보 없음 · kind와 어긋난·모르는 state = 다시 찍기(앞면이라도 "후보 없음"으로 보내지 않는다).
 - 신규 i18n 13키 × 10로케일: packagedScan.vision.{retakeTitle, blurry, tooDark, glare, cropped, notFood, unknown} · packagedScan.err.{visionLimit, tooLarge, busy}{Title, Body}.
 
 ## 2026-11-03 · P-591 KB-966 핫픽스 — 리뷰 조회 3.2 헤더 전 채널(예진 운영 확인)
