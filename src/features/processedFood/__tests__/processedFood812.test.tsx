@@ -289,12 +289,28 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     const a2 = w.root.findAll((n) => n.props?.testID === 'pf-allergens' && typeof n.type === 'string')[0];
     expect(a2.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children)).toEqual(['packaged.allergenTitle', 'Wheat, Soy contained', al]);
   });
-  it('KB-901 T-053: 피하는 재료 근거 원재료 = 판정 문장 아래 작은 글자("Egg: 난각칼슘") · 근거 없으면 줄 0', () => {
+  it('KB-977(예진 운영 실기): 판정 띠 아래 근거 줄("Milk: 원유") 없음 — 띠(본문)는 그대로', () => {
     member();
-    const a = detail({ verdict: 'AVOID', avoidMatches: [{ code: 'EGG', evidence: ['난각칼슘'] }, { code: 'MILK', evidence: [] }] });
-    expect(ids(a)).toContain('pf-evidence-EGG');
-    expect(ids(a)).not.toContain('pf-evidence-MILK');
-    expect(text(a)).toContain('packaged.matchEvidence:{\\"name\\":\\"L(EGG)\\",\\"evidence\\":\\"난각칼슘\\"}');
+    const a = detail({ verdict: 'AVOID', avoidMatches: [{ code: 'EGG', evidence: ['난각칼슘'] }, { code: 'MILK', evidence: ['원유'] }] });
+    expect(ids(a)).toContain('pf-verdict-avoid');
+    expect(ids(a).filter((i) => i.startsWith('pf-evidence'))).toEqual([]);
+    expect(text(a)).not.toContain('packaged.matchEvidence');
+  });
+  it('KB-977: 하단 Write a review = 음식 상세와 같은 투명 떠 있는 띠(흰 바탕·상단 선 0) + 띠 바탕 탭 통과', () => {
+    const F = FLAGS as unknown as Record<string, boolean>;
+    const prev = [F.reviewsEnabled, F.reviewsLiveEnabled, F.packagedReviewWrite];
+    F.reviewsEnabled = F.reviewsLiveEnabled = F.packagedReviewWrite = true;
+    try {
+      member();
+      const t = detail({ verdict: 'SAFE' });
+      const band = t.root.findAll((n) => n.props?.testID === 'pf-write-band' && typeof n.type === 'string')[0];
+      const st = StyleSheet.flatten(band.props.style) as { backgroundColor?: string; position?: string; borderTopWidth?: number; bottom?: number };
+      expect([st.backgroundColor, st.position, st.bottom, st.borderTopWidth ?? 0]).toEqual(['transparent', 'absolute', 0, 0]);
+      expect(band.props.pointerEvents).toBe('box-none');
+      expect(ids(t)).toContain('pf-write-review-bar');
+    } finally {
+      [F.reviewsEnabled, F.reviewsLiveEnabled, F.packagedReviewWrite] = prev;
+    }
   });
   it('회원인데 verdict null(원재료·표시 둘 다 없음) = 판정 리본 없이 "확인 못 함"(KB-914: 회색 unable 띠 — 4상태의 "판정 불가")', () => {
     member();

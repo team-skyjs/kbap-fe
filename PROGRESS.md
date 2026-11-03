@@ -1,3 +1,10 @@
+## 2026-11-03 · P-590 KB-977 가공식품 상세·작성 다듬기 3건(예진 운영 실기)
+
+- ① 상세 판정 띠 아래 근거 줄(MatchEvidence "Milk: 원유") 제거 — 띠 본문 그대로. 키 packaged.matchEvidence는 사용처 0(로케일 파일엔 남김).
+- ② 하단 Write a review = 음식 상세(KB-932)와 같은 pillCta.band(투명·absolute·box-none) + 연필 아이콘 알약 · 스크롤 아래 여백 = useBottomBand(띠 실높이 + 16). 흰 바탕·상단 선 띠(s.bar) 삭제.
+- ③ 리뷰 작성(음식·가공식품 공용) 사진 버튼의 PhotoConsentSheet 폐기 → 갤러리 바로 열림 · 본문 입력 아래 보조 글씨 1줄 ugc.consentTitle("직접 촬영한 사진만 올려 주세요", 10로케일 기존 키 — 신규 키 0). PhotoConsentSheet·packagedPhotoConsent(기기 저장 키 ugc.packagedPhotoConsent.v1) 삭제. 동의 전용 계측 이벤트는 원래 없었다(제거할 계측 0).
+- 키 정리(DoD): 사용처 0이 된 ugc.consentNoStock·consentRemoval·consentAgree·packaged.matchEvidence 10로케일 삭제(copyApproved924·packagedLabels901 잠금 갱신).
+
 ## 2026-11-03 · P-589 KB-976 리뷰 탭 Write a review — 대상 고르기에서 가공식품 선택(예진 운영 확인)
 
 - 리뷰 피드 대상 고르기(TagPickerSheet context review)에 통합 검색과 같은 All/Dishes/Packaged 칩 — 호출측이 onPickPackaged를 넘길 때만(글 작성·필터 픽커 무변) + 가공식품 상세 쓰기 버튼과 같은 플래그(processedFoodEnabled·reviewsLiveEnabled·packagedReviewWrite).

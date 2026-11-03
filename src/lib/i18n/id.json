@@ -1265,7 +1265,6 @@
     "sourceC002": "Data: Kementerian Keamanan Pangan dan Obat Korea, laporan produksi Food Safety Korea",
     "avoidMatchTitle": "Cocok dengan daftar hindari",
     "avoidMatchBody": "Ditemukan di bahan atau pernyataan alergen: {{names}}.",
-    "matchEvidence": "{{name}}: {{evidence}}",
     "crossContactTitle": "Kemungkinan kontaminasi silang",
     "crossContactBody": "Label menyebut mungkin mengandung {{names}} dari fasilitas yang sama.",
     "unverifiedTitle": "Beberapa bahan tidak dapat diverifikasi",
@@ -1388,9 +1387,6 @@
   },
   "ugc": {
     "consentTitle": "Unggah hanya foto yang kamu ambil sendiri",
-    "consentNoStock": "Gambar dari situs belanja atau hasil pencarian tidak bisa diunggah.",
-    "consentRemoval": "Foto yang bermasalah hak ciptanya bisa dihapus.",
-    "consentAgree": "Mengerti, pilih foto",
     "photoRemovalRequest": "Minta hapus foto",
     "photoRemovalPrefill": "Permintaan hapus foto: {{product}} ulasan {{reviewId}}"
   },

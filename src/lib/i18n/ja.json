@@ -1265,7 +1265,6 @@
     "sourceC002": "データ: 食品医薬品安全処 食品安全ナラ 品目製造報告",
     "avoidMatchTitle": "避けたい食材が含まれています",
     "avoidMatchBody": "原材料またはアレルギー表示で見つかりました: {{names}}。",
-    "matchEvidence": "{{name}}: {{evidence}}",
     "crossContactTitle": "混入の可能性",
     "crossContactBody": "同じ製造施設で{{names}}が混入する可能性があると表示されています。",
     "unverifiedTitle": "一部の原材料を確認できません",
@@ -1388,9 +1387,6 @@
   },
   "ugc": {
     "consentTitle": "ご自身で撮影した写真のみアップロードしてください",
-    "consentNoStock": "通販サイトや検索で見つけた画像はアップロードできません。",
-    "consentRemoval": "権利上の問題がある写真は削除されることがあります。",
-    "consentAgree": "確認して選ぶ",
     "photoRemovalRequest": "写真の削除をリクエスト",
     "photoRemovalPrefill": "写真の削除リクエスト: {{product}} レビュー {{reviewId}}"
   },
