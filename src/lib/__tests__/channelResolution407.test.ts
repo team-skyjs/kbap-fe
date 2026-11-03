@@ -48,24 +48,24 @@ describe('채널 해석표 — 실제 flags.ts', () => {
   });
 });
 
-describe('KB-812 2차 — packagedReviewWrite = dev 서버 채널만(서버 기능이 켜진 곳) · P-587 가공식품 3종 = 전 채널', () => {
+describe('P-587·P-588(KB-807) — 가공식품 4종(리뷰 쓰기 포함) = 전 채널', () => {
   it.each([
-    // channel,        __DEV__, write
-    ['development', false, true],
-    ['teamtest', false, true], // KB-894: teamtest = dev 서버(KB-870 prod 리허설을 되돌림)
-    ['teamtest-prod', true, false], // 진단 채널이지만 백엔드 prod(쓰기 OFF) — 막다른 버튼 금지
-    ['preview', true, false],
-    ['production', true, false],
-    ['', true, true], // dev client(Metro) — 로컬
-    ['', false, false],
-    [undefined, false, false],
-  ])('%s (__DEV__=%s) → %s', (channel, dev, write) => {
+    // channel,        __DEV__
+    ['development', false],
+    ['teamtest', false],
+    ['teamtest-prod', true],
+    ['preview', true],
+    ['production', true],
+    ['production', false],
+    ['', true],
+    ['', false],
+    [undefined, false],
+  ])('%s (__DEV__=%s) → 4종 on', (channel, dev) => {
     const f = flagsFor(channel as string | null | undefined, dev as boolean);
-    expect(f.FLAGS.packagedReviewWrite).toBe(write);
-    // P-587(KB-807): 운영 서버 26.11.2 반영 → 가공식품 3종은 채널·__DEV__와 무관하게 on
-    expect([f.FLAGS.processedFoodEnabled, f.FLAGS.popularByReviews, f.FLAGS.packagedLabelScan]).toEqual([true, true, true]);
+    // 운영 서버 26.11.2 + PROCESSED_FOOD_REVIEW_WRITE_ENABLED=true → 채널·__DEV__와 무관하게 on
+    expect([f.FLAGS.processedFoodEnabled, f.FLAGS.popularByReviews, f.FLAGS.packagedLabelScan, f.FLAGS.packagedReviewWrite]).toEqual([true, true, true, true]);
   });
-  it('eas.json — 쓰기 버튼 채널은 전부 dev 서버, 숨김 채널은 dev 서버가 아니다', () => {
+  it('eas.json — teamtest = dev 서버, teamtest-prod·preview·production = 운영 서버', () => {
     const build = JSON.parse(fs.readFileSync('eas.json', 'utf8')).build as Record<string, { channel?: string; env?: Record<string, string> }>;
     const base = (ch: string) => Object.values(build).find((p) => p.channel === ch)?.env?.EXPO_PUBLIC_BE_BASE;
     expect(base('teamtest')).toBe('https://dev.kbap.site'); // KB-894
@@ -152,11 +152,11 @@ it('unknown target은 teamtest 개발 기능을 열지 않고 production은 targ
   expect(flagsFor('teamtest', false, 'typo').isDevServerChannel()).toBe(false);
   const prod = flagsFor('production', false, 'dev');
   expect(prod.isDevServerChannel()).toBe(false);
-  expect(prod.FLAGS.packagedReviewWrite).toBe(false);
+  expect(prod.FLAGS.packagedNameScanPhoto).toBe(false); // dev 서버 게이트 플래그는 운영에서 꺼짐
 });
 
-it('P-587(KB-807) — isProdChannel()에서도 가공식품 3종 true', () => {
+it('P-587·P-588(KB-807) — isProdChannel()에서도 가공식품 4종(리뷰 쓰기 포함) true', () => {
   const f = flagsFor('production', false);
   expect(f.isProdChannel()).toBe(true);
-  expect([f.FLAGS.processedFoodEnabled, f.FLAGS.popularByReviews, f.FLAGS.packagedLabelScan]).toEqual([true, true, true]);
+  expect([f.FLAGS.processedFoodEnabled, f.FLAGS.popularByReviews, f.FLAGS.packagedLabelScan, f.FLAGS.packagedReviewWrite]).toEqual([true, true, true, true]);
 });

@@ -206,8 +206,9 @@ export const FLAGS = {
    * 서버 PROCESSED_FOOD_REVIEW_WRITE_ENABLED가 켜진 채널만 — 지금은 dev 서버(#437)뿐이라 development·teamtest만.
    * teamtest-prod·production·preview(운영 서버, 플래그 OFF)는 숨김 — 막다른 "곧 열려요" 버튼 방지. prod 서버 ON 뒤 이 줄을 true로 확장.
    * (그 사이 서버가 꺼져 있으면 작성 화면이 403 PFOOD-005를 "곧 열려요" 안내로 받는다 — 차단 아님.) 리뷰 **읽기**·기존 리뷰 수정은 이 플래그와 무관.
+   * P-588(KB-807, 11/03 예진 결정): 운영 서버 PROCESSED_FOOD_REVIEW_WRITE_ENABLED=true 적용 → 전 채널 true.
    */
-  packagedReviewWrite: DEV_SERVER_CHANNEL,
+  packagedReviewWrite: true,
   /**
    * KB-892(P-536): 가공식품 이름 스캔에 앞면 사진(긴 변 1,456px·JPEG 0.8) 업로드 + `imagePath` 동봉 — 서버 Haiku 그림자 모드용(S-893).
    * **채널 게이트 의도(발주 P-536)**: dev 서버 채널만. 운영은 그림자 수치 확인 뒤 별도 결정. OFF = 요청 body 현행과 바이트 동일, 업로드 0.
