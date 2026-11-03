@@ -136,10 +136,10 @@ export const EVENTS = {
   food_packaged_detail_expand: 'food_packaged_detail_expand', // KB-865 상세 원재료·출처 펼침/접기(action see_detail|ingredients_source|see_less) — 제품명 0, id만
   food_packaged_scan_find_by_name: 'food_packaged_scan_find_by_name', // KB-865 ③ 스캔 "이름으로 찾기" 진입(from none|rejected) — 읽은 글자 원문 0
   food_packaged_type_select: 'food_packaged_type_select', // KB-865 v4 목록 유형 칩(all|snacks|ramen|drinks|bread)
-  // KB-968: 가공식품 출시 코치마크 2단계(step = home|food)
-  packaged_coach_shown: 'packaged_coach_shown',
-  packaged_coach_next: 'packaged_coach_next',
-  packaged_coach_skip: 'packaged_coach_skip',
+  // KB-968: 가공식품 출시 코치마크 2단계(step = home|food) — food_packaged_* 접두(기존 가공식품 이벤트와 같은 도메인)
+  food_packaged_coach_shown: 'food_packaged_coach_shown',
+  food_packaged_coach_next: 'food_packaged_coach_next',
+  food_packaged_coach_skip: 'food_packaged_coach_skip',
   food_packaged_label_scan: 'food_packaged_label_scan', // P-508 성분표 분석 결과(pages 1~4 · charged = 서버값 · result ok|unreadable|newAnalysis|expired|quota|network… — OCR 원문 금지)
 } as const;
 
@@ -210,9 +210,9 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   food_idol_video_open: ['food_id', 'platform', 'video_position'],
   food_packaged_label_scan: ['pages', 'charged', 'result'],
   food_packaged_type_select: ['type'],
-  packaged_coach_shown: ['step'],
-  packaged_coach_next: ['step'],
-  packaged_coach_skip: ['step'],
+  food_packaged_coach_shown: ['step'],
+  food_packaged_coach_next: ['step'],
+  food_packaged_coach_skip: ['step'],
   food_packaged_scan_find_by_name: ['from'],
   food_packaged_detail_expand: ['product_id', 'action'],
   review_prompt_response: ['answer'], // positive|negative|later

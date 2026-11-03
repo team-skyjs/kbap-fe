@@ -196,7 +196,7 @@ export function usePackagedCoach(step: CoachStep, after: { next: () => void }) {
     if (!p || p.closing) return; // 연타 = 한 번(다음 단계·화면 이동 중복 금지)
     p.closing = true;
     p.next = next;
-    track(next ? EVENTS.packaged_coach_next : EVENTS.packaged_coach_skip, { step });
+    track(next ? EVENTS.food_packaged_coach_next : EVENTS.food_packaged_coach_skip, { step });
     setOpen(false);
     if (Platform.OS !== 'ios') settle();
   };
@@ -205,7 +205,7 @@ export function usePackagedCoach(step: CoachStep, after: { next: () => void }) {
     markPackagedCoachSeen(); // 표시 즉시 기록 — 중간에 앱을 꺼도 다시 안 뜬다
     pending.current = { done, next: false, closing: false };
     setOpen(true);
-    track(EVENTS.packaged_coach_shown, { step });
+    track(EVENTS.food_packaged_coach_shown, { step });
   }, [step]);
   return {
     show,

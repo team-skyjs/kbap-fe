@@ -196,10 +196,10 @@ describe('흐름', () => {
     act(() => api.show!(done));
     await flush();
     expect(await AsyncStorage.getItem('kbap.packagedCoach.v1')).toBe('1');
-    expect(events('packaged_coach_shown')).toEqual([{ step: 'home' }]);
+    expect(events('food_packaged_coach_shown')).toEqual([{ step: 'home' }]);
     const press = byId(tree, 'packaged-coach-home')[0].props.onPress;
     act(() => { press(); press(); }); // 연타 = 닫힘 렌더 전 두 번
-    expect(events('packaged_coach_next')).toEqual([{ step: 'home' }]);
+    expect(events('food_packaged_coach_next')).toEqual([{ step: 'home' }]);
     expect(modal(tree).props.visible).toBe(false);
     expect(next).not.toHaveBeenCalled(); // 아직 dismiss 전 — 다음 화면·모달 금지(KB-377)
     expect(done).not.toHaveBeenCalled();
@@ -216,8 +216,8 @@ describe('흐름', () => {
     layout(tree, 'home');
     await flush();
     act(() => { byId(tree, 'packaged-coach-skip')[0].props.onPress(); });
-    expect(events('packaged_coach_skip')).toEqual([{ step: 'home' }]);
-    expect(events('packaged_coach_next')).toEqual([]);
+    expect(events('food_packaged_coach_skip')).toEqual([{ step: 'home' }]);
+    expect(events('food_packaged_coach_next')).toEqual([]);
     expect(done).toHaveBeenCalledTimes(1);
     expect(next).not.toHaveBeenCalled();
   });
@@ -234,10 +234,10 @@ describe('흐름', () => {
     expect(takePackagedCoachStep2()).toBe(true);
     act(() => food.api.show!());
     expect(modal(food.tree).props.visible).toBe(true);
-    expect(events('packaged_coach_shown')).toEqual([{ step: 'home' }, { step: 'food' }]);
+    expect(events('food_packaged_coach_shown')).toEqual([{ step: 'home' }, { step: 'food' }]);
     tapBackdrop(food.tree, 'food');
     expect(segment).toBe('packaged');
-    expect(events('packaged_coach_next')).toEqual([{ step: 'home' }, { step: 'food' }]);
+    expect(events('food_packaged_coach_next')).toEqual([{ step: 'home' }, { step: 'food' }]);
   });
 });
 

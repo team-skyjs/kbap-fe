@@ -5,7 +5,7 @@
 - 구멍 = 대상 measureInWindow(lib/coachTargets 등록부) + react-native-svg evenodd 경로 · 못 재면 딤 없이 말풍선만. 새 네이티브 의존성 0.
 - 시뮬 실측으로 잡은 것: 첫 실행엔 탭 진입 직후 UMP 동의 폼·ATT가 떠서 그 사이 올린 RN Modal이 iOS에서 버려지고 "봤음"만 기록됐다 → 광고 기동이 끝난 뒤(whenAdsSettled, 상한 20초)·가림 없을 때만 띄우고, 아니면 기록 없이 다음 포커스로.
 - React Compiler: `ref={obj.key}`(멤버 접근)는 "렌더 중 ref 읽기"로 TabBar를 건너뛰었다 → 대상 ref 콜백을 이름별 export(scanCoachAnchor·packagedCoachAnchor).
-- Amplitude packaged_coach_shown·next·skip(step). 새 i18n 키 3개(packagedCoach.homeTitle·homeBody·foodBody, 10로케일).
+- Amplitude food_packaged_coach_shown·next·skip(step) — 발주 이름 packaged_coach_*는 네이밍 규칙(도메인 접두) 위반이라 커맨드 확인 후 기존 가공식품 이벤트와 같은 food_ 접두로. 새 i18n 키 3개(packagedCoach.homeTitle·homeBody·foodBody, 10로케일).
 
 ## 2026-11-02 · P-579 KB-966 연장 — 리뷰의 가공식품 이름 번역(서버 S-942)
 
