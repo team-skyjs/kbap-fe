@@ -117,10 +117,10 @@ describe('④ Tag a food 시트 첫 렌더', () => {
     expect(cp).toContain('testID="picker-skeleton"');
     expect(cp).toContain("skelThumb: { width: 48, height: 48, borderRadius: radius.pill }");
     // 구역 분기·본문 목록·자격 블록 전부 scanPending 게이트 뒤
-    expect(cp).toContain('{!(scanPending && isBrowse) && isBrowse && (');
-    expect(cp).toContain("{!(scanPending && isBrowse) && (kind === 'food'");
+    expect(cp).toContain('{showFoods && !(scanPending && isBrowse) && isBrowse && (');
+    expect(cp).toContain("{showFoods && !(scanPending && isBrowse) && (kind === 'food'");
     // P-392(KB-584): 자격 블록 → 전체 음식 구역(선택 가능)으로 대체 — 게이트는 그대로 scanPending 뒤
-    expect(cp).toContain("{!scanPending && kind === 'food' && isBrowse && reviewInitial && (");
+    expect(cp).toContain("{showFoods && !scanPending && kind === 'food' && isBrowse && reviewInitial && (");
   });
 
   it('판정 후 분기 — 스캔분 있으면 RECENTLY SCANNED, 없으면 인기(P-392: 자격 안내 폐기)', () => {
