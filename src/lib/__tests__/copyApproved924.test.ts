@@ -1,4 +1,4 @@
-/** KB-924 — 예진 승인(10/30) 한국어 문구 10키 잠금. ko 값만(다른 로케일 무변) · 보간 토큰 유지 · 직선 따옴표 · 가운데 점·이모지 0 */
+/** KB-924 — 예진 승인(10/30) 한국어 문구 잠금(KB-977: ugc.consentAgree는 동의 시트와 함께 삭제). ko 값만(다른 로케일 무변) · 보간 토큰 유지 · 직선 따옴표 · 가운데 점·이모지 0 */
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -10,7 +10,6 @@ const APPROVED: Record<string, string> = {
   'packaged.noAvoidMatchTitle': '확인한 성분 중 피하는 재료 없음',
   'detail.verdictMayContain': '못 먹는 재료가 들어 있을 수 있어요: {{list}}',
   'gate.photoRemovalTitle': '리뷰 사진 삭제 요청',
-  'ugc.consentAgree': '확인하고 사진 선택',
   'gate.photoRemovalSub': '가입하면 리뷰 사진 삭제를 요청할 수 있어요.',
   // Codex 권고
   'states.offlineBody': '메뉴 스캔과 리뷰 불러오기에는 인터넷 연결이 필요해요.',

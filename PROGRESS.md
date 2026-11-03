@@ -8,6 +8,12 @@
 - 시뮬 주입: 구 OCR 입력칸 자리 = VisionDebug(글자 → 실제 이름 스캔/성분표 분석으로 응답을 만들어 같은 분기, 다시 찍기 목).
 - #542 공부 반영(커맨드 11/03): reason UNKNOWN(키 재시도 초과·만료 — 비전 호출 0)·모르는 reason = 안내 unknown + 다시 찍기(새 키) · 재전송 REJECTED = 후보 없음 · kind와 어긋난·모르는 state = 다시 찍기(앞면이라도 "후보 없음"으로 보내지 않는다).
 - 신규 i18n 13키 × 10로케일: packagedScan.vision.{retakeTitle, blurry, tooDark, glare, cropped, notFood, unknown} · packagedScan.err.{visionLimit, tooLarge, busy}{Title, Body}.
+## 2026-11-03 · P-590 KB-977 가공식품 상세·작성 다듬기 3건(예진 운영 실기)
+
+- ① 상세 판정 띠 아래 근거 줄(MatchEvidence "Milk: 원유") 제거 — 띠 본문 그대로. 키 packaged.matchEvidence는 사용처 0(로케일 파일엔 남김).
+- ② 하단 Write a review = 음식 상세(KB-932)와 같은 pillCta.band(투명·absolute·box-none) + 연필 아이콘 알약 · 스크롤 아래 여백 = useBottomBand(띠 실높이 + 16). 흰 바탕·상단 선 띠(s.bar) 삭제.
+- ③ 리뷰 작성(음식·가공식품 공용) 사진 버튼의 PhotoConsentSheet 폐기 → 갤러리 바로 열림 · 본문 입력 아래 보조 글씨 1줄 ugc.consentTitle("직접 촬영한 사진만 올려 주세요", 10로케일 기존 키 — 신규 키 0). PhotoConsentSheet·packagedPhotoConsent(기기 저장 키 ugc.packagedPhotoConsent.v1) 삭제. 동의 전용 계측 이벤트는 원래 없었다(제거할 계측 0).
+- 키 정리(DoD): 사용처 0이 된 ugc.consentNoStock·consentRemoval·consentAgree·packaged.matchEvidence 10로케일 삭제(copyApproved924·packagedLabels901 잠금 갱신).
 
 ## 2026-11-03 · P-589 KB-976 리뷰 탭 Write a review — 대상 고르기에서 가공식품 선택(예진 운영 확인)
 
