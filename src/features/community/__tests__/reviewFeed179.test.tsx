@@ -82,6 +82,8 @@ jest.mock('@/lib/data/useFoodReviews', () => ({
 }));
 
 import { ReviewFeed } from '../ReviewFeed';
+// eslint-disable-next-line import/first -- jest.mock 뒤
+import * as analyticsMod from '@/lib/analytics';
 
 const REVIEW = {
   id: 'r1', foodId: '7', rating: 4, body: 'Great dish', photos: [], memberId: '9',
@@ -173,6 +175,19 @@ it('FAB → 음식 픽커(작성 시트 재사용, kind=food) → 선택 = 리�
   expect(props.kind).toBe('food');
   act(() => props.onToggleFood({ foodId: '7', name: 'Kimbap' }));
   expect(mockPush).toHaveBeenCalledWith('/food/7/review');
+});
+
+it('KB-976: 픽커에서 가공식품 선택 = 그 제품 리뷰 작성 + review_write_tap target_type packaged', () => {
+  const track = jest.spyOn(analyticsMod, 'track');
+  const tree = render();
+  act(() => tree.root.findAll((n) => n.props?.testID === 'feed-write-fab')[0].props.onPress());
+  const props = mockSheet.mock.calls.at(-1)![0] as { onPickPackaged?: (p: { id: string }) => void };
+  expect(typeof props.onPickPackaged).toBe('function');
+  act(() => props.onPickPackaged!({ id: '1711' }));
+  expect(mockPush).toHaveBeenCalledWith('/processed-foods/1711/review');
+  expect(track).toHaveBeenCalledWith('review_write_tap', { source: 'feed', target_type: 'packaged' });
+  expect((mockSheet.mock.calls.at(-1)![0] as { kind: string | null }).kind).toBeNull(); // 시트 닫힘
+  track.mockRestore();
 });
 
 it('P-235: 게스트 = 열람 개방(무토큰 200) — 실데이터 렌더 + 게이트 카드 소멸', () => {
