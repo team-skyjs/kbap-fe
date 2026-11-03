@@ -4,10 +4,12 @@
  * 탭 동작은 호출측(음식 상세 = 코치마크 재열람) — 없으면 눌리지 않는 띠.
  */
 import * as React from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { RiskBadge } from '@/components/RiskBadge';
+import { IconLock } from '@/components/icons';
 import { color as C, riskTone, type, type RiskState } from '@/lib/theme';
 
 /** 음식 상세 띠 제목 키 — 가공식품은 서버 판정별 제목을 따로 넘긴다(문구 무변) */
@@ -43,4 +45,22 @@ const st = StyleSheet.create({
   text: { flex: 1, minWidth: 0, gap: 2 },
   title: { ...type.button, color: C.ink }, // 16/600(구 음식 상세 riskRowTitle과 같은 값)
   reason: { ...type.meta, color: C.ink2, lineHeight: 19 }, // 14/500
+});
+
+/** KB-974: 비회원 = 판정 띠 자리의 잠금 행(음식 상세 §1-3에서 옮김 — 가공식품 상세가 같은 부품·같은 키). 탭 = 호출측 가입 게이트(AuthGateSheet context risk) */
+export function VerdictLockRow({ onPress, style, testID = 'verdict-lock' }: { onPress: () => void; style?: StyleProp<ViewStyle>; testID?: string }) {
+  const { t } = useTranslation();
+  return (
+    <Pressable style={[lockStyles.slot, style]} onPress={onPress} accessibilityRole="button" testID={testID}>
+      <IconLock size={16} color={C.ink2} />
+      <Text style={lockStyles.text}>{t('detail.lockVerdict')}</Text>
+      <Text style={lockStyles.cta}>{t('intro.signUp')}</Text>
+    </Pressable>
+  );
+}
+
+const lockStyles = StyleSheet.create({
+  slot: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 20, paddingVertical: 13, backgroundColor: C.surface2, borderBottomWidth: 0.5, borderBottomColor: '#D5DFE7' },
+  text: { flex: 1, fontSize: 14, fontWeight: '400', color: C.ink2 },
+  cta: { fontSize: 14, fontWeight: '700', color: C.primaryText },
 });

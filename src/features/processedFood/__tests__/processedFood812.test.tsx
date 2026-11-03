@@ -162,10 +162,17 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
 
   // KB-945·947(예진 10/31): 음식 상세 순서 · What's inside 한 그리드(감지 + 주요 알레르기 + 혼입 가능) · 설정·로그인 유도 0 · 회피 미설정 = Safe 띠(표시 없는 제품은 확인 못 함)
   const tiles = (t: ReactTestRenderer) => ids(t).filter((i) => /^pf-detected-[A-Z]+$/.test(i));
-  it('비회원: Safe 띠(KB-947) · What\'s inside = 감지 + 주요 알레르기 + 혼입 가능 한 그리드(칩 0) · 주요 알레르기 문단·가입 유도·미리보기 0 · 원재료는 접힘', () => {
+  it('KB-974 비회원: 판정 띠 대신 음식 상세와 같은 잠금 행(Safe 0 — false-safe) · 탭 = 가입 게이트 · What\'s inside = 감지 + 주요 알레르기 + 혼입 가능 한 그리드(칩 0·회피 강조 0) · 원재료는 접힘', () => {
     const t = detail();
-    expect(ids(t)).toEqual(expect.arrayContaining(['pf-verdict-safe-unset', 'badge-safe', 'pf-inside', 'pf-ingredients-source']));
-    expect(text(t)).toContain('packaged.noAvoidMatchTitle');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-verdict-lock', 'pf-inside', 'pf-ingredients-source']));
+    expect(ids(t).filter((i) => i.startsWith('badge-'))).toEqual([]);
+    expect(ids(t)).not.toContain('pf-verdict-safe-unset');
+    expect(text(t)).not.toContain('packaged.noAvoidMatchTitle');
+    expect(text(t)).toContain('detail.lockVerdict'); // 음식 상세와 같은 키
+    expect(text(t)).toContain('intro.signUp');
+    expect(ids(t)).not.toContain('gate-open');
+    act(() => t.root.findAll((n) => n.props?.testID === 'pf-verdict-lock' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    expect(ids(t)).toContain('gate-open');
     expect(tiles(t)).toEqual(['pf-detected-WHEAT', 'pf-detected-SOY', 'pf-detected-MILK', 'pf-detected-EGG', 'pf-detected-PEANUT']);
     expect(text(t)).toContain("detail.insideTitle");
     for (const gone of ['pf-major', 'pf-sign-in', 'pf-set-avoid', 'pf-ingredients-preview', 'pf-see-detail', 'pf-expanded', 'pf-ing-chip-all']) expect(ids(t)).not.toContain(gone);
@@ -179,6 +186,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(ids(t)).not.toContain('pf-set-avoid');
   });
   it('KB-947 false-safe 0: 원재료·알레르기 표시가 둘 다 없는 제품 = 회피 미설정이어도 Safe 0 → 확인 못 함 · 프로필 대기(로그인) = Safe 0', () => {
+    mockGuest = false; mockMe = { id: '41', restrictions: [] }; // KB-974: 비회원은 잠금 행 — 회피 0개 회원 기준
     const bare = detail({ rawMaterials: null, ingredients: null, allergenStatement: null, labelSource: 'NONE' });
     expect(ids(bare)).toContain('pf-not-verified');
     expect(ids(bare)).not.toContain('badge-safe');
@@ -186,10 +194,31 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     const placeholder = detail({ rawMaterials: '알수없음', labelSource: 'NONE' });
     expect(ids(placeholder)).toContain('pf-not-verified');
     expect(ids(placeholder)).not.toContain('badge-safe');
-    mockGuest = false; mockMe = undefined;
+    mockMe = undefined;
     const pending = detail({ verdict: null });
     expect(ids(pending)).toContain('pf-profile-pending');
     expect(ids(pending)).not.toContain('badge-safe');
+  });
+  it('KB-974: 로그인하면 잠금 행 대신 판정 띠로 복귀(회피 1개 이상 회원 = 서버 verdict)', () => {
+    expect(ids(detail())).toContain('pf-verdict-lock');
+    mockGuest = false; mockMe = { id: '41', restrictions: [{ code: 'MILK' }] };
+    const t = detail({ verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: [] }] });
+    expect(ids(t)).toContain('pf-verdict-avoid');
+    expect(ids(t)).not.toContain('pf-verdict-lock');
+  });
+  it('KB-974 상단 = 음식 상세 히어로와 같은 구조: "Product details" 제목 줄 0 · 정방 풀블리드 사진(밝은 바탕) · 사진 위 원형 뒤로(모든 상태)', () => {
+    const t = detail();
+    expect(text(t)).not.toContain('packaged.detailTitle');
+    const back = t.root.findAll((n) => n.props?.testID === 'pf-back' && typeof n.props?.onPress === 'function')[0];
+    expect(back.props.accessibilityLabel).toBe('common.goBack');
+    const bs = Object.assign({}, ...[back.props.style].flat(3).filter(Boolean));
+    expect(bs).toMatchObject({ position: 'absolute', width: 36, height: 36, backgroundColor: 'rgba(20,24,31,0.38)' }); // 음식 상세 fBtn 값
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const src = (require('fs') as typeof import('fs')).readFileSync('src/app/processed-foods/[id].tsx', 'utf8');
+    expect(src).toContain("photo: { marginHorizontal: -GUTTER, marginTop: -20, aspectRatio: 1, backgroundColor: C.surface2, overflow: 'hidden' }");
+    expect(src).not.toContain('<SubHeader');
+    mockDetail = q({ data: undefined, isPending: true }); // 로딩 중에도 뒤로가 있다(제목 줄이 없으니)
+    expect(ids(render(<Detail />))).toContain('pf-back');
   });
   it('Codex #338: 비회원 = 서버 verdict가 와도 회원 판정 0(위험 리본 0) · majorAllergens 필드 없음 = null(모름)', () => {
     mockGuest = true; mockMe = undefined;
@@ -319,7 +348,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
   });
   it('QA #338: 상세 사진 = 상세 전용 recyclingKey + 로드 전 투명(다른 제품 사진 비침 0) · 사진이 바뀌면 다시 마운트', () => {
     const src = fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8');
-    expect(src).toContain('<RemoteImage key={d.imageUrl} uri={d.imageUrl} style={s.photoImage} contentFit="contain" recyclingKey={`pf-detail-${d.id}`} hideUntilLoaded />');
+    expect(src).toContain('<RemoteImage key={d.imageUrl} uri={d.imageUrl} style={[s.photoImage, { top: insets.top + 48 }]} contentFit="contain" recyclingKey={`pf-detail-${d.id}`} hideUntilLoaded />'); // KB-974: 위 = 상태 표시줄·뒤로 원 아래
   });
   it('"Needs checking"(unmapped) 경로 0 · 성분표 직접 확인 버튼 0(결정 4) · 상세 진입 계측 1회', () => {
     const t = detail();
@@ -681,7 +710,7 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     mockGuest = true; mockMe = undefined;
     mockGet.mockResolvedValueOnce(known());
     const g = await mount();
-    expect(badges(g)).toEqual(['badge-safe']);
+    expect(badges(g)).toEqual([]); // KB-974(예진 11/3): 비회원 = 리본 0(음식 카드와 같은 규칙 — 공용 ProductCard 한 곳)
     act(() => g.unmount());
     mockGet.mockResolvedValueOnce(V4()); // 구서버 = 필드 전부 없음
     const old = await mount();

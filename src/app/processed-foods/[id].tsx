@@ -27,7 +27,9 @@ import { usePullRefresh } from '@/lib/data/usePullRefresh';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SubHeader } from '@/components/SubHeader';
+import { VerdictLockRow } from '@/components/VerdictBand';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { IconArrowLeft } from '@/components/icons';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { Pressable } from '@/components/Pressable';
@@ -53,7 +55,6 @@ import { IngredientsText, insideCodes, PackagedDetectedTiles, PackagedUnableBand
 const GUTTER = 20;
 type IngChip = 'all' | 'safe' | 'danger' | 'caution';
 const ING_CHIPS: IngChip[] = ['all', 'safe', 'danger', 'caution']; // 음식 상세와 같은 순서
-export const PHOTO_RATIO = 223 / 335; // 시안 사진 슬롯 335×223(원본 500×333 비율)
 /** 출처 고지 키 → 문구 키. 모르는 키도 자료 출처 문구는 항상(고지 3종 상시). */
 const IMAGE_CREDIT: Record<string, string> = { 'processedFood.image.haccp': 'packaged.imageHaccp', 'processedFood.image.off': 'packaged.imageOff' };
 
@@ -135,7 +136,8 @@ export function ProcessedFoodDetailScreen() {
   const meQ = useMe();
   const me = meQ.data;
   const [ingChip, setIngChip] = React.useState<IngChip>('all'); // 음식 상세 What's inside 칩과 같은 필터
-  const [expanded, setExpanded] = React.useState(false); // 처음엔 접힘(예진 10/22 Q2)
+  const [expanded, setExpanded] = React.useState(false);
+  const [gate, setGate] = React.useState(false); // KB-974: 비회원 잠금 행 → 가입 게이트(음식 상세 context risk) // 처음엔 접힘(예진 10/22 Q2)
   const loadMoreReviews = React.useRef<(() => void) | null>(null); // 리뷰 섹션이 채운다 — 바닥 근처 스크롤 = 다음 페이지(무한 스크롤, Read reviews 버튼 없음)
   const back = () => (router.canGoBack() ? router.back() : router.navigate('/(tabs)/food' as Href));
   const d = q.data;
@@ -216,7 +218,7 @@ export function ProcessedFoodDetailScreen() {
         <View style={s.photo}>
           {d.imageUrl ? (
             // QA #338: 다른 제품 사진이 잠깐 비치던 것 — 상세 전용 recyclingKey + 이번 사진이 뜰 때까지 투명(판정 화면에 엉뚱한 사진 0)
-            <RemoteImage key={d.imageUrl} uri={d.imageUrl} style={s.photoImage} contentFit="contain" recyclingKey={`pf-detail-${d.id}`} hideUntilLoaded />
+            <RemoteImage key={d.imageUrl} uri={d.imageUrl} style={[s.photoImage, { top: insets.top + 48 }]} contentFit="contain" recyclingKey={`pf-detail-${d.id}`} hideUntilLoaded />
           ) : (
             <PackagedPlaceholder type={d.type} foodType={d.foodType} style={StyleSheet.absoluteFill} />
           )}
@@ -238,10 +240,13 @@ export function ProcessedFoodDetailScreen() {
           ) : (
             <View testID="pf-profile-pending"><Shimmer style={s.skelRow} /></View>
           )
-        ) : (guest || m0) && !noLabel ? (
-          // KB-947(예진 10/31 결정): 회피 미설정(비회원·회피 0개) = Safe 띠 — 제목·이유 = 가공 SAFE 키 그대로(보장 표현 0, 새 문구 0)
+        ) : guest ? (
+          // KB-974(예진 11/3 테플): 비회원 = 음식 상세와 같은 잠금 행(같은 부품·키) — 회피 목록이 없는 사람에게 safe 띠는 안전 보장처럼 읽힌다. 로그인하면 위 판정 띠로
+          <VerdictLockRow onPress={() => setGate(true)} style={s.band} testID="pf-verdict-lock" />
+        ) : m0 && !noLabel ? (
+          // KB-947(예진 10/31 결정): 회피 0개 회원 = Safe 띠 — 제목·이유 = 가공 SAFE 키 그대로(보장 표현 0, 새 문구 0)
           <PackagedVerdictBand d={{ ...d, verdict: 'SAFE' }} safeReason={null} style={s.band} testID="pf-verdict-safe-unset" /> /* KB-959: 회피 없음 = 부제 없음(제목 반복 0) */
-        ) : guest || m0 || member ? (
+        ) : m0 || member ? (
           // 원재료·알레르기 표시가 둘 다 없는 제품 = 회원도 verdict null — 판정 없이 "확인 못 함"(#457) = 회색 띠
           <PackagedUnableBand title={t('packaged.notVerified')} reason={t('packaged.notVerifiedBody')} style={s.band} testID="pf-not-verified" />
         ) : null}
@@ -306,19 +311,26 @@ export function ProcessedFoodDetailScreen() {
   }
   return (
     <View style={s.root}>
-      <SubHeader title={t('packaged.detailTitle')} onBack={back} />
       {body}
+      {/* KB-974: 음식 상세와 같은 상단 — "Product details" 제목 줄 없이 사진(히어로) 위 반투명 원 뒤로(음식 fBtn 값) · 모든 상태(로딩·오류 포함)에 */}
+      <Pressable style={[s.back, { top: insets.top + 6 }]} onPress={back} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('common.goBack')} testID="pf-back">
+        <IconArrowLeft size={18} color="#fff" />
+      </Pressable>
+      <AuthGateSheet context="risk" open={gate} onClose={() => setGate(false)} />
     </View>
   );
 }
 
 // 시안 08·12 실측(2x PNG): 사진 위 20 · 335×223 r16 #F7F8FA · 제조사 13/18 gray-700(사진 아래 20) → 이름 28 bold(위 4) → "한국어명 | 유형" 15/20 gray-700
 // · 섹션(제목 20 bold → 본문 15/22 위 10 → 아웃라인 버튼 48 위 12) 간격 20 · 펼침 섹션 간격 24 · See less = 테두리 없는 텍스트 동작
+const HERO_INSET = 24;
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.card },
   pad: { paddingHorizontal: GUTTER, paddingTop: 20, gap: 20 },
-  photo: { width: '100%', aspectRatio: 1 / PHOTO_RATIO, borderRadius: radius.md, backgroundColor: C.surface2, overflow: 'hidden' },
-  photoImage: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
+  // KB-974: 히어로 = 음식 상세 hero와 같은 정방 풀블리드(화면 폭 · 위 끝까지 — 페이지 여백·위 패딩 밖으로) · 밝은 바탕 위 누끼 contain(잘림 0)
+  photo: { marginHorizontal: -GUTTER, marginTop: -20, aspectRatio: 1, backgroundColor: C.surface2, overflow: 'hidden' },
+  photoImage: { position: 'absolute', left: HERO_INSET, right: HERO_INSET, bottom: HERO_INSET }, // top = 상태 표시줄 + 뒤로 원 아래(인라인 — 안전영역 실측)
+  back: { position: 'absolute', left: 12, width: 36, height: 36, borderRadius: radius.pill, backgroundColor: 'rgba(20,24,31,0.38)', alignItems: 'center', justifyContent: 'center' }, // 음식 상세 fBtn과 같은 값
   band: { marginHorizontal: -GUTTER }, // 띠 = 화면 폭(음식 상세와 같음) — 페이지 좌우 여백 밖으로
   bar: { paddingHorizontal: GUTTER, paddingTop: 12, backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.hair },
   titleBlock: { gap: 4 },
