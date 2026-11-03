@@ -1,6 +1,6 @@
 /**
  * KB-870 OTA2 — 승인한 3종 공개와 PF/리뷰 경계. expo-updates channel 목 → flags.ts·리뷰 헤더·회피 카탈로그 **모듈 실계산**(개별 플래그 목 0).
- * production(운영 서버) = 큐레이션·K-pop·회피6 ON, P-587부터 가공식품·리뷰순·성분표 ON(리뷰 쓰기는 OFF) + 리뷰 조회 헤더 없음(기본 1.1) /
+ * production(운영 서버) = 큐레이션·K-pop·회피6 ON, P-587·P-588부터 가공식품·리뷰순·성분표·리뷰 쓰기 ON + 리뷰 조회 헤더 없음(기본 1.1) /
  * teamtest = 사용자 승인 prod 리허설, development = dev 기능 유지. 가공식품 리뷰 엔드포인트는 채널 무관 3.2.
  */
 import * as fs from 'fs';
@@ -30,10 +30,10 @@ function load(channel: string) {
 
 describe('production 채널(운영 서버)', () => {
   const m = load('production');
-  it('승인한 공개 ON · P-587 가공식품 3종 ON · 리뷰 쓰기·공용 dev 서버 게이트 OFF', () => {
+  it('승인한 공개 ON · 가공식품 4종 ON(P-587·P-588) · 공용 dev 서버 게이트 OFF', () => {
     const F = m.flags.FLAGS;
     expect([F.curationEnabled, F.processedFoodEnabled, F.idolPicksEnabled, F.avoidGroupCodesEnabled]).toEqual([true, true, true, true]);
-    expect([F.packagedLabelScan, F.popularByReviews, F.packagedReviewWrite]).toEqual([true, true, false]);
+    expect([F.packagedLabelScan, F.popularByReviews, F.packagedReviewWrite]).toEqual([true, true, true]);
     expect(m.flags.isDevServerChannel()).toBe(false);
   });
   it('리뷰 조회 = 버전 헤더 없음(운영 기본 1.1 유지) · 가공식품 리뷰 엔드포인트는 3.2 고정', () => {
@@ -61,11 +61,11 @@ describe('production 채널(운영 서버)', () => {
 // P-524 후속(커맨드 10/22): 운영 서버를 쓰는 채널 전부 명시 — production만으론 preview·teamtest-prod가 같은 게이트인지 잠기지 않는다
 describe.each(['preview', 'teamtest-prod'])('%s 채널(운영 서버) = production과 같은 선택 공개', (channel) => {
   const m = load(channel);
-  it('공개 ON · 가공식품 3종 ON(P-587) · 리뷰 쓰기 OFF · 리뷰1.1 · 묶음6 노출', () => {
+  it('공개 ON · 가공식품 4종 ON(P-587·P-588) · 리뷰1.1 · 묶음6 노출', () => {
     const F = m.flags.FLAGS;
     expect([F.curationEnabled, F.processedFoodEnabled, F.idolPicksEnabled, F.avoidGroupCodesEnabled]).toEqual([true, true, true, true]);
     expect(m.reviews.REVIEW_READ_HEADERS).toBeUndefined();
-    expect([F.packagedLabelScan, F.popularByReviews, F.packagedReviewWrite, m.flags.isDevServerChannel()]).toEqual([true, true, false, false]);
+    expect([F.packagedLabelScan, F.popularByReviews, F.packagedReviewWrite, m.flags.isDevServerChannel()]).toEqual([true, true, true, false]);
     for (const c of GROUP) expect(m.ing.BE_CODES.has(c)).toBe(true);
   });
 });
