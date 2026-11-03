@@ -4,13 +4,15 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 let mockParams: Record<string, string> = {};
 jest.mock('expo-updates', () => ({ channel: 'development' })); // KB-870/P-527: 개발 기능 회귀. teamtest의 운영 숨김은 prodHide870에서 검사
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }), useLocalSearchParams: () => mockParams }));
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }), useLocalSearchParams: () => mockParams, useFocusEffect: () => {} })); // KB-968: 코치마크 2단계 포커스 판정(여기선 무관)
 jest.mock('@/components', () => {
   const { View } = jest.requireActual('react-native');
   // KB-957: Dishes|Packaged = 헤더 center 슬롯 — 목 헤더도 그 슬롯을 그린다
   return { StickyHeader: (p: { center?: React.ReactNode }) => <View testID="sticky">{p.center}</View>, useStickyScroll: () => ({ onScroll: undefined, hidden: false, atTop: true }), useHeaderHeight: () => 0 };
 });
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock')); // KB-968: 음식 탭 = 코치마크 2단계(1회 기록)
 jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 }));
 jest.mock('@/features/food/FoodExplorer', () => {
   const { View } = jest.requireActual('react-native');

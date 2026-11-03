@@ -1389,5 +1389,10 @@
     "consentAgree": "Got it, choose photos",
     "photoRemovalRequest": "Request photo removal",
     "photoRemovalPrefill": "Photo removal request: {{product}} review {{reviewId}}"
+  },
+  "packagedCoach": {
+    "homeTitle": "Scan convenience store food, too!",
+    "homeBody": "Check what's in snacks, ramyeon and drinks.",
+    "foodBody": "Browse convenience store food, most popular first."
   }
 }

@@ -1393,5 +1393,10 @@
     "consentAgree": "เข้าใจแล้ว เลือกรูป",
     "photoRemovalRequest": "ขอให้ลบรูป",
     "photoRemovalPrefill": "ขอให้ลบรูป: {{product}} รีวิว {{reviewId}}"
+  },
+  "packagedCoach": {
+    "homeTitle": "สแกนอาหารร้านสะดวกซื้อได้ด้วย!",
+    "homeBody": "ดูว่าขนม รามยอน และเครื่องดื่มมีอะไรบ้าง",
+    "foodBody": "ดูอาหารร้านสะดวกซื้อ เรียงตามความนิยม"
   }
 }

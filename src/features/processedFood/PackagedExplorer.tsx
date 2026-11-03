@@ -29,6 +29,7 @@ import { PACKAGED_TYPES, packagedTypeKey, VERDICT_RISK, verdictsForRisk, type Pa
 import { chipRowHeight, SearchScanButton } from '@/features/food/FoodExplorer';
 import { ChipScrollRow } from '@/components/ChipScrollRow';
 import { ProductName, productNameKoRowStyle } from './ProductName';
+import { packagedCoachAnchor } from '@/lib/coachTargets';
 
 export type FoodSegment = 'dishes' | 'packaged';
 
@@ -42,6 +43,7 @@ export function FoodSegmentRow({ value, onChange }: { value: FoodSegment; onChan
       {(['dishes', 'packaged'] as FoodSegment[]).map((s) => (
         <Pressable
           key={s}
+          ref={s === 'packaged' ? packagedCoachAnchor : undefined} // KB-968: 코치마크 2단계 스포트라이트 대상
           style={seg.tab}
           onPress={() => onChange(s)}
           accessibilityRole="tab"

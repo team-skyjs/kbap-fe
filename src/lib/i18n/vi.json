@@ -1393,5 +1393,10 @@
     "consentAgree": "Đã hiểu, chọn ảnh",
     "photoRemovalRequest": "Yêu cầu xóa ảnh",
     "photoRemovalPrefill": "Yêu cầu xóa ảnh: {{product}} đánh giá {{reviewId}}"
+  },
+  "packagedCoach": {
+    "homeTitle": "Quét cả đồ ăn cửa hàng tiện lợi nữa!",
+    "homeBody": "Xem bánh kẹo, mì ramyeon và đồ uống có gì bên trong.",
+    "foodBody": "Xem đồ ăn cửa hàng tiện lợi, phổ biến nhất trước."
   }
 }
