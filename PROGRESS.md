@@ -5,6 +5,13 @@
 - X 제거(두 단계) — 딤 어디든 탭 = 다음/종료, 화면 전체 = 버튼(스크린리더 라벨 = 문구, activate = 진행). food_packaged_coach_skip은 Android 하드웨어 뒤로(onRequestClose)만 남음.
 - 테스트: X 부재·아이콘·딤 탭 전이·진입 경로(view=packaged), 뮤테이션 확인.
 
+## 2026-11-03 · P-582 KB-970 OCR 테스트 입력칸 시뮬레이터 전용(예진 11/03 테플 스크린샷)
+
+- 가공식품 스캔 앞면·성분표 OCR 주입 입력칸(FrontDebug·LabelDebug) = 시뮬레이터에서만. 실기는 진단 채널·개발 번들이어도 숨김(카메라 위 입력칸이 성분표 글자를 가렸다). 스토어 채널 무변.
+- 판정 = lib/simulator(새 네이티브 0 — expo-device는 지문 회전): iOS expo-application 릴리스 유형 SIMULATOR(deviceInfo와 같은 지연 require), Android Platform.constants 지문·모델(generic·emulator·sdk_gphone·emu64·Android SDK built for). 모르면 실기 취급. 판정 전 = 숨김 → 시뮬이면 곧 표시.
+- 테스트 simulator970(iOS 유형별·Android 지문·노출 조합) + packagedScan813 실기 = 입력칸 없음 · 스캔 테스트 4개 = 시뮬 기준 목.
+
+
 ## 2026-11-03 · P-581 KB-968 가공식품 출시 홍보 코치마크 2단계(예진 11/03)
 
 - 1단계(홈) = 딤 + 탭바 스캔 버튼 구멍 + v3 말풍선(제목·본문) → 탭 = 음식 탭(Dishes) · 2단계 = 딤 + 헤더 Packaged 탭 구멍 + 말풍선 → 탭 = Packaged 선택. X = 전체 건너뛰기.
@@ -15,6 +22,7 @@
 - #398 Codex 1차 P2(11/03): 스캔 뒤 넛지·리뷰 유도 게이트 = 저장 키(표시 즉시 기록)만이 아니라 코치마크 흐름 활성(1단계 표시 ~ 2단계 끝, 단계 사이 포함)도 — 떠 있는 동안 시트 겹침 0.
 - React Compiler: `ref={obj.key}`(멤버 접근)는 "렌더 중 ref 읽기"로 TabBar를 건너뛰었다 → 대상 ref 콜백을 이름별 export(scanCoachAnchor·packagedCoachAnchor).
 - Amplitude food_packaged_coach_shown·next·skip(step) — 발주 이름 packaged_coach_*는 네이밍 규칙(도메인 접두) 위반이라 커맨드 확인 후 기존 가공식품 이벤트와 같은 food_ 접두로. 새 i18n 키 3개(packagedCoach.homeTitle·homeBody·foodBody, 10로케일).
+
 
 ## 2026-11-03 · P-580 KB-967 통합 검색 — 음식·가공식품 섹션(예진 11/03)
 
