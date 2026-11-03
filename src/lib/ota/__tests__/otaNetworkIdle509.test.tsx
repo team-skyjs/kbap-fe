@@ -95,7 +95,7 @@ it('배선 잠금 — 호스트 = useNetworkIdle 경유 canReloadNow AND · 레�
   const fs = require('fs');
   const host = fs.readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
   expect(host).toContain('const networkIdle = useNetworkIdle()');
-  expect(host).toMatch(/canReloadNow\(\{ bootedAt: BOOTED_AT[^}]*networkIdle \}\)/);
+  expect(host).toContain('canReloadNow({ appState: AppState.currentState, networkIdle })'); // KB-978: 부팅 가드 소멸 — active·정적 창 AND
   // 9R: 카운트 소스 = netBusy(inflight + RQ 캐시 동기 카운트)
   expect(host).toContain('return inflightCount() > 0 || qc.isFetching() > 0 || qc.isMutating() > 0;');
   const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
@@ -128,9 +128,10 @@ it('#109 P1: react-query 밖 raw 요청(inflight 카운터)도 정적 창에 포
   expect(idleOf(tree)).toContain('true');
 });
 
-it('#109 P2: networkIdle 미충족 대기 = 타이머 스케줄 0(폴링 루프 금지) — 시간 조건 미충족만 remain 타이머', () => {
+it('#109 P2: networkIdle 미충족 대기 = 폴링 루프 금지 — 타이머는 복귀 창 마감 1개뿐(KB-978)', () => {
   const host = require('fs').readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
-  expect(host).toContain('if (remainMs <= 0) return;'); // 8s 경과 후엔 타이머 없음 — deps 반응만
+  expect(host).toContain('}, Math.max(0, windowUntil - Date.now()));'); // 창 마감 1회 — 나머지 조건은 deps 반응만
+  expect((host.match(/setTimeout\(/g) ?? []).length).toBe(3); // 복귀 창 마감·정착 재평가 1회·reload 고착 폴백 — 늘면 폴링 의심
   // 9R: 구독 3종(커밋 무관 동기 콜백) — inflight·queryCache·mutationCache
   expect(host).toContain('subscribeInflight(onEvent), qc.getQueryCache().subscribe(onEvent), qc.getMutationCache().subscribe(onEvent)');
   // 단일 관문 잠금 — 8R: client는 request() 전체 track(installationId·토큰 provider 대기 포함),
@@ -235,8 +236,8 @@ it('#109 3R P1: inflight.track — 네이티브 업로드 프라미스 진행 �
 
 it('#109 4R: ready 후 재체크 생략 + 체크 자체 inflight 경유 — 배선 잠금 + 체크 진행 중 카운트', async () => {
   const host = require('fs').readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
-  expect(host).toContain('if (readyRef.current) return;'); // ready = 재체크 0(네이티브 프라미스 창 제거)
-  expect(host).toContain('void track(checkAndFetchOta(u, stateRef.current, Date.now()))'); // 체크 = 정적 창 포함
+  expect(host).toContain('if (otaState.ready) {'); // ready = 재체크 0(네이티브 프라미스 창 제거)
+  expect(host).toContain('void track(checkAndFetchOta(u, otaState, Date.now()))'); // 체크 = 정적 창 포함
   // track 경유 체크 진행 중 = inflightCount 1 (track 계약 재확인 — 4R ②)
   jest.useRealTimers();
   const { track, inflightCount } = require('@/lib/net/inflight') as typeof import('@/lib/net/inflight');
@@ -252,7 +253,7 @@ it('#109 4R: ready 후 재체크 생략 + 체크 자체 inflight 경유 — 배�
 it('#109 5R: 라우트 차단 복원 + 라우트 무관 네이티브 track 배선 잠금', () => {
   const fs = require('fs');
   const host = fs.readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
-  expect(host).toContain('if (isBlockedRoute(pathname)) return false;'); // 화면 단위 봉쇄(비-prod)
+  expect(host).toContain('if (isBlockedRoute(pathname)) return false;'); // 화면 단위 봉쇄(KB-978 운영 포함)
   expect(host).toContain('const pathname = usePathname();');
   // AuthGateSheet 소셜 로그인(어느 화면에서든)·애플 재인증·위치 = track 경유
   // 8R: 함수 본문 전체 단일 관문(내부 await 개별 track은 사이 창이 샌다)

@@ -1,16 +1,11 @@
 /**
  * otaPolicy (KB-420/P-204) — OTA 자동 적용의 **순수 판정** 한 곳.
  *
- * 채널별 정책(예진 확정 9/4):
- * - 비-prod(teamtest·dev 계열) = **immediate**: 받자마자 reload(도그푸딩 우선).
- * - production = **safe**: 안전 순간(탭 루트 3종 + 진행 중 뮤테이션 0)에만 자동
- *   reload. 아니면 비차단 배너로 수동 적용 + 라우트/뮤테이션 변화 시 재평가.
- * - 제외 화면(BLOCKED) = 진행 중 작업이 끊기면 유실이 생기는 화면 — 자동 reload는
- *   물론 **배너도 띄우지 않는다**(스캔 카메라 위 오버레이 금지).
+ * KB-978: 채널 무관 한 정책(아래 OTA_LAUNCH_TIMEOUT_MS 주석).
+ * - 제외 화면(BLOCKED) = 진행 중 작업이 끊기면 유실이 생기는 화면 — 복귀 reload 보류(deferred).
  */
 export const OTA_CHECK_THROTTLE_MS = 120_000; // 포그라운드 복귀 체크 스로틀 ≥2분
 
-// P-316: SAFE_ROUTES 소멸 — prod = 항상 defer(안전 순간 판정 자체 불요).
 
 /** 진행 중 작업 화면(명시 제외) — 스캔 전 과정(+주문 카드 /scan-order 포함)·
  *  온보딩·프로필 하위 전체·리뷰 작성/수정.
@@ -37,11 +32,14 @@ export function isBlockedRoute(pathname: string): boolean {
   return BLOCKED_ROUTE_RE.some((re) => re.test(pathname));
 }
 
-/** P-304(KB-458, Sentry REACT-NATIVE-6): **부팅 가드** — 콜드 스타트 직후(b28 실측
- *  3초 시점) reloadAsync가 expo-modules-core 56의 AppContext 해제 레이스로 네이티브
- *  크래시(57.0.0에서 수정 — 미백포트). reload는 ① 부팅 8s 경과 ② 스플래시 종료
- *  ③ 포그라운드(active) 전부 충족 시에만. prod 정책(항상 defer 여부)은 예진 결정 대기. */
-export const OTA_BOOT_GUARD_MS = 8_000;
+/** KB-978(P-593, 예진 11/04 — P-316 변경): 운영·비운영 같은 로직.
+ *  - 시작: 앱 트리 마운트 **전**(스플래시 유지) 체크→fetch, 상한 3초. 받으면 바로 reload —
+ *    트리가 없어 진행 중 요청 0(P-347 창 없음). 넘거나 에러 = 현재 번들로 진행(받은 건 다음 복귀/콜드 스타트).
+ *  - 복귀: active 전환 순간부터 3초 창 안에서만 reload(작업 화면 차단·네트워크 정적 게이트 통과 시).
+ *    창이 닫히면 deferred — 사용 중 화면에서 갑자기 reload 금지.
+ *  옛 부팅 8초 가드(P-304: expo-modules-core 56 AppContext 레이스)는 57.0.0 수정 + 시작 판정 대체로 소멸. */
+export const OTA_LAUNCH_TIMEOUT_MS = 3_000;
+export const OTA_RESUME_WINDOW_MS = 3_000;
 
 /** P-347(KB-509, Sentry REACT-NATIVE-8): **네트워크 정적 창** — reloadAsync로 런타임이
  *  해제되는 중 진행 중 fetch의 reject가 죽은 런타임에 스케줄되며 EXC_BAD_ACCESS
@@ -49,14 +47,6 @@ export const OTA_BOOT_GUARD_MS = 8_000;
  *  useIsFetching·useIsMutating 둘 다 0이 이 시간 연속 유지될 때만 networkIdle. */
 export const OTA_NETWORK_IDLE_MS = 500;
 
-export function canReloadNow(opts: { bootedAt: number; now: number; splashDone: boolean; appState: string; networkIdle: boolean }): boolean {
-  return opts.now - opts.bootedAt >= OTA_BOOT_GUARD_MS && opts.splashDone && opts.appState === 'active' && opts.networkIdle;
-}
-
-export type OtaDecision = 'reload' | 'defer';
-
-/** P-316(KB-458 후속, 9/7 예진 a안): prod = **항상 defer** — reload 호출 0·배너 0,
- *  fetch만 해두면 다음 콜드 스타트에 expo-updates가 자동 적용. 비-prod = 즉시(부팅 가드 뒤). */
-export function otaApplyDecision(opts: { prod: boolean; pathname: string; mutating: number }): OtaDecision {
-  return opts.prod ? 'defer' : 'reload';
+export function canReloadNow(opts: { appState: string; networkIdle: boolean }): boolean {
+  return opts.appState === 'active' && opts.networkIdle;
 }
