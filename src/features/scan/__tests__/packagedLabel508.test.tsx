@@ -8,6 +8,7 @@ import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+jest.mock('@/lib/simulator', () => ({ ...jest.requireActual('@/lib/simulator'), useIsSimulator: () => true, isSimulator: async () => true })); // KB-970: OCR 주입 입력칸 = 시뮬 전용 — 이 파일은 시뮬 기준
 jest.mock('react-native-reanimated', () => {
   const { View, Pressable, FlatList } = jest.requireActual('react-native');
   return { __esModule: true, default: { View, FlatList, createAnimatedComponent: (c: unknown) => c ?? Pressable }, createAnimatedComponent: (c: unknown) => c, useSharedValue: (v: unknown) => ({ value: v }), useAnimatedStyle: () => ({}), useAnimatedProps: () => ({}), withSpring: (v: unknown) => v, withTiming: (v: unknown) => v, withRepeat: (v: unknown) => v, Easing: { inOut: () => () => 0, out: () => () => 0, quad: 0 }, useReducedMotion: () => false };

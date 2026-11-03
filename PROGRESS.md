@@ -1,3 +1,9 @@
+## 2026-11-03 · P-582 KB-970 OCR 테스트 입력칸 시뮬레이터 전용(예진 11/03 테플 스크린샷)
+
+- 가공식품 스캔 앞면·성분표 OCR 주입 입력칸(FrontDebug·LabelDebug) = 시뮬레이터에서만. 실기는 진단 채널·개발 번들이어도 숨김(카메라 위 입력칸이 성분표 글자를 가렸다). 스토어 채널 무변.
+- 판정 = lib/simulator(새 네이티브 0 — expo-device는 지문 회전): iOS expo-application 릴리스 유형 SIMULATOR(deviceInfo와 같은 지연 require), Android Platform.constants 지문·모델(generic·emulator·sdk_gphone·emu64·Android SDK built for). 모르면 실기 취급. 판정 전 = 숨김 → 시뮬이면 곧 표시.
+- 테스트 simulator970(iOS 유형별·Android 지문·노출 조합) + packagedScan813 실기 = 입력칸 없음 · 스캔 테스트 4개 = 시뮬 기준 목.
+
 ## 2026-11-02 · P-579 KB-966 연장 — 리뷰의 가공식품 이름 번역(서버 S-942)
 
 - 리뷰 응답 processedFood.name(요청 lang 번역, 가산) 우선, 없음·null·빈값이면 productName 원문 — 가공식품 목록 어댑터와 같은 규칙.

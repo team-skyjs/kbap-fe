@@ -26,7 +26,8 @@ import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { Input, Spinner } from '@/components';
 import { color as C, font, radius } from '@/lib/theme';
-import { FLAGS, isDiagnosticChannel } from '@/lib/flags';
+import { FLAGS } from '@/lib/flags';
+import { showOcrDebug, useIsSimulator } from '@/lib/simulator';
 import { uploadNameScanPhoto } from '@/lib/api/scanImage';
 import { EVENTS, track } from '@/lib/analytics';
 import { apiLang } from '@/lib/api/client';
@@ -97,15 +98,14 @@ export function CameraSlot({ o, render }: { o: ScanCamOpts; render: (o: ScanCamO
   return render(o);
 }
 
-/** 디버그 OCR 주입 노출 — 개발 번들·진단 채널(dev·teamtest)만, 스토어 채널 0 */
-export const showOcrDebug = (): boolean => __DEV__ || isDiagnosticChannel();
 
 /** startLabel = 상세 "성분표 직접 확인"(/scan?mode=packaged&label=1) — 새 분석으로 성분표 안내부터 */
 /** 성분표 한 면 OCR 주입(개발·진단 채널 전용 — 시뮬엔 카메라 OCR이 없다). 면 하나 = 입력 한 번 */
 function LabelDebug({ onAdd }: { onAdd: (text: string) => void }) {
   const { t } = useTranslation();
   const [text, setText] = React.useState('');
-  if (!showOcrDebug()) return null;
+  const sim = useIsSimulator();
+  if (!showOcrDebug(sim)) return null;
   return (
     <View style={st.debug} testID="pscan-label-debug">
       <Text style={st.muted}>{t('packagedScan.debugLabel')}</Text>
@@ -589,7 +589,8 @@ function NameSearchStep({ initial, personalized, m0, busy, onConfirm, onNone, on
 function FrontDebug({ onRun }: { onRun: (text: string) => void }) {
   const { t } = useTranslation();
   const [text, setText] = React.useState('');
-  if (!showOcrDebug()) return null;
+  const sim = useIsSimulator();
+  if (!showOcrDebug(sim)) return null;
   return (
     <View style={st.debug} testID="pscan-ocr-debug">
       <Text style={st.muted}>{t('packagedScan.debugLabel')}</Text>

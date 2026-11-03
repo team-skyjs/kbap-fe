@@ -16,6 +16,7 @@ import * as analytics from '@/lib/analytics';
 
 // scanDefaultView 프렐류드 재사용
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
+jest.mock('@/lib/simulator', () => ({ ...jest.requireActual('@/lib/simulator'), useIsSimulator: () => true, isSimulator: async () => true })); // KB-970: OCR 주입 입력칸 = 시뮬 전용 — 이 파일은 시뮬 기준
 jest.mock('expo-updates', () => ({ channel: 'development' })); // KB-870/P-527: 개발 기능 회귀. teamtest의 운영 숨김은 prodHide870에서 검사
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({
