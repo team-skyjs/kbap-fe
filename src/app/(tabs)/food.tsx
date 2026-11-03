@@ -54,13 +54,16 @@ export default function Food() {
   // KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 세그먼트째 없음 → Dishes 고정(main과 같은 화면)
   // KB-957: Dishes | Packaged = 헤더 로고 줄 안(별도 세그먼트 줄 소멸)
   const segRow = FLAGS.processedFoodEnabled ? <FoodSegmentRow value={foodSegment} onChange={setFoodSegment} /> : null;
-  // KB-968: 코치마크 2단계 — 홈 1단계 탭으로 들어왔을 때만(포커스에서 가져감) · 탭 = Packaged 선택 후 끝
+  // KB-968: 코치마크 2단계 — 홈 1단계 탭으로 들어왔을 때만(포커스에서 가져감)
+  // KB-971: 진입부터 Packaged 선택(view=packaged) · 탭 = 종료(선택 유지 — 아래 설정은 같은 값이라 무변)
   const foodCoach = usePackagedCoach('food', { next: () => setFoodSegment('packaged') });
   const showFoodCoach = foodCoach.show;
+  const abortFoodCoach = foodCoach.abort;
   useFocusEffect(
     useCallback(() => {
       if (takePackagedCoachStep2()) showFoodCoach();
-    }, [showFoodCoach]),
+      return () => abortFoodCoach(); // 2단계가 떠 있는 채 탭 전환 = 닫기(홈과 같은 규칙)
+    }, [showFoodCoach, abortFoodCoach]),
   );
 
   return (

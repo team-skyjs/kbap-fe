@@ -36,7 +36,9 @@ import {
   PackagedCoachOverlay,
   bubbleX,
   holePath,
+  isPackagedCoachActive,
   markPackagedCoachSeen,
+  packagedCoachFoodHref,
   presentHomeCoach,
   queuePackagedCoachStep2,
   shouldShowPackagedCoach,
@@ -164,17 +166,28 @@ describe('스포트라이트 위치', () => {
     expect(has(tree, 'packaged-coach-scrim')).toBe(false);
   });
 
-  it('닫기 = 44pt · 스크린리더 라벨', async () => {
-    let tree!: ReactTestRenderer;
-    act(() => { tree = renderer.create(<PackagedCoachOverlay step="home" open onNext={() => {}} onSkip={() => {}} />); });
-    layout(tree, 'home');
-    await flush();
-    const x = byId(tree, 'packaged-coach-skip')[0];
-    expect(x.props.accessibilityLabel).toBe('common.close');
-    const st = Object.assign({}, ...[x.props.style].flat(3).filter(Boolean));
-    expect(st.width).toBeGreaterThanOrEqual(44);
-    expect(st.height).toBeGreaterThanOrEqual(44);
-    expect(byId(tree, 'packaged-coach-home')[0].props.accessibilityLabel).toBe('packagedCoach.homeTitle, packagedCoach.homeBody');
+  it('KB-971: X 없음(두 단계) — 화면 전체가 버튼(스크린리더 = 제목+본문 라벨, activate = 다음) · 아이콘 1단계 스캔 / 2단계 과자봉지', async () => {
+    const { IconSnackBag, IconTabScan } = jest.requireActual('@/components/icons') as typeof import('@/components/icons');
+    for (const step of ['home', 'food'] as const) {
+      const onNext = jest.fn();
+      let tree!: ReactTestRenderer;
+      act(() => { tree = renderer.create(<PackagedCoachOverlay step={step} open onNext={onNext} onSkip={() => {}} />); });
+      layout(tree, step);
+      await flush();
+      expect(byId(tree, 'packaged-coach-skip')).toHaveLength(0);
+      expect(tree.root.findAll((n) => n.props?.accessibilityLabel === 'common.close')).toHaveLength(0);
+      const root = byId(tree, `packaged-coach-${step}`)[0];
+      expect(root.props.accessibilityRole).toBe('button');
+      expect(root.props.accessibilityLabel).toBe(step === 'home' ? 'packagedCoach.homeTitle, packagedCoach.homeBody' : 'packagedCoach.foodBody');
+      expect(tree.root.findAllByType(step === 'home' ? IconTabScan : IconSnackBag)).toHaveLength(1);
+      expect(tree.root.findAllByType(step === 'home' ? IconSnackBag : IconTabScan)).toHaveLength(0);
+      act(() => root.props.onPress()); // 딤 탭 = 다음/종료
+      expect(onNext).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('KB-971: 1단계 탭의 음식 탭 진입 = Packaged 선택(view=packaged · 새 t — 홈 편의점 See all과 같은 경로)', () => {
+    expect(packagedCoachFoodHref(123)).toBe('/food?view=packaged&t=123');
   });
 });
 
@@ -214,14 +227,14 @@ describe('흐름', () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('Android: 닫으면 바로 다음 처리 · X = 건너뛰기(skip 계측, 다음 단계 없음)', async () => {
+  it('Android: 닫으면 바로 다음 처리 · 하드웨어 뒤로 = 건너뛰기(skip 계측, 다음 단계 없음 — KB-971 X 제거 뒤 남은 유일한 건너뛰기)', async () => {
     setOS('android');
     const done = jest.fn();
     const { tree, api, next } = mount('home');
     act(() => api.show!(done));
     layout(tree, 'home');
     await flush();
-    act(() => { byId(tree, 'packaged-coach-skip')[0].props.onPress(); });
+    act(() => { modal(tree).props.onRequestClose(); });
     expect(events('food_packaged_coach_skip')).toEqual([{ step: 'home' }]);
     expect(events('food_packaged_coach_next')).toEqual([]);
     expect(done).toHaveBeenCalledTimes(1);
@@ -386,5 +399,61 @@ describe('#398 Codex 1차', () => {
     tapBackdrop(food.tree, 'food'); // 흐름 끝
     await exit();
     expect(mockRequest).toHaveBeenCalled(); // 앞 테스트의 호스트도 구독 중이라 횟수 대신 "다시 뜸"만
+  });
+});
+
+describe('#398 Codex P2(머지 후속) — 떠 있는 채 화면 이탈', () => {
+  it('블러(abort) = 닫힘 · "봤음" 되돌림(다음 포커스 재판정) · 흐름 해제 · 큐 해제(done) · 다음 단계 없음 · 계측 없음', async () => {
+    setOS('ios');
+    const done = jest.fn();
+    let abort!: () => void;
+    function H({ next }: { next: () => void }) {
+      const c = usePackagedCoach('home', { next });
+      const { show, abort: a } = c;
+      React.useEffect(() => { abort = a; show(done); }, [show, a]);
+      return <PackagedCoachOverlay {...c.props} />;
+    }
+    const next = jest.fn();
+    let tree!: ReactTestRenderer;
+    act(() => { tree = renderer.create(<H next={next} />); });
+    await flush();
+    expect(modal(tree).props.visible).toBe(true);
+    expect(await AsyncStorage.getItem('kbap.packagedCoach.v1')).toBe('1');
+    expect(isPackagedCoachActive()).toBe(true);
+    mockTrack.mockClear();
+    act(() => abort());
+    await flush();
+    expect(modal(tree).props.visible).toBe(false); // 목적지 탭 위에 남지 않는다
+    expect(done).toHaveBeenCalledTimes(1); // iOS dismiss를 기다리지 않고 큐를 푼다(화면을 떠났다)
+    expect(next).not.toHaveBeenCalled(); // 음식 탭으로 끌고 가지 않는다
+    expect(isPackagedCoachActive()).toBe(false);
+    expect(await AsyncStorage.getItem('kbap.packagedCoach.v1')).toBeNull(); // 다음 홈 포커스에 다시
+    expect(mockTrack).not.toHaveBeenCalled();
+    act(() => { modal(tree).props.onDismiss?.(); }); // 늦게 온 dismiss = 아무것도 안 함
+    expect(next).not.toHaveBeenCalled();
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  it('iOS: 다음 단계로 가는 탭 뒤 dismiss 전에 블러가 와도 abort는 무시 — 2단계 이동·기록·흐름 그대로', async () => {
+    setOS('ios');
+    let abort!: () => void;
+    let show!: (d?: () => void) => void;
+    function H({ next }: { next: () => void }) {
+      const c = usePackagedCoach('home', { next });
+      const { show: s, abort: a } = c;
+      React.useEffect(() => { abort = a; show = s; }, [s, a]);
+      return <PackagedCoachOverlay {...c.props} />;
+    }
+    const next = jest.fn(() => queuePackagedCoachStep2());
+    let tree!: ReactTestRenderer;
+    act(() => { tree = renderer.create(<H next={next} />); });
+    act(() => show());
+    tapBackdrop(tree, 'home'); // 닫는 중(iOS = dismiss 대기)
+    act(() => abort()); // 그 사이 블러
+    await flush();
+    expect(await AsyncStorage.getItem('kbap.packagedCoach.v1')).toBe('1');
+    act(() => { modal(tree).props.onDismiss(); });
+    expect(next).toHaveBeenCalledTimes(1); // 2단계로 그대로
+    expect(isPackagedCoachActive()).toBe(true);
   });
 });
