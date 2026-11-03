@@ -20,9 +20,8 @@ import { color as C, font, radius, type as T } from '@/lib/theme';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { measureCoachTarget, type CoachTarget } from '@/lib/coachTargets';
-import { whenAdsSettled } from '@/lib/ads/adsSession';
-import { isOccluded } from '@/lib/engagement/occlusion';
-import { waitStep } from '@/lib/oneShotQueue';
+import { isAdsSettled, subscribeAds } from '@/lib/ads/adsSession';
+import { isOccluded, subscribeOcclusion } from '@/lib/engagement/occlusion';
 
 const SEEN_KEY = 'kbap.packagedCoach.v1';
 
@@ -39,15 +38,26 @@ export function markPackagedCoachSeen(): void {
   void AsyncStorage.setItem(SEEN_KEY, '1').catch(() => {});
 }
 
-/** 기동 동의 흐름 대기 상한 — 넘기면 이번 포커스는 건너뜀(기록 안 함 → 다음 홈 포커스에 다시 판정) */
-export const ADS_SETTLE_CAP_MS = 20000;
+/** 조건이 참이 될 때까지(구독 알림마다 재판정) — 홈을 떠나면(큐 clear = abort) false. 상한 없음(Q-398: 20초 상한에 걸려 홈에 계속 있어도 안 떴다) */
+function waitUntil(ready: () => boolean, subscribe: (fn: () => void) => () => void, signal: AbortSignal): Promise<boolean> {
+  if (signal.aborted) return Promise.resolve(false);
+  if (ready()) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const finish = (v: boolean) => { off(); signal.removeEventListener('abort', onAbort); resolve(v); };
+    const onAbort = () => finish(false);
+    const off = subscribe(() => { if (ready()) finish(true); });
+    signal.addEventListener('abort', onAbort);
+  });
+}
 
 /** 홈 큐 스텝(1단계). 첫 실행 = 탭 진입 직후 UMP 동의 폼·ATT가 뜬다 — 그 위에 Modal을 올리면 iOS가 present를 버려
- *  "봤음"만 기록되고 안 보였다(시뮬 실측). 광고 기동이 끝나고(준비·불가) 다른 덮개·백그라운드가 없을 때만 띄운다. */
+ *  "봤음"만 기록되고 안 보였다(시뮬 실측). 광고 기동이 끝나고(준비·불가) 덮개·백그라운드가 없어질 때까지 기다렸다가 띄운다 —
+ *  홈에 머무는 한 언제 끝나든 그 자리에서 뜬다. 홈을 떠나면 기록 없이 false(다음 홈 포커스에 다시). */
 export async function presentHomeCoach(show: (done: () => void) => void, done: () => void, signal: AbortSignal): Promise<boolean> {
   if (!(await shouldShowPackagedCoach())) return false;
-  const settled = await waitStep(whenAdsSettled(), signal, ADS_SETTLE_CAP_MS);
-  if (!settled.ok || signal.aborted || isOccluded()) return false;
+  if (!(await waitUntil(isAdsSettled, subscribeAds, signal))) return false;
+  // ATT 직후 잠깐 inactive 등 — 가림이 풀릴 때까지(건너뛰지 않는다)
+  if (!(await waitUntil(() => !isOccluded(), subscribeOcclusion, signal))) return false;
   show(done);
   return true;
 }

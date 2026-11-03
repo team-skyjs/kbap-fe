@@ -21,8 +21,13 @@ const mockRequest = jest.fn();
 jest.mock('@/lib/useReviewPrompt', () => ({ useReviewPrompt: () => ({ request: mockRequest, sheetProps: { open: false, onClose: () => {} } }) }));
 const mockDecide = jest.fn();
 jest.mock('@/lib/push/scanNudge', () => ({ decideScanNudge: (...a: unknown[]) => mockDecide(...a) }));
-let mockSettle: Promise<void> = Promise.resolve();
-jest.mock('@/lib/ads/adsSession', () => ({ whenAdsSettled: () => mockSettle }));
+let mockAdsSettled = true;
+const mockAdsSubs = new Set<() => void>();
+const settleAds = () => { mockAdsSettled = true; mockAdsSubs.forEach((f) => f()); };
+jest.mock('@/lib/ads/adsSession', () => ({
+  isAdsSettled: () => mockAdsSettled,
+  subscribeAds: (f: () => void) => { mockAdsSubs.add(f); return () => { mockAdsSubs.delete(f); }; },
+}));
 jest.mock('@/components/ReviewPromptSheet', () => ({ ReviewPromptSheet: () => null }));
 jest.mock('@/features/push/PushPrimerModal', () => ({ PushPrimerModal: () => null }));
 
@@ -54,7 +59,8 @@ beforeEach(async () => {
   jest.clearAllMocks();
   await AsyncStorage.clear();
   FLAGS.processedFoodEnabled = true;
-  mockSettle = Promise.resolve();
+  mockAdsSettled = true;
+  mockAdsSubs.clear();
   _resetOcclusionForTest();
   Object.defineProperty(AppState, 'currentState', { configurable: true, get: () => 'active' }); // 전경(가림 없음)
   takePackagedCoachStep2();
@@ -274,27 +280,61 @@ describe('직렬화 · 우선순위', () => {
   });
 
   it('첫 실행: 광고 동의 흐름(UMP 폼·ATT)이 끝날 때까지 기다린 뒤에야 띄운다(그 전엔 기록도 안 함)', async () => {
-    let settle!: () => void;
-    mockSettle = new Promise<void>((r) => { settle = r; });
+    mockAdsSettled = false;
     const { tree, api } = mount('home');
     const queue = createOneShotQueue();
     queue.add({ key: 'packagedCoach', present: (done, signal) => presentHomeCoach(api.show!, done, signal) });
     await flush();
     expect(modal(tree).props.visible).toBe(false);
     expect(await AsyncStorage.getItem('kbap.packagedCoach.v1')).toBeNull();
-    settle();
+    act(() => settleAds());
     await flush();
     expect(modal(tree).props.visible).toBe(true);
     expect(await AsyncStorage.getItem('kbap.packagedCoach.v1')).toBe('1');
   });
 
-  it('다른 덮개가 떠 있거나 화면을 떠나면(큐 clear) 건너뜀 — 기록 안 함 → 다음 홈 포커스에 다시', async () => {
-    const show = jest.fn();
+  it('Q-398: 광고 기동이 아주 늦게(옛 상한 20초 넘어) 끝나도 홈에 머무는 한 그 자리에서 뜬다 · 그 전 기록 0', async () => {
+    jest.useFakeTimers();
+    try {
+      mockAdsSettled = false;
+      const { tree, api } = mount('home');
+      const queue = createOneShotQueue();
+      queue.add({ key: 'packagedCoach', present: (done, signal) => presentHomeCoach(api.show!, done, signal) });
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      await act(async () => { jest.advanceTimersByTime(65000); }); // QA: 홈에 1분 넘게
+      expect(modal(tree).props.visible).toBe(false);
+      expect(mockTrack.mock.calls.filter((c) => c[0] === 'food_packaged_coach_shown')).toHaveLength(0);
+      act(() => settleAds());
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
+      expect(modal(tree).props.visible).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('광고는 끝났는데 가림(ATT 직후 inactive·다른 덮개)이 남아 있으면 풀릴 때까지 기다렸다 띄운다(건너뛰지 않음)', async () => {
+    const { tree, api } = mount('home');
     const release = pushOcclusion();
-    expect(await presentHomeCoach(show, () => {}, new AbortController().signal)).toBe(false);
+    const queue = createOneShotQueue();
+    queue.add({ key: 'packagedCoach', present: (done, signal) => presentHomeCoach(api.show!, done, signal) });
+    await flush();
+    expect(modal(tree).props.visible).toBe(false);
+    act(() => release());
+    await flush();
+    expect(modal(tree).props.visible).toBe(true);
+  });
+
+  it('기다리는 중 홈을 떠나면(큐 clear = abort) 기록 없이 false → 다음 홈 포커스에 다시', async () => {
+    const show = jest.fn();
+    const ac0 = new AbortController();
+    const release = pushOcclusion();
+    const p0 = presentHomeCoach(show, () => {}, ac0.signal);
+    await flush();
+    ac0.abort();
+    expect(await p0).toBe(false);
     release();
     const ac = new AbortController();
-    mockSettle = new Promise<void>(() => {});
+    mockAdsSettled = false;
     const p = presentHomeCoach(show, () => {}, ac.signal);
     await flush();
     ac.abort();
