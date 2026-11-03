@@ -1393,5 +1393,10 @@
     "consentAgree": "確認して選ぶ",
     "photoRemovalRequest": "写真の削除をリクエスト",
     "photoRemovalPrefill": "写真の削除リクエスト: {{product}} レビュー {{reviewId}}"
+  },
+  "packagedCoach": {
+    "homeTitle": "コンビニの食品もスキャンできます！",
+    "homeBody": "お菓子、ラーメン、飲み物の中身をチェックしましょう。",
+    "foodBody": "コンビニの食品を人気順に見てみましょう。"
   }
 }

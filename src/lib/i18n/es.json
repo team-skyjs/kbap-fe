@@ -1393,5 +1393,10 @@
     "consentAgree": "Entendido, elegir fotos",
     "photoRemovalRequest": "Solicitar eliminar foto",
     "photoRemovalPrefill": "Solicitud de eliminar foto: {{product}} reseña {{reviewId}}"
+  },
+  "packagedCoach": {
+    "homeTitle": "¡Escanea también comida de tiendas de conveniencia!",
+    "homeBody": "Mira qué llevan los snacks, el ramyeon y las bebidas.",
+    "foodBody": "Explora comida de tiendas de conveniencia, lo más popular primero."
   }
 }

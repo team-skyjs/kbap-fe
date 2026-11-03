@@ -1393,5 +1393,10 @@
     "consentAgree": "知道了，去選擇",
     "photoRemovalRequest": "申請刪除照片",
     "photoRemovalPrefill": "申請刪除照片: {{product}} 評價 {{reviewId}}"
+  },
+  "packagedCoach": {
+    "homeTitle": "便利商店食品也能掃描！",
+    "homeBody": "看看零食、泡麵和飲料裡有什麼。",
+    "foodBody": "依人氣瀏覽便利商店食品。"
   }
 }

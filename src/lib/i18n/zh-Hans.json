@@ -1393,5 +1393,10 @@
     "consentAgree": "知道了，去选择",
     "photoRemovalRequest": "申请删除照片",
     "photoRemovalPrefill": "申请删除照片: {{product}} 评价 {{reviewId}}"
+  },
+  "packagedCoach": {
+    "homeTitle": "便利店食品也能扫描！",
+    "homeBody": "看看零食、拉面和饮料里有什么。",
+    "foodBody": "按人气浏览便利店食品。"
   }
 }

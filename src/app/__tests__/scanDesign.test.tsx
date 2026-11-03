@@ -491,6 +491,7 @@ it('KB-730·KB-908 스캔 성공 2회째 → 스캔을 닫으면 리뷰 유도 �
   const settle = async () => { for (let i = 0; i < 24; i++) await act(async () => { await Promise.resolve(); }); await act(async () => { await new Promise((r) => setTimeout(r, 10)); }); };
   const App = ({ scan = true }: { scan?: boolean }) => (<>{scan && <Scan />}<ScanExitPrompts /></>);
   await AsyncStorage.removeItem('kbap.reviewPrompt.v1');
+  await AsyncStorage.setItem('kbap.packagedCoach.v1', '1'); // KB-968: 가공식품 코치마크를 아직 안 봤으면 스캔 뒤 시트는 건너뜀(코치마크 우선) — 이 테스트는 본 뒤 기준
   const first = render(<App />);
   await act(async () => { await galleryBtn(first).props.onPress(); }); // 성공 1회째
   await settle();

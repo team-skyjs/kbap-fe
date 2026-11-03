@@ -15,6 +15,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, radius } from '@/lib/theme';
 import { IconTabFood, IconTabHome, IconTabReviews, IconTabScan, type IconProps } from './icons';
+import { scanCoachAnchor } from '@/lib/coachTargets';
 import { RemoteImage } from './RemoteImage';
 import { useMyAvatarUrl } from '@/lib/data/useMyAvatarUrl';
 
@@ -125,7 +126,8 @@ export function TabBar({
         <View style={styles.iconSpace} />
         {/* KB-818: 다른 탭과 같은 규칙(한 줄 + 축소) — 빠져 있어 큰 글씨에서 "Scai"로 잘렸다 */}
         <Text style={[styles.tlbl, { color: C.inkMute }]} numberOfLines={1} adjustsFontSizeToFit testID="tab-scan-label">{labels.scan}</Text>
-        <Pressable style={styles.fab} onPress={onScan} hitSlop={8} testID="tab-scan">
+        {/* KB-968: 가공식품 코치마크 1단계 스포트라이트 대상(측정용 등록) */}
+        <Pressable ref={scanCoachAnchor} style={styles.fab} onPress={onScan} hitSlop={8} testID="tab-scan">
           <IconTabScan size={24} color="#fff" />
         </Pressable>
       </View>
