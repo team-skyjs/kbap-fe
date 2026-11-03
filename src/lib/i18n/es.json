@@ -1375,7 +1375,9 @@
       "glare": "El envase refleja la luz. Inclínalo un poco.",
       "cropped": "Falta una parte. Encuadra todo el frente del envase o la etiqueta.",
       "notFood": "No parece un menú ni un envase de comida. Toma una foto de un menú, del frente del envase o de la etiqueta de ingredientes.",
-      "unknown": "No pudimos leer esta foto. Toma una foto de un menú, del frente del envase o de la etiqueta de ingredientes."
+      "unknown": "No pudimos leer esta foto. Toma una foto de un menú, del frente del envase o de la etiqueta de ingredientes.",
+      "reading": "Leyendo tu foto…",
+      "notLabel": "No parece una etiqueta de ingredientes. Fotografía el lado con la lista de ingredientes."
     }
   },
   "scanCamera": {
@@ -1393,7 +1395,8 @@
     "capturedPackage": "Tu foto del envase",
     "capturedLabel": "Tu foto de la etiqueta",
     "choosePhoto": "Elegir foto",
-    "switchCamera": "Cambiar cámara"
+    "switchCamera": "Cambiar cámara",
+    "capturedPhoto": "Tu foto"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

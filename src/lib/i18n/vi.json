@@ -1375,7 +1375,9 @@
       "glare": "Bao bì bị lóa sáng. Hãy nghiêng nhẹ rồi chụp.",
       "cropped": "Một phần bị cắt mất. Hãy để toàn bộ mặt trước bao bì hoặc nhãn thành phần nằm trong khung.",
       "notFood": "Có vẻ đây không phải thực đơn hay bao bì thực phẩm. Hãy chụp thực đơn, mặt trước bao bì hoặc nhãn thành phần.",
-      "unknown": "Không đọc được ảnh này. Hãy chụp thực đơn, mặt trước bao bì hoặc nhãn thành phần."
+      "unknown": "Không đọc được ảnh này. Hãy chụp thực đơn, mặt trước bao bì hoặc nhãn thành phần.",
+      "reading": "Đang đọc ảnh của bạn…",
+      "notLabel": "Có vẻ đây không phải nhãn thành phần. Hãy chụp mặt có danh sách thành phần."
     }
   },
   "scanCamera": {
@@ -1393,7 +1395,8 @@
     "capturedPackage": "Bao bì bạn đã chụp",
     "capturedLabel": "Nhãn bạn đã chụp",
     "choosePhoto": "Chọn ảnh",
-    "switchCamera": "Đổi camera"
+    "switchCamera": "Đổi camera",
+    "capturedPhoto": "Ảnh của bạn"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

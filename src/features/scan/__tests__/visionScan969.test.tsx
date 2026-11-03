@@ -66,7 +66,7 @@ jest.mock('@/lib/api/scanImage', () => ({ ...jest.requireActual('@/lib/api/scanI
 import { ApiError } from '@/lib/api/client';
 import { adaptVisionScan } from '@/lib/api/processedFoodAdapter';
 import { scanFailureOf, scanProcessedVision } from '@/lib/data/useProcessedScan';
-import { PackagedScanFlow, confidenceBand, visionReasonKey, type ScanCamOpts } from '../PackagedScanFlow';
+import { PackagedScanFlow, confidenceBand, visionBodyKey, visionReasonKey, type ScanCamOpts } from '../PackagedScanFlow';
 import { FLAGS } from '@/lib/flags';
 /* eslint-enable import/first */
 
@@ -139,6 +139,13 @@ describe('KB-969 어댑터·요청·오류', () => {
     await scanProcessedVision('images/p.jpg', 'k-1', 'ko');
     expect(mockPost).toHaveBeenCalledWith('/api/processed-foods/scan/vision', { imagePath: 'images/p.jpg', clientRequestId: 'k-1', lang: 'ko' }, { headers: { 'X-API-Version': '3.2' }, timeoutMs: 120_000 });
   });
+  it('Q-412 ②: visionBodyKey — 첫 촬영은 reason 그대로 · 한 면 더는 모름·NOT_FOOD = notLabel, 품질 reason 유지', () => {
+    expect(visionBodyKey(null, false)).toBe('unknown');
+    expect(visionBodyKey('NOT_FOOD', false)).toBe('notFood');
+    expect(visionBodyKey(null, true)).toBe('notLabel');
+    expect(visionBodyKey('NOT_FOOD', true)).toBe('notLabel');
+    for (const r of ['BLURRY', 'TOO_DARK', 'GLARE', 'CROPPED'] as const) expect(visionBodyKey(r, true)).toBe(visionReasonKey(r));
+  });
   it('계측 보조: 확신도 구간 · reason 키(모름 = unknown)', () => {
     expect([confidenceBand(0.95), confidenceBand(0.6), confidenceBand(0.2)]).toEqual(['high', 'mid', 'low']);
     expect([visionReasonKey('TOO_DARK'), visionReasonKey('NOT_FOOD'), visionReasonKey(null)]).toEqual(['tooDark', 'notFood', 'unknown']);
@@ -197,6 +204,34 @@ describe('KB-969 흐름(packagedVisionScan on)', () => {
     expect(ids(t)).toContain('pscan-vision-other');
     expect(mockPost.mock.calls.some(([p]) => p === '/api/processed-foods/scan/label')).toBe(false);
     expect(mockOnMenu).not.toHaveBeenCalled();
+  });
+  it('Q-412 ①: 판정 전 로딩 = 중립 문구(사진을 읽고 있어요·찍은 사진) — 메뉴판일 수도 있어 "포장" 문구 금지', async () => {
+    mockPost.mockReturnValueOnce(new Promise(() => {})); // 판정 대기
+    const t = flow();
+    await act(async () => {
+      void t.root.findAll((n) => n.props?.testID === 'cam-shutter' && typeof n.props?.onPress === 'function')[0].props.onPress(); // 판정이 안 끝나므로 기다리지 않는다
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(ids(t)).toContain('pscan-reading');
+    expect(texts(t)).toEqual(expect.arrayContaining(['packagedScan.vision.reading', 'scanCamera.capturedPhoto']));
+    expect(texts(t)).not.toContain('packagedScan.reading');
+    expect(texts(t)).not.toContain('scanCamera.capturedPackage');
+  });
+  it.each([
+    ['PACKAGE_FRONT', 'CANDIDATES', null, 'packagedScan.vision.notLabel'],
+    ['MENU', 'NOT_PACKAGED', null, 'packagedScan.vision.notLabel'],
+    ['OTHER', 'NOT_PACKAGED', 'NOT_FOOD', 'packagedScan.vision.notLabel'],
+    ['OTHER', 'NOT_PACKAGED', 'BLURRY', 'packagedScan.vision.blurry'],
+  ])('Q-412 ②: 한 면 더에 %s(%s, reason %s) = 성분표 면 안내(품질 reason 우선) — unknown 문구 금지', async (kind, state, reason, key) => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'INGREDIENT_LABEL', state: 'LABEL_RESULT', label: { ...LABEL, analysisId: 'uuid-1' } }));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    await press(t, 'pscan-label-more');
+    mockPost.mockResolvedValueOnce(V({ analysisId: 'uuid-2', kind, state, reason, confidence: 0.99, front: kind === 'PACKAGE_FRONT' ? { candidates: [cand(11, 'R1')] } : null }));
+    await press(t, 'cam-shutter');
+    expect(ids(t)).toContain('pscan-vision-other');
+    expect(texts(t)).toContain(key);
+    expect(texts(t)).not.toContain('packagedScan.vision.unknown');
   });
   it('메뉴판 = 같은 사진·이미 올린 경로로 메뉴 v2(onMenuPhoto) · 흐름은 카메라로', async () => {
     mockPost.mockResolvedValueOnce(V({ kind: 'MENU', state: 'NOT_PACKAGED', confidence: 0.6 }));

@@ -1375,7 +1375,9 @@
       "glare": "包裝上有反光。請稍微傾斜後拍攝。",
       "cropped": "有部分被裁掉了。請讓包裝正面或成分表完整入鏡。",
       "notFood": "這看起來不像菜單或食品包裝。請拍攝菜單、包裝正面或成分表。",
-      "unknown": "無法辨識這張照片。請拍攝菜單、包裝正面或成分表。"
+      "unknown": "無法辨識這張照片。請拍攝菜單、包裝正面或成分表。",
+      "reading": "正在讀取你的照片…",
+      "notLabel": "這似乎不是成分表。請拍攝印有成分表的那一面。"
     }
   },
   "scanCamera": {
@@ -1393,7 +1395,8 @@
     "capturedPackage": "你拍的包裝",
     "capturedLabel": "你拍的成分表",
     "choosePhoto": "選擇照片",
-    "switchCamera": "切換相機"
+    "switchCamera": "切換相機",
+    "capturedPhoto": "你拍的照片"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

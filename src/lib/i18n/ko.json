@@ -1375,7 +1375,9 @@
       "glare": "포장에 빛이 반사돼요. 살짝 기울여서 찍어 주세요.",
       "cropped": "일부가 잘렸어요. 포장 앞면이나 성분표 전체가 화면에 들어오게 찍어 주세요.",
       "notFood": "메뉴판이나 식품 포장이 아닌 것 같아요. 메뉴판, 포장 앞면, 성분표를 찍어 주세요.",
-      "unknown": "이 사진은 읽지 못했어요. 메뉴판, 포장 앞면, 성분표를 찍어 주세요."
+      "unknown": "이 사진은 읽지 못했어요. 메뉴판, 포장 앞면, 성분표를 찍어 주세요.",
+      "reading": "사진을 읽고 있어요…",
+      "notLabel": "성분표가 아닌 것 같아요. 원재료명이 적힌 면을 찍어 주세요."
     }
   },
   "scanCamera": {
@@ -1393,7 +1395,8 @@
     "capturedPackage": "찍은 포장",
     "capturedLabel": "찍은 성분표",
     "choosePhoto": "사진 선택",
-    "switchCamera": "카메라 전환"
+    "switchCamera": "카메라 전환",
+    "capturedPhoto": "찍은 사진"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

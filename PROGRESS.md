@@ -8,6 +8,7 @@
 - 시뮬 주입: 구 OCR 입력칸 자리 = VisionDebug(글자 → 실제 이름 스캔/성분표 분석으로 응답을 만들어 같은 분기, 다시 찍기 목).
 - #542 공부 반영(커맨드 11/03): reason UNKNOWN(키 재시도 초과·만료 — 비전 호출 0)·모르는 reason = 안내 unknown + 다시 찍기(새 키) · 재전송 REJECTED = 후보 없음 · kind와 어긋난·모르는 state = 다시 찍기(앞면이라도 "후보 없음"으로 보내지 않는다).
 - 신규 i18n 13키 × 10로케일: packagedScan.vision.{retakeTitle, blurry, tooDark, glare, cropped, notFood, unknown} · packagedScan.err.{visionLimit, tooLarge, busy}{Title, Body}.
+- Q-412 보정(11/04): 판정 전 로딩 = 중립 문구(packagedScan.vision.reading·scanCamera.capturedPhoto — 메뉴판도 처음엔 "포장" 문구였다) · 한 면 더에 성분표가 아닌 사진(앞면·메뉴·OTHER·성분표 못 읽음) = packagedScan.vision.notLabel(품질 reason이 있으면 그 안내 우선 — 전에는 reason null → unknown). 신규 3키 × 10로케일.
 ## 2026-11-03 · P-590 KB-977 가공식품 상세·작성 다듬기 3건(예진 운영 실기)
 
 - ① 상세 판정 띠 아래 근거 줄(MatchEvidence "Milk: 원유") 제거 — 띠 본문 그대로. 키 packaged.matchEvidence는 사용처 0(로케일 파일엔 남김).

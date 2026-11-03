@@ -1371,7 +1371,9 @@
       "glare": "Light is reflecting off the package. Tilt it a little.",
       "cropped": "Part of it is cut off. Fit the whole package front or label in the frame.",
       "notFood": "This doesn't look like a menu or food package. Take a photo of a menu, package front, or ingredient label.",
-      "unknown": "We couldn't read this photo. Take a photo of a menu, package front, or ingredient label."
+      "unknown": "We couldn't read this photo. Take a photo of a menu, package front, or ingredient label.",
+      "reading": "Reading your photo…",
+      "notLabel": "This doesn't look like an ingredient label. Photograph the side with the ingredient list."
     }
   },
   "scanCamera": {
@@ -1389,7 +1391,8 @@
     "capturedPackage": "Your captured package",
     "capturedLabel": "Your captured label",
     "choosePhoto": "Choose photo",
-    "switchCamera": "Switch camera"
+    "switchCamera": "Switch camera",
+    "capturedPhoto": "Your photo"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

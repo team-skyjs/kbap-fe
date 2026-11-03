@@ -71,7 +71,7 @@ export type ScanCamOpts = {
 type Step =
   | { kind: 'capture' }
   /** back = 뒤로 갈 단계(Codex #315: 성분표 읽기·분석 중 뒤로 = 모은 면·분석 ID를 지키며 직전 단계로 — 앞면 촬영으로 초기화 금지) · photoUri = 로딩에 보일 찍은 사진 */
-  | { kind: 'reading'; label?: boolean; back?: Step; photoUri?: string | null }
+  | { kind: 'reading'; label?: boolean; back?: Step; photoUri?: string | null; vision?: boolean }
   /** KB-865 ③(시안 16·45): 후보 — 탭 = 선택(테두리), 확정 CTA = 그 후보로 확정 */
   | { kind: 'candidates'; analysisId: string; candidates: ScanCandidate[]; selectedId: string | null; ocrText: string }
   /** 시안 17·39: 후보 없음·"None of these" — 이름으로 찾기 / 성분표 찍기(같은 분석, 추가 차감 0) */
@@ -87,7 +87,7 @@ type Step =
   | { kind: 'labelPages'; analysisId: string | null; pages: string[]; photos: (string | null)[]; from?: LabelResultStep }
   | LabelResultStep
   /** KB-969: 사진 스캔이 앞면·성분표·메뉴판이 아니라고 판별(OTHER — reason별 안내) → 다시 찍기 = back */
-  | { kind: 'visionOther'; reason: VisionReason | null; back: Step }
+  | { kind: 'visionOther'; reason: VisionReason | null; back: Step; addSide?: boolean }
   /** labelBack = 성분표 경로의 "다시 찍기" 목적지(Codex #315 R2) */
   | { kind: 'error'; failure: ScanFailure; retry: (() => void) | null; chargeUnknown?: boolean; labelBack?: Step };
 
@@ -226,7 +226,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     const photoUri = photo?.uri ?? null;
     if (addTo) {
       // 한 면 더 = 성분표만 합친다. 다른 사진(앞면·메뉴판 등)이면 다시 찍기 — 기존 결과는 back(카메라)에서 닫기로 돌아간다
-      if (r.route !== 'label' || !r.label) { setStep({ kind: 'visionOther', reason: r.reason, back }); return; }
+      if (r.route !== 'label' || !r.label) { setStep({ kind: 'visionOther', reason: r.reason, back, addSide: true }); return; }
       const pages = [...addTo.pages, r.label.rawText].filter((x) => x.trim()).slice(0, LABEL_PAGES_MAX);
       await runLabel(addTo.result.analysisId, pages, [...addTo.photos, photoUri].slice(0, LABEL_PAGES_MAX), { chargeUnknown: addTo.chargeUnknown, back: addTo });
       return;
@@ -270,7 +270,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
   };
   /** 사진 한 장 = 비전 1회. key = 촬영 1회당 멱등 키 · uploaded = 이미 올린 경로 — 재시도는 같은 키·같은 경로(비전 재호출·상한 차감 0, 재업로드 0) */
   const runVision = async (photo: ScanPhoto, back: Step, addTo?: LabelResultStep, key: string = Crypto.randomUUID(), uploaded: string | null = null): Promise<void> => {
-    goStep({ kind: 'reading', label: !!addTo, back, photoUri: photo.uri });
+    goStep({ kind: 'reading', label: !!addTo, back, photoUri: photo.uri, vision: true }); // Q-412 ①: 판정 전 = 중립 문구(메뉴판일 수도)
     const my = reqSeq.current;
     let path = uploaded;
     try {
@@ -282,7 +282,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
       if (my !== reqSeq.current) return;
       const failure = scanFailureOf(e);
       track(EVENTS.food_packaged_scan_fail, { stage: 'vision', result: failure });
-      if (failure === 'unreadable') { setStep({ kind: 'visionOther', reason: null, back }); return; } // 성분표로 봤지만 글자를 못 읽음(PFOOD-006) = 다시 찍기
+      if (failure === 'unreadable') { setStep({ kind: 'visionOther', reason: null, back, addSide: !!addTo }); return; } // 성분표로 봤지만 글자를 못 읽음(PFOOD-006) = 다시 찍기
       // 전송 실패·혼잡 = 같은 키·같은 경로로 다시(서버 멱등) · 상한·용량·그 밖 = 다시 찍기만
       const retry = failure === 'network' || failure === 'busy' ? () => void runVision(photo, back, addTo, key, path) : null;
       setStep({ kind: 'error', failure, retry, labelBack: addTo ? back : undefined });
@@ -403,9 +403,9 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     // 시안 26 대신 공통 로딩(ScanLoading — KB-862, 커맨드 10/22 Q1 (a))
     return (
       <ScanLoading
-        title={t(step.label ? 'packagedScan.labelReading' : 'packagedScan.reading')}
+        title={t(step.label ? 'packagedScan.labelReading' : step.vision ? 'packagedScan.vision.reading' : 'packagedScan.reading')}
         photoUri={step.photoUri ?? null}
-        caption={t(step.label ? 'scanCamera.capturedLabel' : 'scanCamera.capturedPackage')}
+        caption={t(step.label ? 'scanCamera.capturedLabel' : step.vision ? 'scanCamera.capturedPhoto' : 'scanCamera.capturedPackage')}
         onClose={() => goStep(step.back ?? { kind: 'capture' })}
         testID="pscan-reading"
       />
@@ -575,7 +575,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         lightStatusBar={focused}
         label={t('scanCamera.title')}
         title={t('packagedScan.vision.retakeTitle')}
-        body={t(`packagedScan.vision.${visionReasonKey(step.reason)}`)}
+        body={t(`packagedScan.vision.${visionBodyKey(step.reason, !!step.addSide)}`)}
         overlay={<DarkBackButton onPress={() => goStep(back)} label={t('common.goBack')} testID="pscan-vision-other-back" />}
       >
         <Btn onPress={() => goStep(back)} testID="pscan-retake">{t('packagedScan.retakePhoto')}</Btn>
@@ -699,6 +699,12 @@ export function visionReasonKey(r: VisionReason | null): string {
     case 'NOT_FOOD': return 'notFood';
     default: return 'unknown';
   }
+}
+/** Q-412 ②: 한 면 더(성분표 합치기)에서 성분표가 아닌 사진 = 성분표 면 안내. 품질 reason(흐림 등)이 있으면 그 안내 우선. */
+export function visionBodyKey(r: VisionReason | null, addSide: boolean): string {
+  const k = visionReasonKey(r);
+  if (!addSide) return k;
+  return k === 'unknown' || k === 'notFood' ? 'notLabel' : k;
 }
 
 /** KB-969 비전 응답 주입(개발·진단 채널 전용 — 시뮬엔 카메라가 없다). 구 OCR 입력칸 자리. 글자 = 앞면 이름 → 실제 이름 스캔 후보로,

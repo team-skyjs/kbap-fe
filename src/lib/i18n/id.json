@@ -1375,7 +1375,9 @@
       "glare": "Kemasan memantulkan cahaya. Miringkan sedikit.",
       "cropped": "Ada bagian yang terpotong. Masukkan seluruh bagian depan kemasan atau label ke dalam bingkai.",
       "notFood": "Ini sepertinya bukan menu atau kemasan makanan. Foto menu, bagian depan kemasan, atau label komposisi.",
-      "unknown": "Kami tidak bisa membaca foto ini. Foto menu, bagian depan kemasan, atau label komposisi."
+      "unknown": "Kami tidak bisa membaca foto ini. Foto menu, bagian depan kemasan, atau label komposisi.",
+      "reading": "Membaca fotomu…",
+      "notLabel": "Sepertinya ini bukan label komposisi. Foto sisi yang berisi daftar komposisi."
     }
   },
   "scanCamera": {
@@ -1393,7 +1395,8 @@
     "capturedPackage": "Kemasan yang Anda foto",
     "capturedLabel": "Label yang Anda foto",
     "choosePhoto": "Pilih foto",
-    "switchCamera": "Ganti kamera"
+    "switchCamera": "Ganti kamera",
+    "capturedPhoto": "Fotomu"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",
