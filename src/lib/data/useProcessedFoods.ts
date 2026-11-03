@@ -65,7 +65,7 @@ export function browseUnsupported(e: unknown): boolean {
 }
 
 /** 목록·검색 한 벌. 키에 판정 기준(비회원 / 회원 회피 코드 집합 — useVerdictKey) · KB-927 판정 필터(정렬한 값). */
-function useProcessedSearchQuery<T>(query: string, filter: ProcessedListFilter, select: (pages: SearchPage[]) => T) {
+function useProcessedSearchQuery<T>(query: string, filter: ProcessedListFilter, select: (pages: SearchPage[]) => T, enabled = true) {
   const term = query.trim();
   const verdictKey = useVerdictKey();
   const type = filter.type ?? null;
@@ -78,6 +78,7 @@ function useProcessedSearchQuery<T>(query: string, filter: ProcessedListFilter, 
     getNextPageParam: (last, _pages, lastParam, allParams) =>
       last.hasNext && last.nextCursor != null && last.nextCursor !== lastParam && !allParams.includes(last.nextCursor) ? last.nextCursor : undefined,
     select: (data) => select(data.pages),
+    enabled,
   });
 }
 
@@ -88,8 +89,8 @@ export function useProcessedSearch(query: string, filter: ProcessedListFilter = 
 }
 
 /** KB-927: 페이지별 건수까지 — 판정 필터는 서버가 최대 200행만 살피고 0건 페이지 + hasNext를 줄 수 있어 화면이 빈 페이지를 센다 */
-export function useProcessedSearchPaged(query: string, filter: ProcessedListFilter = {}) {
-  return useProcessedSearchQuery(query, filter, (pages) => ({ items: pages.flatMap((p) => p.items), pageSizes: pages.map((p) => p.items.length) }));
+export function useProcessedSearchPaged(query: string, filter: ProcessedListFilter = {}, enabled = true) {
+  return useProcessedSearchQuery(query, filter, (pages) => ({ items: pages.flatMap((p) => p.items), pageSizes: pages.map((p) => p.items.length) }), enabled);
 }
 
 export type EmptyPageAction = 'fetch' | 'button' | 'none';

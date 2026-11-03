@@ -25,7 +25,9 @@ it('② KB-798 결과 0건 = 스크롤 헤더 안 EmptyBlock(noResultsTitle) · 
 
 it('③ P-345 → P-353 ⑤: 결과 = 음식 탭 2열 FoodGridCard(dish-item 폐기) · ④ popThumb r4', () => {
   const s = read('src/app/search.tsx');
-  expect(s).toContain('data={showingSearch && !search.isLoading && !search.isError ? padOddGrid(results) : []}');
+  // KB-967: 데이터 = 칩별 목록(Dishes = 로딩·실패가 아닐 때 음식 결과 — 가드 그대로) → 2열 패딩
+  expect(s).toContain("!search.isLoading && !search.isError ? results : [];");
+  expect(s).toContain('data={padOddGrid(listData)}');
   expect(s).toContain('numColumns={2}');
   expect(s).toContain("gridRowWrap: { columnGap: 16, paddingHorizontal: 20 }"); // FoodExplorer 값 그대로
   expect(s).toContain('<FoodGridCard');
