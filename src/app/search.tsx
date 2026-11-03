@@ -159,7 +159,7 @@ export default function Search() {
   const pkgFailed = pkg.isError && !pkg.isFetchNextPageError;
   const dishesSection = foodShown ? (
     <View style={styles.section} testID="search-section-dishes">
-      <SectionHead title={t('packaged.segmentDishes')} more={results.length > SECTION_PREVIEW || !!search.hasNextPage} onMore={() => pickSegment('dishes')} moreLabel={t('home.seeAll')} id="dishes" />
+      <SectionHead title={t('packaged.segmentDishes')} more={allSettled && (results.length > SECTION_PREVIEW || !!search.hasNextPage)} /* Q-397 후속: 스켈레톤 동안 See all 0 */ onMore={() => pickSegment('dishes')} moreLabel={t('home.seeAll')} id="dishes" />
       {!allSettled ? (
         <SkeletonFoodGrid rowStyle={styles.gridRowWrap} cellStyle={{ width: cellW }} />
       ) : search.isError ? (
@@ -177,7 +177,7 @@ export default function Search() {
   ) : null;
   const packagedSection = pkgShown ? (
     <View style={styles.section} testID="search-section-packaged">
-      <SectionHead title={t('packaged.segmentPackaged')} more={pkgItems.length > SECTION_PREVIEW || pkg.hasNextPage} onMore={() => pickSegment('packaged')} moreLabel={t('home.seeAll')} id="packaged" />
+      <SectionHead title={t('packaged.segmentPackaged')} more={allSettled && (pkgItems.length > SECTION_PREVIEW || pkg.hasNextPage)} onMore={() => pickSegment('packaged')} moreLabel={t('home.seeAll')} id="packaged" />
       {!allSettled ? (
         <View style={[styles.gridRowWrap, styles.previewGrid]} testID="search-packaged-skeleton">
           {[0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} width={cellW} />)}
