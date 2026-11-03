@@ -36,8 +36,8 @@ describe('production 채널(운영 서버)', () => {
     expect([F.packagedLabelScan, F.popularByReviews, F.packagedReviewWrite]).toEqual([true, true, true]);
     expect(m.flags.isDevServerChannel()).toBe(false);
   });
-  it('리뷰 조회 = 버전 헤더 없음(운영 기본 1.1 유지) · 가공식품 리뷰 엔드포인트는 3.2 고정', () => {
-    expect(m.reviews.REVIEW_READ_HEADERS).toBeUndefined();
+  it('P-591(KB-966): 리뷰 조회 = 3.2(운영 서버 26.11.2 보유 — 1.x면 가공식품 리뷰 제외·targetType 무시) · 가공식품 리뷰 엔드포인트도 3.2', () => {
+    expect(m.reviews.REVIEW_READ_HEADERS).toEqual({ headers: { 'X-API-Version': '3.2' } });
     expect(m.reviews.PROCESSED_REVIEW_HEADERS).toEqual({ headers: { 'X-API-Version': '3.2' } });
   });
   it('회피6 와이어·타일·레거시·프리셋 활성화 및 기존 1기반 배열 보존', () => {
@@ -61,10 +61,10 @@ describe('production 채널(운영 서버)', () => {
 // P-524 후속(커맨드 10/22): 운영 서버를 쓰는 채널 전부 명시 — production만으론 preview·teamtest-prod가 같은 게이트인지 잠기지 않는다
 describe.each(['preview', 'teamtest-prod'])('%s 채널(운영 서버) = production과 같은 선택 공개', (channel) => {
   const m = load(channel);
-  it('공개 ON · 가공식품 4종 ON(P-587·P-588) · 리뷰1.1 · 묶음6 노출', () => {
+  it('공개 ON · 가공식품 4종 ON(P-587·P-588) · 리뷰 조회 3.2(P-591) · 묶음6 노출', () => {
     const F = m.flags.FLAGS;
     expect([F.curationEnabled, F.processedFoodEnabled, F.idolPicksEnabled, F.avoidGroupCodesEnabled]).toEqual([true, true, true, true]);
-    expect(m.reviews.REVIEW_READ_HEADERS).toBeUndefined();
+    expect(m.reviews.REVIEW_READ_HEADERS).toEqual({ headers: { 'X-API-Version': '3.2' } });
     expect([F.packagedLabelScan, F.popularByReviews, F.packagedReviewWrite, m.flags.isDevServerChannel()]).toEqual([true, true, true, false]);
     for (const c of GROUP) expect(m.ing.BE_CODES.has(c)).toBe(true);
   });
