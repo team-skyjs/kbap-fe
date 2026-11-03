@@ -1,3 +1,12 @@
+## 2026-11-03 · P-581 KB-968 가공식품 출시 홍보 코치마크 2단계(예진 11/03)
+
+- 1단계(홈) = 딤 + 탭바 스캔 버튼 구멍 + v3 말풍선(제목·본문) → 탭 = 음식 탭(Dishes) · 2단계 = 딤 + 헤더 Packaged 탭 구멍 + 말풍선 → 탭 = Packaged 선택. X = 전체 건너뛰기.
+- 1회(kbap.packagedCoach.v1, 표시 즉시 기록) · processedFoodEnabled일 때만 · 홈 oneShotQueue 스텝(포커스 등록·블러 clear) · 스캔 뒤 넛지·리뷰 유도(ScanExitPrompts)는 코치마크를 아직 안 봤으면 건너뜀(코치마크 우선).
+- 구멍 = 대상 measureInWindow(lib/coachTargets 등록부) + react-native-svg evenodd 경로 · 못 재면 딤 없이 말풍선만. 새 네이티브 의존성 0.
+- 시뮬 실측으로 잡은 것: 첫 실행엔 탭 진입 직후 UMP 동의 폼·ATT가 떠서 그 사이 올린 RN Modal이 iOS에서 버려지고 "봤음"만 기록됐다 → 광고 기동이 끝난 뒤(whenAdsSettled, 상한 20초)·가림 없을 때만 띄우고, 아니면 기록 없이 다음 포커스로.
+- React Compiler: `ref={obj.key}`(멤버 접근)는 "렌더 중 ref 읽기"로 TabBar를 건너뛰었다 → 대상 ref 콜백을 이름별 export(scanCoachAnchor·packagedCoachAnchor).
+- Amplitude packaged_coach_shown·next·skip(step). 새 i18n 키 3개(packagedCoach.homeTitle·homeBody·foodBody, 10로케일).
+
 ## 2026-11-02 · P-579 KB-966 연장 — 리뷰의 가공식품 이름 번역(서버 S-942)
 
 - 리뷰 응답 processedFood.name(요청 lang 번역, 가산) 우선, 없음·null·빈값이면 productName 원문 — 가공식품 목록 어댑터와 같은 규칙.

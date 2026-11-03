@@ -8,7 +8,7 @@
  * 북마크 토글·위험 필터 로직은 FoodExplorer가 소유(홈 구현 이동, 무변).
  */
 import { View, StyleSheet } from 'react-native';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { StickyHeader, useStickyScroll, useHeaderHeight } from '@/components';
 import { color as C } from '@/lib/theme';
 import { FLAGS } from '@/lib/flags';
@@ -17,7 +17,8 @@ import { useUnreadCount } from '@/lib/data/useNotifications';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { parseFoodFilterParams, defaultFoodSegment } from '@/features/food/foodFilterParams';
 import { FoodSegmentRow, PackagedExplorer, type FoodSegment } from '@/features/processedFood/PackagedExplorer';
-import { useState } from 'react';
+import { PackagedCoachOverlay, takePackagedCoachStep2, usePackagedCoach } from '@/features/coach/PackagedCoach';
+import { useCallback, useState } from 'react';
 
 // KB-812: 세그먼트 선택 유지(앱 세션 동안 — 탭 화면이 다시 마운트돼도).
 // KB-957(예진 11/2): 첫 진입 기본 = Packaged(운영 채널 = 가공식품 없음 → Dishes). 홈 See all(t·view)·딥링크 우선순위는 아래 전이 그대로
@@ -53,6 +54,14 @@ export default function Food() {
   // KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 세그먼트째 없음 → Dishes 고정(main과 같은 화면)
   // KB-957: Dishes | Packaged = 헤더 로고 줄 안(별도 세그먼트 줄 소멸)
   const segRow = FLAGS.processedFoodEnabled ? <FoodSegmentRow value={foodSegment} onChange={setFoodSegment} /> : null;
+  // KB-968: 코치마크 2단계 — 홈 1단계 탭으로 들어왔을 때만(포커스에서 가져감) · 탭 = Packaged 선택 후 끝
+  const foodCoach = usePackagedCoach('food', { next: () => setFoodSegment('packaged') });
+  const showFoodCoach = foodCoach.show;
+  useFocusEffect(
+    useCallback(() => {
+      if (takePackagedCoachStep2()) showFoodCoach();
+    }, [showFoodCoach]),
+  );
 
   return (
     <View style={styles.root}>
@@ -79,6 +88,7 @@ export default function Food() {
         bellCount={unread}
         onBell={() => router.push('/notifications' as Href)}
       />
+      <PackagedCoachOverlay {...foodCoach.props} />
     </View>
   );
 }

@@ -37,6 +37,14 @@ const setState = (s: AdsState) => { state = s; notify(); };
 export const getAdsState = (): AdsState => state;
 export const isAdsReady = (): boolean => state === 'ready';
 export const isPrivacyOptionsRequired = (): boolean => privacyOptionsRequired;
+/** KB-968: 기동 동의 흐름(UMP 폼·iOS ATT)이 끝남 = ready | unavailable. 그 사이 RN Modal을 올리면 iOS가 present를 버린다(시뮬 실측) */
+export function whenAdsSettled(): Promise<void> {
+  const settled = () => state === 'ready' || state === 'unavailable';
+  if (settled()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const off = subscribe(() => { if (settled()) { off(); resolve(); } });
+  });
+}
 
 export function useAdsReady(): boolean {
   return useSyncExternalStore(subscribe, isAdsReady, isAdsReady);

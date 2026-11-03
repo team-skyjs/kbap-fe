@@ -1393,5 +1393,10 @@
     "consentAgree": "Mengerti, pilih foto",
     "photoRemovalRequest": "Minta hapus foto",
     "photoRemovalPrefill": "Permintaan hapus foto: {{product}} ulasan {{reviewId}}"
+  },
+  "packagedCoach": {
+    "homeTitle": "Pindai makanan minimarket juga!",
+    "homeBody": "Cek isi camilan, ramyeon, dan minuman.",
+    "foodBody": "Jelajahi makanan minimarket, yang terpopuler dulu."
   }
 }

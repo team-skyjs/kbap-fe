@@ -14,6 +14,7 @@ import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
 import { useReviewPrompt } from '@/lib/useReviewPrompt';
 import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 import { PushPrimerModal } from '@/features/push/PushPrimerModal';
+import { shouldShowPackagedCoach } from '@/features/coach/PackagedCoach';
 
 type Armed = { isGuest: boolean; ready: Promise<unknown> };
 let armed: Armed | null = null;
@@ -44,6 +45,8 @@ export function ScanExitPrompts() {
       busy.current = true;
       InteractionManager.runAfterInteractions(() => {
         void (async () => {
+          // KB-968: 가공식품 코치마크를 아직 안 봤으면 이번엔 건너뜀(코치마크 우선 — 홈에서 동시 노출 0, 빈도 판정은 다음 스캔에)
+          if (await shouldShowPackagedCoach()) { busy.current = false; return; }
           const m = FLAGS.pushEnabled ? await decideScanNudge(a.isGuest).catch(() => null) : null;
           if (m) {
             setNudgeMode(m);

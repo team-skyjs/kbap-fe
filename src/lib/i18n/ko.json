@@ -1393,5 +1393,10 @@
     "consentAgree": "확인하고 사진 선택",
     "photoRemovalRequest": "사진 삭제 요청",
     "photoRemovalPrefill": "사진 삭제 요청: {{product}} 리뷰 {{reviewId}}"
+  },
+  "packagedCoach": {
+    "homeTitle": "편의점 음식도 스캔해 보세요!",
+    "homeBody": "과자, 라면, 음료에 뭐가 들었는지 확인해요.",
+    "foodBody": "편의점 음식을 인기순으로 둘러봐요."
   }
 }

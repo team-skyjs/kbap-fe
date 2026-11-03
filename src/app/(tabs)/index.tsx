@@ -42,6 +42,8 @@ import { NOTIFICATIONS_KEY, useUnreadCount } from '@/lib/data/useNotifications';
 import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { HomeImpressionContext, ImpressionTracker, trackHomeCardClick, useImpressionRef, useImpressionScrollProps } from '@/features/home/homeImpressions';
+import { useOneShotQueue } from '@/lib/oneShotQueue';
+import { PackagedCoachOverlay, presentHomeCoach, queuePackagedCoachStep2, usePackagedCoach } from '@/features/coach/PackagedCoach';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900 (D-1 Chip과 동일 명시값)
 
@@ -83,9 +85,21 @@ function HomeBody() {
 
   const { data: home, isLoading, isPending, isError, error, refetch } = useHome();
   const { data: me } = useMe();
-  // KB-735: 홈에는 현재 일회성 모달 스텝이 없다. 홈 트리거(코치마크·넛지·리뷰 유도)가 생기면 useOneShotQueue를
-  // **포커스에 등록·블러에 clear**로 되살린다: `useFocusEffect(useCallback(() => { queue.add(step()); return () => queue.clear(); }, [queue, step]))`
-  // — 딥링크·푸시 콜드 스타트는 (tabs) 앵커가 index를 밑에 마운트하므로, 블러의 clear가 없으면 대상 화면 위에 모달이 겹쳐 KB-377류 교착.
+  // KB-735 → KB-968: 홈 일회성 모달 큐 — **포커스에 등록·블러에 clear**(딥링크·푸시 콜드 스타트는 (tabs) 앵커가 index를 밑에
+  // 마운트하므로, 블러의 clear가 없으면 대상 화면 위에 모달이 겹쳐 KB-377류 교착). 현재 스텝 = 가공식품 코치마크 1단계뿐 —
+  // 스캔 뒤 넛지·리뷰 유도(ScanExitPrompts)는 코치마크를 아직 안 봤으면 건너뛴다(코치마크 우선, 동시 노출 0).
+  const modalQueue = useOneShotQueue();
+  const homeCoach = usePackagedCoach('home', {
+    // 탭 = 음식 탭(Dishes — t 파라미터 = 홈 See all과 같은 진입)으로, 거기서 2단계
+    next: () => { queuePackagedCoachStep2(); router.navigate(`/food?t=${Date.now()}` as Href); },
+  });
+  const showHomeCoach = homeCoach.show;
+  useFocusEffect(
+    useCallback(() => {
+      modalQueue.add({ key: 'packagedCoach', present: (done, signal) => presentHomeCoach(showHomeCoach, done, signal) });
+      return () => modalQueue.clear();
+    }, [modalQueue, showHomeCoach]),
+  );
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
@@ -126,6 +140,7 @@ function HomeBody() {
           <QueryErrorBlock error={error} onRetry={() => void refetch()} />
         </ScreenCenterFill>
         <StickyHeader hidden={hidden} atTop={atTop} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
+        <PackagedCoachOverlay {...homeCoach.props} />
       </View>
     );
   }
@@ -251,6 +266,7 @@ function HomeBody() {
       {/* KB-680(P-432) → KB-701: 불꽃 "무료 스캔 N회 남음" = 스캔 버튼 바로 아래(스크롤 0 기준, 화면 고정) — 플래그 countdownBadge(진단 채널만) · 노출 조건은 컴포넌트 안 */}
       <HomeQuotaBadge top={badgeTop} />
 
+      <PackagedCoachOverlay {...homeCoach.props} />
     </View>
   );
 }
