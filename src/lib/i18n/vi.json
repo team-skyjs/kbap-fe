@@ -1324,7 +1324,13 @@
       "unreadableTitle": "Không đọc được nhãn",
       "unreadableBody": "Hãy chụp lại sao cho danh sách thành phần rõ nét.",
       "newAnalysisTitle": "Hãy bắt đầu phân tích mới",
-      "newAnalysisBody": "Không thể thêm ảnh vào lần phân tích này. Hãy bắt đầu phân tích mới."
+      "newAnalysisBody": "Không thể thêm ảnh vào lần phân tích này. Hãy bắt đầu phân tích mới.",
+      "visionLimitTitle": "Bạn đã dùng hết lượt quét ảnh hôm nay",
+      "visionLimitBody": "Bạn có thể quét lại vào ngày mai. Bạn vẫn có thể tìm sản phẩm theo tên.",
+      "tooLargeTitle": "Ảnh quá lớn",
+      "tooLargeBody": "Vui lòng chụp lại.",
+      "busyTitle": "Hệ thống quét đang bận",
+      "busyBody": "Vui lòng thử lại sau giây lát."
     },
     "debugLabel": "Văn bản OCR (chỉ để thử)",
     "debugPlaceholder": "Mỗi dòng một dòng chữ trên bao bì",
@@ -1362,7 +1368,16 @@
     "done": "Xong",
     "resultAvoid": "Khớp với danh sách cần tránh: {{names}}.",
     "resultCaution": "Ghi chú cơ sở sản xuất chung có nêu: {{names}}.",
-    "resultMajorSet": "{{contains}}. Đặt nguyên liệu cần tránh để xem kết quả riêng."
+    "resultMajorSet": "{{contains}}. Đặt nguyên liệu cần tránh để xem kết quả riêng.",
+    "vision": {
+      "retakeTitle": "Chụp lại nhé",
+      "blurry": "Ảnh bị mờ. Giữ chắc tay và chạm vào màn hình để lấy nét.",
+      "tooDark": "Quá tối. Hãy chụp ở nơi sáng hơn.",
+      "glare": "Bao bì bị lóa sáng. Hãy nghiêng nhẹ rồi chụp.",
+      "cropped": "Một phần bị cắt mất. Hãy để toàn bộ mặt trước bao bì hoặc nhãn thành phần nằm trong khung.",
+      "notFood": "Có vẻ đây không phải thực đơn hay bao bì thực phẩm. Hãy chụp thực đơn, mặt trước bao bì hoặc nhãn thành phần.",
+      "unknown": "Không đọc được ảnh này. Hãy chụp thực đơn, mặt trước bao bì hoặc nhãn thành phần."
+    }
   },
   "scanCamera": {
     "title": "Quét",

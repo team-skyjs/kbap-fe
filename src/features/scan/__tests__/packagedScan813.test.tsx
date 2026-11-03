@@ -80,7 +80,7 @@ const DETAIL = { id: 11, reportNo: 'R1', productName: '새우깡', maker: '농�
 
 const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
-beforeEach(() => { mockPrevent.on = false; mockPrevent.cb = null; FLAGS.packagedNameScanPhoto = false; /* KB-892: 기존 흐름 = 플래그 OFF(jest는 dev 채널이라 기본 ON) */ qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; mockFreeUntil = null; });
+beforeEach(() => { mockPrevent.on = false; mockPrevent.cb = null; FLAGS.packagedNameScanPhoto = false; /* KB-892: 기존 흐름 = 플래그 OFF(jest는 dev 채널이라 기본 ON) */ FLAGS.packagedVisionScan = false; /* KB-969: 온디바이스 OCR 흐름 = 플래그 OFF */ qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; mockFreeUntil = null; });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); qc.clear(); jest.clearAllMocks(); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -675,13 +675,13 @@ describe('모드 탭·상세 띠·배선', () => {
   });
   it('스캔 화면 배선: 가공식품 모드 = PackagedScanFlow(단일 presenter 경유) · 메뉴판 카메라·런처에 모드 탭 · 기본 메뉴판 · OCR 주입은 개발·진단 채널만', () => {
     const src = fs.readFileSync('src/app/scan.tsx', 'utf8');
-    expect(src).toContain("useState<ScanMode>(() => (scanParams.mode === 'packaged' && FLAGS.packagedLabelScan ? 'packaged' : 'menu'))"); // 기본 메뉴판 · P-508: 상세 "성분표 직접 확인"만 가공식품 모드로 진입
+    expect(src).toContain("useState<ScanMode>(() => (FLAGS.packagedVisionScan || (scanParams.mode === 'packaged' && FLAGS.packagedLabelScan) ? 'packaged' : 'menu'))"); // 기본 메뉴판 · P-508: 상세 "성분표 직접 확인"만 가공식품 모드로 진입
     expect(src).toContain("if (scanMode === 'packaged' && !offline && (phase !== 'error' || packagedHold)) {\n    return withPresenter(\n      <View style={styles.camHost}>\n        {cameraLayer}\n        <PackagedScanFlow"); // KB-845 QA: 메뉴와 같은 camHost → cameraLayer 구조 · KB-865 ③: 확정 소진 = 같은 자리 흐름 위 덮개(흐름 상태 유지)
     expect(src).toContain('{phase === \'error\' && <View style={StyleSheet.absoluteFill} testID="pscan-quota-overlay">{renderError()}</View>}');
     expect(src.match(/<ScanModeTabs /g)).toHaveLength(2);
     const flowSrc = fs.readFileSync('src/features/scan/PackagedScanFlow.tsx', 'utf8');
     expect(fs.readFileSync('src/lib/simulator.ts', 'utf8')).toContain('export const showOcrDebug = (simulator: boolean): boolean => simulator && (__DEV__ || isDiagnosticChannel());'); // KB-970: 실기 = 채널 무관 숨김(판정은 lib/simulator)
-    expect(flowSrc.match(/if \(!showOcrDebug\(sim\)\) return null;/g)).toHaveLength(2); // KB-845: 앞면·성분표 주입 패널 둘 다(카메라 위 작은 패널)
+    expect(flowSrc.match(/if \(!showOcrDebug\(sim\)\) return null;/g)).toHaveLength(3); // KB-845: 앞면·성분표 주입 패널 둘 다(카메라 위 작은 패널) + KB-969 비전 응답 주입
   });
   it('10언어 문구 전부 · 가운데점 0', () => {
     const flat = (o: Record<string, unknown>, p = ''): string[] => Object.entries(o).flatMap(([k, v]) => (v && typeof v === 'object' ? flat(v as Record<string, unknown>, `${p}${k}.`) : [`${p}${k}`]));

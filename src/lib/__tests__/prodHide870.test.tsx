@@ -112,7 +112,8 @@ describe('표면 게이트(소스·라우트)', () => {
     expect(food).toContain("{segRow && foodSegment === 'packaged' ? (");
     const scan = fs.readFileSync('src/app/scan.tsx', 'utf8');
     expect(scan.match(/<ScanModeTabs /g)).toHaveLength(2);
-    expect(scan.match(/\{FLAGS\.processedFoodEnabled && \(\s*<View style=\{\[styles\.camModeTabs/g)).toHaveLength(2);
+    // KB-969: 사진 스캔(packagedVisionScan) on = 탭 없음(카메라 하나) — 탭 게이트 = 가공식품 켜짐 && 사진 스캔 꺼짐
+    expect(scan.match(/\{FLAGS\.processedFoodEnabled && !FLAGS\.packagedVisionScan && \((?:\s*\/\*[^*]*\*\/)?\s*<View style=\{\[styles\.camModeTabs/g)).toHaveLength(2);
     const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8');
     expect(home).toContain('{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}');
     const idol = fs.readFileSync('src/lib/data/useIdolPicks.ts', 'utf8');

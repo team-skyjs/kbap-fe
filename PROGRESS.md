@@ -1,3 +1,13 @@
+## 2026-11-03 · P-592 KB-969 가공식품 사진 스캔 = 서버 비전(서버 #542) — 카메라 하나·종류 자동 판별
+
+- 플래그 packagedVisionScan = DEV_SERVER_CHANNEL(커맨드 합의: 운영 서버 #542 배포 전 운영 무변 · OFF = 현행 탭 + ML Kit). 운영 배포 뒤 전 채널 ON + ML Kit 가공식품 경로·탭 삭제는 후속 PR.
+- ON: 스캔 화면 Menu/Packaged 탭 없음(카메라 하나 = 가공식품 흐름) · 셔터·갤러리 → 긴 변 1600px·JPEG 0.8 → PACKAGED_SCAN 업로드(실패 = 오류 화면) → POST /api/processed-foods/scan/vision {imagePath, clientRequestId(촬영 1회 UUID), lang}(3.2·120초).
+- 분기(경로 = 서버 state 정본, adaptVisionScan): PACKAGE_FRONT 후보 → 기존 후보·확정(같은 analysisId) / 후보 없음 → 기존 이름 찾기·성분표 / INGREDIENT_LABEL → 기존 성분표 결과(한 면 더 = 다시 비전 → 읽은 원문을 같은 분석에 /scan/label로 합침, 성분표가 아니면 다시 찍기) / MENU → 같은 사진·이미 올린 경로로 메뉴 v2(postScan uploadedPath — 재업로드 0, 티켓·소진 화면 그대로, scan_start source vision) / OTHER → reason별 안내 + 다시 찍기 / CONFIRMED → 멱등 확정으로 상세.
+- 오류: PFOOD-013 = 하루 상한(닫기만) · PFOOD-014 = 용량 · SCAN-006·008 = 혼잡(같은 키·같은 경로로 다시) · 전송 실패 = 같은 키 재시도 · PFOOD-006 = 다시 찍기. 매핑은 코드로만(상태 503·429로 넓히면 이름·성분표 기존 문구가 바뀐다).
+- 계측 신규 food_packaged_scan_vision(kind·state·confidence 구간·reason·side) · food_packaged_scan_start mode vision · food_packaged_scan_fail stage vision.
+- 시뮬 주입: 구 OCR 입력칸 자리 = VisionDebug(글자 → 실제 이름 스캔/성분표 분석으로 응답을 만들어 같은 분기, 다시 찍기 목).
+- 신규 i18n 13키 × 10로케일: packagedScan.vision.{retakeTitle, blurry, tooDark, glare, cropped, notFood, unknown} · packagedScan.err.{visionLimit, tooLarge, busy}{Title, Body}.
+
 ## 2026-11-03 · P-591 KB-966 핫픽스 — 리뷰 조회 3.2 헤더 전 채널(예진 운영 확인)
 
 - useFoodReviews REVIEW_READ_HEADERS = isDevServerChannel() ? 3.2 : 없음 → 전 채널 3.2. 운영이 1.x로 GET /api/reviews·/api/reviews/me를 불러 가공식품 리뷰가 빠지고 targetType 필터가 무시됐다(리뷰 탭 Packaged = 음식 리뷰). 운영 서버 26.11.2가 3.2 보유.

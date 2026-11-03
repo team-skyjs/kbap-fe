@@ -1324,7 +1324,13 @@
       "unreadableTitle": "성분표를 읽지 못했어요",
       "unreadableBody": "원재료명이 잘 보이게 다시 찍어 주세요.",
       "newAnalysisTitle": "새로 분석해 주세요",
-      "newAnalysisBody": "이 분석에는 사진을 더 추가할 수 없어요. 새로 분석해 주세요."
+      "newAnalysisBody": "이 분석에는 사진을 더 추가할 수 없어요. 새로 분석해 주세요.",
+      "visionLimitTitle": "오늘 사진 스캔을 모두 썼어요",
+      "visionLimitBody": "내일 다시 스캔할 수 있어요. 제품 이름 검색은 계속 쓸 수 있어요.",
+      "tooLargeTitle": "사진이 너무 커요",
+      "tooLargeBody": "다시 찍어 주세요.",
+      "busyTitle": "지금 스캔이 몰려 있어요",
+      "busyBody": "잠시 뒤 다시 시도해 주세요."
     },
     "debugLabel": "OCR 텍스트(테스트 전용)",
     "debugPlaceholder": "포장 글자를 한 줄씩 입력",
@@ -1362,7 +1368,16 @@
     "done": "완료",
     "resultAvoid": "피하는 재료와 일치해요: {{names}}.",
     "resultCaution": "같은 제조시설 표기에 있어요: {{names}}.",
-    "resultMajorSet": "{{contains}}. 피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요."
+    "resultMajorSet": "{{contains}}. 피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요.",
+    "vision": {
+      "retakeTitle": "다시 찍어 볼까요",
+      "blurry": "사진이 흐려요. 흔들리지 않게 잡고 화면을 눌러 초점을 맞춰 주세요.",
+      "tooDark": "너무 어두워요. 밝은 곳에서 찍어 주세요.",
+      "glare": "포장에 빛이 반사돼요. 살짝 기울여서 찍어 주세요.",
+      "cropped": "일부가 잘렸어요. 포장 앞면이나 성분표 전체가 화면에 들어오게 찍어 주세요.",
+      "notFood": "메뉴판이나 식품 포장이 아닌 것 같아요. 메뉴판, 포장 앞면, 성분표를 찍어 주세요.",
+      "unknown": "이 사진은 읽지 못했어요. 메뉴판, 포장 앞면, 성분표를 찍어 주세요."
+    }
   },
   "scanCamera": {
     "title": "스캔",

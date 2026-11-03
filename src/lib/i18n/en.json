@@ -1320,7 +1320,13 @@
       "unreadableTitle": "We couldn't read the label",
       "unreadableBody": "Keep the ingredient list in focus and take the photo again.",
       "newAnalysisTitle": "Start a new analysis",
-      "newAnalysisBody": "You can't add more photos to this analysis. Please start a new one."
+      "newAnalysisBody": "You can't add more photos to this analysis. Please start a new one.",
+      "visionLimitTitle": "You've reached today's photo scan limit",
+      "visionLimitBody": "You can scan again tomorrow. You can still search products by name.",
+      "tooLargeTitle": "This photo is too large",
+      "tooLargeBody": "Please take the photo again.",
+      "busyTitle": "Scanning is busy right now",
+      "busyBody": "Please try again in a moment."
     },
     "debugLabel": "OCR text (test only)",
     "debugPlaceholder": "One line per row of the package text",
@@ -1358,7 +1364,16 @@
     "done": "Done",
     "resultAvoid": "Matches your avoid list: {{names}}.",
     "resultCaution": "A shared-facility statement mentions: {{names}}.",
-    "resultMajorSet": "{{contains}}. Set your avoid ingredients to see a personal result."
+    "resultMajorSet": "{{contains}}. Set your avoid ingredients to see a personal result.",
+    "vision": {
+      "retakeTitle": "Let's take that again",
+      "blurry": "The photo is blurry. Hold still and tap the screen to focus.",
+      "tooDark": "It's too dark. Move somewhere brighter.",
+      "glare": "Light is reflecting off the package. Tilt it a little.",
+      "cropped": "Part of it is cut off. Fit the whole package front or label in the frame.",
+      "notFood": "This doesn't look like a menu or food package. Take a photo of a menu, package front, or ingredient label.",
+      "unknown": "We couldn't read this photo. Take a photo of a menu, package front, or ingredient label."
+    }
   },
   "scanCamera": {
     "title": "Scan",

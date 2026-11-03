@@ -184,6 +184,7 @@ const galleryBtn = (tree: ReactTestRenderer) =>
 beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 beforeEach(() => {
   jest.clearAllMocks();
+  (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS.packagedVisionScan = false; // KB-969: 탭·메뉴 기본 = 플래그 OFF 흐름(이 스위트는 dev 서버 채널로 풀려 기본 ON) — 사진 스캔은 visionScan969·scanVisionMenu969
   mockRemoveGuards.length = 0;
   mockPreview.color = '#000000';
   mockPermission.granted = true; mockPermission.canAskAgain = true;

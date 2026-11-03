@@ -151,7 +151,8 @@ export default function Scan() {
   // KB-813: 촬영 모드 — 메뉴판(기본·현행 흐름 그대로) / 음식 사진(자리만) / 가공식품(PackagedScanFlow)
   // P-508: 가공식품 상세 "성분표 직접 확인" = /scan?mode=packaged&label=1 — 가공식품 모드 + 성분표 안내부터(새 분석)
   const scanParams = useLocalSearchParams<{ mode?: string; label?: string; t?: string }>();
-  const [scanMode, setScanModeState] = useState<ScanMode>(() => (scanParams.mode === 'packaged' && FLAGS.packagedLabelScan ? 'packaged' : 'menu'));
+  // KB-969: 사진 스캔(packagedVisionScan) = 늘 가공식품 흐름의 카메라 하나 — 메뉴판은 서버가 판별해 메뉴 v2로 넘긴다(scanMenuFromVision)
+  const [scanMode, setScanModeState] = useState<ScanMode>(() => (FLAGS.packagedVisionScan || (scanParams.mode === 'packaged' && FLAGS.packagedLabelScan) ? 'packaged' : 'menu'));
   // KB-877: 잠금 콜백(메모)이 읽는 현재 모드 — phaseRef와 같은 동기화
   const scanModeRef = useRef(scanMode);
   useLayoutEffect(() => { scanModeRef.current = scanMode; });
@@ -478,7 +479,7 @@ export default function Scan() {
     setPhase('error');
   }
 
-  function runScan(menuDishes: MenuDish[], capturedPhoto: Photo) {
+  function runScan(menuDishes: MenuDish[], capturedPhoto: Photo, uploadedPath: string | null = null) {
     if (isGuest) return setGateOpen(true); // 샘플 스캔 포함
     setDishes(menuDishes);
     setPhoto(capturedPhoto);
@@ -489,7 +490,7 @@ export default function Scan() {
     // P-219: v2 필수 쿼리 — 프로필 통화 → 국적 → 로케일 → USD 폴백(resolveCurrency)
     const ticket = preTicket.current; // P-255: 선발급분 재사용(1회용 — 소모)
     preTicket.current = null;
-    scan.mutate({ items: scanned, photo: capturedPhoto, currency, ticket }, {
+    scan.mutate({ items: scanned, photo: capturedPhoto, currency, ticket, uploadedPath }, {
       onSuccess: (res) => {
         // P-083: 스캔 완료 — 성공/정제실패(degraded) 구분 + 인식 항목 수
         // P-234: v2는 결과 전부가 photoOnly 경로(res.items 항상 [])라 items.length만
@@ -515,6 +516,18 @@ export default function Scan() {
         fail(stageForCode((e as { code?: string })?.code, msg), msg);
       },
     });
+  }
+
+  /** KB-969: 사진 스캔(가공식품 흐름)이 메뉴판으로 판별 — 같은 사진·이미 올린 경로로 메뉴 v2(티켓·차감 그대로, 재업로드 0).
+   *  메뉴 소진이면 기존 소진 화면(촬영 시점 판정 — blockMenuShot). v1 채널(서버 OCR 없음)은 온디바이스 메뉴 경로로 */
+  function scanMenuFromVision(captured: NonNullable<Photo>, uploadedPath: string) {
+    if (blockMenuShot()) return;
+    track(EVENTS.scan_start, { source: 'vision' }); // 메뉴 퍼널 분모(scan_start → scan_complete) 유지 — 출처만 vision
+    if (!scanV2Enabled()) { void scanImage(captured); return; }
+    if (photoUriRef.current && photoUriRef.current !== captured.uri) deletePhotoFile(photoUriRef.current);
+    photoUriRef.current = captured.uri;
+    setError(null);
+    runScan([], captured, uploadedPath);
   }
 
   async function scanImage(captured: Photo) {
@@ -586,7 +599,7 @@ export default function Scan() {
   /** KB-845: onShot = 크롭본을 받을 곳(메뉴 = scanImage, 가공식품·성분표 = PackagedScanFlow) · menu = scan_start 계측(메뉴만 — 가공식품은 자기 이벤트) */
   /** KB-973: 가공식품 촬영 시작 = food_packaged_scan_start(mode) — scan_start는 메뉴 전용 시계열 그대로 */
   const trackShotStart = (kind: ScanCamKind, source: 'camera' | 'gallery') =>
-    kind === 'menu' ? track(EVENTS.scan_start, { source }) /* P-144 */ : track(EVENTS.food_packaged_scan_start, { mode: kind === 'ingredient' ? 'label' : 'packaged', source });
+    kind === 'menu' ? track(EVENTS.scan_start, { source }) /* P-144 */ : track(EVENTS.food_packaged_scan_start, { mode: kind === 'vision' ? 'vision' : kind === 'ingredient' ? 'label' : 'packaged', source });
   async function capture(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, kind: ScanCamKind = 'menu') {
     const menu = kind === 'menu';
     if (capturingRef.current) return; // P-062⓪: 동기 가드 — 리렌더 전 연타도 차단
@@ -847,7 +860,7 @@ export default function Scan() {
         )}
         {/* KB-813 → KB-845 탭: Menu / Food photo(비활성) / Packaged food — 성분표도 Packaged food 활성(screen-5) */}
         {/* KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 모드 탭째 없음 → 메뉴 스캔만(main과 같음) */}
-        {FLAGS.processedFoodEnabled && (
+        {FLAGS.processedFoodEnabled && !FLAGS.packagedVisionScan && ( /* KB-969: 사진 스캔 = 카메라 하나(탭 없음) */
           <View style={[styles.camModeTabs, { top: insets.top + 60 }]} pointerEvents="box-none">
             <ScanModeTabs value={menu ? 'menu' : 'packaged'} onChange={setScanMode} disabled={importing} tone="dark" />
           </View>
@@ -1308,6 +1321,7 @@ export default function Scan() {
           startLabel={labelEntry != null}
           renderCamera={cameraUi}
           focused={isFocused}
+          onMenuPhoto={scanMenuFromVision}
           onQuota={() => {
             packagedHoldRef.current = true;
             setPackagedHold(true);
@@ -1343,7 +1357,7 @@ export default function Scan() {
           <IconClose size={22} color={C.ink2} />
         </Pressable>
         {/* KB-813 모드 탭 — 시스템 카메라 런처(밝은 바탕) */}
-        {FLAGS.processedFoodEnabled && (
+        {FLAGS.processedFoodEnabled && !FLAGS.packagedVisionScan && ( /* KB-969: 사진 스캔 = 카메라 하나(탭 없음) */
           <View style={[styles.camModeTabs, { top: insets.top + 56 }]}>
             <ScanModeTabs value={scanMode} onChange={setScanMode} disabled={importing} />
           </View>

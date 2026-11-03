@@ -1324,7 +1324,13 @@
       "unreadableTitle": "Label tidak terbaca",
       "unreadableBody": "Foto ulang dengan daftar bahan terlihat jelas.",
       "newAnalysisTitle": "Mulai analisis baru",
-      "newAnalysisBody": "Tidak bisa menambah foto lagi ke analisis ini. Silakan mulai analisis baru."
+      "newAnalysisBody": "Tidak bisa menambah foto lagi ke analisis ini. Silakan mulai analisis baru.",
+      "visionLimitTitle": "Pemindaian foto hari ini sudah habis",
+      "visionLimitBody": "Kamu bisa memindai lagi besok. Kamu tetap bisa mencari produk berdasarkan nama.",
+      "tooLargeTitle": "Foto terlalu besar",
+      "tooLargeBody": "Silakan ambil foto lagi.",
+      "busyTitle": "Pemindaian sedang sibuk",
+      "busyBody": "Coba lagi sebentar lagi."
     },
     "debugLabel": "Teks OCR (khusus uji)",
     "debugPlaceholder": "Satu baris teks kemasan per baris",
@@ -1362,7 +1368,16 @@
     "done": "Selesai",
     "resultAvoid": "Cocok dengan daftar hindari: {{names}}.",
     "resultCaution": "Pernyataan fasilitas bersama menyebut: {{names}}.",
-    "resultMajorSet": "{{contains}}. Atur bahan yang dihindari untuk hasil pribadi."
+    "resultMajorSet": "{{contains}}. Atur bahan yang dihindari untuk hasil pribadi.",
+    "vision": {
+      "retakeTitle": "Ayo foto sekali lagi",
+      "blurry": "Fotonya buram. Pegang dengan stabil dan ketuk layar untuk fokus.",
+      "tooDark": "Terlalu gelap. Pindah ke tempat yang lebih terang.",
+      "glare": "Kemasan memantulkan cahaya. Miringkan sedikit.",
+      "cropped": "Ada bagian yang terpotong. Masukkan seluruh bagian depan kemasan atau label ke dalam bingkai.",
+      "notFood": "Ini sepertinya bukan menu atau kemasan makanan. Foto menu, bagian depan kemasan, atau label komposisi.",
+      "unknown": "Kami tidak bisa membaca foto ini. Foto menu, bagian depan kemasan, atau label komposisi."
+    }
   },
   "scanCamera": {
     "title": "Pindai",

@@ -1,0 +1,241 @@
+/**
+ * KB-969(P-592) 가공식품 사진 스캔(서버 비전) — 어댑터(경로 = 서버 state 정본) · 오류 코드 · 요청 ·
+ * 흐름: 카메라 하나 → 업로드 → /scan/vision → 앞면 후보(기존 확정) / 후보 없음 / 성분표 결과(한 면 더 = 같은 분석) / 메뉴판(같은 경로로 메뉴 v2) / 그 밖(reason 안내) ·
+ * 재시도 = 같은 키·같은 경로 · 하루 상한 = 닫기만 · 플래그 off = 현행 OCR 흐름.
+ */
+import * as React from 'react';
+import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+let mockSim = true;
+jest.mock('@/lib/simulator', () => ({ ...jest.requireActual('@/lib/simulator'), useIsSimulator: () => mockSim, isSimulator: async () => mockSim })); // KB-970: 기본 = 시뮬(주입 입력칸 있음)
+jest.mock('react-native-reanimated', () => {
+  const { View, Pressable, FlatList } = jest.requireActual('react-native');
+  return { __esModule: true, default: { View, FlatList, createAnimatedComponent: (c: unknown) => c ?? Pressable }, createAnimatedComponent: (c: unknown) => c, useSharedValue: (v: unknown) => ({ value: v }), useAnimatedStyle: () => ({}), useAnimatedProps: () => ({}), withSpring: (v: unknown) => v, withTiming: (v: unknown) => v, withRepeat: (v: unknown) => v, Easing: { inOut: () => () => 0, out: () => () => 0, quad: 0 }, useReducedMotion: () => false };
+});
+jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
+jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k, getFixedT: () => (k: string) => k } }));
+jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
+jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k}:${JSON.stringify(o)}` : k) }), initReactI18next: { type: '3rdParty', init: () => {} } }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
+jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View {...p} /> }; });
+jest.mock('@/components/RemoteImage', () => { const { View } = jest.requireActual('react-native'); return { RemoteImage: (p: { uri: string }) => <View testID={`img:${p.uri}`} /> }; });
+jest.mock('@/components/SubHeader', () => { const { Text } = jest.requireActual('react-native'); return { SubHeader: (p: { title: string }) => <Text testID="subheader">{p.title}</Text> }; });
+jest.mock('@/components/FlameShape', () => { const { View } = jest.requireActual('react-native'); return { FlameShape: (p: { state: string }) => <View testID={`flame-${p.state}`} /> }; });
+jest.mock('@/components/Btn', () => {
+  const { Pressable, Text } = jest.requireActual('react-native');
+  return { Btn: (p: { testID: string; onPress?: () => void; variant?: string; children?: React.ReactNode }) => <Pressable testID={p.testID} onPress={p.onPress} accessibilityState={{ disabled: p.variant === 'off' }}><Text>{p.children}</Text></Pressable> };
+});
+jest.mock('@/components/icons', () => ({ ...jest.requireActual('@/components/icons'), IconCamera: () => null, IconTabFood: () => null, IconLock: () => null, IconSearch: () => null, IconClose: () => null }));
+jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
+jest.mock('@/lib/onboarding/data', () => ({ restrictionLabel: (c: string) => `L(${c})` }));
+const mockPush = jest.fn();
+let mockParams: Record<string, string> = {};
+// KB-908(T-050): 후보 화면 이탈 확인(useLeaveConfirm) — 마지막 usePreventRemove 호출의 (막는지, 콜백) 기록
+const mockNavDispatch = jest.fn();
+const mockPrevent: { on: boolean; cb: ((o: { data: { action: unknown } }) => void) | null } = { on: false, cb: null };
+jest.mock('expo-router/build/react-navigation/core', () => ({
+  usePreventRemove: (on: boolean, cb: (o: { data: { action: unknown } }) => void) => { mockPrevent.on = on; mockPrevent.cb = cb; },
+}));
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn(), navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams, useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }) }));
+const mockTrack = jest.fn();
+jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
+const mockPost = jest.fn();
+const mockGet = jest.fn();
+jest.mock('@/lib/api/client', () => {
+  class MockApiError extends Error { status?: number; code?: string; constructor(m: string, s?: number, c?: string) { super(m); this.status = s; this.code = c; } }
+  return { api: { post: (...a: unknown[]) => mockPost(...a), get: (...a: unknown[]) => mockGet(...a) }, apiLang: () => 'en', ApiError: MockApiError };
+});
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+let mockRestrictions: { code: string }[] = [{ code: 'SHRIMP' }];
+let mockProfileMissing = false;
+let mockFreeUntil: string | null = null; // KB-877: 서버 무료 창 끝 // 프로필 대기·실패(data 없음)
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockProfileMissing ? undefined : { id: '41', restrictions: mockRestrictions, packagedFreeUntil: mockFreeUntil } }) })); // KB-865: 판정 캐시 키 = 회피 코드 집합 · 0개 = 시안 45
+const mockOcr = jest.fn();
+const mockUploadPhoto = jest.fn(async (_p: unknown): Promise<string | null> => null);
+jest.mock('@/lib/api/scanImage', () => ({ ...jest.requireActual('@/lib/api/scanImage'), uploadNameScanPhoto: (p: unknown) => mockUploadPhoto(p) }));
+jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockOcr(...a) }));
+jest.mock('@/lib/openExternal', () => ({ openAppSettings: jest.fn(async () => true) }));
+jest.mock('expo-image-picker', () => ({}));
+let mockUuid = 0;
+jest.mock('expo-crypto', () => ({ randomUUID: () => `uuid-${++mockUuid}` }));
+const mockVisionUpload = jest.fn(async (_p: unknown): Promise<string> => 'images/packaged-scans/v1.jpg');
+jest.mock('@/lib/api/scanImage', () => ({ ...jest.requireActual('@/lib/api/scanImage'), uploadNameScanPhoto: (p: unknown) => mockUploadPhoto(p), uploadVisionScanPhoto: (p: unknown) => mockVisionUpload(p) }));
+
+/* eslint-disable import/first -- jest.mock 뒤 */
+import { ApiError } from '@/lib/api/client';
+import { adaptVisionScan } from '@/lib/api/processedFoodAdapter';
+import { scanFailureOf, scanProcessedVision } from '@/lib/data/useProcessedScan';
+import { PackagedScanFlow, confidenceBand, visionReasonKey, type ScanCamOpts } from '../PackagedScanFlow';
+import { FLAGS } from '@/lib/flags';
+/* eslint-enable import/first */
+
+const cand = (id: number, rn: string) => ({ id, reportNo: rn, productName: `P${id}`, maker: 'Binggrae', foodType: '우유', imageUrl: null });
+const LABEL = { analysisId: 'V1', state: 'LABEL_RESULT', labelSource: 'DECLARED', detections: [], mayContain: [], avoidance: [], rawText: '원재료명: 원유, 바나나농축과즙', charged: false, verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: ['원유'] }], mayContainMatches: [], unclearIngredients: [], majorAllergens: ['MILK'], ingredients: { translated: null, original: '원유, 바나나농축과즙' }, allergenStatement: null };
+const V = (over: object) => ({ analysisId: 'uuid-1', confidence: 0.92, reason: null, front: null, label: null, warnings: [], ...over });
+const DETAIL = { id: 11, reportNo: 'R1', productName: '바나나맛우유', maker: '빙그레', foodType: '우유', labelSource: 'DECLARED', allergens: '우유', detections: [], avoidance: [], source: { provider: 'HACCP', attributionKey: 'processedFood.source.haccp' }, image: null };
+
+const trees: ReactTestRenderer[] = [];
+let qc: QueryClient;
+const prevVision = FLAGS.packagedVisionScan;
+beforeEach(() => { FLAGS.packagedVisionScan = true; FLAGS.packagedLabelScan = true; mockUuid = 0; qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } }); mockParams = {}; mockRestrictions = [{ code: 'MILK' }]; });
+afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); qc.clear(); jest.clearAllMocks(); FLAGS.packagedVisionScan = prevVision; });
+const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
+const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
+const press = async (t: ReactTestRenderer, id: string) => { await act(async () => { await t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); }); await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); };
+const texts = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children as string);
+const mockShot = { uri: 'file:shot.jpg', width: 3000, height: 4000 };
+let lastCam: ScanCamOpts | null = null;
+function mockCamera(o: ScanCamOpts) {
+  lastCam = o;
+  const { View, Pressable } = jest.requireActual('react-native');
+  return (
+    <View testID={`cam-${o.kind}`}>
+      <Pressable testID="cam-shutter" onPress={() => o.onShot(mockShot)} />
+      {o.link && <Pressable testID={o.link.testID} onPress={o.link.onPress} />}
+      {o.onClose && <Pressable testID="cam-close" onPress={o.onClose} />}
+      {o.debug}
+    </View>
+  );
+}
+const mockOnMenu = jest.fn();
+const onClose = jest.fn();
+const flow = () => render(<PackagedScanFlow mode="packaged" onMode={jest.fn()} onClose={onClose} renderCamera={mockCamera} onMenuPhoto={mockOnMenu} />);
+const visionCalls = () => mockPost.mock.calls.filter(([p]) => p === '/api/processed-foods/scan/vision');
+
+describe('KB-969 어댑터·요청·오류', () => {
+  it('경로는 서버 state 정본: CANDIDATES인데 후보 0 = 후보 없음 · LABEL_RESULT인데 label 없음 = 다시 찍기 · 모르는 kind = OTHER · CONFIRMED', () => {
+    expect(adaptVisionScan(V({ kind: 'PACKAGE_FRONT', state: 'CANDIDATES', front: { candidates: [cand(1, 'R1')] } })).route).toBe('candidates');
+    expect(adaptVisionScan(V({ kind: 'PACKAGE_FRONT', state: 'CANDIDATES', front: { candidates: [] } })).route).toBe('none');
+    expect(adaptVisionScan(V({ kind: 'PACKAGE_FRONT', state: 'NO_CANDIDATE', front: { candidates: [cand(1, 'R1')] } })).front?.candidates).toEqual([]);
+    expect(adaptVisionScan(V({ kind: 'INGREDIENT_LABEL', state: 'LABEL_RESULT', label: null })).route).toBe('other');
+    expect(adaptVisionScan(V({ kind: 'INGREDIENT_LABEL', state: 'LABEL_RESULT', label: LABEL })).route).toBe('label');
+    expect(adaptVisionScan(V({ kind: 'MENU', state: 'NOT_PACKAGED' })).route).toBe('menu');
+    expect(adaptVisionScan(V({ kind: 'SELFIE', state: 'NOT_PACKAGED', reason: 'WEIRD' }))).toMatchObject({ kind: 'OTHER', route: 'other', reason: null });
+    expect(adaptVisionScan(V({ kind: 'PACKAGE_FRONT', state: 'CONFIRMED' })).route).toBe('confirmed');
+    expect(adaptVisionScan(V({ kind: 'OTHER', state: 'NOT_PACKAGED', confidence: 1.7, reason: 'GLARE' }))).toMatchObject({ confidence: 1, reason: 'GLARE' });
+  });
+  it('오류: PFOOD-013 = 하루 상한 · PFOOD-014 = 용량 · SCAN-006·008 = 혼잡 · 코드 없는 503·429는 기존 그대로 network(다른 스캔 문구 무변)', () => {
+    expect(scanFailureOf(new ApiError('x', 429, 'PFOOD-013'))).toBe('visionLimit');
+    expect(scanFailureOf(new ApiError('x', 400, 'PFOOD-014'))).toBe('tooLarge');
+    expect(scanFailureOf(new ApiError('x', 503, 'SCAN-008'))).toBe('busy');
+    expect(scanFailureOf(new ApiError('x', 503, 'SCAN-006'))).toBe('busy');
+    expect(scanFailureOf(new ApiError('x', 503))).toBe('network');
+    expect(scanFailureOf(new ApiError('x', 429))).toBe('network');
+  });
+  it('요청 = POST /api/processed-foods/scan/vision {imagePath, clientRequestId, lang} + 3.2 + 120초', async () => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'MENU', state: 'NOT_PACKAGED' }));
+    await scanProcessedVision('images/p.jpg', 'k-1', 'ko');
+    expect(mockPost).toHaveBeenCalledWith('/api/processed-foods/scan/vision', { imagePath: 'images/p.jpg', clientRequestId: 'k-1', lang: 'ko' }, { headers: { 'X-API-Version': '3.2' }, timeoutMs: 120_000 });
+  });
+  it('계측 보조: 확신도 구간 · reason 키(모름 = unknown)', () => {
+    expect([confidenceBand(0.95), confidenceBand(0.6), confidenceBand(0.2)]).toEqual(['high', 'mid', 'low']);
+    expect([visionReasonKey('TOO_DARK'), visionReasonKey('NOT_FOOD'), visionReasonKey(null)]).toEqual(['tooDark', 'notFood', 'unknown']);
+  });
+});
+
+describe('KB-969 흐름(packagedVisionScan on)', () => {
+  it('카메라 하나 — kind vision · "성분표로" 링크 없음 · 셔터 = 업로드 → /scan/vision(촬영 1회 키) · 온디바이스 OCR 0', async () => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'PACKAGE_FRONT', state: 'CANDIDATES', front: { productName: '바나나맛우유', maker: '빙그레', candidates: [cand(11, 'R1'), cand(12, 'R2')] } }));
+    const t = flow();
+    expect(ids(t)).toContain('cam-vision');
+    expect(lastCam?.link ?? null).toBeNull();
+    await press(t, 'cam-shutter');
+    expect(mockVisionUpload).toHaveBeenCalledWith(mockShot);
+    expect(visionCalls()[0][1]).toEqual({ imagePath: 'images/packaged-scans/v1.jpg', clientRequestId: 'uuid-1', lang: 'en' });
+    expect(mockOcr).not.toHaveBeenCalled();
+    expect(ids(t)).toContain('pscan-candidates');
+    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_vision', { kind: 'PACKAGE_FRONT', state: 'candidates', confidence: 'high', reason: 'none', side: 'first' });
+  });
+  it('앞면 후보 탭 = 기존 확정(같은 analysisId) → 상세', async () => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'PACKAGE_FRONT', state: 'CANDIDATES', front: { candidates: [cand(11, 'R1')] } }));
+    mockPost.mockResolvedValueOnce({ analysisId: 'uuid-1', state: 'CONFIRMED', charged: false, product: DETAIL });
+    const t = flow();
+    await press(t, 'cam-shutter');
+    await press(t, 'pscan-candidate-11');
+    expect(mockPost).toHaveBeenLastCalledWith('/api/processed-foods/scan/confirm', { analysisId: 'uuid-1', reportNo: 'R1' }, expect.anything());
+    expect(mockPush).toHaveBeenCalledWith(expect.stringMatching(/^\/processed-foods\/11\?scan=1/));
+  });
+  it('후보 없음 = 기존 "이름으로 찾기·성분표" 화면', async () => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'PACKAGE_FRONT', state: 'NO_CANDIDATE', front: { productName: 'b나나', candidates: [] } }));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-none', 'pscan-find-by-name', 'pscan-to-label']));
+  });
+  it('성분표 = 기존 결과 화면(판정 띠) · 한 면 더 = 비전 → 같은 분석에 /scan/label(읽은 원문 두 면)', async () => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'INGREDIENT_LABEL', state: 'LABEL_RESULT', label: { ...LABEL, analysisId: 'uuid-1' } }));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pscan-label-result', 'pscan-result-band-danger']));
+    await press(t, 'pscan-label-more');
+    expect(ids(t)).toContain('cam-vision');
+    mockPost.mockResolvedValueOnce(V({ analysisId: 'uuid-2', kind: 'INGREDIENT_LABEL', state: 'LABEL_RESULT', label: { ...LABEL, analysisId: 'uuid-2', rawText: '알레르기: 우유 함유' } }));
+    mockPost.mockResolvedValueOnce({ ...LABEL, analysisId: 'uuid-1' });
+    await press(t, 'cam-shutter');
+    const label = mockPost.mock.calls.find(([p]) => p === '/api/processed-foods/scan/label')!;
+    expect(label[1]).toMatchObject({ analysisId: 'uuid-1', pages: [{ ocrText: LABEL.rawText }, { ocrText: '알레르기: 우유 함유' }] });
+    expect(ids(t)).toContain('pscan-label-result');
+  });
+  it('한 면 더에 성분표가 아닌 사진 = 다시 찍기(기존 결과에 합치지 않음)', async () => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'INGREDIENT_LABEL', state: 'LABEL_RESULT', label: { ...LABEL, analysisId: 'uuid-1' } }));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    await press(t, 'pscan-label-more');
+    mockPost.mockResolvedValueOnce(V({ analysisId: 'uuid-2', kind: 'MENU', state: 'NOT_PACKAGED' }));
+    await press(t, 'cam-shutter');
+    expect(ids(t)).toContain('pscan-vision-other');
+    expect(mockPost.mock.calls.some(([p]) => p === '/api/processed-foods/scan/label')).toBe(false);
+    expect(mockOnMenu).not.toHaveBeenCalled();
+  });
+  it('메뉴판 = 같은 사진·이미 올린 경로로 메뉴 v2(onMenuPhoto) · 흐름은 카메라로', async () => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'MENU', state: 'NOT_PACKAGED', confidence: 0.6 }));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    expect(mockOnMenu).toHaveBeenCalledWith(mockShot, 'images/packaged-scans/v1.jpg');
+    expect(ids(t)).toContain('cam-vision');
+    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_vision', expect.objectContaining({ kind: 'MENU', state: 'menu', confidence: 'mid' }));
+  });
+  it.each([['BLURRY', 'packagedScan.vision.blurry'], ['NOT_FOOD', 'packagedScan.vision.notFood'], [null, 'packagedScan.vision.unknown']])('그 밖(OTHER %s) = reason 안내 + 다시 찍기 → 카메라', async (reason, key) => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'OTHER', state: 'NOT_PACKAGED', reason }));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    expect(ids(t)).toContain('pscan-vision-other');
+    expect(texts(t)).toEqual(expect.arrayContaining(['packagedScan.vision.retakeTitle', key]));
+    await press(t, 'pscan-retake');
+    expect(ids(t)).toContain('cam-vision');
+  });
+  it('전송 실패 → 다시 시도 = 같은 키·같은 경로(재업로드 0 — 서버 멱등)', async () => {
+    mockPost.mockRejectedValueOnce(new Error('NETWORK: x'));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    expect(ids(t)).toContain('pscan-error-network');
+    mockPost.mockResolvedValueOnce(V({ kind: 'MENU', state: 'NOT_PACKAGED' }));
+    await press(t, 'pscan-retry');
+    expect(visionCalls().map((c) => (c[1] as { clientRequestId: string }).clientRequestId)).toEqual(['uuid-1', 'uuid-1']);
+    expect(mockVisionUpload).toHaveBeenCalledTimes(1);
+    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_fail', { stage: 'vision', result: 'network' });
+  });
+  it('업로드 실패도 오류 화면(다시 시도 = 업로드부터) · 하루 상한 = 닫기만(다시 찍기 0)', async () => {
+    mockVisionUpload.mockRejectedValueOnce(new Error('NETWORK: put'));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    expect(ids(t)).toContain('pscan-error-network');
+    expect(visionCalls()).toHaveLength(0);
+    mockPost.mockRejectedValueOnce(new ApiError('limit', 429, 'PFOOD-013'));
+    await press(t, 'pscan-retry');
+    expect(mockVisionUpload).toHaveBeenCalledTimes(2);
+    expect(ids(t)).toContain('pscan-error-visionLimit');
+    expect(ids(t)).toContain('pscan-close');
+    expect(ids(t)).not.toContain('pscan-retake');
+  });
+  it('플래그 off = 현행(앞면 카메라 kind package · 성분표 링크 · 온디바이스 OCR)', async () => {
+    FLAGS.packagedVisionScan = false;
+    mockOcr.mockResolvedValueOnce([{ text: '바나나맛우유' }]);
+    mockPost.mockResolvedValueOnce({ analysisId: 'a', state: 'NO_CANDIDATE', candidates: [] });
+    const t = flow();
+    expect(ids(t)).toEqual(expect.arrayContaining(['cam-package', 'pscan-label-instead']));
+    await press(t, 'cam-shutter');
+    expect(mockOcr).toHaveBeenCalled();
+    expect(visionCalls()).toHaveLength(0);
+  });
+});
