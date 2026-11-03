@@ -1,3 +1,9 @@
+## 2026-11-03 · P-591 KB-966 핫픽스 — 리뷰 조회 3.2 헤더 전 채널(예진 운영 확인)
+
+- useFoodReviews REVIEW_READ_HEADERS = isDevServerChannel() ? 3.2 : 없음 → 전 채널 3.2. 운영이 1.x로 GET /api/reviews·/api/reviews/me를 불러 가공식품 리뷰가 빠지고 targetType 필터가 무시됐다(리뷰 탭 Packaged = 음식 리뷰). 운영 서버 26.11.2가 3.2 보유.
+- 사용처 3곳(리뷰 피드·음식별 리뷰·내 리뷰) 모두 이 상수 · 가공식품 리뷰 엔드포인트는 원래 3.2 고정. 남은 isDevServerChannel 버전 게이트 0(플래그 engagementDwell·packagedNameScanPhoto만 dev 서버 채널).
+- prodHide870 production·preview·teamtest-prod 잠금을 3.2로.
+
 ## 2026-11-03 · P-586 KB-974 가공식품 게스트 판정 숨김·상세 히어로 통일(예진 테플 피드백)
 
 - 비회원 = 가공식품 리본 0 — 공용 ProductCard 한 곳(useIsGuest)에서 막아 Packaged 목록·홈 편의점 줄·검색 Packaged 섹션이 같이 따른다(KB-947 "비회원 safe 리본" 결정 중 비회원만 뒤집음 — 회피 0개 회원은 그대로). 스캔 후보 행(PackagedScanScreens)은 회원 전용·이미 personalized만 · 리뷰 카드엔 판정 표시 없음.
