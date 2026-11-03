@@ -285,6 +285,52 @@ describe('KB-969 흐름(packagedVisionScan on)', () => {
     expect(ids(t)).toContain('pscan-close');
     expect(ids(t)).not.toContain('pscan-retake');
   });
+  it('Codex #412: 혼잡(SCAN-006) 화면에도 다시 시도 — 같은 키·같은 경로(재업로드 0)', async () => {
+    mockPost.mockRejectedValueOnce(new ApiError('busy', 503, 'SCAN-006'));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    expect(ids(t)).toContain('pscan-error-busy');
+    mockPost.mockResolvedValueOnce(V({ kind: 'MENU', state: 'NOT_PACKAGED' }));
+    await press(t, 'pscan-retry');
+    expect(visionCalls().map((c) => (c[1] as { imagePath: string; clientRequestId: string }))).toEqual([
+      expect.objectContaining({ imagePath: 'images/packaged-scans/v1.jpg', clientRequestId: 'uuid-1' }),
+      expect.objectContaining({ imagePath: 'images/packaged-scans/v1.jpg', clientRequestId: 'uuid-1' }),
+    ]);
+    expect(mockVisionUpload).toHaveBeenCalledTimes(1);
+  });
+  it('Codex #412: 업로드 중 로딩을 닫으면 업로드가 끝나도 비전 호출 0(하루 상한 소모 금지)', async () => {
+    let finish!: (p: string) => void;
+    mockVisionUpload.mockImplementationOnce(() => new Promise<string>((r) => { finish = r; }));
+    const t = flow();
+    await act(async () => {
+      void t.root.findAll((n) => n.props?.testID === 'cam-shutter' && typeof n.props?.onPress === 'function')[0].props.onPress(); // 업로드가 안 끝나므로 기다리지 않는다
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(ids(t)).toContain('pscan-reading');
+    await press(t, 'scan-loading-close');
+    await act(async () => { finish('images/packaged-scans/v1.jpg'); await new Promise((r) => setTimeout(r, 0)); });
+    expect(visionCalls()).toHaveLength(0);
+    expect(ids(t)).toContain('cam-vision');
+  });
+  it('Codex #412: 성분표 4면 결과 → 사진 보기 → 다시 찍기 = 마지막 면 교체(원본에 붙여 잘려 나가지 않음)', async () => {
+    const page = (id: string, rawText: string) => V({ analysisId: id, kind: 'INGREDIENT_LABEL', state: 'LABEL_RESULT', label: { ...LABEL, analysisId: id, rawText } });
+    mockPost.mockResolvedValueOnce(page('uuid-1', 'A면'));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    for (const [i, txt] of [[2, 'B면'], [3, 'C면'], [4, 'D면']] as const) {
+      await press(t, 'pscan-label-more');
+      mockPost.mockResolvedValueOnce(page(`uuid-${i}`, txt));
+      mockPost.mockResolvedValueOnce({ ...LABEL, analysisId: 'uuid-1' });
+      await press(t, 'cam-shutter');
+    }
+    await press(t, 'pscan-result-review'); // 4면 = 사진 보기
+    await press(t, 'pscan-label-retake'); // D면을 다시 찍는다
+    mockPost.mockResolvedValueOnce(page('uuid-5', 'E면'));
+    mockPost.mockResolvedValueOnce({ ...LABEL, analysisId: 'uuid-1' });
+    await press(t, 'cam-shutter');
+    const labels = mockPost.mock.calls.filter(([p]) => p === '/api/processed-foods/scan/label');
+    expect(labels.at(-1)![1]).toMatchObject({ analysisId: 'uuid-1', pages: ['A면', 'B면', 'C면', 'E면'].map((ocrText) => ({ ocrText })) });
+  });
   it('플래그 off = 현행(앞면 카메라 kind package · 성분표 링크 · 온디바이스 OCR)', async () => {
     FLAGS.packagedVisionScan = false;
     mockOcr.mockResolvedValueOnce([{ text: '바나나맛우유' }]);

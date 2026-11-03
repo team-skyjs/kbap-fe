@@ -275,6 +275,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     let path = uploaded;
     try {
       path = path ?? (await uploadVisionScanPhoto(photo));
+      if (my !== reqSeq.current) return; // Codex #412: 업로드 중 닫음 = 비전 호출 0(하루 상한 소모 금지)
       const r = await scanProcessedVision(path, key, apiLang());
       if (my !== reqSeq.current) return; // 그 사이 뒤로 감 — 늦은 응답 버림
       await applyVision(r, photo, path, back, addTo);
@@ -305,7 +306,8 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     else setStep({ kind: 'labelPages', analysisId: cam.analysisId, pages: next, photos: nextPhotos });
   };
   const onLabelShot = async (cam: Extract<Step, { kind: 'handoff' }>, photo: ScanPhoto) => {
-    if (FLAGS.packagedVisionScan) return runVision(photo, cam, cam.from);
+    // Codex #412: 결과 → 사진 보기 → 다시 찍기 = 잘라낸 면 목록(cam.pages)에 합친다 — 원본(from.pages)이면 교체가 아니라 추가가 된다
+    if (FLAGS.packagedVisionScan) return runVision(photo, cam, cam.from && { ...cam.from, pages: cam.pages ?? cam.from.pages, photos: cam.photos ?? cam.from.photos });
     const text = await readText(photo, true, cam);
     if (text == null) return;
     await addLabelText(cam, text, photo.uri);
@@ -613,7 +615,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
         body={t(`packagedScan.err.${f}Body`)}
         overlay={<DarkBackButton onPress={() => goStep({ kind: 'capture' })} label={t('common.goBack')} testID={`pscan-error-${f}-back`} />}
       >
-        {f === 'network' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-retry">{t('common.tryAgain')}</Btn>}
+        {(f === 'network' || f === 'busy') && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-retry">{t('common.tryAgain')}</Btn>}
         {/* P-508: 409 PFOOD-007 = 이 분석엔 더 못 붙임 → 새 분석(성공 1회 — 본문이 알린다) */}
         {f === 'newAnalysis' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-new-analysis">{t('packagedScan.newAnalysisCta')}</Btn>}
         {f === 'quota' || f === 'visionLimit' ? ( /* KB-969: 하루 상한 = 다시 찍어도 같다 — 닫기만 */
