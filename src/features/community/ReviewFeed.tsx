@@ -161,6 +161,12 @@ export function ReviewFeed() {
     track(EVENTS.review_write_tap, { source: 'feed' }); // P-213: 퍼널 유입 누락분
     router.push(`/food/${f.foodId}/review` as Href);
   };
+  // KB-976: 대상 고르기에서 가공식품 = 그 제품 리뷰 작성으로(상세 쓰기 버튼과 같은 화면)
+  const onPickPackaged = (p: { id: string }) => {
+    setPickerOpen(false);
+    track(EVENTS.review_write_tap, { source: 'feed', target_type: 'packaged' });
+    router.push(`/processed-foods/${p.id}/review` as Href);
+  };
 
   return (
     <View style={styles.root} testID="review-feed">
@@ -320,6 +326,7 @@ export function ReviewFeed() {
         foodTags={[]}
         placeTag={null}
         onToggleFood={onPickFood}
+        onPickPackaged={onPickPackaged}
         onTogglePlace={() => {}}
         onClose={() => setPickerOpen(false)}
         t={t}

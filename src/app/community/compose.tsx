@@ -25,14 +25,13 @@ import { KAV_BEHAVIOR, KAV_OFFSET, useKeyboardLift } from '@/lib/keyboardAvoid';
 import Animated from 'react-native-reanimated';
 import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
-import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, primaryTint, primaryTint2, accentTint, radius, shadow } from '@/lib/theme';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
-import { Btn, Flag, IconCheck, IconClose, IconFood, IconGallery, IconGlobe, IconMapPin, IconPlus, IconProfile, IconSearch, MedalEmblem, SubHeader, Input } from '@/components';
+import { Btn, Chip, Flag, KeyboardDismissBar, IconCheck, IconClose, IconFood, IconSnackBag, IconGallery, IconGlobe, IconMapPin, IconPlus, IconProfile, IconSearch, MedalEmblem, SubHeader, Input } from '@/components';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -40,6 +39,9 @@ import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmMod
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useMe } from '@/lib/data/useMe';
 import { useInfiniteFoods, useSearchFoods, useScannedFoods } from '@/lib/data/useFoods';
+import { useProcessedSearchPaged } from '@/lib/data/useProcessedFoods';
+import type { ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
+import { FLAGS } from '@/lib/flags';
 import { useCommunityPost, useCreatePost, useUpdatePost } from '@/lib/community/hooks';
 import { searchPlaces } from '@/lib/community/places';
 import type { FoodTagRef, PlaceTagRef } from '@/lib/community/types';
@@ -391,6 +393,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   onClose,
   t,
   context = 'compose',
+  onPickPackaged,
 }: {
   kind: 'food' | 'place' | null;
   foodTags: FoodTagRef[];
@@ -402,6 +405,8 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   /** P-225 ④: 캡션은 compose 전용. P-245: 'review' = 자격 UX(스캔분만 선택 가능),
    *  'filter'(P-229 음식 필터) = 자격 무관 — 전체 활성 유지(스캔 우선 정렬만 공유). */
   context?: 'compose' | 'review' | 'filter';
+  /** KB-976: 리뷰 탭 작성 — 넘기면 All/Dishes/Packaged 칩 + 가공식품 구역(가공식품 상세 쓰기 버튼과 같은 플래그 조건). 안 넘기면 음식만(현행) */
+  onPickPackaged?: (p: ProcessedFoodSummary) => void;
 }) {
   const kbLift = useKeyboardLift({ dismissBar: true }); // KB-768: 키보드·내리기 바 위로
   const bottomInset = useBottomInset();
@@ -432,11 +437,15 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   // P-238: 리뷰 픽커 초기 목록 = 내 최근 스캔(스웨거 명시 — 검색 API가 아니라 스캔 내역
   // 조회). 스캔 이력 0건 = 기존 인기 목록 폴백(빈 화면 금지 — P-210).
   const scanned = useScannedFoods(useScanScope && kind === 'food');
+  // KB-976: 가공식품 = 통합 검색(KB-967)과 같은 칩·구역. 빈 검색 = 홈 편의점 줄과 같은 쿼리(useProcessedSearch('')와 같은 키 = 캐시 공유)
+  const packagedOn = !!onPickPackaged && kind === 'food' && FLAGS.processedFoodEnabled && FLAGS.reviewsLiveEnabled && FLAGS.packagedReviewWrite;
+  const [segment, setSegment] = React.useState<'all' | 'dishes' | 'packaged'>('all');
+  const seg = packagedOn ? segment : 'dishes';
   // KB-603: 시트가 닫히면(kind → null) 검색 상태 리셋 — effect가 아니라 렌더 중 이전값 비교(React 공식 패턴, 낭비 렌더 0)
   const [prevKind, setPrevKind] = React.useState(kind);
   if (kind !== prevKind) {
     setPrevKind(kind);
-    if (kind == null) { setQ(''); setSearchAll(false); }
+    if (kind == null) { setQ(''); setSearchAll(false); setSegment('all'); }
   }
   // P-337(KB-490): 핸들+헤더 스와이프 닫기 — 리스트 스크롤과 충돌 방지(제스처 영역 한정)
   const swipe = useSheetSwipeDismiss(onClose, kind != null);
@@ -456,6 +465,8 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
       : (browse.data ?? []).slice(0, 20)
     : (foods.data ?? []);
   const places = kind === 'place' ? searchPlaces(q) : [];
+  const showFoods = seg !== 'packaged';
+  const showPkg = packagedOn && seg !== 'dishes';
 
 
   return (
@@ -526,11 +537,18 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
               autoCorrect={false}
             />
           </View>
+          {packagedOn && (
+            <View style={styles.segRow} testID="picker-segments">
+              {PICKER_SEGMENTS.map(([id, k]) => (
+                <Chip key={id} label={t(k)} selected={seg === id} onPress={() => setSegment(id)} testID={`picker-seg-${id}`} />
+              ))}
+            </View>
+          )}
 
           {/* KB-905(T-075): 목록 끝 여백 — 마지막 행·구역 제목이 하단 버튼 줄에 붙지 않게 */}
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
             {/* P-349 ④: scanned isPending 동안 = 스켈레톤만(구역·배너는 판정 후 한 번에) */}
-            {scanPending && isBrowse && (
+            {showFoods && scanPending && isBrowse && (
               <View testID="picker-skeleton">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <View key={i} style={styles.skelRow}>
@@ -546,13 +564,17 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
             {/* 섹션 헤더 — mono 대문자. 빈 검색: 음식=POPULAR(브라우즈)·장소=RECENT(목).
                 P-245 자격 컨텍스트: 활성 구역(RECENTLY SCANNED)은 0건이면 헤더도 생략 —
                 안내+CTA가 메인(빈 컨테이너 금지, P-210). */}
-            {!(scanPending && isBrowse) && isBrowse && (
+            {showFoods && !(scanPending && isBrowse) && isBrowse && (
               <Text style={styles.sectionHead}>
                 {t(kind === 'food' ? (reviewInitial ? 'community.sectionRecentlyScanned' : 'community.sectionPopular') : 'community.sectionRecent')}
               </Text>
             )}
+            {/* KB-976: 전체 칩 검색 = 음식 구역 제목(통합 검색과 같은 이름) */}
+            {packagedOn && seg === 'all' && !isBrowse && foodList.length > 0 && (
+              <Text style={styles.sectionHead}>{t('packaged.segmentDishes')}</Text>
+            )}
             {/* P-245: 검색에서 전체 결과로 전환된 상태 = 비활성 + 같은 안내(학습 역할) */}
-            {!(scanPending && isBrowse) && (kind === 'food'
+            {showFoods && !(scanPending && isBrowse) && (kind === 'food'
               ? foodList.map((f) => {
                   const selected = foodTags.some((x) => x.foodId === f.foodId);
                   const disabled = false; // P-392: 자격 제한 폐기 — 검색 결과 전부 선택 가능
@@ -592,7 +614,8 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                 )))}
             {/* P-392(KB-584): 스캔분 아래 전체 음식 — 이제 **선택 가능**(자격 제한 폐기).
                 스캔분이 없으면 위 브라우즈가 이미 인기 목록이라 이 구역은 중복 → 그때만 숨긴다. */}
-            {!scanPending && kind === 'food' && isBrowse && reviewInitial && (
+            {isBrowse && showPkg && <PickerPackaged q={q} seg={seg} onPick={(p) => onPickPackaged?.(p)} t={t} />}
+            {showFoods && !scanPending && kind === 'food' && isBrowse && reviewInitial && (
               <>
                 <Text style={styles.sectionHead}>{t('community.sectionAllFoods')}</Text>
                 {(browse.data ?? []).slice(0, 20).map((f) => (
@@ -624,9 +647,10 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
             )}
             {/* P-392(KB-584): 리뷰는 처음부터 전체 검색이라 "전체에서 찾기" 단계가 없다 —
                 그 단계를 기다리는 조건이면 결과 0건에서 **아무 안내도 안 뜬다**(Codex #168). */}
-            {kind === 'food' && !isBrowse && foods.data?.length === 0 && (!useScanScope || isReview || searchAll) && (
+            {showFoods && kind === 'food' && !isBrowse && foods.data?.length === 0 && (!useScanScope || isReview || searchAll) && (
               <Text style={styles.searchHint}>{t('community.searchFoodsHint')}</Text>
             )}
+            {!isBrowse && showPkg && <PickerPackaged q={q} seg={seg} onPick={(p) => onPickPackaged?.(p)} t={t} />}
           </ScrollView>
 
           {/* KB-432 §2-9: FixedBottom — outline Close + primary Done */}
@@ -658,6 +682,54 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
     </Modal>
   );
 }
+
+const PKG_PREVIEW = 5;
+/** KB-976: 리뷰 작성 대상 고르기의 가공식품 구역 — 빈 검색 = 편의점 인기(홈 줄과 같은 쿼리) · 검색 = 가공식품 검색(음식 결과 아래).
+ *  쿼리를 쓰는 시트에서만 마운트(글 작성·필터 픽커 = 요청 0). 전체 칩 = 미리보기 PKG_PREVIEW개, 실패·0건이면 구역째 숨김(음식 결과가 있다) · Packaged 칩 = 0건·실패 안내 */
+function PickerPackaged({ q, seg, onPick, t }: { q: string; seg: 'all' | 'packaged'; onPick: (p: ProcessedFoodSummary) => void; t: TFn }) {
+  const pkg = useProcessedSearchPaged(q, {});
+  const isBrowse = q.trim().length === 0;
+  const pkgList = (pkg.data?.items ?? []).slice(0, seg === 'all' ? PKG_PREVIEW : undefined);
+  if (seg === 'packaged' && pkg.isError) return <Text style={styles.searchHint}>{t('packaged.emptyBody')}</Text>;
+  if (seg === 'all' && (pkg.isError || (pkg.isSuccess && pkgList.length === 0))) return null;
+  return (
+    <View testID="picker-packaged">
+      <Text style={styles.sectionHead}>{t(isBrowse ? 'home.cvsTitle' : 'packaged.segmentPackaged')}</Text>
+      {pkg.isPending
+        ? [0, 1, 2].map((i) => (
+            <View key={i} style={styles.skelRow}>
+              <Shimmer style={styles.skelThumb} />
+              <View style={{ flex: 1, gap: 6 }}>
+                <Shimmer style={styles.skelBarA} />
+                <Shimmer style={styles.skelBarB} />
+              </View>
+            </View>
+          ))
+        : pkgList.length === 0
+          ? <Text style={styles.searchHint}>{t('packaged.emptyTitle')}</Text>
+          : pkgList.map((p) => (
+              <ResultRow testID="compose-result-packaged"
+                key={`pf-${p.id}`}
+                thumb={
+                  p.imageUrl ? (
+                    <RemoteImage uri={p.imageUrl} style={styles.rowThumb} contentFit="contain" recyclingKey={`pf-${p.id}`} />
+                  ) : (
+                    <View style={[styles.rowThumb, styles.rowThumbFallback]}>
+                      <IconSnackBag size={17} color={C.primary} />
+                    </View>
+                  )
+                }
+                name={p.name}
+                sub={p.nameKo ?? p.maker ?? ''}
+                selected={false}
+                onPress={() => onPick(p)}
+              />
+            ))}
+    </View>
+  );
+}
+
+const PICKER_SEGMENTS = [['all', 'home.filterAll'], ['dishes', 'packaged.segmentDishes'], ['packaged', 'packaged.segmentPackaged']] as const;
 
 /** 시트 결과 행 — 38 썸네일 + 이름/한국어명 2줄 + 우측 + 원형 30(선택=primary ✓). */
 function ResultRow({
@@ -792,6 +864,7 @@ const styles = StyleSheet.create({
   skelThumb: { width: 48, height: 48, borderRadius: radius.pill },
   skelBarA: { width: '55%', height: 14, borderRadius: radius.xs },
   skelBarB: { width: '35%', height: 11, borderRadius: radius.xs },
+  segRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, // KB-976: 통합 검색 칩 줄과 같은 간격
   rowThumbPlace: { backgroundColor: accentTint, alignItems: 'center', justifyContent: 'center' },
   resultText: { fontSize: 16, fontWeight: '600', color: C.ink },
   resultTextOn: { color: C.primaryText },
