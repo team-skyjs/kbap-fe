@@ -6,6 +6,7 @@
 - processedFoodEnabled off = 칩·가공식품 요청 없음(useProcessedSearchPaged enabled 인자 추가). search_query에 segment(all|dishes|packaged).
 - 새 i18n 키 0. 테스트 searchUnified967(뮤테이션 5종 확인) + 기존 search 테스트 2개에 가공식품 목 추가.
 - Q-397 보정(11/03): ① All = 두 요청이 다 끝날 때까지 두 섹션 스켈레톤 고정 순서(Dishes 위) → 끝난 뒤 한 번에 순서·숨김 결정(0.3초 점프 제거) ② Packaged 칩 결과 수 줄 숨김(서버 total 없음 — 불러온 개수가 20→83로 늘던 것), Dishes 칩 = 칩 아래 30(리뷰 탭과 같은 8 + 22) ③ search_query = 가공식품도 끝난 뒤 1회, result_count는 음식 건수 그대로 + packaged_count.
+- #397 Codex 1차 P2(11/03): ① Packaged 칩 다음 페이지 실패 = 받은 카드 유지 + 푸터 다시 시도(자동 재요청 0, 첫 페이지 실패만 오류 블록) ② search_query 기준 = 제출 때 칩 — Dishes 음식 성공 · Packaged 가공식품 성공(result_count = 가공식품 건수, 음식 실패여도 나감) · All 둘 다 끝난 뒤 하나라도 성공(result_count = 음식, 음식 실패면 생략 + packaged_count).
 
 ## 2026-11-02 · P-579 KB-966 연장 — 리뷰의 가공식품 이름 번역(서버 S-942)
 

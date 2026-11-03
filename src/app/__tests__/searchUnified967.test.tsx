@@ -315,3 +315,50 @@ describe('Q-397 보정', () => {
     expect(ev[0][1]).toMatchObject({ result_count: 6, packaged_count: 5, segment: 'all' });
   });
 });
+
+describe('#397 Codex 1차', () => {
+  const ERR = { ...OK, ...PAGED, isSuccess: false, isError: true, error: new Error('HTTP 500'), data: undefined };
+  const lastQuery = () => mockTrack.mock.calls.filter((c) => c[0] === 'search_query').at(-1)?.[1];
+
+  it('① Packaged 칩 다음 페이지 실패 = 받은 카드 유지 + 푸터 다시 시도(자동 재요청 없음)', () => {
+    const next = jest.fn();
+    mockPkg.mockReturnValue({ ...pkgOk(20, true), isSuccess: false, isError: true, isFetchNextPageError: true, // TanStack: 다음 페이지 실패 = status error(데이터는 남음)
+      error: new Error('HTTP 500'), fetchNextPage: next });
+    const tree = render();
+    submit(tree);
+    press(tree, 'search-seg-packaged');
+    expect(idsWith(tree, 'packaged-item-')).toHaveLength(20);
+    expect(tree.root.findAll((n) => n.props?.children === 'states.errorTitle').length).toBe(0); // 오류 블록으로 바꾸지 않는다
+    act(() => { byId(tree, 'search-body')[0].props.onEndReached(); });
+    expect(next).not.toHaveBeenCalled();
+    press(tree, 'search-packaged-more-retry');
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('② Packaged 칩 = 가공식품 기준(음식 실패여도 나감) · result_count = 가공식품 건수', () => {
+    mockUseSearchFoods.mockReturnValue(ERR);
+    const tree = render();
+    submit(tree);
+    press(tree, 'search-seg-packaged');
+    submit(tree, 'tteok'); // 칩이 Packaged인 채로 제출
+    const ev = lastQuery();
+    expect(ev).toMatchObject({ segment: 'packaged', result_count: 5, packaged_count: 5 });
+  });
+
+  it('② All = 둘 다 끝난 뒤 하나라도 성공하면 1회 — 음식 실패 = result_count 생략(0건으로 남기지 않음) + packaged_count', () => {
+    mockUseSearchFoods.mockReturnValue(ERR);
+    const tree = render();
+    submit(tree);
+    const ev = lastQuery();
+    expect(ev).toMatchObject({ segment: 'all', packaged_count: 5 });
+    expect(ev).not.toHaveProperty('result_count');
+  });
+
+  it('② 둘 다 실패 = 이벤트 없음', () => {
+    mockUseSearchFoods.mockReturnValue(ERR);
+    mockPkg.mockReturnValue(ERR);
+    const tree = render();
+    submit(tree);
+    expect(lastQuery()).toBeUndefined();
+  });
+});

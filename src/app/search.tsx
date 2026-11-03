@@ -118,14 +118,25 @@ export default function Search() {
   const trackedFor = useRef<string | null>(null);
   useEffect(() => {
     // KB-786(#278 Codex P2): 요청이 **성공한** 검색만 — 실패(오프라인·5xx)를 "결과 0건"으로 남기지 않고, 같은 검색어 재시도 성공분이 기록되게
-    if (!submitted || search.isLoading || !search.isSuccess || trackedFor.current === submitted) return;
-    if (packagedOn && pkg.isPending) return; // KB-967(Q-397): 가공식품도 끝난 뒤 1회 — result_count는 음식 건수 그대로(기존 대시보드 의미), 가공식품은 packaged_count로 따로
+    // KB-967 정책(#397 Codex P2) — 제출 1번에 1회, 기준은 제출 때 칩:
+    //   Dishes(가공식품 꺼진 채널 포함) = 음식 성공 때 · result_count = 음식 건수
+    //   Packaged = 가공식품 성공 때 · result_count = 가공식품 건수
+    //   All = 두 요청이 다 끝난 뒤 하나라도 성공했으면 · result_count = 음식 건수(기존 대시보드 의미 — 음식 실패면 생략), packaged_count = 가공식품 건수(성공 때만)
+    if (!submitted || trackedFor.current === submitted) return;
+    const food = search.isSuccess;
+    const pf = packagedOn && pkg.isSuccess;
+    if (seg === 'dishes' ? !food : seg === 'packaged' ? !pf : search.isPending || pkg.isPending || (!food && !pf)) return;
     trackedFor.current = submitted;
-    const kw = searchKeywordProps(submitted, results.flatMap((f) => [f.name, f.nameKo].filter(Boolean) as string[]), results.length);
-    track(EVENTS.search_query, { ...kw, segment: seg, ...(packagedOn && pkg.isSuccess ? { packaged_count: pkgItems.length } : {}) });
-    airbridge.searchResults({ keyword: kw.keyword, resultCount: kw.result_count }); // KB-783 ⑦ — 같은 프라이버시 규칙(매칭값만)
+    const names = [
+      ...(food ? results.flatMap((f) => [f.name, f.nameKo]) : []),
+      ...(pf ? pkgItems.flatMap((it) => [it.name, it.nameKo]) : []),
+    ].filter(Boolean) as string[];
+    const count = seg === 'packaged' ? pkgItems.length : food ? results.length : null;
+    const { result_count: _drop, ...kw } = searchKeywordProps(submitted, names, count ?? 0);
+    track(EVENTS.search_query, { ...kw, ...(count != null ? { result_count: count } : {}), segment: seg, ...(pf ? { packaged_count: pkgItems.length } : {}) });
+    airbridge.searchResults({ keyword: kw.keyword, resultCount: count ?? pkgItems.length }); // KB-783 ⑦ — 같은 프라이버시 규칙(매칭값만)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submitted, search.isLoading, search.isSuccess, pkg.isPending]);
+  }, [submitted, seg, search.isSuccess, search.isPending, pkg.isSuccess, pkg.isPending]);
   const reset = () => {
     setQuery('');
     setSubmitted('');
@@ -141,9 +152,11 @@ export default function Search() {
   const foodFirst = !allSettled || Math.min(results.length, FOODS_PAGE_SIZE) >= Math.min(pkgItems.length, PROCESSED_PAGE_SIZE); // 첫 페이지 건수(두 쪽 다 20개 페이지)
   const listData: (FoodCard | ProcessedFoodSummary)[] =
     !showingSearch || seg === 'all' ? [] :
-    seg === 'packaged' ? (pkg.isSuccess ? pkgItems : []) :
+    seg === 'packaged' ? pkgItems : // #397 Codex P2: 다음 페이지 실패에도 받은 카드 유지(PackagedExplorer와 같은 규칙 — 실패는 푸터 재시도)
     !search.isLoading && !search.isError ? results : [];
   const active = seg === 'packaged' ? pkg : search;
+  // 첫 페이지 실패만 오류 블록 — 다음 페이지 실패(isFetchNextPageError)는 받은 카드 유지 + 푸터 다시 시도
+  const pkgFailed = pkg.isError && !pkg.isFetchNextPageError;
   const dishesSection = foodShown ? (
     <View style={styles.section} testID="search-section-dishes">
       <SectionHead title={t('packaged.segmentDishes')} more={results.length > SECTION_PREVIEW || !!search.hasNextPage} onMore={() => pickSegment('dishes')} moreLabel={t('home.seeAll')} id="dishes" />
@@ -169,7 +182,7 @@ export default function Search() {
         <View style={[styles.gridRowWrap, styles.previewGrid]} testID="search-packaged-skeleton">
           {[0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} width={cellW} />)}
         </View>
-      ) : pkg.isError ? (
+      ) : pkgFailed ? (
         <View style={styles.sectionErr}><QueryErrorBlock error={pkg.error} onRetry={() => void pkg.refetch()} /></View>
       ) : (
         <View style={[styles.gridRowWrap, styles.previewGrid]}>
@@ -324,7 +337,7 @@ export default function Search() {
                 <View style={[styles.gridRowWrap, styles.previewGrid]} testID="search-packaged-skeleton">
                   {[0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} width={cellW} />)}
                 </View>
-              ) : pkg.isError ? (
+              ) : pkgFailed ? (
                 <View style={styles.body}><QueryErrorBlock error={pkg.error} onRetry={() => void pkg.refetch()} /></View>
               ) : pkgItems.length > 0 ? (
                 // Q-397 ②: 서버 total이 없어 불러온 개수(20 → 40 …)만 셀 수 있다 — 결과 수 줄 숨김(자리만)
@@ -343,10 +356,16 @@ export default function Search() {
             )}
           </View>
         }
-        ListFooterComponent={showingSearch && seg !== 'all' && active.isFetchingNextPage ? <Spinner /> : null}
+        ListFooterComponent={showingSearch && seg !== 'all' && active.isFetchingNextPage ? <Spinner /> : showingSearch && seg === 'packaged' && pkg.isFetchNextPageError ? (
+          <Pressable style={styles.moreErr} onPress={() => void pkg.fetchNextPage()} accessibilityRole="button" testID="search-packaged-more-retry">
+            <Text style={styles.moreErrText}>{t('packaged.loadMoreFailed')}</Text>
+            <Text style={styles.moreErrCta}>{t('common.tryAgain')}</Text>
+          </Pressable>
+        ) : null}
         onEndReachedThreshold={0.6}
         onEndReached={() => {
-          if (showingSearch && seg !== 'all' && active.hasNextPage && !active.isFetchingNextPage) void active.fetchNextPage();
+          // 다음 페이지 실패 뒤엔 자동으로 다시 부르지 않는다(푸터 수동만 — Packaged 탭 Codex #308 P2와 같은 규칙)
+          if (showingSearch && seg !== 'all' && active.hasNextPage && !active.isFetchingNextPage && !active.isFetchNextPageError) void active.fetchNextPage();
         }}
           renderItem={({ item }) =>
             isGridPad(item) ? (
@@ -442,6 +461,10 @@ const styles = StyleSheet.create({
   // Q-397 ②: 칩 → 첫 내용 = 리뷰 탭과 같은 30(칩 줄 8 + 리뷰 카드 위 패딩 22)
   countUnderChips: { marginTop: 22 },
   countGap: { height: 22 },
+  // 다음 페이지 실패 푸터 = Packaged 탭(PackagedExplorer st.moreErr*)과 같은 모양
+  moreErr: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', columnGap: 8, minHeight: 44, paddingHorizontal: 20 },
+  moreErrText: { ...T.meta, fontFamily: font.body, color: C.ink3 },
+  moreErrCta: { ...T.meta, fontFamily: font.bodyBold, color: C.primaryText },
   section: { marginTop: 16 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 20, marginBottom: 12 },
   sectionTitle: { ...T.appBar, fontFamily: font.bodyBold, color: C.ink, flexShrink: 1 },
