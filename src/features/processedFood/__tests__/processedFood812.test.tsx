@@ -590,6 +590,10 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
   });
 
   it('시안 04: 검색 0 = 탭 안 빈 상태(검색창·칩 유지, 제목 0) · Change search = 비우고 둘러보기로 · 성분표 찍기 = 비회원 가입 게이트', async () => {
+    // P-587: packagedLabelScan 기본 true(전 채널) — 이 케이스는 꺼진 상태 문구를 본다
+    const label = FLAGS.packagedLabelScan;
+    (FLAGS as { packagedLabelScan: boolean }).packagedLabelScan = false;
+    try {
     mockGet.mockResolvedValueOnce(V4());
     const t = await mount();
     mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
@@ -599,15 +603,19 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
     await flush();
     expect(ids(t)).toEqual(expect.arrayContaining(['packaged-empty', 'packaged-types', 'packaged-empty-change-search']));
     expect(text(t)).not.toContain('packaged.searchResults');
-    // packagedLabelScan = 이 스위트 기본 false(dev 서버 채널 아님) → 성분표 버튼 0 · 본문도 성분표 언급 없는 문구
+    // packagedLabelScan 꺼짐 → 성분표 버튼 0 · 본문도 성분표 언급 없는 문구
     expect(ids(t)).not.toContain('packaged-empty-scan-label');
     expect(text(t)).toContain('packaged.emptyBody');
     await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-empty-change-search' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
     expect(ids(t)).toContain('packaged-item-7'); // 캐시된 둘러보기
     expect(input.props.value ?? '').toBe('');
+    } finally {
+      (FLAGS as { packagedLabelScan: boolean }).packagedLabelScan = label;
+    }
   });
 
   it('시안 04 + 성분표 플래그 켜짐: 버튼 = 비회원 가입 게이트(내비 0)', async () => {
+    const label = FLAGS.packagedLabelScan;
     (FLAGS as { packagedLabelScan: boolean }).packagedLabelScan = true;
     try {
       mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
@@ -616,7 +624,7 @@ describe('KB-865 v4 목록(01·03·05·06·49)', () => {
       await act(async () => { t.root.findAll((n) => n.props?.testID === 'packaged-empty-scan-label' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
       expect(ids(t)).toContain('gate-open');
     } finally {
-      (FLAGS as { packagedLabelScan: boolean }).packagedLabelScan = false;
+      (FLAGS as { packagedLabelScan: boolean }).packagedLabelScan = label;
     }
   });
 
