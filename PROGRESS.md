@@ -1,3 +1,10 @@
+## 2026-11-03 · P-589 KB-976 리뷰 탭 Write a review — 대상 고르기에서 가공식품 선택(예진 운영 확인)
+
+- 리뷰 피드 대상 고르기(TagPickerSheet context review)에 통합 검색과 같은 All/Dishes/Packaged 칩 — 호출측이 onPickPackaged를 넘길 때만(글 작성·필터 픽커 무변) + 가공식품 상세 쓰기 버튼과 같은 플래그(processedFoodEnabled·reviewsLiveEnabled·packagedReviewWrite).
+- 빈 검색: 스캔분(빠른 선택) 바로 아래 "편의점 인기 간식" 5개 — 홈 편의점 줄과 같은 쿼리 키(useProcessedSearchPaged(''), 캐시 공유) · 검색: 음식 결과(Dishes 제목) 아래 Packaged 5개 · Packaged 칩 = 첫 페이지 전부 · Dishes 칩 = 가공식품 구역 언마운트(요청 0). 음식 규칙(스캔분 우선·전체 검색) 무변.
+- 가공식품 행 = 시트 결과 행(원형 썸네일 누끼 contain·번역 이름·nameKo 보조, 사진 없음 = 과자봉지 아이콘) · 로딩 = 스켈레톤 3행 · 전체 칩 실패/0건 = 구역째 숨김 · Packaged 칩 0건/실패 = 안내. 선택 = 시트 닫고 /processed-foods/{id}/review + review_write_tap(source feed, target_type packaged).
+- 새 i18n 키 0(home.filterAll·packaged.segment*·home.cvsTitle·packaged.emptyTitle/emptyBody 재사용). 판정 리본은 행에 그리지 않는다(false-safe 표면 0).
+
 ## 2026-11-03 · P-586 KB-974 가공식품 게스트 판정 숨김·상세 히어로 통일(예진 테플 피드백)
 
 - 비회원 = 가공식품 리본 0 — 공용 ProductCard 한 곳(useIsGuest)에서 막아 Packaged 목록·홈 편의점 줄·검색 Packaged 섹션이 같이 따른다(KB-947 "비회원 safe 리본" 결정 중 비회원만 뒤집음 — 회피 0개 회원은 그대로). 스캔 후보 행(PackagedScanScreens)은 회원 전용·이미 personalized만 · 리뷰 카드엔 판정 표시 없음.
