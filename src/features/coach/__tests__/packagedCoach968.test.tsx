@@ -37,6 +37,7 @@ import {
   bubbleX,
   holePath,
   markPackagedCoachSeen,
+  packagedCoachFoodHref,
   presentHomeCoach,
   queuePackagedCoachStep2,
   shouldShowPackagedCoach,
@@ -164,17 +165,28 @@ describe('스포트라이트 위치', () => {
     expect(has(tree, 'packaged-coach-scrim')).toBe(false);
   });
 
-  it('닫기 = 44pt · 스크린리더 라벨', async () => {
-    let tree!: ReactTestRenderer;
-    act(() => { tree = renderer.create(<PackagedCoachOverlay step="home" open onNext={() => {}} onSkip={() => {}} />); });
-    layout(tree, 'home');
-    await flush();
-    const x = byId(tree, 'packaged-coach-skip')[0];
-    expect(x.props.accessibilityLabel).toBe('common.close');
-    const st = Object.assign({}, ...[x.props.style].flat(3).filter(Boolean));
-    expect(st.width).toBeGreaterThanOrEqual(44);
-    expect(st.height).toBeGreaterThanOrEqual(44);
-    expect(byId(tree, 'packaged-coach-home')[0].props.accessibilityLabel).toBe('packagedCoach.homeTitle, packagedCoach.homeBody');
+  it('KB-971: X 없음(두 단계) — 화면 전체가 버튼(스크린리더 = 제목+본문 라벨, activate = 다음) · 아이콘 1단계 스캔 / 2단계 과자봉지', async () => {
+    const { IconSnackBag, IconTabScan } = jest.requireActual('@/components/icons') as typeof import('@/components/icons');
+    for (const step of ['home', 'food'] as const) {
+      const onNext = jest.fn();
+      let tree!: ReactTestRenderer;
+      act(() => { tree = renderer.create(<PackagedCoachOverlay step={step} open onNext={onNext} onSkip={() => {}} />); });
+      layout(tree, step);
+      await flush();
+      expect(byId(tree, 'packaged-coach-skip')).toHaveLength(0);
+      expect(tree.root.findAll((n) => n.props?.accessibilityLabel === 'common.close')).toHaveLength(0);
+      const root = byId(tree, `packaged-coach-${step}`)[0];
+      expect(root.props.accessibilityRole).toBe('button');
+      expect(root.props.accessibilityLabel).toBe(step === 'home' ? 'packagedCoach.homeTitle, packagedCoach.homeBody' : 'packagedCoach.foodBody');
+      expect(tree.root.findAllByType(step === 'home' ? IconTabScan : IconSnackBag)).toHaveLength(1);
+      expect(tree.root.findAllByType(step === 'home' ? IconSnackBag : IconTabScan)).toHaveLength(0);
+      act(() => root.props.onPress()); // 딤 탭 = 다음/종료
+      expect(onNext).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('KB-971: 1단계 탭의 음식 탭 진입 = Packaged 선택(view=packaged · 새 t — 홈 편의점 See all과 같은 경로)', () => {
+    expect(packagedCoachFoodHref(123)).toBe('/food?view=packaged&t=123');
   });
 });
 
@@ -214,14 +226,14 @@ describe('흐름', () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('Android: 닫으면 바로 다음 처리 · X = 건너뛰기(skip 계측, 다음 단계 없음)', async () => {
+  it('Android: 닫으면 바로 다음 처리 · 하드웨어 뒤로 = 건너뛰기(skip 계측, 다음 단계 없음 — KB-971 X 제거 뒤 남은 유일한 건너뛰기)', async () => {
     setOS('android');
     const done = jest.fn();
     const { tree, api, next } = mount('home');
     act(() => api.show!(done));
     layout(tree, 'home');
     await flush();
-    act(() => { byId(tree, 'packaged-coach-skip')[0].props.onPress(); });
+    act(() => { modal(tree).props.onRequestClose(); });
     expect(events('food_packaged_coach_skip')).toEqual([{ step: 'home' }]);
     expect(events('food_packaged_coach_next')).toEqual([]);
     expect(done).toHaveBeenCalledTimes(1);

@@ -43,7 +43,7 @@ import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { HomeImpressionContext, ImpressionTracker, trackHomeCardClick, useImpressionRef, useImpressionScrollProps } from '@/features/home/homeImpressions';
 import { useOneShotQueue } from '@/lib/oneShotQueue';
-import { PackagedCoachOverlay, presentHomeCoach, queuePackagedCoachStep2, usePackagedCoach } from '@/features/coach/PackagedCoach';
+import { PackagedCoachOverlay, packagedCoachFoodHref, presentHomeCoach, queuePackagedCoachStep2, usePackagedCoach } from '@/features/coach/PackagedCoach';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900 (D-1 Chip과 동일 명시값)
 
@@ -90,8 +90,8 @@ function HomeBody() {
   // 스캔 뒤 넛지·리뷰 유도(ScanExitPrompts)는 코치마크를 아직 안 봤으면 건너뛴다(코치마크 우선, 동시 노출 0).
   const modalQueue = useOneShotQueue();
   const homeCoach = usePackagedCoach('home', {
-    // 탭 = 음식 탭(Dishes — t 파라미터 = 홈 See all과 같은 진입)으로, 거기서 2단계
-    next: () => { queuePackagedCoachStep2(); router.navigate(`/food?t=${Date.now()}` as Href); },
+    // 탭 = 음식 탭(KB-971: Packaged 선택된 채 — 홈 편의점 줄 See all과 같은 진입)으로, 거기서 2단계
+    next: () => { queuePackagedCoachStep2(); router.navigate(packagedCoachFoodHref(Date.now()) as Href); },
   });
   const showHomeCoach = homeCoach.show;
   useFocusEffect(

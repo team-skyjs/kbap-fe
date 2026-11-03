@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
-import { IconClose, IconTabScan } from '@/components/icons';
+import { IconSnackBag, IconTabScan } from '@/components/icons';
 import { color as C, font, radius, type as T } from '@/lib/theme';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
@@ -83,10 +83,14 @@ export function takePackagedCoachStep2(): boolean {
 
 /* ---- 오버레이 ---- */
 export type CoachStep = 'home' | 'food';
-const CONTENT: Record<CoachStep, { target: CoachTarget; title?: string; body: string }> = {
-  home: { target: 'scan', title: 'packagedCoach.homeTitle', body: 'packagedCoach.homeBody' },
-  food: { target: 'packaged', body: 'packagedCoach.foodBody' },
+// KB-971(예진 테플): 2단계 아이콘 = 과자봉지(가공식품) · 1단계 = 스캔 그대로
+const CONTENT: Record<CoachStep, { target: CoachTarget; title?: string; body: string; Icon: typeof IconTabScan }> = {
+  home: { target: 'scan', title: 'packagedCoach.homeTitle', body: 'packagedCoach.homeBody', Icon: IconTabScan },
+  food: { target: 'packaged', body: 'packagedCoach.foodBody', Icon: IconSnackBag },
 };
+
+/** KB-971: 1단계 탭 → 음식 탭을 Packaged가 이미 선택된 상태로(홈 편의점 줄 See all과 같은 진입 — view=packaged + 새 t) */
+export const packagedCoachFoodHref = (now: number): string => `/food?view=packaged&t=${now}`;
 const HOLE_PAD = 6;
 const GAP = 12; // 구멍 ↔ 말풍선(꼬리 포함)
 const TAIL_W = 16;
@@ -152,6 +156,7 @@ export function PackagedCoachOverlay({
     : below ? { top: 96 } : { bottom: 120 }; // 못 잼 = 대략 헤더 아래 / 탭바 위(딤 없음)
 
   return (
+    // KB-971: X 없음 — 딤(어디든) 탭 = 다음/종료. 건너뛰기 경로는 Android 하드웨어 뒤로(onRequestClose)만 남는다
     <Modal visible={open} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onSkip} onDismiss={onDismiss}>
       <Pressable
         style={StyleSheet.absoluteFill}
@@ -171,14 +176,11 @@ export function PackagedCoachOverlay({
           <View style={[styles.bubble, vertical, { width: bubbleW }, pos ? { left: pos.left } : { alignSelf: 'center' }]} testID="packaged-coach-bubble">
             {below && pos && <Tail up left={pos.tailX} />}
             <View style={styles.row}>
-              <IconTabScan size={24} color="#FFFFFF" />
+              <c.Icon size={24} color="#FFFFFF" />
               <View style={styles.texts}>
                 {title && <Text style={styles.title} accessibilityRole="header">{title}</Text>}
                 <Text style={title ? styles.body : styles.title}>{body}</Text>
               </View>
-              <Pressable onPress={onSkip} style={styles.close} accessibilityRole="button" accessibilityLabel={t('common.close')} testID="packaged-coach-skip">
-                <IconClose size={18} color="#FFFFFF" />
-              </Pressable>
             </View>
             {!below && pos && <Tail left={pos.tailX} />}
           </View>
@@ -241,12 +243,10 @@ export function usePackagedCoach(step: CoachStep, after: { next: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  bubble: { position: 'absolute', backgroundColor: BUBBLE, borderRadius: radius.lg, paddingLeft: 16, paddingVertical: 12 },
+  bubble: { position: 'absolute', backgroundColor: BUBBLE, borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 12 }, // KB-971: X 자리(44) 빠짐 = 좌우 16
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   texts: { flex: 1, minWidth: 0, gap: 2 },
   title: { ...T.button, fontFamily: font.bodyBold, color: '#FFFFFF' },
   body: { ...T.meta, fontFamily: font.body, color: C.inkDisabled },
-  // 닫기 = 44pt(접근성) — 말풍선 오른쪽 안쪽 여백 겸
-  close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   tail: { position: 'absolute' },
 });

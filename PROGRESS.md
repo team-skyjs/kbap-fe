@@ -1,3 +1,10 @@
+## 2026-11-03 · P-583 KB-971 가공식품 코치마크 보완(예진 테플 피드백)
+
+- 2단계 말풍선 아이콘 = 과자봉지 SVG(IconSnackBag 신설 — 기존 세트에 스낵·패키지 계열 없음, Glyph 선 스타일) · 1단계 = 스캔 그대로.
+- 1단계 탭 → 음식 탭을 Packaged 선택 상태로(packagedCoachFoodHref = /food?view=packaged&t — 홈 편의점 See all과 같은 진입) → 2단계는 선택된 Packaged 탭 스포트라이트, 탭 = 종료(선택 유지).
+- X 제거(두 단계) — 딤 어디든 탭 = 다음/종료, 화면 전체 = 버튼(스크린리더 라벨 = 문구, activate = 진행). food_packaged_coach_skip은 Android 하드웨어 뒤로(onRequestClose)만 남음.
+- 테스트: X 부재·아이콘·딤 탭 전이·진입 경로(view=packaged), 뮤테이션 확인.
+
 ## 2026-11-03 · P-581 KB-968 가공식품 출시 홍보 코치마크 2단계(예진 11/03)
 
 - 1단계(홈) = 딤 + 탭바 스캔 버튼 구멍 + v3 말풍선(제목·본문) → 탭 = 음식 탭(Dishes) · 2단계 = 딤 + 헤더 Packaged 탭 구멍 + 말풍선 → 탭 = Packaged 선택. X = 전체 건너뛰기.
