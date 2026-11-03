@@ -166,7 +166,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   order_card_open: ['item_count', 'has_avoids'],
   // P-214 🔒: keyword = **카탈로그 매칭 시에만**(호출처 searchKeywordProps가 판정) —
   // 자유 텍스트는 matched:false + len_bucket만(알레르기·신념 추론 차단)
-  search_query: ['keyword', 'result_count', 'matched', 'len_bucket'],
+  search_query: ['keyword', 'result_count', 'matched', 'len_bucket', 'segment'], // KB-967 segment: all|dishes|packaged(결과 칩 — 가공식품 꺼진 채널 = dishes)
   review_write_tap: ['source', 'target_type'], // KB-812 2차 target_type: food|packaged(생략 = food — 음식 진입점은 무변)
   food_bookmark_toggle: ['on'],
   // P-389(KB-576): user_type = BE 토큰 유무(guest|registered) — 탭별 회원/게스트 분해용.

@@ -75,7 +75,15 @@ jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<st
   useBookmarks: () => ({ data: [] }),
   useToggleBookmark: () => ({ mutate: jest.fn() }),
 }));
+// KB-967: 통합 검색 가공식품 섹션 — 이 파일은 음식 검색만 본다(가공식품 0건 = 섹션 숨김)
+jest.mock('@/lib/data/useProcessedFoods', () => ({
+  ...jest.requireActual('@/lib/data/useProcessedFoods'),
+  useProcessedSearchPaged: () => ({ isPending: false, isError: false, isSuccess: true, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(), data: { items: [], pageSizes: [0] } }),
+  useProcessedSearch: () => ({ isSuccess: false, data: [] }),
+  useVerdictKey: () => 'en|member:',
+}));
 jest.mock('@/lib/data/useFoods', () => ({
+  FOODS_PAGE_SIZE: 20,
   useFoods: () => mockUseFoods(),
   useInfiniteFoods: () => mockUseInfiniteFoods(),
   useSearchFoods: () => mockUseSearchFoods(),
