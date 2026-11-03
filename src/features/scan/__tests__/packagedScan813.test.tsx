@@ -10,6 +10,8 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StyleSheet } from 'react-native';
 
+let mockSim = true;
+jest.mock('@/lib/simulator', () => ({ ...jest.requireActual('@/lib/simulator'), useIsSimulator: () => mockSim, isSimulator: async () => mockSim })); // KB-970: 기본 = 시뮬(주입 입력칸 있음)
 jest.mock('react-native-reanimated', () => {
   const { View, Pressable, FlatList } = jest.requireActual('react-native');
   return { __esModule: true, default: { View, FlatList, createAnimatedComponent: (c: unknown) => c ?? Pressable }, createAnimatedComponent: (c: unknown) => c, useSharedValue: (v: unknown) => ({ value: v }), useAnimatedStyle: () => ({}), useAnimatedProps: () => ({}), withSpring: (v: unknown) => v, withTiming: (v: unknown) => v, withRepeat: (v: unknown) => v, Easing: { inOut: () => () => 0, out: () => () => 0, quad: 0 }, useReducedMotion: () => false };
@@ -514,6 +516,17 @@ describe('흐름(KB-865 ③ v4)', () => {
       mockPost.mockReset();
     }
   });
+  it('KB-970: 실기 = 앞면·성분표 OCR 주입 입력칸 없음(진단 채널·개발 번들이어도) · 시뮬 = 있음', () => {
+    mockSim = false;
+    try {
+      const t = flow();
+      expect(ids(t)).not.toContain('pscan-ocr-debug');
+      expect(ids(t)).toContain('cam-package'); // 카메라는 그대로
+    } finally {
+      mockSim = true;
+    }
+    expect(ids(flow())).toContain('pscan-ocr-debug');
+  });
   it('Codex #310: 이름 스캔 대기 중 뒤로 = 늦게 온 응답 무시(후보 화면으로 되돌아가지 않음)', async () => {
     let release!: (v: unknown) => void;
     mockPost.mockReturnValueOnce(new Promise((r) => (release = r)));
@@ -667,8 +680,8 @@ describe('모드 탭·상세 띠·배선', () => {
     expect(src).toContain('{phase === \'error\' && <View style={StyleSheet.absoluteFill} testID="pscan-quota-overlay">{renderError()}</View>}');
     expect(src.match(/<ScanModeTabs /g)).toHaveLength(2);
     const flowSrc = fs.readFileSync('src/features/scan/PackagedScanFlow.tsx', 'utf8');
-    expect(flowSrc).toContain('export const showOcrDebug = (): boolean => __DEV__ || isDiagnosticChannel();');
-    expect(flowSrc.match(/if \(!showOcrDebug\(\)\) return null;/g)).toHaveLength(2); // KB-845: 앞면·성분표 주입 패널 둘 다(카메라 위 작은 패널)
+    expect(fs.readFileSync('src/lib/simulator.ts', 'utf8')).toContain('export const showOcrDebug = (simulator: boolean): boolean => simulator && (__DEV__ || isDiagnosticChannel());'); // KB-970: 실기 = 채널 무관 숨김(판정은 lib/simulator)
+    expect(flowSrc.match(/if \(!showOcrDebug\(sim\)\) return null;/g)).toHaveLength(2); // KB-845: 앞면·성분표 주입 패널 둘 다(카메라 위 작은 패널)
   });
   it('10언어 문구 전부 · 가운데점 0', () => {
     const flat = (o: Record<string, unknown>, p = ''): string[] => Object.entries(o).flatMap(([k, v]) => (v && typeof v === 'object' ? flat(v as Record<string, unknown>, `${p}${k}.`) : [`${p}${k}`]));
