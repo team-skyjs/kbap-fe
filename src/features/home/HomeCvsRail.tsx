@@ -16,7 +16,8 @@ import { useMe } from '@/lib/data/useMe';
 import { useProcessedSearch } from '@/lib/data/useProcessedFoods';
 import { ProductCard, ProductCardSkeleton } from '@/features/processedFood/PackagedExplorer';
 import { RAIL_EDGE, RAIL_GAP, railCardW } from '@/features/food/railLayout';
-import { trackHomeCardClick, useImpressionRef } from './homeImpressions';
+import { trackHomeCardClick, useImpressionRef, useImpressionScrollProps } from './homeImpressions';
+import type { ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
 
 export const CVS_RAIL_N = 10;
 
@@ -32,6 +33,7 @@ export function HomeCvsRail() {
   const unset = guest || (!!me && me.restrictions.length === 0);
   const q = useProcessedSearch('');
   const sectionRef = useImpressionRef('cvs');
+  const railScrollProps = useImpressionScrollProps(); // KB-973: 가로 스크롤 정지 = 카드 노출 판정(음식 레일과 같은 규칙)
   const items = (q.data ?? []).slice(0, CVS_RAIL_N);
   if (q.isError || (q.isSuccess && items.length === 0)) return null;
   return (
@@ -43,23 +45,34 @@ export function HomeCvsRail() {
         {/* KB-962(예진 11/2): See all = 홈 공용 원형 화살표 버튼(탭 줄과 같은 부품) — 이동 = 음식 탭 Packaged */}
         <SeeAllCircle onPress={() => router.push(`/food?view=packaged&t=${Date.now()}` as Href)} style={st.seeAll} testID="home-cvs-see-all" />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.rail} contentContainerStyle={st.railContent} testID="home-cvs-rail">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.rail} contentContainerStyle={st.railContent} testID="home-cvs-rail" {...railScrollProps}>
         {q.isPending
           ? [0, 1, 2].map((i) => <ProductCardSkeleton key={i} width={cardW} />)
           : items.map((item, i) => (
-              <ProductCard
+              <CvsCard
                 key={item.id}
+                position={i}
                 item={item}
                 width={cardW}
                 personalized={personalized}
                 unset={unset}
                 onOpen={() => {
                   trackHomeCardClick('cvs', i, item.id);
-                  router.push(`/processed-foods/${item.id}` as Href);
+                  router.push(`/processed-foods/${item.id}?src=home_cvs` as Href);
                 }}
               />
             ))}
       </ScrollView>
+    </View>
+  );
+}
+
+/** KB-973: 카드 노출(home_card_view section cvs · position · product_id) — ProductCard는 ref를 안 받아 스타일 없는 바깥 View에 노출 노드 등록 */
+function CvsCard({ position, ...rest }: React.ComponentProps<typeof ProductCard> & { position: number; item: ProcessedFoodSummary }) {
+  const ref = useImpressionRef('cvs', position, rest.item.id);
+  return (
+    <View ref={ref} collapsable={false} testID={`home-cvs-card-${position}`}>
+      <ProductCard {...rest} />
     </View>
   );
 }

@@ -12,7 +12,7 @@ export const reviewTargetType = (r: Pick<Review, 'target'>): 'food' | 'packaged'
 
 /** 대상 상세 — 음식은 src(food_detail_view 출처), 가공식품은 제품 상세. 대상 미상 = null(탭 무동작) */
 export function reviewTargetHref(r: Pick<Review, 'target' | 'foodId' | 'processedFoodId'>, src: string): Href | null {
-  if (isPackagedReview(r)) return r.processedFoodId ? (`/processed-foods/${r.processedFoodId}` as Href) : null;
+  if (isPackagedReview(r)) return r.processedFoodId ? (`/processed-foods/${r.processedFoodId}?src=review` as Href) : null; // KB-973: 가공식품 상세 출처 = review(피드·내 리뷰 공통)
   return r.foodId ? (`/food/${r.foodId}?src=${src}` as Href) : null;
 }
 

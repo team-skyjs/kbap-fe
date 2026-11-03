@@ -90,7 +90,7 @@ describe('① 어댑터', () => {
 describe('② 대상 링크', () => {
   it('가공식품 = 제품 상세·제품 작성 화면 편집 / 음식 = 기존 경로 / id 없음 = null', () => {
     const pf = { id: 'r1', target: 'packaged' as const, foodId: '', processedFoodId: '9' };
-    expect(reviewTargetHref(pf, 'feed')).toBe('/processed-foods/9');
+    expect(reviewTargetHref(pf, 'feed')).toBe('/processed-foods/9?src=review'); // KB-973 상세 진입 출처
     expect(reviewEditHref(pf)).toBe('/processed-foods/9/review?reviewId=r1');
     expect(reviewTargetType(pf)).toBe('packaged');
     const food = { id: 'r2', target: 'food' as const, foodId: '7' };

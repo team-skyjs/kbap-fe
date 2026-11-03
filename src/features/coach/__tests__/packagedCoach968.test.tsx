@@ -187,7 +187,7 @@ describe('스포트라이트 위치', () => {
   });
 
   it('KB-971: 1단계 탭의 음식 탭 진입 = Packaged 선택(view=packaged · 새 t — 홈 편의점 See all과 같은 경로)', () => {
-    expect(packagedCoachFoodHref(123)).toBe('/food?view=packaged&t=123');
+    expect(packagedCoachFoodHref(123)).toBe('/food?view=packaged&t=123&via=coach'); // KB-973 via = 세그먼트 계측 출처
   });
 });
 

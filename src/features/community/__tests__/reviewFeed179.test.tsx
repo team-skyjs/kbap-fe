@@ -145,7 +145,7 @@ it('KB-847(#288 revert): 리뷰 탭 = main 카드(FeedCard) — 리뷰 상세 �
   const tree = render();
   expect(tree.root.findAll((n) => n.props?.testID === 'review-card-r1')).toHaveLength(0); // #288 리뷰 탭 카드 소멸
   act(() => tree.root.findAll((n) => n.props?.testID === 'feed-food-r2')[0].props.onPress());
-  expect(mockPush).toHaveBeenCalledWith('/processed-foods/1711');
+  expect(mockPush).toHaveBeenCalledWith('/processed-foods/1711?src=review'); // KB-973 상세 진입 출처
   expect(mockPush.mock.calls.some(([h]) => String(h).startsWith('/review/'))).toBe(false);
   // Codex #321: ⋯ 수정 = 대상별 작성 화면(가공식품 = 제품 리뷰 편집 — 빈 foodId "/food//review" 0)
   const onEdit = mockModFlow.mock.calls[mockModFlow.mock.calls.length - 1][0].onEdit;
@@ -575,6 +575,24 @@ describe('KB-966(예진 11/2): 대상 세그먼트 All · Dishes · Packaged', (
     expect(shown()).not.toContain('Server Kimbap');
     act(() => chip(t, 'all').props.onPress());
     expect(lastFilters().targetType ?? null).toBeNull();
+  });
+
+  it('KB-973: review_feed_target_select = 바뀔 때만(all|food|packaged)', () => {
+    FLAGS.processedFoodEnabled = true;
+    mockFeed.mockImplementation(() => ({ data: { pages: [{ items: [REVIEW], hasNext: false, nextCursor: null }] }, isLoading: false, isError: false, error: null, refetch: jest.fn(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }));
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const analytics = require('@/lib/analytics') as typeof import('@/lib/analytics');
+    const track = jest.spyOn(analytics, 'track');
+    try {
+      const t = render();
+      act(() => chip(t, 'all').props.onPress()); // 이미 All = 0
+      act(() => chip(t, 'packaged').props.onPress());
+      act(() => chip(t, 'packaged').props.onPress()); // 같은 것 = 0
+      act(() => chip(t, 'food').props.onPress());
+      expect(track.mock.calls.filter((c) => c[0] === 'review_feed_target_select').map((c) => c[1])).toEqual([{ target: 'packaged' }, { target: 'food' }]);
+    } finally {
+      track.mockRestore();
+    }
   });
 
   it('선택 = 색만(프레임 불변 — 공용 Chip) · 라벨 = 기존 키 재사용(신규 문구 0)', () => {

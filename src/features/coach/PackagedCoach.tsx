@@ -94,7 +94,7 @@ const CONTENT: Record<CoachStep, { target: CoachTarget; title?: string; body: st
 };
 
 /** KB-971: 1단계 탭 → 음식 탭을 Packaged가 이미 선택된 상태로(홈 편의점 줄 See all과 같은 진입 — view=packaged + 새 t) */
-export const packagedCoachFoodHref = (now: number): string => `/food?view=packaged&t=${now}`;
+export const packagedCoachFoodHref = (now: number): string => `/food?view=packaged&t=${now}&via=coach`; // KB-973 via = 세그먼트 전환 계측 출처(See all과 구분)
 const HOLE_PAD = 6;
 const GAP = 12; // 구멍 ↔ 말풍선(꼬리 포함)
 const TAIL_W = 16;
