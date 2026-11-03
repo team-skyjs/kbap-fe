@@ -1,17 +1,16 @@
 /**
  * KB-978(P-593) OTA 즉시 적용 — 운영·비운영 같은 로직(예진 11/04 P-316 변경).
- * 시작: 트리 마운트 전 판정(상한 3초) · 복귀: 3초 창 + 작업 화면·네트워크 정적 게이트(P-347) · 이벤트 ota_apply.
+ * 시작: 트리 마운트 전 판정(상한 3초) · 복귀: 3초 창 + 작업 화면·네트워크 정적 게이트(P-347) · 이벤트 app_ota_apply(네이밍 규칙 app_ 도메인).
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { Text } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const mockRoute = { path: '/' };
 jest.mock('expo-router', () => ({ usePathname: () => mockRoute.path }));
 const mockTrack = jest.fn();
 // 이 파일은 jest.mock 호이스팅 뒤 정적 import — 목 변수는 mock 접두(팩토리 지연 참조)
-jest.mock('@/lib/analytics', () => ({ EVENTS: { ota_apply: 'ota_apply' }, track: (...a: unknown[]) => mockTrack(...a) }));
+jest.mock('@/lib/analytics', () => ({ EVENTS: { app_ota_apply: 'app_ota_apply' }, track: (...a: unknown[]) => mockTrack(...a) }));
 const mockUpdates = {
   isEnabled: true,
   checkForUpdateAsync: jest.fn(async () => ({ isAvailable: true })),
@@ -20,10 +19,12 @@ const mockUpdates = {
 };
 jest.mock('expo-updates', () => mockUpdates);
 
-import { AppState } from 'react-native';
+/* eslint-disable import/first -- jest.mock 뒤(팩토리 호이스팅) — 레포 관례 */
+import { AppState, Text } from 'react-native';
 import { OtaAutoApplyHost, OtaLaunchGate, resetOtaModuleStateForTest } from '../OtaAutoApplyHost';
 import { OTA_LAUNCH_TIMEOUT_MS, OTA_NETWORK_IDLE_MS, OTA_RESUME_WINDOW_MS } from '../otaPolicy';
 import { decInflight, incInflight } from '@/lib/net/inflight';
+/* eslint-enable import/first */
 
 const DEV_GLOBAL = global as unknown as { __DEV__: boolean };
 const appStateListeners: ((s: string) => void)[] = [];
@@ -56,7 +57,7 @@ const advance = async (ms: number) => {
     jest.advanceTimersByTime(ms);
   });
 };
-const events = () => mockTrack.mock.calls.map((c) => (c[1] as { result: string; trigger: string }));
+const events = () => mockTrack.mock.calls.map((c) => { expect(c[0]).toBe('app_ota_apply'); return c[1] as { result: string; trigger: string }; });
 
 async function mountGate(): Promise<ReactTestRenderer> {
   let t!: ReactTestRenderer;

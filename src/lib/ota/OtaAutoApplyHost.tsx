@@ -26,7 +26,7 @@ const otaState: OtaState = { lastCheckAt: 0, ready: false };
 let applying = false; // reload 요청 뒤 재진입(같은 창의 effect 재평가) 차단
 
 function report(result: OtaResult, trigger: OtaTrigger): void {
-  trackEvent(EVENTS.ota_apply, { result, trigger });
+  trackEvent(EVENTS.app_ota_apply, { result, trigger });
 }
 
 function updatesModule(): UpdatesWithReload | null {
