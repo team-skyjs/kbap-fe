@@ -1,44 +1,18 @@
 /**
- * KB-420(P-204): OTA 자동 적용 — 채널별 정책(teamtest 즉시 / prod 안전 순간+배너)
- * + EAS Workflow(develop→teamtest 자동 발행) 잠금.
+ * KB-420(P-204) → KB-978(P-593): OTA 적용 정책 + EAS Workflow(develop→teamtest 자동 발행) 잠금.
  *
  * 구조: otaPolicy(순수 판정) · otaCheck(체크→fetch 코어, 모듈 주입형) ·
- * OtaAutoApplyHost(루트 배선+배너)는 소스 잠금으로 커버(__DEV__ 게이트가
- * jest에서 참이라 컴포넌트 실구동 대신 코어를 직접 실측 — 관례).
+ * OtaAutoApplyHost(시작 게이트·복귀 배선 — 실구동은 otaApply978).
  */
-import { isBlockedRoute, OTA_CHECK_THROTTLE_MS, otaApplyDecision, SAFE_ROUTES } from '../otaPolicy';
-import { checkAndFetchOta, type OtaUpdatesModule } from '../otaCheck';
+import { canReloadNow, isBlockedRoute, OTA_CHECK_THROTTLE_MS } from '../otaPolicy';
+import { checkAndFetchOta, launchCheckOta, type OtaState, type OtaUpdatesModule } from '../otaCheck';
 
-describe('otaPolicy — 채널×라우트×뮤테이션 판정', () => {
-  it('비-prod(teamtest 등) = 어디서든 즉시 reload', () => {
-    for (const pathname of ['/', '/scan', '/food/7/review', '/onboarding']) {
-      expect(otaApplyDecision({ prod: false, pathname, mutating: 1 })).toBe('reload');
-    }
-  });
-
-  it('P-316: prod = 항상 defer(라우트·뮤테이션 무관 — 다음 콜드 스타트 자동 적용)', () => {
-    for (const pathname of ['/', '/food', '/profile', '/scan', '/food/7']) {
-      expect(otaApplyDecision({ prod: true, pathname, mutating: 0 })).toBe('defer');
-      expect(otaApplyDecision({ prod: true, pathname, mutating: 2 })).toBe('defer');
-    }
-  });
-
-    it('prod + 허용 라우트라도 뮤테이션 진행 중이면 defer', () => {
-    expect(otaApplyDecision({ prod: true, pathname: '/', mutating: 1 })).toBe('defer');
-  });
-
-  it('prod + 비허용 라우트 = defer (상세·검색 등)', () => {
-    for (const pathname of ['/food/7', '/search', '/community']) {
-      expect(otaApplyDecision({ prod: true, pathname, mutating: 0 })).toBe('defer');
-    }
-  });
-
+describe('otaPolicy — 작업 화면 차단', () => {
   it('제외 화면 — 스캔 전 과정·주문 카드·리뷰 작성·온보딩·프로필 하위 전체(Codex #18)', () => {
     for (const p of ['/scan', '/scan-order', '/food/7/review', '/onboarding', '/profile/edit', '/profile/diet', '/profile/restrictions', '/profile/saved']) {
       expect(isBlockedRoute(p)).toBe(true);
-      expect(otaApplyDecision({ prod: true, pathname: p, mutating: 0 })).toBe('defer');
     }
-    for (const p of ['/login', '/auth/callback', '/community/compose', '/delete-account', '/search', '/scan-order']) {
+    for (const p of ['/login', '/auth/callback', '/community/compose', '/delete-account', '/search', '/scan-order', '/processed-foods/3/review']) {
       expect(isBlockedRoute(p)).toBe(true); // #109 5R/6R: 작업 화면 전수(작업 = 차단 / 목록·상세 = 허용)
     }
     for (const p of ['/notifications', '/states']) {
@@ -50,22 +24,11 @@ describe('otaPolicy — 채널×라우트×뮤테이션 판정', () => {
   });
 });
 
-describe('P-304(KB-458): canReloadNow — reloadAsync 부팅 가드(3조건 AND)', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { canReloadNow, OTA_BOOT_GUARD_MS } = require('../otaPolicy') as typeof import('../otaPolicy');
-  const OK = { bootedAt: 0, now: OTA_BOOT_GUARD_MS, splashDone: true, appState: 'active', networkIdle: true }; // P-347: 4조건 AND
+describe('KB-978: canReloadNow — active·정적 창 AND(부팅 8초 가드 소멸)', () => {
+  const OK = { appState: 'active', networkIdle: true };
 
-  it('전부 충족 = true(경계 8s 포함)', () => {
+  it('전부 충족 = true', () => {
     expect(canReloadNow(OK)).toBe(true);
-    expect(canReloadNow({ ...OK, now: OTA_BOOT_GUARD_MS + 60_000 })).toBe(true);
-  });
-
-  it('부팅 8s 미경과 = false(b28 크래시 재현 창 — 3s)', () => {
-    expect(canReloadNow({ ...OK, now: 3_000 })).toBe(false);
-  });
-
-  it('스플래시 미종료 = false', () => {
-    expect(canReloadNow({ ...OK, splashDone: false })).toBe(false);
   });
 
   it('비포그라운드(background/inactive) = false', () => {
@@ -76,19 +39,6 @@ describe('P-304(KB-458): canReloadNow — reloadAsync 부팅 가드(3조건 AND)
   it('P-347(KB-509): networkIdle false = false — 진행 중 fetch reject가 죽은 런타임에 스케줄되는 크래시 봉쇄', () => {
     expect(canReloadNow({ ...OK, networkIdle: false })).toBe(false);
   });
-
-  it('호스트 배선 소스 잠금 — 가드 경유 적용·타이머 1회 재평가·배너 탭 동일 경로·splashDone 배선', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('fs');
-    const host = fs.readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
-    expect(host).toContain('const BOOTED_AT = Date.now();'); // 모듈 로드 시각
-    expect(host).toContain('if (!canReloadNow({ bootedAt: BOOTED_AT'); // 가드 통과 시에만 applyNow
-    expect(host).toContain('if (tryApply()) return;'); // 정책 reload여도 가드 선행(teamtest immediate 포함)
-    expect(host).toContain('setTimeout(() => setGuardTick((n) => n + 1), remainMs + 50)'); // 시간 조건 미충족만 1회 재평가(#109 P2)
-    expect(host).toContain('return null;'); // P-316: 배너 렌더 0(수동 적용 경로 소멸)
-    const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
-    expect(layout).toContain('<OtaAutoApplyHost splashDone={!splashVisible} />');
-  });
 });
 
 describe('otaCheck 코어 — 스로틀·isEnabled·fetch 흐름 (모듈 주입 실측)', () => {
@@ -98,57 +48,90 @@ describe('otaCheck 코어 — 스로틀·isEnabled·fetch 흐름 (모듈 주입 
     fetchUpdateAsync: jest.fn(async () => ({})),
     ...over,
   });
+  const fresh = (): OtaState => ({ lastCheckAt: 0, ready: false });
 
-  it('업데이트 있음 → fetch 후 ready + 체크 시각 기록', async () => {
+  it('업데이트 있음 → fetch 후 ready + 체크 시각·ready 기록', async () => {
     const u = mod();
-    const st = { lastCheckAt: 0 };
+    const st = fresh();
     await expect(checkAndFetchOta(u, st, 1_000_000)).resolves.toBe('ready');
     expect(u.fetchUpdateAsync).toHaveBeenCalledTimes(1);
-    expect(st.lastCheckAt).toBe(1_000_000);
+    expect(st).toEqual({ lastCheckAt: 1_000_000, ready: true });
   });
 
   it('스로틀 — 2분 내 재호출은 체크 자체를 생략', async () => {
     const u = mod();
-    const st = { lastCheckAt: 1_000_000 };
+    const st = { lastCheckAt: 1_000_000, ready: false };
     await expect(checkAndFetchOta(u, st, 1_000_000 + OTA_CHECK_THROTTLE_MS - 1)).resolves.toBe('skip');
     expect(u.checkForUpdateAsync).not.toHaveBeenCalled();
     await expect(checkAndFetchOta(u, st, 1_000_000 + OTA_CHECK_THROTTLE_MS)).resolves.toBe('ready');
   });
 
-  it('Updates.isEnabled=false(Metro) = no-op', async () => {
+  it('Updates.isEnabled=false(Metro) = no-op — 시작·복귀 둘 다 호출 0', async () => {
     const u = mod({ isEnabled: false });
-    await expect(checkAndFetchOta(u, { lastCheckAt: 0 }, 1)).resolves.toBe('skip');
+    await expect(checkAndFetchOta(u, fresh(), 1)).resolves.toBe('skip');
+    await expect(launchCheckOta(u, fresh(), 1, 3_000)).resolves.toBe('skip');
     expect(u.checkForUpdateAsync).not.toHaveBeenCalled();
   });
 
-  it('업데이트 없음 = skip(fetch 미호출)', async () => {
+  it('업데이트 없음 = none(fetch 미호출)', async () => {
     const u = mod({ checkForUpdateAsync: jest.fn(async () => ({ isAvailable: false })) });
-    await expect(checkAndFetchOta(u, { lastCheckAt: 0 }, 1)).resolves.toBe('skip');
+    await expect(checkAndFetchOta(u, fresh(), 1_000_000)).resolves.toBe('none');
     expect(u.fetchUpdateAsync).not.toHaveBeenCalled();
   });
 
-  it('체크/페치 실패 = 조용히 skip(throw 없음)', async () => {
+  it('체크/페치 실패 = error(throw 없음)', async () => {
     const u = mod({ checkForUpdateAsync: jest.fn(async () => { throw new Error('NETWORK'); }) });
-    await expect(checkAndFetchOta(u, { lastCheckAt: 0 }, 1)).resolves.toBe('skip');
+    await expect(checkAndFetchOta(u, fresh(), 1_000_000)).resolves.toBe('error');
+    const u2 = mod({ fetchUpdateAsync: jest.fn(async () => { throw new Error('FETCH'); }) });
+    const st = fresh();
+    await expect(launchCheckOta(u2, st, 1, 3_000)).resolves.toBe('error');
+    expect(st.ready).toBe(false);
+  });
+
+  it('KB-978 시작 — 스로틀 무시 + 상한 초과 = timeout 먼저, 뒤늦게 받으면 ready 기록(다음 복귀 적용)', async () => {
+    jest.useFakeTimers();
+    try {
+      let finish!: () => void;
+      const u = mod({ fetchUpdateAsync: jest.fn(() => new Promise<unknown>((r) => { finish = () => r({}); })) });
+      const st = { lastCheckAt: 5_000, ready: false }; // 직전 체크가 있어도 시작은 스로틀 무시
+      const p = launchCheckOta(u, st, 5_001, 3_000);
+      await Promise.resolve();
+      jest.advanceTimersByTime(2_999);
+      let settled = false;
+      void p.then(() => { settled = true; });
+      await Promise.resolve();
+      expect(settled).toBe(false); // 상한 전 = 대기
+      jest.advanceTimersByTime(1);
+      await expect(p).resolves.toBe('timeout');
+      expect(st.ready).toBe(false);
+      finish();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(st.ready).toBe(true); // 체크는 뒤에서 계속 — 다음 복귀가 재체크 없이 적용
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
 
 describe('배선·워크플로·i18n 소스 잠금', () => {
   const fs = require('fs') as typeof import('fs');
 
-  it('루트 레이아웃이 OtaAutoApplyHost를 마운트한다', () => {
+  it('루트 레이아웃 — 기본 내보내기 = OtaLaunchGate가 앱 트리 전체를 감싼다 + 복귀 호스트 마운트', () => {
     const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
-    expect(layout).toContain('<OtaAutoApplyHost splashDone={!splashVisible} />'); // P-304: 가드 조건 ② 배선
+    expect(layout).toMatch(/export default function RootLayout\(\) \{\n  return \(\n    <OtaLaunchGate>\n      <AppRoot \/>\n    <\/OtaLaunchGate>/);
+    expect(layout).toContain('<OtaAutoApplyHost />');
   });
 
-  it('호스트 — __DEV__ 게이트·expo-updates 지연 require·정책 경유·배너 소멸(P-316)', () => {
+  it('호스트 — __DEV__·isEnabled 게이트·expo-updates 지연 require·채널 분기 0(KB-978 운영·비운영 통일)', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const host = require('fs').readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
-    expect(host).toContain('if (__DEV__) return;');
+    expect(host).toContain('if (__DEV__) return null;');
+    expect(host).toContain('return u?.isEnabled ? u : null;');
     expect(host).toContain("require('expo-updates')");
-    expect(host).toContain('otaApplyDecision(');
-    expect(host).not.toContain('ota.ready'); // P-316: prod 배너·수동 적용 소멸
-    expect(host).not.toContain('ota-banner');
+    expect(host).not.toContain('isProdChannel');
+    expect(host).not.toContain('BOOTED_AT');
+    expect(host).not.toContain('ota.ready'); // P-316: 배너·수동 적용 경로 없음(유지)
   });
 
   it('EAS Workflow — develop 푸시 트리거 + prod 호스트 유출 가드 + clear 캐시 + fp 게이트', () => {
