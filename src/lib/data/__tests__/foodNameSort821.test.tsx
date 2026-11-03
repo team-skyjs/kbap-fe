@@ -54,7 +54,7 @@ it('기본 정렬 = 기존 요청 그대로(3.1 헤더·sort 없음, 숫자 커�
   for (const i of [0, 1]) expect(call(i)[1]?.headers).toBeUndefined();
 });
 
-it.each<[FoodNameSort]>([['name_asc'], ['name_desc']])('음식 %s = 3.1 헤더 + sort · 불투명 커서 그대로', async (sort) => {
+it.each<[FoodNameSort]>([['name_asc'], ['name_desc'], ['reviews']])('음식 %s = 3.1 헤더 + sort · 불투명 커서 그대로(KB-956 reviews 포함)', async (sort) => {
   const opaque = 'eyJ2IjozLCJrIjoi6rCAIn0=/x+y';
   mockGet.mockResolvedValueOnce({ items: [WIRE(1)], hasNext: true, nextCursor: opaque }).mockResolvedValueOnce({ items: [WIRE(2)], hasNext: false, nextCursor: null });
   const ref = mount(() => useInfiniteFoods(undefined, { sort }) as unknown as Q);
@@ -132,4 +132,19 @@ it('정렬 시트 = 기존 항목·기본값 불변 + 이름 정순·역순 · �
     expect(food.sort_name_asc).not.toBe(food.sort_name_desc);
     expect(food.sort_name_asc + food.sort_name_desc).not.toContain('·');
   }
+});
+
+it('KB-956: reviews 정렬 다음 페이지 409 FOOD-022(리뷰가 늘어 revision 변경) = 오류 0 · 첫 페이지부터 다시', async () => {
+  mockGet
+    .mockResolvedValueOnce({ items: [WIRE(1)], hasNext: true, nextCursor: 'r1' })
+    .mockRejectedValueOnce(new ApiError('changed', 409, 'FOOD-022'))
+    .mockResolvedValueOnce({ items: [WIRE(9)], hasNext: false, nextCursor: null });
+  const ref = mount(() => useInfiniteFoods(undefined, { sort: 'reviews' }) as unknown as Q);
+  await flush();
+  await act(async () => { await ref.q!.fetchNextPage(); }); await flush();
+  await flush();
+  expect(ref.q!.isError).toBe(false);
+  expect(call(1)[0]).toBe('/foods?cursor=r1&lang=en&sort=reviews');
+  expect(call(2)[0]).toBe('/foods?lang=en&sort=reviews'); // 재시작 = 커서 없는 첫 페이지
+  expect(ref.q!.data!.map((f) => f.foodId)).toEqual(['9']);
 });

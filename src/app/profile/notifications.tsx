@@ -13,7 +13,8 @@
  * 단위(KB-544): 토글은 (회원, 기기), 동의는 회원. 시안: 피그마 「KB-497 알림 설정 시안」 1·1b.
  */
 import * as React from 'react';
-import { AppState, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter } from 'expo-router';
@@ -26,7 +27,7 @@ import { Shimmer } from '@/components/Skeleton';
 import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { EVENTS, track } from '@/lib/analytics';
-import { openAppSettings, openWebPage } from '@/lib/openExternal';
+import { openNotificationSettings, openWebPage } from '@/lib/openExternal';
 import { consentUrl, PRIVACY_CONSENT_VERSION, RECEIVE_CONSENT_VERSION } from '@/lib/push/consent';
 import { useNotificationSettings, useUpdateNotificationSettings, type NotificationSettings as Settings } from '@/lib/data/useNotificationSettings';
 import { NotificationSheet } from '@/features/push/NotificationSheet';
@@ -122,7 +123,7 @@ function NotificationSettingsScreen() {
           <Pressable
             style={styles.banner}
             // KB-630 계측: 팝업 결과(grant/deny)는 requestPermission 안에서 1곳 — 여기선 설정 열기만
-            onPress={() => { if (osAsk) { void askPermission(); return; } track(EVENTS.push_permission, { state: 'settings_open' }); void openAppSettings(); }}
+            onPress={() => { if (osAsk) { void askPermission(); return; } track(EVENTS.push_permission, { state: 'settings_open' }); void openNotificationSettings(); }} // KB-904(T-080): 안드 = 이 앱 알림 페이지
             testID={osAsk ? 'notif-os-ask' : 'notif-os-off'}
           >
             <IconBell size={16} color={C.riskCaution} />
@@ -136,9 +137,9 @@ function NotificationSettingsScreen() {
         {query.isLoading && (
           /* 읽는 중 = 스켈레톤(기본값 스위치로 위장 금지 — P-207 계열) */
           <View style={{ gap: 12 }} testID="notif-skeleton">
-            <Shimmer style={{ height: 52, borderRadius: 8 }} />
-            <Shimmer style={{ height: 52, borderRadius: 8 }} />
-            <Shimmer style={{ height: 52, borderRadius: 8 }} />
+            <Shimmer style={{ height: 52, borderRadius: radius.md }} />
+            <Shimmer style={{ height: 52, borderRadius: radius.md }} />
+            <Shimmer style={{ height: 52, borderRadius: radius.md }} />
           </View>
         )}
         {query.isError && !s && (
@@ -160,9 +161,9 @@ function NotificationSettingsScreen() {
             <View style={styles.group}>
               <Text style={styles.groupTitle}>{t('notif.newsGroup')}</Text>
               <ToggleRow label={t('notif.news')} sub={t('notif.newsSub')} on={s.news.enabled} onPress={toggleNews} testID="notif-news" disabled={osOff} />
-              <View style={styles.hair} />
-              {/* 소식 OFF = 비활성 — 색·불투명도만(P-151), 탭 무동작 */}
-              <View style={[!s.news.enabled && styles.rowDisabled]} testID="notif-mealtime-row">
+              {/* 소식 OFF = 비활성 — 색·불투명도만(P-151), 탭 무동작. KB-904(T-081): OS 꺼짐이면 위 본문이 이미 흐림 — 겹쳐 흐리면(0.4×0.4) 거의 안 보였다.
+                  KB-904(T-097): 이 줄 위 구분선 하나만 있던 것 제거 — 그룹 간격으로만 나눈다 */}
+              <View style={[!s.news.enabled && !osOff && styles.rowDisabled]} testID="notif-mealtime-row">
                 <ToggleRow
                   label={t('notif.mealTime')}
                   sub={t('notif.mealTimeSub')}
@@ -172,6 +173,8 @@ function NotificationSettingsScreen() {
                   testID="notif-mealtime"
                 />
               </View>
+              {/* KB-904(T-081): 왜 못 켜는지 — 소식 알림이 꺼져 있으면 */}
+              {!s.news.enabled && <Text style={styles.captionText} testID="notif-mealtime-why">{t('notif.mealTimeNeedsNews')}</Text>}
               {consent && (
                 <View style={styles.caption} testID="notif-consent-status">
                   <Text style={styles.captionText}>{t('notif.consentStatus', consent)}</Text>
@@ -260,30 +263,29 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 32, gap: 20 },
 
   // 배너(OS 권한·읽기 실패·저장 실패) — 테두리·그림자 없는 연회색 블록(시안 1)
-  banner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface2, borderRadius: radius.sm, padding: 13 },
-  bannerText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18 },
-  bannerCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface2, borderRadius: radius.md, padding: 13 },
+  bannerText: { flex: 1, fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 19 },
+  bannerCta: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
 
   group: { gap: 0 },
-  groupTitle: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, lineHeight: 18, marginBottom: 2 },
+  groupTitle: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, lineHeight: 19, marginBottom: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
   rowDisabled: { opacity: 0.4 }, // 상태 = 불투명도만(P-151)
-  rowLabel: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
-  rowSub: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
-  hair: { height: 1, backgroundColor: C.hair },
+  rowLabel: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
+  rowSub: { fontFamily: font.body, fontSize: 13, color: C.ink3, lineHeight: 17 },
   caption: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 12 },
-  captionText: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
-  captionLink: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText },
+  captionText: { fontFamily: font.body, fontSize: 13, color: C.ink3, lineHeight: 17 },
+  captionLink: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
 
   // P-162 확인 모달(scan.tsx·주문 완료 모달과 동일 수치)
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.xl, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
   confirmActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
 
-  sw: { width: 34, height: 20, borderRadius: 10, backgroundColor: C.line, padding: 2, justifyContent: 'center' },
+  sw: { width: 34, height: 20, borderRadius: radius.pill, backgroundColor: C.line, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
-  knob: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff' },
+  knob: { width: 16, height: 16, borderRadius: radius.pill, backgroundColor: '#fff' },
   knobOn: { alignSelf: 'flex-end' },
 });

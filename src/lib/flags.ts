@@ -187,8 +187,20 @@ export const FLAGS = {
    * P-508(KB-813 후속): 성분표 촬영·분석(서버 #442 `scan/label`) — 핸드오프 촬영 버튼·상세 "성분표 직접 확인"·결과 화면.
    * **채널 게이트 의도(AGENTS.md 4항, 발주 P-508)**: development·teamtest(dev 서버 — #442 배포됨)만. teamtest-prod·production·preview는
    * 운영 서버에 #442가 나간 뒤 이 줄을 true로(그 전엔 버튼이 404를 받는다). 꺼진 채널 = 핸드오프에 "곧 지원" 안내 + 비활성 버튼(기존).
+   * P-587(KB-807, 11/03): 운영 서버 #442(26.10.7) 확인 → 전 채널 true.
    */
-  packagedLabelScan: DEV_SERVER_CHANNEL,
+  packagedLabelScan: true,
+  /**
+   * KB-963(예진 11/2): 스캔 모드 탭의 Food photo(음식 사진 — 기능 미완, 자리만 "준비 중") 노출. 꺼짐 = Menu · Packaged food 두 칸.
+   * 기능이 생기면 이 줄을 켠다(탭 자리·문구 scanMode.food는 그대로 남아 있음).
+   */
+  foodPhotoMode: false,
+  /**
+   * KB-873 lifecycle ②b: 화면 체류 송신(screen_visible_time — 보임 = 앱 앞·덮개 0·방문 중, 공용 1초 틱·15초 checkpoint).
+   * **채널 게이트 의도(커맨드 10/27)**: dev 서버 채널만 명시 허용(development·teamtest-dev). teamtest-prod·production·preview OFF —
+   * 양 OS Amplitude 실수신(③) 확인 전. OFF = 방문 시작만(②a 이전과 같음), 타이머 0.
+   */
+  engagementDwell: DEV_SERVER_CHANNEL,
   /**
    * KB-812 2차(P-507): 가공식품 상세 "리뷰 쓰기" 버튼. **채널 게이트 의도(AGENTS.md 4항, 커맨드 확인 10/21)**:
    * 서버 PROCESSED_FOOD_REVIEW_WRITE_ENABLED가 켜진 채널만 — 지금은 dev 서버(#437)뿐이라 development·teamtest만.
@@ -197,12 +209,21 @@ export const FLAGS = {
    */
   packagedReviewWrite: DEV_SERVER_CHANNEL,
   /**
+   * KB-892(P-536): 가공식품 이름 스캔에 앞면 사진(긴 변 1,456px·JPEG 0.8) 업로드 + `imagePath` 동봉 — 서버 Haiku 그림자 모드용(S-893).
+   * **채널 게이트 의도(발주 P-536)**: dev 서버 채널만. 운영은 그림자 수치 확인 뒤 별도 결정. OFF = 요청 body 현행과 바이트 동일, 업로드 0.
+   */
+  packagedNameScanPhoto: DEV_SERVER_CHANNEL,
+  /**
    * KB-870/P-528 OTA2 채널 게이트 의도: 사용자 검수·공개 승인으로 큐레이션·K-pop·회피6만 전 채널 공개.
    * 운영 큐레이션 게시/GET·idol GET·회피 catalog/profile PATCH 왕복 확인 뒤 develop 머지/발행한다.
    * PF3종과 리뷰 버전은 DEV_SERVER_CHANNEL에 유지한다. 공용 dev 게이트를 켜지 않는다.
+   * P-587(KB-807, 11/03): 운영 서버 26.11.2(가공식품 API 전체) 반영 → processedFoodEnabled·popularByReviews·packagedLabelScan 전 채널 true.
+   * packagedReviewWrite·리뷰 조회 헤더(isDevServerChannel)는 그대로.
    */
   curationEnabled: true,
-  processedFoodEnabled: DEV_SERVER_CHANNEL,
+  processedFoodEnabled: true,
+  /** KB-956(P-572): 음식 탭 Popular = 리뷰 많은 순(sort=reviews, 서버 #521). P-587: 운영 서버 26.11.2 반영 → 전 채널 true */
+  popularByReviews: true,
   idolPicksEnabled: true,
   avoidGroupCodesEnabled: true,
 } as const;

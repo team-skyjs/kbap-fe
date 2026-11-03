@@ -5,15 +5,15 @@
  * 평점 높은 음식 행(KB-800 — 구 REVIEWS 무한 피드 대체) · 스캔 CTA · 면책. 데이터 훅·라우트 무변 — 표시만 교체.
  * 구 표면(인사말·식단 배너·스캔 CTA·Safe for you·카테고리)은 시안 부재로 제거.
  */
-import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
-import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, useScrollToTop, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, riskText, shadow, type RiskState } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { UpdateNudgeBanner } from '@/components/VersionGate';
 import {
   StickyHeader,
@@ -30,6 +30,7 @@ import { RecentRow, TopRatedRow } from '@/features/food/FoodCards';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { CurationSection } from '@/features/curation/CurationSection';
 import { IdolPickBanner } from '@/features/home/IdolPickBanner';
+import { HomeCvsRail } from '@/features/home/HomeCvsRail';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
@@ -37,9 +38,12 @@ import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { HomeQuotaBadge, BADGE_GAP } from '@/features/scan/HomeQuotaBadge';
-import { useUnreadCount } from '@/lib/data/useNotifications';
+import { NOTIFICATIONS_KEY, useUnreadCount } from '@/lib/data/useNotifications';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { HomeImpressionContext, ImpressionTracker, trackHomeCardClick, useImpressionRef, useImpressionScrollProps } from '@/features/home/homeImpressions';
+import { useOneShotQueue } from '@/lib/oneShotQueue';
+import { PackagedCoachOverlay, packagedCoachFoodHref, presentHomeCoach, queuePackagedCoachStep2, usePackagedCoach } from '@/features/coach/PackagedCoach';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900 (D-1 Chip과 동일 명시값)
 
@@ -69,6 +73,8 @@ export default function Home() {
 
 function HomeBody() {
   const { t } = useTranslation();
+  const listRef = useRef<FlatList>(null);
+  useScrollToTop(listRef); // KB-906(T-127): Home 탭 재탭 = 맨 위(헤더 접힘도 스크롤 값을 따라 함께 풀린다)
   const router = useRouter();
   const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
@@ -79,9 +85,23 @@ function HomeBody() {
 
   const { data: home, isLoading, isPending, isError, error, refetch } = useHome();
   const { data: me } = useMe();
-  // KB-735: 홈에는 현재 일회성 모달 스텝이 없다. 홈 트리거(코치마크·넛지·리뷰 유도)가 생기면 useOneShotQueue를
-  // **포커스에 등록·블러에 clear**로 되살린다: `useFocusEffect(useCallback(() => { queue.add(step()); return () => queue.clear(); }, [queue, step]))`
-  // — 딥링크·푸시 콜드 스타트는 (tabs) 앵커가 index를 밑에 마운트하므로, 블러의 clear가 없으면 대상 화면 위에 모달이 겹쳐 KB-377류 교착.
+  // KB-735 → KB-968: 홈 일회성 모달 큐 — **포커스에 등록·블러에 clear**(딥링크·푸시 콜드 스타트는 (tabs) 앵커가 index를 밑에
+  // 마운트하므로, 블러의 clear가 없으면 대상 화면 위에 모달이 겹쳐 KB-377류 교착). 현재 스텝 = 가공식품 코치마크 1단계뿐 —
+  // 스캔 뒤 넛지·리뷰 유도(ScanExitPrompts)는 코치마크를 아직 안 봤으면 건너뛴다(코치마크 우선, 동시 노출 0).
+  const modalQueue = useOneShotQueue();
+  const homeCoach = usePackagedCoach('home', {
+    // 탭 = 음식 탭(KB-971: Packaged 선택된 채 — 홈 편의점 줄 See all과 같은 진입)으로, 거기서 2단계
+    next: () => { queuePackagedCoachStep2(); router.navigate(packagedCoachFoodHref(Date.now()) as Href); },
+  });
+  const showHomeCoach = homeCoach.show;
+  const abortHomeCoach = homeCoach.abort;
+  useFocusEffect(
+    useCallback(() => {
+      modalQueue.add({ key: 'packagedCoach', present: (done, signal) => presentHomeCoach(showHomeCoach, done, signal) });
+      // 블러 = 대기 스텝 폐기 + 떠 있는 코치마크도 닫기(#398 Codex — 목적지 탭 위에 남지 않게)
+      return () => { modalQueue.clear(); abortHomeCoach(); };
+    }, [modalQueue, showHomeCoach, abortHomeCoach]),
+  );
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
@@ -106,8 +126,13 @@ function HomeBody() {
       queryClient.invalidateQueries({ queryKey: ['foods'] }),
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] }),
       queryClient.invalidateQueries({ queryKey: ['curations'] }), // KB-796(Codex #303 P2): 게시·내림·수정 반영 — 포커스 재조회가 꺼져 있다
+      queryClient.invalidateQueries({ queryKey: ['processedFoods', 'search'] }), // KB-955: 편의점 인기 줄
+      queryClient.invalidateQueries({ queryKey: ['me'] }), // KB-954: 다른 기기 회피 변경·쿼터
+      queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY }), // KB-954: 알림 수(종)
     ]).finally(() => setRefreshing(false));
   }, []);
+  // KB-954: 재탭 = 맨 위 + 새로고침(스피너) — QA Q-388 ②: useScrollToTop의 애니메이션 스크롤을 애니메이션 없는 이동으로 덮고 다음 프레임에 새로고침
+  useTabPress('index', (kind) => { if (kind === 'reselect') topThenRefresh(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }), onRefresh); });
 
   if (isError && !isLoading) {
     return (
@@ -117,6 +142,7 @@ function HomeBody() {
           <QueryErrorBlock error={error} onRetry={() => void refetch()} />
         </ScreenCenterFill>
         <StickyHeader hidden={hidden} atTop={atTop} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
+        <PackagedCoachOverlay {...homeCoach.props} />
       </View>
     );
   }
@@ -142,7 +168,7 @@ function HomeBody() {
           popularLoading={isPending}
           onScanRowBottom={setScanRowBottom}
           // KB-796: 음식 레일 뒤·Safe picks 앞 · KB-836: 정적 배너 → 큐레이션 순서(세 탭 모두, D1)
-          afterRail={<>{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}</>}
+          afterRail={<>{FLAGS.processedFoodEnabled && <HomeCvsRail />}{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}</>} /* KB-955: 편의점 줄 = 레일 바로 아래, 아이돌·큐레이션 위 · 운영 채널 off = 0 */
         />
       </View>
 
@@ -200,6 +226,7 @@ function HomeBody() {
   return (
     <View style={styles.root}>
       <Animated.FlatList
+        ref={listRef}
         data={isLoading ? [] : topRated}
         keyExtractor={(f) => f.foodId}
         onScroll={onScroll}
@@ -241,6 +268,7 @@ function HomeBody() {
       {/* KB-680(P-432) → KB-701: 불꽃 "무료 스캔 N회 남음" = 스캔 버튼 바로 아래(스크롤 0 기준, 화면 고정) — 플래그 countdownBadge(진단 채널만) · 노출 조건은 컴포넌트 안 */}
       <HomeQuotaBadge top={badgeTop} />
 
+      <PackagedCoachOverlay {...homeCoach.props} />
     </View>
   );
 }
@@ -255,14 +283,14 @@ const styles = StyleSheet.create({
   // 언더라인 탭 (§1-3)
   tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 20, gap: 4 },
   tab: { paddingHorizontal: 8, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
-  tabLabel: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  tabLabel: { fontSize: 16, fontWeight: '600', color: C.ink2 },
   tabLabelOn: { color: INK_TITLE },
   tabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   tabBarOn: { backgroundColor: INK_TITLE },
   tabsDivider: { height: 0.5, backgroundColor: C.line2 },
 
   // 2열 그리드 (§1-5)
-  gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24 },
+  gridEmpty: { fontSize: 16, fontWeight: '400', color: C.ink2, paddingVertical: 24 },
   moreWrap: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 }, // A-HM-06(KB-486)
 
   // recent-list (§1-7)
@@ -275,18 +303,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.line2,
     borderStyle: 'dashed',
-    borderRadius: 4,
+    borderRadius: radius.xs,
     padding: 14,
     marginHorizontal: 20,
   },
-  guestCtaIc: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  guestCtaText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 18 },
-  guestCtaBtn: { fontSize: 13, fontWeight: '700', color: C.primaryText },
+  guestCtaIc: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  guestCtaText: { flex: 1, fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 19 },
+  guestCtaBtn: { fontSize: 14, fontWeight: '700', color: C.primaryText },
 
   // KB-800: 스캔 CTA — 면책 paddingTop 32 가 CTA↔면책 간격
   scanCta: { paddingHorizontal: 20, paddingTop: 24 },
   // 면책 (§1-10)
-  disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 18, paddingHorizontal: 20, paddingTop: 32, paddingBottom: 40 },
+  disc: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 20, paddingHorizontal: 20, paddingTop: 32, paddingBottom: 40 },
 });
 
 /** KB-784: 최근 스캔 행 = RecentRow + 노출 노드 + 카드 클릭(recent, 위치) */

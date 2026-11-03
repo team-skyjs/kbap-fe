@@ -13,8 +13,9 @@ import { Pressable } from '@/components/Pressable';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { IconTabFood, IconTabHome, IconTabReviews, IconTabScan, type IconProps } from './icons';
+import { scanCoachAnchor } from '@/lib/coachTargets';
 import { RemoteImage } from './RemoteImage';
 import { useMyAvatarUrl } from '@/lib/data/useMyAvatarUrl';
 
@@ -79,6 +80,7 @@ function ProfileTabIcon({ size = 24, active }: IconProps & { active?: boolean })
             onError={() => setFailed(true)}
             style={[styles.avatarImg, { borderRadius: (size - 4) / 2 }]}
             transition={0}
+            cachePolicy="memory-disk" // KB-906(T-125): 액티비티 재생성 뒤 메모리에서 바로(디스크 재디코딩 동안 빈 회색 원 0)
           />
         ) : (
           <AvatarIcon size={size - 4} />
@@ -124,7 +126,8 @@ export function TabBar({
         <View style={styles.iconSpace} />
         {/* KB-818: 다른 탭과 같은 규칙(한 줄 + 축소) — 빠져 있어 큰 글씨에서 "Scai"로 잘렸다 */}
         <Text style={[styles.tlbl, { color: C.inkMute }]} numberOfLines={1} adjustsFontSizeToFit testID="tab-scan-label">{labels.scan}</Text>
-        <Pressable style={styles.fab} onPress={onScan} hitSlop={8} testID="tab-scan">
+        {/* KB-968: 가공식품 코치마크 1단계 스포트라이트 대상(측정용 등록) */}
+        <Pressable ref={scanCoachAnchor} style={styles.fab} onPress={onScan} hitSlop={8} testID="tab-scan">
           <IconTabScan size={24} color="#fff" />
         </Pressable>
       </View>
@@ -177,7 +180,7 @@ const styles = StyleSheet.create({
   avatarDim: { opacity: 0.6 }, // P-315: 비활성 = 흐림(색·불투명도만 — 프레임 불변)
   avatarImg: { width: '100%', height: '100%' },
   // 시안: 11/500 — i18n 가변 길이(독일어/러시아어)는 축소 허용(adjustsFontSizeToFit)
-  tlbl: { fontSize: 11, fontWeight: '500', letterSpacing: -0.11 },
+  tlbl: { fontSize: 12, fontWeight: '500', letterSpacing: -0.11 },
   fab: {
     position: 'absolute',
     // P-371(KB-534): iOS는 바 paddingTop(TABBAR_V_SHIFT 6)만큼 FAB이 낮아지므로
@@ -186,7 +189,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: radius.pill,
     backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',

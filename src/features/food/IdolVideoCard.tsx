@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { CardPhoto } from '@/components';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
 import { openWebPage } from '@/lib/openExternal';
 import type { IdolVideo } from '@/lib/api/idolPickAdapter';
@@ -56,12 +56,12 @@ export function IdolVideoCard({ foodId, video, photoUrl }: { foodId: string; vid
 // 버튼 = Outline 44 radius full, 바탕·테두리 gray-00 · 글자 subtitle1-sbold gray-1000 · 사진 위 gray-1000 72%
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 20, paddingBottom: IDOL_CARD_BOTTOM_PAD },
-  card: { backgroundColor: C.ink, borderRadius: 16, overflow: 'hidden' },
+  card: { backgroundColor: C.ink, borderRadius: radius.lg, overflow: 'hidden' },
   shade: { backgroundColor: 'rgba(28,30,33,0.72)' }, // gray-1000 × 0.72
   inner: { padding: 16, gap: 8 },
-  label: { fontFamily: font.body, fontSize: 12, lineHeight: 18, color: '#FFFFFF' },
+  label: { fontFamily: font.body, fontSize: 13, lineHeight: 20, color: '#FFFFFF' },
   title: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 24, color: '#FFFFFF' },
-  cta: { minHeight: 44, borderRadius: 999, borderWidth: 1, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 10 },
+  cta: { minHeight: 44, borderRadius: radius.pill, borderWidth: 1, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 10 },
   ctaText: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink, textAlign: 'center' },
   press: { backgroundColor: 'rgba(255,255,255,0.12)' },
 });

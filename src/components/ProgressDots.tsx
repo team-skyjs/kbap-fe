@@ -4,7 +4,7 @@
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 
 export function ProgressDots({ count, active, testID = 'ob-dots', dotTestIDPrefix = 'ob-dot' }: { count: number; active: number; testID?: string; dotTestIDPrefix?: string }) {
   return (
@@ -18,6 +18,6 @@ export function ProgressDots({ count, active, testID = 'ob-dots', dotTestIDPrefi
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 4 },
-  dot: { width: 17, height: 4, borderRadius: 8, backgroundColor: C.line2 },
+  dot: { width: 17, height: 4, borderRadius: radius.pill, backgroundColor: C.line2 },
   on: { backgroundColor: C.primary },
 });

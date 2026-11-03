@@ -7,9 +7,11 @@
  * P-387 규약: 완료 안내는 **응답 성공 후에만**. 실패면 본문·사진을 유지하고 재시도.
  */
 import * as React from 'react';
-import { Alert, Image, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert } from '@/lib/engagement/occlusionSurfaces';
+import { launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { Pressable } from '@/components/Pressable';
-import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
+import { KAV_BEHAVIOR, KAV_OFFSET } from '@/lib/keyboardAvoid';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
@@ -30,8 +32,12 @@ export default function FeedbackComposeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   // KB-739: 설정 "광고 신고" 진입 = 본문 프리필(Apple 2.5.18 신고 창구). 프리필만 있는 상태는 '비어 있음'으로 본다(이탈 확인 0)
-  const { prefill } = useLocalSearchParams<{ prefill?: string }>();
-  const initialBody = prefill === 'ad' ? t('ads.reportPrefill') : '';
+  // KB-814 F3: 가공식품 리뷰 '사진 삭제 요청' = 제품명·리뷰 id 한 줄 프리필(초기값만 — 서버 계약 무변)
+  const { prefill, product, reviewId } = useLocalSearchParams<{ prefill?: string; product?: string; reviewId?: string }>();
+  const initialBody =
+    prefill === 'ad' ? t('ads.reportPrefill')
+    : prefill === 'photoRemoval' ? t('ugc.photoRemovalPrefill', { product: product ?? '', reviewId: reviewId ?? '' })
+    : '';
   const [body, setBody] = React.useState(initialBody);
   const [photos, setPhotos] = React.useState<string[]>([]);
   const [importing, setImporting] = React.useState(false);
@@ -71,7 +77,7 @@ export default function FeedbackComposeScreen() {
           return;
         }
       }
-      const res = await ImagePicker.launchImageLibraryAsync({
+      const res = await launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.8,
         allowsMultipleSelection: true,
@@ -108,7 +114,7 @@ export default function FeedbackComposeScreen() {
   return (
     // KB-710(4) → KB-768: KeyboardAvoidingView(padding, 두 플랫폼) — #228 규칙에서 "Send가 스크롤 본문 안이라 스크롤로 닿는다"는 사유로 빠져 있었지만,
     // 회피 없이는 키보드가 떠도 ScrollView가 줄지 않아 스크롤 범위가 생기지 않는다 → SE에서 Send 위 19pt만 보이고 닿을 수도 없었다.
-    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID="feedback-kav">
+    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET} testID="feedback-kav">
       {/* P-406: 목록이 첫 화면이 됐다 — "My inquiries" 링크 제거(뒤로 = 목록) */}
       <SubHeader title={t('feedback.newTitle')} onBack={() => router.back()} />
       <LeaveConfirmModal {...leave.modal} />
@@ -161,17 +167,17 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FFFFFF' },
   body: { padding: 20, gap: 16 },
   // 치수는 리뷰 작성 화면과 동일값(새 시안 없음 — 기존 문법 이식)
-  input: { minHeight: 160, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm, padding: 12, fontSize: 15 },
+  input: { minHeight: 160, borderWidth: 1, borderColor: C.line, borderRadius: radius.md, padding: 12, fontSize: 16 },
   photoRow: { flexDirection: 'row', gap: 8 },
   photoThumbWrap: { width: 100, height: 100 },
-  photoThumb: { width: 100, height: 100, borderRadius: radius.sm },
+  photoThumb: { width: 100, height: 100, borderRadius: radius.md },
   photoDel: {
     position: 'absolute',
     top: 4,
     right: 4,
     width: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: radius.pill,
     backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -179,7 +185,7 @@ const styles = StyleSheet.create({
   photoAdd: {
     width: 100,
     height: 100,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: C.line,
     backgroundColor: C.surface2,

@@ -102,6 +102,9 @@ const stylesWhen = (t: ReactTestRenderer, id: string, pressed: boolean) => {
 };
 const metrics = (s: Record<string, unknown>[]) => s.map((o) => Object.fromEntries(Object.entries(o).filter(([k]) => !COLOR_KEYS.has(k))));
 
+const REACT_ELS = [Symbol.for('react.element'), Symbol.for('react.transitional.element')];
+const safeJson = (v: unknown) => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && REACT_ELS.includes((x as { $$typeof?: symbol }).$$typeof as symbol) ? undefined : x)); // KB-954: refreshControl 엘리먼트 prop(순환 참조)만 제외
+
 describe('어댑터·요청 (계약 C-1)', () => {
   it('평탄 항목 → 음식 요약(adaptMenuSummary 동일) + video · 대문자 → 소문자 · 순서 그대로', () => {
     const [a, b] = adaptIdolPicks({ items: [wireItem(491), wireItem(5, { imageRef: null, video: { url: 'https://example.com/v/5', platform: 'TIKTOK' } })] as never });
@@ -139,7 +142,7 @@ describe('홈 배너 (정적)', () => {
     const t = render(<IdolPickBanner />);
     expect(mockGet).not.toHaveBeenCalled();
     expect(hostIds(t).some((i) => i.startsWith('idol-pick-photo-') || i === 'idol-pick-collage')).toBe(false);
-    const json = JSON.stringify(t.toJSON());
+    const json = safeJson(t.toJSON());
     expect(json).not.toContain('home.idolPick.sub');
     expect(json).not.toContain('count');
     const src = fs.readFileSync('src/features/home/IdolPickBanner.tsx', 'utf8');
@@ -323,7 +326,7 @@ describe('상세 V1 카드', () => {
   it('role link · 라벨 = detail.idolVideo.a11y(플랫폼 없음) · 눌림 = 흰 오버레이만(KB-855 E: 버튼은 흰 알약 그대로)', () => {
     const t = render(<IdolVideoCard foodId="6" video={{ url: 'https://example.com/v/1', platform: 'tiktok' }} />);
     expect(t.root.find((n) => n.props.testID === 'idol-video-card' && n.props.accessibilityRole === 'link').props.accessibilityLabel).toBe('detail.idolVideo.a11y');
-    expect(JSON.stringify(t.toJSON())).not.toMatch(/tiktok|youtube/i);
+    expect(safeJson(t.toJSON())).not.toMatch(/tiktok|youtube/i);
     expect(metrics(stylesWhen(t, 'idol-video-card', true))).toEqual(metrics(stylesWhen(t, 'idol-video-card', false)));
     const overlay = (pressed: boolean) => stylesWhen(t, 'idol-video-card', pressed).find((s) => s.backgroundColor === 'rgba(255,255,255,0.12)')!;
     expect(overlay(true).opacity).toBe(1);
@@ -335,7 +338,7 @@ describe('상세 V1 카드', () => {
     const flat = (t: ReactTestRenderer, id: string) => StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0].props.style) as Record<string, unknown>;
     const withPhoto = render(<IdolVideoCard foodId="6" video={v} photoUrl="https://cdn/food6.jpg" />);
     expect(hostIds(withPhoto)).toContain('idol-video-photo');
-    expect(JSON.stringify(withPhoto.toJSON())).toContain('https://cdn/food6.jpg'); // 상세와 같은 음식 사진(새 아이돌 이미지 0)
+    expect(safeJson(withPhoto.toJSON())).toContain('https://cdn/food6.jpg'); // 상세와 같은 음식 사진(새 아이돌 이미지 0)
     expect(flat(withPhoto, 'idol-video-shade').backgroundColor).toBe('rgba(28,30,33,0.72)');
     const card = StyleSheet.flatten(withPhoto.root.find((n) => n.props.testID === 'idol-video-card' && typeof n.props.style === 'object').props.style) as Record<string, unknown>;
     expect(card).toMatchObject({ borderRadius: 16, overflow: 'hidden', backgroundColor: '#1C1E21' });
@@ -361,11 +364,13 @@ describe('상세 V1 카드', () => {
 });
 
 describe('무효화', () => {
-  it('기피 성분 변경 = useMe 의 전면 invalidateQueries() → [idolPicks, lang] 도 무효화(추가 코드 없음)', async () => {
-    expect(fs.readFileSync('src/lib/data/useMe.ts', 'utf8')).toMatch(/patch\.restrictions !== undefined[\s\S]{0,80}void qc\.invalidateQueries\(\);/);
+  it('기피 성분 변경 = useMe → resetPersonalizedQueries(KB-954) → [idolPicks, lang]은 위험도 키가 아니라 invalidate(데이터 유지·추가 코드 없음)', async () => {
+    expect(fs.readFileSync('src/lib/data/useMe.ts', 'utf8')).toMatch(/patch\.restrictions !== undefined[\s\S]{0,260}void resetPersonalizedQueries\(qc\);/);
+    const { resetPersonalizedQueries } = jest.requireActual('@/lib/queryClient') as typeof import('@/lib/queryClient');
     qc.setQueryData(idolPicksKey('en'), [pick(491)]);
-    await qc.invalidateQueries();
+    await resetPersonalizedQueries(qc);
     expect(qc.getQueryState(idolPicksKey('en'))?.isInvalidated).toBe(true);
+    expect(qc.getQueryData(idolPicksKey('en'))).toHaveLength(1);
   });
 });
 

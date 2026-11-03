@@ -1,7 +1,7 @@
 /**
  * Food detail — KB-431(P-276) 디자인 4차 D-3 (Figma 4150:16891 · 4150:16974).
  * 히어로 정방 + 하단 그라데이션 · 위험 요약 행(히어로 직하, riskTone 틴트 —
- * danger=붉은/caution=노란, 커맨드 센터 판정) · 헤더 블록(맵기 칩+SVG 고추·
+ * danger=붉은/caution=주황 — 리본 계열, KB-908) · 헤더 블록(맵기 칩+SVG 고추·
  * 제목·설명·별점 행·북마크 36) · 8px 섹션 디바이더 · What's inside 칩 필터 +
  * 재료 타일 3열 그리드 + 재료 바텀시트 · 리뷰 섹션(D-2 카드 ×3) · FixedBottom.
  *
@@ -12,7 +12,9 @@
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Platform, RefreshControl, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { usePullRefresh } from '@/lib/data/usePullRefresh';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, withTiming } from 'react-native-reanimated';
@@ -21,19 +23,21 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
+import { CountryOnlyHint } from '@/features/review/CountryOnlyHint';
+import { color as C, font, shadow, type RiskState, radius } from '@/lib/theme';
 import { ingredientLabel, isCatalogIngredient } from '@/lib/mocks/ingredients';
-import { RiskMark, RiskBadge, CardPhoto, Chip, NewBadge, Star, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft } from '@/components';
+import { RiskMark, CardPhoto, Chip, NewBadge, Star, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft, Spinner } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
-import { RemoteImage } from '@/components/RemoteImage';
 import { HeroGallery } from '@/features/food/HeroGallery';
 import { PILL_FADE_MS, useScrollAwarePill } from '@/features/food/scrollAwarePill';
+import { PILL_MAX_SCALE, pillCta, useBottomBand } from '@/features/food/pillCta';
 import { IDOL_CARD_BOTTOM_PAD, IdolVideoCard } from '@/features/food/IdolVideoCard';
 import { useIdolPickVideo } from '@/lib/data/useIdolPicks';
 import { useIsNewFood } from '@/lib/newFood';
-import { useIngredientImageChain } from '@/components/AvoidTile';
+import { IngChainImage, IngredientTile, tile } from '@/components/IngredientTile';
+import { VerdictBand, VerdictLockRow, VERDICT_TITLE } from '@/components/VerdictBand';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
@@ -45,7 +49,7 @@ import { FeedAd } from '@/features/ads/FeedAd';
 import { withFeedAds } from '@/lib/ads/feedSlots';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { IconEdit, IconFood, IconLock } from '@/components/icons';
+import { IconEdit } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -63,29 +67,6 @@ const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2
 const HEADER_SOLID_Y = 210;
 const INK_TITLE = '#2F3137';
 const REVIEW_PREVIEW_N = 3; // 발주 §1-7: 카드 ×3
-
-/** P-303(KB-457): 재료 타일·시트 이미지 = AvoidTile과 같은 3단 체인(서버 imageUrl →
- *  CDN 조립 → 폴백) — 상세만 서버 imageUrl 단독이라 사진이 안 뜨던 결함 해소.
- *  체인 소진 시 현 폴백(IconFood) 유지, 타일 크기 48/56 무변(시안 §3). */
-function IngChainImage({ code, imageUrl, size, iconSize }: { code: string; imageUrl?: string | null; size: number; iconSize: number }) {
-  const { uri, isCutout, nextSource } = useIngredientImageChain(code, imageUrl);
-  if (!uri) return <IconFood size={iconSize} color={C.ink3} />;
-  // key = 소스별 리마운트(RemoteImage settle 리셋 — AvoidTile 문법 동일)
-  // P-341(KB-502): 누끼본 = contain(여백은 크기 축소로 근사 — 타일 pad 유지)
-  // Codex #102 P2: 누끼 상태 = 흰 바닥(AvoidTile 동일 규칙) — 부모 surface2는 실패 폴백만
-  return (
-    <>
-      {isCutout && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF' }]} testID={`ing-cut-bg-${code}`} />}
-      <RemoteImage
-        key={uri}
-        uri={uri}
-        onError={nextSource}
-        contentFit={isCutout ? 'contain' : undefined}
-        style={isCutout ? { width: size * 0.74, height: size * 0.74 } : { width: size, height: size, borderRadius: 8 }} // P-344: 74% 공통
-      />
-    </>
-  );
-}
 
 export default function FoodDetailScreen() {
   // P-012(KB-179): price는 스캔 결과 진입에만 실리는 표시 전용 param — 조작 방어 파싱
@@ -159,12 +140,16 @@ export default function FoodDetailScreen() {
   // KB-431 §1-8 → KB-851 떠 있는 알약 — 등록 음식만(미등록은 본문 CTA 현행 유지)
   const showBottomBar = !!food && food.isRegistered;
   // Codex #97 3R P2 → KB-851: 알약 줄 실높이(큰 글씨·긴 번역이면 커짐) + 바닥 여백만큼 콘텐츠 하단 여백 — 마지막 리뷰를 가리지 않게(측정 전 폴백 48)
-  const [barH, setBarH] = useState(0);
-  const pillBottom = Math.max(insets.bottom, 12);
+  // KB-903: 띠(불투명 바) 실높이 → 스크롤 아래 여백 — 하단 바 화면 공통 규칙(useBottomBand)
+  const band = useBottomBand(insets.bottom);
+  const pull = usePullRefresh([['food', id]]); // KB-954: 상세·리뷰(['food', id] 접두) + ['me']
 
   return (
     <View style={styles.root}>
       <ScrollView
+        // QA Q-388 ①: 히어로가 화면 맨 위(상태 표시줄 아래까지)라 기본 스피너가 상태 표시줄·다이내믹 아일랜드 뒤에 가려졌다 —
+        // Android = progressViewOffset으로 헤더 아래, iOS(offset 미지원) = 헤더 아래에 같은 Spinner를 따로 그린다(아래 detail-pull-spinner)
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={C.ink3} progressViewOffset={insets.top + 48} />}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
@@ -174,7 +159,7 @@ export default function FoodDetailScreen() {
         onMomentumScrollEnd={pill.onMomentumScrollEnd}
         onLayout={(e) => pill.onViewLayout(e.nativeEvent.layout.height)}
         onContentSizeChange={(_w, h) => pill.onContentSize(h)}
-        contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 48) + pillBottom + 16 : 40 }, (error || hidden) && !food ? { flexGrow: 1 } : null]}
+        contentContainerStyle={[{ paddingBottom: showBottomBar ? band.scrollPad : 40 }, (error || hidden) && !food ? { flexGrow: 1 } : null]}
         testID="detail-scroll"
       >
         {/* KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**(FOOD-001)이면 에러 블록 대신 조용한 안내.
@@ -246,10 +231,10 @@ export default function FoodDetailScreen() {
         <RegisteredBottomBar
           shown={pill.shown}
           ready={pill.ready}
-          bottom={pillBottom}
+          bottom={band.bottom}
           guest={isGuest}
           scanEntry={src === 'scan'}
-          onHeight={(h) => { setBarH(h); pill.onBand(h + pillBottom + 8); }}
+          onHeight={(h) => { band.onHeight(h); pill.onBand(h + 8); }}
           t={t}
           onWrite={() => {
             // P-392(KB-584): 자격 게이트 폐기 — 회원이면 스캔 여부 무관(BE #274: reviewEligible 항상 true)
@@ -262,6 +247,12 @@ export default function FoodDetailScreen() {
               : () => { track(EVENTS.owner_ask_open, { source: 'cta', food_id: id ?? '' }); router.push(`/food/${id}/owner` as Href); }
           }
         />
+      )}
+
+      {Platform.OS === 'ios' && pull.refreshing && (
+        <View style={[styles.pullSpin, { top: insets.top + 52 }]} pointerEvents="none" testID="detail-pull-spinner">
+          <Spinner size={20} />
+        </View>
       )}
 
       {/* P-139 ②: 플로팅 헤더 — 사진 위 반투명 원 back(제목 없음) → 솔리드+타이틀 */}
@@ -292,16 +283,13 @@ export default function FoodDetailScreen() {
 type TFn = ReturnType<typeof useTranslation>['t'];
 type Router = ReturnType<typeof useRouter>;
 
-const VERDICT: Record<RiskState, string> = {
-  safe: 'detail.verdictSafe',
-  caution: 'detail.verdictCaution',
-  danger: 'detail.verdictDanger',
-  unable: 'detail.verdictUnable',
-};
 
 /** 재료 필터 칩(§1-5) — D-2 홈과 동일 문법. */
 type IngChip = 'all' | 'safe' | 'danger' | 'caution';
 const ING_CHIPS: IngChip[] = ['all', 'safe', 'danger', 'caution'];
+
+// KB-903(T-032): 알약 글자 = 한 줄(Android 2.0에서 "Ask the / owner" 두 줄 → 바가 화면 1/4) · 넘치면 줄이기(자르기 아님) · 확대 상한 낮춤
+const PILL_LABEL = { numberOfLines: 1, adjustsFontSizeToFit: true, minimumFontScale: 0.7, maxFontSizeMultiplier: PILL_MAX_SCALE } as const;
 
 function RegisteredBottomBar({
   shown,
@@ -317,7 +305,7 @@ function RegisteredBottomBar({
   shown: boolean;
   /** 첫 측정 전 = 애니메이션 없이 숨김(KB-871 QA AP — 진입 때 카드 위로 번쩍 보였다 사라짐) */
   ready?: boolean;
-  /** 화면 바닥에서 알약까지(안전 영역, 최소 12) */
+  /** 띠 안 알약 아래 여백(안전 영역, 최소 12) */
   bottom: number;
   guest: boolean;
   t: TFn;
@@ -325,12 +313,12 @@ function RegisteredBottomBar({
   onAsk?: () => void;
   /** P-353 ②(KB-515): 스캔 진입 = Write 미렌더·Ask 단독(스캔한 음식이라 리뷰 유도 대신 문의 단독) */
   scanEntry?: boolean;
-  /** 알약 줄 실높이 보고 — 스크롤 하단 여백 파생(큰 글씨·긴 번역 대응) */
+  /** 띠 실높이(알약 + 위 여백 + 안전 영역) 보고 — 스크롤 하단 여백 파생(큰 글씨·긴 번역 대응) */
   onHeight?: (h: number) => void;
 }) {
   const reduced = useReducedMotion();
-  const [rowH, setRowH] = useState(48);
-  const hideY = rowH + bottom + 8; // 화면 밖까지
+  const [rowH, setRowH] = useState(48 + bottom);
+  const hideY = rowH + 8; // 띠 전체가 화면 밖까지
   // 표시·숨김 = 200ms 슬라이드 + 페이드(감속 곡선) · 모션 줄이기 = 슬라이드 없이 짧은 페이드만
   const anim = useAnimatedStyle(() => ({
     opacity: !ready ? 0 : withTiming(shown ? 1 : 0, { duration: reduced ? 120 : PILL_FADE_MS, easing: Easing.out(Easing.cubic) }),
@@ -340,7 +328,8 @@ function RegisteredBottomBar({
   if (!write && !onAsk) return null;
   return (
     <Animated.View
-      style={[styles.pillRow, { bottom }, anim]}
+      style={[pillCta.band, { paddingBottom: bottom }, anim]}
+      // KB-903(T-019) auto → KB-932: 띠가 투명해져 아래 콘텐츠가 보인다 — 띠 바탕 탭은 보이는 그 콘텐츠로(box-none), 알약은 알약이 받는다. 숨김 = 전부 통과
       pointerEvents={shown ? 'box-none' : 'none'}
       onLayout={(e) => { const h = e.nativeEvent.layout.height; setRowH(h); onHeight?.(h); }}
       testID="detail-bottom-bar"
@@ -348,13 +337,13 @@ function RegisteredBottomBar({
       {write && (
         <Pressable style={styles.pillPrimary} onPress={onWrite} accessibilityRole="button" testID="bottom-write">
           <IconEdit size={20} color="#FFFFFF" />
-          <Text style={styles.pillPrimaryText}>{t('reviews.writeReview')}</Text>
+          <Text style={styles.pillPrimaryText} {...PILL_LABEL}>{t('reviews.writeReview')}</Text>
         </Pressable>
       )}
       {onAsk && (
         // 회원 = Write 아래 테두리 한 줄 · 스캔 진입(Write 없음) = primary 한 줄(P-353)
         <Pressable style={write ? styles.pillOutline : styles.pillPrimary} onPress={onAsk} accessibilityRole="button" testID="bottom-ask">
-          <Text style={write ? styles.pillOutlineText : styles.pillPrimaryText}>{t('detail.askOwner')}</Text>
+          <Text style={write ? styles.pillOutlineText : styles.pillPrimaryText} {...PILL_LABEL}>{t('detail.askOwner')}</Text>
         </Pressable>
       )}
     </Animated.View>
@@ -446,7 +435,9 @@ function Registered({
       : dishRisk === 'safe'
         ? t('detail.basisSafe')
         : flagged.length > 0
-          ? t('detail.verdictContains', { list: flagged.map((i) => i.name).join(', ') })
+          ? // KB-907(T-007): Caution 띠 + 걸린 재료가 전부 caution = "May contain"(QA: Caution인데 "Contains Egg").
+            // 걸린 재료에 danger가 하나라도 있으면 기존 "Contains" — 확정 재료를 "may"로 낮추지 않는다(false-safe 0)
+            t(dishRisk === 'caution' && flagged.every((i) => i.risk === 'caution') ? 'detail.verdictMayContain' : 'detail.verdictContains', { list: flagged.map((i) => i.name).join(', ') })
           : t('detail.basisFlagged');
 
   // 재료별 사유 — 기존 중립 조립 유지(FE 템플릿, "알레르기" 단정 금지)
@@ -462,26 +453,12 @@ function Registered({
   return (
     <>
       {/* §1-3: 위험 요약 행 — 히어로 직하 full-width, riskTone 틴트(마크 색 기준
-          매핑: danger=붉은 #FFF3EF / caution=노란 #FFFDEF — 시안 인스턴스 뒤바뀜은
-          커맨드 센터 판정으로 통일). 탭 = 코치마크 재열람(P-134). */}
+          매핑: KB-908 10/30 결정 — 띠 배경 = 리본 계열, danger 붉은 · caution 주황). 탭 = 코치마크 재열람(P-134). */}
       {guest ? (
-        <Pressable style={styles.lockSlot} onPress={() => setGateOpen(true)} testID="verdict-lock">
-          <IconLock size={16} color={C.ink2} />
-          <Text style={styles.lockSlotText}>{t('detail.lockVerdict')}</Text>
-          <Text style={styles.lockSlotCta}>{t('intro.signUp')}</Text>
-        </Pressable>
+        <VerdictLockRow onPress={() => setGateOpen(true)} testID="verdict-lock" /> /* KB-974: 공용 잠금 행(가공식품 상세와 같은 부품) */
       ) : (
-        <Pressable
-          style={[styles.riskRow, { backgroundColor: riskTone[dishRisk].bg }]}
-          onPress={() => setCoachOpen(true)}
-          testID="detail-verdict"
-        >
-          <RiskBadge state={dishRisk} />
-          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-            <Text style={styles.riskRowTitle}>{t(VERDICT[dishRisk])}</Text>
-            <Text style={styles.riskRowSub}>{verdictReason}</Text>
-          </View>
-        </Pressable>
+        // KB-914(R-137): 띠 = 공용 VerdictBand(가공식품 상세·성분표 결과와 같은 부품)
+        <VerdictBand state={dishRisk} title={t(VERDICT_TITLE[dishRisk])} reason={verdictReason} onPress={() => setCoachOpen(true)} testID="detail-verdict" />
       )}
 
       {/* §1-2: 헤더 블록 — 좌 컬럼 + 우 북마크 36(4129:10698) */}
@@ -558,42 +535,34 @@ function Registered({
               </View>
             )}
             {/* §3 태그 줄바꿈 규칙: 타일 단위로만 줄바꿈 — flexWrap + flexShrink:0 + 이름 1줄 */}
-            <View style={styles.ingGrid}>
+            <View style={tile.grid}>
               {shownIngredients.map((ing) => {
                 const dRisk = personalRisk(ing.risk, hasRestrictions);
                 return (
-                  <Pressable key={ing.code} style={[styles.ingTile, !guest && dRisk === 'caution' && styles.ingTileWithFoot]} onPress={() => setIngSheet(ing)} testID={`ing-${ing.code}`}>
-                    {!guest && (
-                      <View style={styles.ingTileMark}>
-                        <RiskMark state={dRisk} size={18} />
-                      </View>
-                    )}
-                    <View style={styles.ingTileImg}>
-                      <IngChainImage code={ing.code} imageUrl={cat.imageUrl(ing.code)} size={48} iconSize={28} />
-                    </View>
-                    <Text style={styles.ingTileName} numberOfLines={1}>{ing.name}</Text>
+                  // KB-914(R-137): 타일 = 공용 IngredientTile(가공식품 감지 재료와 같은 부품) — 부가 줄·풋터는 여기서
+                  <IngredientTile key={ing.code} code={ing.code} name={ing.name} risk={guest ? null : dRisk} imageUrl={cat.imageUrl(ing.code)} withFoot={!guest && dRisk === 'caution'} onPress={() => setIngSheet(ing)} testID={`ing-${ing.code}`}>
                     {/* KB-599: 함의 매치 근거(새우 회피 → 새우젓) — 회원·카탈로그 code일 때만, 2줄 클램프. 뒤에 % 줄이 오면 하단 여백은 그 줄이 맡는다 */}
                     {!guest && ing.impliedBy && isCatalogIngredient(ing.impliedBy) && (
-                      <Text style={ing.percentage != null ? [styles.ingTileSub, { marginBottom: 0 }] : styles.ingTileSub} numberOfLines={2} testID={`ing-implied-${ing.code}`}>
+                      <Text style={ing.percentage != null ? [tile.sub, { marginBottom: 0 }] : tile.sub} numberOfLines={2} testID={`ing-implied-${ing.code}`}>
                         {t('detail.avoidImplied', { ingredient: ingredientLabel(ing.impliedBy) })}
                       </Text>
                     )}
                     {ing.percentage != null && (
                       // KB-710(3): 두 줄까지 — SE 큰 글자에서 "~98% of sho…" 잘림. 기본 크기는 한 줄 그대로, 같은 줄 타일은 줄바꿈 격자가 높이를 맞춘다
-                      <Text style={styles.ingTileSub} numberOfLines={2} testID={`ing-shops-${ing.code}`}>{t('detail.ofShops', { pct: Math.round(ing.percentage) })}</Text>
+                      <Text style={tile.sub} numberOfLines={2} testID={`ing-shops-${ing.code}`}>{t('detail.ofShops', { pct: Math.round(ing.percentage) })}</Text>
                     )}
                     {/* caution 변형: "Ask the owner" 풋터(h30 primaryTint) → 사장님 카드(기존 진입점) */}
                     {!guest && dRisk === 'caution' && (
                       <Pressable
-                        style={styles.ingTileFoot}
+                        style={tile.foot}
                         onPress={() => { track(EVENTS.owner_ask_open, { source: 'ingredient', food_id: id }); router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(ing.code)}` as Href); }}
                         hitSlop={4}
                         testID={`ask-${ing.code}`}
                       >
-                        <Text style={styles.ingTileFootText} numberOfLines={1}>{t('detail.askOwner')}</Text>
+                        <Text style={tile.footText} numberOfLines={1}>{t('detail.askOwner')}</Text>
                       </Pressable>
                     )}
-                  </Pressable>
+                  </IngredientTile>
                 );
               })}
             </View>
@@ -629,6 +598,9 @@ function Registered({
                 <Text style={styles.natToggleLabel}>{t('reviews.countryOnly', { code: nationality })}</Text>
               </Pressable>
             </View>
+          ) : null}
+          {!guest && nationality ? (
+            <CountryOnlyHint code={nationality} style={styles.natHint} />
           ) : null}
           {/* KB-848: 평점 요약 박스(리뷰 전체 목록과 공용) — P-360: KR only ON = 같은 국적 집계 · 같은 국적 0건 = 박스 없음. 탭 = 리뷰 전체 목록 */}
           {(() => {
@@ -823,38 +795,32 @@ const styles = StyleSheet.create({
   fhead: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 8 },
   fheadBg: { backgroundColor: FHEAD_BAR_BG, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
   fheadStatusShield: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.surface }, // KB-696
-  fBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(20,24,31,0.38)', alignItems: 'center', justifyContent: 'center' },
+  fBtn: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: 'rgba(20,24,31,0.38)', alignItems: 'center', justifyContent: 'center' },
   fBtnSolid: { backgroundColor: 'transparent' },
   fTitle: { fontFamily: font.bodySemi, fontSize: 16, color: C.ink, textAlign: 'center' },
 
   // §1-3: 위험 요약 행(4129:11366) — 틴트 + 하단 헤어라인
-  riskRow: { flexDirection: 'row', alignItems: 'center', gap: 15, paddingVertical: 12, paddingHorizontal: 20, minHeight: 63, borderBottomWidth: 0.5, borderBottomColor: '#D5DFE7' },
-  riskRowTitle: { fontSize: 14, fontWeight: '600', color: C.ink },
-  riskRowSub: { fontSize: 13, fontWeight: '500', color: C.ink2, lineHeight: 18 },
-  lockSlot: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 20, paddingVertical: 13, backgroundColor: C.surface2, borderBottomWidth: 0.5, borderBottomColor: '#D5DFE7' },
-  lockSlotText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.ink2 },
-  lockSlotCta: { fontSize: 13, fontWeight: '700', color: C.primaryText },
 
   // §1-2: 헤더 블록
   headBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 27 }, // A-FD-01/02(KB-486)
   spiceRow: { flexDirection: 'row', alignItems: 'center', gap: 10 }, // A-FD-03
-  spiceChip: { backgroundColor: '#F2F3F6', borderRadius: 4, paddingVertical: 1, paddingHorizontal: 5 },
-  spiceChipText: { fontSize: 14, fontWeight: '500', color: C.ink2 },
+  spiceChip: { backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 1, paddingHorizontal: 5 },
+  spiceChipText: { fontSize: 16, fontWeight: '500', color: C.ink2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FD-04
   name: { flexShrink: 1, fontSize: 24, fontWeight: '700', color: C.ink, lineHeight: 32 },
   // NEW 배지(시안 — primary pill h18 pad 1/5, 10/600 흰)
-  ko: { fontSize: 14, fontWeight: '400', color: INK_TITLE },
-  desc: { fontSize: 15, fontWeight: '400', color: '#4B4F58', lineHeight: 22 },
-  scanPrice: { fontSize: 14, fontWeight: '700', color: C.ink },
-  scanPriceNote: { fontSize: 12.5, fontWeight: '400', color: C.ink2 },
+  ko: { fontSize: 16, fontWeight: '400', color: INK_TITLE },
+  desc: { fontSize: 16, fontWeight: '400', color: '#4B4F58', lineHeight: 23 },
+  scanPrice: { fontSize: 16, fontWeight: '700', color: C.ink },
+  scanPriceNote: { fontSize: 13, fontWeight: '400', color: C.ink2 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'flex-start' }, // A-FD-06
-  ratingRowText: { fontSize: 13, fontWeight: '600', color: '#2F3137' }, // A-FD-06
+  ratingRowText: { fontSize: 14, fontWeight: '600', color: '#2F3137' }, // A-FD-06
   // 북마크 36(4129:10698 — 홈 그리드와 동일 문법)
   // A-DS-02(KB-486): 기본 흰+sh1(보더 투명 자리 유지 — P-151), 저장만 #EAEBEE 1
-  bmBtn: { width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
+  bmBtn: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
   bmBtnSaved: { borderColor: '#EAEBEE' },
 
-  profileHint: { fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 18, paddingHorizontal: 20, paddingBottom: 12 },
+  profileHint: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 19, paddingHorizontal: 20, paddingBottom: 12 },
 
   // §1-4: 8px 섹션 디바이더
   thickDivider: { height: 8, backgroundColor: '#F5F5F5' },
@@ -864,60 +830,53 @@ const styles = StyleSheet.create({
   insideTitle: { fontSize: 16, fontWeight: '500', color: C.ink, paddingHorizontal: 20 },
   ingChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20 },
   // §3: 타일 단위 줄바꿈 — flexWrap + 타일 flexShrink 0
-  ingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20 },
-  ingTile: { width: '31%', flexGrow: 1, maxWidth: '32%', flexShrink: 0, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, paddingTop: 26, alignItems: 'center', gap: 2, overflow: 'hidden' }, // A-FD-08
-  ingTileMark: { position: 'absolute', top: 6, left: 6 },
-  ingTileImg: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  ingTileName: { fontSize: 12, fontWeight: '500', color: INK_TITLE, textAlign: 'center', paddingHorizontal: 6 },
-  ingTileSub: { fontSize: 11, fontWeight: '400', color: '#5A636A', textAlign: 'center', paddingHorizontal: 4, marginBottom: 10 },
-  ingTileWithFoot: { paddingTop: 8 }, // A-FD-08 푸터 변형
-  ingTileFoot: { alignSelf: 'stretch', minHeight: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,113,52,0.05)', borderBottomLeftRadius: 3, borderBottomRightRadius: 3 },
-  ingTileFootText: { fontSize: 12, fontWeight: '500', color: C.primary }, // A-FD-09(색·굵기는 C-62)
 
   // §1-6: 재료 바텀시트
   sheetScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  ingSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 20, paddingVertical: 28, gap: 16 },
+  ingSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: 20, paddingVertical: 28, gap: 16 },
   ingSheetTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   ingSheetName: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },
   // P-306: 시트 전용 빈도 줄 — 좌측 정렬(마크·이름 아래), 타일용 ingTileSub(center)와 분리
-  ingSheetSub: { fontSize: 11, fontWeight: '400', color: '#5A636A' },
-  ingSheetImg: { width: 56, height: 56, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  ingSheetBody: { fontSize: 15, fontWeight: '400', color: '#4B4F58', lineHeight: 22 },
+  ingSheetSub: { fontSize: 12, fontWeight: '400', color: '#5A636A' },
+  ingSheetImg: { width: 56, height: 56, borderRadius: radius.md, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  ingSheetBody: { fontSize: 16, fontWeight: '400', color: '#4B4F58', lineHeight: 23 },
 
   // §1-7: 리뷰 섹션
   reviewSec: { gap: 14, paddingBottom: 8 },
+  natHint: { paddingHorizontal: 20, marginTop: 4, textAlign: 'right' }, // KB-907(T-106): 토글(오른쪽) 아래
   rvHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 20, paddingTop: 20 }, // KB-848: 토글만 — 오른쪽 정렬
   rvSummary: { paddingHorizontal: 20, paddingTop: 12 }, // KB-848: 요약 박스(토글 아래)
   rvSummaryTop: { paddingTop: 20 }, // 토글 없는 경우(게스트·국적 미상) = 디바이더 아래 20
   // Q12: "{국가} only" 토글(시안 Button/Toggle md 44×24)
   natToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 0 }, // A-FD-10
-  natToggleLabel: { fontSize: 14, fontWeight: '500', color: C.ink },
+  natToggleLabel: { fontSize: 16, fontWeight: '500', color: C.ink },
   // P-323 토글 쿼리 상태(스켈레톤·빈 문구) — 홈 피드 스켈레톤 문법
   natSkel: { gap: 12, paddingTop: 12 },
-  natSkelCard: { height: 150, borderRadius: 8, backgroundColor: '#F2F3F6' },
-  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
+  natSkelCard: { height: 150, borderRadius: radius.md, backgroundColor: '#F2F3F6' },
+  sw: { width: 44, height: 24, borderRadius: radius.pill, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
-  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
+  knob: { width: 20, height: 20, borderRadius: radius.pill, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
   knobOn: { alignSelf: 'flex-end' },
-  rvBeFirst: { fontSize: 14, fontWeight: '600', color: C.ink2, textAlign: 'center', paddingTop: 16 },
+  rvBeFirst: { fontSize: 16, fontWeight: '600', color: C.ink2, textAlign: 'center', paddingTop: 16 },
   rvMore: { paddingHorizontal: 20, paddingTop: 16 },
 
   // 면책
-  disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 17, paddingHorizontal: 20 },
+  disc: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 18, paddingHorizontal: 20 },
 
   // §1-8: FixedBottom
   // KB-871(예진 10/22): 하단 고정 · 좌우 = 화면 여백 20 · 가로 전체 알약(높이 48 radius full) 세로 간격 8 — primary(흰 글자·흰 file-pen) / 테두리(gray-300)
-  pillRow: { position: 'absolute', left: 20, right: 20, gap: 8 },
-  pillPrimary: { alignSelf: 'stretch', minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, backgroundColor: C.primary },
-  pillPrimaryText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: '#FFFFFF', textAlign: 'center' },
-  pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
+  // KB-891: 알약 정의 = features/food/pillCta 한 곳(리뷰 작성 하단과 공용)
+  pillPrimary: pillCta.pillPrimary,
+  pillPrimaryText: pillCta.pillPrimaryText,
+  pullSpin: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 5 }, // QA Q-388 ①: 당김 새로고침 스피너(iOS) — 플로팅 헤더 줄 바로 아래
+  pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
   pillOutlineText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink, textAlign: 'center' },
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },
-  unreg: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 10, padding: 16, backgroundColor: '#ECECEC', borderWidth: 1, borderColor: '#D5DFE7' },
+  unreg: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: radius.md, padding: 16, backgroundColor: '#ECECEC', borderWidth: 1, borderColor: '#D5DFE7' },
   unregTitle: { fontFamily: font.display, fontSize: 19, color: C.riskUnable },
-  unregBody: { fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 19, marginTop: 3 },
-  emptyBlock: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderStyle: 'dashed', borderRadius: 8, padding: 18 },
-  emptyBlockText: { fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 19 },
+  unregBody: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20, marginTop: 3 },
+  emptyBlock: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderStyle: 'dashed', borderRadius: radius.md, padding: 18 },
+  emptyBlockText: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20 },
 });

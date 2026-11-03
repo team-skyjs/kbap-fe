@@ -1,7 +1,10 @@
 /**
  * 흐림 띠 사진 카드(KB-846 → KB-861 공용) — 사진이 카드 전체 + 아래쪽 점진 흐림 띠(8단, blurBandOf) + 스크림 위에 흰 제목·부제 + 박스 없는 흰 chevron.
  * 모음 상세 장소 카드(curations/[key])와 홈 큐레이션 배너(CurationSection)가 같은 부품을 쓴다(KB-861 — 새로 만들지 않고 공유).
- * 흐림 띠: 띠 사진 로딩 자리 투명(회색 스켈레톤 0, #330) · 띠 8장 다 그려진 뒤 150ms 페이드(모션 줄이기 = 즉시) · 호출측이 `blur`로 근접 마운트(#320).
+ * 흐림 띠: 띠 사진 로딩 자리 투명(회색 스켈레톤 0, #330) · 띠가 다 그려진 뒤 150ms 페이드(모션 줄이기 = 즉시) · 호출측이 `blur`로 근접 마운트(#320).
+ * KB-931: 띠 = 블러 **1장**(최대 반경) 위에 선명 원본 띠 8장(위 불투명 → 아래 투명). 구 8장은 띠마다 반경이 달라 카드당 9회 디코드·블러 변환이었다.
+ *   선명 띠는 카드 본 사진과 같은 URL·변환 없음 — 본 사진 onLoad 뒤에 마운트해 메모리 캐시를 쓴다(블러 변환 = 카드당 1회).
+ *   (a) 같은 반경 블러 8장 안은 iOS SDWebImage가 동시 요청을 각자 캐시 미스로 변환할 수 있어 버렸다 · 그라디언트 마스크(MaskedView)는 네이티브 모듈이라 다음 빌드 후보.
  */
 import * as React from 'react';
 import { PixelRatio, Platform, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
@@ -56,6 +59,8 @@ export function BlurCaptionCard({
   const large = captionLargeText(useWindowDimensions().fontScale); // KB-846 QA: 큰 글씨 = 고정 줄 높이 없이(아래 잘림 0)
   const [cardH, setCardH] = React.useState<number | null>(null); // 블러 사본을 원본과 같은 높이로 정렬(큰 글씨면 카드가 자란다)
   const [captionTop, setCaptionTop] = React.useState<number | null>(null); // 캡션 블록 위(= 제목 위) — 블러 밴드 시작 = 여기서 16 위
+  // KB-931: 본 사진이 그려진 뒤에만 띠를 붙인다 — 띠(블러 1·선명 8)가 같은 원본을 메모리 캐시에서 쓰게(동시 시작 = 각자 디코드였다). 실패 = 띠 없음(흐릴 사진이 없다)
+  const [photoReady, setPhotoReady] = React.useState(false);
   const band = cardH != null && captionTop != null ? blurBandOf(cardH, captionTop) : null;
   const k = `${testPrefix}-${testKey}`;
   return (
@@ -70,12 +75,12 @@ export function BlurCaptionCard({
       uiTarget={uiTarget}
     >
       {photoUri ? (
-        <RemoteImage uri={photoUri} style={StyleSheet.absoluteFill} recyclingKey={recyclingKey} />
+        <RemoteImage uri={photoUri} style={StyleSheet.absoluteFill} recyclingKey={recyclingKey} onLoad={() => setPhotoReady(true)} />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.noPhoto]} testID={`${testPrefix}-nophoto-${testKey}`} />
       )}
-      {photoUri && band && blur && <BlurBand cover={photoUri} band={band} cardH={cardH as number} itemId={recyclingKey} testID={`${testPrefix}-blur-${testKey}`} />}
-      {band && <LinearGradient colors={CARD_SCRIM} style={[styles.shade, { top: band.top }]} pointerEvents="none" />}
+      {photoUri && photoReady && band && blur && <BlurBand cover={photoUri} band={band} cardH={cardH as number} itemId={recyclingKey} testID={`${testPrefix}-blur-${testKey}`} />}
+      {band && <LinearGradient colors={CARD_SCRIM} locations={CARD_SCRIM_LOC} style={[styles.shade, { top: Math.max(0, band.top - CARD_SCRIM_LEAD) }]} pointerEvents="none" testID={`${testPrefix}-scrim-${testKey}`} />}
       {overlay}
       <View style={{ height: CARD_SPACER }} />
       <View style={styles.caption} onLayout={(e) => setCaptionTop(e.nativeEvent.layout.y)} testID={`${testPrefix}-caption-${testKey}`} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
@@ -92,15 +97,18 @@ export function BlurCaptionCard({
   );
 }
 
-/** 블러 띠 묶음 — 띠 사진이 전부 그려진 뒤(onLoad·실패도 끝으로 셈) 페이드 시작. 띠 사진 로딩 자리 = 투명(아래 원본이 보인다 — 회색 스켈레톤 0) */
+/** 블러 띠 묶음(KB-931) — 블러 1장(밴드 전체) 위에 선명 띠(불투명도 = 1 − 블러 비중, 마지막 띠 = 0이라 생략).
+ *  띠 사진이 전부 그려진 뒤(onLoad·실패도 끝으로 셈) 페이드 시작. 로딩 자리 = 투명(아래 원본이 보인다 — 회색 스켈레톤 0) */
 function BlurBand({ cover, band, cardH, itemId, testID }: { cover: string; band: ReturnType<typeof blurBandOf>; cardH: number; itemId: string; testID: string }) {
+  const sharp = band.strips.filter((s) => s.opacity < 1);
   const [done, setDone] = React.useState(0);
   const settle = () => setDone((n) => n + 1);
   return (
-    <FadeInBand style={[styles.blurBand, { top: band.top }]} ready={done >= band.strips.length} testID={testID}>
-      {band.strips.map((s, i) => (
-        <View key={i} style={[styles.blurStrip, { top: s.top - band.top, height: s.height, opacity: s.opacity }]} testID={`${testID.replace('-blur-', '-blur-strip-')}-${i}`}>
-          <RemoteImage uri={cover} style={[styles.blurImg, { top: -s.top, height: cardH }]} recyclingKey={`${itemId}-blur-${i}`} blurRadius={s.radius} placeholder="none" onLoad={settle} onError={settle} />
+    <FadeInBand style={[styles.blurBand, { top: band.top }]} ready={done >= sharp.length + 1} testID={testID}>
+      <RemoteImage uri={cover} style={[styles.blurImg, { top: -band.top, height: cardH }]} recyclingKey={`${itemId}-blur`} blurRadius={CARD_BLUR_RADIUS} placeholder="none" onLoad={settle} onError={settle} />
+      {sharp.map((s, i) => (
+        <View key={i} style={[styles.blurStrip, { top: s.top - band.top, height: s.height, opacity: 1 - s.opacity }]} testID={`${testID.replace('-blur-', '-blur-strip-')}-${i}`}>
+          <RemoteImage uri={cover} style={[styles.blurImg, { top: -s.top, height: cardH }]} recyclingKey={`${itemId}-sharp-${i}`} placeholder="none" onLoad={settle} onError={settle} />
         </View>
       ))}
     </FadeInBand>
@@ -126,7 +134,10 @@ function FadeInBand({ style, testID, ready, children }: { style: object; testID:
 }
 
 // KB-846 스크림 — 밴드 위(투명) → 카드 바닥(어둡게 0.45). 띠 경계를 숨기고 흰 글자 대비를 맡는다(구 55% 그라데이션 대체 — 밴드 위 사진은 투명 그대로)
-const CARD_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.45)'] as const;
+// KB-906(T-039): 밝은 사진(하늘·궁 처마) 위 흰 제목 대비 부족 — 띠 위 40부터 시작해 제목 높이에서 이미 진해지게(0 → 0.35 → 0.6)
+const CARD_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.6)'] as const;
+const CARD_SCRIM_LOC = [0, 0.4, 1] as const;
+const CARD_SCRIM_LEAD = 40;
 /** 블러 밴드 시작 = 이름(캡션 블록) 위 16 */
 export const CARD_BLUR_LEAD = 16;
 /** KB-846 QA(큰 글씨에서 이름·지역의 g·y 아래 잘림): 글꼴 배율 > 1이면 고정 lineHeight(26·18)를 빼고 글꼴 고유 줄 높이로 —
@@ -136,11 +147,10 @@ export const captionLargeText = (fontScale: number): boolean => fontScale > 1;
 export const CARD_BLUR_STRIPS = 8;
 /** 띠 불투명도(위 → 아래) = 1/8 간격 균등(0.125 … 1) — 아래 원본과 크로스페이드, 마지막 단계도 같은 간격(점프 없음) */
 export const CARD_BLUR_OPACITY = Array.from({ length: CARD_BLUR_STRIPS }, (_, i) => (i + 1) / CARD_BLUR_STRIPS);
-/** 밴드·띠 계산(KB-846) — 띠 i(0=맨 위)의 blurRadius = 기준값 × (i+1)/4(정수 — Android Glide는 정수 반경). 큰 글씨면 캡션이 높아져 밴드도 늘어난다.
+/** 밴드·띠 계산(KB-846 → KB-931) — 띠 i(0=맨 위)의 opacity = 블러 비중(위 1/8 → 아래 1). 블러는 밴드 전체 1장(CARD_BLUR_RADIUS)이고 띠는 그 위 선명 원본(1 − opacity). 큰 글씨면 캡션이 높아져 밴드도 늘어난다.
  *  좌표는 **기기 픽셀에 스냅**(PixelRatio.roundToNearestPixel — 2.625배 Android에서 정수 pt도 소수 픽셀이라 경계가 앤티앨리어싱 선으로 보였다).
  *  띠는 **맞닿기만**(겹침 0): 같은 픽셀 경계라 틈이 없고, 반투명 띠를 겹치면 겹친 줄이 더 진해져(0.6 + 0.35×0.4 = 0.74) 그 자체가 가는 선이 된다(Codex #320) */
-// 띠 i의 blurRadius = 기준값 × (i+1)/8 (정수) — 반경도 1/8 간격 균등
-export function blurBandOf(cardH: number, captionTop: number, radius: number = CARD_BLUR_RADIUS) {
+export function blurBandOf(cardH: number, captionTop: number) {
   const px = PixelRatio.roundToNearestPixel;
   const top = px(Math.max(0, captionTop - CARD_BLUR_LEAD));
   const bottom = px(cardH);
@@ -148,7 +158,7 @@ export function blurBandOf(cardH: number, captionTop: number, radius: number = C
   const strips = Array.from({ length: CARD_BLUR_STRIPS }, (_, i) => {
     const s = px(top + (h * i) / CARD_BLUR_STRIPS);
     const e = i === CARD_BLUR_STRIPS - 1 ? bottom : px(top + (h * (i + 1)) / CARD_BLUR_STRIPS);
-    return { top: s, height: e - s, radius: Math.max(1, Math.round((radius * (i + 1)) / CARD_BLUR_STRIPS)), opacity: CARD_BLUR_OPACITY[i] };
+    return { top: s, height: e - s, opacity: CARD_BLUR_OPACITY[i] };
   });
   return { top, strips };
 }
@@ -169,8 +179,8 @@ const styles = StyleSheet.create({
   blurImg: { position: 'absolute', left: 0, right: 0 },
   caption: { flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 16, paddingRight: 16, paddingBottom: 16, gap: 4 },
   name: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 26, color: '#FFFFFF' },
-  area: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: '#FFFFFF' },
+  area: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: '#FFFFFF' },
   nameLarge: { fontFamily: font.bodySemi, fontSize: 18, color: '#FFFFFF' }, // 큰 글씨 = 글꼴 고유 줄 높이(KB-846 QA)
-  areaLarge: { fontFamily: font.body, fontSize: 13, color: '#FFFFFF' },
+  areaLarge: { fontFamily: font.body, fontSize: 14, color: '#FFFFFF' },
   arrow: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
 });

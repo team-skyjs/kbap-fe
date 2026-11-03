@@ -11,18 +11,20 @@ import { useTranslation } from 'react-i18next';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font } from '@/lib/theme';
+import { FLAGS } from '@/lib/flags';
 
 export type ScanMode = 'menu' | 'food' | 'packaged';
-const MODES: ScanMode[] = ['menu', 'food', 'packaged'];
+// KB-963: Food photo = 플래그로 숨김(기능 미완) — 꺼지면 Menu · Packaged food 두 칸
+const MODES: ScanMode[] = FLAGS.foodPhotoMode ? ['menu', 'food', 'packaged'] : ['menu', 'packaged'];
 
 /** 활성 탭 가운데를 화면 가운데로 두는 스크롤 위치 — 0 ~ (줄 폭 − 화면 폭)으로 자른다(들어가는 줄 = 0) */
 export const activeTabOffset = (tab: { x: number; w: number }, viewW: number, contentW: number): number =>
   Math.max(0, Math.min(contentW - viewW, Math.round(tab.x + tab.w / 2 - viewW / 2)));
 
-export function ScanModeTabs({ value, onChange, tone = 'light' }: { value: ScanMode; onChange: (m: ScanMode) => void; tone?: 'light' | 'dark' }) {
+export function ScanModeTabs({ value, onChange, tone = 'light', disabled = false }: { value: ScanMode; onChange: (m: ScanMode) => void; tone?: 'light' | 'dark'; disabled?: boolean }) {
   const { t } = useTranslation();
   const dark = tone === 'dark';
-  const third = useWindowDimensions().width / 3;
+  const third = useWindowDimensions().width / MODES.length; // 칸 최소 폭 = 화면 ÷ 칸 수(KB-854)
   // Codex #325: 긴 번역으로 줄이 화면보다 넓을 때 활성 탭이 잘리지 않게 — 처음 그릴 때·값이 바뀔 때 활성 탭을 가운데 쪽으로 스크롤
   const scrollRef = React.useRef<ScrollView>(null);
   const [tabBox, setTabBox] = React.useState<Partial<Record<ScanMode, { x: number; w: number }>>>({});
@@ -39,10 +41,10 @@ export function ScanModeTabs({ value, onChange, tone = 'light' }: { value: ScanM
       <Pressable
         key={m}
         style={dark ? [st.tabDark, { minWidth: third }] : st.tab}
-        onPress={soon ? undefined : () => onChange(m)}
-        disabled={soon}
+        onPress={soon ? undefined : () => { if (!disabled) onChange(m); }}
+        disabled={soon || disabled}
         accessibilityRole="tab"
-        accessibilityState={{ selected: on, disabled: soon }}
+        accessibilityState={{ selected: on, disabled: soon || disabled }}
         accessibilityHint={soon ? t('scanMode.soon') : undefined}
         testID={`scan-mode-${m}`}
         onLayout={dark ? (e) => { const { x, width } = e.nativeEvent.layout; setTabBox((b) => (b[m]?.x === x && b[m]?.w === width ? b : { ...b, [m]: { x, w: width } })); } : undefined}
@@ -64,6 +66,7 @@ export function ScanModeTabs({ value, onChange, tone = 'light' }: { value: ScanM
         <ScrollView
           ref={scrollRef}
           horizontal
+          scrollEnabled={!disabled}
           showsHorizontalScrollIndicator={false}
           bounces={false}
           contentContainerStyle={st.rowDark}
@@ -88,7 +91,7 @@ const st = StyleSheet.create({
   tab: { flex: 1, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
   tabDark: { flexGrow: 1, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 }, // 밑줄 = 칸 전폭(시안)
   label: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, paddingHorizontal: 4 },
-  labelDark: { fontFamily: font.body, fontSize: 14, lineHeight: 21, paddingHorizontal: 12 }, // body-l3-regular · 긴 번역 칸이 넓어질 때 좌우 여백
+  labelDark: { fontFamily: font.body, fontSize: 16, lineHeight: 24, paddingHorizontal: 12 }, // body-l3-regular · 긴 번역 칸이 넓어질 때 좌우 여백
   bar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   divider: { height: 0.5, backgroundColor: C.line2 },
 });

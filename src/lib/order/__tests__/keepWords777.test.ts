@@ -16,5 +16,5 @@ it('어절 안 글자 사이에만 결합자 · 공백 보존 · 걷어 내면 �
 });
 it('카드 한국어 4종(품목 줄·맺음·기피 문장·기피 나열)이 전부 keepWordsKo를 거친다(소스 잠금)', () => {
   const src = fs.readFileSync('src/features/order/FlippedOrderCard.tsx', 'utf8');
-  for (const e of ['{keepWordsKo(l)}', '{keepWordsKo(closing)}', '{keepWordsKo(avoid.sentence)}', '{keepWordsKo(avoid.list)}']) expect(src).toContain(e);
+  for (const e of ['{keepWordsKo(l.ko)}', '{keepWordsKo(closing)}', '{keepWordsKo(avoid.sentence)}', '{keepWordsKo(avoid.list)}']) expect(src).toContain(e);
 });

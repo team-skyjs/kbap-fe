@@ -12,9 +12,9 @@ it('② 스캔 진입 상세 — src===scan = Write 미렌더 + Ask 전폭, 그 
 it('④ My Foods Ordered 행 — thumbnails[0] = CardPhoto r8, 없으면 핀 현행', () => {
   const mf = read('src/app/profile/my-foods.tsx');
   expect(mf).toContain('{order.thumbnails[0] ? (');
-  expect(mf).toContain('<CardPhoto uri={order.thumbnails[0]} borderRadius={8} />');
+  expect(mf).toContain('<CardPhoto uri={order.thumbnails[0]} borderRadius={radius.md} />');
   expect(mf).toContain('<D4MapPin size={24} color={C.ink3} />'); // 폴백 유지
-  expect(mf).toMatch(/pinBox: \{ width: 70, height: 70, borderRadius: 8/);
+  expect(mf).toMatch(/pinBox: \{ width: 70, height: 70, borderRadius: radius\.md/);
 });
 
 it('③ 기본 이미지 = 앱 번들 로컬 에셋(어댑터 경계 한 곳) — 원격 927KB PNG 동시 로딩 공백 재발 방지', () => {
@@ -29,22 +29,21 @@ it('#116 P2 ①② — 판정 드레인 = 공용 useSavedIds(중복 배선 0), �
   const bm = read('src/lib/data/bookmarks.ts');
   expect(bm).toContain('export function useSavedIds(opts?: { enabled?: boolean }): { ids: Set<string>; ready: boolean } {'); // KB-779: 홈은 Saved 탭 활성 시에만
   expect(bm).toContain('void fetchNextPage({ cancelRefetch: false });'); // P-332 문법 승계(KB-779 Codex ④: enabled 가드 + 구조분해)
+  // KB-959(예진 11/2): 카드 저장 버튼 소멸 → 홈·음식 탭·검색은 판정 드레인(useSavedIds)·카드 토글·검색 저장 게이트를 더 안 쓴다(상세가 정본)
   const fe = read('src/features/food/FoodExplorer.tsx');
-  expect(fe).toContain('const { ids: savedIds, ready: savedReady } = useSavedIds({ enabled: bookmarksOn });'); // KB-779
+  expect(fe).not.toContain('useSavedIds(');
   expect(fe).not.toContain('saved.fetchNextPage({ cancelRefetch: false })'); // 자체 드레인 소멸
   const sr = read('src/app/search.tsx');
-  expect(sr).toContain('const { ids: savedIds, ready: savedReady } = useSavedIds();');
-  expect(sr).toContain('if (isGuest) return setGate(true);');
-  expect(sr).toContain('<AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />');
+  expect(sr).not.toContain('useSavedIds(');
+  expect(sr).not.toContain('<AuthGateSheet context="save"');
 });
 
 it('#116 2R — ready(드레인 완료) 전 토글 무시(POST 오발 방지) + 스캔 썸네일 CardPhoto 경유', () => {
   const bm = read('src/lib/data/bookmarks.ts');
   expect(bm).toContain('return { ids, ready: !saved.hasNextPage && !saved.isFetching };');
-  expect(read('src/features/food/FoodExplorer.tsx')).toContain("if (variant === 'screen' && !savedReady) return;"); // KB-779: 홈은 카드 bookmarked가 방향 — 가드 불필요
-  expect(read('src/app/search.tsx')).toContain('if (!savedReady) return;');
+  // KB-959: 카드 토글 소멸 — 드레인 전 토글 가드는 상세(useToggleBookmark 경로)만 남음
   const rich = read('src/features/scan/ScanRichList.tsx');
-  expect(rich).toContain('<CardPhoto uri={thumb} borderRadius={4} />'); // 깨진 URL = 기본 이미지 폴백
+  expect(rich).toContain('<CardPhoto uri={thumb} borderRadius={radius.md} />'); // 깨진 URL = 기본 이미지 폴백
 });
 
 it('P-362(KB-525): 스캔 썸네일 래퍼 = 고정 118(퍼센트 높이 금지 — 행 160만px 폭주 회귀 잠금)', () => {

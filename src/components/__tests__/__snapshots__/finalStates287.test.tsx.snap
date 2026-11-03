@@ -1265,7 +1265,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               {
                 "aspectRatio": 0.8153846153846154,
                 "backgroundColor": "#F2F3F6",
-                "borderRadius": 8,
+                "borderRadius": 12,
                 "width": "100%",
               },
             ]
@@ -1327,7 +1327,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               {
                 "aspectRatio": 0.8153846153846154,
                 "backgroundColor": "#F2F3F6",
-                "borderRadius": 8,
+                "borderRadius": 12,
                 "width": "100%",
               },
             ]
@@ -1389,7 +1389,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               {
                 "aspectRatio": 0.8153846153846154,
                 "backgroundColor": "#F2F3F6",
-                "borderRadius": 8,
+                "borderRadius": 12,
                 "width": "100%",
               },
             ]
@@ -1451,7 +1451,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               {
                 "aspectRatio": 0.8153846153846154,
                 "backgroundColor": "#F2F3F6",
-                "borderRadius": 8,
+                "borderRadius": 12,
                 "width": "100%",
               },
             ]
@@ -1513,7 +1513,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               {
                 "aspectRatio": 0.8153846153846154,
                 "backgroundColor": "#F2F3F6",
-                "borderRadius": 8,
+                "borderRadius": 12,
                 "width": "100%",
               },
             ]
@@ -1575,7 +1575,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               {
                 "aspectRatio": 0.8153846153846154,
                 "backgroundColor": "#F2F3F6",
-                "borderRadius": 8,
+                "borderRadius": 12,
                 "width": "100%",
               },
             ]
@@ -1637,7 +1637,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               {
                 "aspectRatio": 0.8153846153846154,
                 "backgroundColor": "#F2F3F6",
-                "borderRadius": 8,
+                "borderRadius": 12,
                 "width": "100%",
               },
             ]
@@ -1699,7 +1699,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               {
                 "aspectRatio": 0.8153846153846154,
                 "backgroundColor": "#F2F3F6",
-                "borderRadius": 8,
+                "borderRadius": 12,
                 "width": "100%",
               },
             ]
@@ -1761,7 +1761,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               {
                 "aspectRatio": 0.8153846153846154,
                 "backgroundColor": "#F2F3F6",
-                "borderRadius": 8,
+                "borderRadius": 12,
                 "width": "100%",
               },
             ]
@@ -3857,7 +3857,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 16,
+              "borderRadius": 999,
               "height": 32,
               "width": 32,
             },
@@ -3965,7 +3965,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 16,
+              "borderRadius": 999,
               "height": 32,
               "width": 32,
             },
@@ -4534,7 +4534,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             {
               "aspectRatio": 1,
               "backgroundColor": "#F2F3F6",
-              "borderRadius": 8,
+              "borderRadius": 12,
               "flex": 1,
             },
           ]
@@ -4587,7 +4587,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             {
               "aspectRatio": 1,
               "backgroundColor": "#F2F3F6",
-              "borderRadius": 8,
+              "borderRadius": 12,
               "flex": 1,
             },
           ]
@@ -4640,7 +4640,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             {
               "aspectRatio": 1,
               "backgroundColor": "#F2F3F6",
-              "borderRadius": 8,
+              "borderRadius": 12,
               "flex": 1,
             },
           ]
@@ -4702,7 +4702,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 12,
+              "borderRadius": 999,
               "height": 24,
               "width": 72,
             },
@@ -4755,7 +4755,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 12,
+              "borderRadius": 999,
               "height": 24,
               "width": 72,
             },
@@ -4808,7 +4808,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 12,
+              "borderRadius": 999,
               "height": 24,
               "width": 72,
             },
@@ -4880,7 +4880,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 16,
+              "borderRadius": 999,
               "height": 32,
               "width": 32,
             },
@@ -4988,7 +4988,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 16,
+              "borderRadius": 999,
               "height": 32,
               "width": 32,
             },
@@ -5557,7 +5557,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             {
               "aspectRatio": 1,
               "backgroundColor": "#F2F3F6",
-              "borderRadius": 8,
+              "borderRadius": 12,
               "flex": 1,
             },
           ]
@@ -5610,7 +5610,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             {
               "aspectRatio": 1,
               "backgroundColor": "#F2F3F6",
-              "borderRadius": 8,
+              "borderRadius": 12,
               "flex": 1,
             },
           ]
@@ -5663,7 +5663,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             {
               "aspectRatio": 1,
               "backgroundColor": "#F2F3F6",
-              "borderRadius": 8,
+              "borderRadius": 12,
               "flex": 1,
             },
           ]
@@ -5725,7 +5725,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 12,
+              "borderRadius": 999,
               "height": 24,
               "width": 72,
             },
@@ -5778,7 +5778,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 12,
+              "borderRadius": 999,
               "height": 24,
               "width": 72,
             },
@@ -5831,7 +5831,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 12,
+              "borderRadius": 999,
               "height": 24,
               "width": 72,
             },
@@ -5903,7 +5903,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 16,
+              "borderRadius": 999,
               "height": 32,
               "width": 32,
             },
@@ -6011,7 +6011,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 16,
+              "borderRadius": 999,
               "height": 32,
               "width": 32,
             },
@@ -6580,7 +6580,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             {
               "aspectRatio": 1,
               "backgroundColor": "#F2F3F6",
-              "borderRadius": 8,
+              "borderRadius": 12,
               "flex": 1,
             },
           ]
@@ -6633,7 +6633,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             {
               "aspectRatio": 1,
               "backgroundColor": "#F2F3F6",
-              "borderRadius": 8,
+              "borderRadius": 12,
               "flex": 1,
             },
           ]
@@ -6686,7 +6686,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             {
               "aspectRatio": 1,
               "backgroundColor": "#F2F3F6",
-              "borderRadius": 8,
+              "borderRadius": 12,
               "flex": 1,
             },
           ]
@@ -6748,7 +6748,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 12,
+              "borderRadius": 999,
               "height": 24,
               "width": 72,
             },
@@ -6801,7 +6801,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 12,
+              "borderRadius": 999,
               "height": 24,
               "width": 72,
             },
@@ -6854,7 +6854,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             },
             {
               "backgroundColor": "#EAEBEE",
-              "borderRadius": 12,
+              "borderRadius": 999,
               "height": 24,
               "width": 72,
             },

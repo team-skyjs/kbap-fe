@@ -12,15 +12,16 @@
  */
 import { OrderDoneInterstitial, type InterstitialController } from '@/features/ads/OrderDoneInterstitial';
 import * as React from 'react';
-import { Modal, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { EVENTS, track } from '@/lib/analytics';
 import { airbridge } from '@/lib/airbridge';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, primaryTint, primaryTintSolid, radius, shadow } from '@/lib/theme';
+import { color as C, font, primaryTint, primaryTintSolid, radius, shadow, type } from '@/lib/theme';
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
 import { ConfettiBurst, CONFETTI_DURATION_MS } from '@/components/ConfettiBurst';
-import { avoidNoticeKo, orderClosingKo, orderItemLineKo, orderSentenceKo } from '@/lib/order/orderCard';
+import { buildOrderCard } from '@/lib/order/orderCard';
 import { keepWordsKo } from '@/lib/order/keepWords';
 import { saveOrderHistory } from '@/lib/data/orders';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
@@ -96,10 +97,8 @@ export function FlippedOrderCard({
     return () => clearTimeout(timer);
   }, [confetti]);
   // P-265: 2개 이상 = 품목 나열(주세요 X) + 맺음 한 줄(총 N개) / 단일 = 종전 한 문장
-  const multi = items.length >= 2;
-  const lines = items.map((i) => (multi ? orderItemLineKo(i.nameKo, i.qty) : orderSentenceKo(i.nameKo, i.qty)));
-  const closing = multi ? orderClosingKo(items.reduce((a, i) => a + i.qty, 0)) : null;
-  const avoid = avoidNoticeKo(avoidCodes);
+  // KB-915: 한국어 면·미러 = 같은 모델(항목·순서·회피 집합 동일)
+  const { lines, closing, avoid } = buildOrderCard(items, avoidCodes, avoidNames);
   const totalKrw = items.reduce((a, i) => a + (i.priceKrw ?? 0) * i.qty, 0);
   const converted = totalKrw > 0 ? convertKrw(totalKrw, currency, fx) : null; // P-242
 
@@ -108,7 +107,7 @@ export function FlippedOrderCard({
     <View style={{ gap: big ? 18 : 10 }}>
       {lines.map((l, i) => (
         <Text key={i} style={[styles.koLine, big && styles.koLineBig]} testID={big ? undefined : `ko-line-${i}`}>
-          {keepWordsKo(l)}
+          {keepWordsKo(l.ko)}
         </Text>
       ))}
       {/* P-265: 맺음 한 줄 — 사장님이 소리내 읽는 본문의 일부라 품목 줄과 같은 타이포 */}
@@ -143,13 +142,17 @@ export function FlippedOrderCard({
 
       {/* 정방향 미러 — 같은 데이터의 리더 언어 표현, 캡션은 박스 하단(시안) */}
       <View style={styles.mirror} testID="order-mirror">
-        {items.map((i, k) => (
-          <Text key={k} style={styles.mirrorLine}>
-            {i.qty} × {i.name}
+        {lines.map((l, k) => (
+          <Text key={k} style={styles.mirrorLine} testID={`mirror-line-${k}`}>
+            {l.qty} × {l.name}
           </Text>
         ))}
-        {avoidNames.length > 0 && (
-          <Text style={styles.mirrorAvoid}>{t('order.mirrorAvoid', { list: avoidNames.join(', ') })}</Text>
+        {/* KB-915: 요청 문구 = 한국어 면과 같은 뜻(못 먹는 재료 + 들어간 메뉴면 알려 달라) — 구 "빼 주세요"는 다른 요청이었다 */}
+        {!!avoid && (
+          <>
+            <Text style={styles.mirrorAvoid} testID="mirror-avoid">{t('order.mirrorAvoidNotice')}</Text>
+            <Text style={styles.mirrorAvoidList} testID="mirror-avoid-list">{avoid.names.join(', ')}</Text>
+          </>
         )}
         <Text style={styles.mirrorCaption}>{t('order.mirrorTitle')}</Text>
       </View>
@@ -241,16 +244,16 @@ const styles = StyleSheet.create({
   footBar: { paddingHorizontal: 18, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair, backgroundColor: '#fff' },
   // P-162 완료 모달 (scan.tsx confirm 문법과 동일 수치)
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.xl, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
-  doneCheck: { alignSelf: 'center', width: 52, height: 52, borderRadius: 26, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  confirmBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
+  doneCheck: { alignSelf: 'center', width: 52, height: 52, borderRadius: radius.pill, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   flipCard: {
     // KB-780: 불투명 합성색 — 반투명(primaryTint) + elevation(sh1)이면 Android가 그림자를 카드 아래 전체에 그려 회색 띠로 비쳤다(iOS는 무관)
     backgroundColor: primaryTintSolid,
     borderWidth: 1.5,
     borderColor: 'rgba(226,88,12,0.22)',
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     paddingVertical: 30,
     paddingHorizontal: 22,
     minHeight: 260,
@@ -267,7 +270,7 @@ const styles = StyleSheet.create({
     left: 12,
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: radius.pill,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -279,23 +282,25 @@ const styles = StyleSheet.create({
   koAvoid: { fontFamily: font.koBold, fontSize: 16, lineHeight: 24, color: C.ink2, textAlign: 'center', marginTop: 6 },
   koAvoidBig: { fontSize: 21, lineHeight: 31 },
   // P-265: 회피 전체 나열 — 고지 문장보다 한 단계 작은 뮤트(항목 多에도 카드 안 정돈)
-  koAvoidList: { fontFamily: font.koBold, fontSize: 14, lineHeight: 22, color: C.ink2, textAlign: 'center' },
+  koAvoidList: { fontFamily: font.koBold, fontSize: 16, lineHeight: 25, color: C.ink2, textAlign: 'center' },
   koAvoidListBig: { fontSize: 18, lineHeight: 28 },
   mirror: {
     marginTop: 14,
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.hair,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 10,
     gap: 3,
   },
-  mirrorLine: { fontFamily: font.bodySemi, fontSize: 14, color: C.ink },
-  mirrorAvoid: { fontFamily: font.body, fontSize: 12.5, color: C.ink2, marginTop: 2 },
+  mirrorLine: { fontFamily: font.bodySemi, fontSize: 16, color: C.ink },
+  // KB-915: 요청 문장 + 재료 줄(한국어 면과 같은 2단) — 토큰 타이포(KB-909)
+  mirrorAvoid: { ...type.meta, fontFamily: font.body, color: C.ink2, marginTop: 2 },
+  mirrorAvoidList: { ...type.meta, fontFamily: font.bodySemi, color: C.ink2 },
   // 시안(IMG_1799): 캡션은 미러 박스 하단 중앙 뮤트
-  mirrorCaption: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, textAlign: 'center', marginTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair, paddingTop: 8 },
+  mirrorCaption: { fontFamily: font.body, fontSize: 12, color: C.ink3, textAlign: 'center', marginTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair, paddingTop: 8 },
   totalRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -303,10 +308,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingHorizontal: 4,
   },
-  totalLabel: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
-  totalVal: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink, fontVariant: ['tabular-nums'] },
+  totalLabel: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2 },
+  totalVal: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink, fontVariant: ['tabular-nums'] },
   foot: { paddingTop: 10 },
   zoomContent: { flexGrow: 1, justifyContent: 'center', padding: 28, paddingTop: 64 },
-  zoomClose: { position: 'absolute', top: 54, right: 18, width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  zoomClose: { position: 'absolute', top: 54, right: 18, width: 40, height: 40, borderRadius: radius.pill, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   zoomFull: { flex: 1, backgroundColor: '#fff' },
 });

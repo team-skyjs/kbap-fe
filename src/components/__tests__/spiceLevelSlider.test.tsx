@@ -92,3 +92,16 @@ it('P-262: 팬 = 트랙+라벨 전체 래퍼(±32pt) — 라벨 줄이 히트를
   expect(src).toContain('style={styles.trackWrap}');
   expect(src).toContain('marginVertical: -TOUCH_PAD');
 });
+
+// KB-904(T-024): 미설정이 끝까지 채운 그라데이션 트랙이라 Extreme처럼 보였다 — 손잡이·채움 없는 회색 트랙. 트랙 자리·크기는 같다(색만)
+it('KB-904 미설정 = 회색 트랙(그라데이션 0)·손잡이 0 · 설정 = 그라데이션 · 트랙 프레임 동일', async () => {
+  const unset = await render(null);
+  const set = await render('HOT');
+  const track = (t: ReactTestRenderer, id?: string) => t.root.findAll((n) => typeof n.type === 'string' && (id ? n.props?.testID === id : flat(n.props.style)?.height === 8 && flat(n.props.style)?.top === 18));
+  expect(track(unset, 'spice-track-unset')).toHaveLength(1);
+  expect(knobOf(unset)).toBeNull();
+  expect(track(set, 'spice-track-unset')).toHaveLength(0);
+  expect(knobOf(set)).not.toBeNull();
+  const box = (t: ReactTestRenderer) => { const { backgroundColor: _b, ...rest } = flat(track(t)[0].props.style); return rest; };
+  expect(box(unset)).toEqual(box(set));
+});

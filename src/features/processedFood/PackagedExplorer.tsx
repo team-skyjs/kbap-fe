@@ -7,7 +7,9 @@
  * - 로딩 = 시안 loading(335×104 회색 4장) · 결과 0 = 시안 empty(유형 플레이스홀더 + 문구, 성분표 촬영 버튼은 F2 전까지 숨김).
  */
 import * as React from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { usePullRefresh } from '@/lib/data/usePullRefresh';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -20,39 +22,43 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { RemoteImage } from '@/components/RemoteImage';
 import { Shimmer } from '@/components/Skeleton';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius, type as T } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
-import { browseUnsupported, useProcessedSearch } from '@/lib/data/useProcessedFoods';
-import { PACKAGED_TYPES, packagedTypeKey, VERDICT_RISK, type PackagedType, type ProcessedFoodSummary } from '@/lib/api/processedFoodAdapter';
+import { browseUnsupported, emptyPageAction, endReachedShouldFetch, useProcessedSearch, useProcessedSearchPaged } from '@/lib/data/useProcessedFoods';
+import { PACKAGED_TYPES, packagedTypeKey, VERDICT_RISK, verdictsForRisk, type PackagedType, type ProcessedFoodSummary, type VerdictChipRisk } from '@/lib/api/processedFoodAdapter';
+import { chipRowHeight, SearchScanButton } from '@/features/food/FoodExplorer';
+import { ChipScrollRow } from '@/components/ChipScrollRow';
+import { ProductName, productNameKoRowStyle } from './ProductName';
+import { packagedCoachAnchor } from '@/lib/coachTargets';
 
 export type FoodSegment = 'dishes' | 'packaged';
 
-/** R-95 반응형 탭(9:4546) — 두 칸 반반, 활성 = 진한 글자 + 칸 폭 2pt 밑줄, 아래 0.5 구분선. 밑줄은 비활성도 투명으로 자리 유지(프레임 불변). */
+/** KB-957(예진 11/2): Dishes | Packaged = 헤더 로고 줄 안 탭(구 R-95 별도 세그먼트 줄 소멸) — 글자 칸 폭, 선택 = 진한 글자 + 2pt 밑줄(비선택도 투명 밑줄로 자리 유지 — 프레임 불변).
+ *  큰 글자: 벨과 겹치지 않게 줄임표 대신 글자 배율 상한(SEG_MAX_SCALE). */
+export const SEG_MAX_SCALE = 1.15;
 export function FoodSegmentRow({ value, onChange }: { value: FoodSegment; onChange: (s: FoodSegment) => void }) {
   const { t } = useTranslation();
   return (
-    <View>
-      <View style={seg.row} accessibilityRole="tablist">
-        {(['dishes', 'packaged'] as FoodSegment[]).map((s) => (
-          <Pressable
-            key={s}
-            style={seg.tab}
-            onPress={() => onChange(s)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: value === s }}
-            testID={`food-segment-${s}`}
-          >
-            <Text style={[seg.label, value === s && seg.labelOn]} numberOfLines={1}>{t(s === 'dishes' ? 'packaged.segmentDishes' : 'packaged.segmentPackaged')}</Text>
-            <View style={[seg.bar, value === s && seg.barOn]} />
-          </Pressable>
-        ))}
-      </View>
-      <View style={seg.divider} />
+    <View style={seg.row} accessibilityRole="tablist">
+      {(['dishes', 'packaged'] as FoodSegment[]).map((s) => (
+        <Pressable
+          key={s}
+          ref={s === 'packaged' ? packagedCoachAnchor : undefined} // KB-968: 코치마크 2단계 스포트라이트 대상
+          style={seg.tab}
+          onPress={() => onChange(s)}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: value === s }}
+          hitSlop={8}
+          testID={`food-segment-${s}`}
+        >
+          <Text style={[seg.label, value === s && seg.labelOn]} numberOfLines={1} maxFontSizeMultiplier={SEG_MAX_SCALE}>{t(s === 'dishes' ? 'packaged.segmentDishes' : 'packaged.segmentPackaged')}</Text>
+          <View style={[seg.bar, value === s && seg.barOn]} />
+        </Pressable>
+      ))}
     </View>
   );
 }
 
-/** 유형 플레이스홀더(시안: Ramen = soup 아이콘, 나머지 = camera 아이콘 + 유형 글자) — 목록 썸네일·상세 사진 자리 공용. */
 export function PackagedPlaceholder({ type, foodType, style }: { type: PackagedType | null; foodType: string | null; style: object }) {
   const { t } = useTranslation();
   const label = type ? t(packagedTypeKey(type)) : foodType;
@@ -87,11 +93,15 @@ export function ProductRow({ item, onOpen }: { item: ProcessedFoodSummary; onOpe
 
 /** v4 상품 카드(시안 01 12371:70305 — 2열 161.5 · 사진 161.5×176 r12 #F7F8FA, 상품은 8 안쪽 contain · 판정 리본 22×29 좌상단 x10 y0 그림자 없음
  *  → 제조사 → 표시명 → 한국어명 → 빈 별 18 + "4.7 (12)"). 판정·한국어명·평점은 서버 v4 필드가 있을 때만(없으면 줄째 숨김). */
-export function ProductCard({ item, width, onOpen, personalized = true }: { item: ProcessedFoodSummary; width: number; onOpen: () => void; personalized?: boolean }) {
+export function ProductCard({ item, width, onOpen, personalized = true, unset = false }: { item: ProcessedFoodSummary; width: number; onOpen: () => void; personalized?: boolean; unset?: boolean }) {
   const { t } = useTranslation();
   const [failed, setFailed] = React.useState(false);
-  // 리본 = 회피 1개 이상 회원만(Codex #338 P1 — 회피를 비운 직후 남은 판정 캐시를 그리지 않는다)
-  const risk = personalized && item.verdict ? VERDICT_RISK[item.verdict] : null;
+  // 리본 = 회피 1개 이상 회원은 서버 판정(Codex #338 P1 — 회피를 비운 직후 남은 판정 캐시를 그리지 않는다)
+  // KB-947(예진 10/31 결정): 회피 미설정(비회원·회피 0개 회원 — 프로필 확인 뒤) = safe 리본. 프로필 대기·실패 = 리본 0
+  // Codex #383 P1: 표시 근거(원재료·알레르기 표시)를 서버가 확인한 제품만(labelKnown true) — false·필드 없음(구서버) = 리본 0(상세는 같은 제품을 "확인 못 함")
+  // KB-974(예진 11/3 테플): 비회원 = 리본 0(음식 카드와 같은 규칙) — 회피 목록이 없는 사람에게 safe 리본은 안전 보장처럼 읽힌다. 공용 카드 한 곳에서 막아 목록·홈 편의점 줄·검색이 같이 따른다
+  const guest = useIsGuest();
+  const risk = personalized ? (item.verdict ? VERDICT_RISK[item.verdict] : null) : unset && !guest && item.labelKnown === true ? 'safe' : null;
   const rating = item.rating ? `${item.rating.average.toFixed(1)} (${item.rating.count})` : null; // 스크린리더 라벨용
   return (
     <Pressable
@@ -111,13 +121,12 @@ export function ProductCard({ item, width, onOpen, personalized = true }: { item
         )}
         {risk && <View style={card.badge}><RiskBadge state={risk} size={22} flat testID={`packaged-verdict-${item.id}`} /></View>}
       </View>
-      {!!item.maker && <Text style={card.maker} numberOfLines={1}>{item.maker}</Text>}
-      {/* QA AQ(큰 글씨): 한국어 이름이 글자 단위로 끊겨 '우'만 다음 줄로 — iOS는 어절 단위 줄바꿈(Android는 기본 단어 단위) */}
-      <Text style={card.name} numberOfLines={2} lineBreakStrategyIOS="hangul-word">{item.name}</Text>
-      {!!item.nameKo && <Text style={card.nameKo} numberOfLines={1} lineBreakStrategyIOS="hangul-word">{item.nameKo}</Text>}
+      {/* KB-948(예진 10/31): 제조사 줄 제거 — 사진 → 이름(영어 2줄 + 한국어 1줄) → 리뷰 있으면 평점 */}
+      {/* KB-914(R-140): 이름 = 공용 ProductName(영어 굵게 + 한국어 작게, hangul-word — QA AQ 어절 줄바꿈 그대로) */}
+      <ProductName name={item.name} nameKo={item.nameKo} style={card.nameBox} testID={`packaged-name-${item.id}`} />
       {item.rating && (
         <View testID={`packaged-rating-${item.id}`}>
-          <OverallRating average={item.rating.average} count={item.rating.count} style={card.rating} />
+          <OverallRating average={item.rating.average} count={item.rating.count} style={card.rating} textStyle={productNameKoRowStyle} starSize={12} /* P-568: 한국어 이름 줄 글자(meta 14) · 별도 그 크기로 */ />
         </View>
       )}
     </Pressable>
@@ -125,16 +134,21 @@ export function ProductCard({ item, width, onOpen, personalized = true }: { item
 }
 
 /** 시안 05 — 사진 자리 + 막대 130×16 · 90×12(각 8 아래), 2열 2줄(로딩 스피너 중복 없음) */
+/** 카드 한 장 자리(사진 + 막대 2) — 그리드·홈 편의점 줄(KB-955)이 같이 쓴다 */
+export function ProductCardSkeleton({ width }: { width: number }) {
+  return (
+    <View style={[card.root, { width }]}>
+      <Shimmer style={[card.photo, card.skelPhoto]} />
+      <Shimmer style={card.skelBar1} />
+      <Shimmer style={card.skelBar2} />
+    </View>
+  );
+}
+
 function SkeletonGrid({ width }: { width: number }) {
   return (
     <View style={card.skelGrid} testID="packaged-skeleton">
-      {[0, 1, 2, 3].map((i) => (
-        <View key={i} style={[card.root, { width }]}>
-          <Shimmer style={[card.photo, card.skelPhoto]} />
-          <Shimmer style={card.skelBar1} />
-          <Shimmer style={card.skelBar2} />
-        </View>
-      ))}
+      {[0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} width={width} />)}
     </View>
   );
 }
@@ -142,23 +156,50 @@ function SkeletonGrid({ width }: { width: number }) {
 export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.ReactNode; topPad?: number; onScroll?: React.ComponentProps<typeof Animated.FlatList<ProcessedFoodSummary>>['onScroll'] }) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { width: winW } = useWindowDimensions();
+  const { width: winW, fontScale } = useWindowDimensions();
   const cardW = (winW - 40 - 12) / 2;
   const [draft, setDraft] = React.useState('');
   const [query, setQuery] = React.useState('');
   const [type, setType] = React.useState<PackagedType | null>(null);
+  const [verdictChip, setVerdictChip] = React.useState<'all' | VerdictChipRisk>('all');
   const [searchSeq, setSearchSeq] = React.useState(0); // 제출 회차 — 같은 검색어를 다시 제출해도 1회로 센다(Codex #308 R2)
   const [gate, setGate] = React.useState(false);
+  // KB-954(P-570 QA: 당겨도 스피너·요청 0): ['processedFoods'] 접두 = 목록·판정·리뷰 + ['me']
+  const pull = usePullRefresh([['processedFoods']]);
+  const listRef = React.useRef<React.ComponentRef<typeof Animated.FlatList<ProcessedFoodSummary>>>(null);
+  useTabPress('food', (kind) => { // KB-954: 음식 탭 재탭(Packaged 세그먼트) = 맨 위 + 새로고침
+    if (kind !== 'reselect') return;
+    topThenRefresh(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }), pull.onRefresh);
+  });
   const guest = useIsGuest();
   const { data: me } = useMe();
   const personalized = !guest && !!me && me.restrictions.length > 0;
+  const unset = guest || (!!me && me.restrictions.length === 0); // KB-947: 회피 미설정이 확인된 사용자만(로그인 + 프로필 대기 = false)
   const inputRef = React.useRef<React.ComponentRef<typeof Input>>(null);
   // v4 판별 = 검색어 없는 둘러보기 1페이지의 성패(구서버 400). 확인 전·구서버 = 유형 칩 없음(구서버는 type을 무시해 거른 척이 된다)
   const browse = useProcessedSearch('');
   const v4 = browse.isSuccess;
   const term = query.trim();
-  const q = useProcessedSearch(query, { type: v4 ? type : null });
-  const items = q.data ?? [];
+  // KB-927(R-142): 판정 칩 = 회피 1개 이상 회원만(비회원·회피 0개는 서버가 verdict를 무시해 전체를 준다 — 보여 주면 거짓 필터) · v4 확인 뒤에만(유형 칩과 같은 이유)
+  const verdictChips = v4 && personalized;
+  const verdicts = verdictChips && verdictChip !== 'all' ? verdictsForRisk(verdictChip) : null;
+  const q = useProcessedSearchPaged(query, { type: v4 ? type : null, verdicts });
+  const items = q.data?.items ?? [];
+  const pageSizes = q.data?.pageSizes ?? [];
+  // 판정 필터는 서버가 최대 200행만 살펴 0건 페이지 + hasNext가 올 수 있다 — 연속 3번까지 자동으로 이어 부르고 그 뒤엔 "더 찾아보기"(누를 때마다 다시 3번)
+  const filterKey = `${term}|${v4 ? type ?? '' : ''}|${verdicts?.join(',') ?? ''}`;
+  const [resume, setResume] = React.useState({ key: filterKey, at: 0 });
+  const resumeAt = resume.key === filterKey ? resume.at : 0; // 검색어·칩이 바뀌면 처음부터 센다
+  const emptyAction = q.isSuccess ? emptyPageAction(pageSizes, q.hasNextPage, resumeAt) : 'none';
+  const canFetchMore = !q.isFetchingNextPage && !q.isFetchNextPageError;
+  const fetchNext = q.fetchNextPage;
+  const pageCount = pageSizes.length;
+  React.useEffect(() => {
+    // cancelRefetch false = 이미 가는 요청을 끊고 다시 보내지 않는다(렌더마다 다시 판정해도 1발).
+    // pageCount = 페이지가 붙을 때마다 다시 판정 — "가는 중"과 "도착"이 한 렌더로 묶이면 나머지 deps가 그대로라 둘째 빈 페이지 뒤에 멈췄다(jest 재현)
+    if (emptyAction === 'fetch' && canFetchMore) void fetchNext({ cancelRefetch: false });
+  }, [emptyAction, canFetchMore, fetchNext, pageCount]);
+  const findMore = () => { setResume({ key: filterKey, at: pageSizes.length }); void q.fetchNextPage(); };
   const legacyGuide = !term && q.isError && browseUnsupported(q.error);
 
   // 검색 1회 = 제출 1번마다 결과(첫 페이지) 도착 시 1번 — 검색어 원문은 보내지 않는다(길이·결과 수만)
@@ -169,7 +210,8 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
     track(EVENTS.food_packaged_search, { query_length: Array.from(term).length, result_count: items.length });
   }, [term, q.isSuccess, items.length, searchSeq]);
 
-  const submit = () => { setQuery(draft); setSearchSeq((n) => n + 1); };
+  // KB-901(T-017): 돋보기·키보드 검색 = 키보드 내림(안 내려가 빈 결과 안내가 키보드에 가렸다)
+  const submit = () => { setQuery(draft); setSearchSeq((n) => n + 1); inputRef.current?.blur(); };
   const clear = () => { setDraft(''); setQuery(''); };
   // 시안 04·47: 성분표 찍기(비회원 = 가입 게이트) — 상세 "성분표 직접 확인"과 같은 진입(새 분석)
   const scanLabel = () => {
@@ -177,6 +219,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
     router.navigate(`/scan?mode=packaged&label=1&t=${Date.now()}` as Href);
   };
   const changeSearch = () => { clear(); inputRef.current?.focus(); };
+  const pickVerdict = (next: 'all' | VerdictChipRisk) => setVerdictChip(next);
   const pickType = (next: PackagedType | null) => {
     setType(next);
     track(EVENTS.food_packaged_type_select, { type: next ? next.toLowerCase() : 'all' }); // 계측 값은 소문자 유지(1단계와 같은 값)
@@ -185,6 +228,9 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   const header = (
     <View>
       {top}
+      {/* KB-914(R-142): 상단 = Dishes와 같은 검색 행(검색칸 + 주황 스캔 버튼 — 가공식품 모드로).
+          KB-927: 판정 칩 = 서버 verdict 필터(클라 필터 0 — 받은 페이지만 걸러 0건처럼 보이는 일 없음) */}
+      <View style={st.searchRow}>
       <View style={st.searchBox}>
         <Input
           ref={inputRef}
@@ -206,13 +252,48 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
           <IconSearch size={20} color={C.inkMute} />
         </Pressable>
       </View>
+      <SearchScanButton onPress={() => router.navigate(`/scan?mode=packaged&t=${Date.now()}` as Href)} testID="packaged-scan" />
+      </View>
+      {/* KB-949(예진 11/1, Mobbin): 위 = 유형 밑줄 탭(가로 스크롤 — Dishes/Packaged 상단 탭과 같은 글자·밑줄, All 탭 유지) · 아래 = 판정 아이콘 칩(All 칩 없음 — 안 고름 = 전체, 다시 누르면 해제).
+          KB-901(T-017): 바깥 목록만 handled면 안쪽 가로 줄의 첫 탭은 키보드 닫기에 쓰였다(✕ 뒤 Drinks 첫 탭 무반응) */}
       {v4 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.chips} contentContainerStyle={st.chipsRow} testID="packaged-types">
-          <Chip label={t('food.categories.all')} selected={type == null} onPress={() => pickType(null)} testID="packaged-type-all" />
-          {PACKAGED_TYPES.map((k) => <Chip key={k} label={t(packagedTypeKey(k))} selected={type === k} onPress={() => pickType(k)} testID={`packaged-type-${k.toLowerCase()}`} />)}
-        </ScrollView>
+        <ChipScrollRow style={st.chips} minHeight={0} keyboardShouldPersistTaps="handled" scrollTestID="packaged-types" fadeTestID="packaged-types-fade">
+          {([null, ...PACKAGED_TYPES] as (PackagedType | null)[]).map((k) => (
+            <Pressable
+              key={k ?? 'all'}
+              style={cat.tab}
+              onPress={() => pickType(k)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: type === k }}
+              testID={k ? `packaged-type-${k.toLowerCase()}` : 'packaged-type-all'}
+            >
+              <Text style={[cat.label, type === k && cat.labelOn]} numberOfLines={1}>{k ? t(packagedTypeKey(k)) : t('food.categories.all')}</Text>
+              {/* 밑줄 = 비선택도 투명으로 자리 유지(프레임 불변 P-151) */}
+              <View style={[cat.bar, type === k && cat.barOn]} />
+            </Pressable>
+          ))}
+        </ChipScrollRow>
       )}
-      {!legacyGuide && (items.length > 0 || q.isPending) && <Text style={st.heading} accessibilityRole="header">{t(term ? 'packaged.searchResults' : 'packaged.popularPicks')}</Text>}
+      {verdictChips && (
+        <ChipScrollRow style={v4 ? st.chipsSecond : st.chips} minHeight={chipRowHeight(fontScale)} keyboardShouldPersistTaps="handled" scrollTestID="packaged-verdicts" fadeTestID="packaged-verdicts-fade">
+          {(['safe', 'danger', 'caution'] as const).map((c) => (
+            <Chip
+              key={c}
+              label={t(`risk.${c}`)}
+              selected={verdictChip === c}
+              onPress={() => pickVerdict(verdictChip === c ? 'all' : c)}
+              testID={`packaged-verdict-${c}`}
+              risk={c} // 리본·Dishes 칩과 같은 상태색·마크
+            />
+          ))}
+        </ChipScrollRow>
+      )}
+      {/* KB-957(예진 11/2): "Popular picks"·유형명 제목 소멸(유형은 위 밑줄 탭이 말한다) — 검색 결과일 때만 제목 · 없으면 칩 → 그리드 간격만 */}
+      {!legacyGuide && (items.length > 0 || q.isPending) && (term ? (
+        <Text style={st.heading} accessibilityRole="header" testID="packaged-heading">{t('packaged.searchResults')}</Text>
+      ) : (
+        <View style={st.gridGap} testID="packaged-grid-gap" />
+      ))}
     </View>
   );
 
@@ -230,9 +311,16 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
     empty = <SkeletonGrid width={cardW} />;
   } else if (q.isError) {
     empty = <View style={st.errorPad}><QueryErrorBlock error={q.error} onRetry={() => void q.refetch()} /></View>;
+  } else if (q.hasNextPage) {
+    // KB-927: 지금까지 0건이어도 다음이 있으면 "결과 없음"이 아니다 — 이어 부르는 중 = 스켈레톤 · 3번 빈 뒤 = 더 찾아보기 · 다음 페이지 실패 = 다시 시도
+    empty = emptyAction === 'button' && canFetchMore ? (
+      <View style={st.findMorePad} testID="packaged-find-more-empty">
+        <Btn variant="ghost" onPress={findMore} testID="packaged-find-more">{t('packaged.findMore')}</Btn>
+      </View>
+    ) : q.isFetchNextPageError ? null : <SkeletonGrid width={cardW} />;
   } else {
     // 시안 04(검색 0)·47(유형 칩으로 0) — 탭 안에서 목록 자리만 바꾼다(예진 10/22: 검색창·칩 유지, 버튼은 본문)
-    const filtered = v4 && type != null;
+    const filtered = v4 && (type != null || verdicts != null); // KB-927: 판정 칩으로 0건도 "필터 결과 없음"
     empty = (
       <View style={st.noMatch} testID={filtered ? 'packaged-no-filter-match' : 'packaged-empty'}>
         <View style={st.noMatchArt}><IconSearch size={32} color="#000000" /></View>
@@ -241,7 +329,8 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
         <View style={st.noMatchActions}>
           {FLAGS.packagedLabelScan && <Btn onPress={scanLabel} testID="packaged-empty-scan-label">{t('packaged.scanIngredientLabel')}</Btn>}
           {filtered ? (
-            <Btn variant="ghost" onPress={() => pickType(null)} testID="packaged-empty-show-all">{t('packaged.showAllProducts')}</Btn>
+            // KB-901(T-016): "모든 제품" = 칩 All + 검색어도 지움(검색어가 남아 두 번째 빈 화면으로 갔다)
+            <Btn variant="ghost" onPress={() => { clear(); pickType(null); pickVerdict('all'); }} testID="packaged-empty-show-all">{t('packaged.showAllProducts')}</Btn>
           ) : (
             <Btn variant="ghost" onPress={changeSearch} testID="packaged-empty-change-search">{t('packaged.changeSearch')}</Btn>
           )}
@@ -253,15 +342,18 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   return (
     <>
     <Animated.FlatList
+      ref={listRef}
       data={items}
       numColumns={2}
       columnWrapperStyle={st.columns}
       keyExtractor={(it: ProcessedFoodSummary) => it.id}
-      renderItem={({ item }: { item: ProcessedFoodSummary }) => <ProductCard item={item} width={cardW} personalized={personalized} onOpen={() => router.push(`/processed-foods/${item.id}` as Href)} />}
+      renderItem={({ item }: { item: ProcessedFoodSummary }) => <ProductCard item={item} width={cardW} personalized={personalized} unset={unset} onOpen={() => router.push(`/processed-foods/${item.id}?src=list` as Href)} />}
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       ListFooterComponent={
-        q.isFetchingNextPage ? <Spinner /> : q.isFetchNextPageError ? (
+        q.isFetchingNextPage ? <Spinner /> : items.length > 0 && emptyAction === 'button' ? (
+          <View style={st.findMorePad}><Btn variant="ghost" onPress={findMore} testID="packaged-find-more">{t('packaged.findMore')}</Btn></View>
+        ) : q.isFetchNextPageError ? (
           // Codex #308 P2: 다음 페이지 실패 = 안내 + 다시 시도(자동 재요청은 멈춤 — 수동만)
           <Pressable style={st.moreErr} onPress={() => void q.fetchNextPage()} accessibilityRole="button" testID="packaged-more-retry">
             <Text style={st.moreErrText}>{t('packaged.loadMoreFailed')}</Text>
@@ -270,9 +362,12 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
         ) : null
       }
       onEndReachedThreshold={0.6}
-      onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage && !q.isFetchNextPageError) void q.fetchNextPage(); }}
+      // Codex #374 P2 → QA(pr374b): 목록 끝은 마지막 페이지에 건이 있을 때(emptyAction 'none')만 — 빈 페이지면 자동 효과·"더 찾아보기"만 이어 부른다.
+      // 빈 목록은 늘 바닥이라 자동 이어 부르기와 같은 커서를 한 번 더 보냈다(cancelRefetch 기본 = 진행 중 요청을 끊고 다시 — 11페이지에 19요청)
+      onEndReached={() => { if (endReachedShouldFetch({ hasNext: q.hasNextPage, emptyAction, fetching: q.isFetchingNextPage, nextError: q.isFetchNextPageError })) void q.fetchNextPage(); }}
       contentContainerStyle={{ paddingTop: topPad, paddingBottom: 110 }}
       keyboardShouldPersistTaps="handled"
+      refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={C.ink3} progressViewOffset={topPad} />}
       onScroll={onScroll}
       scrollEventThrottle={16}
       showsVerticalScrollIndicator={false}
@@ -286,66 +381,77 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
 // 시안 01 실측(2x PNG): 사진 끝 → 제조사(13/18, 위 6) → 이름(17/24, 위 5) → 한국어명(14/20, 위 3) → 평점 줄(20, 위 6) · 다음 줄 사진까지 20
 const card = StyleSheet.create({
   root: { marginBottom: 20 },
-  photo: { aspectRatio: 161.5 / 176, borderRadius: 12, backgroundColor: C.surface2, overflow: 'hidden' },
+  photo: { aspectRatio: 161.5 / 176, borderRadius: radius.md, backgroundColor: C.surface2, overflow: 'hidden' },
   image: { position: 'absolute', top: 8, left: 8, right: 8, bottom: 8 },
   badge: { position: 'absolute', left: 10, top: 0 },
-  maker: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2, marginTop: 6 },
-  name: { fontFamily: font.bodyBold, fontSize: 17, lineHeight: 24, color: C.ink, marginTop: 5 },
-  nameKo: { fontFamily: font.ko, fontSize: 14, lineHeight: 20, color: C.ink2, marginTop: 3 },
+  nameBox: { marginTop: 10 }, // KB-948: 제조사 줄이 빠져 사진 바로 아래(음식 카드 gmeta marginTop 10과 같은 간격) · 글자 = ProductName(row 16 굵게 + 14)
   rating: { marginTop: 7 }, // 음식 목록 카드 평점 줄(18) 그대로(예진 10/22) — 시안 평점 줄 중심(이름 열 아래)에 맞춤
   // 시안 05: 사진 #F2F3F6(=hair, Shimmer 바탕) · 막대 r 알약
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, paddingHorizontal: 20 },
   skelPhoto: { backgroundColor: C.hair },
-  skelBar1: { width: 130, height: 16, borderRadius: 8, marginTop: 8 },
-  skelBar2: { width: 90, height: 12, borderRadius: 6, marginTop: 8 },
+  skelBar1: { width: 130, height: 16, borderRadius: radius.pill, marginTop: 8 },
+  skelBar2: { width: 90, height: 12, borderRadius: radius.pill, marginTop: 8 },
 });
 
 // R-95 실측(2x PNG): 탭 높이 48(라벨 16/24 semibold · 밑줄 2) · 활성 #2F3137 · 비활성 gray-700 · 구분선 0.5 gray-300
+// KB-957: 헤더 안 탭 — 글자·색·밑줄 = 구 R-95 세그먼트 그대로, 칸 폭 = 글자 폭(헤더 줄 48 안)
 const seg = StyleSheet.create({
-  row: { flexDirection: 'row' },
-  tab: { flex: 1, height: 48, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  tab: { alignItems: 'stretch', gap: 4, paddingTop: 6 },
   label: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 24, color: C.ink2 },
   labelOn: { color: '#2F3137' },
-  bar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
+  bar: { height: 2, backgroundColor: 'transparent' },
   barOn: { backgroundColor: '#212124' },
-  divider: { height: 0.5, backgroundColor: C.line2 },
+});
+
+// KB-949: 유형 밑줄 탭 — 글자·밑줄 = seg(상단 Dishes/Packaged 탭) 그대로, 칸 폭 = 글자 폭(가로 스크롤)
+// KB-957: 유형 탭 = 한 단계 작게(meta 14/500 — 위 Dishes|Packaged 16 semibold와 위계) · 밑줄 2 → 1.5 · 글자–밑줄 6 → 4
+const cat = StyleSheet.create({
+  tab: { alignItems: 'stretch', gap: 4, marginRight: 12 }, // 글자 사이 18(줄 gap 6 + 12) · 첫 탭 = 페이지 여백 20에 맞춤 · 밑줄 = 글자 폭
+  label: { ...T.meta, fontFamily: font.body, color: C.ink2 },
+  labelOn: { fontFamily: font.bodySemi, color: '#2F3137' },
+  bar: { height: 1.5, backgroundColor: 'transparent' },
+  barOn: { backgroundColor: '#212124' },
 });
 
 const ph = StyleSheet.create({
   box: { backgroundColor: C.hair, alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden' },
-  label: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2, paddingHorizontal: 6 },
+  label: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2, paddingHorizontal: 6 },
 });
 
 // R-95 실측: 검색 335×48(세그먼트 아래 24) · 행 72(썸네일 72 r8) 간격 20 · 이름 16 bold ink · 제조사 14 gray-600 · 카드 보더 #EAEBEE
 const st = StyleSheet.create({
   // 시안 01: 탭 구분선 아래 16 · 335×48 · 칩 줄(36) 위 16 · 제목(20 bold) 위 26·아래 16
-  searchBox: { marginTop: 16, marginHorizontal: 20, height: 48, borderRadius: 4, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
-  searchInput: { flex: 1, height: 48, fontSize: 15, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
-  chips: { marginTop: 16, flexGrow: 0 },
-  chipsRow: { paddingHorizontal: 20, gap: 8 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, paddingHorizontal: 20 }, // KB-914: Dishes 검색 행(A-HM-02)과 같은 줄
+  searchBox: { flex: 1, height: 48, borderRadius: radius.md, backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
+  searchInput: { flex: 1, height: 48, fontSize: 16, color: C.ink, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 },
+  chips: { marginTop: 16 },
+  chipsSecond: { marginTop: 8 }, // KB-949: 유형 탭 아래 판정 칩 줄
+  findMorePad: { paddingHorizontal: 20, paddingVertical: 16, alignItems: 'center' },
   heading: { fontFamily: font.bodyBold, fontSize: 22, lineHeight: 28, color: C.ink, marginTop: 26, marginBottom: 16, marginHorizontal: 20 },
+  gridGap: { height: 16 }, // KB-957: 제목이 없을 때 칩 → 그리드(구 제목 아래 간격 16)
   columns: { paddingHorizontal: 20, gap: 12 },
   row: { flexDirection: 'row', gap: 12, marginHorizontal: 20, marginBottom: 20 },
-  thumb: { width: 72, height: 72, borderRadius: 8 },
-  card: { flex: 1, minWidth: 0, minHeight: 72, justifyContent: 'center', borderWidth: 1, borderColor: C.line, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: C.card },
+  thumb: { width: 72, height: 72, borderRadius: radius.md },
+  card: { flex: 1, minWidth: 0, minHeight: 72, justifyContent: 'center', borderWidth: 1, borderColor: C.line, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: C.card },
   name: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 22, color: C.ink },
-  maker: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink3 },
-  type: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: C.ink3 },
+  maker: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink3 },
+  type: { fontFamily: font.body, fontSize: 13, lineHeight: 17, color: C.ink3 },
   skel: { paddingHorizontal: 20, gap: 20 },
   moreErr: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', columnGap: 8, minHeight: 44, paddingHorizontal: 20 },
-  moreErrText: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
-  moreErrCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
-  skelCard: { height: 104, borderRadius: 8 },
+  moreErrText: { fontFamily: font.body, fontSize: 14, color: C.ink3 },
+  moreErrCta: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
+  skelCard: { height: 104, borderRadius: radius.md },
   errorPad: { paddingHorizontal: 20, paddingTop: 24 },
   // 시안 04·47 실측: 아트 335×148 r16 #F7F8FA(돋보기 32) 위 16 → 제목(24 bold, 위 16) → 본문(16/26 gray-700, 위 18) → 버튼 48 둘(간격 8, 위 24)
   noMatch: { paddingHorizontal: 20, paddingTop: 16 },
-  noMatchArt: { height: 148, borderRadius: 16, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  noMatchArt: { height: 148, borderRadius: radius.lg, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   noMatchTitle: { fontFamily: font.bodyBold, fontSize: 24, lineHeight: 32, color: C.ink, marginTop: 16 },
   noMatchBody: { fontFamily: font.body, fontSize: 16, lineHeight: 26, color: C.ink2, marginTop: 18 },
   noMatchActions: { gap: 8, marginTop: 24 },
   // 시안 empty(12338:37301): 유형 아트 335×150 r8 → 제목 → 본문
   state: { paddingHorizontal: 20, paddingTop: 16, gap: 16 }, // QA(10/22): 검색창과 안내 상자가 붙어 있었다 — 시안 04 아트 상자와 같은 16
-  stateArt: { height: 150, borderRadius: 8 },
+  stateArt: { height: 150, borderRadius: radius.md },
   stateTitle: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 28, color: C.ink, marginTop: 8 },
-  stateBody: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink },
+  stateBody: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink },
 });

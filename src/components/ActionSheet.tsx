@@ -13,7 +13,8 @@
  * "시스템 기능 호출=시스템 UI(프로필 사진 시트), 콘텐츠 액션=이 컴포넌트" 구분.
  */
 import type { ReactNode } from 'react';
-import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -29,6 +30,8 @@ export interface ActionSheetItem {
   /** P-342 ②(KB-503): 라벨 우측 트레일링 노드 — NEW "Coming soon" 칩 등 */
   trailing?: ReactNode;
   destructive?: boolean;
+  /** KB-814: 권장 행(예: 가공식품 리뷰 '사진 촬영') — 글자색만 primary(프레임 불변) */
+  emphasis?: boolean;
   onPress: () => void;
   /** P-190: 탭 시 자동 onClose 생략 — 페이즈 전환형(신고/차단)용. onClose가 플로우
    *  전체를 언마운트하는 소비처에서 조기 close가 전환을 죽이던 버그의 구조 수정. */
@@ -83,7 +86,7 @@ export function ActionSheet({
                 }}
               >
                 {it.icon}
-                <Text style={[styles.rowText, it.destructive && styles.rowTextDestructive, it.disabled && styles.rowTextDisabled]} numberOfLines={1}>{it.label}</Text>
+                <Text style={[styles.rowText, it.emphasis && styles.rowTextEmphasis, it.destructive && styles.rowTextDestructive, it.disabled && styles.rowTextDisabled]} numberOfLines={1}>{it.label}</Text>
                 {it.trailing}
               </Pressable>
             ))}
@@ -98,8 +101,8 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: C.surface,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     paddingTop: 18,
     paddingBottom: 30,
     paddingHorizontal: 18,
@@ -107,12 +110,13 @@ const styles = StyleSheet.create({
     ...shadow.sh2,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
-  avatar: { width: 28, height: 28, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
-  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, ...shadow.sh1 },
+  avatar: { width: 28, height: 28, borderRadius: radius.pill, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
+  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.md, ...shadow.sh1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 15 },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
-  rowText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink, flexShrink: 1 }, // P-224: 아이콘 옆 1줄 방어
+  rowText: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink, flexShrink: 1 }, // P-224: 아이콘 옆 1줄 방어
+  rowTextEmphasis: { color: C.primaryText }, // KB-814: 색만
   rowTextDestructive: { color: DESTRUCTIVE },
   rowTextDisabled: { color: C.ink3 },
 });

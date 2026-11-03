@@ -30,7 +30,7 @@ jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
   return { LinearGradient: (p: Record<string, unknown>) => <View {...p} testID="chip-fade" /> };
 });
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useSegments: () => [],
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn(), navigate: jest.fn() }),
   useFocusEffect: () => {},
@@ -118,9 +118,11 @@ it('2-A 음식 탭 칩 = 한 줄 가로 스크롤 + 우측 페이드 + 정렬 �
   // 정렬 버튼은 스크롤 밖(형제) — 스크롤 서브트리에 미포함
   expect(scroll.findAll((n: { props?: { testID?: string } }) => n.props?.testID === 'food-sort')).toHaveLength(0);
   expect(tree.root.findAll((n) => n.props?.testID === 'food-sort').length).toBeGreaterThanOrEqual(1);
-  // 홈 embedded = 구 chipRow 유지(스크롤 없음)
+  // KB-909(Q-367): 홈 embedded도 같은 한 줄 가로 스크롤(XXL 두 줄 넘김 방지) — 정렬 버튼·Saved 칩은 홈엔 없다
   const home = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
-  expect(home.root.findAll((n) => n.props?.testID === 'food-chip-scroll')).toHaveLength(0);
+  expect(home.root.findAll((n) => n.props?.testID === 'food-chip-scroll' && typeof n.type === 'string').length).toBeGreaterThanOrEqual(1);
+  expect(home.root.findAll((n) => n.props?.testID === 'food-sort')).toHaveLength(0);
+  expect(home.root.findAll((n) => n.props?.testID === 'food-chip-saved')).toHaveLength(0);
   // 행 높이 고정 소스 잠금(칩 34 + pad 14/12 + 헤어라인)
   const fx = require('fs').readFileSync('src/features/food/FoodExplorer.tsx', 'utf8') as string;
   expect(fx).toMatch(/chipRowScreen: \{[^}]*paddingTop: 14, paddingBottom: 12[^}]*borderBottomColor: '#EAEBEE'/);
@@ -286,14 +288,16 @@ describe('KB-708 (7) 칩 줄 높이', () => {
     expect(chipRowHeight(3.1)).toBeCloseTo(41.2, 5);
     expect(chipRowHeight(0.85)).toBe(34);
   });
-  it('렌더: 칩 스크롤 내용 높이 = chipRowHeight(창 fontScale) — 기본 34 · XXXL(3.1) 41.2', () => {
+  it('렌더: 칩 스크롤 내용 **최소** 높이 = chipRowHeight(창 fontScale) — 기본 34 · XXXL(3.1) 41.2 · KB-903(T-101): 고정 height 0(칩이 눌려 아이콘·라벨 어긋남)', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- spyOn은 실제 모듈 객체여야 함(import * = 인터롭 사본이라 컴포넌트가 안 봄)
     const spy = jest.spyOn(require('react-native') as typeof import('react-native'), 'useWindowDimensions');
     for (const [fs, h] of [[1, 34], [3.1, 41.2]] as const) {
       spy.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: fs });
       const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
       const sv = tree.root.findAll((n) => n.props?.testID === 'food-chip-scroll' && n.props?.contentContainerStyle != null)[0];
-      expect((StyleSheet.flatten(sv.props.contentContainerStyle) as { height: number }).height).toBeCloseTo(h, 5);
+      const st = StyleSheet.flatten(sv.props.contentContainerStyle) as { height?: number; minHeight: number };
+      expect(st.minHeight).toBeCloseTo(h, 5);
+      expect(st.height).toBeUndefined();
       tree.unmount();
     }
     spy.mockRestore();

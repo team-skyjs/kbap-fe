@@ -1,5 +1,6 @@
 /**
  * P-384(KB-442) — 스캔 탭 사전 안내: 프로필 쿼터(서버 정본) 소진·미해금이면 티켓 응답 전에 쿼터 화면.
+ * → KB-963: 안내 시점 = 진입이 아니라 메뉴 촬영 시도(가공식품은 차감 없음이라 스캔 화면은 늘 열림).
  * 티켓 요청은 유지(403 SCAN-004 경로) + 낡은 프로필(해금됨)은 발급 성공이 카메라 복원.
  */
 import * as React from 'react';
@@ -148,13 +149,36 @@ beforeEach(() => {
   mockIsGuest.mockReturnValue(false);
 });
 
-it('소진·미해금 = 티켓 응답 전에 쿼터 안내(요청은 계속 보냄)', () => {
-  const d = deferred();
-  mockIssue.mockReturnValue(d.promise);
+// KB-963(예진 11/2): 진입 잠금 0 — 소진이어도 카메라(가공식품은 그대로 사용), 메뉴 촬영 시도(갤러리·셔터·시스템 카메라)에서만 쿼터 안내
+const { launchImageLibraryAsync: mockPick } = jest.requireMock('expo-image-picker') as { launchImageLibraryAsync: jest.Mock };
+async function shootMenu(tree: ReactTestRenderer) {
+  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto' && typeof n.props?.onPress === 'function');
+  await act(async () => { await gallery[0].props.onPress(); });
+}
+
+it('KB-963: 소진·미해금 = 진입 시 쿼터 안내 0(카메라) · 메뉴 촬영 시도 = 쿼터 안내 + 사진 고르기 0 · 티켓 요청은 계속', async () => {
+  mockIssue.mockReturnValue(deferred().promise);
   mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0) } });
   let tree!: ReactTestRenderer;
   act(() => { tree = renderer.create(<Scan />); });
   expect(mockIssue).toHaveBeenCalled();
+  expect(quotaShown(tree)).toBe(false);
+  await shootMenu(tree);
+  expect(quotaShown(tree)).toBe(true);
+  expect(mockPick).not.toHaveBeenCalled();
+});
+
+it('KB-963: 쿼터 안내 → 나중에 = 카메라로 복귀(스캔 화면 유지 — 모드 탭에서 가공식품 사용)', async () => {
+  mockIssue.mockReturnValue(deferred().promise);
+  mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0) } });
+  let tree!: ReactTestRenderer;
+  act(() => { tree = renderer.create(<Scan />); });
+  await shootMenu(tree);
+  const later = tree.root.findAll((n) => n.props?.testID === 'scan-quota-later' && typeof n.props?.onPress === 'function')[0];
+  act(() => later.props.onPress());
+  expect(quotaShown(tree)).toBe(false);
+  expect(tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto').length).toBeGreaterThan(0); // 카메라 화면(닫힘 아님)
+  await shootMenu(tree); // 다시 메뉴 촬영 = 다시 안내
   expect(quotaShown(tree)).toBe(true);
 });
 
@@ -166,62 +190,80 @@ it('잔여 있음 = 티켓 대기 중 쿼터 안내 없음', () => {
   expect(quotaShown(tree)).toBe(false);
 });
 
-it('해금(unlimited)·구서버(null) = 쿼터 안내 없음', () => {
+it('해금(unlimited)·구서버(null) = 메뉴 촬영해도 쿼터 안내 없음', async () => {
   for (const q of [QUOTA('unlimited', true), null]) {
     mockIssue.mockReturnValue(deferred().promise);
     mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: q } });
     let tree!: ReactTestRenderer;
     act(() => { tree = renderer.create(<Scan />); });
+    await shootMenu(tree);
     expect(quotaShown(tree)).toBe(false);
     act(() => tree.unmount());
   }
 });
 
-it('낡은 프로필(소진 표시) + 발급 성공 = 카메라 복원', async () => {
+it('낡은 프로필(소진 표시) + 발급 성공 = 메뉴 촬영 통과(반증)', async () => {
   const d = deferred();
   mockIssue.mockReturnValue(d.promise);
   mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0) } });
   let tree!: ReactTestRenderer;
   act(() => { tree = renderer.create(<Scan />); });
-  expect(quotaShown(tree)).toBe(true);
   await act(async () => { d.resolve('t-1'); await d.promise; });
+  await shootMenu(tree);
   expect(quotaShown(tree)).toBe(false);
+  expect(mockPick).toHaveBeenCalled();
 });
 
-it('반증된 프로필은 재포커스에도 다시 잠그지 않음 · 재조회로 새 소진 값이 오면 다시 안내', async () => {
-  const ok = Promise.resolve('t');
-  mockIssue.mockReturnValue(ok);
-  const stale = { data: { restrictions: [], scanQuota: QUOTA(0) } };
-  mockUseMe.mockReturnValue(stale);
-  let tree!: ReactTestRenderer;
-  await act(async () => { tree = renderer.create(<Scan />); await ok; });
-  expect(quotaShown(tree)).toBe(false); // 발급 성공 = 복원
-  const refocus = async () => {
+describe('반증·재조회', () => {
+  const refocus = async (tree: ReactTestRenderer) => {
     mockIsGuest.mockReturnValue(true);
     await act(async () => { tree.update(<Scan />); });
     mockIsGuest.mockReturnValue(false);
     act(() => { tree.update(<Scan />); }); // 포커스 콜백 재실행 직후(발급 응답 전)
   };
-  await refocus();
-  expect(quotaShown(tree)).toBe(false);
-  mockIssue.mockReturnValue(new Promise(() => {}));
-  mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0) } }); // 재조회 = 새 객체
-  await refocus();
-  expect(quotaShown(tree)).toBe(true);
+  it('반증된 프로필은 재포커스(발급 대기 중)에도 메뉴 촬영을 막지 않음', async () => {
+    const ok = Promise.resolve('t');
+    mockIssue.mockReturnValue(ok);
+    mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0) } });
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<Scan />); await ok; });
+    mockIssue.mockReturnValue(new Promise(() => {}));
+    await refocus(tree);
+    await shootMenu(tree);
+    expect(quotaShown(tree)).toBe(false);
+  });
+  it('재조회로 새 소진 값이 오면(포커스 유지 · 재포커스 불필요) 메뉴 촬영 시 다시 안내 — 진입 화면은 그대로 카메라', async () => {
+    const ok = Promise.resolve('t');
+    mockIssue.mockReturnValue(ok);
+    mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(1) } });
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<Scan />); await ok; });
+    const callsBefore = mockIssue.mock.calls.length;
+    mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0) } }); // 스캔 성공 후 재조회 = 새 객체
+    act(() => { tree.update(<Scan />); });
+    expect(quotaShown(tree)).toBe(false);
+    await shootMenu(tree);
+    expect(quotaShown(tree)).toBe(true);
+    expect(mockIssue.mock.calls.length).toBe(callsBefore); // 포커스 재실행 아님 — 프로필 변화만으로
+  });
 });
 
-it('Codex #159 P2: 포커스 유지 중 재조회로 소진 도착 = 카메라 단계에서 촬영 전 안내(재포커스 불필요)', async () => {
-  const ok = Promise.resolve('t');
-  mockIssue.mockReturnValue(ok);
-  mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(1) } });
-  let tree!: ReactTestRenderer;
-  await act(async () => { tree = renderer.create(<Scan />); await ok; });
-  expect(quotaShown(tree)).toBe(false);
-  const callsBefore = mockIssue.mock.calls.length;
-  mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0) } }); // 스캔 성공 후 재조회
-  act(() => { tree.update(<Scan />); });
-  expect(quotaShown(tree)).toBe(true);
-  expect(mockIssue.mock.calls.length).toBe(callsBefore); // 포커스 재실행 아님 — 프로필 변화만으로
+it('Codex #395: 선발급 SCAN-004로 진입 → 카메라 중 해금 프로필 도착(광고·리뷰) = 메뉴 촬영 통과 · 대조: 같은 프로필 그대로면 안내', async () => {
+  for (const arrive of [true, false]) {
+    jest.clearAllMocks();
+    mockIssue.mockRejectedValue(Object.assign(new Error('quota'), { code: 'SCAN-004' }));
+    mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(1) } }); // 프로필은 아직 잔여(서버는 004)
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<Scan />); });
+    if (arrive) {
+      mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA('unlimited', true) } });
+      act(() => { tree.update(<Scan />); });
+    }
+    await shootMenu(tree);
+    expect({ arrive, quota: quotaShown(tree) }).toEqual({ arrive, quota: !arrive });
+    expect({ arrive, picked: mockPick.mock.calls.length > 0 }).toEqual({ arrive, picked: arrive });
+    act(() => tree.unmount());
+  }
 });
 
 describe('Codex #159 P1: 완료된 스캔 결과는 복귀 포커스로 쿼터 화면에 덮이지 않는다', () => {
@@ -285,11 +327,13 @@ describe('KB-670 선발급 MEMBER-003 = 에러 화면 없음 · 게스트 전환
     expect(errorShown(tree)).toBe(false);
   });
 
-  it('대조군: SCAN-004(쿼터)는 그대로 안내 화면(다른 preflight 오류 무변)', async () => {
+  it('대조군: 선발급 SCAN-004(쿼터) = 진입은 카메라(KB-963) · 메뉴 촬영 시 안내 화면(다른 preflight 오류 무변)', async () => {
     mockIssue.mockRejectedValue(Object.assign(new Error('quota'), { code: 'SCAN-004' }));
     mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(1) } });
     let tree!: ReactTestRenderer;
     await act(async () => { tree = renderer.create(<Scan />); });
+    expect(quotaShown(tree)).toBe(false);
+    await shootMenu(tree);
     expect(quotaShown(tree)).toBe(true);
   });
 });

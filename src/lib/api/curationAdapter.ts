@@ -82,6 +82,13 @@ export function galleryOf(it: Pick<ItemWire, 'imageUrl' | 'imageAttribution' | '
   return it.imageUrl && it.imageUrl.trim() ? [{ url: it.imageUrl, attribution: caption(it.imageAttribution) }] : [];
 }
 
+/** KB-906(T-039): 표시 규칙(서버 문자열 무변) — 이름 **전체가** 대문자이고 4글자 이상 단어가 있으면 2글자 이상 단어를 첫 글자만 대문자로
+ *  ("N SEOUL TOWER" → "N Seoul Tower", "SEOUL SKY" → "Seoul Sky"). 대소문자 섞인 이름·약어만 있는 이름("DDP")은 그대로 */
+export const placeNameOf = (name: string): string =>
+  /[a-z]/.test(name) || !/[A-Z]{4,}/.test(name) ? name : name.replace(/\b[A-Z]{2,}\b/g, (w) => w[0] + w.slice(1).toLowerCase());
+/** KB-906(T-039): 위치 = "동네 / 구"와 "구"가 섞였다 — 구분을 주소처럼 쉼표로("Bukchon, Jongno-gu") */
+export const areaOf = (area: string): string => area.split(/\s*\/\s*/).filter(Boolean).join(', ');
+
 export function adaptCurationDetail(w: DetailWire): CurationDetail {
   return {
     key: w.collectionKey,
@@ -95,8 +102,8 @@ export function adaptCurationDetail(w: DetailWire): CurationDetail {
       .map((it) => ({
         id: it.entryId,
         position: it.position,
-        name: it.name,
-        area: it.area,
+        name: placeNameOf(it.name),
+        area: areaOf(it.area),
         introduction: it.introduction,
         reason: it.recommendationReason,
         imageUrl: it.imageUrl,

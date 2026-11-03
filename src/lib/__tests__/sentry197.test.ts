@@ -23,6 +23,16 @@ it('init 게이트 — dev 런타임(__DEV__)에선 enabled false, 환경 = 채�
   expect(src).toContain('enabled: !__DEV__');
 });
 
+it('KB-884 앱 행 임계 4초(초 단위) · init 옵션 키 집합 불변', () => {
+  initSentry();
+  const arg = mockInit.mock.calls[0][0] as Record<string, unknown>;
+  expect(arg.appHangTimeoutInterval).toBe(4);
+  expect(arg.enableAppHangTrackingV2).toBe(true);
+  expect(Object.keys(arg).sort()).toEqual(
+    ['appHangTimeoutInterval', 'dsn', 'enableAppHangTrackingV2', 'enabled', 'environment', 'sendDefaultPii'],
+  );
+});
+
 it('PII 스코프 — 식별 = memberId 단일 키, null = 해제. 닉네임/이메일 필드 소스 부재', () => {
   setSentryUser('42');
   expect(mockSetUser).toHaveBeenCalledWith({ id: '42' }); // id 외 키 0

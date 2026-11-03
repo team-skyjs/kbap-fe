@@ -11,6 +11,7 @@ import 'react-native-gesture-handler';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { Stack, useRouter, type Href } from 'expo-router';
+import { VisitTrackingHost } from '@/lib/engagement/VisitTrackingHost';
 import { useScreenTracking } from '@/lib/useScreenTracking';
 import { UnlockCelebrationHost } from '@/features/scan/UnlockCelebrationHost';
 import * as SplashScreen from 'expo-splash-screen';
@@ -41,6 +42,7 @@ import { handleDeeplink, markEntryResolved, markEntryResolvedAfterLeavingTabs } 
 import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
+import { ScanExitPrompts } from '@/features/scan/ScanExitPrompts';
 import { VersionGateOverlay } from '@/components/VersionGate';
 import { PhotoSourceSheetHost } from '@/components/PhotoSourceSheetHost';
 import { OtaAutoApplyHost } from '@/lib/ota/OtaAutoApplyHost';
@@ -184,7 +186,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (!FLAGS.pushEnabled || !entryChecked) return;
     const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
-    const unsub = push.addNotificationTapListener((href, notificationId) => {
+    const unsub = push.addNotificationTapListener((href, notificationId, type) => {
+      track(EVENTS.push_open, type ? { type } : {}); // KB-629: 탭 1번 = 1회(어댑터 routed가 콜드 스타트·리스너 이중 전달 차단) · 미지 유형 = 속성 생략
       void onPushTapped(notificationId); // KB-499: 이 기기 알림 행 읽음 처리 + 재조회(게스트 = 이동만)
       // KB-735: 보류 없이 즉시 이동. 닫을 수 없는 모달을 다시 두면 라우팅 유예(KB-729의 "모달이 닫힌 뒤 실행" 헬퍼)를 함께 복원할 것 — 그 위로 fullScreenModal이 열리면 KB-377류 교착
       if (href) openNotificationRoute(router, href); // href null = 이동 없는 유형(KB-498) · KB-573: 홈 = 스택 리셋
@@ -227,8 +230,11 @@ export default function RootLayout() {
               {/* P-106: 키보드 내리기 전역 — iOS 액세서리 바(전 Input 연결)+안드 하단 바 */}
               <KeyboardDismissBar />
               {!splashVisible && <UnlockCelebrationHost />}
+              {/* KB-908(T-010): 스캔 결과 뒤 알림 넛지·리뷰 유도 — 스캔 화면을 닫은 뒤 하나만 */}
+              <ScanExitPrompts />
               {/* P-111(KB-269): 최소 지원 버전 하드 게이트 — 내비 전체 덮음, 페일 오픈 */}
               <VersionGateOverlay />
+              {!splashVisible && <VisitTrackingHost />}
               {/* P-123: 안드 사진 소스 시트 호스트 (iOS는 네이티브 시트 — 호스트 미사용) */}
               <PhotoSourceSheetHost />
               {/* P-339 ⑤(KB-494): 북마크 등 상단 다크 토스트 — 전 표면 공용 호스트 */}

@@ -9,7 +9,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { BrandGoogle, BrandKakao, BrandNaver } from '@/components/design4Assets';
 import { SheetShell } from '@/components/SheetShell'; // P-409: 로컬 셸 → 공용(렌더 무변)
 import type { PlaceTagRef } from '@/lib/community/types';
@@ -91,8 +91,8 @@ export function PlaceTagSheet({ place, onClose }: { place: MapPlace | null; onCl
 
 const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '700', color: C.ink },
-  sub: { fontSize: 14, fontWeight: '400', color: C.ink2 },
+  sub: { fontSize: 16, fontWeight: '400', color: C.ink2 },
   mapCol: { gap: 8 },
-  mapBtn: { minHeight: 48, borderRadius: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  mapBtn: { minHeight: 48, borderRadius: radius.pill, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   mapBtnText: { fontSize: 16, fontWeight: '500' },
 });

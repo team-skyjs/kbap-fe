@@ -115,7 +115,7 @@ describe('④ Tag a food 시트 첫 렌더', () => {
   it('scanned isPending = 스켈레톤 행(원 48 + 바 2줄) — 구역 헤더·배너·목록 미렌더 게이트', () => {
     expect(cp).toContain("const scanPending = kind === 'food' && useScanScope && scanned.isPending;");
     expect(cp).toContain('testID="picker-skeleton"');
-    expect(cp).toContain("skelThumb: { width: 48, height: 48, borderRadius: 24 }");
+    expect(cp).toContain("skelThumb: { width: 48, height: 48, borderRadius: radius.pill }");
     // 구역 분기·본문 목록·자격 블록 전부 scanPending 게이트 뒤
     expect(cp).toContain('{!(scanPending && isBrowse) && isBrowse && (');
     expect(cp).toContain("{!(scanPending && isBrowse) && (kind === 'food'");
@@ -130,11 +130,14 @@ describe('④ Tag a food 시트 첫 렌더', () => {
 });
 
 describe('P-351(KB-513) 소형 2건', () => {
-  it('① 프로필 Show all — 0건 = showAllEmpty 라벨 + 꺾쇠, 1건 이상 = 카운트 라벨·꺾쇠 없음(시안 A-PF-09)', () => {
+  it('① 프로필 Show all — 0건 = showAllEmpty + 꺾쇠 · KB-904(T-082): 타일이 다 보이면(8 이하) "Edit restrictions" + 꺾쇠 · 9건부터 Show all N(꺾쇠 없음, 시안 A-PF-09)', () => {
     const pf = read('src/app/(tabs)/profile.tsx');
     expect(pf).toContain("? t('profile.showAll', { count: me.restrictions.length })");
+    expect(pf).toContain("? t('restrictionsEdit.title')");
     expect(pf).toContain(": t('profile.showAllEmpty')}");
-    expect(pf).toContain('iconEnd={me.restrictions.length === 0 ? <IconChevron size={16} color={C.ink3} /> : undefined}');
+    expect(pf).toContain('{me.restrictions.length > AVOID_TILE_MAX');
+    expect(pf).toContain('iconEnd={me.restrictions.length <= AVOID_TILE_MAX ? <IconChevron size={16} color={C.ink3} /> : undefined}');
+    expect(pf).toContain('const AVOID_TILE_MAX = 8;');
     for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
       expect(read(`src/lib/i18n/${loc}.json`)).toContain('"showAllEmpty"');
     }
@@ -148,23 +151,20 @@ describe('P-351(KB-513) 소형 2건', () => {
 });
 
 describe('P-352(KB-514) 리뷰 작성 부제·건너뛰기', () => {
-  it('① 부제 3케이스 — 0건 = 한글명만 / 한글명 없음 = subtitle만(0건이면 줄 생략) / 5건 = " | " 결합', () => {
+  it('① 부제 3케이스 — 0건 = 한글명만 / 한글명 없음 = subtitle만(0건이면 줄 생략) / 5건 = 두 조각(KB-907 T-107: " | " 구분자 → 화면 간격)', () => {
     // 렌더 경유 없이 순수 헬퍼 검증(배선은 소스 잠금)
     const { foodSubtitle } = require('@/lib/review/foodSubtitle') as typeof import('@/lib/review/foodSubtitle');
-    // #115 P1: 결합형 = review.foodSubtitle 키 경유(구분자·어순 로케일 소유)
-    const t = (k: string, o?: Record<string, unknown>) =>
-      k === 'review.foodSubtitle' ? `${o?.nameKo} | ${o?.reviews}` : `${o?.count} reviews`;
-    expect(foodSubtitle({ name: 'Kimbap', nameKo: '김밥', overall: { count: 0 } }, t)).toBe('김밥');
-    expect(foodSubtitle({ name: 'Kimbap', nameKo: null, overall: { count: 5 } }, t)).toBe('5 reviews');
-    expect(foodSubtitle({ name: 'Kimbap', nameKo: null, overall: { count: 0 } }, t)).toBeNull(); // 줄 생략
-    expect(foodSubtitle({ name: 'Kimbap', nameKo: '김밥', overall: { count: 5 } }, t)).toBe('김밥 | 5 reviews');
-    const src = read('src/lib/review/foodSubtitle.ts');
-    expect(src).toContain("t('review.foodSubtitle', { nameKo: ko, reviews })");
+    const t = (_k: string, o?: Record<string, unknown>) => `${o?.count} reviews`;
+    expect(foodSubtitle({ name: 'Kimbap', nameKo: '김밥', overall: { count: 0 } }, t)).toEqual(['김밥']);
+    expect(foodSubtitle({ name: 'Kimbap', nameKo: null, overall: { count: 5 } }, t)).toEqual(['5 reviews']);
+    expect(foodSubtitle({ name: 'Kimbap', nameKo: null, overall: { count: 0 } }, t)).toEqual([]); // 줄 생략
+    expect(foodSubtitle({ name: 'Kimbap', nameKo: '김밥', overall: { count: 5 } }, t)).toEqual(['김밥', '5 reviews']);
     for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
-      expect((JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { review: { foodSubtitle: string } }).review.foodSubtitle).toBe('{{nameKo}} | {{reviews}}');
+      expect((JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { review: Record<string, unknown> }).review.foodSubtitle).toBeUndefined(); // 구분자 키 소멸
     }
     const rv = read('src/app/food/[id]/review.tsx');
-    expect(rv).toContain('const sub = packaged ? product?.maker ?? null : foodSubtitle(food, t);' /* KB-812 2차: 가공식품 = 제조사 */); // 배선 잠금
+    expect(rv).toContain('const parts = packaged ? (product?.maker ? [product.maker] : []) : foodSubtitle(food, t);' /* KB-812 2차: 가공식품 = 제조사 */); // 배선 잠금
+    expect(rv).toMatch(/foodSubRow: \{ flexDirection: 'row', alignItems: 'center', gap: 8 \}/);
     expect(rv).not.toContain('`${food.nameKo} `'); // 구 공백 구분 소멸
   });
 
@@ -181,7 +181,7 @@ describe('P-352(KB-514) 리뷰 작성 부제·건너뛰기', () => {
 it('P-368 ②(KB-531): dietGrid = 행 chunk + flex 셀 — 열 수가 폭과 무관하게 4(375pt 접힘 픽스)', () => {
   const pf = read('src/app/(tabs)/profile.tsx');
   expect(pf).toContain('testID="diet-grid-pad"');
-  expect(pf).toContain('Math.ceil(Math.min(me.restrictions.length, 8) / 4)');
+  expect(pf).toContain('Math.ceil(Math.min(me.restrictions.length, AVOID_TILE_MAX) / 4)');
   expect(pf).toContain('Array.from({ length: 4 - row.length })'); // 빈 자리 = 빈 flex 셀
   expect(pf).toMatch(/dietRow: \{ flexDirection: 'row', columnGap: 8 \}/);
   expect(pf).toContain("dietTile: { width: '100%', height: 86,");

@@ -15,7 +15,7 @@ import { font } from '@/lib/theme';
 import type { TranslationSource } from '@/lib/api/translationAdapter';
 
 /** 번역 라벨 **전용** 값 — DS 토큰에 없는 X 동일 색(예진 지시, 레퍼런스 픽셀 실측). 다른 곳에서 쓰지 않는다. */
-export const TRANSLATE_LABEL = { idleColor: '#1B95E0', mutedColor: '#536471', fontSize: 12.5 } as const;
+export const TRANSLATE_LABEL = { idleColor: '#1B95E0', mutedColor: '#536471', fontSize: 13 } as const;
 
 /** 라벨 줄 높이(1줄 고정). */
 export const TRANSLATE_LABEL_LINE_H = 17;
@@ -44,6 +44,9 @@ export function TranslateButton({ state, source, onPress }: { state: TranslateLa
       onPress={onPress}
       disabled={state === 'loading'}
       accessibilityRole="button"
+      // KB-905(T-067): 라벨을 명시해야 안드가 상태가 바뀔 때마다 content-desc를 다시 쓴다 — 라벨 없이 busy만 있으면 busy=false일 때
+      // RN(BaseViewManager.updateViewContentDescription)이 빈 목록이라 갱신을 건너뛰어 "busy"가 번역 뒤에도 남았다
+      accessibilityLabel={label}
       accessibilityState={{ busy: state === 'loading' }}
       testID="translate-btn"
     >

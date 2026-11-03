@@ -224,15 +224,15 @@ export function PostCard({
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 10, ...shadow.sh1 },
+  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.md, padding: 14, gap: 10, ...shadow.sh1 },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  anonAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  authorName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },
-  when: { fontFamily: font.body, fontSize: 11, color: C.ink3, marginTop: 1 },
-  body: { fontFamily: font.body, fontSize: 14.5, color: C.ink, lineHeight: 21 },
-  more: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText, marginTop: 3 },
+  anonAvatar: { width: 26, height: 26, borderRadius: radius.pill, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  authorName: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
+  when: { fontFamily: font.body, fontSize: 12, color: C.ink3, marginTop: 1 },
+  body: { fontFamily: font.body, fontSize: 16, color: C.ink, lineHeight: 23 },
+  more: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, marginTop: 3 },
 
-  photoBase: { backgroundColor: C.surface2, borderRadius: 12 },
+  photoBase: { backgroundColor: C.surface2, borderRadius: radius.md },
   photoFull: { width: '100%', aspectRatio: 3 / 2 },
   photoRow: { flexDirection: 'row', gap: 4 },
   photoCol: { flex: 1, gap: 4 },
@@ -243,14 +243,14 @@ const styles = StyleSheet.create({
   photoQuad: { width: '49%', aspectRatio: 4 / 3, flexGrow: 1 },
 
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  tagChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, maxWidth: 220 },
-  tagChipText: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink },
+  tagChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.surface2, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 6, maxWidth: 220 },
+  tagChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
   // A-DS-04: chip_place — 배경·패딩 없음
   tagChipPlace: { flexDirection: 'row', alignItems: 'center', gap: 2, maxWidth: 220, minHeight: 44, marginVertical: -14 }, // Codex #91 3R P2: 탭 영역 44pt(실높이) + 음수 마진으로 시각 간격 유지(콘텐츠 ~16)
-  tagChipPlaceText: { fontSize: 12, fontWeight: '700', color: C.inkInfo, flexShrink: 1 },
+  tagChipPlaceText: { fontSize: 13, fontWeight: '700', color: C.inkInfo, flexShrink: 1 },
 
   reactRow: { flexDirection: 'row', alignItems: 'center', gap: 22, paddingTop: 2 },
   reactBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  reactCount: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
+  reactCount: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
   reactCountOn: { color: C.primaryText },
 });

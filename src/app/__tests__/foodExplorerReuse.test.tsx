@@ -30,7 +30,7 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 const mockPush = jest.fn();
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useSegments: () => [],
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn(), navigate: jest.fn() }),
   usePathname: () => '/',
@@ -171,6 +171,16 @@ it('③-b 홈(embedded) = 가로 레일 상한(Popular=소스 8 · Food=HOME_RAI
   expect(tree.root.findAll((n) => n.props?.testID === 'home-grid-more')).toHaveLength(0);
 });
 
+it('KB-962(예진 11/2): See all = 탭 줄 오른쪽 원형 버튼(레일 밖) · 접근성 라벨 = home.seeAll · 레일은 마지막 카드로 끝', () => {
+  const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  const rail = tree.root.findAll((n) => n.props?.testID === 'home-rail' && n.props?.horizontal === true)[0];
+  expect(rail.findAll((n) => n.props?.testID === 'home-rail-see-all')).toHaveLength(0);
+  const btn = tree.root.findAll((n) => n.props?.testID === 'home-rail-see-all' && typeof n.type === 'string')[0];
+  expect(btn.props.accessibilityLabel).toBe('home.seeAll');
+  const tabs = tree.root.findAll((n) => n.props?.testID === 'home-tabs-scroll')[0];
+  expect(tabs.findAll((n) => n.props?.testID === 'home-rail-see-all')).toHaveLength(0); // 스크롤 탭 밖 고정 칸
+});
+
 it('⑤ P-317 See all — 현재 세그먼트·칩 상태가 음식 탭 쿼리로 승계', () => {
   const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
   press(tree, 'home-rail-see-all');
@@ -224,16 +234,45 @@ it('⑥ P-321 Safe picks 2×2 그리드 — 회원+회피≥1+Popular+All에서�
   expect(grid(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />))).toHaveLength(0);
 });
 
-it('④ 게스트 칩 — 4개 렌더 · 개인화 칩 탭 = 게이트 + 선택 All 유지(필터 미적용)', () => {
+it('④ 게스트 칩 — KB-949 음식 탭·홈 = 3개(All 칩 없음 — 모양 통일) · 개인화 칩 탭 = 게이트 + 필터 미적용', () => {
   const tree = render(<FoodExplorer variant="screen" guest initialTab="food" srcTag="list" />);
-  for (const c of ['all', 'safe', 'danger', 'caution']) {
+  for (const c of ['safe', 'danger', 'caution']) {
     expect(tree.root.findAll((n) => n.props?.testID === `home-chip-${c}`).length).toBeGreaterThanOrEqual(1);
   }
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-chip-all')).toHaveLength(0);
+  const home = render(<FoodExplorer variant="embedded" guest srcTag="home" />);
+  expect(home.root.findAll((n) => n.props?.testID === 'home-chip-all')).toHaveLength(0);
+  expect(home.root.findAll((n) => n.props?.testID === 'home-chip-caution').length).toBeGreaterThanOrEqual(1);
   const before = cardIds(tree).size;
   const safe = tree.root.findAll((n) => n.props?.testID === 'home-chip-safe' && typeof n.props?.onPress === 'function')[0];
   act(() => safe.props.onPress());
   expect(tree.root.findAll((n) => n.props?.testID === 'auth-gate-open').length).toBeGreaterThanOrEqual(1); // 게이트
   expect(cardIds(tree).size).toBe(before); // 필터 미적용(All 유지)
+});
+
+it('KB-949 음식 탭 위험 칩 = 단일 선택 토글 — 안 고름 = 전체 · 누르면 그 위험도 · 다시 누르면 해제 · 다른 칩 = 바꿈', () => {
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialTab="food" srcTag="list" />);
+  expect(cardIds(tree).size).toBe(10);
+  press(tree, 'home-chip-danger');
+  expect(cardIds(tree).size).toBe(5);
+  press(tree, 'home-chip-danger'); // 해제
+  expect(cardIds(tree).size).toBe(10);
+  press(tree, 'home-chip-danger');
+  press(tree, 'home-chip-safe'); // 바꿈(단일 선택)
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-chip-danger' && n.props?.selected === true)).toHaveLength(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-chip-safe' && n.props?.selected === true).length).toBeGreaterThanOrEqual(1);
+});
+
+it('KB-949 홈(embedded) 위험 칩 = 음식 탭과 같은 토글 — 누르면 그 위험도 · 다시 누르면 해제(전체)', () => {
+  const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  press(tree, 'home-tab-food');
+  const before = cardIds(tree).size;
+  press(tree, 'home-chip-danger');
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-chip-danger' && n.props?.selected === true).length).toBeGreaterThanOrEqual(1);
+  expect(cardIds(tree).size).toBeLessThan(before);
+  press(tree, 'home-chip-danger');
+  expect(tree.root.findAll((n) => /^home-chip-/.test(n.props?.testID ?? '') && n.props?.selected === true)).toHaveLength(0);
+  expect(cardIds(tree).size).toBe(before);
 });
 
 it('⑧ Codex #80 P1 — initialRisk 초기 적용(회원), 게스트는 all 강등', () => {
@@ -301,7 +340,9 @@ it('⑬ Codex #80 3R P2 — 세션 상태 전환은 파라미터 재적용이 �
   const tree = render(<FoodExplorer variant="screen" guest initialRisk="danger" srcTag="list" />);
   expect(cardIds(tree).size).toBe(10); // 강등 all
   act(() => tree.update(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />));
-  expect(tree.root.findAll((n) => n.props?.testID === 'home-chip-all' && n.props?.selected === true).length).toBeGreaterThanOrEqual(1);
+  // KB-949: 음식 탭엔 All 칩이 없다 — 강등 all = 아무 칩도 선택 안 됨 + 전 카드
+  expect(tree.root.findAll((n) => /^home-chip-/.test(n.props?.testID ?? '') && n.props?.selected === true)).toHaveLength(0);
+  expect(cardIds(tree).size).toBe(10);
   // 반대로 만료(→게스트)는 개인화 필터 강등
   const t2 = render(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />);
   expect([...cardIds(t2)].length).toBe(5); // danger 5
@@ -334,7 +375,8 @@ it('⑮ P-319/320 — 메인 레일 = ScrollView(flexGrow:0·FlatList prop 부�
   const { railCardW } = require('@/features/food/railLayout') as typeof import('@/features/food/railLayout');
   const w = railCardW(width);
   expect(JSON.stringify(tree.root.findAll((n) => n.props?.testID === 'home-food-1')[0].props.style)).toContain(`"width":${w}`);
-  expect(JSON.stringify(tree.root.findAll((n) => n.props?.testID === 'home-rail-see-all')[0].props.style)).toContain(`"width":${w}`);
+  // KB-962: See all = 탭 줄 원형 버튼(지름 32 고정) — 레일 끝 카드 소멸(카드 폭 공유 0)
+  expect(JSON.stringify(tree.root.findAll((n) => n.props?.testID === 'home-rail-see-all' && typeof n.type === 'string')[0].props.style)).toContain('"width":32');
 });
 
 it('⑯ P-321 레일 상태 — 로딩 스켈레톤 / 에러 / Saved 0건 CTA / 칩 전부 걸러짐(전부 ScrollView 밖)', () => {

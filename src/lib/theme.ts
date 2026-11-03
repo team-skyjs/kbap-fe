@@ -8,7 +8,7 @@
 
 /** KB-429(P-274) 디자인 4차: 값 = 커맨드 센터 Figma 실측(노드 ID는 발주문) —
  *  키는 전부 유지, 값만 교체. 신규 키 = inkMute·inkDisabled·line2(+아래
- *  riskText·shadowGlow·shBadge·type). */
+ *  riskText·shadowGlow·type). */
 export const color = {
   primary: '#FF7134', // Button/Primary 4123:3985 · FAB 4095:1858
   primaryPress: '#BE460F', // P-284: 최종본 Main color-pressed(2209:997) — 9/6 예진 'A 시안대로'
@@ -39,8 +39,8 @@ export const color = {
   riskUnable: '#B1B5BD', // 4064:798
   // P-284(9/6): 소형(12~13px) 위험 상태 '텍스트' 대비 토큰 — 마크·배지·아이콘 fill은 원색 무변
   riskSafeText: '#007F43', // 흰 5.10
-  riskCautionText: '#9A5F00', // 흰 5.24 · caution 틴트 위 4.82
-  riskDangerText: '#C4352F', // 흰 5.39 · danger 틴트 위 4.96
+  riskCautionText: '#9A5F00', // 흰 5.24 · caution 틴트 위 4.89
+  riskDangerText: '#C4352F', // 흰 5.39 · danger 틴트 위 4.86
   riskUnableText: '#6A6F7C', // Codex #44 P2: unable 텍스트 대비(흰 5.03 — inkInfo 동일값·의미 분리)
   inkInfo: '#6A6F7C', // 12~13px 정보성 회색 텍스트(흰 5.03 — gray-700 동값·의미 토큰)
   // KB-845(D-31 scan refresh): 시안 gray 팔레트 이름 그대로 — 어두운 카메라·로딩 화면(값은 DS gray-*)
@@ -56,9 +56,10 @@ export const color = {
  */
 export const riskTone = {
   safe: { fg: color.riskSafe, bg: '#EFFFF7', line: '#D5DFE7' },
-  // 9/5 예진 확정: 시안 인스턴스(4150:16971/16972) 그대로 — caution=붉은/danger=노란 틴트
-  caution: { fg: color.riskCaution, bg: '#FFF3EF', line: '#D5DFE7' },
-  danger: { fg: color.riskDanger, bg: '#FFFDEF', line: '#D5DFE7' },
+  // KB-908(10/30 예진 결정 — 9/5 "시안 인스턴스 그대로"를 뒤집음): 띠 배경 = 리본(fg) 계열. fg를 흰 위에 10% 알파로 섞은 값
+  // (danger #F76661 → #FEF0EF 붉은 · caution #FFA526 → #FFF6E9 주황). 옛 값은 caution #FFF3EF / danger #FFFDEF로 뒤바뀌어 보였다(QA aos#1)
+  caution: { fg: color.riskCaution, bg: '#FFF6E9', line: '#D5DFE7' },
+  danger: { fg: color.riskDanger, bg: '#FEF0EF', line: '#D5DFE7' },
   unable: { fg: color.riskUnable, bg: '#ECECEC', line: '#D5DFE7' },
 } as const;
 
@@ -87,7 +88,9 @@ export const primaryTint2 = 'rgba(255,113,52,0.03)';
 export const primaryTintSolid = '#FFF8F5';
 export const accentTint = 'rgba(14,154,167,0.08)';
 
-export const radius = { lg: 10, sm: 8, xs: 4, pill: 999 } as const; // Alert 4123:4019 · tag/input · 버튼/카드
+// KB-909(예진 10/30 "알약으로 맞추자, borderRadius 모든 컴포넌트 맞춰야 해"): 버튼·칩 = pill · 이미지 타일·입력 = md · 카드 = lg · 시트 윗모서리·대화상자 = xl · 작은 배지·바 = xs.
+// 구 sm 8·lg 10은 md로 흡수. 원(아바타·아이콘 원)은 정사각 상자에 pill. 하드코딩 금지 — 전부 이 토큰 참조
+export const radius = { xs: 4, md: 12, lg: 16, xl: 24, pill: 999 } as const;
 
 /**
  * Font families. Each (family, weight) is a distinct registered fontFamily key
@@ -137,14 +140,6 @@ export const shadow = {
     shadowOffset: { width: 0, height: 8 },
     elevation: 12,
   },
-  // risk 썸네일 배지(4095:1430): 1/1 blur 3.7 op 0.6
-  shBadge: {
-    shadowColor: '#000000',
-    shadowOpacity: 0.6,
-    shadowRadius: 3.7,
-    shadowOffset: { width: 1, height: 1 },
-    elevation: 3,
-  },
 } as const;
 
 /** rank-medal 글로우(4150:16186) — 색상 = 요소 색(메달 전용): 0/3 blur 8 op 0.4. */
@@ -166,17 +161,17 @@ export const type = {
   largeTitle: { fontSize: 26, fontWeight: '700' },
   sectionTitle: { fontSize: 22, fontWeight: '700' }, // A-DS-01(KB-486) — 구 20/400(4064:787)
   appBar: { fontSize: 18, fontWeight: '600' },
-  button: { fontSize: 15, fontWeight: '600' },
-  emphasis: { fontSize: 15, fontWeight: '500' }, // 닉네임·입력
-  body: { fontSize: 14, fontWeight: '400' },
-  chip: { fontSize: 14, fontWeight: '500' }, // 칩·ko 부제
-  subtitle: { fontSize: 14, fontWeight: '600' },
-  meta: { fontSize: 13, fontWeight: '500' },
-  rating: { fontSize: 13, fontWeight: '600' },
-  caption: { fontSize: 12, fontWeight: '400' },
-  captionMed: { fontSize: 12, fontWeight: '500' },
-  riskLabel: { fontSize: 12, fontWeight: '700' }, // "Safe"
-  tabLabel: { fontSize: 11, fontWeight: '500' },
+  button: { fontSize: 16, fontWeight: '600' }, // KB-909: 15→16
+  emphasis: { fontSize: 16, fontWeight: '500' }, // 닉네임·입력 · KB-909: 15→16
+  body: { fontSize: 16, fontWeight: '400' }, // KB-909: 14→16
+  chip: { fontSize: 15, fontWeight: '500' }, // 칩·ko 부제 · KB-909: 14→15
+  subtitle: { fontSize: 15, fontWeight: '600' }, // KB-909: 14→15
+  meta: { fontSize: 14, fontWeight: '500' }, // KB-909: 13→14
+  rating: { fontSize: 14, fontWeight: '600' }, // KB-909: 13→14
+  caption: { fontSize: 13, fontWeight: '400' }, // KB-909: 12→13
+  captionMed: { fontSize: 13, fontWeight: '500' }, // KB-909: 12→13
+  riskLabel: { fontSize: 13, fontWeight: '700' }, // "Safe" · KB-909: 12→13
+  tabLabel: { fontSize: 12, fontWeight: '500' }, // KB-909: 11→12
   newBadge: { fontSize: 10, fontWeight: '600' },
 } as const;
 

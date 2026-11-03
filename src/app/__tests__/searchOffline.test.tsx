@@ -82,7 +82,19 @@ jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<st
   useBookmarks: () => ({ data: [] }),
   useToggleBookmark: () => ({ mutate: jest.fn() }),
 }));
+// KB-967: 통합 검색 가공식품 섹션 — 이 파일은 음식 검색만 본다(가공식품 0건 = 섹션 숨김)
+const PKG_OK = { isPending: false, isError: false, isSuccess: true, hasNextPage: false, isFetchingNextPage: false, data: { items: [], pageSizes: [0] } };
+// P-587: 가공식품 전 채널 ON → All 칩은 두 요청 중 하나라도 성공하면 기록(#397) — 오프라인 시나리오는 가공식품 요청도 실패로 둔다
+let mockPkg: Record<string, unknown> = PKG_OK;
+beforeEach(() => { mockPkg = PKG_OK; });
+jest.mock('@/lib/data/useProcessedFoods', () => ({
+  ...jest.requireActual('@/lib/data/useProcessedFoods'),
+  useProcessedSearchPaged: () => ({ ...mockPkg, fetchNextPage: jest.fn() }),
+  useProcessedSearch: () => ({ isSuccess: false, data: [] }),
+  useVerdictKey: () => 'en|member:',
+}));
 jest.mock('@/lib/data/useFoods', () => ({
+  FOODS_PAGE_SIZE: 20,
   useFoods: () => mockUseFoods(),
   useInfiniteFoods: () => mockUseInfiniteFoods(),
   useSearchFoods: () => mockUseSearchFoods(),
@@ -185,6 +197,7 @@ const submit = (tree: ReactTestRenderer, term: string) => {
 
 it('KB-786: 검색 요청 실패(500·오프라인) = search_query·Airbridge 결과 0건 발사 없음', () => {
   mockUseSearchFoods.mockReturnValue({ ...ERR_500, ...PAGED, isSuccess: false, data: undefined });
+  mockPkg = { ...PKG_OK, isError: true, isSuccess: false, data: undefined };
   const tree = render(<Search />);
   submit(tree, 'kimchi');
   expect(searchEvents()).toEqual([]);
@@ -193,10 +206,12 @@ it('KB-786: 검색 요청 실패(500·오프라인) = search_query·Airbridge �
 
 it('KB-786: 같은 검색어 — 실패 뒤 재시도 성공분은 기록된다(실패가 가드를 먼저 차지하지 않음)', () => {
   mockUseSearchFoods.mockReturnValue({ ...ERR_NET, ...PAGED, isSuccess: false, data: undefined });
+  mockPkg = { ...PKG_OK, isError: true, isSuccess: false, data: undefined };
   const tree = render(<Search />);
   submit(tree, 'kimchi');
   expect(searchEvents()).toEqual([]);
   mockUseSearchFoods.mockReturnValue({ ...OK_QUERY, ...PAGED, isSuccess: true, data: POPULAR });
+  mockPkg = PKG_OK;
   act(() => tree.update(<Search />));
   expect(searchEvents()).toHaveLength(1);
   expect(searchEvents()[0][1]).toMatchObject({ matched: true, keyword: 'kimchi', result_count: 1 });

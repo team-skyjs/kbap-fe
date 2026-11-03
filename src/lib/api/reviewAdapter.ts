@@ -14,8 +14,10 @@
  * 사진: 전송 = path(objectKey) / 조회 = 서버 조합 완전 URL(imageUrls) —
  * 프로필 사진과 동일 규약. 기존 사진 유지 시 URL→path 역변환(imageUrlToPath).
  */
+import { adaptProfileImageUrl } from './memberAdapter';
 import type { Review, ReviewAuthor, ReviewPage } from './types';
 import { toHttps } from './processedFoodAdapter';
+import { adaptTranslation } from './translationAdapter';
 
 /* ---- wire shapes (스냅샷 기준) ---- */
 
@@ -26,6 +28,7 @@ export interface ReviewAuthorWire {
   tier: string;
   level: number;
   score: number;
+  profileImageUrl?: string | null;
 }
 
 /** P-165(#144): 리뷰 대상 음식 요약 — 목록 조회에서만, 음식 삭제 시 null. name은 lang 해석값. */
@@ -38,6 +41,8 @@ export interface ReviewFoodWire {
 export interface ReviewWire {
   servingSpeed?: number;
   staffKindness?: number;
+  spiciness?: number | null; // KB-869: 가공식품만 1~5, 미입력·음식 = null
+  sweetness?: number | null;
   reviewId: number;
   /** P-165: 계약에서 소멸 — 구응답 방어 폴백으로만 유지. 정본은 food.foodId. */
   foodId?: number;
@@ -59,10 +64,13 @@ export interface ReviewWire {
   place?: { name?: string | null; address?: string | null; latitude?: number | null; longitude?: number | null; source?: string | null; placeId?: string | null } | null;
   /** KB-702(서버) → KB-703 ②: 리뷰 본문 언어 = 앱 언어 코드(clampLang 집합) · 판별 못 하면 null · 구서버엔 필드 없음. */
   language?: string | null;
+  /** KB-940(서버): 전역 피드 첫 페이지 항목에만 — `{ text: 요청 lang 번역문, sourceLanguage }`(없으면 키 생략) */
+  translation?: { text?: string | null; sourceLanguage?: string | null } | null;
   /** KB-812 2차(서버 #435, 3.2 응답만): 리뷰 대상 — 구응답·3.1 이하엔 없음(= FOOD) */
   targetType?: 'FOOD' | 'PROCESSED_FOOD' | string;
   /** 가공식품 리뷰에만 — 음식 리뷰에선 필드 자체가 생략 */
-  processedFood?: { processedFoodId: number; reportNo?: string; productName: string; maker?: string | null; imageUrl?: string | null } | null;
+  /** KB-966 연장(S-942): name = 요청 lang 번역(가산·빈값 가능), productName = 원문 — 가공식품 목록 계약과 같은 규칙 */
+  processedFood?: { processedFoodId: number; reportNo?: string; productName: string; name?: string | null; maker?: string | null; imageUrl?: string | null } | null;
 }
 
 export interface ReviewPageWire {
@@ -74,6 +82,9 @@ export interface ReviewPageWire {
 export interface ReviewUpdateWire {
   servingSpeed?: number;
   staffKindness?: number;
+  /** KB-865 ④: 가공식품만 — 키 생략 = 서버 기존 값 유지, null = 비움(0 금지 — 400) */
+  spiciness?: number | null;
+  sweetness?: number | null;
   rating: number;
   content?: string;
   imagePaths?: string[];
@@ -91,10 +102,15 @@ function adaptAuthor(wire: ReviewAuthorWire | null | undefined): ReviewAuthor | 
     nationality: wire.countryCode ?? null,
     tier: wire.tier,
     level: wire.level,
+    profileImageUrl: adaptProfileImageUrl(wire.profileImageUrl),
   };
 }
 
-export function adaptReview(wire: ReviewWire): Review {
+/** KB-865 ④: 1~5 정수만 값 — 그 밖(부재·null·0·범위 밖) = 미입력 */
+export const tasteAxis = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 5 ? v : null);
+
+/** requestLang = 이 응답을 받은 요청의 lang — 동봉 번역은 그 언어일 때만 의미가 있다(화면이 현재 lang과 대조) */
+export function adaptReview(wire: ReviewWire, requestLang?: string): Review {
   const author = adaptAuthor(wire.author);
   // P-165(#144): foodId·memberId 정본 = 중첩(food/author), 최상위는 구응답 폴백
   const foodId = wire.food?.foodId ?? wire.foodId;
@@ -112,7 +128,7 @@ export function adaptReview(wire: ReviewWire): Review {
     memberId: memberId != null ? String(memberId) : undefined,
     author,
     // P-165: 서버 해석 음식 이름·썸네일(내 리뷰 화면 우선 소스) — 부재 시 화면이 캐시 폴백
-    foodName: pf ? pf.productName : wire.food?.name ?? null,
+    foodName: pf ? pf.name?.trim() || pf.productName : wire.food?.name ?? null,
     foodImageUrl: pf ? toHttps(pf.imageUrl) : wire.food?.imageUrl ?? null,
     // 파생 — 기존 화면 호환 축. P-181: 탈퇴 판정 = authorWithdrawn **서버 정본 우선**,
     // 필드 부재(구 응답)만 author==null 폴백. 렌더(익명)는 무변.
@@ -124,12 +140,19 @@ export function adaptReview(wire: ReviewWire): Review {
     translatedBody: null,
     // KB-703 ②: 빈 문자열·비문자 = 판별 불가(null) — 버튼은 지금처럼 보인다(숨김은 확신할 때만)
     language: typeof wire.language === 'string' && wire.language.trim() !== '' ? wire.language : null,
+    // KB-941: 서버 동봉 번역 → 도메인 Translation(원문 언어 판정은 번역 어댑터 규칙 그대로) · 빈 본문 = 없음(자동 요청으로)
+    serverTranslation:
+      requestLang && typeof wire.translation?.text === 'string' && wire.translation.text.trim()
+        ? { lang: requestLang, value: adaptTranslation({ targetType: 'REVIEW', targetId: wire.reviewId, language: requestLang, text: wire.translation.text, sourceLanguage: wire.translation.sourceLanguage ?? null }) }
+        : undefined,
     // P-108: 좋아요 = 서버값 (목 로컬 계산 폐기 — 토글 낙관 반영은 뮤테이션 몫)
     likes: wire.likeCount ?? 0,
     myLike: wire.likedByMe === true,
     // P-236: 2축(0 = 평가 안 함) — 누락 = 0과 동일 취급
     servingSpeed: wire.servingSpeed ?? 0,
     staffKindness: wire.staffKindness ?? 0,
+    spiciness: tasteAxis(wire.spiciness),
+    sweetness: tasteAxis(wire.sweetness),
     // P-201: 장소 — name 없으면 무태그. MANUAL = 좌표 null(딥링크는 이름 검색 폴백)
     place: wire.place?.name
       ? {
@@ -143,9 +166,9 @@ export function adaptReview(wire: ReviewWire): Review {
   };
 }
 
-export function adaptReviewPage(wire: ReviewPageWire): ReviewPage {
+export function adaptReviewPage(wire: ReviewPageWire, requestLang?: string): ReviewPage {
   return {
-    items: (wire.items ?? []).map(adaptReview),
+    items: (wire.items ?? []).map((w) => adaptReview(w, requestLang)),
     hasNext: wire.hasNext === true,
     nextCursor: wire.nextCursor != null ? String(wire.nextCursor) : null,
   };
@@ -185,7 +208,7 @@ function placeWire(p: ReviewPlaceLike): NonNullable<ReviewUpdateWire['place']> {
  */
 export function buildReviewUpdate(
   current: { rating: number; body: string | null; photos?: string[]; place?: ReviewPlaceLike | null; servingSpeed?: number; staffKindness?: number },
-  changes: { rating?: number; body?: string | null; place?: ReviewPlaceLike | null; servingSpeed?: number; staffKindness?: number; photos?: string[] },
+  changes: { rating?: number; body?: string | null; place?: ReviewPlaceLike | null; servingSpeed?: number; staffKindness?: number; photos?: string[]; spiciness?: number | null; sweetness?: number | null },
 ): ReviewUpdateWire {
   const body = (changes.body !== undefined ? changes.body : current.body)?.trim() ?? '';
   const place = changes.place !== undefined ? changes.place : (current.place ?? null);
@@ -198,5 +221,8 @@ export function buildReviewUpdate(
     // P-358: 편집 화면이 슬롯 순서대로 확정한 paths(changes.photos) 우선 — 미전달 = 현행 보존
     imagePaths: (changes.photos ?? current.photos ?? []).map(imageUrlToPath), // 항상 전송 — 사진 소실 방지
     ...(place ? { place: placeWire(place) } : {}), // null = 해제 → 생략
+    // KB-865 ④: 맵기·당도는 넘겨받을 때만(가공식품 편집) — 값 또는 null(비움). 음식 편집 = 키 없음(서버 기존 값 유지)
+    ...(changes.spiciness !== undefined ? { spiciness: tasteAxis(changes.spiciness) } : {}),
+    ...(changes.sweetness !== undefined ? { sweetness: tasteAxis(changes.sweetness) } : {}),
   };
 }

@@ -1,5 +1,7 @@
+import { armScanExitPrompt, fireScanExitPrompt } from '@/features/scan/ScanExitPrompts';
 import { ScanModeTabs, type ScanMode } from '@/features/scan/ScanModeTabs';
-import { CameraSlot, PackagedScanFlow, type ScanCamOpts } from '@/features/scan/PackagedScanFlow';
+import { CameraSlot, PackagedScanFlow, type ScanCamKind, type ScanCamOpts } from '@/features/scan/PackagedScanFlow';
+import { ScanDarkMessage } from '@/features/scan/ScanDarkMessage';
 import { ScanLoading } from '@/features/scan/ScanLoading';
 import { UnlockCelebration } from '@/features/scan/UnlockCelebration';
 import { hasUnlockPending, hasObservedUnlockTransition, setUnlockScanFocused, subscribeUnlock } from '@/features/scan/unlockCelebrationStore';
@@ -19,14 +21,16 @@ import { currentGen } from '@/lib/auth/beTokens';
  *
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
-import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
 import { useCallback, useEffect, useRef, useState, useLayoutEffect, useSyncExternalStore, type ReactElement } from 'react';
-import { ActivityIndicator, Alert, AppState, BackHandler, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, AppState, BackHandler, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
+import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { Pressable } from '@/components/Pressable';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import { Txt as Text } from '@/components/Txt';
 import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { usePreventRemove } from 'expo-router/build/react-navigation/core';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { EVENTS, track } from '@/lib/analytics';
@@ -39,7 +43,7 @@ import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoo
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
+import { color as C, font, primaryTint, riskText, riskTone, shadow, radius } from '@/lib/theme';
 import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconScanLines, IconChevron, IconSparkles, IconTabScan, IconArrowLeft } from '@/components';
 import { IconChoosePhoto, IconRefreshCcw } from '@/components/icons';
 import { FramingCorners } from '@/features/scan/FramingCorners';
@@ -54,19 +58,17 @@ import { segmentMenu, formatKrw, orderNameKo, scanPriceParam, type MenuDish, typ
 // P-219→P-220: 실패 분류·계측 사유 매핑은 순수 모듈 한 곳(전수 유닛 대상)
 import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/lib/scan/scanErrors';
 import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
+import { upscaleLongSide, wysiwygCropRect } from '@/lib/scan/coverCrop'; // KB-946: 본문 중간 import에서 위로
 
 // P-354(KB-516): 정렬 라벨 — 메뉴판 순 → 가격 높은순 → 가격 낮은순(시트 순서 동일)
-import { useReviewPrompt } from '@/lib/useReviewPrompt';
 import { recordScanSuccess } from '@/lib/reviewPrompt';
-import { useOneShotQueue, type QueueStep } from '@/lib/oneShotQueue';
-import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
+import { useOneShotQueue } from '@/lib/oneShotQueue';
 const SORT_LABEL_KEY: Record<ResultSortMode, string> = {
   menu: 'scan.sortMenu',
   priceDesc: 'scan.sortPriceDesc',
   priceAsc: 'scan.sortPriceAsc',
 };
 import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
-import { wysiwygCropRect } from '@/lib/scan/coverCrop';
 import { dismissNudge, isNudgeDismissed } from '@/lib/scan/nudgeSession';
 import { personalRisk } from '@/lib/risk';
 import { spring } from '@/lib/motion';
@@ -84,7 +86,6 @@ import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
-import { PushPrimerModal } from '@/features/push/PushPrimerModal';
 import { openAppSettings } from '@/lib/openExternal';
 
 type Photo = { uri: string; width: number; height: number } | null;
@@ -103,6 +104,9 @@ const DARK_ROOT_PHASES = new Set<string>(['error']); // KB-845: scanning = 흰 �
 // KB-854 카메라 v2 B — 위 바 = 상태바 아래 108(헤더 + 탭 40 + 8) · 아래 바 내용 = 22 + 칩 36 + 24 + 컨트롤 88 + 10 + 링크 21
 export const CAM_TOP_BAR = 108;
 export const CAM_BAR_CONTENT = 201;
+/** 아래 단색 바 높이 = 내용 201 + 하단 여백. KB-900(T-004): 시안의 −11은 iOS 홈 인디케이터(얇은 선) 위로 링크가 11 걸쳐도 되는 값 —
+ *  안드 3버튼 내비 바는 불투명 버튼이라 링크가 덮여 ~26px만 눌렸다. 안드는 인셋 전부를 비운다(useBottomInset이 48 하한) */
+export const camBarHeight = (bottom: number, os: string = Platform.OS) => CAM_BAR_CONTENT + (os === 'android' ? bottom : Math.max(bottom - 11, 8));
 
 export default function Scan() {
   const router = useRouter();
@@ -134,10 +138,23 @@ export default function Scan() {
   const hasR = (me?.restrictions.length ?? 0) > 0;
 
   const [phase, setPhase] = useState<Phase>('camera');
+  const importingRef = useRef(false);
+  const [importing, setImporting] = useState(false);
+  // 앱 라우트 이탈만 막는다. 별도 네이티브 사진 선택기의 취소는 그대로 허용한다.
+  usePreventRemove(importing, () => {});
+  useEffect(() => {
+    if (!importing) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => importingRef.current);
+    return () => sub.remove();
+  }, [importing]);
+  const closeCamera = () => { if (!importingRef.current) router.back(); };
   // KB-813: 촬영 모드 — 메뉴판(기본·현행 흐름 그대로) / 음식 사진(자리만) / 가공식품(PackagedScanFlow)
   // P-508: 가공식품 상세 "성분표 직접 확인" = /scan?mode=packaged&label=1 — 가공식품 모드 + 성분표 안내부터(새 분석)
   const scanParams = useLocalSearchParams<{ mode?: string; label?: string; t?: string }>();
   const [scanMode, setScanModeState] = useState<ScanMode>(() => (scanParams.mode === 'packaged' && FLAGS.packagedLabelScan ? 'packaged' : 'menu'));
+  // KB-877: 잠금 콜백(메모)이 읽는 현재 모드 — phaseRef와 같은 동기화
+  const scanModeRef = useRef(scanMode);
+  useLayoutEffect(() => { scanModeRef.current = scanMode; });
   // Codex #315 R2: 성분표 진입 토큰 — 이미 열린 /scan으로 돌아와도(navigate 재사용) 토큰이 바뀌면 가공식품 모드 + **새 플로우**(key)로 새 분석부터.
   // 렌더 중 이전값 비교(KB-603 — 값 키 effect는 A→B→A를 놓친다)
   const labelEntry = scanParams.label === '1' && FLAGS.packagedLabelScan ? (scanParams.t ?? 'entry') : null;
@@ -146,17 +163,23 @@ export default function Scan() {
     setSeenLabelEntry(labelEntry);
     if (labelEntry) setScanModeState('packaged');
   }
+  // KB-865 ③(시안 21): 가공식품 확정이 한도(SCAN-004)에 걸림 = 기존 소진 화면을 **가공식품 흐름 위에** 띄운다 — 흐름(후보·선택)은 마운트 유지,
+  // 해제·나중에 = 같은 후보로 복귀(진입 플로우 문서). 잡고 있는 동안 프로필 잠금이 흐름을 갈아치우지 않게 ref로 막는다
+  const [packagedHold, setPackagedHold] = useState(false);
+  const packagedHoldRef = useRef(false);
   const setScanMode = (m: ScanMode) => {
+    if (importingRef.current) return;
     if (m === scanMode) return;
     track(EVENTS.scan_mode_select, { mode: m });
+    // Codex #339: 소진 덮개(packagedHold)는 가공식품 흐름에만 — 떠나면 해제(남으면 메뉴의 프로필 잠금·"나중에"가 가공식품 규칙을 탄다).
+    // 가공식품에 머무는 동안은 유지 — "나중에" 뒤 프로필 잠금이 방금 돌아간 흐름을 다시 덮지 않게
+    if (scanMode === 'packaged') { packagedHoldRef.current = false; setPackagedHold(false); }
     setScanModeState(m);
   };
-  const reviewPrompt = useReviewPrompt(); // KB-730: 스캔 성공 2회 이상 — 결과 화면 일회성 모달 큐의 마지막 스텝
-  const modalQueue = useOneShotQueue(); // P-267 직렬화의 일반화: 코치마크 → 알림 넛지 → 리뷰 유도
+  const modalQueue = useOneShotQueue(); // P-267 직렬화의 일반화 — KB-908: 결과 화면엔 코치마크만(알림 넛지·리뷰 유도는 스캔을 닫은 뒤 ScanExitPrompts)
   const coachDoneRef = useRef<(() => void) | null>(null);
-  const primerDoneRef = useRef<(() => void) | null>(null);
   const settle = (ref: React.MutableRefObject<(() => void) | null>) => { const f = ref.current; ref.current = null; f?.(); };
-  const scanRecordedRef = useRef<Promise<unknown>>(Promise.resolve()); // 성공 카운트 저장 완료 → 리뷰 스텝 판정 순서 보장
+  const scanRecordedRef = useRef<Promise<unknown>>(Promise.resolve()); // 성공 카운트 저장 완료 → 나갈 때 리뷰 유도 판정 순서 보장
   const [photo, setPhoto] = useState<Photo>(null);
   // ⑦(KB-137) 촬영/갤러리 파일 캐시 누적 방지 — 결과 오버레이가 photo.uri를
   // 렌더하므로 OCR 직후가 아니라 **표시 수명이 끝날 때** 삭제: 새 사진으로
@@ -201,8 +224,9 @@ export default function Scan() {
   // P-131: 줌 — 핀치+프리셋 상호 동기 (0~1 상대값, cameraZoom 순수 로직)
   const [zoom, setZoom] = useState(0);
   const pinchBase = useSharedValue(0);
-  const onPinchStart = useCallback(() => { pinchBase.set(zoom); }, [pinchBase, zoom]);
-  const onPinchUpdate = useCallback((event: { scale: number }) => { setZoom(pinchToZoom(pinchBase.get(), event.scale)); }, [pinchBase]);
+  const importingGestureLock = useSharedValue(false);
+  const onPinchStart = useCallback(() => { if (importingGestureLock.get()) return; pinchBase.set(zoom); }, [importingGestureLock, pinchBase, zoom]);
+  const onPinchUpdate = useCallback((event: { scale: number }) => { if (importingGestureLock.get()) return; setZoom(pinchToZoom(pinchBase.get(), event.scale)); }, [importingGestureLock, pinchBase]);
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   // P-250: SCAN-004(무료 소진) — "리뷰 작성하기" = 리뷰 픽커(P-245 자격 UX) 직결
   const [quotaPicker, setQuotaPicker] = useState(false);
@@ -254,18 +278,27 @@ export default function Scan() {
     phaseRef.current = phase;
   });
   const canLockQuota = () => phaseRef.current === 'camera' || phaseRef.current === 'error';
-  const lockFromProfile = useCallback(() => {
-    const quota = quotaRef.current;
-    if (!canLockQuota() || !isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current) return;
+  // KB-963(예진 11/2): 가공식품 스캔은 차감 없음(서버 S-937) — 메뉴 쿼터가 소진돼도 스캔 화면은 열고(가공식품 바로 사용),
+  // 소진 안내(P-250 쿼터 화면)는 **메뉴 모드에서 촬영하려 할 때만**. 진입 시 판정은 기록만: 프로필 소진(live) · 서버 SCAN-004(menuQuota004Ref).
+  // Codex #395: 004는 **그때의 프로필 객체**와 함께 기록 — 그 뒤 도착한 새 프로필이 소진이 아니면(해금·남은 횟수 있음 — 서버 정본 = 최신 프로필) 기록은 낡음
+  const menuQuota004Ref = useRef<{ quota: unknown } | null>(null);
+  const lockFromProfile = useCallback((detail = 'profile scanRemaining 0') => {
+    if (!canLockQuota() || quotaLockRef.current) return;
     quotaLockRef.current = true;
-    setError({ stage: 'quota', detail: 'profile scanRemaining 0' });
+    setError({ stage: 'quota', detail });
     setPhase('error');
   }, []);
-  // Codex #159 P2: 포커스 유지 중 재조회로 소진이 도착해도(3번째 스캔 성공 → 다시 찍기) 촬영 전에 안내.
-  // 카메라 단계에서만 — 스캔 중·결과 화면은 끊지 않는다.
-  useEffect(() => {
-    if (phase === 'camera' && !isGuest && scanV2Enabled()) lockFromProfile();
-  }, [phase, me?.scanQuota, isGuest, lockFromProfile]);
+  /** 메뉴 촬영 직전 — 소진(프로필 소진이 반증되지 않았거나 서버 004)이면 쿼터 화면을 띄우고 true(촬영 중단) */
+  const blockMenuShot = (): boolean => {
+    if (!scanV2Enabled()) return false;
+    const quota = quotaRef.current;
+    const profileOut = isScanQuotaExhausted(quota) && quota !== disprovenQuota.current;
+    const rejected = menuQuota004Ref.current;
+    if (rejected && rejected.quota !== quota && !isScanQuotaExhausted(quota)) menuQuota004Ref.current = null;
+    if (!profileOut && !menuQuota004Ref.current) return false;
+    lockFromProfile(menuQuota004Ref.current ? 'preflight SCAN-004' : 'profile scanRemaining 0');
+    return true;
+  };
   // KB-759(QA 로그 판독): 해제 응답 뒤 preflight가 쥔 quota는 프로필 재조회 전의 **옛 스냅샷**(소진)일 수 있고, 복원이 티켓 200에만
   // 기대고 있었다(실패는 catch가 조용히 삼킴 → 제한 화면에 광고 버튼만 사라진 채 잔류). `unlocked` = 서버가 scanUnlocked:true를 돌려준 직후:
   // ① 옛 스냅샷은 반증 처리(재잠금 0) — 서버가 정본 ② 티켓 성공이면 잠금 ref와 무관하게 카메라 ③ 티켓 실패(비-004 포함)는 '다시 시도' 상태로 노출.
@@ -282,8 +315,6 @@ export default function Scan() {
     if (unlocked) {
       disprovenQuota.current = quota;
       if (forError) setUnlock({ kind: 'opening', forError });
-    } else {
-      lockFromProfile();
     }
     // KB-759 진단(개발 번들만): 잠금 상태·티켓 결과를 Metro 로그로
     if (__DEV__) console.log('[scan] preflight', JSON.stringify({ phase: phaseRef.current, lock: quotaLockRef.current, unlocked, quota }));
@@ -291,6 +322,7 @@ export default function Scan() {
       const ticket = await issueScanTicket();
       if (generation !== currentGen() || epoch !== ticketEpoch.current) return;
       preTicket.current = ticket;
+      menuQuota004Ref.current = null; // KB-963: 서버가 티켓을 줬다 = 메뉴 촬영 가능
       if (__DEV__) console.log('[scan] preflight ticket ok', JSON.stringify({ lock: quotaLockRef.current, phase: phaseRef.current, unlocked }));
       if (isScanQuotaExhausted(quota)) disprovenQuota.current = quota;
       if (unlocked && errorRef.current !== forError) return; // 그새 화면이 바뀌었다(늦은 응답) — 덮지 않는다
@@ -318,10 +350,8 @@ export default function Scan() {
       }
       if (code === 'SCAN-004') {
         preTicket.current = null;
-        if (!canLockQuota()) return;
-        quotaLockRef.current = true;
-        setError({ stage: 'quota', detail: 'preflight SCAN-004' });
-        setPhase('error'); // 카메라 미표시 — 즉시 쿼터 잠금(P-250 quota UI 재사용)
+        // KB-963: 진입 잠금 0 — 기록만 하고 메뉴 촬영 시점에 쿼터 화면(가공식품은 그대로 사용). 이미 쿼터 화면(해제 대기)이면 그대로 둔다
+        menuQuota004Ref.current = { quota };
       } else if (code === 'MEMBER-003') {
         // KB-441 → KB-670: 서버가 모르는 회원(탈퇴·정지 — 서버 KB-669로 전 회원 API 확대)의 남은 토큰.
         // 세션 무효화는 client 훅(beAuth)이 하고, 세션이 만료되면 isGuest가 바뀌어 아래 라우트 가드가 게스트
@@ -330,7 +360,7 @@ export default function Scan() {
         preTicket.current = null;
       }
     }
-  }, [lockFromProfile]);
+  }, []);
   useFocusEffect(
     useCallback(() => {
       if (isGuest) return; // 게스트 가드 상위(순서 유지) — 티켓 로직 미진입
@@ -371,40 +401,18 @@ export default function Scan() {
     });
     return () => sub.remove();
   }, [noticeOpen]);
-  // P-192: 푸시 프라이머 — 스캔 완료 도달 시 미응답자만 1회(기록 = pushAdapter).
-  // P-267(KB-377): 단독 effect 폐지 — 코치마크와 **직렬화**(아래 결과 진입 effect가
-  // 순차 판정). 동시 present = 네이티브 fullScreenModal 위 RN Modal 2개 같은 커밋
-  // present → iOS UIKit presentation 교착(첫 스캔 먹통 — 실기 2건).
-  // 2026-09-28(종한): 판정 확장 — OS 거부 / 서버 활동 알림 OFF면 매 스캔마다 유도(lib/push/scanNudge), 그 외는 기존 1회 프라이머.
-  const [pushPrimer, setPushPrimer] = useState(false);
-  const [nudgeMode, setNudgeMode] = useState<ScanNudgeMode>('primer');
-  // Codex 리뷰: 결과 1회당 시트 1회 — 「나중에」 뒤 마커 탭→코치마크 닫힘이 판정을 다시 불러도 재노출 0. 새 스캔(카메라 복귀)에서 리셋.
-  const nudgeShownRef = useRef(false);
-  // 큐 스텝: 알림 넛지 — 안 뜨면 false(다음 스텝), 뜨면 완전히 닫힌 뒤 done
-  const nudgeStep = useCallback((): QueueStep => ({
-    key: 'push-nudge',
-    present: async (done) => {
-      if (!FLAGS.pushEnabled || nudgeShownRef.current) return false;
-      const m = await decideScanNudge(isGuest);
-      if (!m || nudgeShownRef.current) return false;
-      nudgeShownRef.current = true;
-      primerDoneRef.current = done;
-      setNudgeMode(m);
-      setPushPrimer(true);
-      return true;
-    },
-  }), [isGuest]);
   // P-061①→P-062⓪ 보수: state 가드는 리렌더 전 연타를 못 막음(스테일 클로저) —
   // **ref 동기 가드**(진입 즉시 검사·세트)가 실차단, state는 시각적 disable 전용.
   const capturingRef = useRef(false);
   const [capturing, setCapturing] = useState(false);
-  const [importing, setImporting] = useState(false); // P-191: 갤러리 원본 로드 구간
   // P-191: 픽커 닫힘~원본 준비 사이 무표시 구간(예진 실기 — "멈췄나?") — 스피너 오버레이.
   // "Reading the menu..."(scanning 페이즈)와 구분되는 선행 단계 표시.
   const ImportingOverlay = importing ? (
-    <View style={styles.importingOverlay} pointerEvents="none" testID="importing-overlay">
-      <ActivityIndicator size="small" color="#fff" />
-      <Text style={styles.statusText}>{t('scan.loadingPhoto')}</Text>
+    <View style={styles.importingOverlay} pointerEvents="auto" accessible accessibilityRole="progressbar" accessibilityLabel={t('scan.loadingPhoto')} accessibilityState={{ busy: true }} testID="importing-overlay">
+      <View style={styles.importingStatus} testID="importing-status">
+        <ActivityIndicator size="small" color="#fff" />
+        <Text style={styles.statusText}>{t('scan.loadingPhoto')}</Text>
+      </View>
     </View>
   ) : null;
   // P-038(KB-212): 빈 프로필 넛지 — 세션 억제 플래그를 마운트 시점에 읽는다
@@ -423,10 +431,10 @@ export default function Scan() {
   // P-267(KB-377): 일회성 모달 직렬화 — 결과 도달마다 **한 흐름에서 순차 판정**.
   // 코치마크 우선, 뜨면 프라이머는 보류(코치 onClose에서 재평가). 코치마크가 없으면
   // (이번에 안 뜸·기존자 재도달) 프라이머 단독 판정 = 현행 시맨틱 무변.
-  const reviewStep = reviewPrompt.step; // useCallback 안정 — 훅 반환 객체 자체는 매 렌더 새것
-  // KB-730: 결과 도달마다 큐에 순서대로 — 코치마크(1회) → 넛지 → 리뷰 유도. 한 스텝이 완전히 닫혀야 다음(동시 present 절대 금지, KB-377)
+  // KB-908(T-010): 결과 도달 = 코치마크(1회)만 큐에. 알림 넛지·리뷰 유도는 나갈 때 하나만(ScanExitPrompts — 판정·빈도 규칙 무변)
   useEffect(() => {
-    if (phase !== 'result') { nudgeShownRef.current = false; modalQueue.clear(); return; }
+    if (phase !== 'result') { modalQueue.clear(); return; }
+    armScanExitPrompt({ isGuest, ready: scanRecordedRef.current });
     modalQueue.add({
       key: 'coach-mark',
       present: async (done) => {
@@ -439,9 +447,8 @@ export default function Scan() {
         return true;
       },
     });
-    modalQueue.add(nudgeStep());
-    modalQueue.add(reviewStep('scan', { ready: scanRecordedRef.current }));
-  }, [phase, modalQueue, nudgeStep, reviewStep]); // 전부 안정(큐 ref·useCallback) — isGuest 전환 시 재평가는 종전(maybeShowPrimer 의존)과 동일
+  }, [phase, modalQueue, isGuest]);
+  useEffect(() => () => fireScanExitPrompt(), []); // 스캔 화면 닫힘 = 결과가 있었으면 하나 띄우기
 
   useEffect(() => {
     if (Platform.OS !== 'android') return; // iOS는 카메라 콜백이 담당
@@ -577,16 +584,21 @@ export default function Scan() {
   }
 
   /** KB-845: onShot = 크롭본을 받을 곳(메뉴 = scanImage, 가공식품·성분표 = PackagedScanFlow) · menu = scan_start 계측(메뉴만 — 가공식품은 자기 이벤트) */
-  async function capture(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, menu = true) {
+  /** KB-973: 가공식품 촬영 시작 = food_packaged_scan_start(mode) — scan_start는 메뉴 전용 시계열 그대로 */
+  const trackShotStart = (kind: ScanCamKind, source: 'camera' | 'gallery') =>
+    kind === 'menu' ? track(EVENTS.scan_start, { source }) /* P-144 */ : track(EVENTS.food_packaged_scan_start, { mode: kind === 'ingredient' ? 'label' : 'packaged', source });
+  async function capture(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, kind: ScanCamKind = 'menu') {
+    const menu = kind === 'menu';
     if (capturingRef.current) return; // P-062⓪: 동기 가드 — 리렌더 전 연타도 차단
     if (isGuest) return setGateOpen(true); // 스캔=회원 전용 (게이트)
+    if (menu && blockMenuShot()) return; // KB-963: 메뉴 쿼터 소진 = 촬영 시점에 안내(가공식품 촬영은 통과)
     // P-131: 가로 촬영 허용 (KB-141 가드 폐기 — 캡슐 전환으로 겹침 사유 소멸)
     const cam = cameraRef.current;
     if (!cam) return;
     capturingRef.current = true;
     setCapturing(true);
     setError(null);
-    if (menu) track(EVENTS.scan_start, { source: 'camera' }); // P-144
+    trackShotStart(kind, 'camera');
     try {
       const pic = await cam.takePictureAsync({ quality: 0.7, exif: true }); // P-338: Orientation 태그 — raw 치수 정규화용
       console.log('[scan] photo =', JSON.stringify({ uri: pic?.uri, w: pic?.width, h: pic?.height }));
@@ -603,16 +615,38 @@ export default function Scan() {
     }
   }
 
-  async function pickFromGallery(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, menu = true) {
+  /** KB-946: 갤러리 이미지가 작으면(긴 변 < 2000) 비율 그대로 키운 JPEG — 카메라 크롭본과 비슷한 OCR 입력. 미탑재·실패 = 원본(cropToPreview와 같은 규칙).
+   *  ponytail: 투명 PNG 흰 배경 합성은 생략(실측 원인 = 해상도) — 투명 배경 실패가 보이면 extent로 추가 */
+  async function upscaleForOcr(pic: NonNullable<Photo>): Promise<NonNullable<Photo>> {
+    const size = upscaleLongSide(pic.width, pic.height);
+    if (!size) return pic;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ImageManipulator, SaveFormat } = require('expo-image-manipulator') as typeof import('expo-image-manipulator');
+      const rendered = await ImageManipulator.manipulate(pic.uri).resize(size).renderAsync();
+      const saved = await rendered.saveAsync({ compress: 0.9, format: SaveFormat.JPEG });
+      console.log('[scan] gallery OCR upscale', JSON.stringify({ from: { w: pic.width, h: pic.height }, to: size }));
+      return { uri: saved.uri, width: saved.width ?? size.width, height: saved.height ?? size.height };
+    } catch (e) {
+      console.log('[scan] gallery upscale 생략:', (e as Error)?.message ?? e);
+      return pic;
+    }
+  }
+
+  async function pickFromGallery(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, kind: ScanCamKind = 'menu') {
+    const menu = kind === 'menu';
     if (capturingRef.current) return; // P-062⓪: 셔터와 동일 동기 가드
     if (isGuest) return setGateOpen(true);
+    if (menu && blockMenuShot()) return; // KB-963
     capturingRef.current = true;
     setCapturing(true);
+    importingGestureLock.set(true);
+    importingRef.current = true; // 리렌더 전 연속 입력도 차단
     setImporting(true); // P-191: 픽커 복귀~원본 준비(iCloud 다운로드 수 초) 구간 표시
     setError(null);
-    if (menu) track(EVENTS.scan_start, { source: 'gallery' }); // P-144
+    trackShotStart(kind, 'gallery');
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
+      const result = await launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: false,
         selectionLimit: 1,
@@ -620,13 +654,17 @@ export default function Scan() {
       });
       if (result.canceled || !result.assets?.length) return;
       const a = result.assets[0];
-      await onShot({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });
+      const picked = { uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 };
+      // KB-946: 가공식품·성분표(온디바이스 OCR) = 작은 이미지는 OCR 전 키움 — 메뉴판 스캔은 무변
+      await onShot(menu ? picked : await upscaleForOcr(picked));
     } catch (e) {
       if (menu) fail('capture', (e as Error)?.message ?? String(e));
       else console.log('[scan] packaged library pick failed:', (e as Error)?.message ?? e);
     } finally {
       capturingRef.current = false;
       setCapturing(false);
+      importingRef.current = false;
+      importingGestureLock.set(false);
       setImporting(false);
     }
   }
@@ -640,6 +678,7 @@ export default function Scan() {
   async function captureViaSystem() {
     if (capturingRef.current) return; // P-062⓪ 동기 가드 공유
     if (isGuest) return setGateOpen(true);
+    if (blockMenuShot()) return; // KB-963: 시스템 카메라 = 메뉴 스캔 전용
     capturingRef.current = true;
     setCapturing(true);
     setError(null);
@@ -654,7 +693,7 @@ export default function Scan() {
         return;
       }
       track(EVENTS.scan_start, { source: 'camera' }); // P-144 (시스템 카메라도 camera)
-      const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+      const res = await launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
       if (res.canceled || !res.assets?.length) return; // 취소 → 런처 복귀(무동작)
       const a = res.assets[0];
       await scanImage({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });
@@ -700,7 +739,7 @@ export default function Scan() {
 
   // KB-845: 카메라 = 시안 X(24, 흰색, (20,60) — 배경 원 없음) · 그 밖(오류·오프라인 밝은 바탕) = 기존 어두운 원(흰 X가 보이게)
   const closeBtn = (cam: boolean) => (
-    <Pressable style={[cam ? styles.camClose : styles.close, { top: insets.top + (cam ? 16 : 8) }]} onPress={() => router.back()} hitSlop={cam ? 10 : 8} accessibilityLabel={t('common.close')} testID="scan-close">
+    <Pressable style={[cam ? styles.camClose : styles.close, { top: insets.top + (cam ? 16 : 8) }]} onPress={closeCamera} disabled={importing} hitSlop={cam ? 10 : 8} accessibilityLabel={t('common.close')} testID="scan-close">
       <Animated.View style={uiRotate}>
         <IconClose size={cam ? 24 : 22} color="#fff" />
       </Animated.View>
@@ -719,13 +758,14 @@ export default function Scan() {
   const [camShown, setCamShown] = useState(false);
   // KB-854 카메라 v2 B: 위 단색 바(헤더+탭) = 상태바 아래 108 · 아래 단색 바(줌 · 갤러리/셔터/전환 · 링크) = 내용 201 + 하단 여백
   // (375×812 시안: 위 바 0~152, 아래 바 588~812 = 224 = 201 + 홈 인디케이터 34 − 11). 프리뷰 = 두 바 사이(크롭 기준 previewSize도 이 영역)
-  const camBarH = CAM_BAR_CONTENT + Math.max(bottom - 11, 8);
+  const camBarH = camBarHeight(bottom);
   const cameraLayer = permission?.granted ? (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none" testID="scan-camera-layer">
       <View style={[styles.camPreview, { top: insets.top + CAM_TOP_BAR, bottom: camBarH }]}>
         {/* P-131: 핀치 줌 — runOnJS(true)로 JS 스레드 콜백(워클릿 0, P-065 교훈 준수) */}
         <GestureDetector
           gesture={Gesture.Pinch()
+            .enabled(!importing)
             .runOnJS(true)
             .onStart(onPinchStart)
             .onUpdate(onPinchUpdate)}
@@ -752,8 +792,8 @@ export default function Scan() {
     const menu = o.kind === 'menu';
     // KB-854: 안내 제목·힌트 문구 제거(시안 B) — 흐름이 주는 한 줄(성분표 n/4 · 같은 분석 차감 안내)만 아래 바 위에 남긴다(P-510 규칙)
     const hint = o.hint ?? null;
-    const shoot = () => void capture(o.onShot, menu);
-    const library = () => void pickFromGallery(o.onShot, menu);
+    const shoot = () => void capture(o.onShot, o.kind);
+    const library = () => void pickFromGallery(o.onShot, o.kind);
     const off = capturing || !!o.shootDisabled; // Codex #318: 성분표 4면이 차면 더 찍지 못한다
     return (
       <View style={styles.camRoot} pointerEvents="box-none">
@@ -767,7 +807,7 @@ export default function Scan() {
               <View style={styles.permAlert}>
                 <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
                 <Text style={[styles.permAlertBody, { marginBottom: 13 }]}>{t('scan.permissionSettingsBody')}</Text>
-                <Btn testID="scan-perm-settings" onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
+                <Btn testID="scan-perm-settings" disabled={importing} onPress={() => { if (importingRef.current) return; track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
                   {t('photo.openSettings')}
                 </Btn>
               </View>
@@ -779,7 +819,7 @@ export default function Scan() {
               <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
               <View style={{ width: '100%', maxWidth: 280 }}>
                 {/* P-214: 권한 퍼널 — 요청 후 결과(grant|deny) 구분 */}
-                <Btn testID="scan-perm-grant" onPress={() => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))}>
+                <Btn testID="scan-perm-grant" disabled={importing} onPress={() => { if (importingRef.current) return; void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' })); }}>
                   {t('scan.grant')}
                 </Btn>
               </View>
@@ -794,7 +834,7 @@ export default function Scan() {
           <Text style={styles.camTitle}>{t('scanCamera.title')}</Text>
         </View>
         {o.onClose ? (
-          <Pressable style={[styles.close, { top: insets.top + 16 }]} onPress={o.onClose} hitSlop={10} accessibilityLabel={t('common.close')} testID="scan-close-step">
+          <Pressable style={[styles.close, { top: insets.top + 16 }]} onPress={() => { if (!importingRef.current) o.onClose?.(); }} disabled={importing} hitSlop={10} accessibilityLabel={t('common.close')} testID="scan-close-step">
             <IconClose size={24} color={C.surface} />
           </Pressable>
         ) : (
@@ -809,7 +849,7 @@ export default function Scan() {
         {/* KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 모드 탭째 없음 → 메뉴 스캔만(main과 같음) */}
         {FLAGS.processedFoodEnabled && (
           <View style={[styles.camModeTabs, { top: insets.top + 60 }]} pointerEvents="box-none">
-            <ScanModeTabs value={menu ? 'menu' : 'packaged'} onChange={setScanMode} tone="dark" />
+            <ScanModeTabs value={menu ? 'menu' : 'packaged'} onChange={setScanMode} disabled={importing} tone="dark" />
           </View>
         )}
         {o.debug ? <View style={[styles.camDebug, { top: insets.top + 116 }]}>{o.debug}</View> : null}
@@ -817,9 +857,10 @@ export default function Scan() {
         {GateSheet}
 
         {/* 흐름 안내 한 줄(성분표 n/4 · 같은 분석) — 아래 바 바로 위 */}
-        {hint ? (
+        {hint || o.notice ? (
           <View style={[styles.camHintWrap, { bottom: camBarH + 12 }]} pointerEvents="none">
-            <Text style={styles.camHint} testID="scan-cam-hint">{hint}</Text>
+            {o.notice /* KB-877: 가공식품 무료 남은 분(없으면 null) */}
+            {hint ? <Text style={styles.camHint} testID="scan-cam-hint">{hint}</Text> : null}
           </View>
         ) : null}
         {/* KB-854: 아래 단색 바 — 1x·2x 칩 → 갤러리 · 셔터 · 전환(아이콘 터치 52) → 링크(가공식품 "성분표로" / 성분표 "앞면으로" — 메뉴는 자리만) */}
@@ -829,7 +870,7 @@ export default function Scan() {
             {(['x1', 'x2'] as CamZoomPreset[]).map((pKey) => {
               const on = activePreset(zoom) === pKey;
               return (
-                <Pressable key={pKey} style={[styles.zoomPill, on && styles.zoomPillOn]} onPress={() => setZoom(CAM_ZOOM_PRESETS[pKey])} disabled={!granted} hitSlop={6} testID={`zoom-${pKey}`}>
+                <Pressable key={pKey} style={[styles.zoomPill, on && styles.zoomPillOn]} onPress={() => { if (!importingRef.current) setZoom(CAM_ZOOM_PRESETS[pKey]); }} disabled={!granted || importing} hitSlop={6} testID={`zoom-${pKey}`}>
                   <Animated.View style={uiRotate}>
                     <Text style={[styles.zoomPillText, on && styles.zoomPillTextOn]}>{pKey === 'x1' ? '1x' : '2x'}</Text>
                   </Animated.View>
@@ -851,7 +892,7 @@ export default function Scan() {
               <View style={styles.shutterSpacer} />
             )}
             {granted ? (
-              <Pressable testID="scan-flip" style={styles.camIconBtn} onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))} accessibilityRole="button" accessibilityLabel={t('scanCamera.switchCamera')}>
+              <Pressable testID="scan-flip" style={styles.camIconBtn} onPress={() => { if (!importingRef.current) setFacing((f) => (f === 'back' ? 'front' : 'back')); }} disabled={importing} accessibilityRole="button" accessibilityLabel={t('scanCamera.switchCamera')}>
                 <Animated.View style={uiRotate}>
                   <IconRefreshCcw size={28} color={C.surface} />
                 </Animated.View>
@@ -861,7 +902,7 @@ export default function Scan() {
             )}
           </View>
           {o.link ? (
-            <Pressable onPress={o.link.onPress} hitSlop={8} accessibilityRole="button" testID={o.link.testID} style={styles.camLink}>
+            <Pressable onPress={() => { if (!importingRef.current) o.link?.onPress(); }} disabled={importing} hitSlop={8} accessibilityRole="button" testID={o.link.testID} style={styles.camLink}>
               <Text style={styles.camLinkText}>{o.link.label}</Text>
             </Pressable>
           ) : (
@@ -984,10 +1025,7 @@ export default function Scan() {
       originalScannedName: p.originalScannedName,
     }));
     const allDishes = [...resultDishes, ...photoDishes];
-    // §14-5: unable sorted last, never hidden.
-    // P-226 ②③: 소팅 세그 — 기본 = 메뉴판 그대로 순(unable만 최하단, 현행 유지),
-    // 안전한 순 = safe→caution→danger→unable. ⚠️ unable은 어느 모드에서도 **최하단**
-    // — 불확실을 안전해 보이는 위치에 두지 않는다(false-safe, 유닛 잠금).
+    // unable은 숨기지 않는다(§14-5). 정렬 = resultSort — 기본 메뉴판 순(KB-908: unable도 제자리, 행의 Unable 라벨·회색 리본이 표시), 가격순은 null 맨 아래
     const listDishes = sortResultDishes(allDishes, sortMode);
     // P-354(KB-516): Safe only — 표시만 필터(장바구니 수량은 itemId 키로 보존,
     // goOrder는 listDishes(전체) 기준이라 숨긴 담김분도 합계 불변)
@@ -1132,7 +1170,6 @@ export default function Scan() {
           onClose={() => setSortSheet(false)}
         />
         {GateSheet}
-        <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} onShow={reviewPrompt.onShow} onClosed={reviewPrompt.onClosed} disabled={reviewPrompt.answered} />
         {/* P-370(KB-533): 모달 컨텍스트 자체 토스트 호스트(스택 top) */}
         <TopToastHost />
         {/* P-267 Codex P1: 프라이머 트리거 = iOS는 onDismiss(네이티브 dismiss 완료
@@ -1181,15 +1218,6 @@ export default function Scan() {
           </View>
         </Modal>
 
-        {/* P-192: 푸시 프라이머 — 첫 스캔 완료 후 1회(미응답자만: 게스트 개방 대비 +
-            온보딩 프라이머 이전 기존 회원 커버 — 응답 기록 시 재노출 0) */}
-        <PushPrimerModal
-          surface="scan"
-          mode={nudgeMode}
-          open={pushPrimer}
-          onDone={() => { setPushPrimer(false); if (Platform.OS !== 'ios') settle(primerDoneRef); }}
-          onDismiss={Platform.OS === 'ios' ? () => settle(primerDoneRef) : undefined}
-        />
       </View>
     );
   }
@@ -1206,19 +1234,33 @@ export default function Scan() {
   }
 
   // ---- error ----
-  if (phase === 'error') {
+  // 가공식품 소진(packagedHold) = 아래 가공식품 분기가 흐름 위에 덮어 그린다(같은 트리 자리 — 흐름 상태 유지). 나중에 = 흐름으로 복귀
+  // KB-963: 소진 안내는 메뉴 촬영 시점에만 뜬다 — 나중에 = 카메라로 복귀(모드 탭에서 가공식품 바로 사용). 가공식품 덮개(packagedHold)도 같음
+  const quotaLater = () => { quotaLockRef.current = false; setError(null); setPhase('camera'); };
+  const renderError = () => {
     const stage = error?.stage ?? 'be';
-    return withPresenter(
-      <View style={[styles.root, styles.center]}>
-        {Close}
-        {GateSheet}
-        <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
-        {/* P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체) */}
-        <Text style={styles.errStage}>{stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}</Text>
-        <Text style={styles.statusText}>{t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'ready' ? 'scan.unlockedBody' : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
-        {/* P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자
-            노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만. */}
-        <View style={styles.errBtns}>
+    return (
+      // KB-914(R-139): 화면 틀 = 공용 ScanDarkMessage(가공식품 후보 없음·못 읽음·오류와 같은 화면) — 라벨·문장·버튼 분기는 그대로
+      <ScanDarkMessage
+        testID="scan-error"
+        overlay={<>{Close}{GateSheet}</>}
+        // P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체)
+        label={stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}
+        // P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자 노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만.
+        title={t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'ready' ? 'scan.unlockedBody' : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}
+        footer={quotaPicker && (
+          <TagPickerSheet
+            context="review"
+            kind="food"
+            foodTags={[]}
+            placeTag={null}
+            onToggleFood={(f) => { setQuotaPicker(false); router.push(`/food/${f.foodId}/review` as Href); }}
+            onTogglePlace={() => {}}
+            onClose={() => setQuotaPicker(false)}
+            t={t}
+          />
+        )}
+      >
           {/* P-219: 분기별 행동 — 메뉴판 아님·촬영 실패 = 재촬영(사용자 행동),
               인식 실패(503)·업로드 실패 = 재시도(같은 사진으로 다시) */}
           {/* P-222 재량: network도 재시도 대상 — 사진은 그대로이고 연결만 회복하면 되는
@@ -1231,13 +1273,13 @@ export default function Scan() {
               {/* KB-759: 해제됐는데 티켓 재발급 중/실패 — 광고·리뷰 CTA 대신 다시 시도(실패일 때만) + 나중에 */}
               {/* /review 3: 여는 중에도 같은 버튼을 busy로 유지(스피너·비활성) — 실패면 탭 가능 */}
               <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t(unlockState === 'ready' ? 'scan.startScanning' : 'common.retry')}</Btn>
-              <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
+              <Btn variant="ghost" onPress={quotaLater} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'quota' ? (
             <>
               {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight({unlocked}) → 새 티켓 → 카메라 복원(KB-759) */}
               <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (!hasObservedUnlockTransition()) void preflight({ unlocked: true }); }} onClose={() => router.back()} />
-              <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
+              <Btn variant="ghost" onPress={quotaLater} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (
             <>
@@ -1249,34 +1291,37 @@ export default function Scan() {
           ) : (
             <Btn variant="ghost" onPress={() => setPhase('camera')} testID="scan-err-retake">{t('scan.retake')}</Btn>
           )}
-        </View>
-        {/* P-250: 무료 소진 → 리뷰 픽커(P-245 자격 UX 그대로 — 스캔분만 선택 가능).
-            작성 성공 후 스캔 재진입 시 새 티켓 발급부터(해금 즉시 반영 — 가이드 C). */}
-        {quotaPicker && (
-          <TagPickerSheet
-            context="review"
-            kind="food"
-            foodTags={[]}
-            placeTag={null}
-            onToggleFood={(f) => { setQuotaPicker(false); router.push(`/food/${f.foodId}/review` as Href); }}
-            onTogglePlace={() => {}}
-            onClose={() => setQuotaPicker(false)}
-            t={t}
-          />
-        )}
-      </View>
+      </ScanDarkMessage>
     );
-  }
+  };
 
-  // ---- KB-813 가공식품 모드 — 카메라 단계에서만(결과·오류·쿼터 잠금은 위에서 먼저 처리돼 이 분기에 오지 않는다) ----
-  if (scanMode === 'packaged' && !offline) {
+  // ---- KB-813 가공식품 모드 — 카메라 단계(결과·오류·쿼터 잠금은 아래에서 먼저) · KB-865 ③: 확정 소진은 흐름 위 덮개 ----
+  if (scanMode === 'packaged' && !offline && (phase !== 'error' || packagedHold)) {
     return withPresenter(
       <View style={styles.camHost}>
         {cameraLayer}
-        <PackagedScanFlow key={labelEntry ?? 'flow'} mode={scanMode} onMode={setScanMode} onClose={() => router.back()} startLabel={labelEntry != null} renderCamera={cameraUi} focused={isFocused} />
+        <PackagedScanFlow
+          key={labelEntry ?? 'flow'}
+          mode={scanMode}
+          onMode={setScanMode}
+          onClose={() => router.back()}
+          startLabel={labelEntry != null}
+          renderCamera={cameraUi}
+          focused={isFocused}
+          onQuota={() => {
+            packagedHoldRef.current = true;
+            setPackagedHold(true);
+            quotaLockRef.current = true;
+            setError({ stage: 'quota', detail: 'packaged confirm SCAN-004' });
+            setPhase('error');
+          }}
+        />
+        {phase === 'error' && <View style={StyleSheet.absoluteFill} testID="pscan-quota-overlay">{renderError()}</View>}
       </View>,
     );
   }
+
+  if (phase === 'error') return withPresenter(renderError());
 
   // ---- camera (default) ----
   // P-046: 오프라인 = 전체 J4 (카메라·갤러리·샘플 진입로 전부 이 화면으로 대체 —
@@ -1294,13 +1339,13 @@ export default function Scan() {
   if (FLAGS.systemCamera) {
     return withPresenter(
       <View style={styles.launcherRoot}>
-        <Pressable style={[styles.close, { top: insets.top + 8, backgroundColor: C.surface2 }]} onPress={() => router.back()} hitSlop={8} testID="scan-close">
+        <Pressable style={[styles.close, { top: insets.top + 8, backgroundColor: C.surface2 }]} onPress={closeCamera} disabled={importing} hitSlop={8} testID="scan-close">
           <IconClose size={22} color={C.ink2} />
         </Pressable>
         {/* KB-813 모드 탭 — 시스템 카메라 런처(밝은 바탕) */}
         {FLAGS.processedFoodEnabled && (
           <View style={[styles.camModeTabs, { top: insets.top + 56 }]}>
-            <ScanModeTabs value={scanMode} onChange={setScanMode} />
+            <ScanModeTabs value={scanMode} onChange={setScanMode} disabled={importing} />
           </View>
         )}
         <View style={styles.launcherBody}>
@@ -1412,54 +1457,54 @@ const styles = StyleSheet.create({
   // KB-432 §1-1: 언더라인 탭 2개(반반) + 인식 배너 + 컨트롤 행
   resultTabs: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: C.line2, backgroundColor: '#fff' },
   resultTab: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
-  resultTabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' }, // A-DS-03(KB-486)
+  resultTabLabel: { fontSize: 16, fontWeight: '700', color: '#9196A1' }, // A-DS-03(KB-486)
   resultTabLabelOn: { color: '#2F3137' },
   resultTabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   resultTabBarOn: { backgroundColor: '#2F3137' },
   recogBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, backgroundColor: primaryTint, paddingVertical: 12, paddingHorizontal: 20 }, // A-SC-02
-  recogBannerText: { flex: 1, fontSize: 15, fontWeight: '500', color: C.primaryText }, // P-284: 틴트 위 대비
+  recogBannerText: { flex: 1, fontSize: 16, fontWeight: '500', color: C.primaryText }, // P-284: 틴트 위 대비
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 10, backgroundColor: C.surface }, // A-SC-03
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-SC-04(off 색은 C-04)
-  toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
-  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
+  toggleLabel: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },
+  sw: { width: 44, height: 24, borderRadius: radius.pill, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
-  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
+  knob: { width: 20, height: 20, borderRadius: radius.pill, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
   knobOn: { alignSelf: 'flex-end' },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 8 },
-  sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 14 }, // KB-926: 좌우 = 필터 칩(Chip 14)과 같게 — 8이면 알약 곡선에 글자가 붙어 잘릴 듯 보였다
+  sortLabel: { fontSize: 16, fontWeight: '700', color: '#4B4F58' },
   // P-161: 확인 모달 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 전사
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.xl, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
   // P-136 콰이엇 결과 크롬 (scanflow 토큰 — 흰 배경·헤어라인·색은 마크/CTA만)
   resultRoot: { flex: 1, backgroundColor: '#fff' },
   quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, minHeight: 56, paddingBottom: 10, backgroundColor: '#fff' }, // A-SC-01(SubHeader 규격)
   qhBack: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   qhTitle: { flex: 1, fontSize: 18, fontWeight: '600', color: C.ink, textAlign: 'center' },
-  seg: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: 999, padding: 3 },
-  segBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
+  seg: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.pill, padding: 3 },
+  segBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill },
   segBtnOn: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-  segText: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink3 },
+  segText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink3 },
   segTextOn: { color: C.ink },
   root: { flex: 1, backgroundColor: '#16110d' },
   center: { alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
-  close: { position: 'absolute', left: 16, zIndex: 40, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' }, // Codex #47 P1: 권한 스크림(z30) 위 — 탈출 경로 보장
+  close: { position: 'absolute', left: 16, zIndex: 40, width: 40, height: 40, borderRadius: radius.pill, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' }, // Codex #47 P1: 권한 스크림(z30) 위 — 탈출 경로 보장
   permission: { alignItems: 'center', justifyContent: 'center', gap: 12, padding: 36 },
   permTitle: { fontFamily: font.display, fontSize: 20, color: '#fff', textAlign: 'center' },
   // P-285: 권한 거부 Alert(4003:12690)
   permScrim: { backgroundColor: 'rgba(0,0,0,0.8)', alignItems: 'center', justifyContent: 'center', zIndex: 30 }, // A-SN-04
-  permAlert: { width: 320, minHeight: 190, backgroundColor: '#FFFFFF', borderRadius: 10, paddingTop: 30, paddingHorizontal: 20, paddingBottom: 20, gap: 5 }, // A-SN-04
+  permAlert: { width: 320, minHeight: 190, backgroundColor: '#FFFFFF', borderRadius: radius.md, paddingTop: 30, paddingHorizontal: 20, paddingBottom: 20, gap: 5 }, // A-SN-04
   permAlertTitle: { fontSize: 18, fontWeight: '600', color: '#262C31', textAlign: 'center' },
-  permAlertBody: { fontSize: 15, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 22.3 }, // A-SN-04(lineHeight만 — 색 대비는 Codex #45 위임 유지) // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
-  permBody: { fontFamily: font.body, fontSize: 14, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 20 },
+  permAlertBody: { fontSize: 16, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 24 }, // A-SN-04(lineHeight만 — 색 대비는 Codex #45 위임 유지) // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
+  permBody: { fontFamily: font.body, fontSize: 16, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 23 },
   camTitleWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   camModeTabs: { position: 'absolute', left: 0, right: 0 },
   launcherRoot: { flex: 1, backgroundColor: '#fff' },
   launcherBody: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 34, gap: 12 },
   launcherTitle: { fontFamily: font.bodyBold, fontSize: 21, color: C.ink },
-  launcherHint: { fontFamily: font.body, fontSize: 13.5, lineHeight: 20, color: C.ink2, textAlign: 'center' },
-  launcherGallery: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, paddingVertical: 8 },
+  launcherHint: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.ink2, textAlign: 'center' },
+  launcherGallery: { fontFamily: font.bodyBold, fontSize: 16, color: C.primaryText, paddingVertical: 8 },
   camTitle: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 24, color: C.surface }, // title3-sbold gray-00
   camRoot: { flex: 1 }, // 바탕 = camHost(gray-1000) — 프리뷰 자리는 비워 cameraLayer가 비친다
   camHost: { flex: 1, backgroundColor: C.ink }, // 헤더 띠 0~100·홈 인디케이터 줄 = gray-1000
@@ -1472,53 +1517,54 @@ const styles = StyleSheet.create({
   camTopBar: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.ink },
   camBottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: C.ink, paddingTop: 22, alignItems: 'center' }, // 칩 y610 = 바 위 22
   camCorners: { top: 24, left: 32, right: 32, bottom: 16 },
-  camHintWrap: { position: 'absolute', left: 20, right: 20, alignItems: 'center' },
-  camHint: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.surface, textAlign: 'center' }, // body-l3-regular gray-00(바 위 한 줄)
+  camHintWrap: { position: 'absolute', left: 68, right: 68, alignItems: 'center' }, // KB-900(T-099): 코너(32 + 28) 안쪽 + 8 — 무료 배지가 아래 코너와 겹쳤다(길면 줄바꿈)
+  camHint: { fontFamily: font.body, fontSize: 16, lineHeight: 24, color: C.surface, textAlign: 'center' }, // body-l3-regular gray-00(바 위 한 줄)
   camIconBtn: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }, // 아이콘 28 · 터치 52(시안 hit region)
   camLink: { minHeight: 21, marginTop: 10, alignItems: 'center', justifyContent: 'center' }, // KB-854: 링크 y768 = 컨트롤 아래 10
-  camLinkText: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.surface, textAlign: 'center' }, // body-l3-regular gray-00
+  camLinkText: { fontFamily: font.body, fontSize: 16, lineHeight: 24, color: C.surface, textAlign: 'center' }, // body-l3-regular gray-00
   hidden: { opacity: 0 },
-  landscapeBadge: { backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  landscapeBadgeText: { fontFamily: font.bodyBold, fontSize: 11, color: '#fff' },
+  landscapeBadge: { backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  landscapeBadgeText: { fontFamily: font.bodyBold, fontSize: 12, color: '#fff' },
   camRow: { width: 335, height: 88, marginTop: 24, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, // KB-854: (20,670) 335×88 — 갤러리 52 @12 · 셔터 링 72 가운데 · 전환 52 @271
   zoomRow: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
-  zoomPill: { height: 36, minWidth: 42, paddingHorizontal: 12, borderRadius: 18, backgroundColor: C.gray800, borderWidth: 1, borderColor: C.surface, alignItems: 'center', justifyContent: 'center' }, // DS chips 36:41(비활성 gray-800 + 흰 테두리) — 활성도 같은 폭 테두리(프레임 불변)
+  zoomPill: { height: 36, minWidth: 42, paddingHorizontal: 12, borderRadius: radius.pill, backgroundColor: C.gray800, borderWidth: 1, borderColor: C.surface, alignItems: 'center', justifyContent: 'center' }, // DS chips 36:41(비활성 gray-800 + 흰 테두리) — 활성도 같은 폭 테두리(프레임 불변)
   zoomPillOn: { backgroundColor: C.surface },
-  zoomPillText: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.surface }, // body-l3-regular
+  zoomPillText: { fontFamily: font.body, fontSize: 16, lineHeight: 24, color: C.surface }, // body-l3-regular
   zoomPillTextOn: { color: C.ink },
-  shutter: { width: 72, height: 72, borderRadius: 36, borderWidth: 3, borderColor: C.surface, alignItems: 'center', justifyContent: 'center' }, // KB-854: 링 72 stroke 3 @ (131,6)
+  shutter: { width: 72, height: 72, borderRadius: radius.pill, borderWidth: 3, borderColor: C.surface, alignItems: 'center', justifyContent: 'center' }, // KB-854: 링 72 stroke 3 @ (131,6)
   shutterOff: { opacity: 0.35 },
   // P-038: 빈 프로필 넛지 — Close 버튼(좌 16, 폭 40) 우측에 정렬, 리스트 여백(60) 위 오버레이
   // P-057: 배너 = 리스트 첫 카드 — 밝은 브랜드 틴트, 메뉴 카드와 같은 radius 리듬
-  nudgeCard: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#fdf0e6', borderWidth: 1, borderColor: '#f0d9c4', borderRadius: 14, paddingHorizontal: 13, paddingVertical: 12 },
-  nudgeIc: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  nudgeCardText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink2, lineHeight: 17 },
+  nudgeCard: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#fdf0e6', borderWidth: 1, borderColor: '#f0d9c4', borderRadius: radius.lg, paddingHorizontal: 13, paddingVertical: 12 },
+  nudgeIc: { width: 34, height: 34, borderRadius: radius.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  nudgeCardText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18 },
   nudgeCardStrong: { fontFamily: font.bodyBold, color: C.primaryText },
   noticeBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', zIndex: 20, padding: 28 },
-  noticeCard: { backgroundColor: '#fff', borderRadius: 20, padding: 22, alignItems: 'center', gap: 10, maxWidth: 340, alignSelf: 'stretch' },
+  noticeCard: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 22, alignItems: 'center', gap: 10, maxWidth: 340, alignSelf: 'stretch' },
   noticeTitle: { fontFamily: font.display, fontSize: 17, color: C.ink, textAlign: 'center' },
-  noticeBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20 },
-  shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: C.surface }, // KB-854: 셔터 60 @ (137,12)
+  noticeBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, textAlign: 'center', lineHeight: 21 },
+  shutterInner: { width: 60, height: 60, borderRadius: radius.pill, backgroundColor: C.surface }, // KB-854: 셔터 60 @ (137,12)
   shutterSpacer: { width: 72, height: 72 },
   // P-222: 주 문구를 밀어내지 않는 보조 톤(작게·흐리게)
-  statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
-  // P-191: 갤러리 원본 로드 오버레이 — scanning 캡션과 동일 톤, 화면 하단 중앙
-  importingOverlay: { position: 'absolute', left: 0, right: 0, bottom: 120, alignItems: 'center', gap: 8, zIndex: 20 },
-  errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primary, textTransform: 'uppercase' }, // Codex #44 2차: 다크 배경 = 원색이 대비 우위(primaryText는 흰 바탕용)
+  statusText: { fontFamily: font.bodyBold, fontSize: 16, color: '#fff', textAlign: 'center' },
+  // P-529(KB-854): 공용 화면 전체 중앙 — 하단 줌/셔터와 겹치지 않는다.
+  importingOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', zIndex: 20 },
+  importingStatus: { maxWidth: '90%', backgroundColor: C.ink, borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', gap: 8 },
+  errStage: { fontFamily: font.bodyBold, fontSize: 12, letterSpacing: 1, color: C.primary, textTransform: 'uppercase' }, // Codex #44 2차: 다크 배경 = 원색이 대비 우위(primaryText는 흰 바탕용)
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
-  degradedNote: { fontFamily: font.body, fontSize: 12, color: '#fbbf24', textAlign: 'center' },
+  degradedNote: { fontFamily: font.body, fontSize: 13, color: '#fbbf24', textAlign: 'center' },
   // P-062② D2 스캐닝 오버레이
   // P-064② 파파고식 플로팅 버튼 + 사진 하단 섀도
   resultShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
   listShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   // list rows
-  row: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderRadius: 14, paddingHorizontal: 13, paddingVertical: 12 },
-  rowName: { fontFamily: font.koBold, fontSize: 15, color: C.ink },
-  rowLatin: { fontFamily: font.body, fontSize: 12, color: C.ink2, marginTop: 1 },
-  rowUnable: { fontFamily: font.body, fontSize: 11.5, color: C.riskUnable, marginTop: 1 },
-  rowPrice: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
-  rowBadge: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
-  rowBadgeText: { fontFamily: font.bodyBold, fontSize: 11.5 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderRadius: radius.lg, paddingHorizontal: 13, paddingVertical: 12 },
+  rowName: { fontFamily: font.koBold, fontSize: 16, color: C.ink },
+  rowLatin: { fontFamily: font.body, fontSize: 13, color: C.ink2, marginTop: 1 },
+  rowUnable: { fontFamily: font.body, fontSize: 12, color: C.riskUnable, marginTop: 1 },
+  rowPrice: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  rowBadge: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 5 },
+  rowBadgeText: { fontFamily: font.bodyBold, fontSize: 12 },
 });
 
 /** 공통 카메라 화면이 보이는 동안만 true — cameraLayer의 CameraView active(로딩·결과 화면 아래에서 카메라를 멈춘다) */

@@ -139,7 +139,7 @@ describe('렌더 — 시안 메트릭·브랜드 배지', () => {
     const card = render().root.findAll((n) => n.props?.testID === 'order-share-card')[0];
     const st = flat(card.props.style);
     expect(st.width).toBe(210);
-    expect(st.borderRadius).toBe(20);
+    expect(st.borderRadius).toBe(16); // KB-909: 카드 = lg
     expect(st.shadowOpacity).toBe(0.12);
     expect(st.shadowRadius).toBe(24);
   });
@@ -179,7 +179,7 @@ describe('렌더 — 시안 메트릭·브랜드 배지', () => {
     const src = read('src/features/order/OrderShareCard.tsx');
     expect(src).toContain('assets/images/splash-mark-ios.png');
     expect(src).toContain('brandMark: { width: 16, height: 16 }');
-    expect(src).toContain("brandText: { fontSize: 11, fontWeight: '600'");
+    expect(src).toContain("brandText: { fontSize: 12, fontWeight: '600'");
     // 주석 제거 후 검사 — 헤더 주석은 필을 뺀 '이유'로 그 색을 인용한다
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
     expect(code).not.toContain('#FF7134'); // 주황 필 잔재 0
@@ -217,7 +217,7 @@ describe('섹션 — 미리보기 영역·버튼 2개 규격', () => {
       expect(st.paddingHorizontal).toBe(8);
       expect(st.gap).toBe(5);
       expect(st.borderColor).toBe('#EAEBEE');
-      expect(st.borderRadius).toBe(14);
+      expect(st.borderRadius).toBe(16); // KB-909: 아이콘+라벨 세로 타일 버튼 = lg
     }
   });
 

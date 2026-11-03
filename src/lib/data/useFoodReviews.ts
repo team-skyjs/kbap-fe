@@ -62,7 +62,11 @@ export interface GlobalFeedFilters {
   sort?: FeedSort | null;
   minRating?: number | null;
   maxRating?: number | null;
+  /** KB-966: 리뷰 대상 — 서버 targetType(3.2+, 기본 ALL). 생략 = 전체(파라미터 미전송) */
+  targetType?: ReviewTargetFilter | null;
 }
+/** KB-966: GET /api/reviews targetType 값(서버 계약 S-939 — 응답 wire targetType과 같은 값). ALL = 생략 */
+export type ReviewTargetFilter = 'FOOD' | 'PROCESSED_FOOD';
 
 /** P-179(KB-307): 전역 최신 리뷰 피드 — GET /api/reviews (P-229: 서버 필터 2종).
  *  bearerAuth 필수(계약) — 게스트/봉인은 빈 페이지(화면이 게이트 담당). */
@@ -73,6 +77,7 @@ export async function fetchGlobalReviewsPage(cursor: string | null, filters: Glo
   if (cursor) q.set('cursor', cursor);
   if (filters.countryCode) q.set('countryCode', filters.countryCode); // 서버 필터 — 클라 필터 금지
   if (filters.foodId) q.set('foodId', filters.foodId);
+  if (filters.targetType) q.set('targetType', filters.targetType); // KB-966: 서버 필터(클라 필터 금지)
   // P-237: 전부 서버 파라미터(클라 로컬 정렬·필터 금지 — P-229 원칙). latest = 기본이라 미전송.
   if (filters.sort && filters.sort !== 'latest') q.set('sort', filters.sort);
   // min>max 조합 클라 방어 — 잘못된 페어는 아예 안 보낸다(400 예방)
@@ -80,11 +85,16 @@ export async function fetchGlobalReviewsPage(cursor: string | null, filters: Glo
   const max = filters.maxRating ?? null;
   if (min != null && (max == null || min <= max)) q.set('minRating', String(min));
   if (max != null && (min == null || min <= max)) q.set('maxRating', String(max));
-  const fetchPage = async () => adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`, REVIEW_READ_HEADERS));
+  // KB-941: 요청 lang을 함께 — 서버 동봉 번역(첫 페이지)은 이 언어로 왔다
+  const fetchPage = async () => adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`, REVIEW_READ_HEADERS), q.get('lang') ?? undefined);
   // foodId 필터가 있으면 서버 `listReviews`가 `getReadyFood`를 탄다 = FOOD-001 원천(#185 5R). 현재 화면 호출자는
   // 안 넘기지만 계약상 열려 있으므로 같은 부기 경로로.
   return filters.foodId ? trackReadyFood(filters.foodId, fetchPage) : fetchPage();
 }
+
+/** KB-958: 전역 피드 쿼리 키 — 훅과 Reviews 첫 장 줄이기(활성 피드만)가 같은 키를 쓴다 */
+export const globalReviewsKey = (filters: GlobalFeedFilters = {}) =>
+  ['reviews', 'global', filters.countryCode ?? 'all', filters.foodId ?? 'all', filters.sort ?? 'latest', filters.minRating ?? 0, filters.maxRating ?? 5, filters.targetType ?? 'ALL'] as const;
 
 export function useGlobalReviews(enabled = true, filters: GlobalFeedFilters = {}) {
   return useInfiniteQuery({
@@ -93,11 +103,7 @@ export function useGlobalReviews(enabled = true, filters: GlobalFeedFilters = {}
     // 🔴 커서 규약(스웨거): 불투명 토큰 — 정렬·필터가 바뀌면 기존 커서 무효.
     // 쿼리키에 sort·rating 포함 = react-query 키 분리로 첫 페이지부터 자연 재조회
     // (수동 리셋 금지 — 구 커서가 새 정렬에 전달될 경로 자체가 없다).
-    queryKey: [
-      'reviews', 'global',
-      filters.countryCode ?? 'all', filters.foodId ?? 'all',
-      filters.sort ?? 'latest', filters.minRating ?? 0, filters.maxRating ?? 5,
-    ],
+    queryKey: globalReviewsKey(filters),
     queryFn: ({ pageParam }) => fetchGlobalReviewsPage(pageParam, filters),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasNext ? last.nextCursor : undefined),

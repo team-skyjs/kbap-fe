@@ -5,7 +5,8 @@
  * 로그인 성공 시 보던 맥락으로 복귀한다 (guest-access-policy §0-3).
  */
 import * as React from 'react';
-import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -17,7 +18,7 @@ import { IconLock } from '@/components/icons';
 import { EVENTS, track } from '@/lib/analytics';
 
 // P-258: 'reviews'(읽기 차단 시절 유물 — P-235 게스트 열람 개방으로 소멸) → 'helpful'
-export type GateContext = 'risk' | 'helpful' | 'writeReview' | 'scan' | 'profile' | 'save';
+export type GateContext = 'risk' | 'helpful' | 'writeReview' | 'scan' | 'profile' | 'save' | 'photoRemoval'; // KB-814: 가공식품 리뷰 사진 삭제 요청
 
 /**
  * P-213: auth_gate_view trigger — 게이트 시트는 게스트 전환 퍼널의 단일 관문이라
@@ -32,6 +33,7 @@ const CONTEXT_TRIGGER: Record<GateContext, GateTrigger> = {
   scan: 'scan',
   risk: 'risk',
   profile: 'profile',
+  photoRemoval: 'review',
 };
 
 const COPY: Record<GateContext, { title: string; sub: string }> = {
@@ -41,6 +43,7 @@ const COPY: Record<GateContext, { title: string; sub: string }> = {
   scan: { title: 'gate.scanTitle', sub: 'gate.scanSub' },
   profile: { title: 'gate.profileTitle', sub: 'gate.profileSub' },
   save: { title: 'gate.saveTitle', sub: 'gate.saveSub' },
+  photoRemoval: { title: 'gate.photoRemovalTitle', sub: 'gate.photoRemovalSub' },
 };
 
 export function AuthGateSheet({
@@ -106,8 +109,8 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: C.card,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     paddingTop: 26,
     paddingBottom: 34,
     paddingHorizontal: 24,
@@ -115,8 +118,8 @@ const styles = StyleSheet.create({
     gap: 12,
     ...shadow.sh2,
   },
-  glyph: { width: 56, height: 56, borderRadius: 28, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center' },
+  glyph: { width: 56, height: 56, borderRadius: radius.pill, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: font.displayBlack, fontSize: 19, color: C.ink, textAlign: 'center', lineHeight: 26 },
-  sub: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20, marginBottom: 6, maxWidth: 320 },
-  later: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, padding: 8 },
+  sub: { fontFamily: font.body, fontSize: 14, color: C.ink2, textAlign: 'center', lineHeight: 21, marginBottom: 6, maxWidth: 320 },
+  later: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink2, padding: 8 },
 });

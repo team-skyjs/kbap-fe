@@ -10,10 +10,10 @@ console.log(JSON.stringify(directory ? checkTeamtestBundle(directory, target) : 
 const build = (backend: string) => ({ build: { teamtest: { channel: 'teamtest', env: { EXPO_PUBLIC_BE_BASE: `https://${backend}.kbap.site` } } } });
 const run = (config: unknown, profile: unknown, directory?: string) => spawnSync(process.execPath, ['--input-type=module', '-e', probe, JSON.stringify([config, profile, directory])], { encoding: 'utf8' });
 
-it('committed target and build profile resolve the production backend for the existing channel', () => {
+it('committed target and build profile resolve the dev backend for the existing channel (KB-894 — 되돌리기 = target prod + eas.json prod 두 줄)', () => {
   const result = spawnSync(process.execPath, ['scripts/teamtest-target.mjs', 'base'], { encoding: 'utf8' });
   expect(result.status).toBe(0);
-  expect(result.stdout.trim()).toBe('https://prod.kbap.site');
+  expect(result.stdout.trim()).toBe('https://dev.kbap.site');
 });
 
 it.each(['prod', 'dev'])('known target %s resolves only when the build env agrees', (backend) => {

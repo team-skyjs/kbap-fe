@@ -77,7 +77,7 @@ describe('pickBySource — 촬영 경로', () => {
     mockRequestCam.mockResolvedValue({ granted: false });
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     await expect(pickBySource('camera', PERM)).resolves.toBe(null);
-    expect(alert).toHaveBeenCalledWith('PT', 'PB', expect.any(Array));
+    expect(alert).toHaveBeenCalledWith('PT', 'PB', expect.any(Array), expect.objectContaining({ onDismiss: expect.any(Function) })); // KB-873 ②a: 가림 래퍼 = 닫힘 해제 경로
     expect(mockLaunchCamera).not.toHaveBeenCalled();
   });
 

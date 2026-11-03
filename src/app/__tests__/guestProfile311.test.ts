@@ -15,7 +15,7 @@ it('게스트 프로필 — 헤더 대체(guestTitle·Sign in)·노출 3(Languag
   expect(profile).not.toContain('GuestLogin'); // 임베드 로그인 소멸
   expect(profile).not.toContain('LoginScreen'); // import 잔존 0
   const guestBlock = profile.slice(profile.indexOf('P-311(KB-478): 게스트'), profile.indexOf(') : meLoading'));
-  for (const key of ['profile.language', 'profile.safetyNotice', 'app-version-row']) expect(guestBlock).toContain(key);
+  for (const key of ['<LanguageRow ', 'profile.safetyNotice', 'app-version-row']) expect(guestBlock).toContain(key); // KB-904: 언어 행 = LanguageRow(› + 안드 안내)
   expect(guestBlock).not.toContain('notif.title'); // KB-497(FR-012): 알림 설정 진입점 = 회원 분기만
   expect(profile.match(/profile\/notifications/g)).toHaveLength(1); // 회원 분기 1곳
   for (const hidden of ['profile.myFoods', 'profile.saved', 'myReviews.title', 'profile.dietTitle', 'community.blockedTitle', 'profile.logout', 'profile.deleteAccount', 'profile-rank-card', 'restrictionsTitle']) {

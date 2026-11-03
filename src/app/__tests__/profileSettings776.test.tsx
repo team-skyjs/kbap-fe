@@ -7,6 +7,7 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { StyleSheet } from 'react-native';
 
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual('react-native');
@@ -64,6 +65,8 @@ jest.mock('@/lib/data/useMe', () => ({
   useUpdateMe: () => ({ mutate: mockMutate }),
 }));
 
+let mockInset = 0;
+jest.mock('@/lib/useBottomInset', () => ({ useBottomInset: () => mockInset })); // KB-900: 안드 3버튼 인셋 흉내
 import EditRestrictions from '../profile/restrictions';
 import LegalDocScreen from '../profile/legal';
 import { Btn } from '@/components/Btn';
@@ -80,6 +83,7 @@ async function render(el: React.ReactElement): Promise<ReactTestRenderer> {
 afterEach(() => { while (trees.length) act(() => trees.pop()!.unmount()); });
 beforeEach(() => {
   jest.clearAllMocks();
+  mockInset = 0;
   mockCodes = ['EGG'];
   mockPrevent.on = false;
   mockPrevent.cb = null;
@@ -90,6 +94,12 @@ const press = async (tree: ReactTestRenderer, id: string) => {
 };
 
 describe('회피 재료 편집', () => {
+  it('KB-900(T-005): 하단 Save 바 아래 여백 = 인셋 + 10(3버튼 내비 48 → 58) — 고정 30이면 버튼이 내비 바 아래로 반쯤', async () => {
+    mockInset = 48;
+    const tree = await render(<EditRestrictions />);
+    const bar = tree.root.findAll((n) => n.props?.testID === 'restrictions-savebar' && n.props?.style)[0];
+    expect(StyleSheet.flatten(bar.props.style).paddingBottom).toBe(58);
+  });
   it('B3-4: 안내 = DS 정보 아이콘(빨간 위험 마크 0) · 문구 키 유지(저장하면 반영으로 갱신) · 하단 Save = busy 배선', async () => {
     const tree = await render(<EditRestrictions />);
     const notice = tree.root.findAll((n) => n.props?.testID === 'restrictions-notice')[0];

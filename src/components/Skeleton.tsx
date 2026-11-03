@@ -59,7 +59,7 @@ function SkImg({ w, h, r = 8 }: { w: number | `${number}%`; h: number; r?: numbe
 }
 function SkBar({ w, h = 12 }: { w: number | `${number}%`; h?: number }) {
   // Codex #47 6차: 고정폭 바가 협폭 기기(320pt) 콘텐츠 폭 초과 — 일괄 축소 허용(전 바 공통 규칙)
-  return <Shimmer style={{ width: w, maxWidth: '100%', flexShrink: 1, height: h, borderRadius: 4, backgroundColor: '#EAEBEE' }} />;
+  return <Shimmer style={{ width: w, maxWidth: '100%', flexShrink: 1, height: h, borderRadius: radius.xs, backgroundColor: '#EAEBEE' }} />;
 }
 
 /** P-287 홈(4003:12994): 인기 카드 2열 + RECENTLY 행 ×4 + 리뷰 블록 ×3. */
@@ -91,9 +91,9 @@ export function SkeletonHome() {
       {[0, 1, 2].map((i) => (
         <View key={i} style={sk287.reviewBlock}>
           <View style={sk287.rowGap8}>
-            <Shimmer style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#EAEBEE' }} />{/* A-SK-02 */}
+            <Shimmer style={{ width: 32, height: 32, borderRadius: radius.pill, backgroundColor: '#EAEBEE' }} />{/* A-SK-02 */}
             <SkBar w={120} />
-            <Shimmer style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#EAEBEE' }} />
+            <Shimmer style={{ width: 32, height: 32, borderRadius: radius.pill, backgroundColor: '#EAEBEE' }} />
           </View>
           <View style={sk287.rowGap12}>{/* A-SK-02: 평점 바 6개 */}
             <SkBar w={40} />
@@ -114,7 +114,7 @@ export function SkeletonHome() {
           </View>
           <View style={sk287.rowGap8}>
             {[0, 1, 2].map((j) => (
-              <Shimmer key={j} style={{ width: 72, height: 24, borderRadius: 12, backgroundColor: '#EAEBEE' }} />
+              <Shimmer key={j} style={{ width: 72, height: 24, borderRadius: radius.pill, backgroundColor: '#EAEBEE' }} />
             ))}
           </View>
         </View>
@@ -200,7 +200,7 @@ export function SkeletonMyReviews() {
       {[0, 1, 2].map((i) => (
         <View key={i} style={sk287.myRevCard}>{/* A-SK-04(KB-486): 카드 r8 stroke #EAEBEE pad 16 gap 12 */}
           <View style={sk287.rowGap8}>
-            <Shimmer style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#EAEBEE' }} />
+            <Shimmer style={{ width: 32, height: 32, borderRadius: radius.pill, backgroundColor: '#EAEBEE' }} />
             <View style={{ flex: 1, gap: 6 }}>
               <SkBar w={120} h={10} />
               <SkBar w={80} h={10} />
@@ -218,7 +218,7 @@ export function SkeletonMyReviews() {
           <View style={sk287.rowGap8}>
             {/* Codex #91 P2: 고정 64×4가 320폭 카드 초과 — flex 비율(정방 유지) */}
             {[0, 1, 2, 3].map((j) => (
-              <Shimmer key={j} style={{ flex: 1, aspectRatio: 1, borderRadius: 8, backgroundColor: '#F2F3F6' }} />
+              <Shimmer key={j} style={{ flex: 1, aspectRatio: 1, borderRadius: radius.md, backgroundColor: '#F2F3F6' }} />
             ))}
           </View>
           <View style={sk287.rowGap6}>
@@ -307,8 +307,8 @@ const sk287 = StyleSheet.create({
   recentRow: { flexDirection: 'row', gap: 16, paddingVertical: 8 },
   reviewBlock: { gap: 12, paddingVertical: 14 }, // A-SK-02: 블록 간 44(14+16+14)
   rowGap6: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  myRevCard: { borderRadius: 8, borderWidth: 1, borderColor: '#EAEBEE', padding: 16, gap: 12 }, // A-SK-04
-  orderDish: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 8, borderWidth: 1, borderColor: '#EAEBEE', padding: 12 }, // A-SK-06
+  myRevCard: { borderRadius: radius.md, borderWidth: 1, borderColor: '#EAEBEE', padding: 16, gap: 12 }, // A-SK-04
+  orderDish: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: radius.md, borderWidth: 1, borderColor: '#EAEBEE', padding: 12 }, // A-SK-06
   rowGap8: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rowGap12: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
@@ -316,8 +316,8 @@ const sk287 = StyleSheet.create({
   safeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 56, backgroundColor: '#F2F3F6', paddingHorizontal: 20 },
   tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   tileCell: { flexBasis: '31%', flexGrow: 1 },
-  tileFill: { width: '100%', aspectRatio: 106 / 130, borderRadius: 8, backgroundColor: '#F2F3F6' },
-  photoTile: { flex: 1, aspectRatio: 1, borderRadius: 8, backgroundColor: '#F2F3F6' },
+  tileFill: { width: '100%', aspectRatio: 106 / 130, borderRadius: radius.md, backgroundColor: '#F2F3F6' },
+  photoTile: { flex: 1, aspectRatio: 1, borderRadius: radius.md, backgroundColor: '#F2F3F6' },
   hero: { width: '100%', aspectRatio: 1, backgroundColor: '#F2F3F6' },
   myFoodsRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 102, paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // A-SK-05
 });
@@ -351,16 +351,16 @@ export function SkeletonProfile() {
   return (
     <View style={sk.tabWrap}>
       <View style={sk.idRow}>
-        <Shimmer style={{ width: 56, height: 56, borderRadius: 28 }} />
+        <Shimmer style={{ width: 56, height: 56, borderRadius: radius.pill }} />
         <View style={{ flex: 1, gap: 8 }}>
           <Shimmer style={[sk.line, { width: '45%' }]} />
           <Shimmer style={[sk.line, { width: '30%' }]} />
         </View>
       </View>
-      <Shimmer style={{ height: 110, borderRadius: radius.lg }} />
-      <Shimmer style={{ height: 17, width: '35%', borderRadius: 7 }} />
+      <Shimmer style={{ height: 110, borderRadius: radius.md }} />
+      <Shimmer style={{ height: 17, width: '35%', borderRadius: radius.md }} />
       {[0, 1, 2].map((i) => (
-        <Shimmer key={i} style={{ height: 52, borderRadius: radius.lg }} />
+        <Shimmer key={i} style={{ height: 52, borderRadius: radius.md }} />
       ))}
     </View>
   );
@@ -368,7 +368,7 @@ export function SkeletonProfile() {
 
 const sk = StyleSheet.create({
   tabWrap: { paddingHorizontal: 18, paddingTop: 4, gap: 20 }, // 홈·프로필 body와 동일
-  line: { height: 12, borderRadius: 6 },
+  line: { height: 12, borderRadius: radius.pill },
   idRow: { flexDirection: 'row', alignItems: 'center', gap: 13 }, // profile id 행
   gridRow: { flexDirection: 'row' }, // KB-830: 열 간격·좌우 여백은 호출측 그리드 행 스타일(FlatList columnWrapperStyle와 같은 값)
 });
@@ -377,10 +377,10 @@ const styles = StyleSheet.create({
   wrap: { padding: 18, gap: 14 },
   block: { backgroundColor: C.surface2, overflow: 'hidden' },
   sweep: { position: 'absolute', top: 0, bottom: 0, left: 0, width: 120, backgroundColor: 'rgba(255,255,255,0.45)', opacity: 0.7 },
-  banner: { height: 64, borderRadius: radius.lg },
-  card: { flexDirection: 'row', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 12 },
-  thumb: { width: 56, height: 56, borderRadius: 12 },
-  line: { height: 12, borderRadius: 6 },
+  banner: { height: 64, borderRadius: radius.md },
+  card: { flexDirection: 'row', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.md, padding: 12 },
+  thumb: { width: 56, height: 56, borderRadius: radius.md },
+  line: { height: 12, borderRadius: radius.pill },
 });
 
 export { Shimmer };

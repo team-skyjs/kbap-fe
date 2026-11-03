@@ -8,14 +8,15 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
-import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
+import { KAV_BEHAVIOR, KAV_OFFSET } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { setUserProps } from '@/lib/analytics';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconChevron, IconCheck, IconApple, IconGoogleG, IconSearch, Input } from '@/components';
 import { AvatarPlaceholder } from '@/components/design4Assets';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -166,15 +167,10 @@ export default function EditProfile() {
   return (
     // KB-700(QA — 닉네임 포커스 시 키보드 아래로 Save 바 주황이 비침): 리뷰 작성·글쓰기와 같은 방식 — KeyboardAvoidingView(padding, KB-768부터 두 플랫폼),
     // 하단 Save 바는 절대 위치가 아닌 ScrollView의 형제(키보드 위로 따라 올라온다). 안드도 edge-to-edge라 회피 필요(lib/keyboardAvoid).
-    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID="edit-kav">
+    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET} testID="edit-kav">
       <SubHeader
         title={t('editProfile.title')}
         onBack={() => router.back()}
-        trailing={
-          <Pressable testID="edit-save-header" onPress={save} disabled={photoBusy || saving} hitSlop={8} style={[styles.saveWrap, (photoBusy || saving) && { opacity: 0.35 }]}>
-            <Text style={styles.saveLink} numberOfLines={1}>{t('common.save')}</Text>
-          </Pressable>
-        }
       />
       <ScrollView keyboardDismissMode="on-drag" scrollEnabled={!sliderDragging} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* 아바타 100 원 + 카메라 배지 32(#2F3137, 흰 1.5px 링) — KB-149 업로드 실연결 유지 */}
@@ -242,11 +238,14 @@ export default function EditProfile() {
         {/* P-060: 언어 = OS 정본 — 탭 시 OS 앱 설정(언어 항목), 안드12- 숨김 */}
         {canOpenLangSettings && (
           <View style={styles.fieldset}>
-            <Text style={styles.fieldLbl}>{t('editProfile.readerLanguage')}</Text>
+            {/* KB-904(T-078): 프로필 메뉴 행과 같은 이름("Reader language" ↔ "Language" 불일치) */}
+            <Text style={styles.fieldLbl}>{t('profile.language')}</Text>
             <Pressable testID="edit-language" style={styles.field} onPress={() => void openAppSettings()}>
               <Text style={styles.val}>{LANG_ENDONYM[lang] ?? lang}</Text>
               <IconChevron size={16} color={C.ink3} />
             </Pressable>
+            {/* KB-904(T-025): 안드는 App info가 열린다(앱 언어 직행 불가) — 누르기 전에 위치 안내 */}
+            {Platform.OS === 'android' && <Text style={styles.langHint} testID="edit-language-hint">{t('profile.languageHintAndroid')}</Text>}
           </View>
         )}
 
@@ -256,6 +255,8 @@ export default function EditProfile() {
           <View style={styles.spiceBox}>
             <SpiceLevelSlider level={spice === 'SKIP' ? null : spice} onChange={setSpice} onDragStateChange={setSliderDragging} />
           </View>
+          {/* KB-904(T-024): 미설정 = 손잡이·채움 없는 트랙 + "Not set"(전엔 끝까지 채워진 트랙이 Extreme처럼 보였다) */}
+          {spice === 'SKIP' && <Text style={styles.spiceUnset} testID="edit-spice-unset">{t('profile.spiceUnset')}</Text>}
           {spice !== 'SKIP' && (
             <Pressable testID="edit-spice-clear" hitSlop={8} onPress={() => setSpice('SKIP')}>
               <Text style={styles.spiceClear}>{t('editProfile.spiceClear')}</Text>
@@ -333,9 +334,9 @@ export default function EditProfile() {
         </View>
       </Modal>
 
-      {/* BottomBar Single(4150:14473) — primary "✓ Save changes"(P-173 가드 무변) */}
+      {/* BottomBar Single(4150:14473) — primary "✓ Save changes"(P-173 가드 무변). KB-904(T-078): 저장 버튼은 이것 하나(헤더 Save 제거) · 바뀐 게 없으면 비활성 */}
       <View style={[styles.savebar, { paddingBottom: bottom + 10 }]} testID="edit-bottom-bar">
-        <Btn testID="edit-save" variant={photoBusy ? 'off' : 'primary'} busy={saving} icon={<IconCheck size={17} color="#fff" />} onPress={photoBusy ? undefined : save}>
+        <Btn testID="edit-save" variant={photoBusy || !dirty ? 'off' : 'primary'} busy={saving} icon={<IconCheck size={17} color="#fff" />} onPress={photoBusy || !dirty ? undefined : save}>
           {t('editProfile.save')}
         </Btn>
       </View>
@@ -348,44 +349,44 @@ export default function EditProfile() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 28, gap: 20 }, // KB-700: Save 바가 흐름 안(형제)이라 바 높이만큼의 보정 120 불필요
-  saveWrap: { paddingHorizontal: 6, height: 38, justifyContent: 'center' },
-  saveLink: { fontSize: 13, fontWeight: '600', color: '#1C1E21' },
 
   avatarWrap: { alignItems: 'center', gap: 10, paddingVertical: 12 }, // A-ED-01(KB-486)
-  av: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#E8F6FF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.10)', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }, // A-ED-01
-  avImg: { position: 'absolute', top: 0, left: 0, width: 100, height: 100, borderRadius: 50 },
+  av: { width: 100, height: 100, borderRadius: radius.pill, backgroundColor: '#E8F6FF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.10)', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }, // A-ED-01
+  avImg: { position: 'absolute', top: 0, left: 0, width: 100, height: 100, borderRadius: radius.pill },
   avBusy: { backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
-  cam: { position: 'absolute', right: 0, bottom: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: '#2F3137', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#FFFFFF' },
-  phErr: { fontSize: 13, fontWeight: '500', color: C.riskCaution },
+  cam: { position: 'absolute', right: 0, bottom: 0, width: 32, height: 32, borderRadius: radius.pill, backgroundColor: '#2F3137', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#FFFFFF' },
+  phErr: { fontSize: 14, fontWeight: '500', color: C.riskCaution },
 
   // Input/Text 필드(D-1 Filled) — bg #F7F8FA r8, Disabled = 동일 bg + 흐린 값
   fieldset: { gap: 4, marginTop: -4 }, // A-ED-03/05(필드 간 16·라벨→필드 4 — 섹션 gap 20 유지)
-  fieldLbl: { fontSize: 14, fontWeight: '500', color: '#6A6F7C' }, // A-ED-04
-  field: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', borderRadius: 8, paddingHorizontal: 16, minHeight: 48 }, // A-ED-06
+  fieldLbl: { fontSize: 16, fontWeight: '500', color: '#6A6F7C' }, // A-ED-04
+  field: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', borderRadius: radius.md, paddingHorizontal: 16, minHeight: 48 }, // A-ED-06
   fieldDisabled: { backgroundColor: C.surface2 },
   valDisabled: { color: C.ink3 },
-  input: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1C1E21', paddingVertical: 14 },
-  val: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1C1E21' },
-  hint: { fontSize: 13, fontWeight: '500', color: C.ink2, marginLeft: 2, marginTop: 0, lineHeight: 18 }, // A-ED-07(필드→힌트 4 = fieldset gap)
+  input: { flex: 1, fontSize: 16, fontWeight: '500', color: '#1C1E21', paddingVertical: 14 },
+  val: { flex: 1, fontSize: 16, fontWeight: '500', color: '#1C1E21' },
+  hint: { fontSize: 14, fontWeight: '500', color: C.ink2, marginLeft: 2, marginTop: 0, lineHeight: 19 }, // A-ED-07(필드→힌트 4 = fieldset gap)
 
-  spiceBox: { backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 14, paddingTop: 5, paddingBottom: 14 }, // A-SP-07(KB-486 공용)
-  spiceClear: { fontSize: 14, fontWeight: '600', color: C.primaryText, marginLeft: 2, marginTop: 12 }, // A-ED-08(박스→16 = gap 4+12)
+  spiceBox: { backgroundColor: C.surface2, borderRadius: radius.md, paddingHorizontal: 14, paddingTop: 5, paddingBottom: 14 }, // A-SP-07(KB-486 공용)
+  langHint: { fontSize: 13, color: C.ink3, lineHeight: 17, marginTop: 6 },
+  spiceUnset: { fontSize: 16, fontWeight: '500', color: C.ink2, marginLeft: 2, marginTop: 12 }, // KB-904: Clear 자리와 같은 위치·간격
+  spiceClear: { fontSize: 16, fontWeight: '600', color: C.primaryText, marginLeft: 2, marginTop: 12 }, // A-ED-08(박스→16 = gap 4+12)
 
   // Linked to account — 카드 border #EBE6E1 r12 pad 14/16
   sec: { gap: 8 }, // A-ED-09
   secTitle: { fontSize: 18, fontWeight: '600', color: '#1C1E21' },
-  linkedCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#EBE6E1', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16 },
-  linkedIc: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.hair, alignItems: 'center', justifyContent: 'center' }, // A-ED-10
-  linkedLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1C1E21' },
-  linkedVal: { fontSize: 13, fontWeight: '500', color: '#8E8883' },
+  linkedCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#EBE6E1', borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: 16 },
+  linkedIc: { width: 24, height: 24, borderRadius: radius.pill, backgroundColor: C.hair, alignItems: 'center', justifyContent: 'center' }, // A-ED-10
+  linkedLabel: { flex: 1, fontSize: 16, fontWeight: '600', color: '#1C1E21' },
+  linkedVal: { fontSize: 14, fontWeight: '500', color: '#8E8883' },
 
   savebar: { paddingHorizontal: 16, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line }, // A-ED-11(padH 16 — 헤어라인은 C-07 무접촉)
 
   // P-165 통화 피커 — 온보딩 natSearch/natRow 문법 수치 재사용
   curBody: { flex: 1, paddingHorizontal: 18, paddingTop: 8 },
-  curSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 13, marginBottom: 10 },
-  curSearchInput: { flex: 1, paddingVertical: 11, fontSize: 14.5, color: C.ink },
-  curRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 56, paddingHorizontal: 12, borderRadius: 8 },
+  curSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.surface2, borderRadius: radius.md, paddingHorizontal: 13, marginBottom: 10 },
+  curSearchInput: { flex: 1, paddingVertical: 11, fontSize: 16, color: C.ink },
+  curRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 56, paddingHorizontal: 12, borderRadius: radius.md },
   curSym: { fontSize: 16, fontWeight: '600', color: C.ink2, minWidth: 34 },
-  curName: { flex: 1, fontSize: 14.5, fontWeight: '500', color: C.ink },
+  curName: { flex: 1, fontSize: 16, fontWeight: '500', color: C.ink },
 });

@@ -4,15 +4,18 @@
  * 표는 폰 폭에 3열이 안 들어가 **행마다 카드**(머리 라벨 + 값). 목록 불릿 = 작은 원(View) — 기호 문자·가운데 점 금지.
  */
 import * as React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Shimmer } from '@/components/Skeleton';
 import { Pressable } from '@/components/Pressable';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius } from '@/lib/theme';
-import { fetchLegalBlocks, type LegalBlock, type LegalDoc } from '@/lib/legalText';
+import { fetchLegalBlocks, localizeLegal, type LegalBlock, type LegalDoc } from '@/lib/legalText';
+import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 
 export function LegalDocBody({ doc }: { doc: LegalDoc }) {
   const { t } = useTranslation();
+  const appLang = useAppLanguage(); // KB-907: 구독형(렌더 중 i18n.language 직접 읽기는 컴파일러가 굳힌다 — KB-695)
   // KB-603 3R: 결과·실패 모두 **어느 문서의 것인지** 달아 저장 — 이전 문서의 늦은 응답이 다음 문서에 붙지 않는다. 표시는 현재 doc과 같을 때만.
   const [remote, setRemote] = React.useState<{ doc: LegalDoc; blocks: LegalBlock[] } | null>(null);
   const [errorDoc, setErrorDoc] = React.useState<LegalDoc | null>(null);
@@ -39,25 +42,29 @@ export function LegalDocBody({ doc }: { doc: LegalDoc }) {
   }
   if (remote?.doc !== doc) {
     return (
+      // KB-910: 원격 본문 로딩 = 스켈레톤(헌법 — 구 스피너). 글 줄 모양 6개
       <View style={styles.loading} testID="legal-loading">
-        <ActivityIndicator color={C.primary} />
+        {SKELETON_WIDTHS.map((w, i) => (
+          <Shimmer key={i} style={[styles.skLine, { width: w }]} />
+        ))}
       </View>
     );
   }
-  return <LegalBlocks blocks={remote.blocks} />;
+  return <LegalBlocks blocks={localizeLegal(remote.blocks, appLang)} />; // KB-907: 앱 언어 한 벌 + 이모지 0
 }
 
 function LegalBlocks({ blocks }: { blocks: LegalBlock[] }) {
   return (
     <View style={styles.blocks} testID="legal-blocks">
       {blocks.map((b, i) => {
-        if (b.type === 'heading') return <Text key={i} style={b.level === 1 ? styles.h1 : b.level === 2 ? styles.h2 : styles.h3} accessibilityRole="header">{b.text}</Text>;
-        if (b.type === 'paragraph') return <Text key={i} style={styles.p}>{b.text}</Text>;
+        // KB-910: 한국어 제목·본문 어절 단위 줄바꿈("안전 고 / 지" 방지 — iOS, #366 사장님 카드와 같은 방식)
+        if (b.type === 'heading') return <Text key={i} style={b.level === 1 ? styles.h1 : b.level === 2 ? styles.h2 : styles.h3} accessibilityRole="header" lineBreakStrategyIOS="hangul-word">{b.text}</Text>;
+        if (b.type === 'paragraph') return <Text key={i} style={styles.p} lineBreakStrategyIOS="hangul-word">{b.text}</Text>;
         if (b.type === 'listItem')
           return (
             <View key={i} style={styles.li}>
               <View style={styles.bullet} />
-              <Text style={[styles.p, { flex: 1 }]}>{b.text}</Text>
+              <Text style={[styles.p, { flex: 1 }]} lineBreakStrategyIOS="hangul-word">{b.text}</Text>
             </View>
           );
         return (
@@ -79,22 +86,25 @@ function LegalBlocks({ blocks }: { blocks: LegalBlock[] }) {
   );
 }
 
+const SKELETON_WIDTHS = ['60%', '100%', '100%', '90%', '100%', '70%'] as const;
+
 const styles = StyleSheet.create({
   blocks: { gap: 10, paddingVertical: 10 },
   h1: { fontFamily: font.bodyBold, fontSize: 17, lineHeight: 24, color: C.ink, marginTop: 4 },
-  h2: { fontFamily: font.bodyBold, fontSize: 15, lineHeight: 22, color: C.ink, marginTop: 12 },
-  h3: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 20, color: C.ink, marginTop: 6 },
-  p: { fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 20 },
+  h2: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 23, color: C.ink, marginTop: 12 },
+  h3: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 23, color: C.ink, marginTop: 6 },
+  p: { fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 22 },
   li: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingLeft: 4 },
-  bullet: { width: 4, height: 4, borderRadius: 2, backgroundColor: C.ink2, marginTop: 8 },
-  table: { borderWidth: 1, borderColor: C.line, borderRadius: radius.sm, overflow: 'hidden' },
+  bullet: { width: 4, height: 4, borderRadius: radius.pill, backgroundColor: C.ink2, marginTop: 8 },
+  table: { borderWidth: 1, borderColor: C.line, borderRadius: radius.md, overflow: 'hidden' },
   row: { padding: 12, gap: 6 },
   rowSep: { borderTopWidth: 1, borderTopColor: C.line },
   cell: { gap: 2 },
-  cellHead: { fontFamily: font.body, fontSize: 11, lineHeight: 15, color: C.ink3 },
-  cellFirst: { fontFamily: font.bodyBold, fontSize: 13, lineHeight: 20, color: C.ink },
-  loading: { paddingVertical: 40, alignItems: 'center' },
+  cellHead: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: C.ink3 },
+  cellFirst: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 22, color: C.ink },
+  loading: { paddingVertical: 16, gap: 12 },
+  skLine: { height: 12, borderRadius: radius.xs },
   error: { paddingVertical: 30, alignItems: 'center', gap: 10 },
-  errorText: { fontFamily: font.body, fontSize: 13, color: C.ink2, textAlign: 'center' },
-  retry: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primary, padding: 4 },
+  errorText: { fontFamily: font.body, fontSize: 14, color: C.ink2, textAlign: 'center' },
+  retry: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary, padding: 4 },
 });

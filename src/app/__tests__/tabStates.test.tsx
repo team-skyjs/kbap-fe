@@ -10,6 +10,16 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 // guestListBadges.test 프렐류드 재사용 — reanimated/expo 표면 mock
 // P-176: 재료 카탈로그 훅 표면 목 — 폴백 경로 = 종전 렌더와 동일
 // P-227: 프로필 탭 식이 섹션 훅 표면 목(상수 폴백 형태 — P-208 관례)
+// P-587: 가공식품 전 채널 ON → 홈 편의점 레일·Packaged 쿼리가 함께 마운트된다. 이 파일은 음식·홈 기존 표면만 본다 —
+// 가공식품 0건 성공(레일 숨김)으로 둔다. 레일 자체는 homeCvsRail955.
+jest.mock('@/lib/data/useProcessedFoods', () => {
+  const empty = { isPending: false, isError: false, isSuccess: true, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: () => {}, refetch: () => {} };
+  return {
+    ...jest.requireActual('@/lib/data/useProcessedFoods'),
+    useProcessedSearch: () => ({ ...empty, data: [] }),
+    useProcessedSearchPaged: () => ({ ...empty, data: { items: [], pageSizes: [0] } }),
+  };
+});
 jest.mock('@/features/curation/CurationSection', () => ({ CurationSection: () => null })); // KB-796: 홈 큐레이션(자체 쿼리) — 이 스위트 범위 밖
 jest.mock('@/lib/data/useDietPresets', () => ({
   useDietPresets: () => {
@@ -66,12 +76,13 @@ jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
   return { LinearGradient: View };
 });
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useSegments: () => [], // P-214: 계측 화면 식별(StateBlock·HelpfulButton)
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/',
   useFocusEffect: () => {},
-  useLocalSearchParams: () => ({}), // Codex #80 P1: 음식 탭 See all 파라미터 수신
+  // P-587: 가공식품 전 채널 ON → 음식 탭 기본 세그먼트 = Packaged. 이 파일의 음식 탭 상태는 Dishes 목록 — See all 진입(t)으로 Dishes 고정
+  useLocalSearchParams: () => ({ t: 'dishes' }), // Codex #80 P1: 음식 탭 See all 파라미터 수신
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),

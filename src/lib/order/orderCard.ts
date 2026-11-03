@@ -111,6 +111,27 @@ export function avoidLabelsKo(codes: string[]): string[] {
   return codes.filter((c) => BY_CODE.has(c)).map(ingredientLabelKo);
 }
 
+/**
+ * KB-915: 주문 카드 단일 모델 — 한국어 면(사장님)과 미러(리더 언어)가 **같은 항목·순서·회피 집합**을 그린다.
+ * 구: 한국어 면은 avoidNoticeKo가 81종 미등재 코드를 걸렀는데 미러는 avoidNames 전부를 나열 → 레거시·신규 코드가 있으면
+ * 영어 면에만 재료가 더 보였다. 미러 = "직원이 읽게 될 내용"이라 한국어 면에 없는 재료는 미러에도 없어야 한다.
+ * avoidNames = avoidCodes와 같은 순서의 리더 언어 이름(코드와 짝으로 거른다).
+ */
+export interface OrderCardItem { nameKo: string; name: string; qty: number }
+export function buildOrderCard(items: OrderCardItem[], avoidCodes: string[], avoidNames: string[]) {
+  const multi = items.length >= 2;
+  const lines = items.map((i) => ({
+    ko: multi ? orderItemLineKo(i.nameKo, i.qty) : orderSentenceKo(i.nameKo, i.qty),
+    qty: i.qty,
+    name: i.name || i.nameKo, // 표시명 부재 = 한국어 표기(빈 줄 0)
+  }));
+  const closing = multi ? orderClosingKo(items.reduce((a, i) => a + i.qty, 0)) : null;
+  const pairs = avoidCodes.map((code, k) => ({ code, name: avoidNames[k] ?? code })).filter((p) => BY_CODE.has(p.code));
+  const notice = avoidNoticeKo(pairs.map((p) => p.code));
+  const avoid = notice ? { ...notice, codes: pairs.map((p) => p.code), names: pairs.map((p) => p.name) } : null;
+  return { lines, closing, avoid };
+}
+
 export function ownerQuestionKo(menuNameKo: string, ingredientCode?: string, avoidCodes?: string[]): string {
   // P-306(Codex #67 4R): 사장님 카드 = **한국어만** — reader 언어 라벨 전달 금지(헌법 I),
   // 해석은 resolveIngredientKo 단일 경로. 미해석 = 중립 질문(회피 진술 폴백 금지, 3R).

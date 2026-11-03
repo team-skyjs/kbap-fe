@@ -24,7 +24,7 @@ import { resetToOnboarding } from '@/lib/nav';
 import { logoutLocalFirst } from '@/lib/auth/beAuth';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { useTranslation } from 'react-i18next';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { parseLoginEntry } from '@/lib/auth/loginEntry';
 import { Wordmark } from '@/components/design4Assets';
@@ -84,7 +84,7 @@ function MarqueeRow({ row, animate, scale }: { row: number; animate: boolean; sc
       ]}
     >
       {tiles.map((src, i) => (
-        <Image key={i} source={src} style={[styles.tile, { width: TILE * scale, height: TILE * scale, borderRadius: 21 * scale }]} />
+        <Image key={i} source={src} style={[styles.tile, { width: TILE * scale, height: TILE * scale, borderRadius: radius.md * scale }]} />
       ))}
     </Animated.View>
   );
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   // P-308: 콜라주 = 상단 블록(높이는 collageLayoutFor 동적 — Codex #70) — 하단 흰 배경
   collage: { overflow: 'hidden' },
   collageRow: { flexDirection: 'row' }, // gap·marginBottom = scale 동적(Codex #70)
-  tile: { width: TILE, height: TILE, borderRadius: 21, backgroundColor: C.surface2 },
+  tile: { width: TILE, height: TILE, borderRadius: radius.md, backgroundColor: C.surface2 },
   collageFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 186 },
 
   // welcome — 콜라주가 flex를 소유, 하단 블록은 safe-area 위 고정
@@ -235,8 +235,8 @@ const styles = StyleSheet.create({
   sub: { fontSize: 16, fontWeight: '400', color: '#2F3137', textAlign: 'center', lineHeight: 22, maxWidth: 326 }, // A-LG-01/02
 
   foot: { gap: 10, paddingHorizontal: 20 }, // A-LG-05: 버튼→둘러보기 16(browse padding 6+10)
-  terms: { fontSize: 13, fontWeight: '400', color: C.inkInfo, textAlign: 'center', lineHeight: 18, paddingHorizontal: 10 }, // P-284
+  terms: { fontSize: 14, fontWeight: '400', color: C.inkInfo, textAlign: 'center', lineHeight: 19, paddingHorizontal: 10 }, // P-284
   termsLink: { textDecorationLine: 'underline', paddingHorizontal: 0 },
-  browse: { fontSize: 14, fontWeight: '500', color: C.ink2, textAlign: 'center', padding: 10, marginTop: -4 }, // A-LG-05/06(버튼→둘러보기 16 = gap10+pad10-4)
+  browse: { fontSize: 16, fontWeight: '500', color: C.ink2, textAlign: 'center', padding: 10, marginTop: -4 }, // A-LG-05/06(버튼→둘러보기 16 = gap10+pad10-4)
   browseDim: { opacity: 0.35 }, // KB-421: 색/불투명도만(프레임 불변 P-151)
 });

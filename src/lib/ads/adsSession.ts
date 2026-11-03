@@ -16,6 +16,7 @@ import { EVENTS, track } from '@/lib/analytics';
 import { isProdChannel } from '@/lib/flags';
 import { setMetaTrackingEnabled } from '@/lib/metaSdk';
 import { getAdsSdk, type AdsSdk } from './sdk';
+import { withOcclusion } from '@/lib/engagement/occlusion';
 
 export type AdsState = 'idle' | 'running' | 'ready' | 'unavailable';
 
@@ -36,6 +37,10 @@ const setState = (s: AdsState) => { state = s; notify(); };
 export const getAdsState = (): AdsState => state;
 export const isAdsReady = (): boolean => state === 'ready';
 export const isPrivacyOptionsRequired = (): boolean => privacyOptionsRequired;
+/** KB-968: 기동 동의 흐름(UMP 폼·iOS ATT·초기화)이 끝남 = ready | unavailable. 그 사이 RN Modal을 올리면 iOS가 present를 버린다(시뮬 실측) */
+export const isAdsSettled = (): boolean => state === 'ready' || state === 'unavailable';
+/** 광고 상태 변화 구독(해제 함수 반환) */
+export const subscribeAds = subscribe;
 
 export function useAdsReady(): boolean {
   return useSyncExternalStore(subscribe, isAdsReady, isAdsReady);
@@ -91,13 +96,13 @@ export async function initAds(): Promise<void> {
         console.log('[ads] consent requestInfoUpdate options', JSON.stringify(debug));
         const updated = await AdsConsent.requestInfoUpdate(debug);
         console.log('[ads] consent requestInfoUpdate result', JSON.stringify(updated));
-        const shown = await AdsConsent.loadAndShowConsentFormIfRequired();
+        const shown = await withOcclusion(() => AdsConsent.loadAndShowConsentFormIfRequired()); // KB-873 ②a: 동의 폼 = 가림
         console.log('[ads] consent form result', JSON.stringify(shown));
       } catch (e) {
         console.warn('[ads] consent gather failed (debug)', String(e));
       }
     } else {
-      await AdsConsent.gatherConsent().catch(() => undefined);
+      await withOcclusion(() => AdsConsent.gatherConsent()).catch(() => undefined);
     }
     const info = await AdsConsent.getConsentInfo();
     if (debug) console.log('[ads] consent info', JSON.stringify(info));
@@ -121,7 +126,7 @@ export async function showPrivacyOptions(): Promise<void> {
   const sdk = getAdsSdk();
   if (!sdk) return;
   try {
-    const info = await sdk.AdsConsent.showPrivacyOptionsForm();
+    const info = await withOcclusion(() => sdk.AdsConsent.showPrivacyOptionsForm());
     privacyOptionsRequired = info.privacyOptionsRequirementStatus === sdk.AdsConsentPrivacyOptionsRequirementStatus.REQUIRED;
     notify();
   } catch {

@@ -204,19 +204,19 @@ const styles = StyleSheet.create({
   emptyFill: { flex: 1, justifyContent: 'center' }, // P-154 ②
   root: { flex: 1, backgroundColor: C.surface },
   csScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(42,33,27,0.42)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  csCard: { width: '86%', backgroundColor: C.card, borderRadius: radius.lg, padding: 26, alignItems: 'center', gap: 9, ...shadow.shPop },
-  csIc: { width: 60, height: 60, borderRadius: 30, backgroundColor: accentTint, alignItems: 'center', justifyContent: 'center' },
+  csCard: { width: '86%', backgroundColor: C.card, borderRadius: radius.md, padding: 26, alignItems: 'center', gap: 9, ...shadow.shPop },
+  csIc: { width: 60, height: 60, borderRadius: radius.pill, backgroundColor: accentTint, alignItems: 'center', justifyContent: 'center' },
   csTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  csBody: { fontFamily: font.body, fontSize: 13.5, lineHeight: 19, color: C.ink2, textAlign: 'center' },
+  csBody: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink2, textAlign: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 12 },
   headerTitle: { fontFamily: font.display, fontSize: 24, color: C.ink, letterSpacing: -0.4 },
   bell: { padding: 4 },
   list: { paddingHorizontal: 16, gap: 12 },
   center: { paddingVertical: 30, alignItems: 'center' },
 
-  guestGate: { alignItems: 'center', gap: 5, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 18, marginTop: 4, ...shadow.sh1 },
-  guestGateTitle: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
-  guestGateSub: { fontFamily: font.body, fontSize: 12.5, color: C.ink2 },
+  guestGate: { alignItems: 'center', gap: 5, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.md, padding: 18, marginTop: 4, ...shadow.sh1 },
+  guestGateTitle: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
+  guestGateSub: { fontFamily: font.body, fontSize: 13, color: C.ink2 },
 
-  fab: { position: 'absolute', right: 18, bottom: 18, width: 54, height: 54, borderRadius: 27, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', ...shadow.shPop },
+  fab: { position: 'absolute', right: 18, bottom: 18, width: 54, height: 54, borderRadius: radius.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', ...shadow.shPop },
 });

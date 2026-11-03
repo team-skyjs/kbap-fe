@@ -32,7 +32,7 @@ jest.mock('expo-image', () => {
   const { View } = jest.requireActual('react-native');
   return { Image: View };
 });
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), navigate: jest.fn(), back: jest.fn() }),
   useLocalSearchParams: () => ({}),
   usePathname: () => '/',
@@ -157,7 +157,7 @@ describe('소스 잠금', () => {
   it('북마크 토글이 /home을 무효화하지 않는다 — 랜덤 레일이 토글 한 번에 통째로 바뀌지 않게(KB-779: 저장 표시는 카드 bookmarked, 토글은 홈 캐시 낙관 반전만)', () => {
     const bm = read('src/lib/data/bookmarks.ts');
     expect(bm).not.toMatch(/invalidateQueries\(\{ queryKey: \['home'/);
-    expect(read('src/features/food/FoodExplorer.tsx')).toContain('saved={isSaved(item)}');
+    expect(read('src/features/food/FoodExplorer.tsx')).not.toContain('saved={'); // KB-959: 카드 저장 표시 소멸
   });
 });
 

@@ -51,6 +51,7 @@ it('불변 규칙 소스 잠금 — expo-image 직접 사용 = 공용 3종 내�
     'src/components/AvoidTile.tsx',
     'src/components/RemoteImage.tsx',
     'src/app/community/compose.tsx', // 첨부 미리보기(로컬 uri)만 직접 — 원격 2곳은 RemoteImage
+    'src/features/scan/PackagedScanScreens.tsx', // KB-865 ③: 성분표 면 미리보기(촬영 로컬 uri)만 직접 — 후보 사진(원격)은 RemoteImage
   ]);
   const offenders: string[] = [];
   const walk = (dir: string) => {

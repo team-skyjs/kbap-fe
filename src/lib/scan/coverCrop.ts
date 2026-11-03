@@ -63,3 +63,14 @@ export function wysiwygCropRect(
   const [rvw, rvh] = rotated ? [vh, vw] : [vw, vh];
   return coverCropRect(rvw, rvh, picW, picH);
 }
+
+/** KB-946: 갤러리 사진 OCR 입력 하한(긴 변) — 카메라 크롭본은 대개 이보다 크다. 작은 웹 이미지는 ML Kit 한국어가 "바나나"를 "아나나"로 읽었다(dev scan_operation 55~59) */
+export const OCR_MIN_LONG_SIDE = 2000;
+
+/** 긴 변이 min보다 작으면 비율 그대로 min까지 키운 크기, 아니면 null(그대로). 치수 모름(0) = null */
+export function upscaleLongSide(width: number, height: number, min = OCR_MIN_LONG_SIDE): { width: number; height: number } | null {
+  const long = Math.max(width, height);
+  if (width <= 0 || height <= 0 || long >= min) return null;
+  const k = min / long;
+  return width >= height ? { width: min, height: Math.round(height * k) } : { width: Math.round(width * k), height: min };
+}

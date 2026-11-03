@@ -7,6 +7,16 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+// P-587: 가공식품 전 채널 ON → 홈 편의점 레일·Packaged 쿼리가 함께 마운트된다. 이 파일은 음식·홈 기존 표면만 본다 —
+// 가공식품 0건 성공(레일 숨김)으로 둔다. 레일 자체는 homeCvsRail955.
+jest.mock('@/lib/data/useProcessedFoods', () => {
+  const empty = { isPending: false, isError: false, isSuccess: true, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: () => {}, refetch: () => {} };
+  return {
+    ...jest.requireActual('@/lib/data/useProcessedFoods'),
+    useProcessedSearch: () => ({ ...empty, data: [] }),
+    useProcessedSearchPaged: () => ({ ...empty, data: { items: [], pageSizes: [0] } }),
+  };
+});
 jest.mock('@/features/curation/CurationSection', () => ({ CurationSection: () => null })); // KB-796: 홈 큐레이션(자체 쿼리) — 이 스위트 범위 밖
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
@@ -32,7 +42,7 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 const mockPush = jest.fn();
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useSegments: () => [],
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn(), navigate: jest.fn() }),
   usePathname: () => '/',
@@ -167,7 +177,7 @@ it('① 홈 섹션 순서 — 검색→탭→칩→레일→Recent 헤드→Revi
   const tree = render(<Home />);
   const flat = safeFlat(tree);
   // 시각 순서 = 소스 내 testID/키 등장 순서로 잠금(전부 단일 스크롤 스택)
-  const order = ['home-search', 'home-scan', 'home-tab-popular', 'home-chip-all', 'home-food-', 'home-recent-head', 'home-recent-r1', 'home.disclaimer'];
+  const order = ['home-search', 'home-scan', 'home-tab-popular', 'home-chip-safe', 'home-food-', 'home-recent-head', 'home-recent-r1', 'home.disclaimer'];
   let last = -1;
   for (const key of order) {
     const at = flat.indexOf(key);
@@ -180,7 +190,7 @@ it('① 홈 섹션 순서 — 검색→탭→칩→레일→Recent 헤드→Revi
   }
 });
 
-it('② 위험 칩 — danger 선택 시 personalRisk=danger 카드만, All 복귀 시 전체(레일 상한 10 내)', () => {
+it('② 위험 칩 — danger 선택 시 personalRisk=danger 카드만, KB-949 다시 누르면 해제 = 전체(레일 상한 10 내) · All 칩 0', () => {
   const tree = render(<Home />);
   act(() => {
     byId(tree, 'home-tab-food')[0].props.onPress();
@@ -192,9 +202,10 @@ it('② 위험 칩 — danger 선택 시 personalRisk=danger 카드만, All 복�
   });
   expect(uniqueIds(tree, 'home-food-')).toEqual(['home-food-2']); // danger 1건만
   act(() => {
-    byId(tree, 'home-chip-all')[0].props.onPress();
+    byId(tree, 'home-chip-danger')[0].props.onPress(); // KB-949: 다시 누름 = 해제
   });
   expect(uniqueIds(tree, 'home-food-').length).toBe(6);
+  expect(byId(tree, 'home-chip-all')).toHaveLength(0);
 });
 
 it('③ 알림 — unread 행 = primaryTint 배경 + 점, read 행 = 흰 배경 + 점 없음(프레임 불변)', () => {
@@ -209,18 +220,11 @@ it('③ 알림 — unread 행 = primaryTint 배경 + 점, read 행 = 흰 배경 
   expect(src).not.toContain('icUnread');
 });
 
-it('⑤ 홈 레일 저장 별 = 카드의 bookmarked(KB-779 — 북마크 목록 드레인 아님): 저장 카드 = #FFE812 fill · 미저장 = 아웃라인', () => {
-  // 북마크 목록엔 id 2가 있어도 홈은 그 집합을 보지 않는다 — /foods 카드의 bookmarked(id 1만 true)가 정본
-  mockBookmarks.data = [mockFood('2', 'danger')];
+it('⑤ KB-959(예진 11/2): 홈 레일 카드 저장 별 소멸 — 저장 카드여도 카드엔 버튼 0(저장·해제 = 상세)', () => {
   mockCatalog[0].bookmarked = true;
   const tree = render(<Home />);
-  const fills = (id: string) => {
-    const bm = byId(tree, `home-bm-${id}`)[0];
-    expect(bm).toBeTruthy();
-    return bm.findAll((n) => n.props?.fill != null).map((n) => n.props.fill as string);
-  };
-  expect(fills('1')).toContain('#FFE812'); // 9/5 판정 4129:10701
-  expect(fills('2')).not.toContain('#FFE812');
+  expect(tree.root.findAll((n) => /^home-bm-/.test(n.props?.testID ?? ''))).toHaveLength(0);
+  expect(byId(tree, 'home-food-1').length).toBeGreaterThan(0); // 카드 자체는 그대로
   mockCatalog[0].bookmarked = false;
 });
 

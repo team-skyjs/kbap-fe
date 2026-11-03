@@ -12,31 +12,34 @@
  */
 import * as React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { nameSortOf, type FoodSort } from './foodSort'; // KB-956: 정렬 매핑 = 순수 모듈
+import { SeeAllCircle } from '@/components/SeeAllCircle';
+import { useRefreshClient } from '@/lib/data/usePullRefresh';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
 import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
 import { MAX_FONT_SCALE, Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, primaryTint, radius } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { CHIP_LABEL_LH } from '@/components/Chip';
-import { Btn, Chip, IconSearch, IconTabScan, IconChevron, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
+import { Btn, Chip, IconSearch, IconTabScan, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
 import { EmptyBlock } from '@/components/StateBlock';
 import { Shimmer } from '@/components/Skeleton';
 import { ActionSheet } from '@/components/ActionSheet';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
+import { FoodGridCard, isGridPad, padOddGrid, RISK_CHIPS } from '@/features/food/FoodCards'; // KB-949: 위험 칩 목록 = 저장 목록과 공통
 import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/food/foodFilterParams';
 import { railCardW } from '@/features/food/railLayout';
 import { LinearGradient } from 'expo-linear-gradient';
+import { CHIP_FADE_W, ChipScrollRow, useMoreOnRight } from '@/components/ChipScrollRow';
 import { SectionHead } from '@/components/SectionHead';
 import { useInfiniteFoods, usePrefetchOtherFoodSorts, FOODS_PAGE_SIZE } from '@/lib/data/useFoods';
-import type { FoodNameSort } from '@/lib/data/foodNameSort';
-import { useBookmarks, useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
+import { useBookmarks } from '@/lib/data/bookmarks';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { popularPhotoFoods } from '@/lib/search/discovery';
 import type { FoodCard } from '@/lib/api/types';
-import { EVENTS, track } from '@/lib/analytics';
 import { trackHomeCardClick, useImpressionRef, useImpressionScrollProps, type HomeSection } from '@/features/home/homeImpressions';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900
@@ -45,53 +48,32 @@ export type GridTab = 'popular' | 'saved' | 'food';
 /** 위험 칩 4종 — All + personalRisk 3상태(라벨은 현 위험 키: Avoid=danger·Warning=caution).
  *  P-318: See all 파라미터(RiskChipParam)와 같은 유니언 — 홈→음식 탭 승계 무변환. */
 type RiskChip = RiskChipParam;
-const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
-/** KB-707: Food 탭 칩 줄 끝 페이드 폭 — 칩 줄 끝 여백도 이만큼(끝까지 밀면 마지막 칩이 페이드 밖으로 완전히 나온다) */
-export const CHIP_FADE_W = 24;
+// KB-927: 칩 줄(가로 스크롤·끝 여백·페이드)은 components/ChipScrollRow — 기존 import 경로 유지용 재수출
+export { CHIP_FADE_W, chipFadeShown } from '@/components/ChipScrollRow';
 /** Food 탭 칩 줄 높이(시안 34). KB-708: 큰 글자에선 칩 라벨 줄 높이가 늘어난 만큼 같이 늘어난다 — 기본 크기 = 34 그대로.
  *  RN은 lineHeight도 글자 배율(상한 MAX_FONT_SCALE)만큼 키우므로 칩은 스스로 커지는데, 줄이 34로 고정이라 잘렸다(XXXL QA). */
+/** KB-934: 카드 리본이 사진 위로 걸치는 높이(FoodCards gbadge top −4) — 홈 가로 레일 위 여백 */
+export const RAIL_RIBBON_OVERHANG = 4;
 export const CHIP_ROW_H = 34;
 export function chipRowHeight(fontScale: number): number {
   return CHIP_ROW_H + CHIP_LABEL_LH * (Math.min(Math.max(fontScale, 1), MAX_FONT_SCALE) - 1);
 }
-/** KB-707: 끝 페이드("더 있다" 표시)는 아직 오른쪽에 숨은 칩이 있을 때만 — 끝까지 밀었거나 다 들어가면 숨김(마지막 칩을 덮지 않게) */
-export function chipFadeShown(scrollX: number, contentW: number, viewW: number): boolean {
-  return contentW - viewW - scrollX > 1;
+/** 검색 행 오른쪽 주황 스캔 버튼(A-HM-02) — Dishes와 Packaged 탭(KB-914 R-142)이 같은 부품 */
+export function SearchScanButton({ onPress, testID }: { onPress: () => void; testID: string }) {
+  return (
+    <Pressable style={styles.scanBtn} onPress={onPress} testID={testID}>
+      <IconTabScan size={24} color="#FFFFFF" />
+    </Pressable>
+  );
 }
 
-/** KB-707: 가로 스크롤 줄 공용 — "오른쪽에 숨은 것이 있나"(끝 페이드 표시) + 바운스 끔. 칩 줄·홈 세그먼트 탭이 같이 쓴다.
- *  scrollProps를 ScrollView에 펼치고, more가 참일 때만 끝 페이드를 그린다. */
-function useMoreOnRight() {
-  const m = React.useRef({ x: 0, content: 0, view: 0 });
-  const [more, setMore] = React.useState(false);
-  const update = () => setMore(chipFadeShown(m.current.x, m.current.content, m.current.view));
-  const scrollProps = {
-    scrollEventThrottle: 32,
-    // 다 들어가는 언어에서 줄이 좌우로 튕기지 않게(iOS 기본 바운스 · Android 오버스크롤 글로우)
-    alwaysBounceHorizontal: false,
-    overScrollMode: 'never' as const,
-    onScroll: (e: { nativeEvent: { contentOffset: { x: number } } }) => {
-      m.current.x = e.nativeEvent.contentOffset.x;
-      update();
-    },
-    onContentSizeChange: (w: number) => {
-      m.current.content = w;
-      update();
-    },
-    onLayout: (e: { nativeEvent: { layout: { width: number } } }) => {
-      m.current.view = e.nativeEvent.layout.width;
-      update();
-    },
-  };
-  return { more, scrollProps, metrics: m };
-}
+/** KB-909(Q-367): 큰 글씨(fontScale > 1 — BlurCaptionCard captionLargeText와 같은 기준)면 Food 탭 정렬 버튼을 칩 아래 자기 줄로 */
+export const sortOnOwnRow = (fontScale: number): boolean => fontScale > 1;
 
 /** P-318 정렬 — new는 서버 정렬 파라미터 부재로 시트에서 비활성(선택 불가, P-385 실측).
  *  P-335(9/8 예진): 클라 A–Z 제거(커서 페이지 위 클라 정렬 = 항목 튐) → KB-821: 서버 3.1 sort=name_asc|name_desc로 재도입
  *  (서버가 전체 순서·불투명 커서를 소유 — 클라는 받은 순서 그대로). popular = 기본 정렬(요청 무변). */
-type FoodSort = 'popular' | 'new' | FoodNameSort;
 const FOOD_SORTS: FoodSort[] = ['popular', 'new', 'name_asc', 'name_desc'];
-const nameSortOf = (s: FoodSort): FoodNameSort | undefined => (s === 'name_asc' || s === 'name_desc' ? s : undefined);
 /** KB-821: 선택 유지 = 세션 내(탭 전환·재진입 유지), 앱 재시작 시 기본 — KB-797 UX안에 유지 범위가 없어 발주 기본값. */
 let sessionSort: FoodSort = 'popular';
 const rememberSort = (s: FoodSort) => { sessionSort = s; };
@@ -178,22 +160,31 @@ export function FoodExplorer({
   const bookmarksOn = variant === 'screen' || savedTabActive;
   const saved = useBookmarks(undefined, { enabled: bookmarksOn });
   // KB-821: 이름 정렬은 Saved 목록(savedList)에만 — 북마크 판정 소스(saved, 드레인)는 기본 정렬 그대로
-  const savedList = useBookmarks(savedTabActive ? riskChip : 'all', { enabled: bookmarksOn, sort: nameSort });
-  const toggleBookmark = useToggleBookmark();
+  // KB-956: /bookmarks엔 reviews 정렬이 없다(서버 #521은 /foods만) — 저장 목록은 이름 정렬만 넘기고 Popular는 기본 정렬
+  const bookmarkSort = nameSort === 'reviews' ? undefined : nameSort;
+  const savedList = useBookmarks(savedTabActive ? riskChip : 'all', { enabled: bookmarksOn, sort: bookmarkSort });
 
   // P-349 ③(KB-512): 당겨서 새로고침 — #112 3R ②: 활성 쿼리만(browse는 Saved 활성 중
   // enabled:false인데 refetch가 이를 우회해 휴면 쿼리를 깨움 → 명시 분기).
   const [refreshing, setRefreshing] = React.useState(false);
+  const qc = useRefreshClient(); // KB-954
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     const jobs: Promise<unknown>[] = savedOnly
-      ? riskChip === 'all' && !nameSort
+      ? riskChip === 'all' && !bookmarkSort
         ? [saved.refetch()] // 5R ②: 같은 키 두 관찰자 — refetch 1회 (KB-821 이름 정렬이면 키가 갈라져 둘 다)
         : [savedList.refetch(), saved.refetch()] // 목록 + 북마크 판정 소스
       : [browse.refetch()];
+    jobs.push(qc.invalidateQueries({ queryKey: ['me'] })); // KB-954: 다른 기기 회피 변경·쿼터
     void Promise.all(jobs).finally(() => setRefreshing(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedOnly, riskChip, nameSort, browse.refetch, saved.refetch, savedList.refetch]);
+  }, [savedOnly, riskChip, bookmarkSort, browse.refetch, saved.refetch, savedList.refetch, qc]);
+  // KB-954: 음식 탭(screen) 재탭 = 맨 위 + 새로고침(스피너) — 홈 embedded는 홈 화면 핸들러가 맡는다
+  const gridRef = React.useRef<React.ComponentRef<typeof Animated.FlatList<FoodCard>>>(null);
+  useTabPress('food', (kind) => {
+    if (kind !== 'reselect') return;
+    topThenRefresh(() => gridRef.current?.scrollToOffset({ offset: 0, animated: false }), onRefresh);
+  }, variant === 'screen');
 
   // P-350 ③: 얇은 페이지 — risk 지정 목록은 hasNext=true·items 미만(0 포함)이 정상.
   // onEndReached만으론 빈 화면에서 다음 페이지가 안 당겨짐 → 화면을 채울 때까지
@@ -269,7 +260,7 @@ export function FoodExplorer({
   const chipScrollRef = React.useRef<ScrollView | null>(null);
   const { fontScale } = useWindowDimensions(); // KB-708: 칩 줄 높이가 큰 글자를 따라감
   // KB-707: 칩 줄이 정렬 버튼 왼쪽에서 끝나는 스크롤 영역 — 오른쪽에 숨은 칩이 있을 때만 끝 페이드(홈 탭과 공용 판정)
-  const chipLine = useMoreOnRight();
+  const sortOwnRow = sortOnOwnRow(fontScale); // KB-909(Q-367): 큰 글씨 = 정렬 버튼 자기 줄
   // KB-707: 홈 세그먼트 탭 줄 — 같은 판정 + 누른 탭을 화면 안으로
   const tabLine = useMoreOnRight();
   const tabsScrollRef = React.useRef<ScrollView | null>(null);
@@ -289,7 +280,7 @@ export function FoodExplorer({
   };
   React.useEffect(() => {
     if (variant !== 'screen') return;
-    const idx = savedOnly ? RISK_CHIPS.length : RISK_CHIPS.indexOf(riskChip);
+    const idx = savedOnly ? RISK_CHIPS.length : riskChip === 'all' ? -1 : RISK_CHIPS.indexOf(riskChip);
     if (idx > 1) chipScrollRef.current?.scrollTo({ x: idx * 72, animated: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variant, riskChip, savedOnly, paramsKey]);
@@ -298,8 +289,6 @@ export function FoodExplorer({
   // (P-332 가드 문법 포함 — 중복 배선 금지, 검색 등 다른 표면과 공유).
   const savedFoods = saved.data ?? []; // 무필터 — 북마크 판정 소스(savedIds)·저장 0건 판단
   const savedListFoods = savedList.data ?? []; // Saved 목록 소스(risk 적용분)
-  const { ids: savedIds, ready: savedReady } = useSavedIds({ enabled: bookmarksOn });
-  const isSaved = (f: FoodCard) => (variant === 'embedded' ? f.bookmarked === true : savedIds.has(f.foodId)); // KB-779
   // KB-712: 홈 Popular + All = /home 랜덤(로딩 중이거나 1건 이상일 때) — 비었으면 기존 경로로 폴백.
   // 로딩 중 홈은 popular={undefined}를 넘긴다(빈 배열 아님) — `popular != null`로 걸면 /foods가 먼저 보였다 바뀌는 팝인(#237 공부)
   const homePopular = variant === 'embedded' && gridTab === 'popular' && riskChip === 'all' && (popularLoading || (popular?.length ?? 0) > 0);
@@ -327,17 +316,7 @@ export function FoodExplorer({
   const mostReviewedImpressionRef = useImpressionRef(variant === 'embedded' ? 'most_reviewed' : null);
   const railScrollProps = useImpressionScrollProps();
 
-  const onBookmark = (f: FoodCard) => {
-    if (guest) return setGate({ ctx: 'save', open: true });
-    if (variant === 'screen' && !savedReady) return; // #116 2R ①: 드레인 완료 전 = 방향 오판 위험 — 무시(KB-779: 홈은 카드값이 방향)
-    // KB-784(감사 §5): 홈·음식 탭 카드 하트 = 기존 도메인 이벤트 그대로(이름·속성 무변) — 상세·저장 목록만 집계되던 과소 보정.
-    // 방향 = 실제 뮤테이션과 같은 판정(isSaved — KB-779 홈 카드값/화면 savedIds)
-    track(EVENTS.food_bookmark_toggle, { on: !isSaved(f) });
-    toggleBookmark.mutate({
-      snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
-      add: !isSaved(f),
-    });
-  };
+  // KB-959(예진 11/2): 카드 저장 버튼 제거 — 저장·해제는 상세에서만(Saved 칩·홈 Saved 탭 목록은 유지)
 
   // 9/5 발주: 게스트 칩 = 렌더하되 개인화 칩 탭 = 게이트(선택 All 유지)
   const onChip = (c: RiskChip) => {
@@ -364,15 +343,15 @@ export function FoodExplorer({
           </Text>
           <IconSearch size={20} color={C.ink3} />
         </Pressable>
-        <Pressable style={styles.scanBtn} onPress={() => router.navigate('/scan')} testID="home-scan">
-          <IconTabScan size={24} color="#FFFFFF" />
-        </Pressable>
+        <SearchScanButton onPress={() => router.navigate('/scan')} testID="home-scan" />
       </View>
 
       {/* 언더라인 탭 (4123:3884): Popular | Saved | Food — P-318: 홈(embedded) 전용,
           음식 탭은 세그먼트 소멸(v2 정본 — 카탈로그 단일 뷰 + 필터·정렬) */}
       {variant === 'embedded' && (
         <>
+          {/* KB-962(예진 11/2): 탭 줄 오른쪽 끝 = See all 원형 버튼(고정 칸) — 탭은 남은 폭(긴 언어는 아래 가로 스크롤 그대로) */}
+          <View style={styles.tabsHead}>
           {/* KB-707: 긴 언어(ru·id)에서 셋째 탭이 말줄임 없이 화면 밖으로 잘렸다 — 줄이지 않고 가로 스크롤로 도달 가능하게(다 들어가면 모양 동일) */}
           <View style={styles.tabsScroll}>
           <ScrollView
@@ -422,69 +401,50 @@ export function FoodExplorer({
             />
           )}
           </View>
+          {/* 이동 = 구 레일 끝 See all 카드와 같음(지금 탭·안전도 칩 그대로 음식 탭으로) */}
+          <SeeAllCircle
+            onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam, Date.now()) as Href)}
+            style={styles.tabsSeeAll}
+            testID="home-rail-see-all"
+          />
+          </View>
           <View style={styles.tabsDivider} />
         </>
       )}
 
       {/* 위험도 칩 필터 (§1-4) — 9/5: 게스트에게도 렌더(시안 4150:16403), 탭 = 게이트.
           P-340 2-A(KB-495): screen = 한 줄 고정 가로 스크롤(우측 페이드 24) + 정렬 버튼
-          스크롤 밖 우측 고정. 홈(embedded)은 현행 무변. */}
-      {variant === 'screen' ? (
-        <View style={styles.chipRowScreen}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <ScrollView
-              ref={chipScrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={[styles.chipScrollContent, { height: chipRowHeight(fontScale) }]}
-              testID="food-chip-scroll"
-              {...chipLine.scrollProps}
-            >
-              {RISK_CHIPS.map((c) => (
-                <Chip
-                  key={c}
-                  label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
-                  selected={riskChip === c}
-                  onPress={() => onChip(c)}
-                  testID={`home-chip-${c}`}
-                  risk={c === 'all' ? undefined : c} // P-391: all만 중립, 나머지는 상태색
-                />
-              ))}
-              <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />
-            </ScrollView>
-            {/* 우측 흰→투명 페이드 — 스크롤 가능함을 암시(터치 투과). KB-707: 오른쪽에 숨은 칩이 있을 때만 */}
-            {chipLine.more && (
-            <LinearGradient
-              colors={['rgba(255,255,255,0)', '#FFFFFF']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.chipFade}
-              pointerEvents="none"
-              testID="food-chip-fade"
+          스크롤 밖 우측 고정. */}
+      {/* KB-909(Q-367): 홈(embedded)도 Food 탭과 같은 한 줄 가로 스크롤 + 끝 페이드(줄바꿈 금지 — XXL에서 Caution만 둘째 줄로 내려갔다).
+          Food 탭 정렬 버튼은 큰 글씨(fontScale > 1)면 칩 아래 오른쪽 자기 줄 — 칩 줄이 정렬 버튼 폭만큼 좁아져 칩이 잘려 보였다 */}
+      <View style={variant === 'screen' ? [styles.chipRowScreen, sortOwnRow && styles.chipRowScreenStack] : styles.chipRowHome}>
+        <ChipScrollRow
+          scrollRef={chipScrollRef}
+          style={variant === 'screen' && !sortOwnRow ? styles.chipLineWrap : styles.chipLineFull}
+          minHeight={chipRowHeight(fontScale)}
+          scrollTestID="food-chip-scroll"
+          fadeTestID="food-chip-fade"
+        >
+          {/* KB-949: Packaged 판정 칩과 같은 칩·토글(All 칩 없음 — 다시 누르면 해제) */}
+          {RISK_CHIPS.map((c) => (
+            <Chip
+              key={c}
+              label={t(`risk.${c}`)}
+              selected={riskChip === c}
+              onPress={() => onChip(riskChip === c ? 'all' : c)}
+              testID={`home-chip-${c}`}
+              risk={c} // P-391: 상태색·마크
             />
-            )}
-          </View>
-          <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="food-sort">
+          ))}
+          {variant === 'screen' && <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />}
+        </ChipScrollRow>
+        {variant === 'screen' && (
+          <Pressable style={[styles.sortBtn, sortOwnRow && styles.sortBtnOwnRow]} onPress={() => setSortSheet(true)} testID="food-sort">
             <Text style={styles.sortLabel} numberOfLines={1}>{t(`food.sort_${sort}`)}</Text>
             <IconChevronDown size={16} color="#4B4F58" />
           </Pressable>
-        </View>
-      ) : (
-        <View style={styles.chipRow}>
-          <View style={styles.chipGroup}>
-            {RISK_CHIPS.map((c) => (
-              <Chip
-                key={c}
-                label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
-                selected={riskChip === c}
-                onPress={() => onChip(c)}
-                testID={`home-chip-${c}`}
-                risk={c === 'all' ? undefined : c} // P-391: all만 중립, 나머지는 상태색
-              />
-            ))}
-          </View>
-        </View>
-      )}
+        )}
+      </View>
     </View>
   );
 
@@ -497,10 +457,8 @@ export function FoodExplorer({
       food={item}
       risk={personalRisk(item.risk, hasR)}
       guest={guest}
-      saved={isSaved(item)}
       riskLabel={t(`risk.${personalRisk(item.risk, hasR)}`)}
       onPress={() => openFood(item.foodId)}
-      onBookmark={() => onBookmark(item)}
       style={cellStyle}
     />
   );
@@ -517,6 +475,7 @@ export function FoodExplorer({
     return (
       <>
         <Animated.FlatList
+          ref={gridRef}
           data={padOddGrid(gridFoods)}
           keyExtractor={(f) => f.foodId}
           numColumns={2}
@@ -610,7 +569,7 @@ export function FoodExplorer({
         /* 원격 콘텐츠 = 스켈레톤 기본(P-188 계열) — 카드 비율·cardW 동일 2장 */
         <View style={styles.railSkel} testID="home-rail-skel">
           {[0, 1].map((i) => (
-            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
+            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: radius.xs }} />
           ))}
         </View>
       ) : gridQ.isError && gridFoods.length === 0 ? (
@@ -656,15 +615,8 @@ export function FoodExplorer({
           contentContainerStyle={styles.railContent}
           testID="home-rail"
         >
+          {/* KB-962: 레일은 마지막 카드로 끝(구 끝 See all 카드 → 탭 줄 오른쪽 원형 버튼) */}
           {gridFoods.map((item, i) => card(item, { width: cardW }, gridTab, i))}
-          <Pressable
-            style={[styles.seeAllCard, { width: cardW }]}
-            onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam, Date.now()) as Href)}
-            testID="home-rail-see-all"
-          >
-            <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>
-            <IconChevron size={16} color={C.primaryText} />
-          </Pressable>
         </ScrollView>
         </View>
       )}
@@ -692,7 +644,7 @@ export function FoodExplorer({
       {variant === 'embedded' && mostReviewedLoading && (
         <View style={styles.railSkel} testID="home-most-reviewed-skel">
           {[0, 1].map((i) => (
-            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
+            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: radius.xs }} />
           ))}
         </View>
       )}
@@ -723,80 +675,68 @@ const styles = StyleSheet.create({
   searchBox: {
     flex: 1,
     height: 48,
-    borderRadius: 4,
+    borderRadius: radius.md, // KB-909: 입력창 = md
     backgroundColor: C.surface2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16, // A-HM-02
   },
-  searchPh: { flex: 1, fontSize: 15, fontWeight: '500', color: '#D1D3D8', marginRight: 8 }, // A-HM-02(scanBtn bg는 C 이관)
-  scanBtn: { width: 48, height: 48, borderRadius: 8, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  searchPh: { flex: 1, fontSize: 16, fontWeight: '500', color: '#D1D3D8', marginRight: 8 }, // A-HM-02(scanBtn bg는 C 이관)
+  // KB-926: 둥근 사각 복원(KB-909 직전 8 → 토큰 md 12) — 홈·Food·Packaged 검색 줄 공용. 하단 탭바 스캔(원형)은 다른 부품
+  scanBtn: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
 
   // 언더라인 탭 (§1-3)
-  tabsScroll: { flexGrow: 0, marginTop: 14 }, // KB-707: 가로 스크롤(세로로 자라지 않게 flexGrow 0 — P-319)
+  tabsHead: { flexDirection: 'row', alignItems: 'center', marginTop: 14, paddingRight: 20 }, // KB-962: 탭(남은 폭) + See all 원형(고정 칸)
+  tabsScroll: { flex: 1, minWidth: 0 }, // KB-707: 가로 스크롤 · KB-962: 원형 버튼 옆 남은 폭(세로 성장은 행이 막는다 — P-319)
+  tabsSeeAll: { marginLeft: 8, flexShrink: 0 },
   tabsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 4 }, // A-HM-03
   // A-DS-03(KB-486): 라벨 14/700 · 비활성 #9196A1 · 패딩 10
   tab: { paddingHorizontal: 10, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
-  tabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' },
+  tabLabel: { fontSize: 16, fontWeight: '700', color: '#9196A1' },
   tabLabelOn: { color: INK_TITLE },
   tabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   tabBarOn: { backgroundColor: INK_TITLE },
   tabsDivider: { height: 0.5, backgroundColor: C.line2 },
 
   // P-318: 칩 그룹(래핑) + 우측 정렬 버튼 — embedded는 우측 요소 없음(시각 무변)
-  chipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14 }, // A-HM-04(홈 무변)
+  // A-HM-04: 홈 칩 줄 위아래 18/14(좌우 여백은 스크롤 콘텐츠 paddingLeft 20·끝 페이드 폭)
+  chipRowHome: { paddingTop: 18, paddingBottom: 14 },
   // P-340 2-A: 한 줄 고정(칩 34) + pad 14/12 + 하단 헤어라인 — 정렬 버튼은 스크롤 밖 우측
   chipRowScreen: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // P-351 ②(#114 P2): 헤어라인 아래 12 — top은 ListHeader라 contentContainer paddingTop은 헤더째 밀림
   // KB-707: 오른쪽 끝 여백 = 페이드 폭 — 끝까지 밀면 마지막 칩이 페이드·정렬 버튼에 가리지 않는다(옛 8 < 페이드 24 → 마지막 칩 끝 16pt가 늘 덮였다)
-  chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: CHIP_FADE_W }, // 높이 = chipRowHeight(fontScale) 인라인
-  chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: CHIP_FADE_W },
   // P-342 ②: 정렬 시트 NEW "준비 중" 칩(DS 소형 pill)
-  soonChip: { backgroundColor: '#F2F3F6', borderRadius: 999, paddingVertical: 2, paddingHorizontal: 8 },
-  soonChipText: { fontSize: 12, fontWeight: '500', color: '#6A6F7C' },
-  chipGroup: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
-  sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
+  soonChip: { backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 2, paddingHorizontal: 8 },
+  soonChipText: { fontSize: 13, fontWeight: '500', color: '#6A6F7C' },
+  chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: CHIP_FADE_W }, // 홈 세그먼트 탭 줄 끝 페이드(칩 줄은 ChipScrollRow 안)
+  chipLineWrap: { flex: 1, minWidth: 0 },
+  chipLineFull: { alignSelf: 'stretch' }, // KB-909: 홈·큰 글씨 Food 탭 = 칩 줄이 전폭(정렬 버튼은 다음 줄 오른쪽)
+  // KB-909 Q-367b: 큰 글씨 = 세로 흐름(칩 줄 → 정렬 버튼). 구 flexWrap 줄바꿈은 둘째 줄이 행 높이에 안 잡혀 그리드가 정렬 버튼을 덮었다(XXL)
+  chipRowScreenStack: { flexDirection: 'column', alignItems: 'stretch' },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 14 }, // KB-926: 좌우 = 필터 칩(Chip 14)과 같게 — 8이면 알약 곡선에 글자가 붙어 잘릴 듯 보였다
+  sortBtnOwnRow: { alignSelf: 'flex-end' }, // 자기 줄 = 오른쪽(칩 줄 아래)
+  sortLabel: { fontSize: 16, fontWeight: '700', color: '#4B4F58' },
 
   // P-317 홈 레일(그리드 카드 동일 비율 — 폭 174 고정, gap 12, 좌우 20)
   // P-319(KB-485) 공백 근본 원인: RN ScrollView 기본 스타일(baseHorizontal)이 flexGrow:1 —
   // 세로 FlatList 헤더(column) 안에서 가로 레일이 잔여 세로 공간을 흡수해 화면 높이만큼
   // 늘어났다(Fabric). 레일 자신은 세로로 자라면 안 되는 요소 — flexGrow:0으로 차단
   // (고정 height 가리기 아님 — 높이는 콘텐츠(카드)가 결정).
-  rail: { flexGrow: 0 },
-  railContent: { paddingHorizontal: 20, gap: 12 },
+  // KB-934: 리본(RiskBadge)이 사진 위로 4pt 걸친다(gbadge top −4) — 가로 ScrollView는 자기 경계에서 자르므로 위 여백 4로 리본을 경계 안에, 같은 만큼 위로 당겨 카드 자리는 그대로
+  rail: { flexGrow: 0, marginTop: -RAIL_RIBBON_OVERHANG },
+  railContent: { paddingHorizontal: 20, gap: 12, paddingTop: RAIL_RIBBON_OVERHANG },
   // 폭은 렌더 시 cardW로 주입(P-319) — 비율·모양만 여기서
-  // P-339 ①(KB-494) → P-396(KB-590): 레일 끝 더보기가 눈에 안 띈다는 실기 피드백 —
-  // 주황 포인트로 승격. 배경·보더는 DS에 이미 있는 primary 쌍(온보딩 선택 타일과 같은
-  // `primaryTint` + `C.primary` 보더) 그대로, 새 hex 0. 비율·폭·탭 동작은 무변이고
-  // RN 보더는 박스 안쪽이라 카드 크기도 그대로다.
-  seeAllCard: {
-    aspectRatio: 174 / 203,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    paddingHorizontal: 12,
-    backgroundColor: primaryTint,
-    borderWidth: 1,
-    borderColor: C.primary,
-    borderRadius: radius.sm,
-  },
-  // 텍스트·chevron은 `C.primaryText`. 발주는 `C.primary`였지만 그 값은 이 틴트 위에서
-  // 대비 2.61로 AA(4.5)는커녕 비텍스트 3:1도 못 넘는다 — P-284가 "12~14px primary 텍스트는
-  // primaryText"로 이미 정해둔 이유가 이것이고, primaryText는 같은 배경에서 4.91이다.
-  seeAllText: { fontSize: 14, fontWeight: '600', color: C.primaryText },
   // P-321 레일 상태 블록(전부 ScrollView 밖 세로 배치 — 줄바꿈 보장)
   railSkel: { flexDirection: 'row', gap: 12, paddingHorizontal: 20 },
   // 디자이너 빈 상태(4003:6689) = 중앙 정렬 — EmptyBlock과 본문·CTA 정렬 통일
   railState: { paddingHorizontal: 20, alignItems: 'center', gap: 4 },
-  railEmptyBody: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20, textAlign: 'center', maxWidth: 335 },
+  railEmptyBody: { fontSize: 16, fontWeight: '400', color: C.ink2, lineHeight: 23, textAlign: 'center', maxWidth: 335 },
   // Safe picks 2×2 — 홈 구 그리드 문법(카드 기본 47% + grow)
   // P-326: 음식 탭 그리드 문법(행 row + 셀 flex:1) — 47% 근사 폐기(좌우 패딩 대칭)
   safeGrid: { gap: 16, paddingHorizontal: 20 },
   safeGridRow: { flexDirection: 'row', columnGap: 16 },
   safeGridCell: { flex: 1, minWidth: 0 },
-  gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24, paddingHorizontal: 20 },
+  gridEmpty: { fontSize: 16, fontWeight: '400', color: C.ink2, paddingVertical: 24, paddingHorizontal: 20 },
 
   // 음식 탭(FlatList) 그리드 — 셀이 폭 소유(저장 목록과 같은 문법)
   gridRowWrap: { columnGap: 16, paddingHorizontal: 20 },

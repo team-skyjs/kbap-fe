@@ -7,8 +7,10 @@
  * ⑤ ReviewEditSheet 부재(컴포넌트·표면 배선 소멸)
  */
 import * as React from 'react';
-import { TextInput } from 'react-native';
+import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { color as TC } from '@/lib/theme';
+import { pillCta } from '@/features/food/pillCta';
 
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
@@ -56,7 +58,7 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 const mockBack = jest.fn();
 /** KB-620: 편집(reviewId 있음)·신규(없음) 두 경로를 같은 스위트에서 — beforeEach가 편집으로 되돌린다. */
 const mockParams: { id: string; reviewId?: string } = { id: '7', reviewId: 'r1' };
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useRouter: () => ({ push: jest.fn(), back: mockBack, replace: jest.fn() }),
   useLocalSearchParams: () => mockParams,
   useSegments: () => [],
@@ -430,5 +432,44 @@ describe('KB-828 리뷰 본문 최소 10자', () => {
     await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
     expect(mockUpdate).toHaveBeenCalledTimes(1);
     expect(mockUpdate.mock.calls[0][0].changes.body).toBe('Really good kimbap');
+  });
+});
+
+describe('KB-891 하단 Post 버튼 = 음식 상세와 같은 가로 전체 알약', () => {
+  const host = (t2: ReactTestRenderer, id: string) => byId(t2, id).find((n) => typeof n.type === 'string')!;
+  const label = (t2: ReactTestRenderer, text: string) => t2.root.findAll((n) => typeof n.type === 'string' && n.props.children === text)[0];
+  const bodyPad = (t2: ReactTestRenderer) =>
+    t2.root.findAllByType(ScrollView).filter((n) => !n.props.horizontal).map((n) => StyleSheet.flatten(n.props.contentContainerStyle).paddingBottom)[0];
+
+  it('KB-903(T-071): 흰 띠·상단 선 없음 · 흐름 안(절대 위치 아님 — 마지막 칩이 바 뒤로 못 들어감) · 좌우 20 · 알약 틀(공용 정의) · 비활성 = off 색 그대로', () => {
+    mockParams.reviewId = undefined; // 신규 — 별점 없음 = off
+    const tree = render(<ReviewCompose />);
+    const bar = StyleSheet.flatten(host(tree, 'review-bottom-bar').props.style);
+    expect(bar.backgroundColor).toBe('#FFFFFF');
+    expect(bar.borderTopWidth).toBeUndefined();
+    expect(bar.position).toBeUndefined();
+    expect(bar).toMatchObject({ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12 });
+    const btn = StyleSheet.flatten(host(tree, 'post-review').props.style);
+    expect(btn).toMatchObject({ ...StyleSheet.flatten(pillCta.pillShape), backgroundColor: TC.line });
+    expect(StyleSheet.flatten(label(tree, 'review.postReview').props.style)).toMatchObject({ fontSize: 16, lineHeight: 22, color: TC.inkDisabled });
+    expect(label(tree, 'review.postReview').props.numberOfLines).toBeUndefined(); // 큰 글씨 = 줄바꿈(자르기 금지)
+  });
+
+  it('수정(저장 가능) = 음식 상세 알약과 같은 primary 색·흰 글자', () => {
+    const tree = render(<ReviewCompose />);
+    const btn = StyleSheet.flatten(host(tree, 'post-review').props.style);
+    const { backgroundColor, ...shape } = StyleSheet.flatten(pillCta.pillPrimary);
+    expect(btn).toMatchObject({ ...shape, backgroundColor });
+    const { fontFamily: _f, ...text } = StyleSheet.flatten(pillCta.pillPrimaryText); // 호스트 글자는 Txt가 글꼴을 스크립트별로 바꾼다
+    expect(StyleSheet.flatten(label(tree, 'editReview.save').props.style)).toMatchObject({ ...text, color: '#fff' });
+  });
+
+  it('KB-903: 바가 흐름 안이라 스크롤 하단 여백 = 16 고정 — 바 높이(큰 글씨)를 더할 필요 없음 · 바는 ScrollView 다음 형제', () => {
+    const tree = render(<ReviewCompose />);
+    expect(bodyPad(tree)).toBe(16);
+    expect(host(tree, 'review-bottom-bar').props.onLayout).toBeUndefined();
+    const stage = host(tree, 'review-bottom-bar').parent!;
+    const kids = stage.children.filter((c) => typeof c !== 'string') as ReactTestRenderer['root'][];
+    expect(kids[kids.length - 1]).toBe(host(tree, 'review-bottom-bar'));
   });
 });

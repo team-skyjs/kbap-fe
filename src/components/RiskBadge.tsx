@@ -2,12 +2,14 @@
  * RiskBadge (KB-429 → 9/5 시안 원본 SVG) — 썸네일 좌상단 리본형 위험도 배지.
  * 26×34, 경로 = 스펙 bridge/design/4th/icons/risk-badge-safe.svg 그대로(형태·치수
  * 무수정): 제비꼬리 리본(상태색) + 흰 1.5 보더(확장 경로) + 흰 원 14 + 상태색
- * 글리프(RiskMark 공용 RiskGlyph, +6/+7 오프셋). 그림자 = shBadge(컨테이너).
+ * 글리프(RiskMark 공용 RiskGlyph, +6/+7 오프셋).
+ * KB-926: 그림자 = 리본 실루엣(같은 경로 + 흰 보더 폭 스트로크)을 반투명 검정으로 뒤에 한 장 더 — 구 shBadge(컨테이너 View 그림자)는
+ * 직사각형으로 깔려 꼬리 홈(V자)을 무시했다. SVG 필터 대신 경로라 iOS·Android 같은 모양. 시안 DROP 1,1 blur 3.7 근사 = 오프셋 두 겹.
  */
 import * as React from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
-import { color as C, shadow, type RiskState } from '@/lib/theme';
+import { color as C, type RiskState } from '@/lib/theme';
 import { RiskGlyph } from './RiskMark';
 
 const STATE_COLOR: Record<RiskState, string> = {
@@ -28,7 +30,14 @@ export function RiskBadge({ state, testID, size = 26, flat = false }: { state: R
   const c = STATE_COLOR[state];
   const h = (size * 34) / 26;
   return (
-    <View style={[{ width: size, height: h }, !flat && shadow.shBadge]} testID={testID ?? `risk-badge-${state}`}>
+    <View style={{ width: size, height: h }} testID={testID ?? `risk-badge-${state}`}>
+      {!flat && (
+        // 뒤 그림자 캔버스 — 같은 크기를 1pt 아래·오른쪽으로(부모 View는 자르지 않는다) · 바깥(넓게 옅게) + 안(좁게 진하게) 두 겹이 흐림 대신
+        <Svg width={size} height={h} viewBox="0 0 26 34" style={st.shadow} pointerEvents="none" testID="risk-badge-shadow">
+          <Path d={RIBBON} fill="#000000" stroke="#000000" strokeWidth={4.5} strokeLinejoin="round" opacity={0.12} transform="matrix(1,0,0,1,2,2)" />
+          <Path d={RIBBON} fill="#000000" stroke="#000000" strokeWidth={3} strokeLinejoin="round" opacity={0.22} transform="matrix(1,0,0,1,2,2)" />
+        </Svg>
+      )}
       <Svg width={size} height={h} viewBox="0 0 26 34">
         <Path d={RIBBON} fill={c} fillRule="nonzero" transform="matrix(1,0,0,1,2,2)" />
         <Path d={RIBBON_BORDER} fill="#FFFFFF" transform="matrix(1,0,0,1,2,2)" />
@@ -44,3 +53,7 @@ export function RiskBadge({ state, testID, size = 26, flat = false }: { state: R
 }
 
 export default RiskBadge;
+
+const st = StyleSheet.create({
+  shadow: { position: 'absolute', left: 1, top: 1 }, // 시안 DROP 오프셋 1,1
+});

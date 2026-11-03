@@ -69,7 +69,7 @@ it('① 메뉴 행 — 매칭 = RiskBadge + 시안 칩(#2F3137 12/700) / 미등�
   expect(tree.root.findAll((n) => n.props?.testID === 'risk-badge-danger').length).toBeGreaterThanOrEqual(1);
   expect(s).toContain('"width":118'); // P-285 최종본 썸네일
   // 회피 칩: 시안 프레임(r37) + 12/700 #2F3137
-  expect(s).toContain('"borderRadius":37');
+  expect(s).toContain('"borderRadius":999');
   expect(s).toContain('Soybean');
   // 미등록(A-SC-10/11): 흰 박스 + 비이탤릭 13/lh13 안내
   expect(s).toContain('"backgroundColor":"#FFFFFF","alignItems":"center","justifyContent":"center"');
@@ -103,7 +103,7 @@ it('③ 리뷰 작성 — 전체 별 48(stroke 3)·세부 별 32(stroke 2)·사�
   expect(review).toContain('testID="review-bottom-bar"'); // FixedBottom primary Post
   expect(review).toContain('busy={posting}'); // P-173 공용 가드 문법(Btn busy)
   const parts = require('fs').readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8') as string;
-  expect(parts).toContain('<Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} />'); // P-348 ①: sw 폐지(non-scaling-stroke)
+  expect(parts).toContain('<Star size={size} fillPct={(values[key] ?? 0) >= n ? 100 : 0} />'); // P-348 ①: sw 폐지(non-scaling-stroke) · KB-865 ④ 공용 행(StarAxisRater)
 });
 
 it('③-b 세부 별 폭 적응(Codex #31 P2) — 협폭에서 gap 축소→별 스케일, overflow 0', () => {

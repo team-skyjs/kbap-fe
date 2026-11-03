@@ -8,11 +8,13 @@
  */
 import * as React from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
-import { Image, type ImageContentFit } from 'expo-image';
+import { Image, type ImageContentFit, type ImageProps } from 'expo-image';
 import { Shimmer } from './Skeleton';
 
 const FILL = { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 } as const;
 const HIDDEN = { ...FILL, opacity: 0 } as const;
+/** KB-905(T-021): 원격 이미지 로딩 바탕 — 사진 칸 바탕(#F7F8FA)보다 한 단계 진하게(스윕이 보이게) */
+export const SHIMMER_BASE = { backgroundColor: '#EAEBEE' } as const;
 
 export function RemoteImage({
   uri,
@@ -25,6 +27,7 @@ export function RemoteImage({
   blurRadius,
   placeholder = 'shimmer',
   hideUntilLoaded = false,
+  cachePolicy,
 }: {
   uri: string;
   /** 크기·라운딩을 가진 컨테이너 스타일(기존 Image 스타일 그대로 이관) */
@@ -44,17 +47,23 @@ export function RemoteImage({
   /** KB-865(QA #338: 상세 진입 때 **다른 제품 사진이 잠깐** 보였다 사라짐) — iOS가 앞 화면의 이미지 뷰를 재사용하면 새 사진이 올 때까지
    *  옛 내용이 남는다. 켜면 이번 소스의 onLoad 전까지 이미지를 투명으로 두어(스켈레톤만) 옛 사진을 그리지 않는다. 판정 화면 사진용 */
   hideUntilLoaded?: boolean;
+  /** KB-906(T-125): 화면마다 자주 다시 그리는 작은 이미지(탭바 아바타)는 'memory-disk' — 안드 액티비티 재생성(글자 크기 변경 등) 뒤 디스크 재디코딩 동안
+   *  빈 회색 원이 보였다. 기본(미지정) = expo-image 기본 그대로 */
+  cachePolicy?: ImageProps['cachePolicy'];
 }) {
   const [settled, setSettled] = React.useState(false);
   return (
     <View style={[style, { overflow: 'hidden' }]}>
-      {!settled && placeholder === 'shimmer' && <Shimmer style={FILL as never} />}
+      {/* KB-905(T-021): 스켈레톤 바탕 = 사진 칸 바탕(surface2 #F7F8FA)과 같은 색이라 흰 스윕(≈0.3)이 거의 안 보여 "회색 박스"로 읽혔다 —
+          원격 이미지 자리만 한 단계 진한 바탕(SkeletonLine과 같은 #EAEBEE) */}
+      {!settled && placeholder === 'shimmer' && <Shimmer style={[FILL as never, SHIMMER_BASE]} />}
       <Image
         source={{ uri }}
         recyclingKey={recyclingKey}
         contentFit={contentFit}
         transition={transition}
         blurRadius={blurRadius}
+        cachePolicy={cachePolicy}
         style={hideUntilLoaded && !settled ? HIDDEN : FILL}
         onLoad={() => {
           setSettled(true);

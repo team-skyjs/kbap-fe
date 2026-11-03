@@ -23,6 +23,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { Txt as Text } from './Txt';
+import { radius } from '@/lib/theme';
 
 /** P-299: 홀드 — 네이티브 표시분(~300ms)을 더해 체감 ≈1s. 실기 조정 지점(상수 하나). */
 const HOLD = 700;
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
   tagline: { position: 'absolute', top: '50%', marginTop: MARK_H / 2 + 22, alignItems: 'center', gap: 4, alignSelf: 'center' },
   line1: { flexDirection: 'row', alignItems: 'flex-end', gap: 3 },
   brand: { fontSize: 16, fontWeight: '700', color: '#000000' },
-  dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FF7134', marginBottom: 3 }, // baseline 위 1pt
+  dot: { width: 5, height: 5, borderRadius: radius.pill, backgroundColor: '#FF7134', marginBottom: 3 }, // baseline 위 1pt
   sub: { fontSize: 16, fontWeight: '600', color: '#000000' },
 });
 

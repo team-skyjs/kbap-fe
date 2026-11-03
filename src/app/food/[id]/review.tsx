@@ -12,9 +12,11 @@
 // 플래그가 런타임 값(원격 컨피그·A/B 등)이 되는 순간 훅 순서가 깨진다. 소진 발주(KB-603~)에서
 // early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
 import { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { Alert, Platform, ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
+import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { Pressable } from '@/components/Pressable';
-import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
+import { KAV_BEHAVIOR, KAV_OFFSET } from '@/lib/keyboardAvoid';
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -30,6 +32,7 @@ import { useFoodDetail } from '@/lib/data/useFoods';
 import { findCachedReview, reviewWriteClosed, useCreateProcessedReview, useCreateReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { useFoodReviews, useProcessedReviews } from '@/lib/data/useFoodReviews';
 import { processedUnavailable, useProcessedDetail } from '@/lib/data/useProcessedFoods';
+import { ProductName } from '@/features/processedFood/ProductName';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { imageUrlToPath } from '@/lib/api/reviewAdapter';
 import { ApiError, foodHiddenReason, type FoodHiddenReason } from '@/lib/api/client';
@@ -43,7 +46,8 @@ import { airbridge } from '@/lib/airbridge';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, reviewBodyLength, reviewPhotoKey, REVIEW_MAX_PHOTOS, REVIEW_MIN_BODY, uploadReviewImages, type ReviewPhoto } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
-import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
+import { pillBottomOf, pillCta } from '@/features/food/pillCta';
+import { ExtrasRater, PACKAGED_TASTE_AXES, PlacePickerSheet, StarAxisRater, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { openAppSettings } from '@/lib/openExternal';
 import { useUploadAbort } from '@/lib/useUploadAbort';
@@ -51,16 +55,22 @@ import { isUploadAborted } from '@/lib/api/uploadAbort';
 import { useReviewPrompt } from '@/lib/useReviewPrompt';
 import { useOneShotQueue } from '@/lib/oneShotQueue';
 import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
+import { PhotoConsentSheet } from '@/components/PhotoConsentSheet';
+import { grantPackagedPhotoConsent, hasPackagedPhotoConsent } from '@/lib/review/packagedPhotoConsent';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
 // ponytail: 이모지·예측 바 전환(+44~53pt)만 줄어든 만큼 내린다 — 키보드가 통째로 다시 올라오는 큰 축소(앱 복귀 등 ~300pt)는
 // 커서가 위쪽이면 화면 밖으로 밀리므로 무동작. 캐럿 좌표를 얻게 되면 이 상한 대신 그 줄로 맞출 것.
 const SHRINK_FOLLOW_MAX = 120;
 
-/** KB-708: 이탈 확인 비교용 — 화면이 들고 있는 작성 값 한 벌(별·본문·사진·장소·세부 별점) */
-function draftKey(rating: number, body: string, photos: unknown[], place: unknown, extras: unknown): string {
-  return JSON.stringify([rating, body, photos, place, extras]);
+/** KB-708: 이탈 확인 비교용 — 화면이 들고 있는 작성 값 한 벌(별·본문·사진·장소·세부 별점·맵기/당도) */
+function draftKey(rating: number, body: string, photos: unknown[], place: unknown, extras: unknown, taste: unknown): string {
+  return JSON.stringify([rating, body, photos, place, extras, taste]);
 }
+
+/** KB-865 ④: 가공식품 맵기·당도(1~5 선택, null = 미입력) */
+type PackagedTaste = { spiciness: number | null; sweetness: number | null };
+const EMPTY_TASTE: PackagedTaste = { spiciness: null, sweetness: null };
 
 export default function ReviewCompose() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
@@ -106,6 +116,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   const [placeSheet, setPlaceSheet] = useState(false);
   // P-202: 3축(속도·친절·찾아가기 — 선택) — 전송은 계약 후(buildReviewExtras), 우선 로컬 보관
   const [extras, setExtras] = useState<ReviewExtras>(EMPTY_EXTRAS);
+  const [taste, setTaste] = useState<PackagedTaste>(EMPTY_TASTE);
   const isGuest = useIsGuest();
   const createReview = useCreateReview();
   const createProcessedReview = useCreateProcessedReview();
@@ -115,7 +126,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   // P-358: 프리필 — 리뷰 도착 시 1회(별·본문·extras·place·사진 = 원격 슬롯)
   const prefilledRef = useRef(false);
   // KB-708: 이탈 확인의 기준 = 화면이 처음 가진 값(작성 = 빈 값, 수정 = 프리필 직후) — 지금 값과 다르면 "변경 있음"
-  const [baseline, setBaseline] = useState(() => draftKey(0, '', [], null, EMPTY_EXTRAS));
+  const [baseline, setBaseline] = useState(() => draftKey(0, '', [], null, EMPTY_EXTRAS, EMPTY_TASTE));
   useEffect(() => {
     if (!editing || !editReviewData || prefilledRef.current) return;
     prefilledRef.current = true;
@@ -125,13 +136,15 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
       extras: extrasFromReview(editReviewData),
       place: editReviewData.place ?? null,
       photos: (editReviewData.photos ?? []).map((url) => ({ kind: 'remote' as const, url })),
+      taste: { spiciness: editReviewData.spiciness ?? null, sweetness: editReviewData.sweetness ?? null }, // null(미입력·구서버) = 빈 별
     };
     setRating(pre.rating);
     setBody(pre.body);
     setExtras(pre.extras);
     setPlace(pre.place);
     setPhotos(pre.photos);
-    setBaseline(draftKey(pre.rating, pre.body, pre.photos, pre.place, pre.extras));
+    setTaste(pre.taste);
+    setBaseline(draftKey(pre.rating, pre.body, pre.photos, pre.place, pre.extras, pre.taste));
   }, [editing, editReviewData]);
   // KB-708: 변경이 있을 때만 이탈 확인 — 뒤로 가기 버튼·스와이프 뒤로·Android 하드웨어 뒤로 전부(usePreventRemove = 네이티브 스택 제스처까지).
   // 등록 성공(완료 모달)·저장 성공(복귀) 뒤에는 막지 않는다.
@@ -147,7 +160,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   // #236 /review B: 막는 조건 ⊆ 확인 창이 렌더되는 조건 — 게스트(세션 만료)·수정 미도착 분기는 아래 early return이라 모달이 없다.
   // 거기서 막으면 뒤로·게이트 "둘러보기"가 전부 무반응 = 나갈 길이 로그인뿐. 폼이 보이는 분기에서만 막는다.
   const formShown = !isGuest && !(editing && !editReviewData);
-  const leave = useLeaveConfirm(formShown && draftKey(rating, body, photos, place, extras) !== baseline && !submitted, posting);
+  const leave = useLeaveConfirm(formShown && draftKey(rating, body, photos, place, extras, taste) !== baseline && !submitted, posting);
   // KB-828: 본문 10자 미만 = Post 비활성 + 안내. 비활성 버튼 탭·서버 REVIEW-005 = 같은 안내를 강조(색만 — 프레임 불변)
   const bodyLen = reviewBodyLength(body);
   const bodyShort = bodyLen < REVIEW_MIN_BODY;
@@ -167,16 +180,12 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   // 문법·라벨 키 재사용, remove 없음). "파일 선택"은 expo-document-picker 네이티브
   // 의존 = 비범위(TODO — 다음 네이티브 빌드).
   // P-375(KB-539): 제목만 리뷰 전용 키 — photo.sheetTitle은 "프로필 사진"이라 오문구였다.
-  const pickPhoto = async () => {
+  // KB-814 F3: 가공식품 = 촬영 권장(촬영 행 강조) · 갤러리는 '직접 촬영한 사진만' 동의 1회 뒤에만(동의 전 갤러리 열림 0)
+  const [consentOpen, setConsentOpen] = useState(false);
+  const consentAgreedRef = useRef(false); // 동의 → 시트가 완전히 닫힌 뒤 갤러리(닫힘 직후 present = iOS 프리즈)
+  const importPhotos = async (src: 'camera' | 'gallery') => {
     const remaining = REVIEW_MAX_PHOTOS - photos.length;
     if (remaining <= 0) return;
-    const src = await choosePhotoSource({
-      title: t('review.photoSheetTitle'),
-      camera: t('photo.take'),
-      gallery: t('photo.gallery'),
-      cancel: t('common.cancel'),
-    });
-    if (!src) return; // 취소
     setPhotoImporting(true);
     try {
       if (src === 'camera') {
@@ -189,11 +198,11 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
           ]);
           return;
         }
-        const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+        const res = await launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
         if (!res.canceled && res.assets?.length) setPhotos((cur) => addReviewPhotos(cur, res.assets.map((a) => a.uri)));
         return;
       }
-      const res = await ImagePicker.launchImageLibraryAsync({
+      const res = await launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.8,
         allowsMultipleSelection: true,
@@ -210,6 +219,28 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
     } finally {
       setPhotoImporting(false);
     }
+  };
+
+  const pickPhoto = async () => {
+    if (REVIEW_MAX_PHOTOS - photos.length <= 0) return;
+    const src = await choosePhotoSource({
+      title: t('review.photoSheetTitle'),
+      camera: t('photo.take'),
+      gallery: t('photo.gallery'),
+      cancel: t('common.cancel'),
+      ...(packaged ? { emphasizeCamera: true } : {}),
+    });
+    if (!src || src === 'remove') return; // 취소
+    if (packaged && src === 'gallery' && !(await hasPackagedPhotoConsent())) {
+      setConsentOpen(true);
+      return;
+    }
+    await importPhotos(src);
+  };
+  const onConsentClosed = () => {
+    if (!consentAgreedRef.current) return;
+    consentAgreedRef.current = false;
+    void importPhotos('gallery');
   };
 
   // P-085(KB-73): 사진 presigned 업로드(purpose REVIEW, 전송=path) → POST /reviews.
@@ -233,7 +264,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
             reviewId: reviewId ?? '',
             foodId: id ?? '',
             current: editReviewData,
-            changes: { rating, body: body.trim() || null, place, extras, photos: imagePaths }, // place 해제 = null 명시
+            changes: { rating, body: body.trim() || null, place, extras, photos: imagePaths, ...(packaged ? taste : {}) }, // place 해제 = null 명시 · KB-865 ④ 맵기·당도 해제 = null(비움)
           });
           // 저장 성공 = 복귀 + 상단 토스트(완료 모달 아님 — P-358). KB-708: 이탈 확인 해제 뒤 복귀(저장한 변경을 "버릴까요?"로 묻지 않게)
           showTopToast(t('editReview.savedToast'));
@@ -241,7 +272,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
           return;
         }
         if (packaged) {
-          await createProcessedReview.mutateAsync({ processedFoodId: id ?? '', rating, content: body.trim() || undefined, imagePaths });
+          await createProcessedReview.mutateAsync({ processedFoodId: id ?? '', rating, content: body.trim() || undefined, imagePaths, ...taste });
         } else {
           await createReview.mutateAsync({
             foodId: id ?? '',
@@ -295,6 +326,9 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   const touchY = useRef<number | null>(null);
   const scrollY = useRef(0);
   const kbHRef = useRef(0);
+  // KB-891 → KB-903(T-071): 하단 알약 바는 ScrollView 아래 **흐름 안**(전엔 위에 떠서 첫 화면 "Where did you eat?" 칩이 바 뒤로 반쯤 들어갔다).
+  // 스크롤이 바 위에서 끝나므로 아래 여백·커서 추종에서 바 높이를 뺄 일이 없다(svH = 이미 바·키보드 제외 높이)
+  const pillBottom = pillBottomOf(bottomInset);
   // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
   useLayoutEffect(() => {
     kbHRef.current = kbH;
@@ -398,9 +432,9 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
         <SubHeader title={t('editReview.title')} onBack={() => router.back()} />
         {refill.isLoading || refill.isFetching ? (
           <View style={{ padding: 20, gap: 16 }} testID="edit-loading">
-            <Shimmer style={{ height: 64, borderRadius: 8 }} />
-            <Shimmer style={{ height: 120, borderRadius: 8 }} />
-            <Shimmer style={{ height: 156, borderRadius: 8 }} />
+            <Shimmer style={{ height: 64, borderRadius: radius.md }} />
+            <Shimmer style={{ height: 120, borderRadius: radius.md }} />
+            <Shimmer style={{ height: 156, borderRadius: radius.md }} />
           </View>
         ) : (
           <View style={{ padding: 20 }} testID="edit-not-found">
@@ -415,16 +449,18 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
   return (
     // KB-700 → KB-768: KeyboardAvoidingView(padding, 두 플랫폼) — 하단 고정 "Post review" 바가 키보드 위로 따라 올라온다.
     // Android도 edge-to-edge(Expo 57)라 adjustResize가 창을 줄이지 않는다 — lib/keyboardAvoid 참조.
-    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID="review-kav">
+    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET} testID="review-kav">
       {/* P-168 ③: 헤더 Post 소멸 — 제출 진입점은 하단 "Post review" 단일화 */}
       <SubHeader title={t(editing ? 'editReview.title' : 'review.title')} onBack={() => router.back()} />
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
       {/* P-158 ①: 키보드 실측 패딩(contentContainer) + 블록 하단 프록시 스크롤 —
           커서 추종은 위 ensureCursorVisible 참조 (P-150② 인셋 방식은 폐기됨) */}
+      {/* KB-891: 무대 — KAV(padding)가 줄이는 쪽은 이 View. KB-903: 알약 바는 ScrollView 아래 형제(흐름 안) */}
+      <View style={styles.stage}>
       <ScrollView
         ref={scrollRef}
         keyboardDismissMode="on-drag"
-        contentContainerStyle={[styles.body, { paddingBottom: 28 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: 16 }]}
         // KB-700: automaticallyAdjustKeyboardInsets 제거 — 바깥 KAV가 ScrollView를 키보드 위로 줄이므로 인셋까지 더하면 이중(P-348 ⑤의 "수동 패딩 공백"과 같은 문제)
         scrollEventThrottle={16}
         onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
@@ -444,21 +480,30 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
           {/* P-170 A안: 썸네일 = 상세 캐시(useFoodDetail) 재사용 — 네트워크 0, 무사진 폴백 */}
           {targetPhoto ? (
             <View style={styles.foodPh}>
-              <CardPhoto uri={targetPhoto} borderRadius={4} />
+              <CardPhoto uri={targetPhoto} borderRadius={radius.md} />
             </View>
           ) : (
             <View style={styles.foodPh} testID="food-ph" />
           )}
           <View style={{ flex: 1, minWidth: 0, gap: 4 }}>{/* A-RW-02 */}
-            <Text style={styles.foodName} numberOfLines={1}>{targetName}</Text>
-            {/* P-352(KB-514): count 0 = 리뷰 수 숨김(한글명 없으면 줄 생략),
-                n≥1 = "한글명 | n reviews"(" | " 구분 — 예진 결정, 구 P-196 공백 구분 대체) */}
+            {packaged ? (
+              // KB-914(R-140): 가공식품 이름 = 공용 ProductName(영어 굵게 + 한국어 작게 — 후보·검색·탭·상세와 같은 규칙)
+              <ProductName name={targetName} nameKo={product?.nameKo ?? null} size="chip" lines={1} testID="review-product-name" />
+            ) : (
+              <Text style={styles.foodName} numberOfLines={1}>{targetName}</Text>
+            )}
+            {/* P-352(KB-514): count 0 = 리뷰 수 숨김(한글명 없으면 줄 생략), n≥1 = 한글명 + n reviews.
+                KB-907(T-107): 세로 막대 구분자 → 간격(gap 8) */}
             {(() => {
-              const sub = packaged ? product?.maker ?? null : foodSubtitle(food, t);
-              return sub == null ? null : (
-                <Text style={styles.foodKo} numberOfLines={1}>
-                  {sub}
-                </Text>
+              const parts = packaged ? (product?.maker ? [product.maker] : []) : foodSubtitle(food, t);
+              return parts.length === 0 ? null : (
+                <View style={styles.foodSubRow} testID="review-food-sub">
+                  {parts.map((p, i) => (
+                    <Text key={i} style={[styles.foodKo, i === 0 && styles.foodSubFirst]} numberOfLines={1}>
+                      {p}
+                    </Text>
+                  ))}
+                </View>
               );
             })()}
           </View>
@@ -484,6 +529,13 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
         {/* P-202: 확장 별점 3축 — 쿠팡이츠식 별도 섹션(선택), 찾아가기 = 장소 태그 연동 */}
         {/* KB-812 2차: 가공식품 = 식당 축(서빙 속도·직원 친절) 없음 — 서버도 0으로 저장 */}
         {!packaged && <ExtrasRater extras={extras} onChange={setExtras} t={t} />}
+        {/* KB-865 ④(시안 32): 가공식품 = 맵기·당도 작은 별 2행(선택, 재탭 = 해제) + 선택 안내 1줄 */}
+        {packaged && (
+          <View style={styles.tasteBlock}>
+            <StarAxisRater packaged axes={PACKAGED_TASTE_AXES} values={taste} onChange={setTaste} t={t} />
+            <Text style={styles.tasteNote} testID="review-taste-optional">{t('review.tasteOptional')}</Text>
+          </View>
+        )}
 
         {/* body — onLayout: 블록 하단 = 커서 하단 프록시(성장 시 재발화) */}
         {/* A-RW-03(KB-486): 사진 블록 = 텍스트 영역 위 */}
@@ -621,9 +673,9 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
         )}
       </ScrollView>
 
-      {/* §2-8: FixedBottom — primary "Post review" full-width. P-173 가드 = useSubmitGuard +
-          Btn busy(공용 문법 — 메트릭 불변 스피너). */}
-      <View style={[styles.bottomBar, { paddingBottom: 10 + bottomInset }]} testID="review-bottom-bar">
+      {/* §2-8 → KB-891: 하단 "Post review" = 음식 상세와 같은 가로 전체 알약(흰 띠·상단 선 없음, 항상 표시 — KB-903 흐름 안). P-173 가드 = useSubmitGuard +
+          Btn busy(공용 문법 — 메트릭 불변 스피너). 비활성 = off 색 그대로(알약은 틀·글자 크기만) */}
+      <View style={[pillCta.bandStatic, { paddingBottom: pillBottom }]} testID="review-bottom-bar">
         {/* KB-828: 비활성 Btn은 터치를 받지 않아 바깥 래퍼가 받는다 → 토스트 없이 안내 강조. 스크린리더는 Btn(비활성 + 사유 힌트) */}
         <Pressable onPress={showMinLen ? () => setMinLenStressed(true) : undefined} accessible={false} testID="post-review-blocked">
           <Btn
@@ -631,16 +683,32 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
             busy={posting}
             onPress={post}
             accessibilityHint={showMinLen ? t('review.minLength') : undefined}
+            style={pillCta.pillShape}
+            labelStyle={pillCta.pillLabel}
             testID="post-review"
           >
             {t(editing ? 'editReview.save' : 'review.postReview')}
           </Btn>
         </Pressable>
       </View>
+      </View>
 
       {/* P-168 ②: 완료 = P-162 주문 완료 모달 문법(화면 전환 없이) — 확인 = 상세 복귀 */}
       {/* KB-708: 작성 중 이탈 확인(커뮤니티 글쓰기와 같은 컴포넌트·문구) */}
       <LeaveConfirmModal {...leave.modal} />
+      {packaged && (
+        <PhotoConsentSheet
+          open={consentOpen}
+          onAnswer={(agreed) => {
+            if (agreed) {
+              consentAgreedRef.current = true;
+              void grantPackagedPhotoConsent();
+            }
+            setConsentOpen(false); // 취소 = 시트만 닫힘(사진 없이 작성 계속)
+          }}
+          onClosed={onConsentClosed}
+        />
+      )}
       <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} onShow={reviewPrompt.onShow} onClosed={reviewPrompt.onClosed} disabled={reviewPrompt.answered} />
       {/* KB-730: Done = 모달 표시만 접고(submitted 유지) iOS는 onDismiss(완전히 닫힌 뒤)에서 유도 시트 큐 — dismiss 직후 present = 프리즈(#236 2R) */}
       <Modal
@@ -695,57 +763,61 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { padding: 20, gap: 20 }, // A-RW-01(KB-486)
 
-  postLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, marginRight: 8 },
+  postLink: { fontFamily: font.bodyBold, fontSize: 16, color: C.primaryText, marginRight: 8 },
   postLinkOff: { color: C.ink3 },
 
   // KB-432 §2-2: 대상 카드(4150:16477) — #DCDEE3 1px r8 pad 8 gap 13
-  foodChip: { flexDirection: 'row', alignItems: 'center', gap: 13, borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, padding: 8 },
-  foodPh: { width: 48, height: 48, borderRadius: 4, backgroundColor: C.surface2, overflow: 'hidden' },
-  foodName: { fontSize: 14, fontWeight: '600', color: C.ink },
-  foodKo: { fontSize: 13, fontWeight: '400', color: C.ink3 },
+  foodChip: { flexDirection: 'row', alignItems: 'center', gap: 13, borderWidth: 1, borderColor: C.line2, borderRadius: radius.md, padding: 8 },
+  foodPh: { width: 48, height: 48, borderRadius: radius.xs, backgroundColor: C.surface2, overflow: 'hidden' },
+  foodName: { fontSize: 16, fontWeight: '600', color: C.ink },
+  foodKo: { fontSize: 14, fontWeight: '400', color: C.ink3 },
+  foodSubRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  foodSubFirst: { flexShrink: 1 }, // 긴 한글명만 말줄임 — 리뷰 수는 그대로
 
   block: { gap: 12 },
-  label: { fontSize: 13, fontWeight: '600', color: '#778088' }, // A-RW-07
+  tasteBlock: { gap: 16 }, // KB-865 ④ 시안 32: 당도 행 → 안내 1줄
+  tasteNote: { fontSize: 14, fontWeight: '500', color: C.ink2 },
+  label: { fontSize: 14, fontWeight: '600', color: '#778088' }, // A-RW-07
   // §2-3: 별 48 gap 11 + 수치 18/600 #4B4F58
   starPick: { flexDirection: 'row', gap: 11, justifyContent: 'center', marginTop: 4 },
   starCap: { fontSize: 18, fontWeight: '600', color: '#4B4F58', textAlign: 'center' },
   starCapEmpty: { color: C.ink3 },
 
   // §2-6(4150:16505): h156 흰 bg line 1px r8 pad 14/16, focus = primary
-  textarea: { minHeight: 132, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', borderRadius: radius.sm, paddingVertical: 14, paddingHorizontal: 16, fontSize: 15, fontWeight: '500', color: C.ink, lineHeight: 21, marginTop: -8 }, // A-RW-07(라벨→필드 4 = block gap 12 - 8)
+  textarea: { minHeight: 132, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: 16, fontSize: 16, fontWeight: '500', color: C.ink, lineHeight: 22, marginTop: -8 }, // A-RW-07(라벨→필드 4 = block gap 12 - 8)
   textareaFocus: { borderColor: C.primary },
   // §2-5: 사진 슬롯 100 r8
   photoRow: { flexDirection: 'row', gap: 8 },
   photoThumbWrap: { width: 100, height: 100 },
-  photoThumb: { width: 100, height: 100, borderRadius: radius.sm, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.inkDisabled },
+  photoThumb: { width: 100, height: 100, borderRadius: radius.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.inkDisabled },
   // KB-777 A2-9: 터치 = 썸네일 안쪽 모서리 44×44 상자(부모 100 안 — hitSlop은 부모 밖에서 잘린다), 보이는 원은 시안 그대로 16 @ top6·right6
   photoDelHit: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, padding: 6, alignItems: 'flex-end' },
-  photoDel: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center' }, // A-RW-06
-  photoAdd: { width: 100, height: 100, borderRadius: radius.sm, borderWidth: 1, borderColor: C.line2, backgroundColor: 'rgba(244,246,246,0.5)', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
+  photoDel: { width: 16, height: 16, borderRadius: radius.pill, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center' }, // A-RW-06
+  photoAdd: { width: 100, height: 100, borderRadius: radius.md, borderWidth: 1, borderColor: C.line2, backgroundColor: 'rgba(244,246,246,0.5)', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
   metaRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
-  tag: { fontSize: 13, fontWeight: '500', color: C.ink3 },
-  minLenHint: { flex: 1, fontSize: 13, fontWeight: '500', color: C.ink3 }, // KB-828: tag와 같은 메트릭 — 강조는 색만
+  tag: { fontSize: 14, fontWeight: '500', color: C.ink3 },
+  minLenHint: { flex: 1, fontSize: 14, fontWeight: '500', color: C.ink3 }, // KB-828: tag와 같은 메트릭 — 강조는 색만
   minLenStressed: { color: C.primaryText },
   // §2-7: 장소 필 h38 border #DCDEE3 r24 pad 8/12
-  placePill: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 38, borderWidth: 1, borderColor: C.line2, borderRadius: 24, paddingVertical: 8, paddingHorizontal: 12, maxWidth: '100%' }, // A-RW-09
-  placePillText: { flexShrink: 1, fontSize: 13, fontWeight: '500', color: C.ink },
-  pillClear: { width: 16, height: 16, borderRadius: 8, backgroundColor: C.inkMute, alignItems: 'center', justifyContent: 'center' },
+  placePill: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 38, borderWidth: 1, borderColor: C.line2, borderRadius: radius.pill, paddingVertical: 8, paddingHorizontal: 12, maxWidth: '100%' }, // A-RW-09
+  placePillText: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
+  pillClear: { width: 16, height: 16, borderRadius: radius.pill, backgroundColor: C.inkMute, alignItems: 'center', justifyContent: 'center' },
   // §2-8: FixedBottom
   // Codex #31 P1: 하단 = 10 + useBottomInset(인라인)
-  bottomBar: { paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
+  stage: { flex: 1 },
   // P-085: 제출 실패 안내 (온보딩 submitErr 톤)
-  postErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
-  postErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
+  postErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 10 },
+  postErrText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 18 },
   // KB-620: postErr와 **같은 틀**, 중립 색(risk*·주황 계열 금지)
-  hiddenNote: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
-  hiddenNoteText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.inkInfo, lineHeight: 17 },
+  hiddenNote: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 10 },
+  hiddenNoteText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.inkInfo, lineHeight: 18 },
 
   // submitted
   // P-168 ②: 완료 모달 (P-162 confirm 문법과 동일 수치)
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.xl, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
-  doneCheck: { alignSelf: 'center', width: 52, height: 52, borderRadius: 26, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  confirmBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
+  doneCheck: { alignSelf: 'center', width: 52, height: 52, borderRadius: radius.pill, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   okMeta: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 2 },
 });

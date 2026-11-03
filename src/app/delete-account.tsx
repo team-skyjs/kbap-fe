@@ -22,7 +22,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { SubHeader, Btn, RiskMark, IconCheck } from '@/components';
 import { D4OctagonAlert } from '@/components/design4Assets';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -130,12 +130,14 @@ export default function DeleteAccount() {
           {/* 리뷰 익명화 안내 — reviewsEnabled 게이트 유지 */}
           {FLAGS.reviewsEnabled && (
             <View style={styles.bullet} testID="delete-bullet-2">
+              {/* KB-904(T-087): 아이콘 자리(20) 비워 첫 문단과 같은 들여쓰기 */}
+              <View style={styles.bulletIconSlot} />
               <Text style={styles.bulletText}>{t('profile.delete.reviewsLine')}</Text>
             </View>
           )}
         </View>
 
-        {/* 체크박스 행 중앙 — Checkbox 20 r4(D-5 consent 문법) */}
+        {/* 체크박스 행 — Checkbox 20 r4(D-5 consent 문법). KB-904(T-087): 가운데 → 문단과 같은 열(체크 = 아이콘 열, 글 = 문단 열) */}
         <Pressable style={styles.consent} onPress={() => setAgreed(!agreed)} testID="delete-agree">
           <View style={[styles.check, agreed && styles.checkOn]}>{agreed && <IconCheck size={13} color="#fff" />}</View>
           <Text style={styles.consentText}>{t('profile.delete.confirm')}</Text>
@@ -189,26 +191,27 @@ export default function DeleteAccount() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   // P-329(2200:21060): 히어로 @y198 = 앱바 아래 98, pad 상 20/하 16 — 블록 간격은 각 블록 pad
-  body: { flex: 1, paddingHorizontal: 20, paddingTop: 98 },
+  body: { flex: 1, paddingHorizontal: 20, paddingTop: 24 }, // KB-904(T-087): 위 98 = 큰 빈 공간(QA) → 24
   title: { fontSize: 20, fontWeight: '700', color: '#1C1E21', textAlign: 'center', lineHeight: 28, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 },
 
   bullets: { gap: 10 },
   // 행 아이콘+텍스트 가로(cross center), 텍스트 좌측 — 시안 카드 내부 303
   bullet: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
   bulletDivider: { borderBottomWidth: 1, borderBottomColor: '#EAEBEE' },
-  bulletText: { flex: 1, fontSize: 14, fontWeight: '500', color: '#4B4F58', textAlign: 'left', lineHeight: 21 },
+  bulletIconSlot: { width: 20 },
+  bulletText: { flex: 1, fontSize: 16, fontWeight: '500', color: '#4B4F58', textAlign: 'left', lineHeight: 24 },
 
   // 체크 행 — pad 상하 8 · gap 12 · 가로 중앙 · 체크 20 stroke #DCDEE3 1.5
-  consent: { flexDirection: 'row', alignItems: 'center', gap: 12, justifyContent: 'center', paddingVertical: 8, marginTop: 10 },
-  check: { width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, borderColor: '#DCDEE3', backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  consent: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 8, marginTop: 10 }, // KB-904(T-087): bullet과 같은 좌우 16·gap 12 = 같은 열
+  check: { width: 20, height: 20, borderRadius: radius.xs, borderWidth: 1.5, borderColor: '#DCDEE3', backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   checkOn: { backgroundColor: C.primary, borderColor: C.primary },
-  consentText: { fontSize: 14, fontWeight: '500', color: '#2F3137' },
+  consentText: { fontSize: 16, fontWeight: '500', color: '#2F3137' },
 
   // 헤어라인 없음(구 borderTop 제거) · Delete = 폭 200 고정, Cancel grow
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF' },
 
   // KB-162 Apple 재인증 게이트 (D-1 Alert 카드 문법)
   gateBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', zIndex: 20, padding: 28 },
-  gateCard: { backgroundColor: C.card, borderRadius: 20, padding: 22, alignItems: 'center', gap: 12, maxWidth: 340, alignSelf: 'stretch' },
-  gateText: { fontSize: 13.5, fontWeight: '400', color: C.ink, textAlign: 'center', lineHeight: 20 },
+  gateCard: { backgroundColor: C.card, borderRadius: radius.lg, padding: 22, alignItems: 'center', gap: 12, maxWidth: 340, alignSelf: 'stretch' },
+  gateText: { fontSize: 14, fontWeight: '400', color: C.ink, textAlign: 'center', lineHeight: 21 },
 });

@@ -41,6 +41,8 @@ jest.mock('@/lib/onboarding/submit', () => ({ loadLocalSpice: async () => null, 
 jest.mock('@/lib/onboarding/draft', () => ({ clearOnboardingDraft: jest.fn(async () => {}) }));
 jest.mock('@/lib/auth/session', () => ({ logOut: jest.fn(async () => {}) }));
 
+const mockResumeVisit = jest.fn();
+jest.mock('@/lib/engagement/visitRuntime', () => ({ resumeEngagementIdentity: () => mockResumeVisit(), suspendEngagementIdentity: jest.fn() }));
 /* eslint-disable import/first -- jest.mock 선언 뒤(팩토리 호이스팅) — 레포 관례 */
 import { fetchMe } from '@/lib/data/useMe';
 import { endSessionBoundary, initSessionFromStorage, logoutLocalFirst, withdrawBe } from '@/lib/auth/beAuth';
@@ -100,6 +102,14 @@ it('부팅: 로컬 토큰 없음 → 잔존 정리 1회 · 토큰 있음 → 호
   mockTokens.cur = { access: 'a', refresh: 'r' };
   await initSessionFromStorage();
   expect(mockClearStale).toHaveBeenCalledTimes(1);
+});
+
+it('KB-873 Codex #342: 부팅 = 방문 식별 미정 — 손님 부팅(토큰 없음)만 즉시 재개 · 저장된 세션은 프로필(setAnalyticsUser)까지 대기', async () => {
+  await initSessionFromStorage();
+  expect(mockResumeVisit).toHaveBeenCalledTimes(1);
+  mockTokens.cur = { access: 'a', refresh: 'r' };
+  await initSessionFromStorage();
+  expect(mockResumeVisit).toHaveBeenCalledTimes(1);
 });
 
 it('로그아웃 도중 도착한 옛 members/me 응답(세대 바뀜) → 식별 0(Sentry·Amplitude) · 값은 반환', async () => {

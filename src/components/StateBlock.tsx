@@ -11,7 +11,7 @@ import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, riskTone } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { Btn } from './Btn';
 import Svg from 'react-native-svg';
 import { D4CircleDashed } from './design4Assets';
@@ -79,9 +79,9 @@ const styles = StyleSheet.create({
   root: { alignItems: 'center', gap: 11, paddingHorizontal: 24, paddingVertical: 24, maxWidth: 320, alignSelf: 'center' },
   // P-184: 잔여 높이 정중앙 — flex(플렉스 부모)+flexGrow(스크롤 콘텐츠) 겸용
   fill: { flex: 1, flexGrow: 1, justifyContent: 'center' },
-  ic: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
+  ic: { width: 76, height: 76, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: font.display, fontSize: 20, color: C.ink, textAlign: 'center' },
-  body: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 21, textAlign: 'center' },
+  body: { fontFamily: font.body, fontSize: 16, color: C.ink2, lineHeight: 24, textAlign: 'center' },
   btns: { width: '100%', gap: 9, marginTop: 6 },
   // P-196: 화면 기준 정중앙 — 4탭 공용(paddingHorizontal은 게이트 카드류 대비)
   screenCenter: { justifyContent: 'center', paddingHorizontal: 18 },
@@ -90,9 +90,9 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 16, fontWeight: '400', color: '#000000', textAlign: 'center' },
   // P-287: 에러 블록(4003:12563) — 세로 중앙 pad 40/32 gap 16
   errWrap: { flex: 1, flexGrow: 1, justifyContent: 'center', alignItems: 'center', gap: 6, paddingVertical: 40, paddingHorizontal: 32, maxWidth: 360, alignSelf: 'center', width: '100%' }, // A-ER-01(제목→본문 6)
-  errMark: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,113,52,0.10)', alignItems: 'center', justifyContent: 'center' },
+  errMark: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: 'rgba(255,113,52,0.10)', alignItems: 'center', justifyContent: 'center' },
   errTitle: { fontSize: 16, fontWeight: '600', color: C.ink, textAlign: 'center' },
-  errBody: { fontSize: 14, fontWeight: '400', color: C.ink2, textAlign: 'center', lineHeight: 20 },
+  errBody: { fontSize: 16, fontWeight: '400', color: C.ink2, textAlign: 'center', lineHeight: 23 },
 });
 
 /**

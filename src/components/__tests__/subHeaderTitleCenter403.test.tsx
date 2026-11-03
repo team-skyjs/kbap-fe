@@ -379,12 +379,10 @@ describe('KB-613 trailing 축약 정책', () => {
     expect(titleInsets(tree, TITLE)).toEqual({ left: 56, right: 56 });
   });
 
-  it('호출부 계약 — trailing 텍스트는 한 줄(numberOfLines={1}): profile/edit · profile/restrictions', () => {
+  it('호출부 계약 — KB-904(T-078·T-079): profile/edit · profile/restrictions 헤더 Save 제거(저장은 하단 버튼 하나) — trailing 0', () => {
     const fs = require('fs') as typeof import('fs');
     for (const f of ['src/app/profile/edit.tsx', 'src/app/profile/restrictions.tsx']) {
-      const src = fs.readFileSync(f, 'utf8');
-      const block = src.slice(src.indexOf('trailing={'), src.indexOf('/>', src.indexOf('trailing={')));
-      expect(block).toContain('numberOfLines={1}');
+      expect({ f, trailing: fs.readFileSync(f, 'utf8').includes('trailing={') }).toEqual({ f, trailing: false });
     }
   });
 });

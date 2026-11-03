@@ -24,7 +24,7 @@ import { LayoutAnimation, PanResponder, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
-import { color as C, font } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { SPICE_LEVEL_LABEL, SPICE_LEVELS, spiceRank, type SpiceLevel } from '@/lib/spice';
 
 const KNOB = 28; // KB-433(4150:14286): 썸 28 흰 원
@@ -114,7 +114,12 @@ export function SpiceLevelSlider({
         pointerEvents="none"
       >
         <View style={styles.trackBox}>
-          <LinearGradient colors={['#FFCD43', '#FF7134']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.track} />
+          {/* KB-904(T-024): 미설정(손잡이 없음) = 채움 없는 회색 트랙 — 그라데이션이 끝까지 차 있어 Extreme처럼 보였다. 색만 바뀜(프레임 불변) */}
+          {knobX == null ? (
+            <View style={[styles.track, styles.trackUnset]} testID="spice-track-unset" />
+          ) : (
+            <LinearGradient colors={['#FFCD43', '#FF7134']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.track} />
+          )}
           {/* 시안: 5개 스텝 점 6px 흰 60% — absolute 고정(선택 전환 이동 0) */}
           {trackW > 0 && [0, 1, 2, 3, 4].map((i) => <View key={i} style={[styles.tick, { left: toX(i) - 3 }]} />)}
           {knobX != null && <View style={[styles.knob, { left: knobX - KNOB / 2 }]} />}
@@ -156,8 +161,9 @@ const styles = StyleSheet.create({
   trackBox: { height: 44, justifyContent: 'center' },
   // KB-433(4150:14286): 트랙 8 r7(그라데이션 유지 — 발주) · 점 6 흰 60% · 노브 28 흰
   // border #B1B5BD 0.5 + 그림자 2/4 blur6 25% · 라벨 12/500(활성 primary/나머지 #B1B5BD)
-  track: { position: 'absolute', left: 0, right: 0, height: 8, borderRadius: 7, top: 18 },
-  tick: { position: 'absolute', top: 19, width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.6)' },
+  track: { position: 'absolute', left: 0, right: 0, height: 8, borderRadius: radius.pill, top: 18 },
+  trackUnset: { backgroundColor: C.line },
+  tick: { position: 'absolute', top: 19, width: 6, height: 6, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.6)' },
   knob: {
     position: 'absolute',
     top: (44 - KNOB) / 2,
@@ -174,7 +180,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   labels: { height: 18, marginTop: 6 },
-  label: { position: 'absolute', fontSize: 12, fontWeight: '500', color: C.inkMute },
+  label: { position: 'absolute', fontSize: 13, fontWeight: '500', color: C.inkMute },
   labelOn: { color: C.primary },
 });
 

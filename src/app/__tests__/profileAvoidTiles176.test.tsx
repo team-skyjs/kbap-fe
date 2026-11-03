@@ -71,6 +71,8 @@ jest.mock('@/lib/data/useMe', () => ({
 }));
 
 import Profile from '../(tabs)/profile';
+const REACT_ELS = [Symbol.for('react.element'), Symbol.for('react.transitional.element')];
+const safeJson = (v: unknown) => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && REACT_ELS.includes((x as { $$typeof?: symbol }).$$typeof as symbol) ? undefined : x)); // KB-954: refreshControl 엘리먼트 prop(순환 참조)만 제외
 
 const ME = (codes: string[]) => ({
   data: {
@@ -89,7 +91,7 @@ function render(): ReactTestRenderer {
   });
   return tree;
 }
-const flat = (t2: ReactTestRenderer) => JSON.stringify(t2.toJSON());
+const flat = (t2: ReactTestRenderer) => safeJson(t2.toJSON());
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -137,7 +139,7 @@ describe('P-181: 프로필 소형 4건', () => {
   it('② KB-434 D-6: Recently scanned 섹션 = 프로필 탭에서 소멸(시안 부재 — 홈·My Foods로 이관)', () => {
     mockHome.mockReturnValue({ data: { recent: [{ foodId: '7', name: 'Kimbap', nameKo: '김밥', photoUrl: null, risk: 'safe', overall: { average: null, count: 0 } }] } } as never);
     const tree = render();
-    expect(JSON.stringify(tree.toJSON())).not.toContain('home.recentTitle');
+    expect(safeJson(tree.toJSON())).not.toContain('home.recentTitle');
   });
 
   it('⑤ 국가 줄 = 국기+국가명(코드 생짜 0) · KB-434: 정보수정 = 아웃라인 68×36 r8 #DCDEE3', () => {
@@ -151,7 +153,7 @@ describe('P-181: 프로필 소형 4건', () => {
     const st = flatten(btn.props.style);
     expect(st.minWidth).toBe(68); // KB-707: 짧은 글자는 그대로 68, 긴 언어는 내용에 맞춰 넓어짐(고정 폭이면 vi·th·ja가 테두리에 닿았다)
     expect(st.height).toBe(36);
-    expect(st.borderRadius).toBe(8);
+    expect(st.borderRadius).toBe(999); // KB-909: 버튼 = 알약
     expect(st.borderColor).toBe('#DCDEE3');
     expect(btn.findAll((n) => n.props?.children === 'profile.edit').length).toBeGreaterThanOrEqual(1); // "정보수정" 현 키
   });

@@ -14,9 +14,10 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useMemo, useEffect, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
-import { BackHandler, Keyboard, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { BackHandler, Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
-import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
+import { KAV_BEHAVIOR, KAV_OFFSET } from '@/lib/keyboardAvoid';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -28,13 +29,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
-import { primaryTint, color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
+import { primaryTint, color as C, font, radius, shadow, type } from '@/lib/theme';
 import {
   Btn,
   IconCheck,
@@ -69,7 +70,7 @@ import { flagEmoji } from '@/lib/flagEmoji';
 import i18n from '@/lib/i18n';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, resetPersonalizedQueries } from '@/lib/queryClient';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { airbridge } from '@/lib/airbridge';
 import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
@@ -247,7 +248,8 @@ export default function Onboarding() {
       });
       // 제출 전 fetch된 홈/프로필 캐시(개인화 빈 값)가 staleTime(60s) 동안
       // 살아남아 "저장 안 된 것처럼" 보이는 버그 방지 — 전부 fresh로.
-      queryClient.clear();
+      // KB-954(P-570): clear()는 이미 마운트된 탭 옵저버를 재조회시키지 않는다(P-205 족보) → 회피 변경과 같은 reset·invalidate
+      void resetPersonalizedQueries(queryClient);
       // KB-497: 온보딩 직후 푸시 프라이머 제거(UX 리서치 B안) — OS 권한 요청은 첫 스캔 결과 시트 1곳.
       // P-080: SuccessCheck는 요약 카드 진입 연출로 결합(스펙) — 완료 오버레이 없이 직행
       router.replace('/(tabs)');
@@ -364,7 +366,7 @@ export default function Onboarding() {
   return (
     // KB-700(하단 고정 바 + 입력창 전수): 국가·기피 재료 검색 입력 중 하단 CTA 푸터가 키보드 뒤에 남지 않게 — 리뷰 작성·프로필 편집과 같은
     // KeyboardAvoidingView(padding, KB-768부터 두 플랫폼 — 안드 edge-to-edge는 adjustResize가 창을 안 줄인다). 푸터는 ScrollView의 형제라 키보드 위로 따라 올라온다.
-    <KeyboardAvoidingView style={[styles.app, { paddingTop: insets.top }]} behavior={KAV_BEHAVIOR} testID="ob-kav">
+    <KeyboardAvoidingView style={[styles.app, { paddingTop: insets.top }]} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET} testID="ob-kav">
       {/* P-133: 국적 스텝 = 헤더·검색 고정, 리스트만 스크롤(시안 kbap-ob4) — 자체 스크롤 구조 */}
       {step === 'nationality' ? (
         <View style={[styles.body, { flex: 1 }]}>
@@ -478,6 +480,10 @@ export default function Onboarding() {
           setLegalDoc(null);
         }}
         onClose={() => setLegalDoc(null)}
+        onReadSafety={() => {
+          setLegalDoc(null);
+          router.push('/profile/legal?doc=safety' as Href);
+        }}
         t={t}
       />
 
@@ -549,8 +555,8 @@ function Consent({
   );
 }
 
-/** 전문 바텀시트 — terms/privacy는 kbap-legal fetch, safety는 i18n 재사용. */
-function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAgree: () => void; onClose: () => void; t: TFn }) {
+/** 전문 바텀시트 — terms/privacy는 kbap-legal fetch, safety는 i18n 요약 3단 + 전문 링크(KB-910: 앱 안 법적 문서 화면 — 시트에 전문을 넣으면 온보딩이 길어진다). */
+function LegalSheet({ doc, onAgree, onClose, onReadSafety, t }: { doc: ConsentKey | null; onAgree: () => void; onClose: () => void; onReadSafety: () => void; t: TFn }) {
   // P-337(KB-490): 핸들+제목 스와이프 닫기 — 본문 ScrollView와 충돌 방지(영역 한정).
   // 이 시트는 마운트 유지형(visible=doc) — open 전환 시 훅이 translateY 리셋.
   const swipe = useSheetSwipeDismiss(onClose, doc != null);
@@ -582,7 +588,14 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
           {isRemote ? (
             <LegalDocBody doc={doc as LegalDoc} />
           ) : (
-            <Text style={styles.legalText}>{safetyText}</Text>
+            <>
+              <Text style={styles.legalText}>{safetyText}</Text>
+              {/* KB-910: 전문은 앱 안 법적 문서 화면(프로필과 같은 화면) — 시트(Modal)를 닫고 연다(Modal이 위에 남으면 화면을 가린다) */}
+              <Pressable onPress={onReadSafety} accessibilityRole="link" hitSlop={8} style={styles.readFullRow} testID="legal-read-full-safety">
+                <Text style={styles.readFull}>{t('onboarding.readFullSafety')}</Text>
+                <IconChevron size={16} color={C.primaryText} />
+              </Pressable>
+            </>
           )}
         </ScrollView>
         <Btn testID="legal-agree" onPress={onAgree}>{t('onboarding.agree')}</Btn>
@@ -846,21 +859,21 @@ function ObTitle({ title, sub, dotCount, dotActive }: { title: string; sub?: str
 const styles = StyleSheet.create({
   // P-134 회피 타일 그리드 (시안 ob4-tile) — 4열 정사각, 프레임 불변(P-103)
   avCount: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, minHeight: 20 },
-  avCountText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
-  avClear: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
-  avTile: { width: '100%', aspectRatio: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent' },
+  avCountText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  avClear: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+  avTile: { width: '100%', aspectRatio: 1, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent' },
   avTileOn: { borderColor: C.primary },
   avAbbr: { fontFamily: font.displayBlack, fontSize: 18, color: C.ink2, opacity: 0.55 },
   // P-134 맵기 — 배지 줄(고정 높이)·레일·설명
   // KB-433 §4-②: 예시 타일 107×133(border #ECEDF0 r4, 원형 62) — 3개 고정 행
   railRow: { flexDirection: 'row', justifyContent: 'center', gap: 7, marginTop: 18 }, // A-SP-04/05
-  railTile: { width: 107, height: 133, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', justifyContent: 'center', gap: 2 }, // A-SP-06(썸 세로 중앙·gap 2)
-  railImgWrap: { width: 62, height: 62, borderRadius: 31, overflow: 'hidden', backgroundColor: C.surface2 },
+  railTile: { width: 107, height: 133, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', gap: 2 }, // A-SP-06(썸 세로 중앙·gap 2)
+  railImgWrap: { width: 62, height: 62, borderRadius: radius.pill, overflow: 'hidden', backgroundColor: C.surface2 },
   railImg: { width: '100%', height: '100%' },
-  railName: { fontSize: 12, fontWeight: '500', color: '#2F3137', marginTop: 2, paddingHorizontal: 6 }, // A-SP-06
-  railKo: { fontSize: 11, fontWeight: '400', color: '#5A636A' },
-  sliderBox: { backgroundColor: C.surface2, borderRadius: radius.sm, paddingHorizontal: 14, paddingTop: 5, paddingBottom: 14, marginTop: 22 }, // A-SP-07(KB-486): 박스 81(트랙 중심 27·라벨 y49)
-  spiceDesc: { fontSize: 12, fontWeight: '400', lineHeight: 18, height: 36, color: C.ink2, textAlign: 'center', paddingHorizontal: 8 }, // 2줄 고정 슬롯 — 프레임 불변 유지
+  railName: { fontSize: 13, fontWeight: '500', color: '#2F3137', marginTop: 2, paddingHorizontal: 6 }, // A-SP-06
+  railKo: { fontSize: 12, fontWeight: '400', color: '#5A636A' },
+  sliderBox: { backgroundColor: C.surface2, borderRadius: radius.md, paddingHorizontal: 14, paddingTop: 5, paddingBottom: 14, marginTop: 22 }, // A-SP-07(KB-486): 박스 81(트랙 중심 27·라벨 y49)
+  spiceDesc: { fontSize: 13, fontWeight: '400', lineHeight: 20, height: 40, color: C.ink2, textAlign: 'center', paddingHorizontal: 8 }, // 2줄 고정 슬롯 — 프레임 불변 유지 · KB-909 Codex #367: 높이 = 2 × lineHeight(구 2 × 18)
   // P-130 v3
   miniHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 56 }, // A-NT-01(KB-486)
   miniBack: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginLeft: -8 },
@@ -868,34 +881,34 @@ const styles = StyleSheet.create({
   natHead: { paddingTop: 8 },
   // P-203: 프리셋 칩 — 선택 = 색만(보더 폭 동일 — 프레임 불변)
   // KB-433 §4-③ → 9/5 예진 수정: Tag 선택 = 색만(체크 아이콘 소멸 — 폭 밀림 방지, P-103/151 프레임 불변)
-  presetGroup: { fontSize: 14, fontWeight: '500', color: C.ink2, marginBottom: 12 }, // A-DT-02
+  presetGroup: { fontSize: 16, fontWeight: '500', color: C.ink2, marginBottom: 12 }, // A-DT-02
   presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  presetChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, backgroundColor: '#FFFFFF', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12 }, // A-DT-04(h43)
+  presetChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, backgroundColor: '#FFFFFF', borderRadius: radius.pill, paddingHorizontal: 16, paddingVertical: 12 }, // A-DT-04(h43)
   presetChipOn: { borderColor: C.primary, backgroundColor: primaryTint },
-  presetChipText: { fontSize: 14, fontWeight: '400', color: '#1E2124' }, // A-DT-04
+  presetChipText: { fontSize: 16, fontWeight: '400', color: '#1E2124' }, // A-DT-04
   presetChipTextOn: { color: C.primaryText }, // 굵기 400→400 유지(폭 고정) — 색만 변화
-  natSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 4, paddingHorizontal: 16, marginBottom: 12 }, // A-NT-10/11(보더·아이콘은 C-06)
+  natSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.md, paddingHorizontal: 16, marginBottom: 12 }, // A-NT-10/11(보더·아이콘은 C-06)
   natSearchFocus: { borderColor: C.primary },
-  natSearchInput: { flex: 1, paddingVertical: 14, fontFamily: font.body, fontSize: 15, fontWeight: '500', color: C.ink }, // A-NT-10(h48)
-  natClear: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  natSecText: { fontSize: 14, fontWeight: '500', color: C.ink2, marginTop: 4, marginBottom: 12 }, // A-NT-05/11
+  natSearchInput: { flex: 1, paddingVertical: 14, fontFamily: font.body, fontSize: 16, fontWeight: '500', color: C.ink }, // A-NT-10(h48)
+  natClear: { width: 22, height: 22, borderRadius: radius.pill, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  natSecText: { fontSize: 16, fontWeight: '500', color: C.ink2, marginTop: 4, marginBottom: 12 }, // A-NT-05/11
   // P-154 ①: 전 행 상시 투명 보더 동폭+라운딩 — 선택 시 색만 전환(natPinOn 공유),
   // 행 높이 62·간격 픽셀 무변(P-151 방식). 강조는 항상 화면 1곳.
   // KB-433 §4-①: 추천 행(4150:13845) = pad 16 gap 12 r8 / 2열 그리드 타일(4150:13850)
-  natPinRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm, marginBottom: 12 }, // A-NT-08
+  natPinRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderWidth: 1, borderColor: C.line, borderRadius: radius.md, marginBottom: 12 }, // A-NT-08
   natGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  natTile: { width: '47%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm }, // A-NT-12
+  natTile: { width: '47%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderWidth: 1, borderColor: C.line, borderRadius: radius.md }, // A-NT-12
   natTilePad: { width: '47%', flexGrow: 1 }, // P-333 동류: 홀수 자리표시자
   natOn: { borderColor: C.primary, backgroundColor: primaryTint },
   natFlagSlot: { width: 30, alignItems: 'center' },
   natFlag: { fontSize: 24, lineHeight: 30 },
-  natName: { fontSize: 15, fontWeight: '600', color: C.ink },
-  natSub: { fontSize: 12, fontWeight: '400', color: C.ink2, marginTop: 2 }, // A-NT-06
+  natName: { fontSize: 16, fontWeight: '600', color: C.ink },
+  natSub: { fontSize: 13, fontWeight: '400', color: C.ink2, marginTop: 2 }, // A-NT-06
   // Radio 16(D-1 Choice) — 선택 = primary 5px 링
-  natRadio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: C.line2, backgroundColor: '#FFFFFF' }, // A-NT-07
+  natRadio: { width: 16, height: 16, borderRadius: radius.pill, borderWidth: 1.5, borderColor: C.line2, backgroundColor: '#FFFFFF' }, // A-NT-07
   natRadioOn: { borderWidth: 5, borderColor: C.primary },
   natNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, paddingHorizontal: 0, marginBottom: 32 }, // A-NT-08/09(안내→Country 36 = 32+4)
-  natNoticeText: { flex: 1, fontSize: 12, fontWeight: '400', lineHeight: 17, color: C.ink3 },
+  natNoticeText: { flex: 1, fontSize: 13, fontWeight: '400', lineHeight: 18, color: C.ink3 },
   app: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 28, flexGrow: 1 }, // A-NT-02
 
@@ -906,100 +919,102 @@ const styles = StyleSheet.create({
   footerSkip: { width: 119 },
   skipSlot: { height: 22, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   // 제출 실패 안내 (KB-75)
-  submitErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
-  submitErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
+  submitErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
+  submitErrText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 18 },
 
   // titles (KB-433 §3: 20/700 + 14/500 #9196A1 + 진행 점)
   obTitle: { fontSize: 20, fontWeight: '700', color: C.ink },
-  obSub: { fontSize: 14, fontWeight: '500', color: C.ink3, lineHeight: 21, marginTop: 0 }, // A-NT-03/04
+  obSub: { fontSize: 16, fontWeight: '500', color: C.ink3, lineHeight: 24, marginTop: 0 }, // A-NT-03/04
 
   // fields
   // KB-149 프로필 사진 (edit.tsx avatar 패턴)
   avatarWrap: { alignItems: 'center', gap: 8, paddingVertical: 2 },
-  av: { width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
-  avImg: { position: 'absolute', top: 0, left: 0, width: 88, height: 88, borderRadius: 44 },
+  av: { width: 88, height: 88, borderRadius: radius.pill, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
+  avImg: { position: 'absolute', top: 0, left: 0, width: 88, height: 88, borderRadius: radius.pill },
   avBusy: { backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
-  cam: { position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: 15, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.surface },
-  phLbl: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primary },
-  phErr: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.riskCaution },
+  cam: { position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: radius.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.surface },
+  phLbl: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
+  phErr: { fontFamily: font.bodyBold, fontSize: 13, color: C.riskCaution },
 
   fieldset: { gap: 6 },
-  fieldLbl: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
-  field: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 14, minHeight: 50, ...shadow.sh1 },
+  fieldLbl: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  field: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.md, paddingHorizontal: 14, minHeight: 50, ...shadow.sh1 },
   fieldFocus: { borderColor: C.primary },
-  fieldInput: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink, paddingVertical: 13 },
-  fieldVal: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
+  fieldInput: { flex: 1, fontFamily: font.bodyBold, fontSize: 16, color: C.ink, paddingVertical: 13 },
+  fieldVal: { flex: 1, fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
 
   // notice
   notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, marginBottom: 18 },
-  noticeText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
+  noticeText: { flex: 1, fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, lineHeight: 20 },
 
   // ① consent (P-080) · P-088①: 카드를 화면 패딩보다 13 안쪽으로 당기고 내부
   // 패딩 13 — 카드 안 체크박스 좌측 x가 아래 3행 체크박스와 일직선(카드만 살짝 넓게)
-  consent: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, padding: 13, marginHorizontal: -14.5, ...shadow.sh1 },
+  consent: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.md, padding: 13, marginHorizontal: -14.5, ...shadow.sh1 },
   consentAllOn: { borderColor: C.primary },
-  check: { width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: C.line2, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }, // D-1 Choice 20 r4
+  check: { width: 20, height: 20, borderRadius: radius.xs, borderWidth: 1, borderColor: C.line2, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }, // D-1 Choice 20 r4
   checkOn: { backgroundColor: C.primary, borderColor: C.primary },
-  consentText: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink, lineHeight: 20 },
+  consentText: { flex: 1, fontFamily: font.bodyBold, fontSize: 16, color: C.ink, lineHeight: 21 },
   consentRows: { marginTop: 12, gap: 2 },
   consentRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 9 },
   // KB-773: 체크 상자 = 따로 탭(32 상자 + hitSlop 6 ≈ 44) — 음수 여백으로 체크·라벨의 보이는 자리는 종전과 같게
   consentCheckHit: { width: 32, height: 32, marginLeft: -6, alignItems: 'center', justifyContent: 'center' },
   consentRowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 11 },
-  consentRowText: { flex: 1, fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 19 },
-  searchEmpty: { fontFamily: font.body, fontSize: 13.5, lineHeight: 19, color: C.ink3, paddingVertical: 16, textAlign: 'center' }, // KB-773
-  requiredTag: { fontFamily: font.body, fontSize: 12.5, color: C.ink3 },
+  consentRowText: { flex: 1, fontFamily: font.body, fontSize: 16, color: C.ink, lineHeight: 22 },
+  searchEmpty: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink3, paddingVertical: 16, textAlign: 'center' }, // KB-773
+  requiredTag: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
   consentChevron: { padding: 4 },
 
   // ③ risk demo (P-080 · P-088 에셋 슬롯+펄스)
-  demoCard: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, overflow: 'hidden', ...shadow.sh1 },
+  demoCard: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.md, overflow: 'hidden', ...shadow.sh1 },
   demoImg: { width: '100%', height: 150, backgroundColor: C.surface2 },
-  demoMark: { position: 'absolute', top: 104, right: 16, backgroundColor: '#fff', borderRadius: 33, padding: 10, ...shadow.shPop },
+  demoMark: { position: 'absolute', top: 104, right: 16, backgroundColor: '#fff', borderRadius: radius.pill, padding: 10, ...shadow.shPop },
   // P-088③: 펄스 링 — 마크 버튼과 동심원 (66 = 46 + padding 10×2)
-  pulseRing: { position: 'absolute', top: 0, left: 0, width: 66, height: 66, borderRadius: 33, borderWidth: 2, borderColor: C.primary },
+  pulseRing: { position: 'absolute', top: 0, left: 0, width: 66, height: 66, borderRadius: radius.pill, borderWidth: 2, borderColor: C.primary },
   demoCap: { paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
-  demoName: { fontFamily: font.bodyBold, fontSize: 15.5, color: C.ink },
-  demoHint: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
-  demoMeaning: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, marginTop: 16, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 13 },
-  demoLabel: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
-  demoBody: { fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18, marginTop: 2 },
+  demoName: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
+  demoHint: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
+  demoMeaning: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, marginTop: 16, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.md, padding: 13 },
+  demoLabel: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
+  demoBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 19, marginTop: 2 },
 
   // ⑤ spice (P-080 → P-081: 슬라이더는 공용 SpiceLevelSlider로 승격 — 히어로만 잔존)
   // P-119: minHeight→height 고정 — 어느 단계에서도 히어로 줄 프레임 불변(P-101/103 원칙)
   chiliRow: { flexDirection: 'row', gap: 4, height: 28, alignItems: 'center' }, // A-SP-02 · 고정 프레임 유지(P-119)
   bandName: { fontSize: 20, fontWeight: '700', lineHeight: 28, height: 28, color: C.ink }, // 고정
-  analogy: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, paddingHorizontal: 15, height: 36, backgroundColor: 'rgba(226,88,12,0.08)' }, // P-119: paddingV→고정 높이
-  analogyText: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary },
-  tag: { fontFamily: font.body, fontSize: 11, color: C.ink3 },
+  analogy: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: radius.pill, paddingHorizontal: 15, height: 36, backgroundColor: 'rgba(226,88,12,0.08)' }, // P-119: paddingV→고정 높이
+  analogyText: { fontFamily: font.bodyBold, fontSize: 16, color: C.primary },
+  tag: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
 
   // interests grid
   foodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  foodCard: { width: '31.5%', backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, overflow: 'hidden', ...shadow.sh1 },
+  foodCard: { width: '31.5%', backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.md, overflow: 'hidden', ...shadow.sh1 },
   foodCardOn: { borderColor: C.primary },
   foodImg: { height: 58, backgroundColor: C.surface2 },
   foodCap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 5, paddingHorizontal: 9, paddingVertical: 8 },
-  foodName: { flex: 1, fontFamily: font.bodyBold, fontSize: 12, color: C.ink },
-  foodAdd: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: C.ink3, alignItems: 'center', justifyContent: 'center' },
+  foodName: { flex: 1, fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
+  foodAdd: { width: 20, height: 20, borderRadius: radius.pill, borderWidth: 1.5, borderColor: C.ink3, alignItems: 'center', justifyContent: 'center' },
   foodAddOn: { backgroundColor: C.primary, borderColor: C.primary },
 
   // ⑥ summary (P-080)
   sumHero: { alignItems: 'center', paddingVertical: 14 },
-  sumCard: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, paddingHorizontal: 14, ...shadow.sh1 },
+  sumCard: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.md, paddingHorizontal: 14, ...shadow.sh1 },
   sumRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14 },
   sumRowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
-  sumLbl: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2, width: 96 },
+  sumLbl: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, width: 96 },
   sumRight: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
   sumValRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  sumVal: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 22, color: C.ink, textAlign: 'right', flexShrink: 1 }, // P-119: 🌶️ 유무 불변
+  sumVal: { fontFamily: font.bodyBold, fontSize: 16, lineHeight: 25, color: C.ink, textAlign: 'right', flexShrink: 1 }, // P-119: 🌶️ 유무 불변
   sumValMuted: { fontFamily: font.body, color: C.ink3 },
 
   // legal sheet (P-080)
   sheetScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(42,33,27,0.42)' },
-  legalSheet: { marginTop: 'auto', maxHeight: '82%', backgroundColor: C.card, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, gap: 12, ...shadow.shPop },
-  grab: { width: 44, height: 5, borderRadius: 3, backgroundColor: C.ink3, opacity: 0.5, alignSelf: 'center', marginBottom: 4 },
+  legalSheet: { marginTop: 'auto', maxHeight: '82%', backgroundColor: C.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: 20, gap: 12, ...shadow.shPop },
+  grab: { width: 44, height: 5, borderRadius: radius.pill, backgroundColor: C.ink3, opacity: 0.5, alignSelf: 'center', marginBottom: 4 },
   sheetTitle: { fontFamily: font.display, fontSize: 18, color: C.ink },
-  legalScroll: { flexGrow: 0, minHeight: 180, borderWidth: 1, borderColor: C.hair, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4, backgroundColor: C.surface },
-  legalText: { fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 20, paddingVertical: 10 },
+  legalScroll: { flexGrow: 0, minHeight: 180, borderWidth: 1, borderColor: C.hair, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 4, backgroundColor: C.surface },
+  legalText: { fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 22, paddingVertical: 10 },
+  readFullRow: { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'flex-start', paddingVertical: 8 },
+  readFull: { ...type.meta, fontFamily: font.bodyBold, color: C.primaryText }, // KB-910: 토큰(type.meta) — 새 fontSize 리터럴 0
 
-  linkbtn: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, textAlign: 'center', padding: 6 },
+  linkbtn: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink2, textAlign: 'center', padding: 6 },
 });

@@ -164,6 +164,8 @@ import MyReviews from '../profile/reviews';
 import Profile from '../(tabs)/profile';
 import { IconBookmark } from '@/components/icons';
 import { Stars } from '@/components/Stars';
+const REACT_ELS = [Symbol.for('react.element'), Symbol.for('react.transitional.element')];
+const safeJson = (v: unknown) => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && REACT_ELS.includes((x as { $$typeof?: symbol }).$$typeof as symbol) ? undefined : x)); // KB-954: refreshControl 엘리먼트 prop(순환 참조)만 제외
 
 function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
@@ -172,7 +174,11 @@ function render(el: React.ReactElement): ReactTestRenderer {
   });
   return tree;
 }
-const flatJson = (t2: ReactTestRenderer) => JSON.stringify(t2.toJSON());
+const flatJson = (t2: ReactTestRenderer) => safeJson(t2.toJSON());
+
+/** KB-891: 커서 추종 가시 높이 = 뷰포트 − 떠 있는 알약(측정 전 48 + 바닥 여백 12) */
+// KB-891 → KB-903(T-071): 알약 바가 ScrollView 아래 흐름 안 — 뷰포트(svH)가 이미 바를 뺀 높이라 바 몫 차감·여백 0
+const PILL = 0;
 
 it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + 셀렉션/성장 스크롤 배선', () => {
   const { Keyboard } = require('react-native') as typeof import('react-native');
@@ -189,7 +195,7 @@ it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + �
   act(() => listeners['keyboardDidShow']?.({ endCoordinates: { height: 336 } }));
   const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
   const pad = (require('react-native').StyleSheet.flatten(sv.props.contentContainerStyle) as { paddingBottom?: number }).paddingBottom;
-  expect(pad).toBe(28);
+  expect(pad).toBe(PILL + 16); // KB-903: 바가 흐름 안 — 아래 여백 16뿐
   // 셀렉션·성장·포커스 배선 — scrollTo 호출(블록/뷰포트 실측 주입 후)
   const scrollTo = jest.fn();
   const svInst = sv.instance as { scrollTo?: unknown } | null;
@@ -203,7 +209,7 @@ it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + �
   expect(typeof input.props.onSelectionChange).toBe('function');
   act(() => input.props.onSelectionChange());
   // target = blockBottom 700 − 가시 364(이미 키보드 제외 — iOS는 kbH를 또 빼지 않음) + 16 = 352(Q-87 실기 통과 때와 같은 위치)
-  expect(scrollTo).toHaveBeenCalledWith({ y: 352, animated: true });
+  expect(scrollTo).toHaveBeenCalledWith({ y: 352 + PILL, animated: true });
   spy.mockRestore();
 });
 
@@ -234,7 +240,7 @@ it('P-163 ②: 커서 추종 게이트 — 중간 편집 무개입, 문서 끝 �
   expect(scrollTo).not.toHaveBeenCalled();
   // 끝 커서 → 추종 재개 (target = 700 − 가시 364 + 16 = 352)
   act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 10, end: 10 } } }));
-  expect(scrollTo).toHaveBeenCalledWith({ y: 352, animated: true });
+  expect(scrollTo).toHaveBeenCalledWith({ y: 352 + PILL, animated: true });
   spy.mockRestore();
 });
 
@@ -259,11 +265,11 @@ it('KB-657: 키보드 hide 뒤 끝 커서 셀렉션 = kbH 0 기준 목표(700 �
   const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
   act(() => input.props.onFocus?.()); // KB-700 ①: 커서 추종은 본문 포커스 동안만 — 실제 입력 흐름(포커스 → 선택·입력)
   act(() => input.props.onSelectionChange());
-  expect(scrollTo).toHaveBeenLastCalledWith({ y: 352, animated: true }); // 대조: 키보드 올라온 상태
+  expect(scrollTo).toHaveBeenLastCalledWith({ y: 352 + PILL, animated: true }); // 대조: 키보드 올라온 상태
   act(() => listeners['keyboardDidHide']?.({}));
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } })); // KB-700: 키보드 내려가면 KAV가 원래 높이로
   act(() => input.props.onSelectionChange());
-  expect(scrollTo).toHaveBeenLastCalledWith({ y: 16, animated: true }); // 700 − 700 + 16
+  expect(scrollTo).toHaveBeenLastCalledWith({ y: 16 + PILL, animated: true }); // 700 − (700 − 알약) + 16
   spy.mockRestore();
 });
 
@@ -337,7 +343,7 @@ it('P-157 ②: 저장 아이콘 별 전면 통일 — 프로필에 북마크 글
   expect(tree.root.findAllByType(IconBookmark).length).toBe(0);
   const src = require('fs').readFileSync('src/app/profile/saved.tsx', 'utf8') as string;
   expect(src).not.toContain('IconBookmark');
-  expect(src).toContain('IconStar');
+  expect(src).not.toContain('IconStar'); // KB-959: 저장 목록 카드 별·Undo 스낵바 별 소멸(저장 해제 = 상세)
 });
 
 it('P-287: 저장 빈 상태 = 공용 EmptyBlock(버튼 없음) — 필터 결과 0은 별도 문구(Codex #47)', () => {
@@ -396,7 +402,7 @@ it('KB-700 ①: 마운트 직후(본문 포커스 없음) — 크기·선택 변
   // 본문 포커스 → 추종(Q-87 유지)
   act(() => input.props.onFocus());
   act(() => input.props.onContentSizeChange());
-  expect(scrollTo).toHaveBeenCalledWith({ y: 750 - 700 + 16, animated: true });
+  expect(scrollTo).toHaveBeenCalledWith({ y: 750 - (700 - PILL) + 16, animated: true });
   // 블러 → 다시 무개입
   scrollTo.mockClear();
   act(() => input.props.onBlur());
@@ -429,7 +435,7 @@ it('KB-700(#228 공부): 긴 본문의 **중간 줄**을 탭(끝 커서 아님) 
   scrollTo.mockClear();
   // 키보드 → KAV로 뷰포트 364. 탭한 줄(668~700)이 364 밖 → 700 − 364 + 16 = 352
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } }));
-  expect(scrollTo).toHaveBeenCalledWith({ y: 352, animated: true });
+  expect(scrollTo).toHaveBeenCalledWith({ y: 352 + PILL, animated: true });
   // 이미 보이는 줄 탭 = 무개입: 스크롤 200에서 콘텐츠 y 300 + 30 + 20 = 350 탭 → 줄어든 뷰포트(200~564) 안
   scrollTo.mockClear();
   act(() => input.props.onBlur());

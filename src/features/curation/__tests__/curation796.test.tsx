@@ -42,7 +42,7 @@ jest.mock('@/components/Btn', () => {
 const mockPush = jest.fn();
 const mockNavigate = jest.fn();
 let mockParams: Record<string, string> = {};
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, navigate: mockNavigate, back: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams }));
+jest.mock('expo-router', () => ({ useScrollToTop: () => {}, useRouter: () => ({ push: mockPush, navigate: mockNavigate, back: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams }));
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 const mockOpen = jest.fn(async () => true);
@@ -61,7 +61,9 @@ jest.mock('@/lib/data/useCurations', () => ({
   ...jest.requireActual('@/lib/data/useCurations'),
   useCurationIndex: () => mockIndex,
   useCurationDetail: () => mockDetail,
+  useCurationCoverPrefetch: (keys: readonly string[] | null) => mockCoverPrefetch(keys), // KB-931: 섹션 → 프리페치 배선만(동작은 별도 테스트)
 }));
+const mockCoverPrefetch = jest.fn();
 
 /* eslint-disable import/first -- jest.mock 뒤 */
 import { ApiError } from '@/lib/api/client';
@@ -86,6 +88,8 @@ afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.c
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(el); }); trees.push(t); return t; };
 const q = (over: Partial<Q>): Q => ({ isPending: false, isError: false, refetch: jest.fn(), ...over });
 const byId = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string');
+/** KB-931: 본 사진(띠 아닌 카드 원본) onLoad — 띠는 그 뒤에 붙는다. 띠 밖 img만 */
+const loadPhotos = (t: ReactTestRenderer) => act(() => { t.root.findAll((n) => typeof n.type === 'string' && /^img:/.test(String(n.props?.testID)) && typeof n.props?.onLoad === 'function').forEach((n) => n.props.onLoad()); });
 const text = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
 const press = (t: ReactTestRenderer, id: string) => act(() => t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress());
@@ -163,7 +167,7 @@ describe('홈 섹션', () => {
     const caps = cap.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string');
     expect(caps.map((n) => n.props.children)).toEqual(['10 places sights', 'T sights']); // 예진 결정: 홈 = 설명(위) → 제목(아래) — 기존 홈 순서
     expect(caps.map((n) => RNx.StyleSheet.flatten(n.props.style))).toEqual([
-      expect.objectContaining({ fontSize: 13, color: '#FFFFFF' }), // 설명 = 지역 스타일
+      expect.objectContaining({ fontSize: 14, color: '#FFFFFF' }), // 설명 = 지역 스타일
       expect.objectContaining({ fontSize: 18, color: '#FFFFFF' }), // 제목 = 이름 스타일(줄 높이는 배율 규칙 — 아래 큰 글씨 테스트)
     ]);
     // 흐림 띠: 카드·캡션을 잰 뒤 — 현재 장(0)과 옆(1)은 8띠, 두 장 너머(2)는 원본 + 스크림만
@@ -172,8 +176,20 @@ describe('홈 섹션', () => {
       act(() => t.root.findAll((n) => n.props?.testID === `curation-banner-caption-${i}` && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout: { x: 0, y: 236, width: 335, height: 64 } } }));
     }
     const strips = (i: number) => t.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith(`curation-banner-blur-strip-${i}-`) && typeof n.type === 'string').length;
-    expect([strips(0), strips(1), strips(2)]).toEqual([8, 8, 0]);
+    expect([strips(0), strips(1), strips(2)]).toEqual([0, 0, 0]); // KB-931: 본 사진이 그려지기 전 = 띠 없음(같은 원본을 메모리 캐시에서 쓰게)
+    loadPhotos(t);
+    expect([strips(0), strips(1), strips(2)]).toEqual([7, 7, 0]); // 선명 띠 7(마지막 = 블러 100% 라 생략) — 보이는 장 ± 1장만
     expect(byId(t, 'curation-banner-attribution-2')).toHaveLength(1); // 출처 유지(사진 위 오른쪽 위)
+  });
+  it('KB-931: 공개 섹션 = 모음 키 3개로 커버 프리페치 · 로딩·미게시 = 키 없음(null)', () => {
+    mockCoverPrefetch.mockClear();
+    mockIndex = q({ data: published });
+    render(<CurationSection />);
+    expect(mockCoverPrefetch).toHaveBeenLastCalledWith(published.cards.map((c: { key: string }) => c.key));
+    mockCoverPrefetch.mockClear();
+    mockIndex = q({ data: { ...published, published: false } });
+    render(<CurationSection />);
+    expect(mockCoverPrefetch).toHaveBeenLastCalledWith(null);
   });
   it('KB-861: 상세 장소 카드 글자 순서는 그대로 — 이름(위) → 지역(아래)(홈만 설명 위)', () => {
     const detail = adaptCurationDetail(DETAIL_WIRE) as CurationDetail;
@@ -307,7 +323,7 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(ids(t)).not.toContain('curation-gallery'); // 처음엔 닫힘
   });
 
-  it('KB-846 점진 블러(네이티브 의존 0): 카드·캡션을 잰 뒤 이름 위 16부터 바닥까지 띠 4개 · blurRadius 1/4→1 · 같은 사진 같은 오프셋(이음새 0) · 스크림이 밴드 전체 · 큰 글씨 = 밴드도 늘어남', () => {
+  it('KB-846 → KB-931 점진 블러(네이티브 의존 0): 본 사진 onLoad 뒤 밴드 = 블러 1장(최대 반경) + 선명 띠 7(위 0.875 → 아래 0.125) · 같은 사진 같은 오프셋(이음새 0) · 스크림이 밴드 전체 · 큰 글씨 = 밴드도 늘어남', () => {
     mockDetail = q({ data: detail });
     const t = render(<CurationDetailScreen />);
     expect(ids(t).some((i) => i.startsWith('curation-item-blur-'))).toBe(false); // 높이 모르는 첫 렌더 = 밴드 없음
@@ -316,26 +332,33 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     layoutOf('curation-item-1', { x: 0, y: 0, width: 335, height: 300 });
     expect(ids(t).some((i) => i.startsWith('curation-item-blur-1'))).toBe(false); // 캡션 위치 전 = 없음
     layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 335, height: 64 }); // 이름 위 = 236
+    expect(ids(t).some((i) => i.startsWith('curation-item-blur-1'))).toBe(false); // KB-931: 본 사진 onLoad 전 = 없음
+    loadPhotos(t);
     const band = t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0];
     expect(RN.StyleSheet.flatten(band.props.style)).toMatchObject({ position: 'absolute', top: 220, bottom: 0, overflow: 'hidden' }); // 236 − 16
     expect(band.props.pointerEvents).toBe('none');
-    const strips = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => t.root.findAll((n) => n.props?.testID === `curation-item-blur-strip-1-${i}` && typeof n.type === 'string')[0]);
+    // KB-931: 블러 = 1장(밴드 전체, iOS 45) — 카드 높이 그대로 밴드 위치만큼 위로(원본과 같은 자리) · 블러 변환 카드당 1회
+    const blurs = band.findAll((n) => n.props?.testID === 'blur:https://cdn/i1.jpg' && typeof n.type === 'string');
+    expect(blurs).toHaveLength(1);
+    expect(blurs[0].props.blurRadius).toBe(45);
+    expect(RN.StyleSheet.flatten(blurs[0].props.style)).toMatchObject({ top: -220, height: 300 });
+    const strips = [0, 1, 2, 3, 4, 5, 6].map((i) => t.root.findAll((n) => n.props?.testID === `curation-item-blur-strip-1-${i}` && typeof n.type === 'string')[0]);
+    expect(byId(t, 'curation-item-blur-strip-1-7')).toHaveLength(0); // 블러 비중 1(맨 아래) = 선명 띠 없음
     const tops = strips.map((s) => RN.StyleSheet.flatten(s.props.style).top as number);
     const hs = strips.map((s) => RN.StyleSheet.flatten(s.props.style).height as number);
-    // KB-846 QA(iOS 확대): 밴드 80 = 띠 10 ×8 · 맞닿기만(겹침 0 — Codex #320) · 마지막 띠 바닥 = 카드 바닥
-    expect(tops).toEqual([0, 10, 20, 30, 40, 50, 60, 70]);
-    expect(hs).toEqual([10, 10, 10, 10, 10, 10, 10, 10]);
+    // KB-846 QA(iOS 확대): 밴드 80 = 띠 10 × 8 · 맞닿기만(겹침 0 — Codex #320)
+    expect(tops).toEqual([0, 10, 20, 30, 40, 50, 60]);
+    expect(hs).toEqual([10, 10, 10, 10, 10, 10, 10]);
     const ops = strips.map((s) => RN.StyleSheet.flatten(s.props.style).opacity as number);
-    expect(ops).toEqual([0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1]); // 1/8 균등 — 마지막 단계도 같은 간격(0.85→1 점프 소멸)
-    for (let i = 1; i < ops.length; i++) expect(ops[i] - ops[i - 1]).toBeCloseTo(0.125, 10);
-    const imgs = strips.map((s) => s.findAll((n) => n.props?.testID === 'blur:https://cdn/i1.jpg' && typeof n.type === 'string')[0]);
-    expect(imgs.map((im) => im.props.blurRadius)).toEqual([6, 11, 17, 23, 28, 34, 39, 45]); // iOS 45 × 1/8…1(정수)
-    // 각 띠의 사진 = 카드 높이 그대로, 띠의 카드 기준 위치만큼 위로 → 원본과 같은 자리
-    expect(imgs.map((im) => RN.StyleSheet.flatten(im.props.style))).toEqual([220, 230, 240, 250, 260, 270, 280, 290].map((y) => expect.objectContaining({ top: -y, height: 300 })));
+    // 선명 띠 = 1 − 블러 비중(1/8 균등) — 결과 = 블러×(i+1)/8 + 원본×(1−(i+1)/8), 구 8장 크로스페이드와 같은 비중
+    [0.875, 0.75, 0.625, 0.5, 0.375, 0.25, 0.125].forEach((o, i) => expect(ops[i]).toBeCloseTo(o, 10));
+    const imgs = strips.map((s) => s.findAll((n) => n.props?.testID === 'img:https://cdn/i1.jpg' && typeof n.type === 'string')[0]);
+    expect(imgs.every((im) => im.props.blurRadius == null)).toBe(true); // 선명 띠 = 변환 없음(본 사진과 같은 캐시)
+    expect(imgs.map((im) => RN.StyleSheet.flatten(im.props.style))).toEqual([220, 230, 240, 250, 260, 270, 280].map((y) => expect.objectContaining({ top: -y, height: 300 })));
     const scrim = t.root.findAll((n) => n.props?.testID === 'card-shade' && typeof n.type === 'string');
     expect(scrim).toHaveLength(1);
-    expect(RN.StyleSheet.flatten(scrim[0].props.style)).toMatchObject({ top: 220, bottom: 0 });
-    expect(scrim[0].props.colors).toEqual(['rgba(0,0,0,0)', 'rgba(0,0,0,0.45)']);
+    expect(RN.StyleSheet.flatten(scrim[0].props.style)).toMatchObject({ top: 180, bottom: 0 }); // KB-906(T-039): 띠 위 40부터
+    expect(scrim[0].props.colors).toEqual(['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.6)']);
     // 큰 글씨 = 캡션이 높아져 위로 — 밴드도 이름 위 16 유지
     layoutOf('curation-item-1', { x: 0, y: 0, width: 335, height: 340 });
     layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 335, height: 104 });
@@ -386,23 +409,27 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       act(() => t.root.findAll((n) => n.props?.testID === `curation-item-caption-${i}` && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout: { x: 0, y: 236, width: 335, height: 64 } } }));
     }
     const blurred = () => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((i) => t.root.findAll((n) => n.props?.testID === `curation-item-blur-${i}` && typeof n.type === 'string').length > 0);
+    loadPhotos(t); // KB-931: 띠는 본 사진 onLoad 뒤
     expect(blurred()).toEqual([1, 2, 3, 4, 5]);
     const strips = () => t.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('curation-item-blur-strip-') && typeof n.type === 'string').length;
-    expect(strips()).toBe(5 * 8); // 동시 마운트 = 범위 안 카드 × 8(전부 = 80)
+    expect(strips()).toBe(5 * 7); // 동시 마운트 = 범위 안 카드 × 선명 띠 7(전부 = 70) · 블러는 카드당 1장
     act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { x: 0, y: 2000 } } }));
+    loadPhotos(t);
     expect(blurred()).toEqual([5, 6, 7, 8, 9, 10]);
     const band = t.root.findAll((n) => n.props?.testID === 'curation-item-blur-10' && typeof n.type === 'string')[0];
     expect(jest.requireActual('react-native').StyleSheet.flatten(band.props.style).opacity).toBe(0); // 막 붙은 블러 = 투명에서 시작(150ms 페이드인 — 뚝 바뀌지 않게)
   });
-  it('KB-846 Android QA(플링 뒤 회색 띠): 블러 띠 사진 로딩 자리 = 투명(placeholder none) · 띠 8장이 다 그려지기(onLoad/onError) 전엔 밴드 투명 → 전부 끝나면 페이드', () => {
+  it('KB-846 Android QA(플링 뒤 회색 띠) → KB-931: 띠 사진 로딩 자리 = 투명(placeholder none) · 블러 1 + 선명 7이 다 그려지기(onLoad/onError) 전엔 밴드 투명 → 전부 끝나면 페이드', () => {
     const RNs = jest.requireActual('react-native');
     mockDetail = q({ data: detail });
     const t = render(<CurationDetailScreen />);
     const layoutOf = (id: string, layout: object) => act(() => t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout } }));
     layoutOf('curation-item-1', { x: 0, y: 0, width: 335, height: 300 });
     layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 335, height: 64 });
-    const imgs = () => t.root.findAll((n) => n.props?.testID === 'blur:https://cdn/i1.jpg' && typeof n.type === 'string');
-    expect(imgs()).toHaveLength(8);
+    loadPhotos(t);
+    const band = () => t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0];
+    const imgs = () => band().findAll((n) => typeof n.props?.testID === 'string' && /^(blur|img):https:\/\/cdn\/i1\.jpg$/.test(n.props.testID) && typeof n.type === 'string');
+    expect(imgs()).toHaveLength(8); // 블러 1 + 선명 7
     expect(imgs().every((n) => n.props.placeholder === 'none')).toBe(true); // 회색 Shimmer 자리 0
     const bandOpacity = () => RNs.StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0].props.style).opacity;
     expect(bandOpacity()).toBe(0);
@@ -414,16 +441,19 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     act(() => { imgs()[7].props.onLoad(); });
     expect(ready()).toBe(true); // 8/8 → 페이드 시작
   });
-  it('KB-846 blurBandOf: Android 9 = 띠 반경 정수 1~9 8단계(단조 증가) · 캡션이 카드 위쪽 16 안이면 밴드 top 0', () => {
-    const { blurBandOf } = jest.requireActual('@/app/curations/[key]') as { blurBandOf: (h: number, c: number, r?: number) => { top: number; strips: { radius: number }[] } };
-    expect(blurBandOf(300, 236, 9).strips.map((s) => s.radius)).toEqual([1, 2, 3, 5, 6, 7, 8, 9]);
-    expect(blurBandOf(300, 10, 9).top).toBe(0);
+  it('KB-931 blurBandOf: 띠 = 블러 비중만(반경은 밴드 블러 1장 CARD_BLUR_RADIUS — 띠마다 반경 0) · 캡션이 카드 위쪽 16 안이면 밴드 top 0', () => {
+    const { blurBandOf } = jest.requireActual('@/app/curations/[key]') as { blurBandOf: (h: number, c: number) => { top: number; strips: object[] } };
+    expect(blurBandOf(300, 236).strips.every((s) => !('radius' in s))).toBe(true);
+    expect(blurBandOf(300, 10).top).toBe(0);
+    const src = fs.readFileSync('src/features/curation/BlurCaptionCard.tsx', 'utf8');
+    expect(src.match(/blurRadius=\{/g)).toHaveLength(1); // 블러 RemoteImage는 한 군데(밴드 1장)
+    expect(src).toContain("{photoUri && photoReady && band && blur && <BlurBand"); // 본 사진 onLoad 뒤 마운트
   });
   it('KB-846 QA 큰 글씨: 배율 > 1 = 이름·지역 고정 lineHeight 없음(글꼴 고유 줄 높이 — g·y 잘림 0, 앱에서 곱하지 않음 = 두 번 스케일 0 · Codex #320) · 기본 = 26·18', () => {
     const RNx = jest.requireActual('react-native');
     const spy = jest.spyOn(RNx, 'useWindowDimensions');
     try {
-      for (const [scale, nameLh, areaLh] of [[1, 26, 18], [1.3, undefined, undefined], [2, undefined, undefined]] as const) {
+      for (const [scale, nameLh, areaLh] of [[1, 26, 19], [1.3, undefined, undefined], [2, undefined, undefined]] as const) {
         spy.mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: scale });
         mockDetail = q({ data: detail });
         const t = render(<CurationDetailScreen />);
@@ -575,7 +605,11 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(inside(bodyOf(), 'curation-gallery-credit')).toBe(false);
     const credit = byId(t, 'curation-gallery-credit')[0];
     expect(credit.props.numberOfLines).toBe(1);
-    expect(RNc.StyleSheet.flatten(credit.props.style)).toMatchObject({ position: 'absolute', left: 16, bottom: 31, color: '#FFFFFF', textAlign: 'left' });
+    expect(RNc.StyleSheet.flatten(credit.props.style)).toMatchObject({ position: 'absolute', left: 16, bottom: 44, color: '#FFFFFF', textAlign: 'left' }); // Codex #365 P2: 여러 장 = 점 알약 위
+    const dotsBox = RNc.StyleSheet.flatten(sub('curation-gallery-dots').props.style);
+    expect(RNc.StyleSheet.flatten(credit.props.style).bottom).toBeGreaterThanOrEqual(dotsBox.bottom + dotsBox.height + 8); // 알약 윗변 + 간격 8 — 겹침 0
+    const { creditBottom } = jest.requireActual('@/features/curation/CurationGallerySheet') as { creditBottom: (m: boolean) => number };
+    expect(creditBottom(false)).toBe(31); // 1장(점 없음) = 원래 자리
     const w0 = jest.requireActual('react-native').Dimensions.get('window').width;
     const maxW = RNc.StyleSheet.flatten(credit.props.style).maxWidth as number;
     expect(maxW).toBe(creditMaxWidth(w0));
@@ -640,6 +674,51 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
   });
 });
 
+describe('KB-906 홈·큐레이션 동작', () => {
+  const detail = adaptCurationDetail(DETAIL_WIRE) as CurationDetail;
+  const withImages = (n: number) => ({ ...detail, items: detail.items.map((it) => (it.position === 1 ? { ...it, images: Array.from({ length: n }, (_, i) => ({ url: `https://cdn/g${i}.jpg`, attribution: null })) } : it)) });
+  const src = (f: string) => fs.readFileSync(`${__dirname}/../${f}`, 'utf8');
+  it('T-040: 손잡이 탭 = 닫힘 · 끌기 제스처는 사진 영역 전체(그래버 띠만이 아님)', () => {
+    mockDetail = q({ data: detail });
+    const t = render(<CurationDetailScreen />);
+    press(t, 'curation-item-1');
+    expect(ids(t)).toContain('curation-gallery');
+    act(() => t.root.findAll((n) => n.props?.testID === 'curation-gallery-grabber' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    expect(ids(t)).not.toContain('curation-gallery');
+    const sheet = src('CurationGallerySheet.tsx');
+    expect(sheet).toMatch(/<GestureDetector gesture=\{drag\}>\s*<View style=\{\{ height: photoBoxH \}\}/); // 사진 상자 전체가 끌기 영역
+    expect(sheet).toMatch(/<Pressable\s+ref=\{grabRef\}\s+style=\{st\.grabZone\}\s+onPress=\{onClose\}/);
+  });
+  it('T-128: pager 점 = 반투명 검정 알약 위 8pt 점 · 켜짐/꺼짐은 불투명도만(크기 동일)', () => {
+    mockDetail = q({ data: withImages(3) });
+    const t = render(<CurationDetailScreen />);
+    press(t, 'curation-item-1');
+    const flat = (id: string) => jest.requireActual('react-native').StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0].props.style);
+    expect(flat('curation-gallery-dots').backgroundColor).toBe('rgba(0,0,0,0.45)');
+    const on = flat('curation-gallery-dot-on');
+    const off = flat('curation-gallery-dot');
+    for (const k of ['width', 'height', 'borderRadius'] as const) expect(off[k]).toBe(on[k]);
+    expect(on.width).toBe(8);
+    expect(off.opacity).toBeLessThan(1);
+    expect(on.opacity ?? 1).toBe(1);
+  });
+  it('T-039: 이름 = 전부 대문자만 단어 첫 글자로(약어만인 이름·섞인 이름 그대로) · 위치 = "동네, 구"', () => {
+    const { placeNameOf, areaOf } = jest.requireActual('@/lib/api/curationAdapter') as { placeNameOf: (s: string) => string; areaOf: (s: string) => string };
+    expect(placeNameOf('N SEOUL TOWER')).toBe('N Seoul Tower');
+    expect(placeNameOf('SEOUL SKY')).toBe('Seoul Sky');
+    expect(placeNameOf('Dongdaemun Design Plaza')).toBe('Dongdaemun Design Plaza');
+    expect(placeNameOf('DDP')).toBe('DDP');
+    expect(placeNameOf('DDP Museum')).toBe('DDP Museum');
+    expect(areaOf('Bukchon / Jongno-gu')).toBe('Bukchon, Jongno-gu');
+    expect(areaOf('Jongno-gu')).toBe('Jongno-gu');
+  });
+  it('T-039: 카드 스크림 = 띠 위 40부터 3단(0 → 0.35 → 0.6)', () => {
+    const card = src('BlurCaptionCard.tsx');
+    expect(card).toContain("const CARD_SCRIM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.6)'] as const;");
+    expect(card).toMatch(/locations=\{CARD_SCRIM_LOC\}.*top: Math\.max\(0, band\.top - CARD_SCRIM_LEAD\)/);
+  });
+});
+
 describe('KB-846 갤러리 시트 끌어 닫기', () => {
   it('shouldDismiss: 시트 높이 25% 이상 또는 아래로 빠르게(1000px/s) = 닫기 · 위로·작은 끌기 = 되돌림', () => {
     const { shouldDismiss } = jest.requireActual('@/features/curation/CurationGallerySheet') as { shouldDismiss: (y: number, v: number, h: number) => boolean };
@@ -664,7 +743,7 @@ describe('KB-829 QA S3 지역 행 줄바꿈', () => {
 describe('배치·문구 잠금', () => {
   it('홈: 음식 레일 뒤·Safe picks 앞 슬롯에 큐레이션 · 모음 키 하드코딩 0', () => {
     const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8');
-    expect(home).toContain('afterRail={<>{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}</>}'); // KB-836 D1: 배너 → 큐레이션
+    expect(home).toContain('afterRail={<>{FLAGS.processedFoodEnabled && <HomeCvsRail />}{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}</>}'); // KB-836 D1: 배너 → 큐레이션 · KB-955: 편의점 줄이 맨 앞
     expect(home).toContain("queryClient.invalidateQueries({ queryKey: ['curations'] })"); // Codex #303 P2: 당겨서 새로고침에 포함
     const fx = fs.readFileSync('src/features/food/FoodExplorer.tsx', 'utf8');
     expect(fx.indexOf("{variant === 'embedded' && afterRail}")).toBeGreaterThan(fx.indexOf('testID="home-rail"'));

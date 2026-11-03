@@ -10,7 +10,7 @@ import * as React from 'react';
 import { FlatList, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { CardPhoto } from '@/components';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { useAutoSlide } from './useAutoSlide';
 import { useMotionPaused } from '@/lib/useMotionPaused';
 
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   // 히어로 안쪽 하단 중앙 — 위험도 표시는 히어로 밖(본문)이라 겹치지 않는다
   dots: { position: 'absolute', left: 0, right: 0, bottom: 12, flexDirection: 'row', justifyContent: 'center', gap: 6 },
   // 상태 전환은 색만 — 크기 고정(P-151 프레임 불변)
-  dot: { width: 6, height: 6, borderRadius: 3 },
+  dot: { width: 6, height: 6, borderRadius: radius.pill },
 });
 
 export default HeroGallery;

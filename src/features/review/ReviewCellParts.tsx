@@ -8,7 +8,8 @@
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
-import { ActivityIndicator, Keyboard, Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Keyboard, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { useKeyboardLift } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
@@ -96,13 +97,14 @@ export function ExpandableBody({ body, t, style, toggleColor }: { body: string; 
  *  KB-703(예진 10/2): 누른 뒤 사라지는 경우는 없다 — 같은 언어 응답도 일반 번역 결과처럼 표시.
  *  KB-703 ②: 서버가 판별한 리뷰 언어(`review.language`)가 앱 언어와 같으면 라벨을 **처음부터** 숨긴다(유일한 숨김 조건).
  *  null·필드 없음(판별 불가·구서버) = 지금처럼 표시, 안내 문구 없음. 앱 언어는 구독형(useAppLanguage — 렌더 중 싱글턴 직접 읽기 금지, KB-695). */
-export function ReviewBody({ review, t, style, toggleColor }: { review: Review; t: TFn; style?: object; toggleColor?: string }) {
+export function ReviewBody({ review, t, style, toggleColor, autoTranslate = false }: { review: Review; t: TFn; style?: object; toggleColor?: string; /** KB-941: 리뷰 탭 첫 묶음 — 탭 없이 번역문부터 */ autoTranslate?: boolean }) {
   const original = review.body?.trim() ? review.body : null;
-  const tx = useContentTranslation('REVIEW', review.id, original ?? '');
   // 앱 언어 원값과 비교(clampLang 안 거침 — 앱 10개 언어 = 서버 언어 집합. 어긋나면 "다름" = 표시 쪽이라 안전, client 모듈 의존도 안 늘림)
   const appLang = useAppLanguage();
-  if (!original) return null;
   const sameAsApp = review.language != null && review.language === appLang;
+  // KB-941: 같은 언어 = 요청 0 · 판별 불가(null) = 대상(같은 언어 응답이면 KB-703대로 표시)
+  const tx = useContentTranslation('REVIEW', review.id, original ?? '', { auto: autoTranslate && FLAGS.contentTranslation && !sameAsApp, seed: review.serverTranslation });
+  if (!original) return null;
   const label = FLAGS.contentTranslation && !sameAsApp; // 탭 뒤 같은 언어로 판정돼도 숨기지 않는다(KB-703 ①) — 숨김은 처음부터만
   return (
     // 라벨이 있을 때만 래퍼를 카드 gap 안으로 8 올린다 — 라벨 상자(44)의 위 여유가 래퍼(부모) 안에 들어오게(시각 위치 무변)
@@ -125,7 +127,7 @@ export const PEEK_GAP = 8;
 
 /** 사진 가로 스트립 + 탭 = 풀스크린 뷰어(가로 페이징·X 닫기·인덱스).
  *  variant 'tiles'(기본) = 정사각 최대 3장 · 'peek'(KB-817, 리뷰 탭) = 전체 장수 가로 스냅, 4:3, 다음 장이 걸쳐 보임. */
-export function ReviewPhotoStrip({ photos, size = 72, radius = 10, variant = 'tiles' }: { photos: string[]; size?: number; radius?: number; variant?: 'tiles' | 'peek' }) {
+export function ReviewPhotoStrip({ photos, size = 72, radius: tileRadius = radius.md, variant = 'tiles' }: { photos: string[]; size?: number; radius?: number; variant?: 'tiles' | 'peek' }) {
   const [openAt, setOpenAt] = React.useState<number | null>(null);
   const { width } = useWindowDimensions();
   const [page, setPage] = React.useState(0);
@@ -133,7 +135,8 @@ export function ReviewPhotoStrip({ photos, size = 72, radius = 10, variant = 'ti
   const [measured, setMeasured] = React.useState<number | null>(null);
   if (!photos.length) return null;
   const open = (i: number) => { setPage(i); setOpenAt(i); };
-  const tileW = Math.max(0, (measured ?? width - 40) - PEEK_REVEAL);
+  // KB-905(T-073): 1장이면 걸쳐 보일 다음 장이 없다 — 전폭(전엔 80%만 차고 오른쪽 빈 공간)
+  const tileW = Math.max(0, (measured ?? width - 40) - (photos.length > 1 ? PEEK_REVEAL : 0));
   return (
     <>
       {variant === 'peek' ? (
@@ -148,7 +151,7 @@ export function ReviewPhotoStrip({ photos, size = 72, radius = 10, variant = 'ti
           >
             {photos.map((uri, i) => (
               <Pressable key={uri} onPress={() => open(i)} testID={`photo-${i}`}>
-                <RemoteImage uri={uri} style={{ width: tileW, height: (tileW * 3) / 4, borderRadius: 12, backgroundColor: C.surface2 }} />
+                <RemoteImage uri={uri} style={{ width: tileW, height: (tileW * 3) / 4, borderRadius: radius.md, backgroundColor: C.surface2 }} />
               </Pressable>
             ))}
           </ScrollView>
@@ -157,7 +160,7 @@ export function ReviewPhotoStrip({ photos, size = 72, radius = 10, variant = 'ti
       <View style={styles.strip}>
         {photos.slice(0, 3).map((uri, i) => (
           <Pressable key={uri} hitSlop={4} onPress={() => open(i)} testID={`photo-${i}`}>
-            <RemoteImage uri={uri} style={{ width: size, height: size, borderRadius: radius, backgroundColor: C.surface2 }} />
+            <RemoteImage uri={uri} style={{ width: size, height: size, borderRadius: tileRadius, backgroundColor: C.surface2 }} />
           </Pressable>
         ))}
       </View>
@@ -365,8 +368,7 @@ const EXTRA_AXES: { key: keyof ReviewExtras; labelKey: string; Icon: typeof Icon
 
 /** Codex #31 P2: 세부 별 행 폭 적응 — 기본 32/16(=224pt)이 협폭(320 폰·편집 모달)에서
  *  넘침: 가용폭에 맞춰 gap 축소(최소 8) → 그래도 넘치면 별 스케일 다운(시안 비율 유지). */
-export function fitExtrasStars(availW: number): { size: number; gap: number } {
-  const BASE = { size: 32, gap: 16 };
+export function fitExtrasStars(availW: number, BASE = { size: 32, gap: 16 }): { size: number; gap: number } {
   if (availW <= 0 || BASE.size * 5 + BASE.gap * 4 <= availW) return BASE;
   const gap = Math.max(8, Math.floor((availW - BASE.size * 5) / 4));
   if (BASE.size * 5 + gap * 4 <= availW) return { size: BASE.size, gap };
@@ -382,31 +384,59 @@ export function ExtrasRater({
   onChange: (next: ReviewExtras) => void;
   t: TFn;
 }) {
-  const [starW, setStarW] = React.useState(0);
   if (!FLAGS.reviewExtrasEnabled) return null;
+  return <StarAxisRater axes={EXTRA_AXES} values={extras} onChange={onChange} t={t} />;
+}
+
+/** KB-865 ④(시안 32): 가공식품 맵기·당도 — 같은 행 문법(라벨 + 작은 별 5, 재탭 = 해제), 별 28 gap 12 · 거터 = 본문 패딩 */
+export const PACKAGED_TASTE_AXES = [
+  { key: 'spiciness', labelKey: 'review.spiciness' },
+  { key: 'sweetness', labelKey: 'review.sweetness' },
+] as const;
+const PACKAGED_STARS = { size: 28, gap: 12 };
+
+/** 축별 작은 별 행(1~5 선택 · 같은 별 재탭 = null) — 음식 세부 별점(ExtrasRater)·가공식품 맵기·당도 공용 */
+export function StarAxisRater<K extends string>({
+  axes,
+  values,
+  onChange,
+  t,
+  packaged = false,
+}: {
+  axes: readonly { key: K; labelKey: string }[];
+  values: Record<K, number | null>;
+  onChange: (next: Record<K, number | null>) => void;
+  t: TFn;
+  packaged?: boolean;
+}) {
+  const [starW, setStarW] = React.useState(0);
   // KB-432 §2-4(4150:16482): 2행 mx39 gap18 — 라벨 13/500 + 수치 13/600 / 별 32 gap 16(빈 stroke 2)
-  const { size, gap } = fitExtrasStars(starW);
+  const { size, gap } = fitExtrasStars(starW, packaged ? PACKAGED_STARS : undefined);
+  const tid = packaged ? 'taste' : 'extras'; // 음식 testID 무변
   return (
-    <View style={styles.extrasBox} testID="review-extras">
-      {EXTRA_AXES.map(({ key, labelKey }) => (
-        <View key={key} style={styles.extrasRow} testID={`extras-row-${key}`}>
+    <View style={[styles.extrasBox, packaged && styles.extrasBoxPackaged]} testID={packaged ? 'review-taste' : 'review-extras'}>
+      {axes.map(({ key, labelKey }) => (
+        <View key={key} style={styles.extrasRow} testID={`${tid}-row-${key}`}>
           <View style={styles.extrasLabelWrap}>
             <Text style={styles.extrasLabel} numberOfLines={1}>{t(labelKey)}</Text>
-            {extras[key] != null && <Text style={styles.extrasValue}>{extras[key]}</Text>}
+            {!packaged && values[key] != null && <Text style={styles.extrasValue}>{values[key]}</Text>}
           </View>
           <View
             style={{ flexDirection: 'row', gap, flexShrink: 1 }}
             onLayout={(e) => setStarW((cur) => (cur === 0 ? e.nativeEvent.layout.width : cur))}
-            testID={`extras-stars-${key}`}
+            testID={`${tid}-stars-${key}`}
           >
             {[1, 2, 3, 4, 5].map((n) => (
               <Pressable
                 key={n}
                 hitSlop={5}
-                testID={`extras-${key}-${n}`}
-                onPress={() => onChange({ ...extras, [key]: extras[key] === n ? null : n })} // 재탭 = 해제
+                testID={`${tid}-${key}-${n}`}
+                {...(packaged // 음식 세부 별점은 무변(KB-865 ④ 범위 밖)
+                  ? { accessibilityRole: 'button' as const, accessibilityLabel: t('review.tasteStarA11y', { axis: t(labelKey), count: n }), accessibilityState: { selected: values[key] === n } }
+                  : {})}
+                onPress={() => onChange({ ...values, [key]: values[key] === n ? null : n })} // 재탭 = 해제
               >
-                <Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} />
+                <Star size={size} fillPct={(values[key] ?? 0) >= n ? 100 : 0} />
               </Pressable>
             ))}
           </View>
@@ -494,24 +524,25 @@ export function HelpfulButton({
 
 
 const styles = StyleSheet.create({
-  body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
+  body: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20 },
   // P-202: 3축 섹션(작성·수정 공용) + 셀 축약 — 기본 스타일(디자이너 폴리시 전)
   // KB-432 §2-4: 카드 박스 소멸 — mx 39 플랫 2행
   extrasBox: { gap: 18, marginHorizontal: 20 }, // P-348 ⑦: 39는 ko/id 라벨+별 5개 공존 불가(i18n 예외)
+  extrasBoxPackaged: { marginHorizontal: 0 }, // KB-865 ④ 시안 32: 라벨 = 본문 거터(20)
   extrasRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   extrasLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 }, // A-RW-04 → P-348 ⑦: 라벨 고정(별 행이 축소)
-  extrasLabel: { fontSize: 13, fontWeight: '500', color: C.ink2 },
-  extrasValue: { fontSize: 13, fontWeight: '600', color: '#2F3137' },
+  extrasLabel: { fontSize: 14, fontWeight: '500', color: C.ink2 },
+  extrasValue: { fontSize: 14, fontWeight: '600', color: '#2F3137' },
   extrasLine: { flexDirection: 'row', gap: 8, alignSelf: 'flex-start' },
   extrasChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  extrasChipText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3 },
+  extrasChipText: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink3 },
   // P-201: 장소 줄 — 핀+이름 한 줄(조용한 톤), 탭 = 지도 시트
   // P-196: Helpful — 상태별 색만 전환(프레임 불변): 기본 ink2 · 내 토글 primary · 본인 ink3
   // 9/5 시안 실측(4123:3696): 흰 bg + border #EAEBEE 1px r4, h30 pad 7/13, gap 4, 12/500 #2F3137
-  helpfulBtn: { minWidth: 61, height: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 4, backgroundColor: '#FFFFFF' }, // P-342 ① 2R: 시안 61 = 보더 포함 — pad 12/6+border 1, 2자리 = 61·99+만 자연 확장
+  helpfulBtn: { minWidth: 61, height: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: radius.pill, backgroundColor: '#FFFFFF' }, // P-342 ① 2R: 시안 61 = 보더 포함 — pad 12/6+border 1, 2자리 = 61·99+만 자연 확장
   helpfulBtnOn: { borderColor: C.primary }, // 눌림 = 스트로크 색만(프레임 불변)
-  helpfulCount: { fontSize: 12, fontWeight: '700', color: '#2F3137', fontVariant: ['tabular-nums'] }, // P-342 ①
-  helpful: { fontSize: 12, fontWeight: '500', color: '#2F3137' },
+  helpfulCount: { fontSize: 13, fontWeight: '700', color: '#2F3137', fontVariant: ['tabular-nums'] }, // P-342 ①
+  helpful: { fontSize: 13, fontWeight: '500', color: '#2F3137' },
   helpfulOn: { color: C.primaryText },
   helpfulMine: { color: C.ink3 },
   strip: { flexDirection: 'row', gap: 6 },
@@ -520,32 +551,32 @@ const styles = StyleSheet.create({
   viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.94)', justifyContent: 'center' },
   viewerClose: { position: 'absolute', top: 54, right: 18 },
   dots: { position: 'absolute', bottom: 42, alignSelf: 'center', flexDirection: 'row', gap: 6 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.35)' },
+  dot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.35)' },
   dotOn: { backgroundColor: '#fff' },
   editBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 },
-  editCard: { backgroundColor: C.card, borderRadius: 26, padding: 20, gap: 12, ...shadow.shPop },
+  editCard: { backgroundColor: C.card, borderRadius: radius.xl, padding: 20, gap: 12, ...shadow.shPop },
   editTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
   editStars: { flexDirection: 'row', justifyContent: 'center', gap: 8 },
-  editInput: { minHeight: 110, maxHeight: 220, backgroundColor: C.surface2, borderRadius: radius.sm, padding: 12, fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 20 },
+  editInput: { minHeight: 110, maxHeight: 220, backgroundColor: C.surface2, borderRadius: radius.md, padding: 12, fontFamily: font.body, fontSize: 16, color: C.ink, lineHeight: 23 },
   // P-201: 수정 시트 장소 행/칩 — 작성 화면 문법 축약
-  editPlaceChip: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.surface2, borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 10 },
-  editPlaceText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
+  editPlaceChip: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.surface2, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 10 },
+  editPlaceText: { flex: 1, fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
   editPlaceRow: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 2 },
-  editPlaceAdd: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
+  editPlaceAdd: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
   // P-201: 장소 픽커 시트 (review.tsx P-095 스타일 이식 — 작성·수정 공용화로 이동)
   pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   // P-355(KB-517): 음식 선택 시트 — 드래그 페이드는 dim 레이어(compose P-337 문법)
-  pickerSheet: { height: '92%', backgroundColor: C.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, gap: 20, ...shadow.sh2 }, // A-RW-11
+  pickerSheet: { height: '92%', backgroundColor: C.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: 16, gap: 20, ...shadow.sh2 }, // A-RW-11
   pickerHeader: { alignItems: 'center' }, // A-RW-11(중앙)
   pickerTitle: { fontSize: 18, fontWeight: '600', color: C.ink }, // A-RW-11
-  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: 4, paddingLeft: 16, paddingRight: 14 }, // A-RW-11(Input/Search DS)
-  searchInput: { flex: 1, paddingVertical: 14, fontSize: 15, fontWeight: '500', color: C.ink }, // A-RW-11(h48)
+  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: radius.md, paddingLeft: 16, paddingRight: 14 }, // A-RW-11(Input/Search DS)
+  searchInput: { flex: 1, paddingVertical: 14, fontSize: 16, fontWeight: '500', color: C.ink }, // A-RW-11(h48)
   // KB-432 §2-10: 라벨 12/500 · 행 h66(장소명 15/600 / 주소 13/500 #6A6F7C)
-  recentLbl: { fontSize: 12, fontWeight: '500', color: C.ink3 },
+  recentLbl: { fontSize: 13, fontWeight: '500', color: C.ink3 },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 66, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.line }, // A-RW-11(핀 인라인 gap 2)
-  resultText: { fontSize: 15, fontWeight: '600', color: C.ink },
-  resultSub: { fontSize: 13, fontWeight: '500', color: C.ink2, marginTop: 1 },
-  noResults: { fontFamily: font.body, fontSize: 13, color: C.ink3, textAlign: 'center', paddingVertical: 26 },
+  resultText: { fontSize: 16, fontWeight: '600', color: C.ink },
+  resultSub: { fontSize: 14, fontWeight: '500', color: C.ink2, marginTop: 1 },
+  noResults: { fontFamily: font.body, fontSize: 14, color: C.ink3, textAlign: 'center', paddingVertical: 26 },
   // §2-10 FixedBottom
   sheetBottom: { flexDirection: 'row', gap: 16, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line }, // 하단 = 8 + bottomInset(인라인)
   sheetBottomSkip: { flexShrink: 0, minWidth: 119 },

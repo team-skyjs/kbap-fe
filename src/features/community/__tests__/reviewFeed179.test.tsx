@@ -36,7 +36,7 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 const mockPush = jest.fn();
-jest.mock('expo-router', () => ({
+jest.mock('expo-router', () => ({ useScrollToTop: () => {},
   useSegments: () => [], // P-214: 계측 화면 식별(StateBlock·HelpfulButton)
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/community',
@@ -76,7 +76,10 @@ const mockMe = jest.fn(() => ({ data: { id: '9', nationality: 'US' } as { id: st
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 })); // KB-499: 헤더 배지 = react-query 훅 — 이 스위트는 Provider 없이 렌더
 const mockFeed = jest.fn();
-jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: (enabled: boolean, filters: unknown) => mockFeed(enabled, filters) }));
+jest.mock('@/lib/data/useFoodReviews', () => ({
+  useGlobalReviews: (enabled: boolean, filters: unknown) => mockFeed(enabled, filters),
+  globalReviewsKey: jest.requireActual('@/lib/data/useFoodReviews').globalReviewsKey, // KB-958: 첫 장 줄이기 = 활성 피드 키(실제 키 규칙)
+}));
 
 import { ReviewFeed } from '../ReviewFeed';
 
@@ -142,7 +145,7 @@ it('KB-847(#288 revert): 리뷰 탭 = main 카드(FeedCard) — 리뷰 상세 �
   const tree = render();
   expect(tree.root.findAll((n) => n.props?.testID === 'review-card-r1')).toHaveLength(0); // #288 리뷰 탭 카드 소멸
   act(() => tree.root.findAll((n) => n.props?.testID === 'feed-food-r2')[0].props.onPress());
-  expect(mockPush).toHaveBeenCalledWith('/processed-foods/1711');
+  expect(mockPush).toHaveBeenCalledWith('/processed-foods/1711?src=review'); // KB-973 상세 진입 출처
   expect(mockPush.mock.calls.some(([h]) => String(h).startsWith('/review/'))).toBe(false);
   // Codex #321: ⋯ 수정 = 대상별 작성 화면(가공식품 = 제품 리뷰 편집 — 빈 foodId "/food//review" 0)
   const onEdit = mockModFlow.mock.calls[mockModFlow.mock.calls.length - 1][0].onEdit;
@@ -201,6 +204,60 @@ it('소스 잠금(P-289 재잠금) — 리뷰 생존 분기가 coming-soon 가�
   expect(liveIdx).toBeGreaterThan(-1);
   expect(guardIdx).toBeGreaterThan(liveIdx);
   expect(tab).toContain('PostCard'); // 글 피드 코드 보존
+});
+
+describe('KB-954(P-570): 탭바 재탭·진입 = 첫 페이지만 재조회(다른 폰 리뷰가 GNB를 눌러도 안 보이던 것)', () => {
+  const { queryClient } = jest.requireActual('@/lib/queryClient') as typeof import('@/lib/queryClient');
+  const { emitTabPress } = jest.requireActual('@/lib/tabPress') as typeof import('@/lib/tabPress');
+  const KEY = ['reviews', 'global', 'all', 'all', 'latest', 0, 5, 'ALL']; // KB-966: 끝 = targetType(All)
+  const twoPages = () => queryClient.setQueryData(KEY, { pages: [{ items: [REVIEW] }, { items: [] }], pageParams: [null, 'c2'] });
+  const feedWith = (refetch: jest.Mock) => mockFeed.mockReturnValue({
+    data: { pages: [{ items: [REVIEW], hasNext: true, nextCursor: 'c2' }] },
+    isLoading: false, isError: false, error: null, refetch, isStale: false,
+    hasNextPage: true, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+  });
+  afterEach(() => queryClient.removeQueries({ queryKey: ['reviews', 'global'] }));
+
+  it('다른 탭에서 진입(enter) = stale 아니어도 재조회 · 불러온 페이지는 첫 장만 남김(전 페이지 순차 재요청 0, 데이터는 유지)', () => {
+    const refetch = jest.fn().mockResolvedValue(undefined);
+    feedWith(refetch);
+    twoPages();
+    render();
+    act(() => emitTabPress('community', 'enter'));
+    expect(refetch).toHaveBeenCalledTimes(1);
+    const d = queryClient.getQueryData<{ pages: unknown[]; pageParams: unknown[] }>(KEY)!;
+    expect([d.pages.length, d.pageParams]).toEqual([1, [null]]);
+  });
+  it('KB-958(Codex #388 2R P2): 첫 장 줄이기 = 지금 보는 피드 키만 — 비활성 정렬·국적 변형은 페이지·updatedAt·isInvalidated 무변', () => {
+    const refetch = jest.fn().mockResolvedValue(undefined);
+    feedWith(refetch);
+    twoPages(); // 활성(latest·국적 없음)
+    const OTHER = ['reviews', 'global', 'KR', 'all', 'popular', 0, 5, 'ALL'];
+    queryClient.setQueryData(OTHER, { pages: [{ items: [] }, { items: [] }], pageParams: [null, 'x2'] });
+    const before = queryClient.getQueryState(OTHER)!;
+    render();
+    act(() => emitTabPress('community', 'enter'));
+    expect(queryClient.getQueryData<{ pages: unknown[] }>(KEY)!.pages).toHaveLength(1);
+    const after = queryClient.getQueryState(OTHER)!;
+    expect(queryClient.getQueryData<{ pages: unknown[] }>(OTHER)!.pages).toHaveLength(2);
+    expect([after.dataUpdatedAt, after.isInvalidated]).toEqual([before.dataUpdatedAt, before.isInvalidated]);
+  });
+  it('이미 Reviews에서 재탭(reselect) = 같은 첫 페이지 재조회 + 스피너(RefreshControl refreshing) · 다른 탭 신호엔 반응 0', async () => {
+    let done!: () => void;
+    const refetch = jest.fn(() => new Promise<void>((r) => { done = r; }));
+    feedWith(refetch);
+    twoPages();
+    const tree = render();
+    act(() => emitTabPress('index', 'reselect'));
+    expect(refetch).not.toHaveBeenCalled();
+    act(() => emitTabPress('community', 'reselect'));
+    await act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); }); // QA Q-388 ②: 맨 위 이동 → 다음 프레임 새로고침
+    expect(refetch).toHaveBeenCalledTimes(1);
+    const { RefreshControl } = jest.requireActual('react-native') as typeof import('react-native');
+    expect(tree.root.findAllByType(RefreshControl)[0].props.refreshing).toBe(true);
+    await act(async () => { done(); await Promise.resolve(); await Promise.resolve(); });
+    expect(tree.root.findAllByType(RefreshControl)[0].props.refreshing).toBe(false);
+  });
 });
 
 describe('P-194: 당겨서 새로고침 + 포커스 stale 재조회', () => {
@@ -440,7 +497,9 @@ it('KB-777 B3-7: 작은 화면 판정(폭<360 또는 높이<700) · 기본 화�
   const { isCompactFabScreen } = jest.requireActual('../ReviewFeed') as { isCompactFabScreen: (w: number, h: number) => boolean };
   expect([isCompactFabScreen(360, 640), isCompactFabScreen(320, 800), isCompactFabScreen(375, 667), isCompactFabScreen(390, 844), isCompactFabScreen(360, 760)]).toEqual([true, true, true, false, false]);
   const RN = jest.requireActual('react-native');
+  const normal = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1 }); // KB-903: jest 기본 fontScale 2 = 큰 글자
   const big = render();
+  normal.mockRestore();
   const fab = () => big.root.findAll((n) => n.props?.testID === 'feed-write-fab' && typeof n.type === 'string')[0];
   expect(big.root.findAll((n) => n.props?.testID === 'feed-write-fab-label')).not.toHaveLength(0);
   expect(fab().props.accessibilityLabel).toBe('reviews.writeReview');
@@ -449,7 +508,7 @@ it('KB-777 B3-7: 작은 화면 판정(폭<360 또는 높이<700) · 기본 화�
   const sfab = small.root.findAll((n) => n.props?.testID === 'feed-write-fab' && typeof n.type === 'string')[0];
   expect(small.root.findAll((n) => n.props?.testID === 'feed-write-fab-label')).toHaveLength(0);
   const st = RN.StyleSheet.flatten(sfab.props.style);
-  expect({ w: st.width, h: st.height, r: st.borderRadius }).toEqual({ w: 36, h: 36, r: 18 });
+  expect({ w: st.width, h: st.height, r: st.borderRadius }).toEqual({ w: 36, h: 36, r: 999 });
   // Codex #306 P2: 터치 = 36 + hitSlop 4×2 = 44, hitSlop은 부모(화면) 안 — right 14·bottom 18 ≥ 4
   const slop = sfab.props.hitSlop;
   expect(36 + slop * 2).toBeGreaterThanOrEqual(44);
@@ -457,4 +516,97 @@ it('KB-777 B3-7: 작은 화면 판정(폭<360 또는 높이<700) · 기본 화�
   expect(fab().props.hitSlop).toBeUndefined(); // 일반 화면 필은 그대로
   expect(sfab.props.accessibilityLabel).toBe('reviews.writeReview');
   spy.mockRestore();
+});
+
+// KB-903(T-022): 필이 스크롤 중·큰 글자에서 리뷰 본문을 덮었다 — 원형으로 줄이고, 멈추고 300ms 뒤 필
+it('KB-903 T-022: 큰 글자(1.3배↑) = 처음부터 원형 · 스크롤 시작 = 원형 → 멈춘 뒤 300ms = 필', () => {
+  jest.useFakeTimers();
+  const RN = jest.requireActual('react-native');
+  const { fabCompactFor, FAB_IDLE_MS } = jest.requireActual('../ReviewFeed') as { fabCompactFor: (w: number, h: number, f: number, s: boolean) => boolean; FAB_IDLE_MS: number };
+  expect([fabCompactFor(390, 844, 1, false), fabCompactFor(390, 844, 1.3, false), fabCompactFor(390, 844, 1, true)]).toEqual([false, true, true]);
+  const label = (t: ReturnType<typeof render>) => t.root.findAll((n) => n.props?.testID === 'feed-write-fab-label').length;
+  const spy = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1 });
+  const tree = render();
+  expect(label(tree)).toBeGreaterThan(0);
+  const list = tree.root.findAll((n) => typeof n.props?.onScrollBeginDrag === 'function' && typeof n.props?.onMomentumScrollEnd === 'function')[0];
+  act(() => { list.props.onScrollBeginDrag(); });
+  expect(label(tree)).toBe(0);
+  act(() => { list.props.onScrollEndDrag(); list.props.onMomentumScrollBegin(); }); // 관성이 이어지면 원형 유지
+  act(() => { jest.advanceTimersByTime(FAB_IDLE_MS + 50); });
+  expect(label(tree)).toBe(0);
+  act(() => { list.props.onMomentumScrollEnd(); });
+  act(() => { jest.advanceTimersByTime(FAB_IDLE_MS - 50); });
+  expect(label(tree)).toBe(0);
+  act(() => { jest.advanceTimersByTime(100); });
+  expect(label(tree)).toBeGreaterThan(0);
+  spy.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1.3 });
+  const bigText = render();
+  expect(label(bigText)).toBe(0);
+  spy.mockRestore();
+  jest.useRealTimers();
+});
+
+describe('KB-966(예진 11/2): 대상 세그먼트 All · Dishes · Packaged', () => {
+  const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { processedFoodEnabled: boolean } };
+  const prev = FLAGS.processedFoodEnabled;
+  afterEach(() => { FLAGS.processedFoodEnabled = prev; });
+  const chip = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === `feed-target-${id}` && typeof n.props?.onPress === 'function')[0];
+  const lastFilters = () => mockFeed.mock.calls.at(-1)?.[1] as { targetType?: string | null };
+  const PACKAGED = { ...REVIEW, id: 'p1', target: 'packaged', processedFoodId: '11', foodId: undefined, foodName: 'Shrimp Crackers' };
+
+  it('기본 All(파라미터 0) · Dishes = FOOD · Packaged = PROCESSED_FOOD · 다시 All = 생략 — 결과는 그 필터의 페이지', () => {
+    FLAGS.processedFoodEnabled = true;
+    mockFeed.mockImplementation((_e: boolean, f: { targetType?: string | null }) => ({
+      data: { pages: [{ items: f.targetType === 'PROCESSED_FOOD' ? [PACKAGED] : f.targetType === 'FOOD' ? [REVIEW] : [REVIEW, PACKAGED], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: false, error: null, refetch: jest.fn(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    }));
+    const t = render();
+    const shown = () => JSON.stringify(t.toJSON(), (_k, v) => (v && typeof v === 'object' && (v.$$typeof === Symbol.for('react.element') || v.$$typeof === Symbol.for('react.transitional.element')) ? undefined : v));
+    expect(lastFilters().targetType ?? null).toBeNull();
+    expect(chip(t, 'all').props).toBeDefined();
+    expect(shown()).toContain('Server Kimbap');
+    expect(shown()).toContain('Shrimp Crackers');
+    act(() => chip(t, 'food').props.onPress());
+    expect(lastFilters().targetType).toBe('FOOD');
+    expect(shown()).not.toContain('Shrimp Crackers');
+    act(() => chip(t, 'packaged').props.onPress());
+    expect(lastFilters().targetType).toBe('PROCESSED_FOOD');
+    expect(shown()).toContain('Shrimp Crackers');
+    expect(shown()).not.toContain('Server Kimbap');
+    act(() => chip(t, 'all').props.onPress());
+    expect(lastFilters().targetType ?? null).toBeNull();
+  });
+
+  it('KB-973: review_feed_target_select = 바뀔 때만(all|food|packaged)', () => {
+    FLAGS.processedFoodEnabled = true;
+    mockFeed.mockImplementation(() => ({ data: { pages: [{ items: [REVIEW], hasNext: false, nextCursor: null }] }, isLoading: false, isError: false, error: null, refetch: jest.fn(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }));
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const analytics = require('@/lib/analytics') as typeof import('@/lib/analytics');
+    const track = jest.spyOn(analytics, 'track');
+    try {
+      const t = render();
+      act(() => chip(t, 'all').props.onPress()); // 이미 All = 0
+      act(() => chip(t, 'packaged').props.onPress());
+      act(() => chip(t, 'packaged').props.onPress()); // 같은 것 = 0
+      act(() => chip(t, 'food').props.onPress());
+      expect(track.mock.calls.filter((c) => c[0] === 'review_feed_target_select').map((c) => c[1])).toEqual([{ target: 'packaged' }, { target: 'food' }]);
+    } finally {
+      track.mockRestore();
+    }
+  });
+
+  it('선택 = 색만(프레임 불변 — 공용 Chip) · 라벨 = 기존 키 재사용(신규 문구 0)', () => {
+    FLAGS.processedFoodEnabled = true;
+    const t = render();
+    const chips = t.root.findAll((n) => typeof n.props?.label === 'string' && /^feed-target-/.test(n.props?.testID ?? ''));
+    expect(chips.map((n) => n.props.label)).toEqual(['home.filterAll', 'packaged.segmentDishes', 'packaged.segmentPackaged']);
+    expect(chips.map((n) => n.props.selected)).toEqual([true, false, false]);
+  });
+
+  it('processedFoodEnabled OFF(운영) = 세그먼트 미노출 · 파라미터 0', () => {
+    FLAGS.processedFoodEnabled = false;
+    const t = render();
+    expect(t.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('feed-target'))).toHaveLength(0);
+    expect(lastFilters().targetType ?? null).toBeNull();
+  });
 });

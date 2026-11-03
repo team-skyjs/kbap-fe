@@ -29,7 +29,7 @@ it('③④ 사진 슬롯 = 아이콘만 + 탭 = 촬영/갤러리 시트(choosePh
   expect(rv).not.toContain('photoCap:'); // 스타일 소멸(photoCapNote 스낵바 키는 별개)
   expect(rv).not.toContain('photosLabel');
   expect(rv).toContain('choosePhotoSource({');
-  expect(rv).toContain("ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 })");
+  expect(rv).toContain("launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 })"); // KB-873 ②a: occlusionPickers 래퍼 경유
   expect(rv).toContain('requestCameraPermissionsAsync');
   expect(rv).toContain("t('scan.permissionSettingsBody')"); // 거부 = 설정 유도(스캔 동일)
   expect(rv).not.toContain("require('expo-document-picker')"); // 파일 선택 = 비범위(TODO — 주석 언급만 허용)
@@ -37,7 +37,7 @@ it('③④ 사진 슬롯 = 아이콘만 + 탭 = 촬영/갤러리 시트(choosePh
 
 it('⑤ 키보드 — 수동 kbH 패딩 소멸 + (KB-700) iOS = 화면 KeyboardAvoidingView(padding) · 시스템 인셋 제거(이중 방지) · 커서 추종 실측 유지', () => {
   const rv = read('src/app/food/[id]/review.tsx');
-  expect(rv).toContain('{ paddingBottom: 28 }');
+  expect(rv).toContain('contentContainerStyle={[styles.body, { paddingBottom: 16 }]}'); // KB-903: 알약 바가 흐름 안 — 바 높이 여백 불필요
   expect(rv).not.toContain('28 + kbH');
   expect(rv).toContain("<KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR}"); // KB-768: 두 플랫폼 padding(안드 edge-to-edge)
   expect(rv).not.toContain('automaticallyAdjustKeyboardInsets={');

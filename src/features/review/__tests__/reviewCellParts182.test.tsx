@@ -224,10 +224,10 @@ describe('KB-817 리뷰 탭 peek', () => {
     act(() => tree.root.findAll((n) => n.props?.testID === 'photo-3')[0].props.onPress());
     expect(tree.root.findByType(PhotoViewer).props).toMatchObject({ index: 3, uris: photos });
   });
-  it('1장 = 스크롤 없이 같은 크기 1장 · 0장 = 미렌더', () => {
+  it('1장 = 스크롤 없이 전폭 1장(KB-905 T-073 — 걸쳐 보일 다음 장이 없으니 오른쪽 40 비우지 않음) · 0장 = 미렌더', () => {
     const one = render(<ReviewPhotoStrip photos={[photos[0]]} variant="peek" />);
     measure(one, 335);
-    expect(tile(one, 0)).toMatchObject({ width: 295, height: 221.25 });
+    expect(tile(one, 0)).toMatchObject({ width: 335, height: 251.25 });
     expect(one.root.findByType(ScrollView).props.scrollEnabled).toBe(false);
     expect(render(<ReviewPhotoStrip photos={[]} variant="peek" />).toJSON()).toBeNull();
   });

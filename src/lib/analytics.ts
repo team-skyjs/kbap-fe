@@ -1,3 +1,4 @@
+import { resumeEngagementIdentity, suspendEngagementIdentity } from './engagement/visitRuntime';
 import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type EngagementEvent } from './engagement/schema';
 
 /**
@@ -94,6 +95,7 @@ export const EVENTS = {
   push_permission: 'push_permission', // OS 팝업 결과·설정 열기
   push_consent_response: 'push_consent_response', // 광고성 동의 시트 클릭
   push_settings_tap: 'push_settings_tap', // 알림 설정 화면 보조 클릭(토글은 push_pref_toggle)
+  push_open: 'push_open', // KB-629: 푸시 알림 탭으로 앱 진입(콜드 스타트·백그라운드 공통, 탭 1번 = 1회)
   profile_avoid_update: 'profile_avoid_update',
   community_post_submit: 'community_post_submit',
   community_comment_submit: 'community_comment_submit',
@@ -132,7 +134,17 @@ export const EVENTS = {
   home_idol_pick_list_view: 'home_idol_pick_list_view', // KB-836 K-POP & K-FOOD 목록 화면 포커스(음식 수) — 발주명 idol_pick_list_view → 도메인 규칙상 home_
   food_idol_video_open: 'food_idol_video_open', // KB-836 발주명 idol_video_open → 도메인 규칙상 food_ · 상세 티저 카드 → 대표 영상 열기(platform 은 계측 전용 — 화면 비노출, URL 금지)
   food_packaged_detail_expand: 'food_packaged_detail_expand', // KB-865 상세 원재료·출처 펼침/접기(action see_detail|ingredients_source|see_less) — 제품명 0, id만
+  food_packaged_scan_find_by_name: 'food_packaged_scan_find_by_name', // KB-865 ③ 스캔 "이름으로 찾기" 진입(from none|rejected) — 읽은 글자 원문 0
   food_packaged_type_select: 'food_packaged_type_select', // KB-865 v4 목록 유형 칩(all|snacks|ramen|drinks|bread)
+  // KB-968: 가공식품 출시 코치마크 2단계(step = home|food) — food_packaged_* 접두(기존 가공식품 이벤트와 같은 도메인)
+  food_packaged_coach_shown: 'food_packaged_coach_shown',
+  food_packaged_coach_next: 'food_packaged_coach_next',
+  food_packaged_coach_skip: 'food_packaged_coach_skip',
+  // KB-973 가공식품 출시 계측 보강 — 촬영 시작(scan_start는 메뉴 시계열 그대로 두고 따로)·이름 검색/확정 실패·세그먼트·리뷰 탭 대상 필터
+  food_packaged_scan_start: 'food_packaged_scan_start',
+  food_packaged_scan_fail: 'food_packaged_scan_fail',
+  food_segment_select: 'food_segment_select',
+  review_feed_target_select: 'review_feed_target_select',
   food_packaged_label_scan: 'food_packaged_label_scan', // P-508 성분표 분석 결과(pages 1~4 · charged = 서버값 · result ok|unreadable|newAnalysis|expired|quota|network… — OCR 원문 금지)
 } as const;
 
@@ -163,7 +175,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   order_card_open: ['item_count', 'has_avoids'],
   // P-214 🔒: keyword = **카탈로그 매칭 시에만**(호출처 searchKeywordProps가 판정) —
   // 자유 텍스트는 matched:false + len_bucket만(알레르기·신념 추론 차단)
-  search_query: ['keyword', 'result_count', 'matched', 'len_bucket'],
+  search_query: ['keyword', 'result_count', 'matched', 'len_bucket', 'segment', 'packaged_count'], // KB-967 segment: all|dishes|packaged(결과 칩 — 가공식품 꺼진 채널 = dishes) · packaged_count = 가공식품 첫 페이지 건수(켜진 채널·성공 때만 — result_count는 음식 건수 그대로)
   review_write_tap: ['source', 'target_type'], // KB-812 2차 target_type: food|packaged(생략 = food — 음식 진입점은 무변)
   food_bookmark_toggle: ['on'],
   // P-389(KB-576): user_type = BE 토큰 유무(guest|registered) — 탭별 회원/게스트 분해용.
@@ -186,36 +198,45 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   screen_view: ['screen'],
   ui_click: ['screen', 'target'],
   home_section_view: ['section'],
-  home_card_view: ['section', 'position', 'food_id'],
-  home_card_click: ['section', 'position', 'food_id', 'collection_key'], // KB-796: section=curation이면 collection_key(서버 모음 키)
+  home_card_view: ['section', 'position', 'food_id', 'product_id'], // KB-973: cvs = product_id(home_card_click과 같은 규칙 — food_id에 섞지 않는다)
+  home_card_click: ['section', 'position', 'food_id', 'collection_key', 'product_id'], // KB-796: section=curation이면 collection_key(서버 모음 키) · KB-955: section=cvs면 product_id
   home_curation_link_click: ['collection_key', 'position'],
   food_packaged_search: ['query_length', 'result_count'],
-  food_packaged_detail_view: ['product_id', 'label_source'],
+  food_packaged_detail_view: ['product_id', 'label_source', 'source'], // KB-973 source: search|home_cvs|list|scan|review|deeplink
   home_curation_gallery_open: ['collection_key', 'entry_id'],
   home_curation_gallery_swipe: ['collection_key', 'entry_id', 'index'],
   home_curation_map_open: ['collection_key', 'entry_id'],
   home_curation_map_select: ['collection_key', 'entry_id', 'provider'],
   scan_mode_select: ['mode'],
-  food_packaged_scan_name: ['candidate_count'],
+  food_packaged_scan_name: ['candidate_count', 'photo_attached'], // KB-892: 사진·경로는 싣지 않음(동봉 여부만)
   food_packaged_scan_confirm: ['charged', 'rejected'],
   food_packaged_scan_handoff: ['from'],
   home_idol_pick_list_view: ['count'],
   food_idol_video_open: ['food_id', 'platform', 'video_position'],
   food_packaged_label_scan: ['pages', 'charged', 'result'],
+  food_packaged_scan_start: ['mode', 'source'], // mode packaged(앞면)|label(성분표) · source camera|gallery(scan_start와 같은 값)
+  food_packaged_scan_fail: ['stage', 'result'], // stage name(이름 인식)|confirm(확정) · result = scanFailureOf(network|quota|… — 성분표 food_packaged_label_scan result와 같은 값)
+  food_segment_select: ['segment', 'source'], // segment dishes|packaged · source tap|coach|see_all
+  review_feed_target_select: ['target'], // all|food|packaged
   food_packaged_type_select: ['type'],
+  food_packaged_coach_shown: ['step'],
+  food_packaged_coach_next: ['step'],
+  food_packaged_coach_skip: ['step'],
+  food_packaged_scan_find_by_name: ['from'],
   food_packaged_detail_expand: ['product_id', 'action'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open
   error_state_view: ['screen', 'kind', 'action'], // kind: error|offline|empty · action: view|retry
   review_helpful_toggle: ['on', 'surface', 'target_type'], // KB-812 2차 target_type: food|packaged
-  review_translate_toggle: ['action', 'target', 'result'], // action: translate|original · target: review|post · result: ok|fail|same(KB-679 — 번역 시도 결과, original엔 없음 · KB-689 same = 원문 언어 == 요청 언어)
+  review_translate_toggle: ['action', 'target', 'result', 'source'], // action: translate|original · target: review|post · result: ok|fail|same(KB-679 — 번역 시도 결과, original엔 없음 · KB-689 same = 원문 언어 == 요청 언어) · source: auto(KB-941 리뷰 탭 첫 묶음 자동 — 수동 탭엔 없음)
   push_primer_response: ['action', 'surface'], // accept|later · onboarding|scan
   push_pref_toggle: ['key', 'on'],
   // KB-630 — 값은 enum만(문구·URL 금지). state 체계는 scan_permission 준용.
   push_permission: ['state'], // grant|deny|settings_open
   push_consent_response: ['action', 'target'], // action: check|uncheck|full_text|blocked|later · target: privacy|receive(check·uncheck·full_text만)
   push_settings_tap: ['target'], // news_off_cancel|consent_full|retry_save|retry_load
+  push_open: ['type'], // KB-629: PUSH_TYPES 값만(HELPFUL|SCAN_SUGGESTION|REVIEW_REMINDER|NEWS|MEAL_TIME) — 미지 유형 = 속성 생략
   profile_avoid_update: ['count', 'delta', 'via'], // via: manual|preset (항목명 금지 — 개수만)
   community_post_submit: ['photo_count', 'food_tag_count', 'has_place'], // 장소명 금지 — boolean만
   community_comment_submit: ['is_reply'],
@@ -263,6 +284,13 @@ export function sanitize(event: EventName, props?: Record<string, unknown>): Rec
   return Object.fromEntries(Object.entries(props).filter(([k]) => allowed.includes(k)));
 }
 
+/** KB-973: 가공식품 상세 진입 출처 — 앱 안 진입점은 ?src= 태그, 스캔 확정은 ?scan=1, 그 밖(태그 없음) = deeplink(푸시·외부 링크) */
+export const PACKAGED_DETAIL_SOURCES = ['search', 'home_cvs', 'list', 'scan', 'review', 'deeplink'] as const;
+export function packagedDetailSource(src: string | undefined, scan: string | undefined): (typeof PACKAGED_DETAIL_SOURCES)[number] {
+  if (src === 'search' || src === 'home_cvs' || src === 'list' || src === 'review') return src;
+  return scan === '1' ? 'scan' : 'deeplink';
+}
+
 export function track(event: EventName, props?: Record<string, unknown>): void {
   const clean = sanitize(event, props);
   // Invalid schema2 areas are rejected as events, not forwarded with missing dimensions.
@@ -302,14 +330,21 @@ export function setUserProps(props: Partial<Record<UserPropKey, string | number 
  * KB-732: 회원 식별 — `members/me` 응답의 회원 번호(문자열)로 setUserId. 호출 지점 = fetchMe 성공 한 곳(로그인 직후·세션 복원 공통).
  * 화면 코드에서 부르지 않는다.
  */
+let engagementMemberId: string | null = null;
 export function setAnalyticsUser(memberId: string): void {
+  if (engagementMemberId === memberId) { resumeEngagementIdentity(); return; }
+  suspendEngagementIdentity();
   if (!ensureInit()) {
+    engagementMemberId = memberId;
     if (__DEV__) console.log('[analytics:noop] setUserId (set)');
+    resumeEngagementIdentity();
     return;
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
   amp.setUserId(memberId);
+  engagementMemberId = memberId;
+  resumeEngagementIdentity();
 }
 
 /**
@@ -319,13 +354,17 @@ export function setAnalyticsUser(memberId: string): void {
  * (잃는 것 = 같은 기기 두 계정 연결뿐).
  */
 export function resetAnalyticsIdentity(): void {
+  engagementMemberId = null;
+  suspendEngagementIdentity();
   if (!ensureInit()) {
     if (__DEV__) console.log('[analytics:noop] reset');
+    resumeEngagementIdentity();
     return;
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
   amp.reset();
+  resumeEngagementIdentity();
 }
 
 /**

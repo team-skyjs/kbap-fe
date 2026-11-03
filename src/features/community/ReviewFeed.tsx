@@ -10,19 +10,24 @@
  * 게스트: 열람 개방(P-235) — 쓰기·Helpful 게이트 유지(AuthGateSheet).
  */
 import * as React from 'react';
-import { RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useRefreshClient } from '@/lib/data/usePullRefresh';
+import { topThenRefresh, useTabPress } from '@/lib/tabPress';
+import type { InfiniteData } from '@tanstack/react-query';
 import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
-import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, useScrollToTop, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { CountryOnlyHint } from '@/features/review/CountryOnlyHint';
 import { color as C, radius } from '@/lib/theme';
 import { Spinner, StickyHeader, useHeaderHeight, useStickyScroll, IconChevronDown, IconCheck, IconEdit } from '@/components';
 import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { useGlobalReviews, type FeedSort } from '@/lib/data/useFoodReviews';
+import { useGlobalReviews, type FeedSort, globalReviewsKey, type ReviewTargetFilter } from '@/lib/data/useFoodReviews';
+import { Chip } from '@/components/Chip';
 import { useBlockedUsers } from '@/lib/community/hooks';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
@@ -36,7 +41,7 @@ import { isScanQuotaExhausted } from '@/lib/api/memberAdapter';
 import { useUnreadCount } from '@/lib/data/useNotifications';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
-import { reviewEditHref, reviewTargetHref } from '@/lib/review/reviewTarget';
+import { isPackagedReview, photoRemovalHref, reviewEditHref, reviewTargetHref } from '@/lib/review/reviewTarget';
 import type { FoodTagRef } from '@/lib/community/types';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900(D-1 Chip과 동일 명시값)
@@ -44,10 +49,19 @@ const SORT_OPTIONS: FeedSort[] = ['latest', 'rating_high', 'rating_low', 'food_r
 
 /** KB-777 B3-7: 플로팅 "Write a review"를 아이콘만으로 줄이는 작은 화면(폭 < 360 또는 높이 < 700 dp — QA 720×1280@2x = 360×640). */
 export const isCompactFabScreen = (w: number, h: number): boolean => w < 360 || h < 700;
+/** KB-903(T-022): 글자 크기 1.3배 이상이면 첫 화면부터 필이 둘째 리뷰 본문을 덮었다(AX5) — 아이콘 원형으로 */
+export const FAB_COMPACT_FONT_SCALE = 1.3;
+/** 원형(아이콘만) 조건 — 작은 화면 · 큰 글자 · 스크롤 중 */
+export const fabCompactFor = (w: number, h: number, fontScale: number, scrolling: boolean): boolean =>
+  isCompactFabScreen(w, h) || fontScale >= FAB_COMPACT_FONT_SCALE || scrolling;
+/** 스크롤이 멈춘 뒤 필로 돌아오기까지(음식 상세 알약 멈춤 규칙과 같은 300ms) */
+export const FAB_IDLE_MS = 300;
 const FAB_COMPACT_SLOP = 4; // 36 + 4×2 = 44
 
 export function ReviewFeed() {
   const router = useRouter();
+  const listRef = React.useRef<FlatList>(null);
+  useScrollToTop(listRef); // KB-906(T-127): Reviews 탭 재탭 = 맨 위
   const { t } = useTranslation();
   const isGuest = useIsGuest();
   const [sort, setSort] = React.useState<FeedSort>('latest');
@@ -67,7 +81,12 @@ export function ReviewFeed() {
     setPrevFilterKey(filterKey);
     if ((isGuest || !myNat) && profileFilter) setProfileFilter(false);
   }
-  const feed = useGlobalReviews(true, { sort, countryCode: filterActive ? myNat : undefined });
+  // KB-966(예진 11/2): 대상 세그먼트 All · Dishes · Packaged — 기본 All(통합). 세션 내 state(정렬·국적 필터와 같은 유지 규칙).
+  // 가공식품 꺼진 채널(운영) = 세그먼트 숨김 + 파라미터 0(현행 그대로)
+  const [target, setTarget] = React.useState<ReviewTargetFilter | null>(null);
+  const targetFilter = FLAGS.processedFoodEnabled ? target : null;
+  const feedFilters = { sort, countryCode: filterActive ? myNat : undefined, targetType: targetFilter };
+  const feed = useGlobalReviews(true, feedFilters);
   const deleteReview = useDeleteReview();
   const myId = me?.id;
   const unread = useUnreadCount();
@@ -75,8 +94,14 @@ export function ReviewFeed() {
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [mod, setMod] = React.useState<ModTarget | null>(null);
   const win = useWindowDimensions();
-  const fabCompact = isCompactFabScreen(win.width, win.height);
   const { onScroll, hidden, atTop } = useStickyScroll();
+  // KB-903(T-022): 스크롤 중 필이 본문 문장을 덮었다 — 끌기·관성 동안은 원형, 멈추고 300ms 뒤 다시 필(워클릿 없이 JS 스크롤 이벤트로)
+  const [scrolling, setScrolling] = React.useState(false);
+  const idle = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollStart = () => { if (idle.current) clearTimeout(idle.current); setScrolling(true); };
+  const scrollStop = () => { if (idle.current) clearTimeout(idle.current); idle.current = setTimeout(() => setScrolling(false), FAB_IDLE_MS); };
+  React.useEffect(() => () => { if (idle.current) clearTimeout(idle.current); }, []);
+  const fabCompact = fabCompactFor(win.width, win.height, win.fontScale, scrolling);
   const headerH = useHeaderHeight();
 
   // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증이라 보조(확인되면 제거)
@@ -86,6 +111,8 @@ export function ReviewFeed() {
     const author = r.author?.memberId ?? r.memberId;
     return author == null || !blockedIds.has(author);
   });
+  // KB-941(예진 10/30): 첫 API 묶음(pages[0])만 자동 번역 — 정렬·필터·당겨서 새로고침으로 새 첫 페이지가 오면 그 묶음이 대상, 다음 묶음부터는 탭
+  const firstPageIds = new Set((feed.data?.pages[0]?.items ?? []).map((r) => r.id));
   const rows = withFeedAds(reviews, (r) => r.id, REVIEW_FEED_AD_EVERY); // KB-816: 5개마다 · KB-739: 광고 행 key 순번 고정(페이지 추가에도 앞 행 identity 유지)
   const loadMore = () => {
     // Codex #58 P2-2: 에러 푸터가 콘텐츠 높이를 바꿔 onEndReached가 재발화 →
@@ -96,10 +123,26 @@ export function ReviewFeed() {
 
   // P-194: 당겨서 새로고침 + 탭 포커스 시 stale 재조회(폴링 아님)
   const [refreshing, setRefreshing] = React.useState(false);
+  const qc = useRefreshClient(); // KB-954
+  // KB-954(P-570): 첫 페이지만 새로 — 불러온 페이지를 1장으로 줄인 뒤 refetch(옛 데이터는 그대로 보여 스켈레톤 깜빡임 0, 전 페이지 순차 재요청 0)
+  const refetchFirstPage = () => {
+    // KB-958(Codex #388 2R P2): 지금 보는 피드 키만 — 접두 전체를 줄이면 비활성 정렬·국적 변형의 갱신 시각까지 바뀌어 신선도가 리셋됐다
+    const key = globalReviewsKey(feedFilters);
+    const d = qc.getQueryData<InfiniteData<unknown, unknown>>(key);
+    if (d && d.pages.length > 1) qc.setQueryData(key, { pages: d.pages.slice(0, 1), pageParams: d.pageParams.slice(0, 1) });
+    return feed.refetch();
+  };
   const onRefresh = () => {
     setRefreshing(true);
-    void feed.refetch().finally(() => setRefreshing(false));
+    // KB-954: + ['me'](다른 기기 회피 변경·쿼터)
+    void Promise.all([refetchFirstPage(), qc.invalidateQueries({ queryKey: ['me'] })]).finally(() => setRefreshing(false));
   };
+  // KB-954(예진 실기: 다른 폰 리뷰가 GNB를 눌러도 안 보임): 재탭 = 맨 위(useScrollToTop) + 새로고침(스피너) · 다른 탭에서 진입 = stale 여부와 무관하게 첫 페이지 재조회(맨 위로 — 새 리뷰는 위에 온다)
+  useTabPress('community', (kind) => {
+    if (kind === 'reselect') { topThenRefresh(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }), onRefresh); return; } // QA Q-388 ②
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+    void refetchFirstPage();
+  });
   const staleRef = React.useRef(false);
   // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
   React.useLayoutEffect(() => {
@@ -108,8 +151,9 @@ export function ReviewFeed() {
   const refetch = feed.refetch;
   useFocusEffect(
     React.useCallback(() => {
-      if (staleRef.current) void refetch();
-    }, [refetch]),
+      // KB-954: 탭바 진입이 방금 첫 페이지 재조회를 걸었으면 겹쳐 부르지 않는다(진행 중 = 건너뜀)
+      if (staleRef.current && qc.isFetching({ queryKey: ['reviews', 'global'] }) === 0) void refetch();
+    }, [refetch, qc]),
   );
 
   const onPickFood = (f: FoodTagRef) => {
@@ -121,6 +165,7 @@ export function ReviewFeed() {
   return (
     <View style={styles.root} testID="review-feed">
       <Animated.FlatList
+        ref={listRef}
         ListHeaderComponent={
           (
             <View>
@@ -146,6 +191,15 @@ export function ReviewFeed() {
                   <IconChevronDown size={16} color="#4B4F58" />
                 </Pressable>
               </View>
+              {!isGuest && myNat ? <CountryOnlyHint code={myNat} style={styles.natHint} /> : null}
+              {FLAGS.processedFoodEnabled ? (
+                // KB-966: 키에 targetType 포함 = 바꾸면 커서 처음부터·기존 스켈레톤(정렬과 같은 문법)
+                <View style={styles.targetRow} testID="feed-target">
+                  {([[null, 'home.filterAll', 'all'], ['FOOD', 'packaged.segmentDishes', 'food'], ['PROCESSED_FOOD', 'packaged.segmentPackaged', 'packaged']] as const).map(([v, k, id]) => (
+                    <Chip key={id} label={t(k)} selected={targetFilter === v} onPress={() => { if (v !== targetFilter) track(EVENTS.review_feed_target_select, { target: id }); setTarget(v); }} testID={`feed-target-${id}`} /* KB-973: 바뀔 때만 */ />
+                  ))}
+                </View>
+              ) : null}
               {/* 9/5 예진 판정(Q1)·KB-435 쿼터 넛지 카드(4150:17089) — P-384(KB-442): 회원·무료 소진·미해금만 */}
               {!isGuest && isScanQuotaExhausted(me?.scanQuota) && (
                 <View style={styles.nudge} testID="quota-nudge">
@@ -164,6 +218,10 @@ export function ReviewFeed() {
         contentContainerStyle={[styles.list, { paddingTop: headerH + 4, paddingBottom: 96, flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
+        onScrollBeginDrag={scrollStart}
+        onMomentumScrollBegin={scrollStart}
+        onScrollEndDrag={scrollStop}
+        onMomentumScrollEnd={scrollStop}
         scrollEventThrottle={16}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
@@ -175,6 +233,7 @@ export function ReviewFeed() {
             review={row.item}
             t={t}
             photoVariant="peek" // KB-817: 리뷰 탭만
+            autoTranslate={firstPageIds.has(row.item.id)}
             mine={row.item.memberId != null && row.item.memberId === myId}
             onOpenFood={() => { const href = reviewTargetHref(row.item, 'feed'); if (href) router.push(href); }} /* KB-812 2차: 가공식품 리뷰 = 제품 상세 */
             onGuestHelpful={() => setGateOpen('helpful')}
@@ -275,6 +334,13 @@ export function ReviewFeed() {
           if (r) deleteReview.mutate({ reviewId: r.id, foodId: r.foodId });
         }}
         onBlocked={() => void feed.refetch()}
+        // KB-814 F3: 가공식품 리뷰만 '사진 삭제 요청'(음식 리뷰 무변) — 게스트 = 로그인 게이트
+        onPhotoRemoval={mod && isPackagedReview(reviews.find((r) => r.id === mod.id) ?? {}) ? (m) => {
+          if (isGuest) { setGateOpen('photoRemoval'); return; }
+          const rv = reviews.find((r) => r.id === m.id);
+          const href = rv && photoRemovalHref(rv);
+          if (href) router.push(href);
+        } : undefined}
       />
       {/* P-237: 소팅 시트 — 공용 ActionSheet 재사용(5종·현재값 표시) */}
       <ActionSheet
@@ -303,26 +369,28 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   list: { gap: 0 },
   // KB-430 §2-2: 컨트롤 행(4150:17070 — 좌 토글 + 우 드롭다운)
+  natHint: { paddingHorizontal: 20, marginTop: -4, paddingBottom: 8 }, // KB-907(T-106)
+  targetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, paddingBottom: 8 }, // KB-966: 큰 글자 = 줄바꿈(가로 넘침 0)
   controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 0, paddingBottom: 8 }, // A-RT-01(KB-486)
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-RT-02
-  toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
+  toggleLabel: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },
   // Button/Toggle md 44×24 — off 트랙 #D1D3D8 / on primary, 노브 20 흰 + 그림자 2/2 b4 15%
-  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
+  sw: { width: 44, height: 24, borderRadius: radius.pill, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
-  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
+  knob: { width: 20, height: 20, borderRadius: radius.pill, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
   knobOn: { alignSelf: 'flex-end' },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
-  sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 14 }, // KB-926: 좌우 = 필터 칩(Chip 14)과 같게 — 8이면 알약 곡선에 글자가 붙어 잘릴 듯 보였다
+  sortLabel: { fontSize: 16, fontWeight: '700', color: '#4B4F58' },
   center: { paddingVertical: 30, alignItems: 'center' },
   // Codex #58 P2: 다음 페이지 실패 푸터 — 소형(리스트 흐름 유지), 색 = 정보성 회색
   footerErr: { paddingVertical: 20, alignItems: 'center', gap: 10 },
-  footerErrText: { fontSize: 13, fontWeight: '500', color: C.inkInfo },
-  footerRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, paddingHorizontal: 20, paddingVertical: 8 },
-  footerRetryText: { fontSize: 14, fontWeight: '600', color: C.ink },
+  footerErrText: { fontSize: 14, fontWeight: '500', color: C.inkInfo },
+  footerRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.md, paddingHorizontal: 20, paddingVertical: 8 },
+  footerRetryText: { fontSize: 16, fontWeight: '600', color: C.ink },
   // Q1: 쿼터 넛지 카드(4150:17089) — mx 24, bg #FFFBF4 r16 pad 20/12/20/20
-  nudge: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 24, backgroundColor: '#FFFBF4', borderRadius: 16, paddingTop: 12, paddingBottom: 20, paddingHorizontal: 20 },
-  nudgeTitle: { fontSize: 15, fontWeight: '700', color: '#262C31' },
-  nudgeBody: { fontSize: 14, fontWeight: '400', color: '#4B4F58' },
+  nudge: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 24, backgroundColor: '#FFFBF4', borderRadius: radius.lg, paddingTop: 12, paddingBottom: 20, paddingHorizontal: 20 },
+  nudgeTitle: { fontSize: 16, fontWeight: '700', color: '#262C31' },
+  nudgeBody: { fontSize: 16, fontWeight: '400', color: '#4B4F58' },
 
   // KB-430 §2-5: 플로팅 필(4150:17079)
   // A-RT-03(KB-486): gap 4 · right 14 · bottom 18
@@ -334,12 +402,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: '#1C1E21',
-    borderRadius: 24,
+    borderRadius: radius.pill,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
-  fabLabel: { fontSize: 14, fontWeight: '600', color: '#fff' },
-  fabCompact: { width: 36, height: 36, borderRadius: 18, paddingVertical: 0, paddingHorizontal: 0, justifyContent: 'center' }, // KB-777 B3-7
+  fabLabel: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  fabCompact: { width: 36, height: 36, borderRadius: radius.pill, paddingVertical: 0, paddingHorizontal: 0, justifyContent: 'center' }, // KB-777 B3-7
 });
 
 export default ReviewFeed;

@@ -48,10 +48,11 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 let mockRouteId = '12';
+let mockQuery: Record<string, string> = {}; // KB-814: 작성 화면 프리필 쿼리
 jest.mock('expo-router', () => ({
   useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }), // KB-708 이탈 확인
   useRouter: () => ({ push: mockPush, back: mockBack, replace: jest.fn() }),
-  useLocalSearchParams: () => ({ id: mockRouteId }),
+  useLocalSearchParams: () => ({ id: mockRouteId, ...mockQuery }),
   useSegments: () => [],
   usePathname: () => '/',
   // 포커스 이펙트: 기본은 마운트 시 포커스(정리 함수 = 이탈). 이탈 시나리오는 테스트에서 직접 호출한다.
@@ -130,6 +131,7 @@ const idleList = (flat: unknown[]) => ({
 beforeEach(() => {
   jest.clearAllMocks();
   mockRouteId = '12';
+  mockQuery = {};
   mockListState = idleList([ITEM]);
   mockSubmit.mockResolvedValue({ id: '12' });
 });
@@ -497,9 +499,9 @@ it('P-406 치수 — 행·알약·목록 여백이 발주 전사값 그대로', 
   expect(src).toMatch(/row: \{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16 \}/);
   expect(src).toMatch(/rowText: \{ flex: 1, gap: 4 \}/);
   expect(src).toMatch(/title: \{ fontSize: 17, fontWeight: '400', color: C\.ink \}/);
-  expect(src).toMatch(/sub: \{ fontSize: 15, fontWeight: '400', color: C\.ink3 \}/);
+  expect(src).toMatch(/sub: \{ fontSize: 16, fontWeight: '400', color: C\.ink3 \}/);
   expect(src).toMatch(/subRow: \{ flexDirection: 'row', alignItems: 'baseline', gap: 8 \}/);
-  expect(src).toMatch(/position: 'absolute', right: 24, height: FEEDBACK_FAB_H, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: 26,\s*backgroundColor: C\.ink, flexDirection: 'row', alignItems: 'center', gap: 8,/);
+  expect(src).toMatch(/position: 'absolute', right: 24, height: FEEDBACK_FAB_H, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: radius.pill,\s*backgroundColor: C\.ink, flexDirection: 'row', alignItems: 'center', gap: 8,/);
   expect(src).toMatch(/export const FEEDBACK_FAB_H = 52;/); // KB-707: 알약 높이 52는 상수로(목록 끝 여백 계산과 공유)
   expect(src).toMatch(/fabLabel: \{ fontSize: 17, fontWeight: '600', color: '#FFFFFF' \}/);
   expect(src).toMatch(/bottom: insets\.bottom \+ FEEDBACK_FAB_GAP/);
@@ -598,4 +600,16 @@ it('KB-708 전송 실패로 끝나면 다시 막음 → 뒤로 = 확인 창(내�
   expect(mockPrevent.on).toBe(true);
   await act(async () => { mockPrevent.cb!({ data: { action: { type: 'GO_BACK' } } }); });
   expect(r.root.findAllByProps({ testID: 'leave-confirm' }).length).toBeGreaterThan(0);
+});
+
+it('KB-814 F3: 사진 삭제 요청 진입(prefill=photoRemoval) = 본문 초기값 한 줄 · 프리필 없으면 빈 본문', async () => {
+  mockQuery = { prefill: 'photoRemoval', product: 'Banana Milk', reviewId: '77' };
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  const body = () => r.root.findAllByType(TextInput).find((n) => n.props.testID === 'feedback-body')!.props.value;
+  expect(body()).toBe('ugc.photoRemovalPrefill');
+  act(() => r.unmount());
+  mockQuery = {};
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  expect(body()).toBe('');
 });

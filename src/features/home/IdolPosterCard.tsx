@@ -13,7 +13,7 @@ import { Txt as Text } from '@/components/Txt';
 import { RemoteImage } from '@/components/RemoteImage';
 import { RiskBadge } from '@/components/RiskBadge';
 import { IconQuestion } from '@/components/icons';
-import { color as C, font, type RiskState } from '@/lib/theme';
+import { color as C, font, type RiskState, radius } from '@/lib/theme';
 import type { FoodCard } from '@/lib/api/types';
 
 /** 물음표 티저 공통 그라데이션(디자인 스펙 "공통 시각 언어") */
@@ -72,11 +72,11 @@ export function IdolPosterCard({ food, risk, width, onOpen }: { food: FoodCard; 
 }
 
 const styles = StyleSheet.create({
-  card: { aspectRatio: 3 / 4, borderRadius: 12, overflow: 'hidden', backgroundColor: C.ink },
+  card: { aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: C.ink },
   badge: { position: 'absolute', top: 4, left: 8 },
-  mark: { position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  mark: { position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: radius.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
   caption: { position: 'absolute', left: 12, right: 12, bottom: 12, gap: 2 },
   name: { fontFamily: font.bodyBlack, fontSize: 16, lineHeight: 20, color: '#FFFFFF' },
-  ko: { fontFamily: font.koMed, fontSize: 12, lineHeight: 16, color: '#FFFFFF', opacity: 0.7 },
+  ko: { fontFamily: font.koMed, fontSize: 13, lineHeight: 17, color: '#FFFFFF', opacity: 0.7 },
   press: { backgroundColor: 'rgba(0,0,0,0.12)' },
 });

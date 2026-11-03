@@ -8,6 +8,8 @@ import * as React from 'react';
 import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+const mockRouterPush = jest.fn(); // KB-963: 가공식품 확정 → 상세 이동 확인
+jest.mock('@/lib/simulator', () => ({ ...jest.requireActual('@/lib/simulator'), useIsSimulator: () => true, isSimulator: async () => true })); // KB-970: OCR 주입 입력칸 = 시뮬 전용 — 이 파일은 시뮬 기준
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({
     name: (c: string) => (require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients')).ingredientLabel(c),
@@ -67,7 +69,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 jest.mock('expo-camera', () => {
   const { View } = require('react-native');
-  return { CameraView: View, useCameraPermissions: () => [{ granted: false }, jest.fn()] };
+  return { CameraView: View, useCameraPermissions: () => [{ granted: mockCamGranted.on }, jest.fn()] }; // 기본 거부 — 가공식품 흐름 테스트만 허용
 });
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] }),
@@ -79,12 +81,12 @@ jest.mock('expo-image', () => {
 });
 // KB-769: 스캔 결과 이탈 가드(useLeaveConfirm) — 포커스·내비 표면 + usePreventRemove 기록(scanDesign이 콜백을 흉내)
 jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
-jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), /* P-508: scan.tsx 진입 파라미터(mode·label) */
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => mockSearch.v, /* P-508: scan.tsx 진입 파라미터(mode·label) */
   useIsFocused: () => mockFocused.on,
   useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   // 실제처럼 콜백 정체성 기준 1회(렌더마다 재실행하면 포커스 의미가 사라진다)
   useFocusEffect: (cb: () => void) => jest.requireActual('react').useEffect(cb, [cb]),
-  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ push: mockRouterPush, back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/scan',
   useSegments: () => ['scan'],
 }));
@@ -106,6 +108,8 @@ jest.mock('@/lib/scan/ocr', () => ({
 }));
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
 const mockProbe: { offline: boolean } = { offline: false };
+const mockCamGranted = { on: false };
+const mockSearch: { v: Record<string, string> } = { v: {} }; // KB-877: /scan?mode=packaged 진입
 const mockFocused = { on: true };
 jest.mock('@/lib/data/useFoods', () => ({
   useInfiniteFoods: () => (mockProbe.offline ? { isError: true, error: new Error('NETWORK: request failed'), refetch: jest.fn() } : { isError: false, error: null, refetch: jest.fn() }),
@@ -158,6 +162,12 @@ const QUOTA = (remaining: number | 'unlimited', unlocked = false) => ({ count: 3
 const quotaShown = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID === 'scan-quota-review').length > 0;
 const adBtn = (t: ReactTestRenderer) => t.root.findAll((x) => x.props?.testID === 'quota-watch-ad' && typeof x.props?.onPress === 'function' && typeof x.type !== 'string')[0];
 const flush = async () => { for (let i = 0; i < 8; i++) await act(async () => { await Promise.resolve(); }); };
+// KB-963: 소진 안내 = 진입이 아니라 메뉴 촬영 시도(갤러리)에서 — 제한 화면을 세우는 공용 단계
+const shootMenu = async (tree: ReactTestRenderer) => {
+  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto' && typeof n.props?.onPress === 'function');
+  await act(async () => { await gallery[0].props.onPress(); });
+  await flush();
+};
 
 beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 let qc: QueryClient;
@@ -165,6 +175,8 @@ beforeEach(async () => {
   jest.clearAllMocks();
   resetUnlockSession(currentGen());
   mockIsGuest.mockReturnValue(false);
+  mockCamGranted.on = false;
+  mockSearch.v = {};
   mockAds.reset(); mockUuid = 0;
   _resetAdsSessionForTest(); _resetAdsSdkForTest();
   qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -191,6 +203,7 @@ it('재현: 프로필 소진(quotaLockRef 경로) → 광고 3회 → 3번째 sc
   mockUseMe.mockReturnValue(me(3));
   const tree = render();
   await flush();
+  await shootMenu(tree);
   expect(quotaShown(tree)).toBe(true);
   expect(adBtn(tree)).toBeDefined();
   await watchOnce(tree, { rewardCount: 1, remainingForUnlock: 2, scanUnlocked: false });
@@ -210,6 +223,7 @@ it('방어 2: 해제 응답 뒤 티켓 재발급 실패(네트워크·비-004) =
   mockUseMe.mockReturnValue(me(1));
   const tree = render();
   await flush();
+  await shootMenu(tree);
   expect(quotaShown(tree)).toBe(true);
   mockIssue.mockReset(); mockIssue.mockRejectedValueOnce(new Error('network')); // 해제 뒤 첫 티켓 = 실패
   await watchOnce(tree, { rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
@@ -233,6 +247,7 @@ it('#252 /review 1: 해제 응답 뒤 티켓이 아직 SCAN-004 = "해제됨/다
   mockUseMe.mockReturnValue(me(1));
   const tree = render();
   await flush();
+  await shootMenu(tree);
   await watchOnce(tree, { rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true }); // 티켓은 계속 004
   const json = JSON.stringify(tree.toJSON());
   expect(json).not.toContain('scan.unlockedTitle');
@@ -246,6 +261,7 @@ it('#252 /review 3: 다시 시도 = 공용 제출 가드 — 응답 전 연타 =
   mockUseMe.mockReturnValue(me(1));
   const tree = render();
   await flush();
+  await shootMenu(tree);
   mockIssue.mockReset(); mockIssue.mockRejectedValueOnce(new Error('network'));
   await watchOnce(tree, { rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
   const retry = () => tree.root.findAll((n) => n.props?.testID === 'scan-unlock-retry' && typeof n.props?.onPress === 'function' && typeof n.type !== 'string')[0];
@@ -263,6 +279,7 @@ it('#252 /review 4: 제한 화면 본문 — 광고 버튼이 있으면 quotaBod
   mockUseMe.mockReturnValue(me(3));
   const tree = render();
   await flush();
+  await shootMenu(tree);
   expect(JSON.stringify(tree.toJSON())).toContain('scan.quotaBodyUnlock');
   mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0), adRewards: null } });
   act(() => { tree.update(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>); });
@@ -276,6 +293,7 @@ it('방어 1·반증: 프로필 재조회가 늦어 preflight가 옛 소진 스�
   mockUseMe.mockReturnValue(me(1)); // 끝까지 소진 상태(재조회 미도착)
   const tree = render();
   await flush();
+  await shootMenu(tree);
   expect(quotaShown(tree)).toBe(true);
   mockIssue.mockReset(); mockIssue.mockResolvedValue('t-unlocked');
   await watchOnce(tree, { rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
@@ -292,6 +310,7 @@ it('재현 변형: 스캔 시도 403으로 온 제한 화면(fail 경로, quotaL
   mockUseMe.mockReturnValue(me(1));
   const tree = render();
   await flush();
+  await shootMenu(tree);
   expect(quotaShown(tree)).toBe(true);
   const d = { resolve: (_: string) => {} };
   mockIssue.mockReset(); mockIssue.mockImplementation(() => new Promise<string>((r) => { d.resolve = r; }));
@@ -314,7 +333,7 @@ it('KB760: server transition waits for celebration CTA and native dismissal befo
   observeUnlock('7', false, currentGen());
   mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
   mockUseMe.mockReturnValue(me(1));
-  const tree = render(); await flush();
+  const tree = render(); await flush(); await shootMenu(tree);
   mockIssue.mockReset(); mockIssue.mockResolvedValue('celebration-ticket');
   await watchOnce(tree, { rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
   expect(mockIssue).not.toHaveBeenCalled();
@@ -337,7 +356,7 @@ it('KB760: early profile unlock keeps the SDK close listener alive and blocks th
   observeUnlock('7', false, currentGen());
   mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
   mockUseMe.mockReturnValue(me(1));
-  const tree = render(); await flush(); mockIssue.mockClear();
+  const tree = render(); await flush(); await shootMenu(tree); mockIssue.mockClear();
   mockPost.mockResolvedValueOnce({ rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
   act(() => mockAds.update('rewarded', { status: 'loaded', earnedReward: false }));
   await act(async () => adBtn(tree).props.onPress());
@@ -448,7 +467,7 @@ it('Codex #291 R12 P2: a stale focus preflight returning SCAN-004 after the unlo
   mockIssue.mockReset();
   mockIssue.mockImplementationOnce(() => new Promise((_, reject) => { rejectFocus = reject; })); // focus preflight, still in flight
   mockUseMe.mockReturnValue(me(1)); // profile exhausted → quota screen without waiting for the ticket
-  const tree = render(); await flush();
+  const tree = render(); await flush(); await shootMenu(tree);
   expect(quotaShown(tree)).toBe(true);
   mockIssue.mockResolvedValue('unlocked-ticket');
   act(() => observeUnlock('7', true, currentGen())); await flush(); // late profile transition → celebration (quota context)
@@ -464,4 +483,86 @@ it('Codex #291 R12 P2: a stale focus preflight returning SCAN-004 after the unlo
   expect(quotaShown(tree)).toBe(false); // unlock retry reopened the camera
   await act(async () => { rejectFocus(new ApiError('quota', 403, 'SCAN-004')); }); await flush();
   expect(quotaShown(tree)).toBe(false); // the superseded focus result is ignored
+});
+
+it('Codex #339: 가공식품 확정 소진 덮개 → 나중에 → 메뉴로 전환 = 가공식품 잡기 해제 — 메뉴 카메라에서 프로필 소진이 오면 평소처럼 잠근다', async () => {
+  const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean; processedFoodEnabled: boolean } };
+  const prev = { label: FLAGS.packagedLabelScan, pf: FLAGS.processedFoodEnabled };
+  FLAGS.packagedLabelScan = true;
+  FLAGS.processedFoodEnabled = true; // 모드 탭
+  try {
+    mockCamGranted.on = true;
+    mockIssue.mockResolvedValue('t-ok');
+    const live = { data: { restrictions: [{ code: 'SHRIMP' }], scanQuota: QUOTA(2), adRewards: { count: 0, forUnlock: 3, remaining: 3 } } };
+    mockUseMe.mockReturnValue(live);
+    mockPost.mockImplementation((url: string) => {
+      if (url.endsWith('/scan/name')) return Promise.resolve({ analysisId: 'A1', state: 'CANDIDATES', candidates: [{ id: 11, reportNo: 'R1', productName: 'P11', imageUrl: null }] });
+      if (url.endsWith('/scan/confirm')) return Promise.reject(new ApiError('quota', 403, 'SCAN-004'));
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+    const tree = render();
+    await flush();
+    const press = async (id: string) => { await act(async () => { await tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); }); await flush(); };
+    await press('scan-mode-packaged');
+    act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
+    await press('pscan-ocr-debug-run');
+    await press('pscan-candidate-11'); // KB-914(R-138): 줄 탭 = 바로 확정
+    expect(tree.root.findAll((n) => n.props?.testID === 'pscan-quota-overlay').length).toBeGreaterThan(0);
+    await press('scan-quota-later');
+    act(() => tree.root.findAll((n) => typeof n.props?.onBack === 'function')[0].props.onBack()); // 후보 → 앞면 카메라
+    await flush();
+    await press('scan-mode-menu');
+    expect(quotaShown(tree)).toBe(false);
+    // 메뉴 카메라 중 프로필 재조회로 소진 도착(Codex #159 경로) → KB-963: 화면은 카메라 그대로, 메뉴 촬영 시도에서 잠금 — 가공식품 잡기가 남아 있으면 조용히 막혔다
+    mockUseMe.mockReturnValue({ data: { ...live.data, scanQuota: QUOTA(0) } });
+    act(() => { tree.update(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>); });
+    await flush();
+    expect(quotaShown(tree)).toBe(false);
+    await shootMenu(tree);
+    expect(quotaShown(tree)).toBe(true);
+  } finally {
+    FLAGS.packagedLabelScan = prev.label;
+    FLAGS.processedFoodEnabled = prev.pf;
+    mockPost.mockReset();
+  }
+});
+
+it('KB-877 → KB-963: 소진 회원 가공식품 바로 진입(/scan?mode=packaged) + 프로필 남은 0 + 티켓 SCAN-004 = 가공식품 흐름 그대로(차감 없음) → 메뉴로 바꾸고 촬영하면 소진 안내', async () => {
+  const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean; processedFoodEnabled: boolean } };
+  const prev = { label: FLAGS.packagedLabelScan, pf: FLAGS.processedFoodEnabled };
+  FLAGS.packagedLabelScan = true;
+  FLAGS.processedFoodEnabled = true;
+  try {
+    mockCamGranted.on = true;
+    mockSearch.v = { mode: 'packaged' };
+    mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
+    mockUseMe.mockReturnValue(me(3)); // scanQuota 소진(remaining 0)
+    const tree = render();
+    await flush();
+    expect(quotaShown(tree)).toBe(false);
+    expect(tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input').length).toBeGreaterThan(0); // 가공식품 카메라(흐름) 그대로
+    // KB-963: 소진 회원도 가공식품 스캔 확정까지(서버 S-937 — charged false) — 쿼터 덮개 0 · 상세 이동
+    mockPost.mockImplementation((url: string) => {
+      if (url.endsWith('/scan/name')) return Promise.resolve({ analysisId: 'A9', state: 'CANDIDATES', candidates: [{ id: 11, reportNo: 'R1', productName: 'P11', imageUrl: null }] });
+      if (url.endsWith('/scan/confirm')) return Promise.resolve({ analysisId: 'A9', state: 'CONFIRMED', charged: false, freeUntil: null, product: { id: 11, reportNo: 'R1', productName: 'P11', maker: 'M', foodType: '과자', labelSource: 'DECLARED', allergens: '밀', detections: [], avoidance: [], source: { provider: 'HACCP', attributionKey: 'processedFood.source.haccp' }, image: null } });
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+    const press = async (id: string) => { await act(async () => { await tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); }); await flush(); };
+    act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
+    await press('pscan-ocr-debug-run');
+    await press('pscan-candidate-11');
+    expect(tree.root.findAll((n) => n.props?.testID === 'pscan-quota-overlay')).toHaveLength(0);
+    expect(mockRouterPush).toHaveBeenCalledWith(expect.stringMatching(/^\/processed-foods\/11\?scan=1&charged=0$/));
+    mockPost.mockReset();
+    act(() => tree.root.findAll((n) => typeof n.props?.onBack === 'function')[0]?.props.onBack()); // 후보 → 앞면 카메라(모드 탭)
+    await flush();
+    await act(async () => { tree.root.findAll((n) => n.props?.testID === 'scan-mode-menu' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    await flush();
+    expect(quotaShown(tree)).toBe(false); // KB-963: 메뉴로 바꿔도 진입 잠금 0
+    await shootMenu(tree);
+    expect(quotaShown(tree)).toBe(true); // 메뉴 촬영 시도 = 소진 안내
+  } finally {
+    FLAGS.packagedLabelScan = prev.label;
+    FLAGS.processedFoodEnabled = prev.pf;
+  }
 });

@@ -41,14 +41,14 @@ it('activeTabOffset = 활성 탭 가운데를 화면 가운데로 · 0 ~ (줄 �
 
 it('긴 번역(줄 480 > 화면 375)으로 Packaged 진입 = 첫 그림에서 활성 탭으로 스크롤 · 값 바뀌면 다시', () => {
   const t = render('packaged');
-  layout(t, 375, [['menu', 0, 125], ['food', 125, 175], ['packaged', 300, 180]]);
+  layout(t, 375, [['menu', 0, 200], ['packaged', 200, 280]]); // KB-963: Food photo 숨김 = 두 칸
   expect(scrollTo).toHaveBeenLastCalledWith({ x: 105, animated: false }); // 줄 480 − 화면 375 = 오른쪽 끝(활성 탭 전부 보임)
   act(() => t.update(<ScanModeTabs value="menu" onChange={jest.fn()} tone="dark" />));
   expect(scrollTo).toHaveBeenLastCalledWith({ x: 0, animated: false });
 });
 
-it('들어가는 줄(세 칸 균등) = 스크롤 0 그대로', () => {
+it('들어가는 줄(두 칸 균등 — KB-963) = 스크롤 0 그대로', () => {
   const t = render('packaged');
-  layout(t, 375, [['menu', 0, 125], ['food', 125, 125], ['packaged', 250, 125]]);
+  layout(t, 375, [['menu', 0, 187], ['packaged', 187, 188]]);
   expect(scrollTo).toHaveBeenLastCalledWith({ x: 0, animated: false });
 });

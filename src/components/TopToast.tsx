@@ -20,6 +20,7 @@ import { Txt as Text } from '@/components/Txt';
 import { IconAlertTri, IconCheck, IconInfo } from '@/components/icons';
 import { RiskGlyph } from '@/components/RiskMark';
 import Svg from 'react-native-svg';
+import { radius } from '@/lib/theme';
 
 const SHOW_MS = 2500;
 const EXIT_MS = 220;
@@ -159,7 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     backgroundColor: '#2F3137',
-    borderRadius: 24,
+    borderRadius: radius.xl,
     paddingHorizontal: 20,
     paddingVertical: 12,
     shadowColor: '#000000',
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  checkDot: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  checkDot: { width: 22, height: 22, borderRadius: radius.pill, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, fontSize: 16, fontWeight: '500', color: '#FFFFFF', lineHeight: 22, textAlign: 'left' },
   close: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
 });

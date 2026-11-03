@@ -27,27 +27,21 @@ const ratio = (a: string, b: string) => {
 const overWhite = (rgb: [number, number, number], alpha: number) =>
   '#' + rgb.map((c) => Math.round(c * alpha + 255 * (1 - alpha)).toString(16).padStart(2, '0')).join('');
 
-it('① 색은 DS 토큰만 — seeAll 스타일에 새 hex 리터럴 0', () => {
-  const block = FX.match(/seeAllCard: \{[\s\S]*?\n  \},/)![0] + FX.match(/seeAllText: \{[^}]*\},/)![0];
-  expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/); // 인라인 hex 금지
-  expect(block).toContain('backgroundColor: primaryTint');
-  expect(block).toContain('borderColor: C.primary');
-  expect(block).toContain('color: C.primaryText');
-  // chevron도 같은 토큰(텍스트만 바꾸고 아이콘이 회색으로 남는 반쪽 적용 방지)
-  expect(FX).toMatch(/\{t\('home\.seeAll'\)\}<\/Text>\s*<IconChevron size=\{16\} color=\{C\.primaryText\}/);
+// KB-962(예진 11/2): 레일 끝 See all 카드 소멸 → 탭 줄 오른쪽 원형 화살표 버튼(SeeAllCircle). ③ 대비 판단(primaryText)은 토큰 수준이라 유지
+it('① KB-962: 레일 끝 See all 카드 0 — 레일은 마지막 카드로 끝', () => {
+  expect(FX).not.toContain('seeAllCard');
+  expect(FX).not.toMatch(/\{t\('home\.seeAll'\)\}<\/Text>/);
 });
 
-it('② 프레임·탭 동작 무변 — 비율·gap·패딩 그대로, foodTabHref 승계, testID 유지', () => {
-  expect(FX).toContain('aspectRatio: 174 / 203');
-  expect(FX).toContain('gap: 2,');
-  expect(FX).toContain('paddingHorizontal: 12,');
+it('② KB-962: See all = 탭 줄 오른쪽 원형 버튼(고정 칸) · 이동 = foodTabHref 승계 · testID 유지', () => {
+  expect(FX).toContain('<SeeAllCircle');
   expect(FX).toContain('testID="home-rail-see-all"');
   // 탭 동작은 따로 단언한다 — 위 testID와 OR로 묶으면 앞 가지가 늘 참이라 무의미해진다(Codex #172)
   expect(FX).toMatch(
     /onPress=\{\(\) => router\.push\(foodTabHref\(gridTab as GridSegment, riskChip as RiskChipParam, Date\.now\(\)\) as Href\)\}/,
   );
-  // 폭은 렌더 시 cardW 주입 — 고정 width가 새로 박히면 레일 폭 계산이 깨진다
-  expect(FX).toMatch(/style=\{\[styles\.seeAllCard, \{ width: cardW \}\]\}/);
+  expect(FX).toMatch(/tabsHead: \{ flexDirection: 'row'[^}]*\}/);
+  expect(FX).toMatch(/tabsSeeAll: \{[^}]*flexShrink: 0/); // 큰 글자·긴 언어에서도 버튼 칸은 고정 — 탭이 남은 폭(가로 스크롤)
 });
 
 it('③ 대비 — primaryTint 배경 위 primaryText는 AA(4.5) 통과, 발주가 지정한 primary는 미달', () => {

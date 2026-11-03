@@ -49,8 +49,9 @@ it('배선 소스 잠금 — 쿼리키 프리픽스·클라 소팅 부재 (KB-43
   expect(feed).not.toMatch(/reviews\s*\.\s*sort\(/);
   const hook = fs.readFileSync('src/lib/data/useFoodReviews.ts', 'utf8') as string;
   // 프리픽스 유지 — 좋아요 낙관·작성 무효화의 프리픽스 매칭 안전(P-237에서 sort·rating 키 확장)
-  expect(hook).toContain("'reviews', 'global',");
-  expect(hook).toContain("filters.sort ?? 'latest', filters.minRating ?? 0, filters.maxRating ?? 5,");
+  // KB-958: 키는 globalReviewsKey 한 곳(훅·Reviews 첫 장 줄이기 공유) — 프리픽스·순서 그대로
+  expect(hook).toContain("['reviews', 'global', filters.countryCode ?? 'all', filters.foodId ?? 'all', filters.sort ?? 'latest', filters.minRating ?? 0, filters.maxRating ?? 5, filters.targetType ?? 'ALL'] as const;");
+  expect(hook).toContain('queryKey: globalReviewsKey(filters),');
 });
 
 /* ---- P-237(KB-346): 소팅 5종 + 별점 필터 ---- */
@@ -89,5 +90,23 @@ describe('P-237: sort·rating 서버 쿼리', () => {
     expect(hook).not.toContain('resetQueries'); // 수동 리셋 금지
     // 커서는 불투명 토큰 그대로 전달(해석·조립 없음)
     expect(hook).toContain("q.set('cursor', cursor)");
+  });
+});
+
+describe('KB-966: 대상 필터 targetType(서버 S-939 — 3.2+, 기본 ALL)', () => {
+  it('All = 생략 · Dishes = FOOD · Packaged = PROCESSED_FOOD · 커서·정렬과 공존', async () => {
+    await fetchGlobalReviewsPage(null, { targetType: null });
+    expect(mockGet).toHaveBeenLastCalledWith('/api/reviews?lang=en');
+    await fetchGlobalReviewsPage(null, { targetType: 'FOOD' });
+    expect(mockGet).toHaveBeenLastCalledWith('/api/reviews?lang=en&targetType=FOOD');
+    await fetchGlobalReviewsPage('42', { targetType: 'PROCESSED_FOOD', sort: 'rating' as never });
+    expect(mockGet).toHaveBeenLastCalledWith('/api/reviews?lang=en&cursor=42&targetType=PROCESSED_FOOD&sort=rating');
+  });
+  it('쿼리 키가 대상별로 갈림(바꾸면 첫 페이지부터) · 프리픽스 [reviews, global] 유지(좋아요·작성 무효화)', () => {
+    const { globalReviewsKey } = jest.requireActual('../useFoodReviews') as typeof import('../useFoodReviews');
+    const keys = [null, 'FOOD', 'PROCESSED_FOOD'].map((v) => JSON.stringify(globalReviewsKey({ targetType: v as never })));
+    expect(new Set(keys).size).toBe(3);
+    expect(globalReviewsKey({ targetType: 'FOOD' }).slice(0, 2)).toEqual(['reviews', 'global']);
+    expect(globalReviewsKey({})).toEqual(globalReviewsKey({ targetType: null })); // All = 기존 키와 같은 자리
   });
 });

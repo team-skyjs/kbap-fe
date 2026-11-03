@@ -12,6 +12,7 @@ import type { ViewStyle } from 'react-native';
 import { Image, type ImageStyle } from 'expo-image';
 import { DEFAULT_FOOD_IMAGE } from '@/lib/api/foodAdapter';
 import { Shimmer } from './Skeleton';
+import { SHIMMER_BASE } from './RemoteImage';
 
 // RN 0.85 타입에 absoluteFillObject가 없어 직접 정의 (런타임 동일)
 const FILL = { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 } as const;
@@ -40,7 +41,8 @@ export function CardPhoto({
     setFailed(false);
   }
   const round = borderRadius != null ? { borderRadius, overflow: 'hidden' as const } : null;
-  const shimmerStyle: ViewStyle[] = round ? [FILL, round] : [FILL];
+  // KB-905(T-021): RemoteImage와 같은 로딩 바탕(스윕이 보이게)
+  const shimmerStyle: ViewStyle[] = round ? [FILL, SHIMMER_BASE, round] : [FILL, SHIMMER_BASE];
   const imageStyle: ImageStyle[] = round ? [FILL, round] : [FILL];
   const source: string | number = !uri || failed ? DEFAULT_FOOD_IMAGE : uri;
   return (

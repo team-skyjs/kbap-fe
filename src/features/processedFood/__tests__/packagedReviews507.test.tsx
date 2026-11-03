@@ -31,14 +31,16 @@ const mockDelete = jest.fn();
 jest.mock('@/lib/data/useReviewMutations', () => ({ ...jest.requireActual('@/lib/data/useReviewMutations'), useDeleteReview: () => ({ mutate: (...a: unknown[]) => mockDelete(...a) }) }));
 jest.mock('@/features/review/FeedCard', () => {
   const { View } = jest.requireActual('react-native');
-  return { FeedCard: (p: { review: { id: string }; showFood: boolean; mine: boolean }) => <View testID={`card-${p.review.id}`} accessibilityLabel={`${p.showFood}|${p.mine}`} /> };
+  return { FeedCard: (p: { review: { id: string }; showFood: boolean; mine: boolean; youAsName?: boolean }) => <View testID={`card-${p.review.id}`} accessibilityLabel={`${p.showFood}|${p.mine}`} accessibilityHint={String(p.youAsName)} /> };
 });
-let mockModProps: { onEdit: (m: { id: string }) => void; onDelete: (m: { id: string }) => void } | null = null;
+let mockModProps: { onEdit: (m: { id: string }) => void; onDelete: (m: { id: string }) => void; onPhotoRemoval?: (m: { id: string }) => void } | null = null;
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: (p: never) => { mockModProps = p; return null; } }));
-jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
+jest.mock('@/components/AuthGateSheet', () => { const { View } = jest.requireActual('react-native'); return { AuthGateSheet: (p: { open: boolean; context: string }) => (p.open ? <View testID={`gate-${p.context}`} /> : null) }; });
+let mockGuest = false;
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest }));
 jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View {...p} /> }; });
 jest.mock('@/components/StateBlock', () => { const { View } = jest.requireActual('react-native'); return { QueryErrorBlock: () => <View testID="qeb" /> }; });
-jest.mock('@/components', () => { const { View } = jest.requireActual('react-native'); return { Stars: (p: { value: number }) => <View testID={`stars-${p.value}`} /> }; });
+jest.mock('@/components', () => { const { View } = jest.requireActual('react-native'); return { Stars: (p: { value: number }) => <View testID={`stars-${p.value}`} />, Star: (p: { fillPct: number }) => <View testID={`star-${p.fillPct}`} /> }; });
 jest.mock('@/components/Btn', () => {
   const { Pressable, Text } = jest.requireActual('react-native');
   return { Btn: (p: { testID: string; onPress?: () => void; children?: React.ReactNode }) => <Pressable testID={p.testID} onPress={p.onPress}><Text>{p.children}</Text></Pressable> };
@@ -68,6 +70,13 @@ describe('① 어댑터', () => {
     const r = adaptReview({ ...BASE, targetType: 'PROCESSED_FOOD', servingSpeed: 0, staffKindness: 0, processedFood: { processedFoodId: 1711, reportNo: '19700001001', productName: '우유식빵', maker: '롯데제과', imageUrl: 'http://haccp/a.jpg' } });
     expect(r).toMatchObject({ target: 'packaged', processedFoodId: '1711', foodId: '', foodName: '우유식빵', foodImageUrl: 'https://haccp/a.jpg' });
   });
+  it('KB-966 연장: 번역 name 우선 · 없음/null/빈값 = productName 원문 폴백', () => {
+    const pfOf = (name?: string | null) => adaptReview({ ...BASE, targetType: 'PROCESSED_FOOD', processedFood: { processedFoodId: 1711, productName: '우유식빵', ...(name !== undefined ? { name } : {}) } }).foodName;
+    expect(pfOf('Milk Bread')).toBe('Milk Bread');
+    expect(pfOf()).toBe('우유식빵');
+    expect(pfOf(null)).toBe('우유식빵');
+    expect(pfOf('  ')).toBe('우유식빵');
+  });
   it('FOOD · 필드 없는 구응답 · PROCESSED_FOOD인데 요약 없음 = food 축 그대로', () => {
     const food = { foodId: 7, name: 'Kimbap', koreanName: '김밥', imageUrl: 'https://x/k.jpg' };
     expect(adaptReview({ ...BASE, targetType: 'FOOD', food })).toMatchObject({ target: 'food', foodId: '7', foodName: 'Kimbap' });
@@ -81,7 +90,7 @@ describe('① 어댑터', () => {
 describe('② 대상 링크', () => {
   it('가공식품 = 제품 상세·제품 작성 화면 편집 / 음식 = 기존 경로 / id 없음 = null', () => {
     const pf = { id: 'r1', target: 'packaged' as const, foodId: '', processedFoodId: '9' };
-    expect(reviewTargetHref(pf, 'feed')).toBe('/processed-foods/9');
+    expect(reviewTargetHref(pf, 'feed')).toBe('/processed-foods/9?src=review'); // KB-973 상세 진입 출처
     expect(reviewEditHref(pf)).toBe('/processed-foods/9/review?reviewId=r1');
     expect(reviewTargetType(pf)).toBe('packaged');
     const food = { id: 'r2', target: 'food' as const, foodId: '7' };
@@ -114,6 +123,16 @@ describe('③ 요청', () => {
     expect(mockPost).not.toHaveBeenCalled();
     (FLAGS as { reviewsLiveEnabled: boolean }).reviewsLiveEnabled = live;
     expect(reviewWriteClosed(new ApiError('x', 403, 'REVIEW-004'))).toBe(false);
+  });
+  it('KB-865 ④ 작성 요청 맵기·당도 = 1~5만 실림 · 미입력(null·undefined)·0·범위 밖 = 키 생략(서버 400 방지)', async () => {
+    mockPost.mockResolvedValue({});
+    let run!: (v: { processedFoodId: string; rating: number; content?: string; spiciness?: number | null; sweetness?: number | null }) => Promise<unknown>;
+    function Probe() { run = useCreateProcessedReview().mutateAsync; return null; }
+    render(<QueryClientProvider client={new QueryClient()}><Probe /></QueryClientProvider>);
+    await act(async () => { await run({ processedFoodId: '1711', rating: 4, content: 'crunchy and salty', spiciness: 3, sweetness: null }); });
+    expect(mockPost).toHaveBeenLastCalledWith('/api/processed-foods/1711/reviews', { rating: 4, content: 'crunchy and salty', spiciness: 3 }, V32);
+    await act(async () => { await run({ processedFoodId: '1711', rating: 4, content: 'crunchy and salty', spiciness: 0, sweetness: 6 }); });
+    expect(mockPost).toHaveBeenLastCalledWith('/api/processed-foods/1711/reviews', { rating: 4, content: 'crunchy and salty' }, V32);
   });
 });
 
@@ -161,6 +180,18 @@ describe('④ 상세 섹션', () => {
     act(() => t3.root.findAll((n) => n.props?.testID === 'pf-reviews-more-retry' && typeof n.props.onPress === 'function')[0].props.onPress());
     expect(mockReviewsQ.fetchNextPage).toHaveBeenCalledTimes(1);
   });
+  it('KB-865 ④ 시안 31·46: 헤더 Reviews + 쓰기 텍스트 링크 · 빈 별 + "평균 (건수)" 행(0건·null·평균 없음 = 없음) · 내 리뷰 = You 표시 켬', () => {
+    mockReviewsQ = rq({ data: pageOf(2) });
+    const t = render(<PackagedReviews productId="1711" summary={SUM(4.66, 12)} />);
+    const json = JSON.stringify(t.toJSON());
+    expect(json).toContain('reviews.headerTitle');
+    expect(json).toContain('4.7 (12)');
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-reviews-count', 'star-0']));
+    expect(t.root.findAll((n) => n.props?.testID === 'card-1' && typeof n.type === 'string')[0].props.accessibilityHint).toBe('true');
+    expect(ids(render(<PackagedReviews productId="1711" summary={null} />))).not.toContain('pf-reviews-count');
+    expect(ids(render(<PackagedReviews productId="1711" summary={SUM(0, 0)} />))).not.toContain('pf-reviews-count');
+    expect(ids(render(<PackagedReviews productId="1711" summary={{ ...SUM(4, 3), overall: { average: null, count: 3 } } as never} />))).not.toContain('pf-reviews-count');
+  });
   it('로딩 = 스켈레톤 · 첫 페이지 실패 = 에러 블록(빈 상태 아님)', () => {
     mockReviewsQ = rq({ isPending: true });
     expect(ids(render(<PackagedReviews productId="1711" summary={null} />))).toContain('pf-reviews-skeleton');
@@ -185,5 +216,22 @@ describe('④ 상세 섹션', () => {
     expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/1711/review?reviewId=r9');
     act(() => mockModProps?.onDelete({ id: 'r9' }));
     expect(mockDelete).toHaveBeenCalledWith({ reviewId: 'r9', foodId: '' });
+  });
+});
+
+describe('KB-814 F3 사진 삭제 요청', () => {
+  afterEach(() => { mockGuest = false; });
+  const pf = () => ({ pages: [{ items: [adaptReview({ ...BASE, reviewId: 7, targetType: 'PROCESSED_FOOD', processedFood: { processedFoodId: 1711, productName: 'Banana Milk' } })], hasNext: false }] });
+  it('회원 = 문의 화면(제품명·리뷰 id 프리필) · 게스트 = 로그인 게이트(이동 0)', () => {
+    mockReviewsQ = rq({ data: pf() });
+    render(<PackagedReviews productId="1711" summary={null} />);
+    act(() => mockModProps?.onPhotoRemoval?.({ id: '7' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/profile/feedback/new?prefill=photoRemoval&reviewId=7&product=Banana%20Milk');
+    mockPush.mockClear();
+    mockGuest = true;
+    const t = render(<PackagedReviews productId="1711" summary={null} />);
+    act(() => mockModProps?.onPhotoRemoval?.({ id: '7' }));
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(ids(t)).toContain('gate-photoRemoval');
   });
 });

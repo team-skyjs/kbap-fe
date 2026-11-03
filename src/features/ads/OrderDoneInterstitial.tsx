@@ -16,6 +16,7 @@ import type { QueueStep } from '@/lib/oneShotQueue';
 import type { AdsSdk } from '@/lib/ads/sdk';
 import { canShowInterstitial, markInterstitialShown, useAdsSdk } from '@/lib/ads/adsSession';
 import { adUnitId } from '@/lib/ads/units';
+import { useOcclusion } from '@/lib/engagement/occlusion';
 
 export interface InterstitialController { step: () => QueueStep }
 /** show() 뒤 'showing'까지 기다리는 상한 — 넘으면 안 뜬 것으로 보고 복귀. 테스트는 ms를 줄인다 */
@@ -30,6 +31,7 @@ export function OrderDoneInterstitial({ controllerRef }: { controllerRef: React.
 function Host({ sdk, controllerRef }: { sdk: AdsSdk; controllerRef: React.MutableRefObject<InterstitialController | null> }) {
   const ad = sdk.useInterstitialAd({ adUnitId: adUnitId('order_done_interstitial'), autoLoad: canShowInterstitial() });
   const { status, show, impression, clicked } = ad;
+  useOcclusion(status === 'showing'); // KB-873 ②a: 전면 광고 = 화면 가림
   // 닫힘(또는 show 실패·타임아웃) → 큐 done 1회. 콜백은 ref — 네이티브 이벤트에서 최신 값
   const doneRef = React.useRef<(() => void) | null>(null);
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);

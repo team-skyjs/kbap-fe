@@ -21,7 +21,7 @@ import { Pressable } from '@/components/Pressable';
 import { CurationGallerySheet } from '@/features/curation/CurationGallerySheet';
 import { BlurCaptionCard, CARD_SPACER } from '@/features/curation/BlurCaptionCard';
 import { Shimmer } from '@/components/Skeleton';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
 import { isCurationUnavailable, useCurationDetail, type CurationItem } from '@/lib/data/useCurations';
 
@@ -136,7 +136,7 @@ function ItemCard({ item, onOpen, blur, onPlace }: { item: CurationItem; onOpen:
       title={item.name}
       subtitle={areaLine(item.area, item.nearby) /* 역 모음 = 지역 + 주변 이름을 공백 2칸으로(가운데점 금지) · 이름 안 공백은 NBSP(QA S3) */}
       blur={blur}
-      radius={12}
+      radius={radius.md}
       onPress={onOpen}
       onLayout={(y, h) => onPlace(p, y, h)}
       accessibilityLabel={`${item.name}, ${item.area}`}
@@ -168,13 +168,13 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: GUTTER, paddingTop: 8, gap: 12 }, // v2: 헤더 아래 8 → 설명 → 20 → 첫 사진
   stateBox: { gap: 16 },
   stateTitle: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 28, color: C.ink },
-  stateBody: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink2 },
-  fallback: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink3 },
-  description: { fontFamily: font.body, fontSize: 13, lineHeight: 20, color: C.ink2, marginBottom: 8 },
+  stateBody: { fontFamily: font.body, fontSize: 16, lineHeight: 23, color: C.ink2 },
+  fallback: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink3 },
+  description: { fontFamily: font.body, fontSize: 14, lineHeight: 22, color: C.ink2, marginBottom: 8 },
   list: { gap: 20 }, // v2: 구분선 없이 카드 간 20
   staleRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, minHeight: 44 },
-  staleText: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
-  staleRetry: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
-  skelLine: { height: 16, borderRadius: 4, width: '100%' },
-  skelPhoto: { width: '100%', aspectRatio: 1 / ITEM_PHOTO_RATIO, borderRadius: 12 },
+  staleText: { fontFamily: font.body, fontSize: 14, color: C.ink3 },
+  staleRetry: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
+  skelLine: { height: 16, borderRadius: radius.xs, width: '100%' },
+  skelPhoto: { width: '100%', aspectRatio: 1 / ITEM_PHOTO_RATIO, borderRadius: radius.md },
 });

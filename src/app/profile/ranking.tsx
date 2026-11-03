@@ -13,7 +13,7 @@ import { StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { Btn, RankMedal, SubHeader, IconScanLines, IconTabReviews } from '@/components';
 import { MEDAL_COLORS } from '@/components/RankMedal';
 import { IconCutlery, RankPointBadge, RankWreath } from '@/components/rankBadge';
@@ -100,7 +100,7 @@ function RankingBody({ rk }: { rk: Ranking }) {
 
   return (
     <View style={styles.body}>
-      {/* 히어로 — VIP MEMBERSHIP + 월계수(opacity 0.5) 뒤 RankMedal 56(그림자) + 등급명 + ko 필 + 시식 문구 */}
+      {/* 히어로 — 내 등급 라벨 + 월계수(opacity 0.5) 뒤 RankMedal 56(그림자) + 등급명 + 레벨 필 + 시식 문구(KB-907: 한글 병기·VIP 표현 제거) */}
       <View style={styles.hero}>
         <Text style={styles.eyebrow}>{t('ranking.vipEyebrow')}</Text>
         <View style={styles.medalGroup} testID="ranking-medal-group">
@@ -113,9 +113,8 @@ function RankingBody({ rk }: { rk: Ranking }) {
         </View>
         <Text style={styles.tierName}>{t(`ranking.tier.${cur.key}`)}</Text>
         <View style={styles.tierPill}>
-          <Text style={styles.tierPillText}>
-            {t(`ranking.tierKo.${cur.key}`)} {t('ranking.levelLabel', { level: cur.level })}
-          </Text>
+          {/* KB-907(T-036): 한국어 등급명 병기 제거 — 모든 로케일에 한글이 섞였다 */}
+          <Text style={styles.tierPillText}>{t('ranking.levelLabel', { level: cur.level })}</Text>
         </View>
         {bd && (
           <Text style={styles.flavor}>
@@ -158,10 +157,9 @@ function RankingBody({ rk }: { rk: Ranking }) {
         </View>
       )}
 
-      {/* Score breakdown — 제목 16/500 + ko 13/500 */}
+      {/* Score breakdown — 제목 16/500 */}
       <View style={styles.secHead}>
         <Text style={styles.secTitle}>{t('ranking.breakdownTitle')}</Text>
-        <Text style={styles.secSub}>{t('ranking.breakdownSub')}</Text>
       </View>
       {/* P-283(9/5 예진 확정): 3칸 전부 실배선 — 서버 breakdown 실값(리뷰 10·고유 음식 5·
           스캔 2pt, Ranking.kt). 자물쇠+Coming 하드코딩 소멸. 리뷰 아이콘 = 시안
@@ -170,7 +168,6 @@ function RankingBody({ rk }: { rk: Ranking }) {
         <BreakCol
           icon={<IconTabReviews size={24} color={'#9196A1'} />}
           label={t('ranking.reviewsLabel')}
-          labelKo={t('ranking.reviewsLabelKo')}
           detail={bd ? t('ranking.reviewsDetail', { count: bd.reviews.count }) : ''}
           detailColor={C.ink3}
           points={bd?.reviews.points}
@@ -179,7 +176,6 @@ function RankingBody({ rk }: { rk: Ranking }) {
         <BreakCol
           icon={<IconCutlery size={24} color={'#9196A1'} />}
           label={t('ranking.diversityLabel')}
-          labelKo={t('ranking.diversityLabelKo')}
           detail={bd ? t('ranking.diversityDetail', { count: bd.diversity.count }) : ''}
           detailColor={C.ink3}
           points={bd?.diversity.points}
@@ -188,7 +184,6 @@ function RankingBody({ rk }: { rk: Ranking }) {
         <BreakCol
           icon={<IconScanLines size={24} color={'#9196A1'} />}
           label={t('ranking.scansLabel')}
-          labelKo={t('ranking.scansLabelKo')}
           detail={bd ? t('ranking.scansDetail', { count: bd.scans.count }) : ''}
           detailColor={C.ink3}
           points={bd?.scans.points}
@@ -198,7 +193,6 @@ function RankingBody({ rk }: { rk: Ranking }) {
       {/* All ranks — 3열 × 2행 + 마지막 full */}
       <View style={styles.secHead}>
         <Text style={styles.secTitle}>{t('ranking.ladderTitle')}</Text>
-        <Text style={styles.secSub}>{t('ranking.ladderSub')}</Text>
       </View>
       <View style={styles.rankGrid}>
         {TIERS.map((tier) => {
@@ -239,7 +233,6 @@ function RankingBody({ rk }: { rk: Ranking }) {
                     <RankMedal level={tier.level} size={28} />
                   </View>
                   <Text style={styles.rankName} numberOfLines={2}>{t(`ranking.tier.${tier.key}`)}</Text>{/* KB-707: "K-Food Mas…" — 두 줄까지 */}
-                  <Text style={styles.rankKo} numberOfLines={1}>{t(`ranking.tierKo.${tier.key}`)}</Text>
                   <Text style={[styles.rankPts, now && { color: C.primary }]}>{t('ranking.tickPts', { at: tier.at })}</Text>
                 </View>
               </View>
@@ -251,19 +244,17 @@ function RankingBody({ rk }: { rk: Ranking }) {
   );
 }
 
-/** 내역 카드 열 — 아이콘 원 40 + 제목/ko + 설명 + 점수 필(P-283: 3칸 전부 활성 — locked 소멸).
+/** 내역 카드 열 — 아이콘 원 40 + 제목 + 설명 + 점수 필(KB-907: 바닥 정렬)(P-283: 3칸 전부 활성 — locked 소멸).
  *  Codex #89 P2: 비활성 판정 = **숫자 points**(없음·0) — 포맷("+n")은 필 안에서. */
 function BreakCol({
   icon,
   label,
-  labelKo,
   detail,
   detailColor,
   points,
 }: {
   icon: React.ReactNode;
   label: string;
-  labelKo: string;
   detail: string;
   detailColor: string;
   points?: number;
@@ -274,7 +265,6 @@ function BreakCol({
     <View style={styles.breakCol}>
       <View style={styles.breakIc}>{icon}</View>
       <Text style={styles.breakLabel} numberOfLines={1}>{label}</Text>
-      <Text style={styles.breakKo} numberOfLines={1}>{labelKo}</Text>
       <Text style={[styles.breakDetail, { color: detailColor }]} numberOfLines={2}>{detail}</Text>
       {/* P-327: 비활성(0점 포함) = opacity 0.2 + "-" */}
       <View style={[styles.gainPill, !active && { opacity: 0.2 }]} testID={active ? 'gain-active' : 'gain-inactive'}>
@@ -291,58 +281,56 @@ const styles = StyleSheet.create({
 
   // P-327 §2: 헤더→라벨 16 · 라벨→메달 그룹 17 · 메달→이름 9 · 필/문구 gap 8
   hero: { alignItems: 'center', paddingTop: 16, paddingHorizontal: 20 },
-  eyebrow: { fontSize: 14, fontWeight: '500', color: INK_TITLE, textAlign: 'center' },
+  eyebrow: { fontSize: 16, fontWeight: '500', color: INK_TITLE, textAlign: 'center' },
   medalGroup: { width: 130, height: 70, alignItems: 'center', justifyContent: 'center', marginTop: 17 },
   medalShadow: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 22.9, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   tierName: { fontSize: 20, fontWeight: '700', color: '#1C1E21', textAlign: 'center', marginTop: 9 },
-  tierPill: { backgroundColor: PRIMARY_10, borderRadius: 24, paddingVertical: 4, paddingHorizontal: 12, marginTop: 8 },
-  tierPillText: { fontSize: 13, fontWeight: '500', color: C.primary },
-  flavor: { fontSize: 14, fontWeight: '400', color: '#9196A1', textAlign: 'center', lineHeight: 20, maxWidth: 300, marginTop: 8 },
+  tierPill: { backgroundColor: PRIMARY_10, borderRadius: radius.pill, paddingVertical: 4, paddingHorizontal: 12, marginTop: 8 },
+  tierPillText: { fontSize: 14, fontWeight: '500', color: C.primary },
+  flavor: { fontSize: 16, fontWeight: '400', color: '#9196A1', textAlign: 'center', lineHeight: 23, maxWidth: 300, marginTop: 8 },
 
   // P-327 §3: 히어로→카드 24 · pad 20 gap 10 r8 stroke #F2F3F6
-  progCard: { marginTop: 24, marginHorizontal: 20, padding: 20, borderRadius: 8, borderWidth: 1, borderColor: '#F2F3F6', backgroundColor: '#FFFFFF', gap: 10 },
+  progCard: { marginTop: 24, marginHorizontal: 20, padding: 20, borderRadius: radius.md, borderWidth: 1, borderColor: '#F2F3F6', backgroundColor: '#FFFFFF', gap: 10 },
   progHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
   progTo: { fontSize: 16, fontWeight: '500', color: '#1C1E21', flexShrink: 1 },
-  progPts: { fontSize: 12 },
+  progPts: { fontSize: 13 },
   progPtsCur: { fontSize: 18, fontWeight: '600', color: INK_TITLE },
-  progPtsGoal: { fontSize: 12, fontWeight: '400', color: '#B1B5BD' },
+  progPtsGoal: { fontSize: 13, fontWeight: '400', color: '#B1B5BD' },
   starGrid: { gap: 10 },
   starRow: { flexDirection: 'row', justifyContent: 'space-evenly' },
-  track: { height: 10, borderRadius: 16, backgroundColor: '#EDEFF4', overflow: 'hidden' },
-  fill: { height: 10, borderRadius: 16, backgroundColor: C.primary },
+  track: { height: 10, borderRadius: radius.pill, backgroundColor: '#EDEFF4', overflow: 'hidden' },
+  fill: { height: 10, borderRadius: radius.pill, backgroundColor: C.primary },
 
   // P-327 §4: 카드→헤드 18 · 헤드 gap 6 · 헤드→리스트 0(카드 자체 상단 pad)
   secHead: { flexDirection: 'row', alignItems: 'baseline', gap: 6, paddingHorizontal: 20, marginTop: 18 },
   secTitle: { fontSize: 16, fontWeight: '500', color: '#1C1E21' },
-  secSub: { fontSize: 13, fontWeight: '500', color: '#6A6F7C' },
 
   // 내역 카드 — r20 흰 보더 없음 pad 상하 16/좌우 0, 열 사이 1px #EAEBEE(h175)
-  breakCard: { marginHorizontal: 20, flexDirection: 'row', paddingVertical: 16, paddingHorizontal: 0, borderRadius: 20, backgroundColor: '#FFFFFF' },
+  breakCard: { marginHorizontal: 20, flexDirection: 'row', paddingVertical: 16, paddingHorizontal: 0, borderRadius: radius.lg, backgroundColor: '#FFFFFF' },
   breakCol: { flex: 1, alignItems: 'center', gap: 8, paddingHorizontal: 8 },
   breakDiv: { width: 1, height: 175, alignSelf: 'center', backgroundColor: '#EAEBEE' },
-  breakIc: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F7F8FA', alignItems: 'center', justifyContent: 'center' },
-  breakLabel: { fontSize: 14, fontWeight: '600', color: '#1C1E21' },
-  breakKo: { fontSize: 12, fontWeight: '500', color: '#9196A1', marginTop: -6 }, // 제목/ko gap 2(열 gap 8 보정)
-  breakDetail: { fontSize: 12, fontWeight: '400', textAlign: 'center', lineHeight: 16, minHeight: 32 },
-  gainPill: { height: 32, justifyContent: 'center', backgroundColor: C.primary, borderRadius: 100, paddingVertical: 6, paddingHorizontal: 10 },
-  gainText: { fontSize: 13, fontWeight: '500', color: '#FFFFFF' },
+  breakIc: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: '#F7F8FA', alignItems: 'center', justifyContent: 'center' },
+  breakLabel: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
+  breakDetail: { fontSize: 13, fontWeight: '400', textAlign: 'center', lineHeight: 17, minHeight: 34 }, // KB-909 Codex #367: 2줄 자리 = 2 × lineHeight
+  gainPill: { marginTop: 'auto', height: 32, // KB-907(T-036): 칸 높이 = 가장 긴 칸 — 배지를 바닥에 붙여 세 칸 가로 정렬
+    justifyContent: 'center', backgroundColor: C.primary, borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 10 },
+  gainText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF' },
 
   // P-327 §5: 헤드→그리드 10 · 비현재 보더 없음(NOW만 primary 1) · 1행 h145/2행·풀 h129
   // KB-707(#235 Codex): 이름을 두 줄까지 허용 → 고정 높이면 NOW 카드(세로 여백 40)에서 메달·두 줄 이름·한국어·점수가 넘쳤다.
   // 높이 = 최소값(시안 145·129 = 이름 한 줄일 때 — 한 줄 언어는 모양 무변) + 줄 안 카드끼리 가장 높은 카드에 맞춤(stretch).
   rankGrid: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch', gap: 8, paddingHorizontal: 20, marginTop: 10 },
-  rankCard: { width: '31.5%', flexGrow: 1, minHeight: 145, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
+  rankCard: { width: '31.5%', flexGrow: 1, minHeight: 145, borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   rankCardRow2: { minHeight: 129 },
   rankContent: { alignSelf: 'stretch', alignItems: 'center' }, // KB-708(6): 줄 최대 내용 높이(minHeight 인라인) · 위 정렬
   rankContentInner: { alignItems: 'center' },
   rankCardFull: { width: '100%', minHeight: 129 },
   rankCardNow: { borderWidth: 1, borderColor: C.primary, paddingTop: 24, paddingBottom: 16 },
-  nowBadge: { position: 'absolute', top: 4, left: 4, backgroundColor: INK_TITLE, borderRadius: 4, paddingVertical: 2, paddingHorizontal: 6 },
-  nowBadgeText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
+  nowBadge: { position: 'absolute', top: 4, left: 4, backgroundColor: INK_TITLE, borderRadius: radius.xs, paddingVertical: 2, paddingHorizontal: 6 },
+  nowBadgeText: { fontSize: 11, fontWeight: '600', color: '#FFFFFF' },
   medalGlow: { shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 }, // P-369 ②: shadowColor = 등급색(인라인)
-  rankName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', marginTop: 6, textAlign: 'center' }, // KB-707: 두 줄로 감쌀 때 가운데
-  rankKo: { fontSize: 12, fontWeight: '400', color: C.ink3, marginTop: 2 },
-  rankPts: { fontSize: 13, fontWeight: '500', color: C.ink3, marginTop: 6 },
+  rankName: { fontSize: 16, fontWeight: '600', color: '#1C1E21', marginTop: 6, textAlign: 'center' }, // KB-707: 두 줄로 감쌀 때 가운데
+  rankPts: { fontSize: 14, fontWeight: '500', color: C.ink3, marginTop: 6 },
 
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
 });

@@ -93,6 +93,7 @@ describe('⑤ ⑦ 에러 분기 · OCR 미호출 — 소스 잠금', () => {
     // 통합 줄이 v2 데이터를 우선 소비(없으면 v1 조인 폴백)
     expect(list).toContain('dish.avoidances?.length');
     expect(list).toContain("(food?.ingredients ?? [])");
-    expect(list).toContain('{warns.length > 0 && ('); // 표시 조건 = 통합 줄 하나
+    expect(list).toContain('if (warns.length === 0) return null;'); // 표시 조건 = 통합 줄 하나(KB-914: 공용 WarnChips 안)
+    expect(list).toContain('<WarnChips warns={warns}');
   });
 });

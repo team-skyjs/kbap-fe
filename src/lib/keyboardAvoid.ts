@@ -21,6 +21,11 @@ export const KAV_BEHAVIOR = 'padding' as const;
  *  (KB-768 QA: 신고 Submit 아래 ~20px가 바에 잘림). iOS는 액세서리 바가 키보드 프레임 안이라 더하지 않는다. */
 export const DISMISS_BAR_H = 40;
 
+/** KB-900(T-031): 안드는 루트 내리기 바가 키보드 위 끝에 붙어 KAV로 올린 화면 아래 40을 덮는다(회피 편집 Save 바 반쯤 잘림) — KAV 화면은 전부
+ *  `keyboardVerticalOffset={KAV_OFFSET}`로 바 높이까지 더 올린다. iOS는 액세서리 바가 키보드 프레임 안이라 0. */
+export const kavOffsetFor = (os: string) => (os === 'android' ? DISMISS_BAR_H : 0);
+export const KAV_OFFSET = kavOffsetFor(Platform.OS);
+
 /** 창 아래 끝 → 키보드 위 끝(px). 키보드 없으면 0. `dismissBar` = 그 위에 안드 내리기 바가 뜨는 자리(Modal 시트) — 바 높이까지 비운다. */
 export function useKeyboardLift({ dismissBar = false }: { dismissBar?: boolean } = {}): number {
   const insets = useSafeAreaInsets();

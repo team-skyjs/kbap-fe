@@ -11,7 +11,7 @@ import { Pressable } from '@/components/Pressable';
 import { Input } from './KeyboardDismissBar';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, shadow } from '@/lib/theme';
+import { color as C, font, shadow, radius } from '@/lib/theme';
 import { IngredientTileSections } from './IngredientTileSections';
 import { IconSearch } from './icons';
 
@@ -64,10 +64,10 @@ export function IngredientFilter({
 }
 
 const styles = StyleSheet.create({
-  search: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 13, paddingVertical: 11, ...shadow.sh1 },
-  searchInput: { flex: 1, fontFamily: font.body, fontSize: 14.5, color: C.ink, padding: 0 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.md, paddingHorizontal: 13, paddingVertical: 11, ...shadow.sh1 },
+  searchInput: { flex: 1, fontFamily: font.body, fontSize: 16, color: C.ink, padding: 0 },
   // 온보딩 avCount/avCountText/avClear 수치 전사 (문법 통일)
   avCount: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 20, marginBottom: -4 },
-  avCountText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
-  avClear: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
+  avCountText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  avClear: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
 });

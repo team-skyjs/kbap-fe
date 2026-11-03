@@ -93,11 +93,11 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FFFFFF' },
   body: { padding: 20, gap: 12 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  date: { fontSize: 12, fontWeight: '400', color: C.ink3 },
-  content: { fontSize: 15, fontWeight: '400', color: C.ink, lineHeight: 22 },
-  photo: { width: '100%', aspectRatio: 1, borderRadius: radius.sm },
+  date: { fontSize: 13, fontWeight: '400', color: C.ink3 },
+  content: { fontSize: 16, fontWeight: '400', color: C.ink, lineHeight: 23 },
+  photo: { width: '100%', aspectRatio: 1, borderRadius: radius.md },
   replies: { gap: 12, marginTop: 8 },
   // 답변 = 옅은 면으로 내 본문과 구분(색만 — 프레임은 본문과 동일 여백)
-  reply: { gap: 6, padding: 14, borderRadius: radius.sm, backgroundColor: C.surface2 },
-  author: { fontSize: 14, fontWeight: '600', color: C.ink },
+  reply: { gap: 6, padding: 14, borderRadius: radius.md, backgroundColor: C.surface2 },
+  author: { fontSize: 16, fontWeight: '600', color: C.ink },
 });

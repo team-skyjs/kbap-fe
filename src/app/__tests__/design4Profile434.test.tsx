@@ -69,6 +69,8 @@ jest.mock('@/lib/data/useMe', () => ({
 
 import Profile from '../(tabs)/profile';
 import DeleteAccount from '../delete-account';
+const REACT_ELS = [Symbol.for('react.element'), Symbol.for('react.transitional.element')];
+const safeJson = (v: unknown) => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && REACT_ELS.includes((x as { $$typeof?: symbol }).$$typeof as symbol) ? undefined : x)); // KB-954: refreshControl 엘리먼트 prop(순환 참조)만 제외
 
 const ME = {
   data: {
@@ -95,7 +97,7 @@ beforeEach(() => {
 });
 
 it('① 메뉴 행 순서 스냅샷 — My Foods→Saved→My reviews→Language→Safety→Blocked→Log out→Delete', () => {
-  const s = JSON.stringify(render(<Profile />).toJSON());
+  const s = safeJson(render(<Profile />).toJSON());
   const order = [
     'profile.myFoods', 'profile.saved', 'myReviews.title', 'profile.language',
     'profile.safetyNotice', 'community.blockedTitle', 'profile.logout', 'profile.deleteAccount',
@@ -117,10 +119,10 @@ it('①-c P-300(KB-449): 값 없는 이동 행 전부 chevron — 값 행 무변
   expect(src).toContain("label={t('profile.safetyNotice')} chevron");
   expect(src).toContain("label={t('community.blockedTitle')} chevron");
   expect(src).toContain("label={t('profile.deleteAccount')} dim chevron");
-  // 값 행(Saved·My reviews·Language) = chevron 없음(무변)
-  expect(src).not.toMatch(/profile\.saved'\)\} value=[^\n]*chevron/);
-  expect(src).not.toMatch(/myReviews\.title'\)\} value=[^\n]*chevron/);
-  expect(src).not.toMatch(/profile\.language'\)\} value=[^\n]*chevron/);
+  // KB-904(T-082): 값 행(Saved·My reviews·Language)도 이동이면 chevron — 숫자 행만 없어 눌리는지 몰랐다(QA)
+  expect(src).toMatch(/profile\.saved'\)\} value=[^\n]*chevron/);
+  expect(src).toMatch(/myReviews\.title'\)\} value=[^\n]*chevron/);
+  expect(src).toMatch(/profile\.language'\)\} value=[^\n]*chevron/);
   // 크기·색 = 로그아웃과 동일(MenuRow 공용 렌더 한 곳)
   expect(src).toContain('{chevron && <IconChevron size={16} color={C.ink3} />}');
 });
@@ -129,7 +131,7 @@ it('①-b KB-434 후속: rank null(계약 드리프트 방어) = 랭킹 카드 �
   mockUseMe.mockReturnValue({ ...ME, data: { ...ME.data, rank: null } });
   const tree = render(<Profile />);
   expect(tree.root.findAll((n) => n.props?.testID === 'profile-rank-card')).toHaveLength(0);
-  const s = JSON.stringify(tree.toJSON());
+  const s = safeJson(tree.toJSON());
   expect(s).toContain('profile.restrictionsTitle'); // 화면 전체 에러 아님 — 섹션만 미렌더
   expect(s).toContain('profile.saved');
 });
@@ -142,7 +144,7 @@ it('② 편집 폼 — 국적 Disabled 필드(bg #F7F8FA + 자물쇠 + 헬퍼) �
   expect(src).toContain('busy={saving}'); // P-173 공용 가드 문법(Btn busy)
   expect(src).toContain("t('editProfile.save')"); // BottomBar Single "Save changes"
   // Input/Text 필드 D-1 Filled — bg surface2 r8(구 카드 보더 필드 소멸)
-  expect(src).toContain('backgroundColor: C.surface2, borderRadius: 8');
+  expect(src).toContain('backgroundColor: C.surface2, borderRadius: radius.md');
 });
 
 it('③ 탈퇴 — 체크박스 게이트: 동의 전 확정 무동작, 동의 후 진행(GOOGLE = 게이트 없음)', async () => {
@@ -190,11 +192,12 @@ it('Codex #33 P2 4건 — 진행 바 티어 상대·식이 진입 복원·영수
   expect(detail).not.toContain('Alert.alert'); // 네이티브 목록 소멸 잠금
 });
 
-it('④ 저장 목록 — FoodGridCard 2열 그리드 + 위험 칩(All·Safe·Avoid·Warning) 소스 잠금', () => {
+it('④ 저장 목록 — FoodGridCard 2열 그리드 + 위험 칩(KB-949: 홈·음식 탭과 같은 RISK_CHIPS — All 없음) 소스 잠금', () => {
   const src = require('fs').readFileSync('src/app/profile/saved.tsx', 'utf8') as string;
   expect(src).toContain('<FoodGridCard'); // D-2 카드 재사용
   expect(src).toContain('numColumns={2}');
-  expect(src).toContain("['all', 'safe', 'danger', 'caution']"); // 칩 순서 = D-2 홈 동일
-  expect(src).toContain('onBookmark={() => onRemove(item)}'); // 별 = 해제 토글(Undo 무변)
+  expect(src).toContain("RISK_CHIPS } from '@/features/food/FoodCards'"); // KB-949: 칩 목록 = 홈·음식 탭과 같은 상수(순서 동일)
+  expect(src).not.toMatch(/RISK_CHIPS: RiskChip\[\] = \[/); // 자체 목록 0
+  expect(src).not.toContain('onBookmark='); // KB-959(예진 11/2): 카드 별(해제 토글)·Undo 소멸 — 해제는 상세에서
   expect(src).not.toContain('Swipeable'); // 구 스와이프 행 소멸
 });

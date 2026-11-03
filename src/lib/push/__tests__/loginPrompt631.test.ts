@@ -179,7 +179,7 @@ describe('소스 잠금 (contracts §2)', () => {
   });
   it('첫 설치 경로·스캔 시트 게이트 무변 — _layout replace(entry=intro) · scan 프라이머 1회 규칙(판정은 scanNudge로 이동, 9/28)', () => {
     expect(read('src/app/_layout.tsx')).toContain("router.replace('/login?entry=intro' as Href)");
-    expect(read('src/app/scan.tsx')).toContain('decideScanNudge(isGuest)');
+    expect(read('src/features/scan/ScanExitPrompts.tsx')).toContain('decideScanNudge(a.isGuest)'); // KB-908: 스캔 닫은 뒤 판정
     expect(read('src/lib/push/scanNudge.ts')).toContain("(await getPrimerResult()) == null ? 'primer' : null"); // 미결정 = 기존 1회 규칙 그대로
   });
 });

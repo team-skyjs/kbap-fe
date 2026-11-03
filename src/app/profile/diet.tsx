@@ -17,16 +17,18 @@
  * 식이 선언 문맥이라 **저장 즉시 반영 + 사후 모달** — 두 경로는 의도적으로 다르다.
  */
 import { useMemo, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, primaryTint, shadow } from '@/lib/theme';
+import { color as C, font, primaryTint, shadow, radius } from '@/lib/theme';
 import { Btn, IconCheck, SubHeader } from '@/components';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
 import { useDietPresets } from '@/lib/data/useDietPresets';
 import { unionResolvedCodes, type PresetGroup } from '@/lib/onboarding/dietPresets';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 
@@ -38,6 +40,7 @@ const GROUP_LABEL: Record<PresetGroup, string> = {
 
 export default function DietPresetsScreen() {
   const router = useRouter();
+  const bottom = useBottomInset(); // KB-900: 회피 편집과 같은 고정 30 Save 바 — 3버튼 내비 바에 가림(iOS 34 → 아래 여백 120 종전과 같음)
   const { t } = useTranslation();
   const { data: me } = useMe();
   const update = useUpdateMe();
@@ -86,7 +89,7 @@ export default function DietPresetsScreen() {
   return (
     <View style={styles.root}>
       <SubHeader title={t('profile.dietTitle')} onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: 86 + bottom }]} showsVerticalScrollIndicator={false}>
         {(['diet', 'religion', 'allergy'] as PresetGroup[]).map((g) => (
           <View key={g} style={styles.group}>
             <Text style={styles.groupTitle}>{t(GROUP_LABEL[g])}</Text>
@@ -111,9 +114,10 @@ export default function DietPresetsScreen() {
         <Text style={styles.hint}>{t('profile.dietUncheckHint')}</Text>
       </ScrollView>
 
-      <View style={styles.savebar}>
-        <Btn icon={<IconCheck size={17} color="#fff" />} busy={saving} onPress={save} testID="diet-save">
-          {t('common.save')}
+      <View style={[styles.savebar, { paddingBottom: bottom + 10 }]} testID="diet-savebar">
+        {/* KB-904(T-086): 바뀐 게 없으면 비활성 · 문구 = 프로필 편집과 같은 "Save changes" */}
+        <Btn icon={<IconCheck size={17} color="#fff" />} variant={dirty ? 'primary' : 'off'} busy={saving} onPress={dirty ? save : undefined} testID="diet-save">
+          {t('editProfile.save')}
         </Btn>
       </View>
 
@@ -147,19 +151,19 @@ export default function DietPresetsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { padding: 18, gap: 24, paddingBottom: 120 }, // A-DT-07(KB-486)
+  body: { padding: 18, gap: 24 }, // A-DT-07(KB-486) · KB-900: 아래 여백 = Save 바(18+48) + 인셋 보정 + 여유 20
   group: { gap: 12 }, // A-DT-07
-  groupTitle: { fontSize: 14, fontWeight: '500', color: '#6A6F7C' }, // A-DT-06(uppercase 소멸)
+  groupTitle: { fontSize: 16, fontWeight: '500', color: '#6A6F7C' }, // A-DT-06(uppercase 소멸)
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   // 온보딩 프리셋 칩 문법 — 선택 전후 프레임 불변(같은 폭 보더, 색만 전환 — P-103)
-  chip: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12 }, // A-DT-05
+  chip: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.pill, paddingHorizontal: 16, paddingVertical: 12 }, // A-DT-05
   chipOn: { backgroundColor: primaryTint, borderColor: C.primary },
-  chipText: { fontSize: 14, fontWeight: '400', color: '#1E2124' }, // A-DT-05
+  chipText: { fontSize: 16, fontWeight: '400', color: '#1E2124' }, // A-DT-05
   chipTextOn: { color: C.primaryText },
-  hint: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 17 },
-  savebar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18, paddingBottom: 30, backgroundColor: C.surface },
+  hint: { fontFamily: font.body, fontSize: 13, color: C.ink3, lineHeight: 18 },
+  savebar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18, backgroundColor: C.surface },
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
-  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: radius.xl, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20, textAlign: 'center' },
 });

@@ -10,7 +10,8 @@
  * - 전부 공용 ActionSheet('context' 변형) 경유 — 글·댓글·대댓글 동일 배선.
  */
 import * as React from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { KeyboardDismissBar } from '@/components';
 import { useKeyboardLift } from '@/lib/keyboardAvoid';
@@ -19,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { ActionSheet, DESTRUCTIVE } from '@/components/ActionSheet';
 import { Btn, Flag, IconCheck, IconEdit, IconProfile, IconReport, IconTrash, IconUserX, Input } from '@/components';
+import { IconGallery } from '@/components/icons';
 import { showTopToast } from '@/components/topToastStore';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { TopToastHost } from '@/components/TopToast';
@@ -52,6 +54,7 @@ export function ModerationFlow({
   onEdit,
   onDelete,
   onBlocked,
+  onPhotoRemoval,
 }: {
   target: ModTarget | null;
   onClose: () => void;
@@ -61,6 +64,8 @@ export function ModerationFlow({
   onDelete: (target: ModTarget) => void;
   /** 차단 완료 — 발원지별 후처리 (피드 복귀+토스트 / 댓글 제거) */
   onBlocked: (target: ModTarget) => void;
+  /** KB-814 F3: 가공식품 리뷰(남의 것)만 — 있으면 '사진 삭제 요청' 행(문의로 이동). 호출측이 대상별로 넘긴다 */
+  onPhotoRemoval?: (target: ModTarget) => void;
 }) {
   const { t } = useTranslation();
   const isGuest = useIsGuest(); // P-281: 게스트 = 차단 숨김·신고 게이트(호출처 5곳 무변)
@@ -143,7 +148,8 @@ export function ModerationFlow({
     const KIND_BY = { post: 'community.postBy', comment: 'community.commentBy', review: 'community.reviewBy' } as const;
     const title = target.mine ? t(KIND_MINE[target.type]) : t(KIND_BY[target.type], { name });
     const avatar = target.author.nationality ? (
-      <Flag code={target.author.nationality} size={26} />
+      // KB-905(T-070): 국기 이모지는 헌법 v2.3.0 허용(유지) — 제목 줄에서 크게 튀던 26을 리뷰 행 배지와 같은 14로
+      <Flag code={target.author.nationality} size={14} />
     ) : (
       <View style={styles.anonAvatar}>
         <IconProfile size={15} color={C.ink3} />
@@ -169,6 +175,10 @@ export function ModerationFlow({
                 // 바뀌었다(BE #249·#250, X-Installation-Id 헤더로 식별). P-281 로그인 게이트는 폐기.
                 ...(target.type === 'review' || FLAGS.communityReportEnabled
                   ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, keepOpen: true, onPress: () => setPhase('report') }]
+                  : []),
+                // KB-814 F3: 사진 삭제 요청 = 통지→중단 창구(문의 화면). 게스트 게이트는 호출측
+                ...(onPhotoRemoval && target.type === 'review'
+                  ? [{ key: 'photoRemoval', label: t('ugc.photoRemovalRequest'), icon: <IconGallery size={17} color={C.ink} />, onPress: () => onPhotoRemoval(target) }]
                   : []),
                 // P-281: 게스트 = 차단 항목 자체 미노출(예진 지시 — /members/me/blocks 회원 전용)
                 // P-339 ②: 탈퇴 리뷰(작성자 부재)·신고 전용 표면(홈)도 차단 미노출
@@ -211,7 +221,7 @@ export function ModerationFlow({
                  ModerationFlow를 유지한 채 target만 바꾸므로, A의 응답이 끝날 때까지 B의
                  신고가 스피너에 묶였다. 가드가 이 자식에 살면 대상 전환(phase 리셋)에서
                  함께 사라진다 — key는 시트가 마운트된 채 대상만 바뀌는 변형까지 막는 보험. */
-              <ReportSheet key={`${target.type}:${target.id}`} onSubmit={doReport} />
+              <ReportSheet key={`${target.type}:${target.id}`} onSubmit={doReport} onCancel={close} />
             ))}
 
           {phase === 'blockConfirm' && (
@@ -260,7 +270,7 @@ export function ModerationFlow({
  * 대상이 바뀌면 가드도 함께 사라진다. 부모(ModerationFlow)는 호출처에서 계속 마운트된
  * 채 target만 바뀌므로, 가드를 부모에 두면 A의 응답이 B의 제출을 막는다(Codex #161 3R).
  */
-function ReportSheet({ onSubmit }: { onSubmit: (reason: ReportReason, note: string) => Promise<void> }) {
+function ReportSheet({ onSubmit, onCancel }: { onSubmit: (reason: ReportReason, note: string) => Promise<void>; onCancel: () => void }) {
   const { t } = useTranslation();
   const [reason, setReason] = React.useState<ReportReason | null>(null);
   const [note, setNote] = React.useState('');
@@ -293,26 +303,30 @@ function ReportSheet({ onSubmit }: { onSubmit: (reason: ReportReason, note: stri
       >
         {t('community.reportSubmit')}
       </Btn>
+      {/* KB-905(T-068): 닫을 길이 배경 탭·뒤로뿐이었다 — 삭제·차단 확인과 같은 ghost Cancel */}
+      <Btn testID="report-cancel" variant="ghost" onPress={onCancel}>
+        {t('common.cancel')}
+      </Btn>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: C.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 34, ...shadow.sh2 },
+  sheet: { backgroundColor: C.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: 22, paddingBottom: 34, ...shadow.sh2 },
   title: { fontFamily: font.display, fontSize: 17, color: C.ink },
-  sub: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
-  anonAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  sub: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20 },
+  anonAvatar: { width: 26, height: 26, borderRadius: radius.pill, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
 
   reasonRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 6 },
-  radio: { width: 21, height: 21, borderRadius: 11, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  radio: { width: 21, height: 21, borderRadius: radius.pill, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   radioOn: { borderColor: C.primary },
-  radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: C.primary },
-  reasonText: { flex: 1, fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
-  noteInput: { minHeight: 80, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 12, padding: 12, fontFamily: font.body, fontSize: 13.5, color: C.ink },
+  radioDot: { width: 11, height: 11, borderRadius: radius.pill, backgroundColor: C.primary },
+  reasonText: { flex: 1, fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
+  noteInput: { minHeight: 80, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.md, padding: 12, fontFamily: font.body, fontSize: 14, color: C.ink },
 
-  okIc: { width: 52, height: 52, borderRadius: 26, backgroundColor: C.riskSafe, alignItems: 'center', justifyContent: 'center' },
-  blockSuggest: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11 },
-  blockSuggestText: { fontFamily: font.bodyBold, fontSize: 13.5, color: DESTRUCTIVE },
-  blocking: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
+  okIc: { width: 52, height: 52, borderRadius: radius.pill, backgroundColor: C.riskSafe, alignItems: 'center', justifyContent: 'center' },
+  blockSuggest: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
+  blockSuggestText: { fontFamily: font.bodyBold, fontSize: 14, color: DESTRUCTIVE },
+  blocking: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
 });

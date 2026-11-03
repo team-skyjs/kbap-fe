@@ -29,6 +29,12 @@ export type ProcessedFoodSummary = {
   /** v4 평점 — 구서버·리뷰 0 = null(줄 숨김) */
   rating: { average: number; count: number } | null;
   verdict: ProcessedVerdict | null;
+  /** 비회원·회피 0개 후보 줄 "Contains …"(시안 45) — 목록·후보 응답에 없으면 null(줄 숨김) */
+  majorAllergens: string[] | null;
+  /** 품목보고번호 — 스캔 "이름으로 찾기"에서 고른 제품을 확정할 때(후보 밖 선택 — 진입 플로우 ②). 없으면 null(그 항목은 확정 불가) */
+  reportNo: string | null;
+  /** KB-947 Codex #383 P1(서버 S-928 확정): 표시 근거 있음 = 상세 labelSource != NONE과 같은 서버 함수(혼입 문장뿐·"알수없음" 자리표시 = false). 필드 없음(구서버) = null = 모름 */
+  labelKnown: boolean | null;
 };
 
 export type ProcessedDetection = { code: string; evidence: string; fromLabel: boolean };
@@ -55,6 +61,8 @@ export type ProcessedFoodDetail = ProcessedFoodSummary & {
   mayContain: ProcessedMayContain[];
   /** 내용 불명 원재료(서버 사전) — 한국어 원문 */
   unclearIngredients: string[];
+  /** KB-936(서버 #505): 내용 불명 용어의 요청 언어 라벨 — 구서버 = [] */
+  unclearIngredientLabels: UnclearLabel[];
   /** 비회원·회피 0개: 한국 표시 의무 주요 알레르기 중 포함된 코드. **필드 없음(구서버·부분 배포) = null = 모름** — 빈 배열(서버가 확인한 0)과 구별(Codex #338 P1) */
   majorAllergens: string[] | null;
   /** 원재료 — 번역(#462, 요청 언어) 없으면 null(원문만). 원문 = rawMaterials */
@@ -80,6 +88,11 @@ type SummaryWire = {
   rating?: { average?: number | null; count?: number | null } | null;
   verdict?: string | null;
   type?: string | null;
+  /** KB-867(#458): 요청 언어 표시명 — 번역 전엔 원문. 없으면 productName */
+  name?: string | null;
+  majorAllergens?: string[] | null;
+  reportNo?: string | number | null;
+  labelKnown?: boolean | null; // S-928 — 목록·검색·이름 스캔 후보 공통, 늘 실림
 };
 export type SearchPageWire = { items: SummaryWire[]; hasNext: boolean; nextCursor?: string | null };
 export type DetailWire = SummaryWire & {
@@ -98,6 +111,7 @@ export type DetailWire = SummaryWire & {
   mayContainMatches?: MatchWire[] | null;
   mayContain?: { code: string; source?: string; evidence: string }[] | null;
   unclearIngredients?: string[] | null;
+  unclearIngredientLabels?: { term?: string | null; label?: string | null }[] | null;
   majorAllergens?: string[] | null;
   ingredients?: { translated?: string | null; original?: string | null } | null;
   allergenStatement?: { translated?: string | null; original?: string | null } | null;
@@ -106,6 +120,14 @@ type AxisWire = { average?: number | null; count?: number | null } | null;
 type MatchWire = { code: string; evidence?: string[] | string | null };
 
 const blankToNull = (s: string | null | undefined): string | null => (s && s.trim() ? s.trim() : null);
+/** KB-901(T-003·T-012): 서버는 번역이 없을 때 translated에 원문을 그대로 채운다(dev 2453 실측 — 원재료) → "English translation" 아래 한국어,
+ *  알레르기 문장 두 번. 원문과 같은 "번역" = 번역 없음(null) */
+export const realTranslation = (translated: string | null | undefined, original: string | null): string | null => {
+  const tr = blankToNull(translated);
+  return tr && tr !== original ? tr : null;
+};
+/** KB-877: 서버 무료 창 끝 시각(ISO) — 해석 못 하는 값 = 창 없음(null). 창 계산은 서버만 한다 */
+export const isoOrNull = (s: string | null | undefined): string | null => (s && Number.isFinite(Date.parse(s)) ? s : null);
 export const toHttps = (u: string | null | undefined): string | null => {
   const v = blankToNull(u);
   return v ? v.replace(/^http:\/\//i, 'https://') : null;
@@ -137,23 +159,35 @@ const ratingOf = (r: SummaryWire['rating']): ProcessedFoodSummary['rating'] =>
 export function adaptProcessedSummary(w: SummaryWire): ProcessedFoodSummary {
   const foodType = blankToNull(w.foodType);
   const nameKo = blankToNull(w.nameKo);
+  const name = blankToNull(w.name) ?? w.productName;
   return {
     id: String(w.id),
-    name: w.productName,
+    name,
     maker: blankToNull(w.maker),
     foodType,
     type: typeOf(w.type, foodType),
     imageUrl: toHttps(w.imageUrl),
-    nameKo: nameKo === w.productName.trim() ? null : nameKo,
+    nameKo: nameKo === name.trim() ? null : nameKo,
     rating: ratingOf(w.rating),
     verdict: verdictOf(w.verdict),
+    majorAllergens: w.majorAllergens == null ? null : w.majorAllergens,
+    reportNo: w.reportNo == null || w.reportNo === '' ? null : String(w.reportNo),
+    labelKnown: typeof w.labelKnown === 'boolean' ? w.labelKnown : null,
   };
 }
 
 /** 판정 → RiskBadge 상태. 내용 불명 메모가 붙은 Safe도 배지는 safe(결정 4) */
-export const VERDICT_RISK = { AVOID: 'danger', CAUTION: 'caution', SAFE: 'safe', SAFE_WITH_NOTE: 'safe' } as const;
+// KB-921(R-147): SAFE_WITH_NOTE = 속을 알 수 없는 원재료(혼합제제·양념 등)가 있음 → 주의 — "모름"을 초록으로 그리지 않는다(false-safe 0). 띠·목록 리본·후보 줄이 전부 이 표를 거친다
+export const VERDICT_RISK = { AVOID: 'danger', CAUTION: 'caution', SAFE: 'safe', SAFE_WITH_NOTE: 'caution' } as const;
+/** KB-927: 판정 칩(리본과 같은 3상태) → 서버 verdict 파라미터 — VERDICT_RISK 역매핑이라 리본 톤과 늘 같다(Caution = CAUTION + SAFE_WITH_NOTE) */
+export type VerdictChipRisk = 'safe' | 'caution' | 'danger';
+export const verdictsForRisk = (risk: VerdictChipRisk): ProcessedVerdict[] => VERDICTS.filter((v) => VERDICT_RISK[v] === risk);
 
 // 판정 원소 변환 — 상세(GET /processed-foods/{id})와 성분표 분석(scan/label)이 같은 모양이라 한 벌로
+export type UnclearLabel = { term: string; label: string };
+/** KB-936: 필드 없음(구서버) = [] · 빈 term/label 항목은 버림 */
+const adaptUnclearLabels = (ls: DetailWire['unclearIngredientLabels']): UnclearLabel[] =>
+  (ls ?? []).map((l) => ({ term: (l.term ?? '').trim(), label: (l.label ?? '').trim() })).filter((l) => l.label);
 const adaptDetections = (ds: DetailWire['detections'] | null | undefined): ProcessedDetection[] =>
   (ds ?? []).map((d) => ({ code: d.code, evidence: d.evidence, fromLabel: d.source === 'ALLERGEN_DECLARATION' }));
 const adaptAvoidance = (as: NonNullable<DetailWire['avoidance']>): ProcessedAvoidance[] =>
@@ -173,6 +207,11 @@ function reviewSummaryOf(w: DetailWire['reviewSummary']): ProcessedReviewSummary
   return { overall, taste: overall.count > 0 ? overall : null, spiciness: null, sweetness: null };
 }
 
+const ingredientsOf = (w: { translated?: string | null; original?: string | null } | null | undefined, fallback: string | null) => {
+  const original = blankToNull(w?.original) ?? fallback;
+  return { translated: realTranslation(w?.translated, original), original };
+};
+
 export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
   const labelSource = labelSourceOf(w.labelSource);
   const allergens = labelSource === 'DECLARED' ? blankToNull(w.allergenStatement?.original) ?? blankToNull(w.allergens) : null;
@@ -189,10 +228,11 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     mayContainMatches: adaptMatches(w.mayContainMatches),
     mayContain: (w.mayContain ?? []).map((m) => ({ code: m.code, evidence: m.evidence })),
     unclearIngredients: (w.unclearIngredients ?? []).map((u) => u.trim()).filter(Boolean),
+    unclearIngredientLabels: adaptUnclearLabels(w.unclearIngredientLabels),
     majorAllergens: w.majorAllergens == null ? null : w.majorAllergens,
     // #462 전 = 원문만(번역 null). 원문은 서버 ingredients.original → 없으면 rawMaterials
-    ingredients: { translated: blankToNull(w.ingredients?.translated), original: blankToNull(w.ingredients?.original) ?? blankToNull(w.rawMaterials) },
-    allergenStatement: allergens ? { translated: blankToNull(w.allergenStatement?.translated), original: allergens } : null,
+    ingredients: ingredientsOf(w.ingredients, blankToNull(w.rawMaterials)),
+    allergenStatement: allergens ? { translated: realTranslation(w.allergenStatement?.translated, allergens), original: allergens } : null,
     sourceProvider: w.source.provider,
     sourceAttributionKey: w.source.attributionKey,
     image: w.image?.url ? { url: toHttps(w.image.url) as string, attributionKey: w.image.attributionKey } : null,
@@ -204,11 +244,12 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
 export type ScanCandidate = ProcessedFoodSummary & { reportNo: string };
 export type ScanNameResult = { analysisId: string; candidates: ScanCandidate[]; expiresAt: string | null };
 /** 확정 결과 — charged = 이번 호출에서 서버가 1회 차감했는지(표시는 이 값만 — 로컬 추정 금지) */
-export type ScanConfirmResult = { analysisId: string; rejected: boolean; charged: boolean; product: ProcessedFoodDetail | null };
+/** freeUntil(KB-877) = 가공식품 1시간 무료 창 끝(서버 정본) — null = 창 없음 */
+export type ScanConfirmResult = { analysisId: string; rejected: boolean; charged: boolean; product: ProcessedFoodDetail | null; freeUntil: string | null };
 
 type CandidateWire = SummaryWire & { reportNo: string };
 export type ScanNameWire = { analysisId: string; state: string; candidates?: CandidateWire[] | null; expiresAt?: string | null };
-export type ScanConfirmWire = { analysisId: string; state: string; charged?: boolean | null; product?: DetailWire | null };
+export type ScanConfirmWire = { analysisId: string; state: string; charged?: boolean | null; product?: DetailWire | null; freeUntil?: string | null };
 
 /** NO_CANDIDATE면 후보 0 — 서버 state가 정본(후보가 와도 state가 NO_CANDIDATE면 쓰지 않는다). 최대 5. */
 export function adaptScanName(w: ScanNameWire): ScanNameResult {
@@ -222,13 +263,22 @@ export function adaptScanName(w: ScanNameWire): ScanNameResult {
 /** charged는 true일 때만 true(없음·null = 차감 없음으로 보지 않고 "표시 안 함" — 호출측은 true만 차감 표시) */
 export function adaptScanConfirm(w: ScanConfirmWire): ScanConfirmResult {
   const rejected = w.state === 'REJECTED' || !w.product;
-  return { analysisId: w.analysisId, rejected, charged: w.charged === true, product: !rejected && w.product ? adaptProcessedDetail(w.product) : null };
+  return { analysisId: w.analysisId, rejected, charged: w.charged === true, product: !rejected && w.product ? adaptProcessedDetail(w.product) : null, freeUntil: isoOrNull(w.freeUntil) };
 }
 
 // ── KB-813 후속(P-508): 성분표 분석 S5 — POST /api/processed-foods/scan/label (서버 #442) ──
 /** 성분표 판독 결과. 제품이 정해지지 않았으니 상세 연결 없음. avoidance = 회원 대조(엔드포인트가 회원 전용이라 늘 배열). */
 export type LabelScanResult = {
   analysisId: string;
+  /** KB-865 v4(#457) — 상세와 같은 판정 필드(구서버 = null/빈 배열 → 구 판정 부품으로) */
+  verdict: ProcessedVerdict | null;
+  avoidMatches: ProcessedMatch[];
+  mayContainMatches: ProcessedMatch[];
+  unclearIngredients: string[];
+  unclearIngredientLabels: UnclearLabel[];
+  majorAllergens: string[] | null;
+  ingredients: { translated: string | null; original: string | null };
+  allergenStatement: { translated: string | null; original: string } | null;
   labelSource: LabelSource;
   detections: ProcessedDetection[];
   mayContain: ProcessedMayContain[];
@@ -236,6 +286,8 @@ export type LabelScanResult = {
   rawText: string;
   /** 이번 호출에서 서버가 1회 차감했는지 — true일 때만 차감 표시(로컬 추정 0) */
   charged: boolean;
+  /** KB-877: 가공식품 1시간 무료 창 끝(서버 정본) — null = 창 없음 */
+  freeUntil: string | null;
 };
 export type LabelScanWire = {
   analysisId: string;
@@ -246,15 +298,36 @@ export type LabelScanWire = {
   avoidance?: DetailWire['avoidance'];
   rawText?: string | null;
   charged?: boolean | null;
+  verdict?: string | null;
+  avoidMatches?: MatchWire[] | null;
+  mayContainMatches?: MatchWire[] | null;
+  unclearIngredients?: string[] | null;
+  unclearIngredientLabels?: { term?: string | null; label?: string | null }[] | null;
+  majorAllergens?: string[] | null;
+  ingredients?: { translated?: string | null; original?: string | null } | null;
+  allergenStatement?: { translated?: string | null; original?: string | null } | null;
+  freeUntil?: string | null;
 };
 export function adaptLabelScan(w: LabelScanWire): LabelScanResult {
+  const rawText = blankToNull(w.rawText);
+  const allergenOriginal = blankToNull(w.allergenStatement?.original);
   return {
     analysisId: w.analysisId,
+    verdict: verdictOf(w.verdict),
+    avoidMatches: adaptMatches(w.avoidMatches),
+    mayContainMatches: adaptMatches(w.mayContainMatches),
+    unclearIngredients: (w.unclearIngredients ?? []).map((u) => u.trim()).filter(Boolean),
+    unclearIngredientLabels: adaptUnclearLabels(w.unclearIngredientLabels),
+    majorAllergens: w.majorAllergens == null ? null : w.majorAllergens,
+    // 원문 = 서버 ingredients.original → 없으면 읽은 원문(rawText)
+    ingredients: ingredientsOf(w.ingredients, rawText),
+    allergenStatement: allergenOriginal ? { translated: realTranslation(w.allergenStatement?.translated, allergenOriginal), original: allergenOriginal } : null,
     labelSource: labelSourceOf(w.labelSource),
     detections: adaptDetections(w.detections),
     mayContain: (w.mayContain ?? []).map((m) => ({ code: m.code, evidence: m.evidence })),
     avoidance: adaptAvoidance(w.avoidance ?? []),
     rawText: blankToNull(w.rawText) ?? '',
     charged: w.charged === true,
+    freeUntil: isoOrNull(w.freeUntil),
   };
 }

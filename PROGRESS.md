@@ -1,3 +1,334 @@
+## 2026-11-03 · P-586 KB-974 가공식품 게스트 판정 숨김·상세 히어로 통일(예진 테플 피드백)
+
+- 비회원 = 가공식품 리본 0 — 공용 ProductCard 한 곳(useIsGuest)에서 막아 Packaged 목록·홈 편의점 줄·검색 Packaged 섹션이 같이 따른다(KB-947 "비회원 safe 리본" 결정 중 비회원만 뒤집음 — 회피 0개 회원은 그대로). 스캔 후보 행(PackagedScanScreens)은 회원 전용·이미 personalized만 · 리뷰 카드엔 판정 표시 없음.
+- 상세 비회원 = 판정 띠 대신 음식 상세와 같은 잠금 행 — 음식 상세 인라인 마크업을 공용 VerdictLockRow(VerdictBand.tsx)로 옮겨 둘이 같이 씀(키 detail.lockVerdict·intro.signUp, 새 키 0) · 탭 = AuthGateSheet(context risk) · 로그인 = 판정 띠 복귀. What's inside는 판정이 없으면 이미 중립(칩·마크 0).
+- 상세 상단 = 음식 상세 히어로와 같은 구조: SubHeader("Product details") 제거 · 정방 풀블리드 사진(C.surface2 바탕, 누끼 contain, 위 = 상태 표시줄·뒤로 원 아래) · 사진 위 반투명 원 뒤로(음식 fBtn 값, 모든 상태). PHOTO_RATIO 제거.
+- 시뮬로 잡은 것: 히어로 높이가 음식보다 40pt 컸다(aspectRatio 1 + 음수 좌우 여백 = Yoga가 여백 전 폭으로 높이 계산 → 높이 = 창 폭 명시) · 사진과 잠금 행 사이 20pt 틈(목록 gap → 아래 -20 상쇄). ja + 글자 XXXL 잠금 행 잘림 0.
+
+## 2026-11-03 · P-584 KB-973 가공식품 출시 계측 보강(예진 11/03 "다 넣어줘")
+
+- ① 촬영 시작 = 신규 food_packaged_scan_start(mode packaged|label · source camera|gallery — scan_start와 같은 값). scan_start는 메뉴 전용 시계열 그대로(가공식품을 섞으면 기존 대시보드 수치가 바뀐다 — 발주 "속성 확장 권장" 대신 별 이벤트, 보고).
+- ② 실패 = 신규 food_packaged_scan_fail(stage name|confirm · result = scanFailureOf). 확정 성공 food_packaged_scan_confirm은 그대로(성공 분모 유지). 성분표는 기존 food_packaged_label_scan result가 이미 실패 포함.
+- ③ 홈 편의점 줄 카드 노출 home_card_view(section cvs · position · product_id — click과 같은 규칙) — 카드 바깥 View에 노출 노드 + 가로 스크롤 정지 판정.
+- ④ food_packaged_detail_view source(search|home_cvs|list|scan|review|deeplink) — 진입점 ?src= 태그(검색·홈 줄·Packaged 목록·리뷰 카드), 스캔 확정 = scan=1, 태그 없음 = deeplink(packagedDetailSource).
+- ⑤ review_feed_target_select(target all|food|packaged, 바뀔 때만) · food_segment_select(segment · source tap = 바뀔 때만 | coach(via=coach) | see_all = 링크 진입마다). deeplink 값은 없음 — kbap://food 딥링크가 쿼리를 버려 세그먼트를 못 바꾼다.
+- 기존 이벤트 이름·속성 제거 0(속성 추가: home_card_view product_id · food_packaged_detail_view source). 상세 링크 기대값 테스트 5곳 갱신. 뮤테이션 7종 확인.
+
+
+## 2026-11-03 · KB-967 후속 — 통합 검색 All 섹션 See all은 두 요청 settle 뒤에만(Q-397 사소)
+
+- All 스켈레톤 동안 음식 응답 직후 Dishes 머리 See all이 0.3초 먼저 뜨던 것 → 두 섹션 See all 모두 allSettled 뒤에만(스켈레톤·순서 고정과 같은 조건).
+- searchUnified967 단언 추가(먼저 온 음식의 See all = 0), 뮤테이션 확인.
+
+## 2026-11-03 · P-583 KB-971 가공식품 코치마크 보완(예진 테플 피드백)
+
+- 2단계 말풍선 아이콘 = 과자봉지 SVG(IconSnackBag 신설 — 기존 세트에 스낵·패키지 계열 없음, Glyph 선 스타일) · 1단계 = 스캔 그대로.
+- 1단계 탭 → 음식 탭을 Packaged 선택 상태로(packagedCoachFoodHref = /food?view=packaged&t — 홈 편의점 See all과 같은 진입) → 2단계는 선택된 Packaged 탭 스포트라이트, 탭 = 종료(선택 유지).
+- X 제거(두 단계) — 딤 어디든 탭 = 다음/종료, 화면 전체 = 버튼(스크린리더 라벨 = 문구, activate = 진행). food_packaged_coach_skip은 Android 하드웨어 뒤로(onRequestClose)만 남음.
+- 같이 실음(#398 Codex P2, 머지 후속): 코치마크가 떠 있는 채 warm 딥링크 등으로 탭이 바뀌면 Modal이 목적지 위에 남고 탭하면 음식 탭으로 끌고 갔다 → 홈·음식 탭 블러에 abort(닫기 · 봤음 기록 되돌림 = 다음 포커스 재판정 · 흐름 해제 · 큐 즉시 해제, 계측 없음). 다음 단계로 가는 탭 뒤 dismiss 대기 중 블러는 무시.
+- 테스트: X 부재·아이콘·딤 탭 전이·진입 경로(view=packaged), 뮤테이션 확인.
+
+## 2026-11-03 · P-582 KB-970 OCR 테스트 입력칸 시뮬레이터 전용(예진 11/03 테플 스크린샷)
+
+- 가공식품 스캔 앞면·성분표 OCR 주입 입력칸(FrontDebug·LabelDebug) = 시뮬레이터에서만. 실기는 진단 채널·개발 번들이어도 숨김(카메라 위 입력칸이 성분표 글자를 가렸다). 스토어 채널 무변.
+- 판정 = lib/simulator(새 네이티브 0 — expo-device는 지문 회전): iOS expo-application 릴리스 유형 SIMULATOR(deviceInfo와 같은 지연 require), Android Platform.constants 지문·모델(generic·emulator·sdk_gphone·emu64·Android SDK built for). 모르면 실기 취급. 판정 전 = 숨김 → 시뮬이면 곧 표시.
+- 테스트 simulator970(iOS 유형별·Android 지문·노출 조합) + packagedScan813 실기 = 입력칸 없음 · 스캔 테스트 4개 = 시뮬 기준 목.
+
+
+## 2026-11-03 · P-581 KB-968 가공식품 출시 홍보 코치마크 2단계(예진 11/03)
+
+- 1단계(홈) = 딤 + 탭바 스캔 버튼 구멍 + v3 말풍선(제목·본문) → 탭 = 음식 탭(Dishes) · 2단계 = 딤 + 헤더 Packaged 탭 구멍 + 말풍선 → 탭 = Packaged 선택. X = 전체 건너뛰기.
+- 1회(kbap.packagedCoach.v1, 표시 즉시 기록) · processedFoodEnabled일 때만 · 홈 oneShotQueue 스텝(포커스 등록·블러 clear) · 스캔 뒤 넛지·리뷰 유도(ScanExitPrompts)는 코치마크를 아직 안 봤으면 건너뜀(코치마크 우선).
+- 구멍 = 대상 measureInWindow(lib/coachTargets 등록부) + react-native-svg evenodd 경로 · 못 재면 딤 없이 말풍선만. 새 네이티브 의존성 0.
+- 시뮬 실측으로 잡은 것: 첫 실행엔 탭 진입 직후 UMP 동의 폼·ATT가 떠서 그 사이 올린 RN Modal이 iOS에서 버려지고 "봤음"만 기록됐다 → 광고 기동이 끝난 뒤(whenAdsSettled, 상한 20초)·가림 없을 때만 띄우고, 아니면 기록 없이 다음 포커스로.
+- Q-398(11/03): 첫 실행 첫 홈 포커스에서 1단계가 안 뜸(광고 기동이 20초 상한을 넘겨 이번 포커스 건너뜀 → 탭 전환해야 표시) → 상한 제거: 광고 settle·가림 해제를 구독으로 기다렸다가 홈에 머무는 한 그 자리에서 표시, 홈을 떠나면(큐 abort) 기록 없이 다음 포커스로.
+- #398 Codex 1차 P2(11/03): 스캔 뒤 넛지·리뷰 유도 게이트 = 저장 키(표시 즉시 기록)만이 아니라 코치마크 흐름 활성(1단계 표시 ~ 2단계 끝, 단계 사이 포함)도 — 떠 있는 동안 시트 겹침 0.
+- React Compiler: `ref={obj.key}`(멤버 접근)는 "렌더 중 ref 읽기"로 TabBar를 건너뛰었다 → 대상 ref 콜백을 이름별 export(scanCoachAnchor·packagedCoachAnchor).
+- Amplitude food_packaged_coach_shown·next·skip(step) — 발주 이름 packaged_coach_*는 네이밍 규칙(도메인 접두) 위반이라 커맨드 확인 후 기존 가공식품 이벤트와 같은 food_ 접두로. 새 i18n 키 3개(packagedCoach.homeTitle·homeBody·foodBody, 10로케일).
+
+
+## 2026-11-03 · P-580 KB-967 통합 검색 — 음식·가공식품 섹션(예진 11/03)
+
+- search.tsx 결과 위 칩 All / Dishes / Packaged(리뷰 탭 KB-966과 같은 Chip·키 — home.filterAll, packaged.segmentDishes/Packaged). 기본 All, 제출 방식·검색 전 화면 현행.
+- All = 섹션별 4개 + 더 있을 때만 See all(home.seeAll, 해당 칩으로 전환) · 순서 = 첫 페이지 건수 많은 쪽(동률 Dishes) · 0건 섹션 숨김, 둘 다 0건 = 기존 빈 상태 · 로딩 = 섹션 스켈레톤 · 실패 = 그 섹션만 QueryErrorBlock.
+- Dishes = 기존 음식 결과 그대로 · Packaged = useProcessedSearchPaged 무한스크롤 + Packaged 탭 ProductCard(판정 리본 기준 동일).
+- processedFoodEnabled off = 칩·가공식품 요청 없음(useProcessedSearchPaged enabled 인자 추가). search_query에 segment(all|dishes|packaged).
+- 새 i18n 키 0. 테스트 searchUnified967(뮤테이션 5종 확인) + 기존 search 테스트 2개에 가공식품 목 추가.
+- Q-397 보정(11/03): ① All = 두 요청이 다 끝날 때까지 두 섹션 스켈레톤 고정 순서(Dishes 위) → 끝난 뒤 한 번에 순서·숨김 결정(0.3초 점프 제거) ② Packaged 칩 결과 수 줄 숨김(서버 total 없음 — 불러온 개수가 20→83로 늘던 것), Dishes 칩 = 칩 아래 30(리뷰 탭과 같은 8 + 22) ③ search_query = 가공식품도 끝난 뒤 1회, result_count는 음식 건수 그대로 + packaged_count.
+- #397 Codex 1차 P2(11/03): ① Packaged 칩 다음 페이지 실패 = 받은 카드 유지 + 푸터 다시 시도(자동 재요청 0, 첫 페이지 실패만 오류 블록) ② search_query 기준 = 제출 때 칩 — Dishes 음식 성공 · Packaged 가공식품 성공(result_count = 가공식품 건수, 음식 실패여도 나감) · All 둘 다 끝난 뒤 하나라도 성공(result_count = 음식, 음식 실패면 생략 + packaged_count).
+
+
+## 2026-11-02 · P-579 KB-966 연장 — 리뷰의 가공식품 이름 번역(서버 S-942)
+
+- 리뷰 응답 processedFood.name(요청 lang 번역, 가산) 우선, 없음·null·빈값이면 productName 원문 — 가공식품 목록 어댑터와 같은 규칙.
+- 리뷰 카드·상세·내 리뷰·상품 리뷰가 전부 adaptReview의 foodName을 쓰므로 어댑터 한 곳에서 처리. 세 리뷰 GET 모두 lang 이미 전송.
+- 테스트: packagedReviews507 ① 어댑터에 name 있음/없음/null/빈값 폴백(뮤테이션 확인 — 수정 되돌리면 실패).
+
+## 2026-11-02 · P-578 KB-966 리뷰 탭 음식·가공식품 필터(예진 11/2, 서버 S-939)
+- 리뷰 탭 국적·정렬 줄 아래 세그먼트 All · Dishes · Packaged(공용 Chip — 선택 = 색만, 라벨 = 기존 home.filterAll·packaged.segmentDishes·segmentPackaged). 기본 All(통합 그대로). 유지 = 정렬·국적 필터처럼 세션 내 state.
+- GET /api/reviews targetType = FOOD | PROCESSED_FOOD(All 생략, 서버 기본 ALL) — globalReviewsKey 끝에 targetType(기본 'ALL') → 바꾸면 커서 처음부터·기존 스켈레톤, 프리픽스 유지라 좋아요·작성 무효화·첫 장 새로고침 무변.
+- processedFoodEnabled OFF(운영) = 세그먼트 숨김 + 파라미터 0. 0건 = 기존 "No reviews yet"(필터 무관하게 맞는 문장) — 신규 문구 0.
+
+## 2026-11-02 · P-577 KB-963 가공식품 스캔 차감 없음·Food photo 숨김(예진 11/2 실기, 서버 S-937)
+- 스캔 진입 게이트: 메뉴 쿼터가 소진돼도 스캔 화면은 열림(진입 시 프로필 소진·선발급 SCAN-004 = 기록만). 소진 안내(P-250 쿼터 화면 재사용) = 메뉴 모드 촬영 시도(셔터·갤러리·시스템 카메라)에서만 — 가공식품 촬영은 통과. 나중에 = 카메라 복귀(모드 탭에서 가공식품). 진입 경로(홈·탭바·Packaged 탭)는 전부 /scan이라 게이트는 scan.tsx 한 곳. 기본 진입 모드 = 기존 규칙 유지(메뉴, mode=packaged면 가공식품).
+- 가공식품 무료 창·차감 표시 소멸: 카메라 배지 2곳(앞면·성분표) · packagedFreeHour 모듈(applyFreeUntil·PackagedFreeLine·FreeBadge) 삭제 · 상세 링크 &free=1 · labelResult freeStarted. 서버 charged는 계측·프로필 재조회에만 남음. i18n packagedScan.freeFor_*·freeExplain 10로케일 삭제(err.quota*는 구 서버 403 대비 유지).
+- 스캔 모드 탭 Food photo 숨김 = FLAGS.foodPhotoMode(false) — Menu · Packaged food 두 칸(칸 최소 폭 = 화면 ÷ 칸 수).
+- OCR text (test only) 입력칸 = showOcrDebug(__DEV__ || isDiagnosticChannel — development·teamtest·teamtest-prod만, production·preview 0) 확인만.
+- 신규 문구 0.
+
+## 2026-11-02 · P-576 KB-962 홈 See all 원형 화살표 버튼(예진 11/2, Mobbin Uber Eats·DoorDash)
+- 공용 SeeAllCircle(components) — 연회색 원(C.hair) + 검은 → (신규 IconArrowRight = lucide arrow-right), 지름 32 · hitSlop 6 · 접근성 라벨 home.seeAll(기존 키).
+- 홈 Popular|Saved|Food 탭 줄 오른쪽 끝 = 원형 버튼(고정 칸 flexShrink 0, 탭은 남은 폭 — 긴 언어는 기존 가로 스크롤) · 이동 = 구 레일 끝 카드와 같음(foodTabHref 탭·칩 승계, testID home-rail-see-all 유지). 레일 끝 See all 카드 삭제(seeAllCard·seeAllText 스타일 제거).
+- 편의점 줄 헤더 See all 텍스트 → 같은 원형 버튼(이동 = Packaged 그대로).
+- (추가) 저장 빈 상태 안내 saved.emptyBody(홈 Saved 탭·음식 탭 Saved) = 카드 별 제거(KB-959)에 맞춰 "Save dishes from their detail page to keep them here." / "음식 상세에서 저장하면 여기에 모여요." 10로케일(K-항목, 키 이름 유지). 기기 미검증(QA — 큰 글자·ru 탭 줄 겹침).
+
+## 2026-11-02 · P-575 KB-959 목록 저장 버튼 제거·성분표 무료 배너·Safe 띠 문구(+ Ramyeon·See all 색)
+- 카드 저장(별) 버튼 제거: FoodGridCard(홈 레일 Popular·Food·Saved 탭·음식 그리드·검색 결과·저장 목록) — 이름 열이 카드 폭 전부. Packaged 카드는 원래 별 없음. 저장·해제 = 상세만. 따라 죽은 경로 정리: FoodExplorer 카드 토글·판정 드레인(useSavedIds)·카드 하트 계측, 검색 카드 토글·저장 게이트, 저장 목록 해제 토글·Undo 스낵바(saved.undo 키 10로케일 삭제). Saved 칩·홈 Saved 탭·저장 목록 화면 유지.
+- 성분표 분석 결과 상단 무료 시간 배너(시작 안내 freeStarted·남은 분 배너) 제거 — packagedScan.freeStarted 10로케일 삭제. 남은 무료 시간 표시 = 앞면·성분표 카메라 배지 2곳(보고 — 판단은 커맨드).
+- Safe 띠 부제 = 근거: 회피 N개 회원 = packaged.safeBasis(복수형 10로케일, ru 네 형태 같은 문구) "We checked the label against your {{count}} avoided ingredients." · 회피 0개·비회원 Safe = 부제 없음. 구 packaged.noAvoidMatches·packagedScan.resultSafeAll 삭제.
+- (추가) Ramen → Ramyeon: 유형 탭·Packaged 검색 힌트·맵기 예시 — 라틴 = Ramyeon(vi Mì ramyeon) · ja ラミョン · zh-Hans 韩国拉面 · zh-Hant 韓國泡麵 · th บะหมี่เกาหลี · ru Рамён · ko 라면. 서버 enum RAMEN·계측 값 무변.
+- (추가) 홈 편의점 줄 헤더 See all = C.ink(구 주황). 음식 레일 끝 See all 카드 무변(별도 발주 예정). 신규 문구 = K-항목.
+
+## 2026-11-02 · KB-958 Reviews 첫 장 줄이기를 활성 피드 쿼리만(Codex #388 2R P2 후속)
+- 구 = setQueriesData(['reviews','global'] 접두) → 비활성 정렬·국적 변형까지 첫 장으로 줄이며 갱신 시각이 바뀌어 신선도 리셋. 신 = globalReviewsKey(지금 필터) 정확한 키 하나만 getQueryData → 2장 이상이면 setQueryData. 훅과 같은 키 함수(useFoodReviews globalReviewsKey).
+
+## 2026-11-02 · P-572 KB-956 음식 탭 Popular = 리뷰 많은 순(서버 #521, dev 7248dc52)
+- 정렬 시트 Popular(라벨 그대로) → GET /foods sort=reviews(리뷰 수↓·평균↓·id↓) — 이름 정렬과 같은 3.1 헤더·불투명 커서·재시작 경로(409 FOOD-022 = 리뷰가 늘어 revision 변경 → 첫 페이지부터). 구 = Popular·New 둘 다 파라미터 없음(id↓ = 최신순)이라 이름과 실제가 달랐다.
+- 게이트 = FLAGS.popularByReviews(DEV_SERVER_CHANNEL) — 운영 서버는 모르는 sort면 INVALID_REQUEST, 서버 운영 배포 뒤 다음 OTA에서 플래그만 연다. off = 기존 기본 정렬.
+- 저장 목록(/bookmarks)은 reviews 정렬이 없어(서버 #521 = /foods만) Popular일 때 기본 정렬(bookmarkSort). 정렬 선요청 목록에 reviews(플래그 on). 매핑 = features/food/foodSort.ts(순수). 신규 ko 0.
+
+## 2026-11-02 · P-573 KB-957 음식 탭 상단 정리·기본 Packaged(예진 11/2 실기)
+- Dishes | Packaged = 헤더 로고 줄 안(StickyHeader center 슬롯 — 다른 화면 무변) · 글자·밑줄 = 구 세그먼트 그대로(16 semibold·2pt), 칸 폭 = 글자 폭 · 큰 글자 = 줄임표 대신 글자 배율 상한 SEG_MAX_SCALE 1.15. 별도 세그먼트 줄·Dishes 머리 간격 소멸.
+- Packaged "Popular picks"·유형명 제목 소멸(유형은 밑줄 탭 선택 상태) — 검색 결과일 때만 제목, 그 밖엔 칩 → 그리드 간격 16. Dishes엔 같은 제목 없음.
+- 유형 밑줄 탭 = 한 단계 작게: type.meta 14(선택 = semibold) · 밑줄 2 → 1.5 · 글자–밑줄 6 → 4. 칩 라벨 토큰은 16/500이라 "칩 크기급"이면 지금과 같은 크기 — 위계를 위해 meta 14로(보고).
+- 첫 진입 기본 = Packaged(defaultFoodSegment — 운영 채널 processedFoodEnabled off = Dishes) · See all·딥링크 전이 무변. 신규 ko 0. 기기 미검증(QA).
+
+## 2026-11-02 · P-571 KB-955 홈 편의점 인기 가공식품 줄(예진 11/2)
+- 위치 = Popular|Saved|Food 레일 바로 아래(afterRail 맨 앞), 아이돌 픽·큐레이션 위 · 운영 채널(processedFoodEnabled off) = 마운트 0.
+- 헤더 = SectionHead(라벨 packaged.segmentPackaged 재사용 + 제목 home.cvsTitle 신규) + 오른쪽 See all(home.seeAll) → /food?view=packaged(음식 탭이 Packaged 세그먼트로 — 운영 채널은 Dishes).
+- 카드 = Packaged ProductCard 그대로(리본·평점 규칙 동일) · 폭 = railCardW · 10개 · 데이터 = useProcessedSearch('')(Packaged 둘러보기와 같은 키 = 캐시 공유, verdictKey).
+- 로딩 = ProductCardSkeleton(그리드와 공유) · 실패·0개 = 섹션째 없음 · home_section_view(cvs)·home_card_click(cvs·position·product_id — ALLOWED에 product_id 추가) · 홈 당겨서 새로고침 + ['processedFoods','search'].
+- QA Q-389: 음식 탭을 한 번도 안 연 채 See all(view=packaged)로 들어오면 첫 마운트의 t가 곧 prevSeeAll이라 전이가 없어 Dishes로 열렸다 → 세그먼트 초기값에도 t·view 적용.
+- 신규 문구(K-항목): home.cvsTitle ko "편의점 인기 간식"(10로케일). 기기 미검증(QA).
+
+## 2026-11-02 · P-570 KB-954 새로고침 공백·리뷰 후 카드 평점·회피 변경 재조회·탭바 재탭
+- 회피 변경(useUpdateMe)·온보딩 완료 = resetPersonalizedQueries — 위험도 키(home·foods·food·bookmarks·processedFoods)는 resetQueries(재조회 동안 옛 Safe 대신 스켈레톤, 실패 = 오류), 나머지는 invalidate. 온보딩 clear()(마운트된 탭 재조회 0, P-205 족보) 제거.
+- 리뷰 작성·수정·삭제 무효화 + foods·bookmarks·processedFoods search(KB-948 카드 평점 공백).
+- 당겨서 새로고침: Packaged(['processedFoods'])·저장 목록(bookmarks)·음식 상세(['food', id])·가공 상세(detail id + 리뷰)·Profile — 공용 usePullRefresh(+ me, 스피너 = 활성 재조회 끝까지, Provider 없으면 앱 싱글턴). 홈 = + me·알림 수, Dishes·Reviews = + me.
+- 탭바(P-570 추가): AppTabBar가 lib/tabPress 신호(reselect·enter) — 재탭 = 맨 위 + 새로고침(홈·음식 Dishes/Packaged·Reviews·Profile) · Reviews 진입 = stale 무관 첫 페이지 재조회(맨 위로). Reviews 재조회 = 불러온 페이지를 첫 장으로 줄인 뒤 refetch(옛 데이터 유지 — 깜빡임 0, 전 페이지 순차 재요청 0), 포커스 stale 재조회는 진행 중이면 건너뜀.
+- Codex #388 P1: 다른 기기 회피 변경 → 당김·재탭·앱 복귀로 프로필만 새로 오면 판정 캐시는 옛 기준(false-safe) → fetchMe 한 곳에서 회피 집합(정렬) 비교, 다르면 위험도 키만 reset(riskOnly — me·나머지 재조회 0). 이 기기 저장은 noteAppliedRestrictions로 새 기준을 먼저 적어 중복 reset 0.
+- QA Q-388 수정: ① 음식 상세 당김 스피너가 상태 표시줄·다이내믹 아일랜드 뒤(히어로가 화면 맨 위부터) → Android progressViewOffset · iOS 헤더 줄 아래 Spinner(refreshing 동안). ② 재탭 맨 위 이동이 중간에 멈춤(애니메이션 스크롤 + refreshing 동시) → topThenRefresh: 애니메이션 없이 맨 위 → 다음 프레임 새로고침(5탭 공통).
+- 테스트 하네스: refreshControl 엘리먼트 prop 순환 참조 → JSON 직렬화에서 React 엘리먼트만 제외. 신규 ko 0. 기기 미검증(QA).
+
+## 2026-11-01 · P-569 KB-949 음식·가공식품 탭 필터 — 카테고리 밑줄 탭 + 안전도 아이콘 칩(예진 11/1, Mobbin 1순위안)
+- Packaged: 위 = 유형 밑줄 탭(가로 스크롤 ChipScrollRow 안 — 글자·밑줄 = 상단 Dishes/Packaged 세그먼트 seg 스타일 그대로, 비선택도 투명 밑줄로 자리 유지, All 탭 유지, accessibilityRole tab) · 아래 = 판정 칩 Safe·Avoid·Caution(All 칩 삭제 — 안 고름 = 전체, 다시 누르면 해제, 단일 선택).
+- Dishes(음식 탭) + 홈(embedded, 커맨드 추가 지시 — "안전도 필터 모양 통일"): 위험 칩 All 삭제 + 같은 토글(RISK_CHIPS 하나) · Saved 칩·정렬 버튼 그대로. 저장 목록(profile/saved)도 같은 RISK_CHIPS(FoodCards로 옮겨 공유)·토글·위험도 마크(구 = 중립 칩)로 통일(커맨드 추가 지시).
+- 칩 모양 = 기존 Chip(risk 마크·외곽선 / 선택 = 위험도 틴트 채움 + 같은 색 테두리) 그대로. 필터 로직·API 무변. 신규 ko 0. 기기 미검증(QA — 큰 글자·긴 로케일 가로 스크롤·한 줄).
+
+## 2026-10-31 · P-568 KB-948 후속 — 카드 평점 줄을 한국어 이름 줄 스타일로(예진 실기 teamtest 0f5f2db)
+- OverallRating 카드 변형(textStyle·starSize prop): 평균·개수 = 같은 글자 하나(평균만 굵게 0) · 행 minHeight 없음 = 그 글자 lineHeight를 따름(큰 글자 대응 유지). 음식 카드 = gko(16/500 ink2)·별 13 · Packaged 카드 = ProductName rowKo(meta 14/400 ink2)·별 12.
+- 다른 사용처(Top rated 행·이름 스캔 후보 줄) = prop 없음 = 기존 16/700·13/700·minHeight 18 그대로. 줄 간격(marginTop)은 무변. 신규 ko 0. 기기 미검증(QA 보통·큰 글자).
+
+## 2026-10-31 · P-567 KB-948 음식·가공식품 2열 카드 정리(예진 Mobbin 벤치마킹)
+- 공용 FoodGridCard(Dishes 그리드·홈 레일·검색·저장) = 한국어 줄 아래 리뷰 있으면 OverallRating "★ 4.5 (12)" 한 줄(reviewsEnabled · count 0 = 줄째 없음). 영어 2줄 말줄임·한국어 1줄은 기존 그대로.
+- Packaged ProductCard = 제조사 줄 제거(스크린리더 라벨엔 유지) · 이름 상자 위 간격 10(음식 카드 gmeta와 같음) · 평점 줄 기존 그대로(rating null = 없음).
+- QA(#385): 큰 글자에서 평균 숫자 하단 잘림 → OverallRating 행 height 18 고정 → minHeight 18 + 글자 lineHeight 18(기본 크기 그대로, 큰 글자면 줄이 늘어남). 사용처 4곳(음식 카드·Top rated·가공 카드·스캔 후보 줄) 모두 높이 덮어쓰기 0.
+- 리본·판정·사진 윗선 정렬 무변, 텍스트 아래 높이 차이 허용. 스켈레톤은 이미 이름·한국어(+음식 상태) 막대라 무변(평점 줄은 조건부라 막대 없음). 신규 ko 0. 기기 미검증(QA 위임 — 리뷰 있는/없는 카드 같은 행, 큰 글자).
+
+## 2026-10-31 · P-566 KB-946 갤러리 이름 스캔 실패(같은 사진 카메라는 성공)
+- 원인(dev scan_operation 55~60 실측): 갤러리 = 원본 그대로 OCR → 작은 웹 이미지에서 ML Kit 한국어가 "바나나맛"을 "아나나맛"·"가나나맛", "Since1974"를 "Shoetg4"로 읽어 서버 후보 0. 카메라 = 고해상도 WYSIWYG 크롭본이라 정상(후보 11). 사진 동봉 플래그 off(요청 = 텍스트만).
+- 수정: 가공식품·성분표 갤러리(menu false)만 긴 변 2000 미만이면 비율 그대로 키운 JPEG로 OCR(upscaleLongSide·upscaleForOcr — 지연 require, 실패 = 원본). 메뉴판 갤러리 무변. 투명 PNG 흰 배경 합성은 생략(원인 아님). 기기 미검증(QA 위임 — 같은 작은 이미지).
+
+## 2026-10-31 · P-564 KB-945 가공식품 상세 = 음식 상세 구성 + P-565 KB-947 회피 미설정 Safe
+- 상세 순서 = 음식 상세: 사진 → 판정 띠(화면 폭) → 이름 → 굵은 구분선 → What's inside(음식 상세 제목 키·칩 필터·재료 타일 한 그리드 = 감지·일치 + 주요 알레르기 + 혼입 가능, insideCodes) → 접힌 "Ingredients and source"(원재료 원문·알레르기 표시·출처) → 굵은 구분선 → 리뷰. 구 감지 카드·Major allergens 문단·원재료 미리보기·See detail 소멸.
+- 피할 재료 설정·로그인 유도 버튼 제거(상세·성분표 결과 — 회피 0개 결과 = Done만). 이름 스캔 후보 단계 = 제목 + 목록 + None of these(무료 배지·설명, "N possible matches", 개인화 안내 제거 — 무료 차감은 서버 그대로).
+- KB-947(예진 10/31 결정): 비회원·회피 0개 회원 = Packaged 카드 safe 리본 + 상세 Safe 띠(가공 SAFE 키 그대로). 로그인 + 프로필 대기·실패 = 리본 0, 원재료·알레르기 표시 둘 다 없는 제품 = 확인 못 함(false-safe 0). 판정 칩·음식 리본 무변.
+- Codex #383 1R P1: 카드 safe 리본 = 서버 labelKnown(S-928 확정, 상세 labelSource != NONE과 같은 규칙) true만 · 상세 표시 없음 판정도 labelSource NONE으로 맞춤 — false·필드 없음(구서버) = 리본 0. 서버 필드 dev 반영 전엔 미설정 사용자 카드 리본 0이 정상.
+- 안 쓰게 된 키 10로케일 정리: packaged.setAvoidIngredients·signInToPersonalize·seeDetail, packagedScan.possibleMatches. 신규 ko 0. 기기 미검증(QA 위임).
+
+## 2026-10-31 · P-563 KB-944 이름 스캔 후보 탭 시 이름 줄바꿈 튐 수정
+- 확정 대기 스피너 = 썸네일 위에 겹침(흰 원 36 + 스피너 20) — 구 = 줄 오른쪽에 새 칸이 생겨 이름 폭이 줄고 줄바꿈이 바뀌었다(예진 화면 녹화). 줄 직계 칸 수 불변·스피너 absolute 잠금(packagedScan813).
+- ①(카드 이름 두 줄·행 높이)은 P-563 변경으로 보류 — 카드 UI 벤치마킹 중. 신규 ko 0. 기기 미검증(QA 위임).
+
+## 2026-10-31 · P-562 KB-936 SAFE_WITH_NOTE 부제 사용자 언어 라벨(서버 #505)
+- 어댑터: 상세(이름 스캔 확정 상세 포함)·성분표 스캔 결과에 `unclearIngredientLabels` [{term, label}] 파싱(필드 없음 = [], 빈 label 버림). unclearIngredients 유지.
+- 부제 = 공용 `unclearSubtitle` — label 중복 제거 후 ", " 연결 → 라벨 0(구서버·빈 배열)이면 원문 unclearIngredients → 그것도 비면 생략. 상세 띠·성분표 결과 둘 다 같은 함수.
+- 신규 ko 0 · 라벨 문구 = 서버 데이터(K-130). 기기 미검증(QA 위임 — en·ja SAFE_WITH_NOTE 상품).
+
+## 2026-10-30 — P-548 / KB-914 가공식품 화면 메뉴판 스캔과 통일 (R-137~R-142)
+
+- 공용 부품 추출(무변 이동): 음식 상세 판정 띠 → `components/VerdictBand` · 재료 타일 → `components/IngredientTile`(IngChainImage 포함) · 메뉴판 회피 칩 줄 → `ScanRichList` `WarnChips` · 메뉴판 오류 화면 → `features/scan/ScanDarkMessage`
+- R-137 가공식품 상세·성분표 결과 = 같은 띠(서버 verdict 그대로, 제목 = 기존 가공식품 판정 키, 성분표 결과 이유 = 결과 전용 문장 키 무변) + 감지 재료 타일(회원 판정 있을 때만 마크: 회피 = danger · 혼입 = caution · 그 밖 감지 = safe — 판정 없으면 마크 0) · 확인 못 함 = 회색 unable 띠 · 원재료 = 한 체계(IngredientsText — "English translation"·"Korean original" 같은 위계 소제목) · 성분표 결과 원문 = 접힘 · 상세 하단 고정 "Write a review" 알약(섹션 링크 숨김) · 결과 하단 = Done 알약 + 보조 테두리 · 사진 위 작은 리본 소멸
+- R-138 후보 줄 = 메뉴판 결과 줄 치수(richStyles) + ProductName(영어 굵게 + 한국어 작게) + 회피 칩(위험 판정 줄만 상세 프리페치 — 서버 후보 항목엔 일치 코드가 없다) · **줄 탭 = 바로 확정**(하단 확정 버튼 소멸, 확정 대기 줄에 스피너, 나머지 잠금 유지) · "None of these" = 목록 끝 줄
+- R-139 후보 없음·못 읽음·오류(MessagePage) = 메뉴판 'Not a menu'와 같은 어두운 전체 화면(주황 라벨 = 구 헤더 제목 · 흰 문장 · 버튼 세로) · 왼쪽 위 뒤로
+- 2차 R-140 이름 = 공용 ProductName(영어 굵게 + 한국어 작게, 같으면 한 줄) — 후보·이름 찾기·탭 카드·상세 제목·리뷰 칩 · 상세 메타 줄 = 유형만 · 글자 = 토큰(목록 16 굵게 + 14 · 상세 largeTitle 26, 구 28 · 카드 16, 구 17)
+- 2차 R-141 무료 창 = 배지 하나(FreeBadge — 틴트 알약) · 카메라(앞면·성분표)·후보·결과만 — 면 검토·이름 찾기·상세 문장 제거 · 뜻 한 줄(freeExplain)은 배지 아래에만
+- 2차 R-142 Packaged 탭 상단 = Dishes와 같은 검색 행(검색칸 + 공용 SearchScanButton → /scan?mode=packaged) · 둘째 줄 유형 칩 · **판정 칩 = 서버 verdict 필터 대기(R-142 일부 보류 — 클라 필터 금지, 커맨드 (a))**
+- 새 스타일 = type 토큰만(새 fontSize·radius 리터럴 0)
+- Codex #369 2R P1: 가공 SAFE 띠 제목 = 매칭 범위 키(구 음식 상세 detail.verdictSafe "안심하고 드세요" — 보장 표현 금지) · 가공 띠 제목 전부 가공 전용 키
+- 신규 ko 문구(K-항목 — 안전 문구, 예진 승인 대상): `packaged.noAvoidMatchTitle` = 피하는 재료와 겹치는 것 없음 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
+
+## 2026-10-30 · P-561b KB-941 후속 — 리뷰 탭 번역 캐시 서버 동봉 사용(KB-940 #504)
+- 전역 피드 첫 페이지 items[].translation {text, sourceLanguage} → reviewAdapter serverTranslation(요청 lang + adaptTranslation 규칙) → useContentTranslation seed: 요청 lang = 지금 apiLang이면 기존 캐시 키에 setQueryData, 자동 POST 0. 구 서버(키 없음)·다른 lang = 현행 자동 요청.
+- dev 실응답(lang=ja) 대입: 50개 중 28개 시드(서버 실측과 같음). foodAdapter map(adaptReview) → 화살표(배열 index가 requestLang으로 들어가는 것 차단).
+
+## 2026-10-30 · P-561 KB-941 리뷰 탭 첫 묶음 자동 번역
+- useContentTranslation에 auto 옵션(새 훅 0): 켜면 탭 없이 번역 요청 → 처음부터 번역문 · "원문 보기" 토글 유지(누르면 그 키는 원문) · 실패 = 원문 유지·토스트 0 · 로딩 = 원문 + 기존 로딩 라벨.
+- 자동 요청은 전역 줄로 동시 4개 이하(runLimited). 캐시·구독 방식(useSyncExternalStore) 그대로 — 렌더 중 캐시 직접 읽기 0.
+- 대상 = ReviewFeed pages[0] 항목 중 본문 있고 language ≠ 앱 언어(null 포함). 정렬·필터·새로고침 = 새 첫 페이지가 대상. 2페이지 이후·음식 상세·가공식품 = 현행(탭).
+- 계측: 자동 결과 = review_translate_toggle + source 'auto'(수동엔 source 없음 — 수동 지표 무오염). ALLOWED에 source 추가.
+- 서버 KB-940 번역 필드: dev Swagger 미반영 — 필드 확정 시 어댑터 → 캐시 시드(setQueryData) 몇 줄. 지금은 POST 자동 요청(구 서버 호환).
+- 신규 ko 문구 0.
+
+## 2026-10-30 · P-557 KB-931 큐레이션 카드 블러 1장 + 커버 프리페치
+- 흐림 띠: 띠마다 반경이 다른 블러 8장(카드당 디코드·변환 9회) → 블러 1장(최대 반경) + 선명 원본 띠 7(위 0.875 → 아래 0.125). 본 사진 onLoad 뒤 마운트(메모리 캐시 공유). 블러 변환 = 카드당 1회.
+  - (a) 같은 반경 블러 8장 안은 iOS SDWebImage가 동시 요청을 각자 캐시 미스로 변환할 수 있어 (a')로. MaskedView 그라디언트 마스크 = 다음 네이티브 빌드 후보.
+- 홈 큐레이션 섹션이 공개로 그려지면 모음 3개 상세(같은 캐시 키, 5분) → 앞 2장씩 = 6장 Image.prefetch.
+- 표시용 1080 WebP URL(KB-930): dev Swagger에 아직 필드 없음 — 사진 URL은 curationAdapter에서만 읽어 필드 이름이 정해지면 어댑터 한 줄.
+- 측정(시뮬, 디스크 캐시 있음·앱 재실행): 상세 진입 → 앞 2장 띠 준비 평균(2~5회차) 1532 → 1362ms, 범위 안 5장 2618 → 2067ms.
+
+## 2026-10-30 · P-560 KB-629 push_open(type) 재발주(#187 닫힘 — R-157)
+- 이벤트 push_open, 속성 type(PUSH_TYPES 정확 일치만 — 미지·없음 = 속성 생략). ALLOWED ['type'].
+- pushAdapter.addNotificationTapListener 콜백 3번째 인자 = 유형 → 루트 레이아웃 탭 콜백에서 track 1줄. 콜드 스타트(getLastNotificationResponse)·리스너 이중 전달은 기존 routed(identifier) Set이 차단 → 탭 1번 = 1회.
+- 잠금: pushAdapter192(유형 전달·미지 생략·이중 0·레이아웃 track 1줄) · analytics.test(sanitize = type만).
+
+## 2026-10-30 · P-559 KB-934 홈 레일 리본 윗변 잘림
+- 원인: 리본이 사진 위로 4pt 걸치는데(gbadge top −4) 홈 Popular dishes 레일은 가로 ScrollView라 자기 경계에서 잘림(Food 그리드는 세로 흐름이라 안 잘림).
+- 수정: 레일 contentContainer 위 여백 4 + 레일 marginTop −4(카드 자리 무변). overflow visible은 ScrollView에선 iOS·Android 모두 안 먹어 여백으로.
+- 잠금 railRibbonClip934. 캡처 = 회원 리본이라 QA.
+
+## 2026-10-30 · P-558 KB-932 음식 상세 하단 CTA 띠 투명
+- pillCta.band(떠 있는 바) 흰 바탕 → 투명(예진 TestFlight — 흰 띠가 "What's inside" 등 콘텐츠를 잘라 보이게 함). 알약만 뜬다. 스크림 0(완전 투명 우선).
+- pointerEvents 보이는 동안 auto → box-none: 이제 보이는 아래 콘텐츠라 띠 바탕 탭은 그 콘텐츠로(KB-903 T-019 반대 결정 — 커맨드 보고).
+- 스크롤 아래 여백(띠 실높이 + 16, useBottomBand) 그대로 — 끝까지 스크롤 시 마지막 줄 알약 위. 리뷰 작성(bandStatic 흐름 안)·가공식품 상세(흐름 안 바) 대상 아님.
+
+## 2026-10-30 · P-556 KB-927 Packaged 판정 필터 칩(서버 verdict) + 칩 줄 공통화
+- 판정 칩 All·Safe·Avoid·Caution(회피 1개 이상 회원 + v4만 — 비회원·회피 0개는 서버가 무시해 숨김) → `verdict` 반복 키. 매핑 = VERDICT_RISK 역매핑(verdictsForRisk: Caution = CAUTION + SAFE_WITH_NOTE). 캐시 키에 정렬한 verdicts.
+- 빈 페이지: 0건 + hasNext면 자동 이어 부르기(연속 3번, emptyPageAction) → "더 찾아보기"(누르면 다시 3번). "결과 없음" = hasNext=false && 누적 0건만. 자동 효과 deps에 페이지 수 — 도착이 한 렌더로 묶이면 둘째 빈 페이지 뒤 멈췄다(jest 재현).
+- 칩 줄 공용 components/ChipScrollRow(Dishes에서 추출 — 가로 스크롤·끝 여백 24·숨은 칩 페이드). Dishes 정렬 자기 줄 규칙은 FoodExplorer에 남김(Packaged엔 정렬 없음). Packaged 유형 칩도 같은 줄(간격 8 → 6).
+- 신규 ko: `packaged.findMore` = 더 찾아보기
+
+## 2026-10-30 · P-555 KB-926 리본 그림자 실루엣 + 검색 스캔 버튼 radius + 정렬 알약 패딩
+- ① RiskBadge 그림자 = 리본 경로(흰 보더 폭 스트로크 포함) 반투명 두 겹, 1/1 오프셋 뒤 Svg — 구 shBadge(컨테이너 View 그림자)는 직사각형. shBadge 토큰 제거. flat(가공식품 카드)은 그대로 그림자 없음.
+- ② SearchScanButton radius pill → md(KB-909 직전 8 → 토큰 12, 커맨드 결정 (a)) — 홈·Food·Packaged 공용. 탭바 스캔 원형 무변.
+- ③ 정렬 알약 4곳(Food·Reviews 피드·음식 리뷰 목록·스캔 결과) 좌우 8 → 14(Chip과 같게).
+- 잠금 ribbonShadowScanRadius926 + designParity315·design4Tokens429 갱신. 게스트 시뮬 전/후 캡처(스캔 버튼·정렬 알약, 큰 글자 포함). 리본은 회원 판정에서만 보여 캡처 QA.
+
+## 2026-10-30 · P-554 KB-924 한국어 문구 승인 반영(ko 10키)
+- 예진 승인(10/30) 안전·법적 5키(packaged.noAvoidMatchTitle·detail.verdictMayContain·gate.photoRemovalTitle·ugc.consentAgree·gate.photoRemovalSub) + Codex 권고 5키(states.offlineBody·community.blockConfirmBody·saved.emptyBody·packagedScan.freeExplain·profile.languageHintAndroid) ko 값만 교체. 다른 로케일·코드 0.
+- 잠금: copyApproved924(10키 값·{{list}} 토큰·직선 따옴표·가운데 점 0) + 914·907 단언 갱신.
+
+## 2026-10-30 · P-550 KB-921 가공식품 SAFE_WITH_NOTE 띠 = 주의 톤 (R-147)
+- VERDICT_RISK.SAFE_WITH_NOTE safe → caution(한 표) — 상세 띠·성분표 결과 띠·검색 카드 리본·후보 줄 리본이 함께 주의(색+형태). "모름"을 초록으로 그리지 않음(false-safe 0).
+- 띠 제목 = packaged.unverifiedTitle(10로케일) · 부제 = 서버 unclearIngredients 쉼표 나열(비면 생략). 옛 키 unclearTitle·unclearBody·packagedScan.resultUnclear 제거.
+- 신규 ko(K-항목 — 판정 띠 제목, 안전 문구, 예진 승인 대상): packaged.unverifiedTitle = 일부 성분을 확인할 수 없어요(Codex #371 P1 해요체)
+- 잠금: safeWithNoteBand921(4판정 톤·제목 키) + 812·508·813 갱신. 캡처 = 회원 판정 필요(게스트 verdict null) — QA 위임 문의.
+
+## 2026-10-30 · P-549 KB-915 사장님 주문 카드 영어·한국어 면 동기화
+- 재현: 회피 목록에 81종(로컬 카탈로그) 미등재 코드(레거시 ing:slug·카탈로그 신규)가 섞이면 한국어 면(avoidNoticeKo)은 거르고 미러는 avoidNames 전부 나열 → 영어 면에만 재료가 더 보임. 요청 문구도 달랐다(한국어 "못 먹어요, 들어간 메뉴면 알려주세요" ↔ 미러 "Please leave out").
+- 수정: orderCard.ts buildOrderCard 단일 모델(항목 줄·맺음·회피 코드↔한국어 라벨↔리더 이름 짝) → 두 면이 같은 모델을 렌더. 미러 요청 = order.mirrorAvoidNotice(한국어 면과 같은 뜻) + 재료 줄(구 order.mirrorAvoid 제거).
+- 신규 ko: `order.mirrorAvoidNotice` = 저는 아래 재료를 못 먹어요. 들어간 메뉴가 있으면 알려주세요.(카드 본문과 같은 문장)
+- 잠금: orderCardSync915(모델) + scanRichOrder(렌더 두 면 줄 수·재료 집합). 시뮬 캡처 = 로그인 계정 필요(게스트 = 회피 8개 고정) — 커맨드 문의.
+
+## 2026-10-30 — P-546 / KB-909 DS 토큰 통일 — radius 알약·글자 상향 (Draft)
+
+- 글자: `scripts/kb909-font-codemod.mjs`로 fontSize 리터럴 일괄 치환(런타임 간접층 없음) — 11→12·12→13·12.5→13·13→14·13.5→14·14→16·15→16, 표 밖 값은 같은 규칙(9.5→10·10→11·10.5→11·11.5→12·14.5→16·15.5→16), 16 이상 그대로. 같은 스타일 객체의 lineHeight는 새/옛 비율로(반올림). theme type 토큰은 손으로 표대로. 상한(MAX_FONT_SCALE 1.3) 무변
+  - 전: 9.5×2 10×6 10.5×4 11×24 11.5×9 12×72 12.5×37 13×84 13.5×37 14×110 14.5×14 15×64 15.5×2 16×38 17×13 17.5×10 18×25 19×5 20×15 21×3 22×5 24×9 26×1 27×1 28×4 34×4
+  - 후: 10×3 11×9 12×33 13×109 14×121 15×2 16×226 17×13 17.5×10 18×25 19×5 20×15 21×3 22×5 24×9 26×1 27×1 28×4 34×4
+- radius: theme `radius = { xs 4, md 12, lg 16, xl 24, pill 999 }`(구 sm 8·lg 10 → md 흡수), `scripts/kb909-radius-codemod.mjs`로 하드코딩 전부 토큰 참조 — 버튼·칩 = pill(Btn·소셜 로그인 포함) · 원 = pill · 이미지 타일·입력창 = md · 카드 = lg · 시트 윗모서리·대화상자 = xl · 작은 배지·바 = xs · 0(직각)은 그대로 · 위험도 배지(RiskPill)는 원래 pill이라 형태 무변
+- 판단 메모: 공유 카드 세로 타일 버튼(아이콘+라벨, 높이 약 70) = lg(알약이면 타원) · 리뷰 작성 음식 행(foodChip, 썸네일 카드) = md · 16px 칩 썸네일·사진 커버 배지 = xs
+- 오분류 바로잡음: shadowOffset의 height를 상자 높이로 읽어 토스트·공유 카드가 알약이 된 3건, 0 → xs 1건(직각 유지)
+- 신규 ko 문구 0 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
+
+## 2026-10-30 — P-547 / KB-910 안전 고지 앱 안 렌더 + Avoid 통일
+
+- 안전 고지 = 약관·개인정보와 같은 앱 안 렌더: `LEGAL_URLS.safety` 추가(SAFETY_NOTICE_URL 상수 삭제), `/profile/legal?doc=safety`(제목 profile.safetyNotice), 프로필 게스트·회원 두 메뉴 = 앱 안 화면(구 openWebPage 인앱 브라우저 — 외부 도메인 노출)
+- 온보딩 동의 시트의 안전 고지 = 요약 3단 유지(커맨드 — 시트에 전문을 넣으면 온보딩이 길어진다) + 아래 "전문 보기" 링크(IconChevron) → 시트를 닫고 /profile/legal?doc=safety. SAFETY_NOTICE_URL 소비처는 프로필 2곳뿐이었다(로그인은 약관·개인정보만 openWebPage — 범위 밖, 그대로)
+- 원문 판정명 → 앱 판정명(appRiskTerms, localizeLegal 단계 — 모든 법적 문서 공통): "Danger" → "Avoid" · 한국어 "안전/주의/위험/…" 목록과 “위험” → "회피"(앱 ko risk.danger) · "위험도 표시"처럼 판정명 아닌 "위험"은 그대로. 원문(kbap-legal safety.md) 수정은 예진 승인 뒤
+- 본문 로딩 = 스켈레톤 6줄(구 스피너) · 제목·문단·목록 hangul-word(iOS 어절 줄바꿈) · 새 radius·fontSize 리터럴 0(radius.xs 토큰)
+- 신규 ko 문구(K-항목): `onboarding.readFullSafety` = 안전 고지 전문 보기 · 기기 미검증(iOS = QA 위임, Android = 재로그인 대기)
+
+## 2026-10-30 — P-545 / KB-907 문구 일괄 정리
+
+- T-036 My Ranking 한국어 병기(등급 필·점수 내역·칸 라벨·등급 카드·전체 등급) 렌더·키 제거 · 제목 VIP MEMBERSHIP → YOUR RANK(코드의 등급 체계 = rank) · 내역 배지 marginTop auto(가장 긴 칸 기준 바닥 정렬)
+- T-007 상세 띠: Caution + 걸린 재료 전부 caution = "May contain" · danger 재료가 섞이면 기존 "Contains"(false-safe 0)
+- T-030 오프라인 "저장된 스캔" 문장 삭제 · T-035 차단 = 리뷰 + Profile의 Blocked users · T-037 북마크 → 별
+- T-103 주문 pill = 개수와 "View order" 두 덩어리(간격) · 나가기 확인 복수형 _one/_other(ru 중립)
+- T-104 무료 창 뜻 한 줄(결과 배너·시작 안내, 카메라 위 제외) — K112 잠금(차감 표현 0) 지켜 "횟수 걱정 없이"
+- T-106 "{국가} only" 토글 세 곳 아래 설명 한 줄(나라 이름 — 필터 = 보는 사람과 같은 국적, 한국 고정 아님)
+- T-107 리뷰 작성 부제·가공식품 메타 세로 막대 → gap(P-352·시안의 구분자 결정을 발주로 대체)
+- T-109·T-110 약관·개인정보: 앱 렌더에서 언어 한 벌만(ko = 한국어 절, 그 외 English 절) + 이모지 제거 — 원문(kbap-legal) 수정은 그 레포 몫
+- T-034 사장님 카드 한국어 lineBreakStrategyIOS hangul-word(iOS 어절 줄바꿈, 문구 무변 — Android는 RN 미지원)
+- 신규·변경 ko 문구(K-항목):
+  - `ranking.vipEyebrow` = 내 등급
+  - `detail.verdictMayContain` = 들어 있을 수 있는 못 먹는 재료: {{list}}
+  - `states.offlineBody` = 메뉴 스캔과 리뷰 로드는 인터넷 연결이 필요해요.
+  - `community.blockConfirmBody` = 그 사용자의 리뷰가 더 이상 보이지 않아요. 프로필의 차단한 사용자에서 언제든 해제할 수 있어요.
+  - `community.blockedNote` = 차단한 사용자의 리뷰가 보이지 않아요. 상대는 내 리뷰를 그대로 볼 수 있어요.
+  - `saved.emptyBody` = 음식의 별을 누르면 여기에 모여요. 안심하고 맛있게 먹을 나만의 리스트예요. (Codex #366 P1 — 완결 문장)
+  - `scan.orderCount_one` = 담은 메뉴 {{count}}개
+  - `scan.viewOrderAction` = 주문 보기
+  - `scan.retakeBodyWithCart_one` = 지금 결과와 담은 메뉴 {{count}}개가 사라져요.
+  - `packagedScan.freeExplain` = 이 시간 동안은 가공식품을 횟수 걱정 없이 스캔할 수 있어요. 메뉴판 스캔은 해당되지 않아요.
+  - `reviews.countryOnlyHint` = 켜면 {{country}} 국적 사용자의 리뷰만 보여요.
+
+## 2026-10-30 — P-544 / KB-906 홈·큐레이션 동작
+
+- T-039 큐레이션 카드 스크림 = 띠 위 40부터 0 → 0.35 → 0.6(밝은 사진 위 흰 제목) · 이름 표시 규칙(전부 대문자 + 4글자 이상 단어 있을 때만 단어 첫 글자로 — "N Seoul Tower") · 위치 "동네 / 구" → "동네, 구"(어댑터, 서버 문자열 무변). 헤더 아래 "어두운 줄"은 헤더 요소가 아니라 위로 스크롤된 앞 카드 바닥(스크림 가장 진한 끝) — 코드 변경 없음, 보고
+- T-040 장소 시트 끌어 닫기 = 사진 영역 전체(전엔 위 44 띠만) · 손잡이 = 앱 Pressable(탭 = 닫기, ui_click 경유 — Gesture.Tap 잠금 uiClickCoverage784 R5 유지)
+- T-125 탭바 아바타 cachePolicy memory-disk(RemoteImage에 prop 추가)
+- T-127 커스텀 탭 바가 tabPress를 먼저 낸다(같은 탭 = 이동 0) → Home·Reviews 목록 useScrollToTop
+- T-128 pager 점 8 + 반투명 검정 알약 바탕, 켜짐/꺼짐 = 불투명도만
+- 기기 미검증: 제스처 변경(T-040)은 실기 확인 대상 — iOS 시뮬 새 설치본은 로그인 불가라 QA 위임, Android는 재로그인 대기
+
+## 2026-10-30 — P-543 / KB-905 리뷰 피드·시트 동작
+
+- T-021 원격 이미지 스켈레톤 바탕을 사진 칸(#F7F8FA)보다 진하게(#EAEBEE — 흰 스윕이 안 보여 회색 박스로 읽힘, RemoteImage·CardPhoto) · T-067 번역 버튼 접근성 이름 명시(RN 안드가 busy 해제 때 content-desc 갱신을 건너뜀) · T-066 Tag a food 0개 = Done 비활성 · T-075 목록 끝 여백 · T-068 신고 시트 Cancel · T-069 내 리뷰 = 내 프로필 사진(실패 = 기본) · T-070 국기 이모지 유지(헌법 v2.3.0 허용)·크기 14 · T-073 사진 1장 = 전폭.
+- T-023은 서버 원인(ReviewResponse.language null — id 49·42·43·40) → FE 범위 제외(커맨드가 서버 후속).
+- **사고**: 에뮬 연결 명령에 표시용으로 쓴 `pm clear`가 실행돼 kbap 앱 데이터 초기화·회원 세션 풀림. 예진 재로그인 대기, Android 기기 검증은 재로그인 뒤 QA. 위 규칙 추가.
+
+## 2026-10-30 — P-542 / KB-904 프로필·설정 내비·저장 버튼
+
+- T-080 알림 "기기 설정 열기" = Android 이 앱 알림 페이지 직행(APP_NOTIFICATION_SETTINGS + 패키지 extra — RN sendIntent로 가능, 에뮬 확인). T-025 앱 언어 직행은 package: 데이터 URI가 필요해 RN으로 불가(에뮬 resolve 실패, 네이티브 모듈 추가 금지) → App info + 언어 행 아래 안내(누르기 전에 보이게).
+- 저장 버튼 하나·무변경 비활성(프로필 편집·회피·식이), 헤더 Save 제거 · 연동 계정 값 = Apple/Google · Language 라벨 통일 · 맵기 미설정 = 회색 트랙 + Not set · 알림 식사 알림 이유 캡션·이중 흐림 제거·외톨이 구분선 제거 · 프로필 값 행 › · 국가 옆 언어 이름 · 회피 8개 이하 = Edit restrictions › · 주문 공유 Share image/Save to photos·파일명 kbap-order-YYYYMMDD.png · 주문 음식 행 › · 탈퇴 화면 정렬.
+- 에뮬에서 화면별 확인(알림 페이지 직행·저장 토스트·파일명 MediaStore 확인). iOS 시뮬 미캡처. 지문 무변.
+
+## 2026-10-30 — P-541 / KB-901 가공식품 표기·Packaged 탭 동작 정리
+
+- 원인 2개가 대부분: ① 목록·상세 요청에 `lang` 쿼리 없음 — 서버는 표시명·제조사·알레르기 번역을 lang으로만 준다(Accept-Language만으론 한국어, dev 2453 실측) → Food 탭 진입만 "농심 / 신라면"(T-013·T-014). ② 서버가 번역 없을 때 translated에 원문을 그대로 채움 → "English translation" 아래 한국어·알레르기 문장 2번(T-003·T-012) → 어댑터 realTranslation이 원문과 같은 번역을 버림, 원문엔 "Korean original" 라벨.
+- T-053 출처 둘째 줄 "자료:" 라벨(10로케일 — 기존 라벨 말 재사용) + 피하는 재료 근거("Egg: 계란"). T-016 Show all = 검색어도 지움. T-017 제출 시 blur + 칩 줄 handled. T-105 칩 제목 = 유형명.
+- 에뮬에서 신라면 4경로(Packaged 카드·Food 탭 상세·스캔 후보·이름 찾기·스캔 확정 상세) 표기 동일 확인. 스캔 확정 1회(dev, 무료 1시간 창 시작). 지문 무변.
+
+## 2026-10-30 — P-540 / KB-903 큰 글자·하단 고정 바 겹침
+
+- 상세 하단 바 = 흰 띠(안전 영역 포함, 띠가 터치 받음 — T-060·T-019) · 알약 글자 한 줄·상한 1.15(T-032) · 리뷰 작성·수정 바는 흐름 안(T-071) · 공통 규칙 useBottomBand. 피드 필 = 스크롤 중·큰 글자 원형(T-022). 카드 제목 2줄 + 줄이기(T-033·T-057). Food 탭 칩 줄 고정 height가 칩을 눌러 아이콘·라벨 어긋남 → minHeight(T-101, 에뮬 전후 캡처).
+- 무변: T-089(Save 바는 흐름 안 — 스크롤 중 경계에서 잘릴 뿐, 끝에선 다 보임) · T-102(탭 라벨은 이미 앱 상한 1.3까지 커짐 — 에뮬 2.0 확인).
+- 에뮬 2.0(3버튼)·1.0(제스처) 캡처(qa-shots/kb903), 설정 원복. iOS AX5는 새 시뮬 설치본이 로그인 화면에서 막혀 미캡처(QA 대체). 지문 무변.
+
+## 2026-10-30 — P-539 / KB-908 판정 띠 색 리본 맞춤 + 스캔 결과 정리
+
+- T-001 riskTone 띠 배경 = 리본 fg 10% 틴트(danger #FEF0EF 붉은 · caution #FFF6E9 주황, 10/30 예진 결정). 칩·RiskPill 틴트도 같은 토큰이라 같이 바뀜, 틴트 위 글자 대비 4.86·4.89 유지. 에뮬 픽셀 실측 일치.
+- T-010 결과 직후 알림 넛지·리뷰 유도 2연속 → 스캔을 닫은 뒤 루트 ScanExitPrompts가 하나만(넛지 우선, 판정·빈도 무변). T-050 가공 후보 이탈 확인. T-111 주문 헤더 가운데. T-009 Menu order = 메뉴판 순 그대로(unable 포함, 커맨드 결정 — 별도 커밋).
+- 에뮬 kbap에서 띠 3종·결과 목록 순서·나갈 때 시트 1개·후보 뒤로 확인 녹화/캡처(qa-shots/kb908). iOS 시뮬은 빈 시뮬의 빌드가 dev 런처가 아니라 미캡처. 지문 무변.
+
+## 2026-10-30 — P-538 / KB-900 Android 하단 안전영역·키보드 인셋
+
+- 원인 3갈래: 스캔 카메라 아래 바가 iOS 홈 인디케이터 값(인셋 −11)을 안드에도 써 링크가 3버튼 내비 바 아래(T-004) · 회피 편집·식이 Save 바 아래 여백 고정 30(T-005) · 안드 루트 키보드 내리기 바(40)가 KAV로 올린 화면 아래를 덮음(T-031, KAV 7화면 전부 같은 원인). Saved Undo 스낵바도 인셋 미반영이라 같이 고침.
+- 무료 배지·힌트 줄은 아래 코너 안쪽으로(T-099 겹침). 스캔 화면 내비 바 색은 JS로 못 바꿈(네이티브 모듈 또는 app.json = 지문 회전) — 커맨드 결정으로 다음 네이티브 빌드에 이월.
+- 에뮬 kbap 3버튼·제스처 캡처로 링크·Save 전체 노출과 탭 동작 확인. 지문 9ee06892/05ba070d 유지. iOS 시뮬 캡처는 QA 시뮬 사용 중이라 미실행(iOS 값은 유닛으로 잠금).
+
+## 2026-10-23 — P-529 P2 대비·가져오기 중 앱 입력 잠금 보완
+
+- 사용자 추가요구로 importing 동안 줌/전환/닫기/모드/링크/핀치·앱뒤로 입력 차단. 기존 갤러리/셔터 capturingRef에 더해 importingRef 동기가드, disabled/접근성 상태, 투명 터치mask, usePreventRemove·AndroidBackHandler 적용. 네이티브 사진선택기 취소는 변경하지 않음, finally로 성공/취소/실패 뒤 해제.
+- 자동리뷰 P2 4358094336: 중앙 로딩묶음만 불투명C.ink 플레이트, 흰문구/스피너대비16.71:1. 전체프리뷰는가리지않음. 새카피/플래그/API/native 변경0.
+- 이전구현실행 새회귀8fail RED. 밝은/어두운프리뷰·stale handler 직접호출·갤러리1회/촬영0·카메라/줌/모드/라우트불변·뒤로가드 및 복구 검증. 관련/전체 결과와미실행네이티브범위는 PR/REPORTS에기록. 자동리뷰재호출·추가production발행0.
+
+## 2026-10-23 — P-529 / KB-854 갤러리 가져오기 중앙 배치
+
+- 사용자 사진1 지적: P191의 bottom120 로딩이 KB854 새 하단 줌/셔터와 겹침. 공용 importingOverlay를 화면전체 절대영역+가로세로중앙으로 최소수정, pointerEvents none·문구·스캔상태처리 무변.
+- 위치 회귀 수정전3fail RED. 관련25tests PASS·tsc0: 실제렌더 스타일의4변0/중앙·터치통과, 갤러리성공/취소/실패 후복구·촬영대기/완료시가져오기표시0. 네이티브양OS 좌표/작은화면/회전은미실행이며 단위렌더와구분.
+- 주문카드/위험도문구/API/플래그/native 변경0. PF운영OFF·리뷰1.1·BEprod유지. 정상PR/센터검토후develop, 추가productionOTA발행금지.
+
 ## 2026-10-23 — P-528 PR345 P1 선행조건 보완
 
 - c047f8bb CI PASS·자동Codex 완료/P1 comment4357327876. 큐레이션뿐 아니라 prod idol GET·catalog/profile PATCH를 develop 머지 전 조건으로 보완. 자동 재호출 없음.
@@ -17,6 +348,12 @@
 - 새회귀 수정전RED·관련76testsPASS, tsc0, 양OS지문9ee/05ba 유지, EAS workflow CLI 유효성 PASS. 전체/번들/lint 결과와PR/CI/OTA 실제상태는REPORTS에기록.
 - root 검토 후 develop 정상 자동teamtest OTA 단독 발행, 사용자실기QA 후 OTA1 순서. KB873 후속PR342/가공식품339/타담당187 미포함.
 
+## 2026-10-23 — KB-873 lifecycle ① 실제 방문 연결
+
+- 기반 PR341 merge10e16bef 후속. active leaf/content 교체·entry/deeplink·foreground·계정경계·실제 환경 context 연결. 기존 screen_view/4탭 의미 보존.
+- 새 screen_visit_start만 실제 배선. 가림 전수 연결 전 visible-time OFF·타이머0. 다음 lifecycle② 가림/scheduler, 화면별 영역/스크롤·실수신 계속 필요. 전체 완료 아님.
+- 테스트/CI/PR 증거는 REPORTS, 범위·한계는 docs/analytics/KB873-LIFECYCLE.md. release 후보에는 이 미완료 후속을 포함하지 않음.
+
 ## 2026-10-23 — KB-873 PR341 리뷰 P2 두 건 수정
 
 - 실제 route 파일 전수 → screenFromSegments → sanitizer 대조. canonical screen 4곳 교정, food/index 별칭 제거.
@@ -30,8 +367,17 @@
 - 12개기반회귀PASS:가림/배경/중복·세대·크기보정·동적목록·민감값배제·5분60fps집계·첫드래그. 타입/sweep검증. 최종전체/lint/CI근거는REPORTS에기록.
 - 기능·플래그·API·카피·native의존성변경0. 실기/수신/기기성능미검증. 배포0. KB873전체진행중,다음lifecycle배선.
 
+## 2026-10-23 — KB-865 / P-523 ③ Codex 인수
+
+- 기존 PR339와 backup 098cb1b8을 대조하고 독립 지속 worktree에서 FF 통합. 거절 요청 중 MessagePage의 이름 찾기·뒤로가기 잠금 유지.
+- busy 전달 제거 시813 회귀 정상 exit1, 복원 후29/29 정상 exit0. 테스트 QueryClient query/mutation GC 타이머와 cache teardown 정리(단언 변경0).
+- tsc exit0, compiler sweep 새 항목0, changed lint13파일 새 문제0. 지문 ios9ee06892/android05ba070d 유지. 전체 Jest 결과는 인수 보고·PR에 기록.
+- QA 최신 후보 재확인(4면 숫자·확정/거절 잠금·모드 이탈quota hold·큰글씨·VoiceOver) 대기. AR6 미확인, AR4 최신dev 차이 비교 필요. K112~115 승인 대기.
+- 기기·8088 점유 보존, 새 라우트/카피0. 직접 merge/OTA 없음. ④는③ 검토·머지·teamtest OTA 확인 후 착수.
+
 # kbap-fe Build Progress
 > 규칙: 한 번에 1개. [ ]→[~]→[x]. 각 화면 완료 시 목업 대조 + 커밋.
+> 규칙(10/30 KB-905 사고 후): 에뮬·시뮬 명령에 `pm clear`·`uninstall`·`clearState`(·`simctl erase`)는 **문자열로도 쓰지 않는다** — 표시용으로 쓴 줄이 실행돼 QA 회원 세션을 지웠다. 기기 명령은 보내기 전 이 목록과 대조.
 > 목업 SSOT: Claude Design `43cc8ad0-38d8-4afa-a66f-a7412eae2a49` ("KLens Hi-Fi (Direction G)", hifi-*.jsx, hifi-g.css).
 > 계약 SSOT: spec 레포 `specs/001-personalized-menu-mvp/contracts/openapi.yaml` (재조정 중 — 미확정 필드에 로직 강결합 금지).
 > 브랜드: 목업 "KLens" → 표시명 **K-Bap** 치환.
@@ -100,7 +446,6 @@
 > [x] 리뷰 목록 화면(G2) — `app/food/[id]/reviews`: 평점요약·같은국적 토글·익명·빈상태. 디테일 평점카드 화살표→연결.
 > [x] G2 번역 UX(FR-023 c63daf1): 전역토글 제거 → **리뷰별 개별 번역**. useReviewTranslation seam(프리번역 즉시/온디맨드 로딩·에러·재시도, MOCK 지연+플래키), SVG Spinner, 원문↔번역 개별토글, reader=원문 리뷰엔 버튼 미표시. web 대조 OK(즉시/온디맨드/에러→재시도).
 > 미구현: 9개 다국어 i18n(영어만). menuName vs id 리컨실은 BE 회의 대기(방향: BE가 foodId 실어주고 [id] 유지).
-
 
 ## ✅ 헤더 = hide-on-scroll (Blind 패턴, §6 갱신 d63068e)
 - 스펙 해석차였음(버그 아님): §6이 "always-pinned"→"hide-on-scroll"로 정식 변경됨.
@@ -1492,7 +1837,6 @@
 - [x] 테스트: nav573 +5(홈 dismissAll→navigate 순서·canDismiss false·throw 방어·내 리뷰·음식 상세) · pushAdapter192 매핑 3케이스 교체 + 레이아웃 소스 잠금(entryChecked 게이트·헬퍼 경유·router.push 0) · landingRemoved573 +3. tsc 0 · jest 220스위트 1601/1601. 동승 정리 2건: pushSurfaces192 레이아웃 소스 잠금을 새 게이트 문자열로 · prodFlagSurfaces436의 앱 버전 기대 1.0.2→1.0.3(e53b63d 범프 이후 develop에서 이미 깨져 있던 기존 실패).
 - [x] 문서: specs/002 spec.md(개요·AS 1·2·5·FR-002)·contracts §2 표 갱신. push-landing 언급 0.
 - [ ] 실기(종한, iOS·Android): quickstart D-1~D-10 — **D-3·D-4(콜드 스타트) 필수**. 완료 전 OTA 발행 금지(OTA 게이트 커밋).
-
 
 ## KB-631 첫 설치 로그인 화면 OS 알림 권한 즉시 요청 — 카메라 권한과 같은 방식 (2026-09-22, 워크트리 feat/kb631-login-push-prompt · spec 006)
 

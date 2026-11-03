@@ -19,7 +19,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { reviewEditHref, reviewTargetHref } from '@/lib/review/reviewTarget';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
-import { color as C } from '@/lib/theme';
+import { color as C, radius } from '@/lib/theme';
 import { SubHeader, IconFood } from '@/components';
 import { useMyReviews } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   body: { paddingBottom: 32 },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 28 }, // P-154 ②: 상하 센터(앱 통일)
-  emptyIc: { width: 64, height: 64, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  emptyIc: { width: 64, height: 64, borderRadius: radius.lg, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontSize: 19, fontWeight: '600', color: C.ink, textAlign: 'center' },
-  emptyBody: { fontSize: 13.5, fontWeight: '400', color: C.ink2, textAlign: 'center', lineHeight: 20 },
+  emptyBody: { fontSize: 14, fontWeight: '400', color: C.ink2, textAlign: 'center', lineHeight: 21 },
 });

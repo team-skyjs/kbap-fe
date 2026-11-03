@@ -174,7 +174,7 @@ it('P-119 → KB-433: 히어로 프레임 고정 · NONE(0)↔HOT(3) 스타일 �
     // KB-433: 고추 행 28 고정 · 레벨명 28 고정 · 설명 슬롯 36 고정
     const chiliRow = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.height === 28 && flat(n.props.style)?.flexDirection === 'row')[0];
     const band = tree.root.findAll((n) => n.type === 'Text' && flat(n.props.style)?.height === 28)[0];
-    const desc = tree.root.findAll((n) => n.type === 'Text' && flat(n.props.style)?.height === 36)[0];
+    const desc = tree.root.findAll((n) => n.type === 'Text' && flat(n.props.style)?.height === 40)[0]; // KB-909: 2 × lineHeight 20
     return { chiliRow: flat(chiliRow.props.style), band: flat(band.props.style), desc: flat(desc.props.style) };
   };
   const a = await renderSpiceStep();
@@ -185,7 +185,7 @@ it('P-119 → KB-433: 히어로 프레임 고정 · NONE(0)↔HOT(3) 스타일 �
   const hb = heroStyles(b);
   expect(ha).toEqual(hb); // 단계 전환에도 프레임 스타일 픽셀 동일
   expect(ha.band.lineHeight).toBe(28);
-  expect(ha.desc.height).toBe(36); // 설명 슬롯 고정
+  expect(ha.desc.height).toBe(40); // 설명 슬롯 고정(KB-909: 2 × lineHeight 20)
 });
 
 /* ---- KB-433 §4-②: SVG 고추 점등 · 예시 타일 3개 고정 행 + 레벨 전환 교체 ---- */
