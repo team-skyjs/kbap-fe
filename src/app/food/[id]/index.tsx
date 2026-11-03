@@ -37,7 +37,7 @@ import { IDOL_CARD_BOTTOM_PAD, IdolVideoCard } from '@/features/food/IdolVideoCa
 import { useIdolPickVideo } from '@/lib/data/useIdolPicks';
 import { useIsNewFood } from '@/lib/newFood';
 import { IngChainImage, IngredientTile, tile } from '@/components/IngredientTile';
-import { VerdictBand, VERDICT_TITLE } from '@/components/VerdictBand';
+import { VerdictBand, VerdictLockRow, VERDICT_TITLE } from '@/components/VerdictBand';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
@@ -49,7 +49,7 @@ import { FeedAd } from '@/features/ads/FeedAd';
 import { withFeedAds } from '@/lib/ads/feedSlots';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { IconEdit, IconLock } from '@/components/icons';
+import { IconEdit } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -455,11 +455,7 @@ function Registered({
       {/* §1-3: 위험 요약 행 — 히어로 직하 full-width, riskTone 틴트(마크 색 기준
           매핑: KB-908 10/30 결정 — 띠 배경 = 리본 계열, danger 붉은 · caution 주황). 탭 = 코치마크 재열람(P-134). */}
       {guest ? (
-        <Pressable style={styles.lockSlot} onPress={() => setGateOpen(true)} testID="verdict-lock">
-          <IconLock size={16} color={C.ink2} />
-          <Text style={styles.lockSlotText}>{t('detail.lockVerdict')}</Text>
-          <Text style={styles.lockSlotCta}>{t('intro.signUp')}</Text>
-        </Pressable>
+        <VerdictLockRow onPress={() => setGateOpen(true)} testID="verdict-lock" /> /* KB-974: 공용 잠금 행(가공식품 상세와 같은 부품) */
       ) : (
         // KB-914(R-137): 띠 = 공용 VerdictBand(가공식품 상세·성분표 결과와 같은 부품)
         <VerdictBand state={dishRisk} title={t(VERDICT_TITLE[dishRisk])} reason={verdictReason} onPress={() => setCoachOpen(true)} testID="detail-verdict" />
@@ -804,9 +800,6 @@ const styles = StyleSheet.create({
   fTitle: { fontFamily: font.bodySemi, fontSize: 16, color: C.ink, textAlign: 'center' },
 
   // §1-3: 위험 요약 행(4129:11366) — 틴트 + 하단 헤어라인
-  lockSlot: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 20, paddingVertical: 13, backgroundColor: C.surface2, borderBottomWidth: 0.5, borderBottomColor: '#D5DFE7' },
-  lockSlotText: { flex: 1, fontSize: 14, fontWeight: '400', color: C.ink2 },
-  lockSlotCta: { fontSize: 14, fontWeight: '700', color: C.primaryText },
 
   // §1-2: 헤더 블록
   headBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 27 }, // A-FD-01/02(KB-486)

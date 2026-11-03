@@ -99,7 +99,9 @@ export function ProductCard({ item, width, onOpen, personalized = true, unset = 
   // 리본 = 회피 1개 이상 회원은 서버 판정(Codex #338 P1 — 회피를 비운 직후 남은 판정 캐시를 그리지 않는다)
   // KB-947(예진 10/31 결정): 회피 미설정(비회원·회피 0개 회원 — 프로필 확인 뒤) = safe 리본. 프로필 대기·실패 = 리본 0
   // Codex #383 P1: 표시 근거(원재료·알레르기 표시)를 서버가 확인한 제품만(labelKnown true) — false·필드 없음(구서버) = 리본 0(상세는 같은 제품을 "확인 못 함")
-  const risk = personalized ? (item.verdict ? VERDICT_RISK[item.verdict] : null) : unset && item.labelKnown === true ? 'safe' : null;
+  // KB-974(예진 11/3 테플): 비회원 = 리본 0(음식 카드와 같은 규칙) — 회피 목록이 없는 사람에게 safe 리본은 안전 보장처럼 읽힌다. 공용 카드 한 곳에서 막아 목록·홈 편의점 줄·검색이 같이 따른다
+  const guest = useIsGuest();
+  const risk = personalized ? (item.verdict ? VERDICT_RISK[item.verdict] : null) : unset && !guest && item.labelKnown === true ? 'safe' : null;
   const rating = item.rating ? `${item.rating.average.toFixed(1)} (${item.rating.count})` : null; // 스크린리더 라벨용
   return (
     <Pressable
