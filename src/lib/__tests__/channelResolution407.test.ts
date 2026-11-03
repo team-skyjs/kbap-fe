@@ -48,7 +48,7 @@ describe('채널 해석표 — 실제 flags.ts', () => {
   });
 });
 
-describe('KB-812 2차·P-508 — packagedReviewWrite·packagedLabelScan = dev 서버 채널만(서버 기능이 켜진 곳)', () => {
+describe('KB-812 2차 — packagedReviewWrite = dev 서버 채널만(서버 기능이 켜진 곳) · P-587 가공식품 3종 = 전 채널', () => {
   it.each([
     // channel,        __DEV__, write
     ['development', false, true],
@@ -62,7 +62,8 @@ describe('KB-812 2차·P-508 — packagedReviewWrite·packagedLabelScan = dev �
   ])('%s (__DEV__=%s) → %s', (channel, dev, write) => {
     const f = flagsFor(channel as string | null | undefined, dev as boolean);
     expect(f.FLAGS.packagedReviewWrite).toBe(write);
-    expect(f.FLAGS.packagedLabelScan).toBe(write); // P-508: 성분표 분석(서버 #442)도 dev 서버에만 배포 — 같은 채널 축
+    // P-587(KB-807): 운영 서버 26.11.2 반영 → 가공식품 3종은 채널·__DEV__와 무관하게 on
+    expect([f.FLAGS.processedFoodEnabled, f.FLAGS.popularByReviews, f.FLAGS.packagedLabelScan]).toEqual([true, true, true]);
   });
   it('eas.json — 쓰기 버튼 채널은 전부 dev 서버, 숨김 채널은 dev 서버가 아니다', () => {
     const build = JSON.parse(fs.readFileSync('eas.json', 'utf8')).build as Record<string, { channel?: string; env?: Record<string, string> }>;
@@ -147,7 +148,15 @@ it('teamtest dev 기능은 삭제하지 않으며 명시 target=dev일 때만 �
   expect(f.FLAGS.curationEnabled).toBe(true);
 });
 
-it('unknown target은 teamtest 개발 기능을 열지 않고 production은 target과 무관하게 OFF다', () => {
+it('unknown target은 teamtest 개발 기능을 열지 않고 production은 target과 무관하게 dev 서버 게이트 OFF다', () => {
   expect(flagsFor('teamtest', false, 'typo').isDevServerChannel()).toBe(false);
-  expect(flagsFor('production', false, 'dev').FLAGS.processedFoodEnabled).toBe(false);
+  const prod = flagsFor('production', false, 'dev');
+  expect(prod.isDevServerChannel()).toBe(false);
+  expect(prod.FLAGS.packagedReviewWrite).toBe(false);
+});
+
+it('P-587(KB-807) — isProdChannel()에서도 가공식품 3종 true', () => {
+  const f = flagsFor('production', false);
+  expect(f.isProdChannel()).toBe(true);
+  expect([f.FLAGS.processedFoodEnabled, f.FLAGS.popularByReviews, f.FLAGS.packagedLabelScan]).toEqual([true, true, true]);
 });

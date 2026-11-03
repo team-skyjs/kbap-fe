@@ -1,6 +1,6 @@
 /**
  * KB-956(P-572) 음식 탭 Popular = 리뷰 많은 순 — 서버 #521 sort=reviews(GET /foods 3.1+). 라벨 그대로.
- * 게이트 = popularByReviews(DEV_SERVER_CHANNEL — 운영 서버 릴리스 뒤 다음 OTA에서 연다) · off = 기존 기본 정렬(파라미터 없음).
+ * 게이트 = popularByReviews(P-587부터 전 채널 true — 운영 서버 26.11.2 반영) · off = 기존 기본 정렬(파라미터 없음).
  * 저장 목록(/bookmarks)엔 reviews 정렬이 없어 이름 정렬만 넘긴다.
  */
 import * as fs from 'fs';
@@ -24,8 +24,8 @@ describe('KB-956 Popular 정렬 매핑', () => {
 
 describe('KB-956 배선(소스)', () => {
   const read = (p: string) => fs.readFileSync(p, 'utf8');
-  it('플래그 = dev 서버 채널 · 저장 목록은 reviews를 넘기지 않음 · 정렬 선요청 목록에 reviews(플래그 on)', () => {
-    expect(read('src/lib/flags.ts')).toContain('popularByReviews: DEV_SERVER_CHANNEL,');
+  it('플래그 = 전 채널 true(P-587) · 저장 목록은 reviews를 넘기지 않음 · 정렬 선요청 목록에 reviews(플래그 on)', () => {
+    expect(read('src/lib/flags.ts')).toContain('popularByReviews: true,');
     const fe = read('src/features/food/FoodExplorer.tsx');
     expect(fe).toContain("const bookmarkSort = nameSort === 'reviews' ? undefined : nameSort;");
     expect(fe).toContain('sort: bookmarkSort });');
