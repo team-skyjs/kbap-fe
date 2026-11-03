@@ -43,6 +43,14 @@ it('50% 이상만 · 포커스 뒤 정착 지연 후 1회 측정 · 섹션/카�
   ]);
 });
 
+it('KB-973: 편의점 줄(cvs) 카드 노출 = product_id(가공식품 id — food_id에 섞지 않는다, home_card_click과 같은 규칙)', () => {
+  const t = new ImpressionTracker(VP);
+  t.focus();
+  t.register({ kind: 'card', section: 'cvs', position: 2, foodId: '10201' }, node({ x: 20, y: 300, width: 100, height: 100 }));
+  jest.advanceTimersByTime(400);
+  expect(mockTrack.mock.calls).toEqual([['home_card_view', { section: 'cvs', position: 2, product_id: '10201' }]]);
+});
+
 it('스크롤 중엔 판정 0 — 손 뗌 뒤 관성이 이어지면 관성 끝에서만', () => {
   const t = new ImpressionTracker(VP);
   t.focus();

@@ -764,6 +764,61 @@ describe('KB-845 공통 카메라', () => {
       FLAGS.packagedLabelScan = prev;
     }
   });
+  it('KB-973: 가공식품 앞면 촬영 = food_packaged_scan_start(mode packaged, camera) · scan_start(메뉴 시계열) 0 · 메뉴 촬영 = scan_start 그대로', async () => {
+    const track = jest.spyOn(analytics, 'track');
+    try {
+      const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
+      const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
+      await pressId(tree, 'scan-mode-packaged');
+      await act(async () => { tree.root.findAll((n) => n.props?.testID === 'scan-shutter' && typeof n.props?.onPress === 'function')[0].props.onPress(); await new Promise((r) => setTimeout(r, 0)); });
+      expect(track.mock.calls.filter((c) => c[0] === 'food_packaged_scan_start')).toEqual([['food_packaged_scan_start', { mode: 'packaged', source: 'camera' }]]);
+      expect(track.mock.calls.filter((c) => c[0] === 'scan_start')).toHaveLength(0);
+      act(() => tree.unmount());
+      track.mockClear();
+      const menu = render(<Scan />);
+      await act(async () => { menu.root.findAll((n) => n.props?.testID === 'scan-shutter' && typeof n.props?.onPress === 'function')[0].props.onPress(); await new Promise((r) => setTimeout(r, 0)); });
+      expect(track.mock.calls.filter((c) => c[0] === 'scan_start')).toEqual([['scan_start', { source: 'camera' }]]);
+      expect(track.mock.calls.filter((c) => c[0] === 'food_packaged_scan_start')).toHaveLength(0);
+      act(() => menu.unmount());
+    } finally {
+      track.mockRestore();
+    }
+  });
+  it('KB-973: 이름 인식 요청 실패 = food_packaged_scan_fail(stage name, result network)', async () => {
+    mockScanName.mockRejectedValueOnce(new Error('NETWORK: request failed'));
+    const track = jest.spyOn(analytics, 'track');
+    try {
+      const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
+      const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
+      await pressId(tree, 'scan-mode-packaged');
+      act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
+      await pressId(tree, 'pscan-ocr-debug-run');
+      await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+      expect(track.mock.calls.filter((c) => c[0] === 'food_packaged_scan_fail')).toEqual([['food_packaged_scan_fail', { stage: 'name', result: 'network' }]]);
+    } finally {
+      track.mockRestore();
+    }
+  });
+  it('KB-973: 가공식품 확정 실패 = food_packaged_scan_fail(stage confirm, result) · 확정 성공 이벤트 0(분모 분리)', async () => {
+    const { ApiError } = jest.requireActual('@/lib/api/client');
+    const cand = { id: '11', reportNo: 'R1', name: 'P11', nameKo: null, maker: null, foodType: null, type: null, imageUrl: null, verdict: null, majorAllergens: null };
+    mockScanName.mockResolvedValueOnce({ analysisId: 'A1', state: 'CANDIDATES', candidates: [cand] });
+    mockConfirm.mockRejectedValueOnce(new ApiError('quota', 403, 'SCAN-004'));
+    const track = jest.spyOn(analytics, 'track');
+    try {
+      const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
+      const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
+      await pressId(tree, 'scan-mode-packaged');
+      act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
+      await pressId(tree, 'pscan-ocr-debug-run');
+      await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+      await pressId(tree, 'pscan-candidate-11');
+      expect(track.mock.calls.filter((c) => c[0] === 'food_packaged_scan_fail')).toEqual([['food_packaged_scan_fail', { stage: 'confirm', result: 'quota' }]]);
+      expect(track.mock.calls.filter((c) => c[0] === 'food_packaged_scan_confirm')).toHaveLength(0);
+    } finally {
+      track.mockRestore();
+    }
+  });
   it('KB-865 ③ Q4: 가공식품 확정 한도 = 흐름 위 소진 덮개(흐름 언마운트 0 · 후보·선택 유지) → 나중에 = 같은 후보 화면 · 카메라 재마운트 0', async () => {
     const { ApiError } = jest.requireActual('@/lib/api/client');
     const cand = { id: '11', reportNo: 'R1', name: 'P11', nameKo: null, maker: null, foodType: null, type: null, imageUrl: null, verdict: null, majorAllergens: null };

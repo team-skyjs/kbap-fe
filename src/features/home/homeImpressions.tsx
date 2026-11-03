@@ -94,7 +94,7 @@ export class ImpressionTracker {
           if (visibleFraction({ x, y, width, height }, v) < VISIBLE_THRESHOLD) return;
           this.seen.add(k);
           if (target.kind === 'section') track(EVENTS.home_section_view, { section: target.section });
-          else track(EVENTS.home_card_view, { section: target.section, position: target.position, food_id: target.foodId });
+          else track(EVENTS.home_card_view, target.section === 'cvs' ? { section: target.section, position: target.position, product_id: target.foodId } : { section: target.section, position: target.position, food_id: target.foodId }); // KB-973: cvs = 가공식품 id
         });
       } catch {
         /* 언마운트 중 측정 — 다음 정지에서 */

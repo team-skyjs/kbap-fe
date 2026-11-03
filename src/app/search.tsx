@@ -98,7 +98,7 @@ export default function Search() {
 
   const riskOf = (f: FoodCard): RiskState => personalRisk(f.risk, hasR);
   const openFood = (id: string) => router.push(`/food/${id}?src=search` as Href);
-  const openProduct = (id: string) => router.push(`/processed-foods/${id}` as Href);
+  const openProduct = (id: string) => router.push(`/processed-foods/${id}?src=search` as Href);
   const pickSegment = (next: SearchSegment) => {
     setSegment(next);
     bodyRef.current?.scrollToOffset({ offset: 0, animated: false });

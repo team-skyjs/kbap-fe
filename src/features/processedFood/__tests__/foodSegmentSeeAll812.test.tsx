@@ -62,6 +62,32 @@ it('KB-957: 첫 진입 기본 = Packaged · 세그먼트 = 헤더 안(본문 머
   act(() => t.unmount());
 });
 
+it('KB-973: food_segment_select — 탭 = 바뀔 때만(tap) · 링크 진입(새 t) = 진입마다 1회(코치마크 via=coach | see_all) · 같은 t 재렌더 0', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const analytics = require('@/lib/analytics') as typeof import('@/lib/analytics');
+  const track = jest.spyOn(analytics, 'track');
+  const seg = () => track.mock.calls.filter((c) => c[0] === 'food_segment_select').map((c) => c[1]);
+  try {
+    mockParams = {};
+    let t!: ReactTestRenderer;
+    act(() => { t = renderer.create(<Food />); });
+    press(t, 'to-packaged'); // 이미 Packaged(직전 테스트 마지막 선택과 무관하게 아래에서 정리)
+    track.mockClear();
+    press(t, 'to-dishes');
+    press(t, 'to-dishes'); // 같은 것 다시 = 0
+    expect(seg()).toEqual([{ segment: 'dishes', source: 'tap' }]);
+    mockParams = { view: 'packaged', t: '31', via: 'coach' };
+    act(() => t.update(<Food />));
+    mockParams = { view: 'packaged', t: '32' };
+    act(() => t.update(<Food />));
+    act(() => t.update(<Food />)); // 같은 t = 0
+    expect(seg()).toEqual([{ segment: 'dishes', source: 'tap' }, { segment: 'packaged', source: 'coach' }, { segment: 'packaged', source: 'see_all' }]);
+    act(() => t.unmount());
+  } finally {
+    track.mockRestore();
+  }
+});
+
 it('KB-957: 기본 세그먼트 = 가공식품 켜진 채널 Packaged · 운영 채널(processedFoodEnabled off) Dishes — food.tsx가 이 함수로 정한다', () => {
   const { defaultFoodSegment } = jest.requireActual('@/features/food/foodFilterParams') as typeof import('@/features/food/foodFilterParams');
   expect([defaultFoodSegment(true), defaultFoodSegment(false)]).toEqual(['packaged', 'dishes']);
