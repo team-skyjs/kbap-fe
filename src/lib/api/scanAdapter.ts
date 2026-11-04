@@ -168,7 +168,8 @@ export interface AiPendingItem {
   risk: 'caution' | 'unable';
   /** 들어 있을 수 있는 회피 재료 코드 — 표시 이름은 화면이 렌더 시점에(restrictionLabel — 언어 전환 즉시 반영) */
   avoidCodes: string[];
-  /** false = 서버 15초 마감 채움(DISH·UNKNOWN·설명·재료 0) — 추정이 아니라 미도착과 같게 다룬다(현행 unable 행) */
+  /** false = 서버 15초 마감 채움(`filled: true`, #565) — 추정이 아니라 미도착과 같게 다룬다(현행 unable 행).
+   *  filled 필드가 없는 서버(배포 전)만 내용(UNKNOWN·설명 null·재료 0)으로 판별. */
   estimated: boolean;
 }
 
@@ -193,6 +194,6 @@ export function adaptPendingItem(w: ScanPendingItemWire): AiPendingItem {
     description,
     risk,
     avoidCodes,
-    estimated: risk === 'caution' || description != null || avoidCodes.length > 0,
+    estimated: typeof w.filled === 'boolean' ? !w.filled : risk === 'caution' || description != null || avoidCodes.length > 0,
   };
 }

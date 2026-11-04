@@ -48,7 +48,13 @@ describe('어댑터', () => {
     expect(a.avoidCodes).toEqual(['EGG']);
   });
 
-  it('S-959 15초 마감 채움(DISH·UNKNOWN·설명 null·재료 0) = estimated false · 설명·재료·CAUTION 중 하나라도 있으면 true', () => {
+  it('서버 #565 filled: true = estimated false · false = true(내용 무관 — 설명 없는 UNKNOWN 추정도 추정으로)', () => {
+    const base = { pendingId: 'p9', kind: 'DISH', name: '김치전', koreanName: '김치전', description: null, riskLevel: 'UNKNOWN', avoidances: [], aiEstimated: true };
+    expect(adaptPendingItem({ ...base, filled: true, description: 'x' } as never).estimated).toBe(false);
+    expect(adaptPendingItem({ ...base, filled: false } as never).estimated).toBe(true);
+  });
+
+  it('filled 부재(배포 전 서버) 폴백: DISH·UNKNOWN·설명 null·재료 0 = estimated false · 설명·재료·CAUTION 중 하나라도 있으면 true', () => {
     const filler = { pendingId: 'p9', kind: 'DISH', name: '김치전', koreanName: '김치전', description: null, riskLevel: 'UNKNOWN', avoidances: [], aiEstimated: true };
     expect(adaptPendingItem(filler as never).estimated).toBe(false);
     expect(adaptPendingItem({ ...filler, description: 'Pancake' } as never).estimated).toBe(true);

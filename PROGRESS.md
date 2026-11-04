@@ -1,5 +1,7 @@
 ## 2026-11-05 · P-605 #428 S-959 계약 확정 반영(dev 배포 전)
 
+- 서버 #565 `filled: boolean`(true = 마감 채움, false = LLM 추정)로 판별 교체 — 필드가 없는 배포 전 서버만 내용(UNKNOWN·설명 null·재료 0) 폴백.
+
 - 대기 항목 riskLevel = CAUTION|UNKNOWN만(UNKNOWN = unable 시각) — 기존 매핑 그대로 통과(SAFE·미지 = unable 유지).
 - avoidances = 회피 재료 코드 배열(IngredientCode[]) → AiPendingItem.avoidCodes, 칩·안내 카드 이름은 렌더 시점 restrictionLabel(언어 전환 즉시), 칩 = caution(재료별 위험도 없음 — safe 0). 초안 객체 모양도 방어 수용.
 - 15초 마감 서버 채움(DISH·UNKNOWN·설명 null·재료 0) = estimated false → 미도착과 같게(폴링 끝 = 현행 unable 행, AI 칩 0).

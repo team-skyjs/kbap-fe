@@ -95,6 +95,8 @@ export interface ScanPendingItemWire {
   confidence?: number | null;
   aiEstimated?: boolean;
   existsNotReady?: boolean; // 아직 화면 미사용
+  /** 서버 #565: true = 15초 마감 채움(추정 아님), false = LLM 추정. 부재(배포 전 서버) = 어댑터가 내용으로 판별 */
+  filled?: boolean;
   foodId?: number | null; // 아직 화면 미사용
 }
 
