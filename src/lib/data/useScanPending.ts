@@ -12,6 +12,7 @@ import { api, apiLang } from '@/lib/api/client';
 import { adaptPendingItem, type AiPendingItem } from '@/lib/api/scanAdapter';
 import type { ScanPendingPayload } from '@/lib/api/scanTypes';
 import { EVENTS, track } from '@/lib/analytics';
+import { SCAN_API_VERSION } from './useScan';
 
 export const PENDING_POLL_MS = 1000;
 export const PENDING_CAP_MS = 15_000;
@@ -43,7 +44,10 @@ export function useScanPending(scanId: string | null, active: boolean): { items:
     const cap = setTimeout(finish, Math.max(0, r.startedAt + PENDING_CAP_MS - Date.now()));
     const tick = async () => {
       try {
-        const p = await api.get<ScanPendingPayload>(`/api/scans/${encodeURIComponent(scanId)}/pending?lang=${apiLang()}`);
+        // QA #428: ScanV2Controller = version "2.0+" — 기본 1.1 헤더면 404 COMMON-002(핸들러 없음). POST /scans와 같은 상수.
+        const p = await api.get<ScanPendingPayload>(`/api/scans/${encodeURIComponent(scanId)}/pending?lang=${apiLang()}`, {
+          headers: { 'X-API-Version': SCAN_API_VERSION },
+        });
         if (!alive) return;
         const fresh = (p.items ?? [])
           .filter((w) => w && typeof w.pendingId === 'string' && !r.seen.has(w.pendingId))

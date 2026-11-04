@@ -94,6 +94,8 @@ describe('useScanPending', () => {
     await flush();
     expect(mockGet).toHaveBeenCalledTimes(1);
     expect(mockGet.mock.calls[0][0]).toBe('/api/scans/s1/pending?lang=en');
+    // QA #428: 스캔 v2 컨트롤러는 2.0+ — 기본 1.1이면 dev 404. POST /scans와 같은 버전 헤더가 실려야 한다
+    expect(mockGet.mock.calls[0][1]).toEqual({ headers: { 'X-API-Version': '3.0' } });
     await advance(999);
     expect(mockGet).toHaveBeenCalledTimes(1);
     await advance(1);

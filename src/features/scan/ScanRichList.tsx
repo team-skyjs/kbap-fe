@@ -201,7 +201,9 @@ function RichRow({
           회색 박스가 되던 결함(9/10 실기). */}
       <View style={styles.thumbWrap}>
         <View style={styles.thumb}>
-          <CardPhoto uri={thumb} borderRadius={radius.md} />
+          {/* QA #428: 행 key = itemId(스캔마다 0부터 재사용) → 다시 찍으면 같은 인스턴스가 직전 스캔 사진을 ~0.5초 보여 줬다.
+              recyclingKey가 바뀌면 expo-image가 옛 사진을 즉시 비운다 — 매칭 = foodId(상세 로딩 중 thumb null→URL로 깜빡이지 않게), 미매칭 = thumb. */}
+          <CardPhoto uri={thumb} recyclingKey={dish.foodId ?? thumb ?? undefined} borderRadius={radius.md} />
         </View>
         <Pressable style={styles.thumbBadge} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
           <RiskBadge state={dish.risk} />
@@ -330,7 +332,7 @@ function AiFilledRow({ row, ai, onOpen, t }: { row: AiRow; ai: AiPendingItem; on
     <Pressable style={styles.row} onPress={onOpen} testID={`ai-${d.itemId}`}>
       <View style={styles.thumbWrap}>
         <View style={styles.thumb}>
-          <CardPhoto uri={d.imageUrl ?? null} borderRadius={radius.md} />
+          <CardPhoto uri={d.imageUrl ?? null} recyclingKey={d.imageUrl ?? undefined} borderRadius={radius.md} />
         </View>
         <View style={styles.thumbBadge} testID={`ai-badge-${d.itemId}`}>
           <RiskBadge state={ai.risk} />
