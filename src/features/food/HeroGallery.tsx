@@ -3,11 +3,12 @@
  * 1장 이하는 이 컴포넌트를 쓰지 않는다(화면이 현행 정적 히어로를 그대로 렌더).
  *
  * - 가로 페이징 FlatList, 장마다 CardPhoto(원격 이미지 규칙 — 스켈레톤·실패 폴백 포함)
- * - 2초 자동 넘김(useAutoSlide) — 화면 blur·앱 background·reduce motion이면 멈춘다
+ * - 5초 자동 넘김(useAutoSlide) — 화면 blur·앱 background·reduce motion이면 멈춘다
+ * - 자동 넘김 전환 = SLIDE_MS 동안 직접 그리는 이징 스크롤(플랫폼 animated 스크롤은 시간 조절 불가)
  * - 하단 도트는 View로 그린다(이모지 금지), 히어로 안쪽 하단
  */
 import * as React from 'react';
-import { FlatList, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Easing, FlatList, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { CardPhoto } from '@/components';
 import { color as C, radius } from '@/lib/theme';
@@ -19,6 +20,11 @@ export const DOT_ACTIVE = C.primary;
 export const DOT_INACTIVE = C.ink3;
 /** 손을 뗀 뒤 스크롤 이벤트가 이만큼 끊기면 스냅 완료로 본다(스로틀 16ms의 충분한 배수). */
 export const QUIET_MS = 250;
+/** KB-965(예진 11/5 실기): 자동 넘김 전환 시간 — 플랫폼 기본 animated 스크롤(~300ms, 시간 인자 없음)의 약 2배.
+ *  ponytail: 프레임마다 JS가 scrollToOffset(animated:false) — UI 스레드 구동(reanimated scrollTo)은 끊김이 실기에서 보이면. */
+export const SLIDE_MS = 600;
+/** 이징 = 플랫폼 기본 페이지 스크롤과 같은 계열(가속 후 감속). 시간만 늘린다. */
+const SLIDE_EASE = Easing.inOut(Easing.ease);
 
 /** renderPage(KB-965) = 장 하나 그리기 — 없으면 CardPhoto(음식 상세 cover). 가공식품 상세는 누끼·실사진을 같은 바탕에 contain으로 */
 export function HeroGallery({ urls, overlay, renderPage }: { urls: string[]; /** 사진 위·도트 아래 레이어(그라데이션) */ overlay?: React.ReactNode; renderPage?: (url: string, index: number) => React.ReactNode }) {
@@ -34,6 +40,11 @@ export function HeroGallery({ urls, overlay, renderPage }: { urls: string[]; /**
   const releasedRef = React.useRef(false);
   const offsetRef = React.useRef(0); // 최신 스크롤 오프셋
   const quietTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const slideRef = React.useRef<number | null>(null); // 진행 중인 전환 프레임
+  const stopSlide = () => {
+    if (slideRef.current != null) cancelAnimationFrame(slideRef.current);
+    slideRef.current = null;
+  };
 
   React.useEffect(() => () => {
     if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
@@ -52,7 +63,27 @@ export function HeroGallery({ urls, overlay, renderPage }: { urls: string[]; /**
     if (urls.length < 2) return;
     const wrapped = index === 0 && prevIndexRef.current === urls.length - 1;
     prevIndexRef.current = index;
-    listRef.current?.scrollToOffset({ offset: index * width, animated: !wrapped });
+    const to = index * width;
+    if (wrapped) {
+      listRef.current?.scrollToOffset({ offset: to, animated: false });
+      return;
+    }
+    // KB-965: SLIDE_MS 동안 이징으로 직접 그린다 — 사용자가 이미 그 장에 있으면(스와이프 안착) 그릴 게 없다
+    const from = offsetRef.current;
+    if (Math.abs(to - from) < 1) return;
+    const t0 = Date.now();
+    const step = () => {
+      const p = Math.min(1, (Date.now() - t0) / SLIDE_MS);
+      const x = from + (to - from) * SLIDE_EASE(p);
+      offsetRef.current = x; // 다음 전환·재개 판단의 출발점(스로틀된 onScroll을 기다리지 않는다)
+      listRef.current?.scrollToOffset({ offset: x, animated: false });
+      slideRef.current = p < 1 ? requestAnimationFrame(step) : null;
+    };
+    slideRef.current = requestAnimationFrame(step);
+    return () => {
+      if (slideRef.current != null) cancelAnimationFrame(slideRef.current);
+      slideRef.current = null;
+    };
   }, [index, width, urls.length]);
 
   /** 손을 뗀 뒤 스크롤 이벤트가 QUIET_MS 동안 없으면 = 스냅이 끝났다 → 그 자리에서 재개. */
@@ -71,6 +102,7 @@ export function HeroGallery({ urls, overlay, renderPage }: { urls: string[]; /**
   // 넘어야 오므로, 손을 올려만 두거나 조금만 움직이면 그 전에 틱이 화면을 끌어간다.
   // 드래그 인식도 같은 처리로 받는다(터치 이벤트가 네이티브 스크롤에 뺏기는 경우 대비).
   const press = () => {
+    stopSlide(); // 전환 중에 닿으면 그 자리에서 손가락에 넘긴다
     touchingRef.current = true;
     releasedRef.current = false;
     if (quietTimerRef.current) clearTimeout(quietTimerRef.current);

@@ -6,13 +6,13 @@
  *
  * 규칙(발주 2):
  *  - 2장 미만이면 타이머를 만들지 않는다.
- *  - 2000ms마다 다음 장, 마지막 다음은 처음(순환).
- *  - 드래그가 시작되면 즉시 멈추고, 안착한 장에서 타이머를 **다시 시작**한다 → 스와이프 직후 2초 정지 후 재개.
+ *  - 5000ms마다 다음 장, 마지막 다음은 처음(순환). (KB-965 예진 11/5: 2초 → 5초)
+ *  - 드래그가 시작되면 즉시 멈추고, 안착한 장에서 타이머를 **다시 시작**한다 → 스와이프 직후 5초 정지 후 재개.
  *  - paused(화면 blur·앱 background·reduce motion)면 타이머를 해제한다. 언마운트도 해제.
  */
 import * as React from 'react';
 
-export const AUTO_SLIDE_MS = 2000;
+export const AUTO_SLIDE_MS = 5000; // KB-965(예진 11/5 실기): 2초 → 5초
 
 export function useAutoSlide(count: number, paused: boolean) {
   const [index, setIndex] = React.useState(0);
@@ -56,7 +56,7 @@ export function useAutoSlide(count: number, paused: boolean) {
   // (React 공식 패턴, 같은 렌더에서 0). 표시값만 클램프하면 저장된 옛 index가 장수가 다시 늘 때 되살아난다(Codex #208 P2).
   if (index >= count && index !== 0) setIndex(0);
 
-  /** 사용자가 직접 넘겼을 때 — 그 장으로 맞추고 2초를 새로 센다. */
+  /** 사용자가 직접 넘겼을 때 — 그 장으로 맞추고 간격(AUTO_SLIDE_MS)을 새로 센다. */
   const onUserSwipe = React.useCallback(
     (next: number) => {
       holdRef.current = false; // 손을 뗐다 — 제스처 정지 해제
