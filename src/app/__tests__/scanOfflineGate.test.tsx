@@ -143,3 +143,9 @@ it('서버 5xx(J3 아님) → 게이트 미발동 — 오프라인만 차단', (
   expect(tree.root.findAllByType(CameraView).length).toBe(1); // 스캔은 5xx와 무관하게 가능
   expect(texts(tree, 'states.offlineTitle')).toBe(0);
 });
+
+// P-598: packagedVisionScan 전 채널 ON — 이 스위트는 탭·메뉴판·ML Kit 흐름(아직 코드에 남은 OFF 경로)을 본다 → OFF 고정(scanDesign 관례)
+const visionFlags = (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS;
+const visionPrev = visionFlags.packagedVisionScan;
+beforeEach(() => { visionFlags.packagedVisionScan = false; });
+afterAll(() => { visionFlags.packagedVisionScan = visionPrev; });

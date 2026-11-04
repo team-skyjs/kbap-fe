@@ -1,3 +1,8 @@
+## 2026-11-04 · P-598 KB-969 후속 — packagedVisionScan 전 채널 ON
+
+- flags.ts packagedVisionScan: DEV_SERVER_CHANNEL → true(운영 서버 #542 배포 26.11.5, 11/4 03:47). ML Kit 가공식품 경로·탭은 코드에 남김(운영 확인 뒤 후속 PR).
+- 탭·메뉴판·ML Kit 흐름을 보는 스위트 8개는 OFF 고정(scanDesign 관례) · prodHide870에 기본값 true 잠금.
+
 ## 2026-11-04 · P-596 KB-982 메뉴판 스캔 음식 상세에 메뉴 담기
 
 - 카트 = 모듈 스토어 src/features/scan/scanCartStore.ts(useSyncExternalStore — 구 scan.tsx 로컬 Map 상태). 담기·빼기 이벤트(scan_item_add·scan_item_remove·airbridge.addToCart)도 스토어 한 곳 — 결과 리스트·상세 같은 계측.

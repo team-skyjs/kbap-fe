@@ -337,3 +337,9 @@ describe('KB-670 선발급 MEMBER-003 = 에러 화면 없음 · 게스트 전환
     expect(quotaShown(tree)).toBe(true);
   });
 });
+
+// P-598: packagedVisionScan 전 채널 ON — 이 스위트는 탭·메뉴판·ML Kit 흐름(아직 코드에 남은 OFF 경로)을 본다 → OFF 고정(scanDesign 관례)
+const visionFlags = (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS;
+const visionPrev = visionFlags.packagedVisionScan;
+beforeEach(() => { visionFlags.packagedVisionScan = false; });
+afterAll(() => { visionFlags.packagedVisionScan = visionPrev; });
