@@ -1,4 +1,5 @@
 /** P-609: OCR evidence only. No model scores, labels, credentials or API client. */
+import { runtimeContext } from '@/lib/engagement/runtimeContext';
 import type { OcrLine } from '@/lib/scan/ocr';
 
 export const PROTOCOL = 'kbap-mlkit-capture-v1';
@@ -14,7 +15,10 @@ export type Device = {
   app_build: string; ocr_library_version: string; script: 'KOREAN';
 };
 export function allowed(channel: string | null | undefined, dev: boolean, base: string): boolean {
-  return base === 'https://dev.kbap.site' &&
+  const context = runtimeContext({ development: dev, os: 'unknown', beBase: base, channel });
+  if (context.be_env !== 'dev') return false;
+  const url = new URL(base);
+  return !url.username && !url.password && !url.port && !url.search && !url.hash && url.pathname === '/' &&
     (channel === 'teamtest' || channel === 'development' || (channel == null && dev));
 }
 

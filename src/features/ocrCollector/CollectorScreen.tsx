@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { AppState, ScrollView, TextInput, StyleSheet, View } from 'react-native';
+import { AppState, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Input } from '@/components/KeyboardDismissBar';
 import { Btn } from '@/components/Btn';
 import { Txt } from '@/components/Txt';
 import { color as C } from '@/lib/theme';
@@ -57,7 +58,7 @@ export default function CollectorScreen() {
       <Txt style={styles.title}>{t('ocrCollector.title')}</Txt>
       <Txt>{t('ocrCollector.intro')}</Txt>
       {message && <Txt accessibilityLiveRegion="polite">{t(message)}</Txt>}
-      <TextInput style={styles.input} value={host} onChangeText={setHost} editable={!busy}
+      <Input testID="ocr-collector-host" style={styles.input} value={host} onChangeText={setHost} editable={!busy}
         autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('ocrCollector.host')} placeholder={t('ocrCollector.host')} />
       <Btn testID="ocr-collector-prepare" disabled={busy} onPress={() => { void action(async () => {
         await prepare(host, n => { if (mounted.current) setProgress(n); }); setReady(true);
@@ -66,7 +67,7 @@ export default function CollectorScreen() {
         await importFiles(n => { if (mounted.current) setProgress(n); }); setReady(true);
       }, 'ocrCollector.prepared'); }}>{t('ocrCollector.import')}</Btn>
       <Txt>{t('ocrCollector.progress', { done: progress, total: 32 })}</Txt>
-      <TextInput style={styles.input} value={model} onChangeText={setModel} editable={!busy && rows.length === 0}
+      <Input testID="ocr-collector-model" style={styles.input} value={model} onChangeText={setModel} editable={!busy && rows.length === 0}
         accessibilityLabel={t('ocrCollector.model')} placeholder={t('ocrCollector.model')} />
       <Btn testID="ocr-collector-kind" disabled={busy || rows.length > 0} variant="ghost"
         onPress={() => setKind(kind === 'physical' ? 'simulator' : 'physical')}>{t(`ocrCollector.${kind}`)}</Btn>
