@@ -1064,10 +1064,7 @@ export default function Scan() {
     }));
     // KB-992: 2단 — DB 판정(현행)은 위, pendingId 항목은 아래 'AI 추정' 섹션(서버 순서). 도착 전 = 스켈레톤,
     // NOT_FOOD = 행 제거, 폴링이 끝났는데 미도착(15초·실패·scanId 없음) = 현행 unable 행으로 위 목록에 남는다.
-    // S-959 후속 방어: 칩 = 회원 기피와의 교집합만(매칭 행과 같은 의미). 서버가 교집합으로 고치기 전 응답이 와도 무관 재료 칩 0.
-    // 위험도(risk)는 건드리지 않는다 — 칩만 거른다(false-safe 아님). 게스트·기피 0 = 칩 없음
-    const mine = new Set((me?.restrictions ?? []).map((r) => r.code));
-    const aiById = new Map(aiPending.items.map((a) => [a.pendingId, { ...a, avoidCodes: a.avoidCodes.filter((c) => mine.has(c)) }]));
+    const aiById = new Map(aiPending.items.map((a) => [a.pendingId, a]));
     const aiRows: AiRow[] = [];
     const allDishes = [...resultDishes, ...photoDishes].filter((d) => {
       if (!d.pendingId || !scanId) return true;
