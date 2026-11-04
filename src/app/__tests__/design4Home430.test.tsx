@@ -78,7 +78,7 @@ const mockFood = (id: string, risk: string) => ({
 // KB-986 #421: 시트가 열린 채 홈 요청 실패로 분기 전환 — 실제 쿼리처럼 구독으로 다시 그린다(렌더 메모이즈 우회)
 const mockHomeErr = { on: false, subs: new Set<() => void>(), set(v: boolean) { this.on = v; this.subs.forEach((f) => f()); } };
 jest.mock('@/lib/data/useHome', () => ({
-  useHome: () => (require('react').useSyncExternalStore((f: () => void) => { mockHomeErr.subs.add(f); return () => mockHomeErr.subs.delete(f); }, () => mockHomeErr.on)
+  useHome: () => (jest.requireActual<typeof import('react')>('react').useSyncExternalStore((f: () => void) => { mockHomeErr.subs.add(f); return () => mockHomeErr.subs.delete(f); }, () => mockHomeErr.on)
     ? { isLoading: false, isPending: false, isError: true, error: new Error('NETWORK'), refetch: jest.fn(), data: undefined }
     : {
       isLoading: false,
@@ -90,8 +90,8 @@ jest.mock('@/lib/data/useHome', () => ({
 }));
 // KB-986 #421: 피드백 시트를 연 상태로 고정(큐 판정은 feedbackPrompt986 담당) — 시트 자체는 실제 컴포넌트
 jest.mock('react-native-gesture-handler', () => {
-  const R = require('react');
-  const { View } = require('react-native');
+  const R = jest.requireActual<typeof import('react')>('react');
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
   const pan = () => {
     const b: Record<string, () => unknown> = {};
     for (const k of ['runOnJS', 'onUpdate', 'onFinalize', 'onStart', 'onEnd', 'onChange', 'enabled', 'minDistance', 'activeOffsetY']) b[k] = () => b;
