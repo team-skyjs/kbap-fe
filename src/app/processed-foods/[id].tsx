@@ -35,6 +35,7 @@ import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { Pressable } from '@/components/Pressable';
 import { RemoteImage } from '@/components/RemoteImage';
+import { HeroGallery } from '@/features/food/HeroGallery';
 import { Shimmer } from '@/components/Skeleton';
 import { Chip } from '@/components/Chip';
 import { color as C, font, radius } from '@/lib/theme';
@@ -218,7 +219,13 @@ export function ProcessedFoodDetailScreen() {
         {/* KB-865 ③(시안 20): 스캔 확정 결과 = 일반 상세와 같은 화면 — "스캔 결과" 띠·불꽃·차감 문구 없음(README) */}
         {/* 시안 08: 사진 335×223 r16 #F7F8FA(상품 8 안쪽 contain) */}
         <View style={[s.photo, { height: heroH }]}>
-          {d.imageUrl ? (
+          {d.images.length >= 2 ? (
+            // KB-965: 2장 이상 = 음식 상세 캐러셀(HeroGallery — 2초 자동·도트) · 장마다 같은 바탕(surface2)·contain·같은 안쪽 여백 = 누끼·실사진이 섞여도 배경이 어긋나지 않는다
+            <HeroGallery
+              urls={d.images}
+              renderPage={(u, i) => <RemoteImage uri={u} style={[s.photoImage, { top: insets.top + 48 }]} contentFit="contain" recyclingKey={`pf-detail-${d.id}-${i}`} hideUntilLoaded />}
+            />
+          ) : d.imageUrl ? (
             // QA #338: 다른 제품 사진이 잠깐 비치던 것 — 상세 전용 recyclingKey + 이번 사진이 뜰 때까지 투명(판정 화면에 엉뚱한 사진 0)
             <RemoteImage key={d.imageUrl} uri={d.imageUrl} style={[s.photoImage, { top: insets.top + 48 }]} contentFit="contain" recyclingKey={`pf-detail-${d.id}`} hideUntilLoaded />
           ) : (

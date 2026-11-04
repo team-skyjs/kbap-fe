@@ -6,6 +6,11 @@
 - 시트는 SheetShell을 안 쓴다 — 공용 셸은 스크림 0.4·패딩 39·X 없음(P-310)이라 시안(스크림 50%·핸들·헤더 X)과 달라 같은 Modal 위에 시안 값으로.
 - 아이콘: 전자레인지·타이머·물방울 = 시안 로컬 벡터(icons.tsx IconMicrowave·IconTimer·IconDroplet, stroke 1.75) · 끓는 물 = DS ic/soup(IconTabFood).
 - i18n packaged.recipe.* 15키 × 10로케일(단위 약어는 {{value}} — 복수형 키 불필요). drainKeepMl은 어댑터만(시안에 표시 자리 없음).
+## 2026-11-04 · P-602 KB-965 가공식품 상세 사진 여러 장(캐러셀)
+
+- 어댑터: 상세 응답 images[{url, kind}](S-953, 서버 dev 배포 전 — 옵셔널) → images: string[](서버 순서·https·빈 url·중복 버림) · 없음·빈 배열 = 대표(imageUrl) 한 장.
+- 히어로: 2장 이상 = 음식 상세 HeroGallery 재사용(2초 자동·도트) · 1장 = 현행 정적 히어로 그대로. HeroGallery에 renderPage(옵션) — 가공식품은 장마다 단일 히어로와 같은 바탕(surface2)·contain·안쪽 여백(누끼·실사진 혼재 배경 일치) · 음식 상세는 기본 CardPhoto 무변.
+- kind는 아직 화면에서 쓰지 않음(모든 장 같은 처리). 스크린샷·실기 = 서버 dev 배포 뒤 QA 세션.
 
 ## 2026-11-04 · P-600 광고성 동의 시트 최초 1회·전 채널 ON(예진 11/4 결정)
 
