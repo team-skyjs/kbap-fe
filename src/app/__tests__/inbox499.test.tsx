@@ -44,6 +44,8 @@ jest.mock('expo-router', () => {
   };
 });
 const mockT = jest.fn((k: string, o?: { count?: number }) => (o?.count != null ? `${k}:${o.count}` : k));
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- 호이스팅되는 목 팩토리 안
+jest.mock('@/features/push/MarketingConsentSheet', () => ({ ...jest.requireActual('@/features/push/MarketingConsentSheet'), InboxMarketingConsent: () => require('react').createElement('InboxMarketingConsent') })); // KB-979: 알림함 동의 시트(navigation 이벤트) — 동작은 marketingConsent979 담당, 여기선 마운트 여부만
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: mockT, i18n: { language: 'en' } }),
   initReactI18next: { type: '3rdParty', init: () => {} },
@@ -193,6 +195,13 @@ it('⑬ 게스트 — 로그인 Redirect(returnTo=/notifications), 알림함 어
   expect(byId(tree, 'query-error-block').length).toBe(0);
   expect(byId(tree, 'notif-empty').length).toBe(0);
   expect(texts(tree)).not.toContain('inbox.title');
+  expect(tree.root.findAll((n) => n.type === 'InboxMarketingConsent').length).toBe(0); // KB-979: 게스트 = 동의 판정(설정 GET) 0
+});
+
+it('⑭ KB-979 회원 = 알림함에 동의 시트 판정 마운트 1', () => {
+  mockInbox.data = [];
+  const tree = render();
+  expect(tree.root.findAll((n) => n.type === 'InboxMarketingConsent').length).toBe(1);
 });
 
 it('⑤ 소스 잠금 — 로컬 스토어·모두 읽음·구 상대 시각·게이트 시트 부재, timeAgo·routeForNotificationData·returnTo 존재', () => {

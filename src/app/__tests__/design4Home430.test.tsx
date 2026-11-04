@@ -17,6 +17,7 @@ jest.mock('@/lib/data/useProcessedFoods', () => {
     useProcessedSearchPaged: () => ({ ...empty, data: { items: [], pageSizes: [0] } }),
   };
 });
+jest.mock('@/features/push/MarketingConsentSheet', () => ({ ...jest.requireActual('@/features/push/MarketingConsentSheet'), InboxMarketingConsent: () => null })); // KB-979: 알림함 동의 시트(navigation 이벤트) — marketingConsent979 담당
 jest.mock('@/features/curation/CurationSection', () => ({ CurationSection: () => null })); // KB-796: 홈 큐레이션(자체 쿼리) — 이 스위트 범위 밖
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
