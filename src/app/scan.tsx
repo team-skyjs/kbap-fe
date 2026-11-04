@@ -57,6 +57,7 @@ import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { AiPendingItem, PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { useScanPending } from '@/lib/data/useScanPending';
+import { OrderPill, ScanRichList, type AiRow } from '@/features/scan/ScanRichList';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, formatKrw, orderNameKo, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 // P-219→P-220: 실패 분류·계측 사유 매핑은 순수 모듈 한 곳(전수 유닛 대상)
@@ -82,7 +83,6 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
-import { OrderPill, ScanRichList, type AiRow } from '@/features/scan/ScanRichList';
 import { D4CameraRestart } from '@/components/design4Assets';
 import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { TagPickerSheet } from '@/app/community/compose';

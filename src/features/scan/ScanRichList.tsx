@@ -23,6 +23,8 @@ import { Pressable } from '@/components/Pressable';
 import { openWebPage } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow, type RiskState, radius } from '@/lib/theme';
+import type { AiPendingItem } from '@/lib/api/scanAdapter';
+import { SkBar, SkImg } from '@/components/Skeleton';
 
 /** P-171 ① → P-223: 칩 폭 근사 — 통합 칩 메트릭(패딩 8×2·보더·RiskMark 11) 기반.
  *  CJK ≈ 폰트폭, 라틴/숫자 ≈ 절반. ponytail: 문자폭 근사 휴리스틱 — 오차는 이르게
@@ -54,8 +56,6 @@ import { BrandGoogleMark, D4Minus } from '@/components/design4Assets';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw, type ResultDish } from '@/lib/scan/segmentMenu';
-import type { AiPendingItem } from '@/lib/api/scanAdapter';
-import { SkBar, SkImg } from '@/components/Skeleton';
 
 /** KB-992: 'AI 추정' 섹션 한 줄 — ai = null이면 도착 전(스켈레톤). */
 export interface AiRow {

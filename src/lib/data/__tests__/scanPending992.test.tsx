@@ -5,13 +5,13 @@ import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { adaptPendingItem, photoOnlyResults } from '@/lib/api/scanAdapter';
 import type { ScanResultWire } from '@/lib/api/scanTypes';
+import { PENDING_CAP_MS, useScanPending } from '../useScanPending';
 
 const mockGet = jest.fn();
 jest.mock('@/lib/api/client', () => ({ api: { get: (...a: unknown[]) => mockGet(...a) }, apiLang: () => 'en' }));
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 
-import { PENDING_CAP_MS, useScanPending } from '../useScanPending';
 
 const wire = (p: Partial<ScanResultWire>): ScanResultWire => ({ matched: false, riskLevel: 'UNKNOWN', name: 'x', ...p });
 const item = (pendingId: string, extra: Record<string, unknown> = {}) => ({ pendingId, kind: 'DISH', name: pendingId, riskLevel: 'CAUTION', aiEstimated: true, ...extra });
