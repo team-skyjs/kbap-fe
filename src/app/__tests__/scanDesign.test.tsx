@@ -944,6 +944,15 @@ describe('KB-992 AI 추정 섹션', () => {
     expect(has(tree, 'ai--2') || has(tree, 'ai-pending--2')).toBe(false);
   });
 
+  it('S-959 후속 방어: AI 칩 = 회원 기피(EGG)와의 교집합만 — 무관 코드(PEANUT)는 칩·카드 재료 줄에서 빠지고 위험도는 그대로', async () => {
+    mockScanExtra.v = { photoOnly, scanId: 's1' };
+    mockPending.items = [{ pendingId: 'p1', kind: 'dish', name: 'Kimchi pancake', koreanName: '김치전', description: 'x', risk: 'caution', avoidCodes: ['PEANUT', 'EGG'], estimated: true }];
+    const tree = await toResult();
+    const row = (list(tree).props.aiRows as { ai: { avoidCodes: string[]; risk: string } }[])[0];
+    expect(row.ai.avoidCodes).toEqual(['EGG']);
+    expect(row.ai.risk).toBe('caution');
+  });
+
   it('AI 행 탭 = 미등록 안내 카드 재사용 + 위에 AI 설명·추정 재료 한 줄(상세 이동 0)', async () => {
     mockScanExtra.v = { photoOnly, scanId: 's1' };
     mockPending.items = [{ pendingId: 'p1', kind: 'dish', name: 'Kimchi pancake', koreanName: '김치전', description: 'Pan-fried kimchi pancake', risk: 'caution', avoidCodes: ['EGG'], estimated: true }];
