@@ -90,10 +90,12 @@ beforeEach(() => {
 
 it('① 어댑터 — 5필드 변환 + at ISO · receivedAt 비정상 = 현재 시각 · type/orderId 옵션(문자열 정규화)', () => {
   const base = toInboxItem(wire(1, false, { receivedAt: 1789540000000 }));
-  expect(base).toEqual({ id: 1, title: 't1', body: 'b1', at: new Date(1789540000000).toISOString(), read: false, type: undefined, orderId: undefined });
+  expect(base).toEqual({ id: 1, title: 't1', body: 'b1', at: new Date(1789540000000).toISOString(), read: false, type: undefined, orderId: undefined, foodId: undefined });
   expect(Number.isNaN(Date.parse(toInboxItem(wire(2, true, { receivedAt: Number.NaN })).at))).toBe(false);
   expect(toInboxItem(wire(3, false, { type: 'REVIEW_REMINDER', orderId: 12 }))).toMatchObject({ type: 'REVIEW_REMINDER', orderId: '12' });
   expect(toInboxItem(wire(4, false, { type: 'NEWS', orderId: null })).orderId).toBeUndefined();
+  expect(toInboxItem(wire(5, false, { type: 'FOOD_DISCOVERY', orderId: null, foodId: 6 }))).toMatchObject({ type: 'FOOD_DISCOVERY', foodId: '6' }); // KB-985
+  expect(toInboxItem(wire(6, false, { type: 'REVIEW_REMINDER', orderId: 12, foodId: null })).foodId).toBeUndefined();
 });
 
 it('② 목록·미읽음 파생 — 세션 true: GET 1회(/api/notifications), 순서 그대로, unread = read===false 개수', async () => {

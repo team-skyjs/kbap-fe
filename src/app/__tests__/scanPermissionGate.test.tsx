@@ -254,3 +254,9 @@ it('P-131: granted 카메라 — 세로 유도 오버레이 부재 + 줌 프리�
   expect(tree.root.findAll((n) => n.props?.testID === 'zoom-x1').length).toBeGreaterThanOrEqual(1);
   expect(tree.root.findAll((n) => n.props?.testID === 'zoom-x2').length).toBeGreaterThanOrEqual(1);
 });
+
+// P-598: packagedVisionScan 전 채널 ON — 이 스위트는 탭·메뉴판·ML Kit 흐름(아직 코드에 남은 OFF 경로)을 본다 → OFF 고정(scanDesign 관례)
+const visionFlags = (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS;
+const visionPrev = visionFlags.packagedVisionScan;
+beforeEach(() => { visionFlags.packagedVisionScan = false; });
+afterAll(() => { visionFlags.packagedVisionScan = visionPrev; });

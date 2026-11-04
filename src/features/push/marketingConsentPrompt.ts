@@ -37,7 +37,7 @@ export function setMarketingConsentActive(v: boolean): void {
 
 /** 홈 큐 스텝 — 띄우면 true(닫힌 뒤 done). 게스트·세션 미확정·GET 실패·블러 = 소모 없이 false(다음 포커스 재판정) */
 export async function presentHomeMarketingConsent(show: (done: () => void) => void, done: () => void, signal: AbortSignal): Promise<boolean> {
-  if (!FLAGS.pushEnabled || homeChecked) return false;
+  if (!FLAGS.pushEnabled || !FLAGS.marketingConsentPrompt || homeChecked) return false; // P-599: 운영 OFF = 판정 전 즉시 false(GET·날짜 기록·대기 0 — 큐는 다음 스텝으로)
   if (getSessionState() !== true) return false; // 홈 응답 전에 스텝이 돈다 — home.authenticated 대신 세션
   let stored: string | null;
   try {

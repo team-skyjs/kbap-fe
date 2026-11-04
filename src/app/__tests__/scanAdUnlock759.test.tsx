@@ -566,3 +566,9 @@ it('KB-877 → KB-963: 소진 회원 가공식품 바로 진입(/scan?mode=packa
     FLAGS.processedFoodEnabled = prev.pf;
   }
 });
+
+// P-598: packagedVisionScan 전 채널 ON — 이 스위트는 탭·메뉴판·ML Kit 흐름(아직 코드에 남은 OFF 경로)을 본다 → OFF 고정(scanDesign 관례)
+const visionFlags = (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS;
+const visionPrev = visionFlags.packagedVisionScan;
+beforeEach(() => { visionFlags.packagedVisionScan = false; });
+afterAll(() => { visionFlags.packagedVisionScan = visionPrev; });
