@@ -71,11 +71,13 @@ function SheetBody({ open, onClose, backRef }: { open: boolean; onClose: () => v
     void markFeedbackPromptDone();
     swipe.dismiss(() => end('never_again'));
   };
-  const onSend = () =>
+  const onSend = () => {
+    if (swipe.isClosing()) return; // #421 Codex P2: 닫히는 180ms 중 Send = 무시(곧 언마운트 — 전송이 끊기거나 결과 없이 사라진다)
     form.send(({ photoCount }) => {
       void markFeedbackPromptDone(); // P-387: 성공 응답 뒤에만 종료
       swipe.dismiss(() => end('submitted', { has_photos: photoCount > 0, photo_count: photoCount }));
     });
+  };
 
   React.useEffect(() => {
     backRef.current = () => requestClose('back');

@@ -21,7 +21,7 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (v: unknown) => require('react').useRef({ value: v }).current,
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => v,
-    withTiming: (v: unknown, _c?: unknown, cb?: (f: boolean) => void) => { if (cb) cb(true); return v; },
+    withTiming: (v: unknown, _c?: unknown, cb?: (f: boolean) => void) => { if (cb) { if (mockTiming.hold) mockTiming.pending.push(cb); else cb(true); } return v; }, // hold = 퇴장 애니메이션 진행 중 고정
     runOnJS: (fn: (...a: unknown[]) => void) => fn,
     interpolate: () => 1,
     Extrapolation: { CLAMP: 'clamp' },
@@ -46,6 +46,8 @@ jest.mock('react-native-gesture-handler', () => {
     Gesture: { Pan: pan, Tap: pan },
   };
 });
+// 퇴장 애니메이션을 진행 중으로 붙잡기(#421: 닫히는 중 Send)
+const mockTiming = { hold: false, pending: [] as ((f: boolean) => void)[] };
 let mockAdsSettled = true;
 jest.mock('@/lib/ads/adsSession', () => ({ isAdsSettled: () => mockAdsSettled, subscribeAds: () => () => {} }));
 jest.mock('@/lib/engagement/occlusionSurfaces', () => {
@@ -217,6 +219,22 @@ describe('시트 — 보내기·닫기·다시 보지 않기', () => {
     const t = mount();
     const modal = t.root.findAll((n) => n.props?.transparent === true && n.props?.animationType === 'fade')[0];
     expect(modal.findAll((n) => n.type === KeyboardDismissBar && n.props.modal === true)).toHaveLength(1);
+  });
+
+  it('#421 Codex P2: 닫히는 애니메이션 중 Send = 전송 0', async () => {
+    const t = mount();
+    type(t, '닫히는 중 본문');
+    mockTiming.hold = true;
+    try {
+      act(() => byId(t, 'feedback-prompt-close').props.onPress()); // 퇴장 시작(완료 전)
+      expect(open(t)).toBe(true);
+      act(() => byId(t, 'feedback-send').props.onPress());
+      expect(mockSubmit).not.toHaveBeenCalled();
+    } finally {
+      mockTiming.hold = false;
+      act(() => mockTiming.pending.splice(0).forEach((cb) => cb(true)));
+    }
+    expect(open(t)).toBe(false);
   });
 
   it('다시 보지 않기 = 종료 기록 + never_again → 닫힘', async () => {
