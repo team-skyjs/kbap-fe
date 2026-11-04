@@ -89,20 +89,28 @@ export function InboxMarketingConsent() {
   const [settled, setSettled] = React.useState(false);
   const clear = React.useSyncExternalStore(subscribeOcclusion, () => !isOccluded());
   const shown = React.useRef(false);
+  const focusedAt = React.useRef(Number.POSITIVE_INFINITY);
+  const refetch = query.refetch;
   React.useEffect(() => navigation.addListener('transitionEnd', (e) => { if (!e.data.closing) setSettled(true); }), [navigation]);
+  // #416 Codex P2: 자식 화면 밑에 살아 있다 복귀해도 재조회(전역 refetchOnWindowFocus=false) — 첫 GET 실패도 복귀 때 재시도
   useFocusEffect(
-    React.useCallback(() => () => {
-      setSettled(false);
-      shown.current = false;
-      abort();
-    }, [abort]),
+    React.useCallback(() => {
+      focusedAt.current = Date.now();
+      void refetch();
+      return () => {
+        setSettled(false);
+        shown.current = false;
+        abort();
+      };
+    }, [abort, refetch]),
   );
-  // 이번 마운트에서 받은 성공 응답만(캐시된 옛 값으로 판정 금지 — 재가입 등은 서버가 정본)
-  const due = settled && clear && query.isSuccess && query.isFetchedAfterMount && isUnconsented(query.data);
+  // 이번 포커스 이후 받은 성공 응답만(캐시된 옛 값으로 판정 금지 — 재가입 등은 서버가 정본). ref 비교는 effect 안에서(react-hooks/refs)
+  const due = settled && clear && query.isSuccess && isUnconsented(query.data);
+  const updatedAt = query.dataUpdatedAt;
   React.useEffect(() => {
-    if (!due || shown.current || isMarketingConsentActive()) return;
+    if (!due || updatedAt < focusedAt.current || shown.current || isMarketingConsentActive()) return;
     shown.current = true;
     show();
-  }, [due, show]);
+  }, [due, updatedAt, show]);
   return <MarketingConsentSheet {...props} />;
 }

@@ -107,6 +107,18 @@ it('막힌 자리(제출 중·다른 모달 위·에러) = blocked → 안 열�
   expect(await latest().request('review')).toBe(true);
 });
 
+it('함수형 blocked 는 상태 로드 await 뒤 띄우기 직전에 다시 평가 — 그 사이 막히면 안 열림·소모 0 (#416 Codex P2)', async () => {
+  await mount();
+  let active = false;
+  const p = latest().request('review', { blocked: () => active });
+  active = true; // await loadPromptState() 사이에 동의 시트가 뜸
+  expect(await p).toBe(false);
+  expect(mockTrack).not.toHaveBeenCalled();
+  expect(await loadPromptState()).toEqual(EMPTY_PROMPT_STATE);
+  active = false;
+  expect(await latest().request('review', { blocked: () => active })).toBe(true);
+});
+
 it('응답 — 나중에: 닫힘·종료 아님 / 좋아요: 기본 평점 창 요청 + 종료 + after / 별로예요: 문의 작성 이동 + 종료 + after', async () => {
   await mount();
   const after = jest.fn();

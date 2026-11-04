@@ -59,8 +59,8 @@ export function ScanExitPrompts() {
             return;
           }
           await a.ready; // 성공 카운트 저장이 끝난 뒤 판정(스캔 2회 이상 규칙)
-          if (isMarketingConsentActive()) { busy.current = false; return; }
-          const shown = await request('scan', { onClosed: () => { busy.current = false; } });
+          // request() 내부 await(프롬프트 상태 로드) 뒤에도 재확인 — 함수형 blocked (#416 Codex P2)
+          const shown = await request('scan', { blocked: isMarketingConsentActive, onClosed: () => { busy.current = false; } });
           if (!shown) busy.current = false;
         })();
       });

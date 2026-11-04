@@ -21,12 +21,14 @@ let mockSession: boolean | null = true;
 jest.mock('@/lib/auth/useSession', () => ({ getSessionState: () => mockSession }));
 const mockFetch = jest.fn();
 const mockPatch = jest.fn();
-let mockQuery: { isSuccess: boolean; isFetchedAfterMount: boolean; data?: unknown } = { isSuccess: false, isFetchedAfterMount: false };
+// dataUpdatedAt: 포커스 이후 응답 = 이번 포커스에서 받은 것(#416 Codex P2). 0 = 옛 캐시
+let mockQuery: { isSuccess: boolean; dataUpdatedAt: number; data?: unknown } = { isSuccess: false, dataUpdatedAt: 0 };
+const mockRefetch = jest.fn(() => { mockQuery = { ...mockQuery, dataUpdatedAt: Date.now() }; return Promise.resolve(); });
 jest.mock('@/lib/data/useNotificationSettings', () => ({
   NOTIF_SETTINGS_KEY: ['notifSettings'],
   fetchNotificationSettings: (...a: unknown[]) => mockFetch(...a),
   patchNotificationSettings: (...a: unknown[]) => mockPatch(...a),
-  useNotificationSettings: () => mockQuery,
+  useNotificationSettings: () => ({ ...mockQuery, refetch: mockRefetch }),
 }));
 let mockAdsSettled = true;
 const mockAdsSubs = new Set<() => void>();
@@ -129,7 +131,8 @@ beforeEach(async () => {
   mockNav.listeners.clear();
   mockFocus.cb = null;
   mockFocus.cleanup = undefined;
-  mockQuery = { isSuccess: false, isFetchedAfterMount: false };
+  mockQuery = { isSuccess: false, dataUpdatedAt: 0 };
+  mockRefetch.mockClear();
   mockPrimer.open = false;
 });
 afterEach(() => { act(() => trees.forEach((t) => t.unmount())); trees.length = 0; });
@@ -347,7 +350,7 @@ describe('알림함', () => {
   const mount = () => { act(() => { trees.push(renderer.create(<InboxMarketingConsent />)); }); };
 
   it('미동의: transitionEnd{closing:false} 전엔 0 · closing:true 무시 · 후 1 · 떠 있는 동안 활성 플래그', () => {
-    mockQuery = { isSuccess: true, isFetchedAfterMount: true, data: UNCONSENTED };
+    mockQuery = { isSuccess: true, dataUpdatedAt: Date.now(), data: UNCONSENTED };
     mount();
     expect(open()).toBe(false);
     emit(true);
@@ -364,7 +367,7 @@ describe('알림함', () => {
   });
 
   it('블러 → 재포커스(+transitionEnd) = 다시 1 · 떠 있는 채 블러 = 닫힘', () => {
-    mockQuery = { isSuccess: true, isFetchedAfterMount: true, data: UNCONSENTED };
+    mockQuery = { isSuccess: true, dataUpdatedAt: Date.now(), data: UNCONSENTED };
     mount();
     emit(false);
     expect(open()).toBe(true);
@@ -378,24 +381,39 @@ describe('알림함', () => {
   });
 
   it('동의 회원 = 0 · 이번 마운트 응답 전(캐시만) = 0 · 실패 = 0', () => {
-    mockQuery = { isSuccess: true, isFetchedAfterMount: true, data: CONSENTED };
+    mockQuery = { isSuccess: true, dataUpdatedAt: Date.now(), data: CONSENTED };
     mount();
     emit(false);
     expect(open()).toBe(false);
     act(() => trees.pop()!.unmount());
-    mockQuery = { isSuccess: true, isFetchedAfterMount: false, data: UNCONSENTED };
+    mockQuery = { isSuccess: true, dataUpdatedAt: 0, data: UNCONSENTED };
+    mockRefetch.mockImplementationOnce(() => Promise.resolve()); // 재조회 미완 = 옛 캐시만
     mount();
     emit(false);
     expect(open()).toBe(false);
     act(() => trees.pop()!.unmount());
-    mockQuery = { isSuccess: false, isFetchedAfterMount: true, data: UNCONSENTED };
+    mockQuery = { isSuccess: false, dataUpdatedAt: Date.now(), data: UNCONSENTED };
     mount();
     emit(false);
     expect(open()).toBe(false);
   });
 
+  it('포커스마다 refetch — 첫 GET 실패 뒤 복귀하면 재시도해 1 · 복귀 전 옛 캐시로는 0 (#416 Codex P2)', () => {
+    mockQuery = { isSuccess: false, dataUpdatedAt: 0, data: UNCONSENTED };
+    mount();
+    expect(mockRefetch).toHaveBeenCalledTimes(1);
+    emit(false);
+    expect(open()).toBe(false);
+    act(() => { if (typeof mockFocus.cleanup === 'function') mockFocus.cleanup(); }); // 자식 화면 push
+    mockRefetch.mockImplementationOnce(() => { mockQuery = { isSuccess: true, dataUpdatedAt: Date.now(), data: UNCONSENTED }; return Promise.resolve(); });
+    act(() => { mockFocus.cleanup = mockFocus.cb!(); }); // 복귀 = 재조회 성공
+    expect(mockRefetch).toHaveBeenCalledTimes(2);
+    emit(false);
+    expect(open()).toBe(true);
+  });
+
   it('다른 덮개가 떠 있으면 풀릴 때까지 대기', () => {
-    mockQuery = { isSuccess: true, isFetchedAfterMount: true, data: UNCONSENTED };
+    mockQuery = { isSuccess: true, dataUpdatedAt: Date.now(), data: UNCONSENTED };
     const release = pushOcclusion();
     mount();
     emit(false);

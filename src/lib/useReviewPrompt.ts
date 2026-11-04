@@ -22,13 +22,16 @@ export function useReviewPrompt() {
   const closedRef = React.useRef<(() => void) | null>(null);
 
   /** 조건이 맞으면 시트를 열고 true. 저장·계측은 onShow에서 */
-  const request = React.useCallback(async (t: PromptTrigger, opts: { blocked?: boolean; after?: (answer: PromptAnswer) => void; onClosed?: () => void } = {}): Promise<boolean> => {
-    if (opts.blocked) return false;
+  const request = React.useCallback(async (t: PromptTrigger, opts: { blocked?: boolean | (() => boolean); after?: (answer: PromptAnswer) => void; onClosed?: () => void } = {}): Promise<boolean> => {
+    // #416 Codex P2: 함수형 blocked 는 아래 await 뒤 띄우기 직전에 한 번 더 평가(그 사이 다른 시트가 뜰 수 있다 — KB-979 동의 시트)
+    const blocked = () => (typeof opts.blocked === 'function' ? opts.blocked() : !!opts.blocked);
+    if (blocked()) return false;
     const now = Date.now();
     let s = fixClockRewind(await loadPromptState(), now);
     if (s.lastShownAt != null && now === s.lastShownAt) await savePromptState(s); // 되돌림 보정분 저장
     if (!canShow(s, now)) return false;
     if (t === 'scan' && !scanTriggerDue(s)) return false;
+    if (blocked()) return false;
     afterRef.current = opts.after ?? null;
     closedRef.current = opts.onClosed ?? null;
     answeredRef.current = false;
