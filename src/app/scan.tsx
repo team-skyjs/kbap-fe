@@ -1070,8 +1070,9 @@ export default function Scan() {
       if (!d.pendingId || !scanId) return true;
       // S-959: 15초 마감 채움(estimated=false)은 추정이 아니다 → 미도착과 같게(폴링 끝 = 현행 unable 행)
       const got = aiById.get(d.pendingId);
+      // Codex #428 P2: NOT_FOOD 판정은 estimated와 무관하게 행 제거 — filled 없는 폴백에선 설명 없는 NOT_FOOD가 estimated=false라 먼저 버려졌다
+      if (got?.kind === 'notFood') return false;
       const ai = got?.estimated === false ? undefined : got;
-      if (ai?.kind === 'notFood') return false;
       if (ai || aiPending.polling) {
         aiRows.push({ dish: d, ai: ai ?? null });
         return false;

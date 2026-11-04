@@ -935,6 +935,15 @@ describe('KB-992 AI 추정 섹션', () => {
     expect(badge.findAll((n) => n.props?.state !== undefined)[0].props.state).toBe('caution');
   });
 
+  it('Codex #428 P2: NOT_FOOD는 estimated=false(filled 없는 폴백·설명 없음)여도 행 제거 — 폴링 끝에 unable 행으로 되살아나지 않는다', async () => {
+    mockScanExtra.v = { photoOnly, scanId: 's1' };
+    mockPending.polling = false;
+    mockPending.items = [{ pendingId: 'p2', kind: 'notFood', name: null, koreanName: null, description: null, risk: 'unable', avoidCodes: [], estimated: false }];
+    const tree = await toResult();
+    expect(names(tree)).not.toContain('맛나식당');
+    expect(has(tree, 'ai--2') || has(tree, 'ai-pending--2')).toBe(false);
+  });
+
   it('AI 행 탭 = 미등록 안내 카드 재사용 + 위에 AI 설명·추정 재료 한 줄(상세 이동 0)', async () => {
     mockScanExtra.v = { photoOnly, scanId: 's1' };
     mockPending.items = [{ pendingId: 'p1', kind: 'dish', name: 'Kimchi pancake', koreanName: '김치전', description: 'Pan-fried kimchi pancake', risk: 'caution', avoidCodes: ['EGG'], estimated: true }];
