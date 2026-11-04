@@ -25,23 +25,18 @@ import { markFeedbackPromptDone, setFeedbackPromptActive } from './feedbackPromp
 type Via = 'close' | 'backdrop' | 'swipe' | 'back';
 
 export function FeedbackPromptSheet({ open, onClose, onDismiss }: { open: boolean; onClose: () => void; onDismiss?: () => void }) {
-  const [visible, setVisible] = React.useState(open);
-  const [prevOpen, setPrevOpen] = React.useState(open);
-  if (open !== prevOpen) {
-    setPrevOpen(open);
-    if (open) setVisible(true);
-  }
+  // 닫힘 경로는 전부 몸통 안에서 퇴장 슬라이드를 끝낸 뒤 onClose — 바깥에서 닫힘(블러 abort)은 애니메이션 없이 바로 내린다
   // 안드 뒤로 = Modal onRequestClose(Modal이 떠 있으면 BackHandler로 안 온다) → 몸통의 닫기 경로로
   const back = React.useRef<(() => void) | null>(null);
   // 입력 상태는 시트가 보이는 동안만 산다(닫히면 언마운트 = 다음 실행은 빈 폼 · 전송 중 언마운트 = 업로드 취소 KB-711)
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => back.current?.()} onDismiss={onDismiss}>
-      {visible && <SheetBody open={open} onClose={onClose} onGone={() => setVisible(false)} backRef={back} />}
+    <Modal visible={open} transparent animationType="fade" onRequestClose={() => back.current?.()} onDismiss={onDismiss}>
+      {open && <SheetBody open={open} onClose={onClose} backRef={back} />}
     </Modal>
   );
 }
 
-function SheetBody({ open, onClose, onGone, backRef }: { open: boolean; onClose: () => void; onGone: () => void; backRef: React.RefObject<(() => void) | null> }) {
+function SheetBody({ open, onClose, backRef }: { open: boolean; onClose: () => void; backRef: React.RefObject<(() => void) | null> }) {
   const { t } = useTranslation();
   const bottom = useBottomInset();
   const form = useFeedbackForm();
@@ -59,9 +54,6 @@ function SheetBody({ open, onClose, onGone, backRef }: { open: boolean; onClose:
   React.useEffect(() => {
     track(EVENTS.feedback_prompt_shown, {});
   }, []);
-  React.useEffect(() => {
-    if (!open) swipe.dismiss(onGone); // 퇴장 슬라이드 뒤 Modal 내림
-  }, [open]);
 
   const requestClose = (v: Via) => {
     if (form.busy || swipe.isClosing()) return; // 전송 중 = 닫지 않는다(응답을 기다린다)
