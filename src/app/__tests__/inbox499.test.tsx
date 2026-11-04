@@ -57,7 +57,7 @@ jest.mock('@/lib/analytics', () => ({ track: jest.fn(), EVENTS: { error_state_vi
 let mockGuest = false;
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest, useSession: () => (mockGuest ? false : true) }));
 
-type Item = { id: number; title: string; body: string; at: string; read: boolean; type?: string; orderId?: string };
+type Item = { id: number; title: string; body: string; at: string; read: boolean; type?: string; orderId?: string; foodId?: string };
 const mockInbox = {
   data: undefined as Item[] | undefined,
   isPending: false,
@@ -168,6 +168,20 @@ it('⑨⑩⑪ 탭 — 미읽음만 mutate · type 없음 = 이동 0 · REVIEW_RE
   press(tree, 'inbox-5'); // 읽음 + HELPFUL: mutate 0, 이동은 규칙대로
   expect(mockMutate).toHaveBeenCalledTimes(3);
   expect(mockNavigate).toHaveBeenLastCalledWith(routeForNotificationData({ type: 'HELPFUL' }));
+});
+
+it('KB-985 FOOD_DISCOVERY 행 탭 — 미읽음 읽음 처리 + /food/{foodId} · foodId 없음 = 이동 0', () => {
+  mockInbox.data = [
+    { id: 6, title: 'f', body: 'f', at: ago(1000), read: false, type: 'FOOD_DISCOVERY', foodId: '6' },
+    { id: 7, title: 'g', body: 'g', at: ago(1000), read: false, type: 'FOOD_DISCOVERY' },
+  ];
+  const tree = render();
+  press(tree, 'inbox-6');
+  expect(mockMutate).toHaveBeenLastCalledWith(6);
+  expect(mockNavigate).toHaveBeenLastCalledWith('/food/6');
+  press(tree, 'inbox-7');
+  expect(mockMutate).toHaveBeenLastCalledWith(7);
+  expect(mockNavigate).toHaveBeenCalledTimes(1);
 });
 
 it('⑫ 프레임 불변 — 읽음/미읽음 행은 backgroundColor만 다르고 점은 미읽음에만', () => {
