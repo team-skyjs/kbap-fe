@@ -22,8 +22,8 @@ import { currentGen } from '@/lib/auth/beTokens';
  */
 import { useCallback, useEffect, useRef, useState, useLayoutEffect, useSyncExternalStore, type ReactElement } from 'react';
 import { ActivityIndicator, AppState, BackHandler, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
-import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
+import { launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { withPermissionPrompt } from '@/lib/permissionPrompt';
 import { markPromptShown } from '@/lib/engagement/promptSlot';
 import { addScanItem, rememberScanDish, removeScanItem, resetScanCart, useScanCart } from '@/features/scan/scanCartStore';
@@ -42,7 +42,6 @@ import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { CameraView, useCameraPermissions, type CameraType, type CameraOrientation } from 'expo-camera';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoomPreset } from '@/features/scan/cameraZoom';
-import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, riskText, riskTone, shadow, radius } from '@/lib/theme';
@@ -65,6 +64,7 @@ import { upscaleLongSide, wysiwygCropRect } from '@/lib/scan/coverCrop'; // KB-9
 // P-354(KB-516): 정렬 라벨 — 메뉴판 순 → 가격 높은순 → 가격 낮은순(시트 순서 동일)
 import { recordScanSuccess } from '@/lib/reviewPrompt';
 import { useOneShotQueue } from '@/lib/oneShotQueue';
+import { FLAGS } from '@/lib/flags';
 const SORT_LABEL_KEY: Record<ResultSortMode, string> = {
   menu: 'scan.sortMenu',
   priceDesc: 'scan.sortPriceDesc',
@@ -87,7 +87,6 @@ import { TagPickerSheet } from '@/app/community/compose';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { FLAGS } from '@/lib/flags';
 import { openAppSettings } from '@/lib/openExternal';
 
 type Photo = { uri: string; width: number; height: number } | null;
@@ -1160,6 +1159,7 @@ export default function Scan() {
   // 가공식품 소진(packagedHold) = 아래 가공식품 분기가 흐름 위에 덮어 그린다(같은 트리 자리 — 흐름 상태 유지). 나중에 = 흐름으로 복귀
   // KB-963: 소진 안내는 메뉴 촬영 시점(KB-988: 비전이 메뉴판으로 판별한 뒤)에만 뜬다 — 나중에 = 카메라로 복귀. 가공식품 덮개(packagedHold)도 같음
   const quotaLater = () => { quotaLockRef.current = false; setError(null); setPhase('camera'); };
+  const unlockRetry = () => void runUnlockRetry(() => preflight({ unlocked: true })); // renderError(렌더 중 호출) 밖에서 만든다 — 안에서 가드(ref)를 잡으면 react-hooks/refs
   const renderError = () => {
     const stage = error?.stage ?? 'be';
     return (
@@ -1195,7 +1195,7 @@ export default function Scan() {
             <>
               {/* KB-759: 해제됐는데 티켓 재발급 중/실패 — 광고·리뷰 CTA 대신 다시 시도(실패일 때만) + 나중에 */}
               {/* /review 3: 여는 중에도 같은 버튼을 busy로 유지(스피너·비활성) — 실패면 탭 가능 */}
-              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t(unlockState === 'ready' ? 'scan.startScanning' : 'common.retry')}</Btn>
+              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={unlockRetry} testID="scan-unlock-retry">{t(unlockState === 'ready' ? 'scan.startScanning' : 'common.retry')}</Btn>
               <Btn variant="ghost" onPress={quotaLater} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'quota' ? (

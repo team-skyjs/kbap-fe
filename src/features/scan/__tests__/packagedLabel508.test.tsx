@@ -115,6 +115,32 @@ const labelCalls = () => mockPost.mock.calls.filter((c) => c[0] === '/api/proces
 /** 비전 응답(성분표로 판별 — 서버가 읽고 분석까지 끝낸 결과) */
 const VISION_LABEL = (label: object) => ({ analysisId: (label as { analysisId: string }).analysisId, kind: 'INGREDIENT_LABEL', state: 'LABEL_RESULT', confidence: 0.9, reason: null, front: null, label, warnings: [] });
 
+describe('어댑터·요청·오류', () => {
+  it('어댑터: 함유 가능 = 코드·근거 · 검출 fromLabel = 표시란 · charged는 true만 · 모르는 labelSource = NONE · avoidance 없음 = []', () => {
+    const r = adaptLabelScan(RESULT() as never);
+    expect(r.mayContain).toEqual([{ code: 'SOY', evidence: '대두' }]);
+    expect(r.detections.map((d) => d.fromLabel)).toEqual([true, false]);
+    expect(r.avoidance).toEqual([{ code: 'SHRIMP', detected: true, evidence: ['새우'] }]);
+    expect(adaptLabelScan(RESULT({ charged: null, labelSource: 'WHAT', avoidance: undefined }) as never)).toMatchObject({ charged: false, labelSource: 'NONE', avoidance: [] });
+  });
+  it('요청 = POST /api/processed-foods/scan/label + 3.2 · {analysisId, pages[{ocrText}], lang} · 면 ≤4 · 면당 4000자(코드포인트)', async () => {
+    mockPost.mockResolvedValueOnce(RESULT());
+    await scanProcessedLabel(null, ['가'.repeat(4500), 'b', 'c', 'd', 'e'], 'ko');
+    const [path, body, opts] = mockPost.mock.calls[0] as [string, { analysisId: null; pages: { ocrText: string }[]; lang: string }, object];
+    expect(path).toBe('/api/processed-foods/scan/label');
+    expect(opts).toEqual(V32);
+    expect(body.analysisId).toBeNull();
+    expect(body.lang).toBe('ko');
+    expect(body.pages).toHaveLength(4);
+    expect(Array.from(body.pages[0].ocrText)).toHaveLength(4000);
+  });
+  it('오류: 400 PFOOD-006 = unreadable · 409 PFOOD-007 = newAnalysis', () => {
+    expect(scanFailureOf(new ApiError('x', 400, 'PFOOD-006'))).toBe('unreadable');
+    expect(scanFailureOf(new ApiError('x', 409, 'PFOOD-007'))).toBe('newAnalysis');
+    expect(scanFailureOf(new ApiError('x', 409, 'SCAN-005'))).toBe('newAnalysis'); // #444 같은 키·다른 원문 = 새 키로 새 분석
+  });
+});
+
 describe('흐름(KB-988 — 성분표 사진 = 비전 결과 → 결과 27~ · 사진 검토 25·50)', () => {
   const close = (t: ReactTestRenderer, id: string) => act(() => t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress());
   const count = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'pscan-label-count' && typeof n.type === 'string')[0]?.props.children as string | undefined;

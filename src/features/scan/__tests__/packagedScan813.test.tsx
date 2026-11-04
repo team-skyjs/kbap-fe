@@ -83,7 +83,6 @@ import { ApiError } from '@/lib/api/client';
 import { adaptScanConfirm, adaptScanName } from '@/lib/api/processedFoodAdapter';
 import { scanFailureOf, scanProcessedName } from '@/lib/data/useProcessedScan';
 import { PackagedScanFlow, type ScanCamOpts } from '../PackagedScanFlow';
-import { FLAGS } from '@/lib/flags';
 import { ProcessedFoodDetailScreen as Detail } from '@/app/processed-foods/[id]'; // KB-870: 기본 내보내기 = 채널 게이트 — 화면 자체를 직접 렌더
 /* eslint-enable import/first */
 

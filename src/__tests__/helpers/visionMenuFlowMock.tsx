@@ -20,7 +20,7 @@ export const flowProps: { last: FlowProps | null } = { last: null };
 export const flowMode = { real: false };
 
 export function PackagedScanFlow(p: FlowProps) {
-  flowProps.last = p;
+  React.useEffect(() => { flowProps.last = p; }); // 렌더 중 모듈 값 변이 금지(react-hooks) — 커밋 뒤 기록
   if (flowMode.real) return <actual.PackagedScanFlow {...p} />;
   const { renderCamera, onMenuPhoto } = p;
   return <CameraSlot render={renderCamera} o={{ onShot: (photo) => onMenuPhoto?.(photo, MENU_VISION_PATH) }} />;
