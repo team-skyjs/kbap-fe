@@ -51,7 +51,7 @@ const mockDismiss = jest.fn();
 let mockParams: Record<string, string> = { id: '1711' };
 // KB-981: 상세가 누른 순간 읽는 루트 스택 상태(이름만)
 let mockNavState: { index: number; routes: { name: string }[] } | undefined;
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: mockBack, dismiss: mockDismiss, navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams, useNavigation: () => ({ getState: () => mockNavState }), useSegments: () => [], Redirect: () => null }));
+jest.mock('expo-router', () => ({ useFocusEffect: (cb: () => void) => jest.requireActual('react').useEffect(cb, [cb]) /* KB-965: HeroGallery(useMotionPaused) */, useRouter: () => ({ push: mockPush, back: mockBack, dismiss: mockDismiss, navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams, useNavigation: () => ({ getState: () => mockNavState }), useSegments: () => [], Redirect: () => null }));
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 const mockGet = jest.fn();
@@ -143,6 +143,14 @@ describe('어댑터·요청', () => {
     expect(d.detections.map((x) => x.code)).toEqual(['WHEAT', 'SOY', 'MILK', 'EGG']);
     expect(adaptProcessedDetail({ ...W1711, labelSource: 'WHATEVER' }).labelSource).toBe('NONE');
     expect(adaptProcessedDetail({ ...W1711, labelSource: 'DECLARED', allergens: '밀, 우유 함유' }).allergens).toBe('밀, 우유 함유');
+  });
+  it('KB-965 images(S-953 가산·옵셔널): 서버 순서 그대로 https·빈 url·중복 버림 · 없음(배포 전)·빈 배열 = 대표 한 장 · 둘 다 없음 = []', () => {
+    const img = { url: 'http://h/front.png', source: 'HACCP', attributionKey: 'processedFood.image.haccp' };
+    expect(adaptProcessedDetail({ ...W1711, image: img }).images).toEqual(['https://h/front.png']);
+    expect(adaptProcessedDetail({ ...W1711, image: img, images: [] }).images).toEqual(['https://h/front.png']);
+    expect(adaptProcessedDetail({ ...W1711, image: img, images: [{ url: 'http://h/cut.png', kind: 'CUTOUT' }, { url: '  ', kind: 'PHOTO' }, { url: 'https://h/real.jpg', kind: 'FRONT' }, { url: 'https://h/cut.png', kind: 'CUTOUT' }] }).images)
+      .toEqual(['https://h/cut.png', 'https://h/real.jpg']);
+    expect(adaptProcessedDetail({ ...W1711, image: null, imageUrl: null }).images).toEqual([]);
   });
   it('요청 = /api/processed-foods + X-API-Version 3.2 · 검색어 인코딩·커서', async () => {
     mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null }).mockResolvedValueOnce(W1711);
@@ -446,6 +454,37 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
   it('QA #338: 상세 사진 = 상세 전용 recyclingKey + 로드 전 투명(다른 제품 사진 비침 0) · 사진이 바뀌면 다시 마운트', () => {
     const src = fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8');
     expect(src).toContain('<RemoteImage key={d.imageUrl} uri={d.imageUrl} style={[s.photoImage, { top: insets.top + 48 }]} contentFit="contain" recyclingKey={`pf-detail-${d.id}`} hideUntilLoaded />'); // KB-974: 위 = 상태 표시줄·뒤로 원 아래
+  });
+  it('KB-965: 사진 2장 이상 = 음식 상세 캐러셀(HeroGallery — 도트) · 1장 = 현행 정적 히어로 그대로(캐러셀·도트 0)', () => {
+    const two = detail({ images: [{ url: 'https://h/cut.png', kind: 'CUTOUT' }, { url: 'https://h/real.jpg', kind: 'PHOTO' }] });
+    expect(ids(two)).toContain('detail-hero-gallery');
+    expect(ids(two)).toEqual(expect.arrayContaining(['img:https://h/cut.png', 'img:https://h/real.jpg']));
+    expect(ids(two).filter((i) => i === 'hero-dot-active' || i === 'hero-dot')).toHaveLength(2);
+    const one = detail({ images: [{ url: 'https://h/cut.png', kind: 'CUTOUT' }] });
+    expect(ids(one)).not.toContain('detail-hero-gallery');
+    expect(ids(one)).not.toContain('hero-dot-active');
+    expect(ids(one).filter((i) => i.startsWith('img:https://www.haccp.or.kr/'))).toHaveLength(1); // 현행 히어로 = 대표(imageUrl) 한 장
+    expect(ids(one)).not.toContain('img:https://h/cut.png');
+  });
+  it('KB-965 dev 실응답(14727 앵그리짜파구리큰사발면, S-953 #556 11/4): 대표 누끼 + FRONT·TOP·OTHER·LABEL 5장 = 서버 순서 그대로 캐러셀 5장·도트 5', () => {
+    const CDN = 'https://d29c1cr2ng7w0.cloudfront.net/dev/processed';
+    const cut = `${CDN}/cutout/20010549541142-f9242ff2d7247caa.png`;
+    const rest = ['dea3ce6d8f9a8346.jpg', 'fce56aab26951af2.jpg', 'd7586f3b0ba7f874.jpg', 'a3f7b01c8b9d7b90.jpg'].map((f) => `${CDN}/images/20010549541142-${f}`);
+    const wire = {
+      image: { url: cut, source: 'C002', attributionKey: 'processedFood.image.haccp' },
+      images: [{ url: cut, kind: 'CUTOUT' }, ...rest.map((url, i) => ({ url, kind: ['FRONT', 'TOP', 'OTHER', 'LABEL'][i] }))],
+    } as Partial<DetailWire>;
+    expect(adaptProcessedDetail({ ...V4, ...wire } as DetailWire).images).toEqual([cut, ...rest]);
+    const t = detail(wire);
+    expect(ids(t)).toContain('detail-hero-gallery');
+    expect(ids(t).filter((i) => i.startsWith('img:') && i.includes('/dev/processed/'))).toEqual([cut, ...rest].map((u) => `img:${u}`));
+    expect(ids(t).filter((i) => i === 'hero-dot-active' || i === 'hero-dot')).toHaveLength(5);
+  });
+  it('KB-965 배경: 캐러셀 각 장 = 단일 히어로와 같은 바탕(photo surface2)·contain·안쪽 여백 — 누끼·실사진이 섞여도 장마다 바탕이 다르지 않다(소스 잠금)', () => {
+    const src = fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8');
+    expect(src).toContain('renderPage={(u, i) => <RemoteImage uri={u} style={[s.photoImage, { top: insets.top + 48 }]} contentFit="contain" recyclingKey={`pf-detail-${d.id}-${i}`} hideUntilLoaded />}');
+    expect(src).toMatch(/photo: \{[^}]*backgroundColor: C\.surface2/);
+    expect(fs.readFileSync('src/features/food/HeroGallery.tsx', 'utf8')).toContain('{renderPage ? renderPage(item, i) : <CardPhoto uri={item} transition={200} borderRadius={0} />}'); // 음식 상세 = 기본 CardPhoto 그대로
   });
   it('"Needs checking"(unmapped) 경로 0 · 성분표 직접 확인 버튼 0(결정 4) · 상세 진입 계측 1회', () => {
     const t = detail();

@@ -13,6 +13,11 @@
 - 배지: AI 항목은 caution|unable만 — SAFE·미지 = unable, DANGER = caution(어댑터 잠금, 타입도 두 값). AI 칩 = IconSparkles SVG. AI 행엔 담기 슬롯 없음.
 - 탭: 미등록 안내 카드(UnmatchedNotice) 재사용 + 위에 AI 설명·"들어 있을 수 있는 기피 재료" 한 줄. 판정 문구·unable 마크 무변, 상세 이동 0.
 - 계측 scan_ai_section_shown{count}(스캔당 1회) · scan_ai_item_filled{kind}. i18n 3키 × 10로케일(scan.aiSectionTitle·aiSectionNote·aiIngredientsLine).
+## 2026-11-04 · P-602 KB-965 가공식품 상세 사진 여러 장(캐러셀)
+
+- 어댑터: 상세 응답 images[{url, kind}](S-953, 서버 dev 배포 전 — 옵셔널) → images: string[](서버 순서·https·빈 url·중복 버림) · 없음·빈 배열 = 대표(imageUrl) 한 장.
+- 히어로: 2장 이상 = 음식 상세 HeroGallery 재사용(2초 자동·도트) · 1장 = 현행 정적 히어로 그대로. HeroGallery에 renderPage(옵션) — 가공식품은 장마다 단일 히어로와 같은 바탕(surface2)·contain·안쪽 여백(누끼·실사진 혼재 배경 일치) · 음식 상세는 기본 CardPhoto 무변.
+- kind는 아직 화면에서 쓰지 않음(모든 장 같은 처리). 스크린샷·실기 = 서버 dev 배포 뒤 QA 세션.
 
 ## 2026-11-04 · P-600 광고성 동의 시트 최초 1회·전 채널 ON(예진 11/4 결정)
 

@@ -20,7 +20,8 @@ export const DOT_INACTIVE = C.ink3;
 /** 손을 뗀 뒤 스크롤 이벤트가 이만큼 끊기면 스냅 완료로 본다(스로틀 16ms의 충분한 배수). */
 export const QUIET_MS = 250;
 
-export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위·도트 아래 레이어(그라데이션) */ overlay?: React.ReactNode }) {
+/** renderPage(KB-965) = 장 하나 그리기 — 없으면 CardPhoto(음식 상세 cover). 가공식품 상세는 누끼·실사진을 같은 바탕에 contain으로 */
+export function HeroGallery({ urls, overlay, renderPage }: { urls: string[]; /** 사진 위·도트 아래 레이어(그라데이션) */ overlay?: React.ReactNode; renderPage?: (url: string, index: number) => React.ReactNode }) {
   const { width } = useWindowDimensions();
   const paused = useMotionPaused();
   const { index, onUserSwipe, pause } = useAutoSlide(urls.length, paused);
@@ -113,9 +114,9 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
         onTouchCancel={() => release()}
         onScrollBeginDrag={press}
         onScrollEndDrag={onDragEnd}
-        renderItem={({ item }) => (
+        renderItem={({ item, index: i }) => (
           <View style={{ width, height: '100%' }}>
-            <CardPhoto uri={item} transition={200} borderRadius={0} />
+            {renderPage ? renderPage(item, i) : <CardPhoto uri={item} transition={200} borderRadius={0} />}
           </View>
         )}
       />
