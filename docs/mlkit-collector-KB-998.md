@@ -82,7 +82,7 @@ uv run --offline --frozen python mobile_ocr_bridge.py ingest --capture /absolute
 - receipt: `kbap-scan-classifier-experiment/runs/routing-v2-pilot/mobile-ocr-imports/<위 SHA256>/receipt.json`; `phone_measured=false`, `classification_evaluated=false`, `labels_used_as_model_input=false`.
 - 로컬 증거: `kbap-scan-classifier-experiment/artifacts/kb998-collector-validation/`의 캡처·집계·receipt 경로·스크린샷·검증 로그. 원본/결과 JSON/사진은 FE Git에 넣지 않았다.
 - 전체 Jest **394 suites / 3,722 tests / 7 snapshots 통과** 후 마지막 중앙 딥링크·빈 채널 변경은 관련 **7 suites / 60 tests 통과**로 추가 검증. tsc0, 변경 줄 lint14파일 새 문제0. Jest 열린 핸들/worker 종료 경고가 있어 `--forceExit`를 사용했으며 핸들 누수 해결을 주장하지 않는다.
-- 수집 화면 진입 이후 Metro 로그에서 `/scans`, `/tickets`, `/uploads`, `[MLKit]`, `[OCR]` 일치0. 수집 소스에 API client/scan hook/segmentMenu import0. 이는 로그·소스 관찰 범위이며 네이티브 SDK 전체 패킷 감사는 아니다. 일반 앱 초기 진입에는 기존 홈·광고 동의 통신이 있다.
+- 수집 화면 진입 이후 Metro 로그에서 `/scans`, `/tickets`, `/uploads`, `[MLKit]`, `[OCR]`, 실제 소문자 접두 `[ocr]` 일치0. 수집 소스에 API client/scan hook/segmentMenu import0. 이는 로그·소스 관찰 범위이며 네이티브 SDK 전체 패킷 감사는 아니다. 일반 앱 초기 진입에는 기존 홈·광고 동의 통신이 있다.
 
 ### 다음 기기 실행
 

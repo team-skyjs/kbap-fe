@@ -1,6 +1,6 @@
 ## 2026-11-05 · P-610 / KB-998 · ML Kit 입력 수집 · 실기 검증 대기
 
-- 격리 worktree `kbap-fe-kb998`, `feat/kb998-mlkit-collector` → develop Draft PR. development/teamtest + BE=dev 전용 화면과 중앙 딥링크 게이트. 로컬 dev client의 실제 빈 채널은 __DEV__에서만 허용, release/prod 차단 유지. 기존 로그인/온보딩 게이트 무변.
+- 격리 worktree `kbap-fe-kb998`, `feat/kb998-mlkit-collector` → develop [Draft PR #434](https://github.com/team-skyjs/kbap-fe/pull/434). development/teamtest + BE=dev 전용 화면과 중앙 딥링크 게이트. 로컬 dev client의 실제 빈 채널은 __DEV__에서만 허용, release/prod 차단 유지. 기존 로그인/온보딩 게이트 무변.
 - 공개 fixture32장 로컬 HTTP/Files 공급·SHA256 검증·순차 한국어 OCR·취소/timeout/native drain·행별 저장/복구·JSON 공유. confidence·정답·모델 없음, 서버 scan/upload/ticket/차감 경로 연결0, 원문 진단 로그 제외. 새 의존성/잠금파일/native 설정 변경0. 한국어 K-140 검수 및19키×10로케일.
 - 실제 iPhone17 Simulator iOS26.4.1 / 개발 바이너리1.0.4/1: UI 다운로드32장 해시 일치 → fixture 서버 종료 → native OCR32/32 ok, error0, empty1, 총1,278줄 → 공유 시트 → strict ingest 통과 → 재시작 후 결과/기기 복구·캡처 해시 불변. receipt phone_measured=false, classification_evaluated=false.
 - 측정 JS e4a591f8. 이후 복구 화면 준비 수32표시·완료 후 빈 실행 비활성화만 추가, 시뮬 화면 확인. 처리 중앙값525.46ms(해시·디코드 포함), 과부하 개발 시뮬 값으로 폰 성능 주장 금지.
