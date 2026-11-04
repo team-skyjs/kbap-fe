@@ -17,6 +17,7 @@ import { isProdChannel } from '@/lib/flags';
 import { setMetaTrackingEnabled } from '@/lib/metaSdk';
 import { getAdsSdk, type AdsSdk } from './sdk';
 import { withOcclusion } from '@/lib/engagement/occlusion';
+import { withPermissionPrompt } from '@/lib/permissionPrompt';
 
 export type AdsState = 'idle' | 'running' | 'ready' | 'unavailable';
 
@@ -60,7 +61,7 @@ async function requestTracking(): Promise<void> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const att = require('expo-tracking-transparency') as typeof import('expo-tracking-transparency');
-    const { granted } = await att.requestTrackingPermissionsAsync();
+    const { granted } = await withPermissionPrompt(() => att.requestTrackingPermissionsAsync());
     setMetaTrackingEnabled(granted);
   } catch {
     /* 모듈 없음·거부 — 광고는 비개인화로 계속 */

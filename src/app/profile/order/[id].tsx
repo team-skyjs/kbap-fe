@@ -49,6 +49,7 @@ import { useBottomInset } from '@/lib/useBottomInset';
 import { convertKrw, currencyForCountry } from '@/lib/exchange';
 import { formatOrderDate } from '../my-foods';
 import { formatKrw } from '@/lib/scan/segmentMenu';
+import { withPermissionPrompt } from '@/lib/permissionPrompt';
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -87,7 +88,7 @@ export default function OrderDetailScreen() {
       }
       let uri: string | null = null;
       if (src === 'camera') {
-        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        const perm = await withPermissionPrompt(() => ImagePicker.requestCameraPermissionsAsync());
         if (!perm.granted) {
           setCameraDenied(true);
           return;

@@ -5,6 +5,8 @@
  *   넘거나 에러면 현재 번들로 트리 마운트.
  * - OtaAutoApplyHost: AppState active 복귀 순간부터 3초 창 안에서만 reload — 작업 화면 차단·
  *   네트워크 정적 게이트(P-347)·2분 스로틀 유지. 창이 닫히면 deferred(다음 복귀/콜드 스타트).
+ *   KB-980: 복귀 = background를 거친 active만(iOS 시스템 팝업은 inactive만 거친다) ·
+ *   권한 요청 중·응답 뒤 5초 = reload 금지(Android 팝업의 background 전이).
  * - __DEV__ 또는 Updates.isEnabled=false(Metro·dev client·jest) = 호출 0.
  * - expo-updates는 지연 require(정적 import 금지 관례 — pushAdapter와 동일 계열).
  */
@@ -16,6 +18,7 @@ import { EVENTS, track as trackEvent } from '@/lib/analytics';
 import { checkAndFetchOta, launchCheckOta, type OtaState, type OtaUpdatesModule } from './otaCheck';
 import { inflightCount, subscribeInflight, track } from '@/lib/net/inflight';
 import { OTA_LAUNCH_TIMEOUT_MS, OTA_NETWORK_IDLE_MS, OTA_RESUME_WINDOW_MS, canReloadNow, isBlockedRoute } from './otaPolicy';
+import { permissionPromptSettled } from '@/lib/permissionPrompt';
 
 type UpdatesWithReload = OtaUpdatesModule & { reloadAsync(): Promise<void> };
 type OtaResult = 'applied' | 'none' | 'timeout' | 'error' | 'deferred';
@@ -187,8 +190,13 @@ export function OtaAutoApplyHost() {
   const pathname = usePathname();
 
   React.useEffect(() => {
+    // KB-980: inactive→active(권한·ATT·알림 센터 등 시스템 팝업)는 복귀가 아니다 — 창·체크·이벤트 0
+    let wentBackground = false;
     const sub = AppState.addEventListener('change', (st) => {
+      if (st === 'background') wentBackground = true;
       if (st !== 'active') return;
+      if (!wentBackground) return;
+      wentBackground = false;
       const u = enabledUpdates();
       if (!u) return;
       const until = Date.now() + OTA_RESUME_WINDOW_MS;
@@ -208,6 +216,7 @@ export function OtaAutoApplyHost() {
 
   const tryApply = React.useCallback((): boolean => {
     if (isBlockedRoute(pathname)) return false;
+    if (!permissionPromptSettled()) return false; // KB-980: 팝업 중·응답 뒤 5초 — 창이 닫히면 deferred
     if (!canReloadNow({ appState: AppState.currentState, networkIdle })) return false;
     // #109 2R P1 ② → 9R: 렌더 상태(networkIdle)와 무관한 **호출 시점 동기 최종 게이트**
     if (!networkQuietNow(queryClient)) return false;

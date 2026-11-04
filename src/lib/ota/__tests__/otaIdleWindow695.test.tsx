@@ -60,7 +60,7 @@ const advance = async (ms: number) => {
 };
 const foreground = async () => {
   await act(async () => {
-    appStateListeners.forEach((cb) => cb('active'));
+    appStateListeners.forEach((cb) => { cb('background'); cb('active'); }); // KB-980: 복귀 = background 경유
   });
 };
 

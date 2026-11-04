@@ -1,3 +1,10 @@
+## 2026-11-04 · P-594 KB-980 권한 팝업 닫힘을 OTA 복귀로 치지 않기
+
+- 복귀 판정 = background를 거친 active만(OtaAutoApplyHost). iOS 시스템 팝업(알림·카메라·사진·위치·ATT)은 inactive만 거쳐 창·체크·이벤트 0. background→inactive→active는 복귀.
+- 권한 요청 중 + 응답 뒤 5초 = tryApply 차단(Android는 팝업에서도 background 전이) — 창이 닫히면 기존처럼 deferred, 다음 진짜 복귀·콜드 스타트에 적용.
+- 공통 지점 src/lib/permissionPrompt.ts withPermissionPrompt — 요청 11곳(알림 pushAdapter·ATT adsSession·카메라 scan 훅/ImagePicker·사진·위치 2·저장) 감쌈, src 전수 잠금(otaPermission980).
+- 기존 OTA 테스트 복귀 헬퍼 = background→active로(978·657·695×2). 시작 3초 상한·네이티브 fallbackToCacheTimeout 무변 · 새 카피 0.
+
 ## 2026-11-03 · P-592 KB-969 가공식품 사진 스캔 = 서버 비전(서버 #542) — 카메라 하나·종류 자동 판별
 
 - 플래그 packagedVisionScan = DEV_SERVER_CHANNEL(커맨드 합의: 운영 서버 #542 배포 전 운영 무변 · OFF = 현행 탭 + ML Kit). 운영 배포 뒤 전 채널 ON + ML Kit 가공식품 경로·탭 삭제는 후속 PR.

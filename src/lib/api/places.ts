@@ -10,6 +10,7 @@
  */
 import { track } from '@/lib/net/inflight';
 import { api, apiLang } from './client';
+import { withPermissionPrompt } from '@/lib/permissionPrompt';
 
 /** 실위치 불가 시 폴백 — 강남역(스웨거 예시). 검색 좌표 옵셔널 확정 시 폴백 제거 지점. */
 export const REVIEW_PLACE_FALLBACK_COORD = { latitude: 37.4979502, longitude: 127.0276368 };
@@ -37,7 +38,7 @@ async function currentCoord(): Promise<Coord> {
     let status = perm.status;
     // 미결정 = OS 팝업 바로(사전 모달 없음 — 예진 확정). 거절 이력은 재요청 없음.
     if (status === 'undetermined' && perm.canAskAgain !== false) {
-      status = (await Location.requestForegroundPermissionsAsync()).status;
+      status = (await withPermissionPrompt(() => Location.requestForegroundPermissionsAsync())).status;
     }
     if (status !== 'granted') return REVIEW_PLACE_FALLBACK_COORD;
     const pos = await track(Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })); // #109 5R
