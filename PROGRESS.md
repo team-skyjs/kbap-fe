@@ -1,3 +1,11 @@
+## 2026-11-05 · P-607 KB-997 가공식품 원재료 3줄 미리 보기(예진 11/5 실기)
+
+- 접힘 = "Ingredients" + 번역(없으면 한국어 원문) 3줄(numberOfLines 3) + 아래 페이드(expo-linear-gradient, 바탕 → 투명, 40) + See all. "Ingredients and source" 알약 대체.
+- 3줄 초과 판정 = 제한 없는 투명 사본의 onTextLayout 줄 수(안드는 numberOfLines가 걸린 Text의 잘린 줄만 준다), 측정은 글 키로 보관(언어 전환 = 재측정). 측정 전엔 버튼·페이드 0.
+- 3줄 이하·원재료 없음 = 접을 게 없어 전체 섹션(번역·원문·알레르기·출처)을 그대로 — 미리 보기만 남기면 출처 고지·한국어 원문에 닿을 길이 없어진다.
+- See all = 기존 펼침 제자리 + Show less(새 키). 계측 food_packaged_detail_expand action은 기존 값 유지(ingredients_source·see_less — 퍼널 연속).
+- i18n packaged.ingredients.{seeAll, showLess} × 10로케일. 새 의존성 0(linear-gradient 기존 설치).
+
 ## 2026-11-04 · P-604 KB-989 가공식품 상세 칼로리(Draft — 서버 S-957 전)
 
 - 어댑터: 상세 `kcal`(포장 전체, 옵셔널 — S-957 초안) → 유한·0 이상이면 반올림 정수, 그 밖·null·부재 = null(미표시). 묶음 상품 규칙은 서버 소유.
