@@ -1039,6 +1039,8 @@
     "primerLater": "Để sau",
     "consentSheetTitle": "Nhận tin từ K-Bap?",
     "consentSheetBody": "Gửi tin về sự kiện và tính năng mới dưới dạng thông báo quảng cáo.",
+    "consentPromptTitle": "Bật thông báo để nhận gợi ý K-Food hợp khẩu vị của bạn!",
+    "consentPromptBody": "Không làm phiền, chỉ gợi ý món ngon 👍",
     "privacyConsent": "Đồng ý thu thập và sử dụng thông tin cá nhân cho tiếp thị (tùy chọn)",
     "receiveConsent": "Đồng ý nhận thông tin quảng cáo (tùy chọn)",
     "consentBothRequired": "Hãy đồng ý cả hai mục để bật thông báo.",

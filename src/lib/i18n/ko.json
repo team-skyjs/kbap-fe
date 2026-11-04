@@ -1039,6 +1039,8 @@
     "primerLater": "나중에",
     "consentSheetTitle": "K-Bap 소식을 받을까요?",
     "consentSheetBody": "이벤트/새 기능 소식을 광고성 알림으로 보내요.",
+    "consentPromptTitle": "알림을 동의하시면 취향에 맞춰 먹고 싶은 K-Food를 추천해드려요!",
+    "consentPromptBody": "귀찮게 하지 않고 맛있는 음식 추천만 해드려요 👍",
     "privacyConsent": "마케팅 목적 개인정보 수집/이용 동의 (선택)",
     "receiveConsent": "광고성 정보 수신 동의 (선택)",
     "consentBothRequired": "두 항목에 모두 동의해야 알림을 켤 수 있어요.",

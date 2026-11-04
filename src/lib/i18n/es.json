@@ -1039,6 +1039,8 @@
     "primerLater": "Ahora no",
     "consentSheetTitle": "¿Recibir novedades de K-Bap?",
     "consentSheetBody": "Avisos publicitarios sobre eventos y nuevas funciones.",
+    "consentPromptTitle": "¡Activa las notificaciones y te recomendaremos K-Food a tu gusto!",
+    "consentPromptBody": "Sin molestias, solo recomendaciones deliciosas 👍",
     "privacyConsent": "Consentimiento para recopilar y usar datos con fines de marketing (opcional)",
     "receiveConsent": "Consentimiento para recibir información publicitaria (opcional)",
     "consentBothRequired": "Acepta ambos puntos para activar las notificaciones.",

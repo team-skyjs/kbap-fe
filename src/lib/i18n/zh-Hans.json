@@ -1039,6 +1039,8 @@
     "primerLater": "以后再说",
     "consentSheetTitle": "要接收 K-Bap 资讯吗？",
     "consentSheetBody": "以广告通知的形式发送活动和新功能资讯。",
+    "consentPromptTitle": "同意通知后，我们会按你的口味推荐想吃的K-Food！",
+    "consentPromptBody": "不打扰你，只推荐美味 👍",
     "privacyConsent": "同意为营销目的收集和使用个人信息（可选）",
     "receiveConsent": "同意接收广告信息（可选）",
     "consentBothRequired": "需同意两项才能开启通知。",

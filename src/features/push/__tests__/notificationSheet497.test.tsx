@@ -57,7 +57,7 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 const mockOpen = jest.fn().mockResolvedValue(true);
 jest.mock('@/lib/openExternal', () => ({ openWebPage: (...a: unknown[]) => mockOpen(...a) }));
 const mockAnalytics = { track: jest.fn() };
-jest.mock('@/lib/analytics', () => ({ EVENTS: { push_consent_response: 'push_consent_response' }, get track() { return mockAnalytics.track; } })); // KB-630
+jest.mock('@/lib/analytics', () => ({ EVENTS: { push_consent_response: 'push_consent_response', push_consent_view: 'push_consent_view' }, get track() { return mockAnalytics.track; } })); // KB-630 · KB-979 view
 
 import { NotificationSheet } from '../NotificationSheet';
 
@@ -380,24 +380,38 @@ it('(o) Codex #150 P1: 나중에/스크림/드래그로 퇴장 시작 후 180ms 
   expect(p2.onClose).toHaveBeenCalledTimes(1);
 });
 
-it('(p) KB-630 consent 클릭 이벤트: 체크 해제/재체크 = uncheck/check + target · 전문 보기 = full_text + target · 하나만 체크한 채 확인 = blocked · 나중에/스크림 = later(닫힘 1회당 1번) · 확인 성공은 이벤트 없음(push_pref_toggle이 담당)', async () => {
-  const p = props({ variant: 'consent' });
+it('(p) KB-630·KB-979 consent 이벤트: 열림 = view{surface} 1회 · 체크 해제/재체크 = uncheck/check + target · 전문 보기 = full_text + target · 하나만 체크한 채 확인 = blocked · 둘 다 체크한 확인 = confirm · 나중에/스크림 = later(닫힘 1회당 1번) — 전부 surface', async () => {
+  const p = props({ variant: 'consent', consentSurface: 'settings' });
   const tree = render(<NotificationSheet {...p} />);
+  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_view', { surface: 'settings' });
   await tap(tree, 'consent-privacy');
-  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'uncheck', target: 'privacy' });
+  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'uncheck', target: 'privacy', surface: 'settings' });
   await tap(tree, 'consent-receive-full');
-  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'full_text', target: 'receive' });
+  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'full_text', target: 'receive', surface: 'settings' });
   await tap(tree, 'notif-sheet-confirm'); // 하나 해제 상태 = 차단
-  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'blocked' });
+  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'blocked', surface: 'settings' });
   await tap(tree, 'consent-privacy');
-  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'check', target: 'privacy' });
+  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'check', target: 'privacy', surface: 'settings' });
   await tap(tree, 'notif-sheet-confirm'); // 둘 다 체크 = 진행
   expect(p.onConfirm).toHaveBeenCalledTimes(1);
-  expect(mockAnalytics.track).toHaveBeenCalledTimes(4); // 확인 성공은 여기서 안 쏜다
+  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'confirm', surface: 'settings' });
+  expect(mockAnalytics.track).toHaveBeenCalledTimes(6);
   await tap(tree, 'notif-sheet-later');
-  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'later' });
+  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'later', surface: 'settings' });
   await tap(tree, 'notif-sheet-backdrop'); // 닫힘 진행 중 재입력 = 이벤트도 0
-  expect(mockAnalytics.track).toHaveBeenCalledTimes(5);
+  expect(mockAnalytics.track).toHaveBeenCalledTimes(7);
+});
+
+it('(p2) KB-979 view = 열릴 때마다 1회(닫힘→다시 열림 = 2회) · 리렌더는 0', () => {
+  const p = props({ variant: 'consent', consentSurface: 'home', open: false });
+  const tree = render(<NotificationSheet {...p} />);
+  expect(mockAnalytics.track).not.toHaveBeenCalled();
+  act(() => { tree.update(<NotificationSheet {...p} open />); });
+  act(() => { tree.update(<NotificationSheet {...p} open title="T2" />); });
+  expect(mockAnalytics.track.mock.calls.filter((c) => c[0] === 'push_consent_view')).toEqual([['push_consent_view', { surface: 'home' }]]);
+  act(() => { tree.update(<NotificationSheet {...p} open={false} />); });
+  act(() => { tree.update(<NotificationSheet {...p} open />); });
+  expect(mockAnalytics.track.mock.calls.filter((c) => c[0] === 'push_consent_view')).toHaveLength(2);
 });
 
 it('(q) KB-630 primer 변형은 push_consent_response 0 — 켜기/나중에는 PushPrimerModal의 push_primer_response가 담당', async () => {
