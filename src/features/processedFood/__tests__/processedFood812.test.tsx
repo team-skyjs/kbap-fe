@@ -148,7 +148,7 @@ describe('어댑터·요청', () => {
     const img = { url: 'http://h/front.png', source: 'HACCP', attributionKey: 'processedFood.image.haccp' };
     expect(adaptProcessedDetail({ ...W1711, image: img }).images).toEqual(['https://h/front.png']);
     expect(adaptProcessedDetail({ ...W1711, image: img, images: [] }).images).toEqual(['https://h/front.png']);
-    expect(adaptProcessedDetail({ ...W1711, image: img, images: [{ url: 'http://h/cut.png', kind: 'CUTOUT' }, { url: '  ', kind: 'PHOTO' }, { url: 'https://h/real.jpg', kind: 'PHOTO' }, { url: 'https://h/cut.png', kind: 'CUTOUT' }] }).images)
+    expect(adaptProcessedDetail({ ...W1711, image: img, images: [{ url: 'http://h/cut.png', kind: 'CUTOUT' }, { url: '  ', kind: 'PHOTO' }, { url: 'https://h/real.jpg', kind: 'FRONT' }, { url: 'https://h/cut.png', kind: 'CUTOUT' }] }).images)
       .toEqual(['https://h/cut.png', 'https://h/real.jpg']);
     expect(adaptProcessedDetail({ ...W1711, image: null, imageUrl: null }).images).toEqual([]);
   });
@@ -465,6 +465,20 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(ids(one)).not.toContain('hero-dot-active');
     expect(ids(one).filter((i) => i.startsWith('img:https://www.haccp.or.kr/'))).toHaveLength(1); // 현행 히어로 = 대표(imageUrl) 한 장
     expect(ids(one)).not.toContain('img:https://h/cut.png');
+  });
+  it('KB-965 dev 실응답(14727 앵그리짜파구리큰사발면, S-953 #556 11/4): 대표 누끼 + FRONT·TOP·OTHER·LABEL 5장 = 서버 순서 그대로 캐러셀 5장·도트 5', () => {
+    const CDN = 'https://d29c1cr2ng7w0.cloudfront.net/dev/processed';
+    const cut = `${CDN}/cutout/20010549541142-f9242ff2d7247caa.png`;
+    const rest = ['dea3ce6d8f9a8346.jpg', 'fce56aab26951af2.jpg', 'd7586f3b0ba7f874.jpg', 'a3f7b01c8b9d7b90.jpg'].map((f) => `${CDN}/images/20010549541142-${f}`);
+    const wire = {
+      image: { url: cut, source: 'C002', attributionKey: 'processedFood.image.haccp' },
+      images: [{ url: cut, kind: 'CUTOUT' }, ...rest.map((url, i) => ({ url, kind: ['FRONT', 'TOP', 'OTHER', 'LABEL'][i] }))],
+    } as Partial<DetailWire>;
+    expect(adaptProcessedDetail({ ...V4, ...wire } as DetailWire).images).toEqual([cut, ...rest]);
+    const t = detail(wire);
+    expect(ids(t)).toContain('detail-hero-gallery');
+    expect(ids(t).filter((i) => i.startsWith('img:') && i.includes('/dev/processed/'))).toEqual([cut, ...rest].map((u) => `img:${u}`));
+    expect(ids(t).filter((i) => i === 'hero-dot-active' || i === 'hero-dot')).toHaveLength(5);
   });
   it('KB-965 배경: 캐러셀 각 장 = 단일 히어로와 같은 바탕(photo surface2)·contain·안쪽 여백 — 누끼·실사진이 섞여도 장마다 바탕이 다르지 않다(소스 잠금)', () => {
     const src = fs.readFileSync('src/app/processed-foods/[id].tsx', 'utf8');

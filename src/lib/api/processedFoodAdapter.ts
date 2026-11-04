@@ -73,7 +73,8 @@ export type ProcessedFoodDetail = ProcessedFoodSummary & {
   sourceProvider: string;
   sourceAttributionKey: string;
   image: { url: string; attributionKey: string } | null;
-  /** KB-965(S-953): 히어로 사진들 — 서버 순서(누끼 대표 먼저) · 2장 이상 = 캐러셀. images 없음(서버 배포 전)·비어 있음 = imageUrl 한 장(없으면 []) */
+  /** KB-965(S-953 #556, dev Swagger ProcessedFoodGalleryImageResponse 11/4 대조): 히어로 사진들 — 서버 순서(맨 앞 = image.url과 같은 대표, CUTOUT 또는 FRONT) · 2장 이상 = 캐러셀.
+   *  images 없음(운영 서버 배포 전)·비어 있음 = imageUrl 한 장(없으면 []). kind(CUTOUT·FRONT·TOP·LABEL·OTHER)는 아직 화면에서 안 쓴다. */
   images: string[];
   /** 리뷰 요약 — 구서버(필드 없음) = null → 화면은 숨김 */
   reviewSummary: ProcessedReviewSummary | null;
@@ -99,7 +100,7 @@ type SummaryWire = {
 export type SearchPageWire = { items: SummaryWire[]; hasNext: boolean; nextCursor?: string | null };
 export type DetailWire = SummaryWire & {
   /** KB-965(S-953, 가산·옵셔널): kind = 누끼·실사진 구분 — 화면은 모든 장을 같은 바탕·contain으로 그려 아직 쓰지 않는다 */
-  images?: { url?: string | null; kind?: string | null }[] | null;
+  images?: { url?: string | null; kind?: string | null }[] | null; // S-953: Swagger는 url·kind 필수 — 운영 서버 배포 전·이상값 방어로 옵셔널 유지
   capacity?: string | null;
   rawMaterials?: string | null;
   allergens?: string | null;
