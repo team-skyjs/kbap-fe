@@ -26,6 +26,7 @@ import { ActivityIndicator, AppState, BackHandler, Platform, ScrollView, StyleSh
 import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
 import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { withPermissionPrompt } from '@/lib/permissionPrompt';
+import { markPromptShown } from '@/lib/engagement/promptSlot';
 import { addScanItem, rememberScanDish, removeScanItem, resetScanCart, useScanCart } from '@/features/scan/scanCartStore';
 import { Pressable } from '@/components/Pressable';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -438,6 +439,7 @@ export default function Scan() {
         coachChecked.current = true;
         if (!(await shouldShowCoachMark())) return false;
         coachDoneRef.current = done;
+        markPromptShown(); // KB-986
         setCoachOpen(true);
         markCoachSeen();
         return true;

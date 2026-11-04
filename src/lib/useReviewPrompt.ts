@@ -11,6 +11,7 @@ import { EVENTS, track } from '@/lib/analytics';
 import { canShow, fixClockRewind, loadPromptState, markDone, markShown, savePromptState, scanTriggerDue, type PromptAnswer, type PromptTrigger } from '@/lib/reviewPrompt';
 import { requestStoreReview } from '@/lib/storeReview';
 import type { QueueStep } from '@/lib/oneShotQueue';
+import { markPromptShown } from '@/lib/engagement/promptSlot';
 
 export function useReviewPrompt() {
   const router = useRouter();
@@ -37,6 +38,7 @@ export function useReviewPrompt() {
     answeredRef.current = false;
     setAnswered(false);
     triggerRef.current = t;
+    markPromptShown(); // KB-986: 이 실행의 일회성 시트 자리(피드백 시트는 다음 실행으로)
     setTrigger(t);
     return true;
   }, []);

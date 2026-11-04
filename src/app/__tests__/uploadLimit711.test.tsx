@@ -158,7 +158,7 @@ it('배선 잠금 — 리뷰 작성·문의 작성·커뮤니티 글쓰기 모�
   expect(review).toContain('uploadReviewImages(localUris, signal)');
   expect(review).toContain('if (signal.aborted) return;'); // 본 요청 직전 확인
   expect(review).toContain('if (isUploadAborted(e)) return;');
-  const fb = read('src/app/profile/feedback/new.tsx');
+  const fb = read('src/features/feedback/FeedbackForm.tsx'); // KB-986: 문의 제출 = 공용 폼(화면·재방문 시트)
   expect(fb).toContain('signal: nextUploadSignal()');
   expect(fb).toContain('if (isUploadAborted(e)) return;');
   const cm = read('src/app/community/compose.tsx');

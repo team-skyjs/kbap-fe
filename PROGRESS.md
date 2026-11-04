@@ -1,3 +1,11 @@
+## 2026-11-04 · P-597 KB-986 재방문 피드백 모달(홈)
+
+- 대상: 두 번째 이상 실행(콜드 스타트 수 — AsyncStorage kbap.feedbackPrompt.v1, 루트·홈이 같은 런타임 1회 약속 공유) + 홈 큐 마지막 스텝(코치마크 → 광고성 동의 → 피드백). 홈이 아닌 화면 배선 0.
+- 빈도: 보낼 때까지 매 실행 · 보내기 성공(응답 뒤)·"다시 보지 않기" = 영구 종료 · 닫기(X·바깥 탭·스와이프·뒤로) = 다음 실행 재노출.
+- 한 실행 하나: src/lib/engagement/promptSlot.ts — 스토어 리뷰 시트(useReviewPrompt.request)·광고성 동의(useMarketingConsentSheet.show)·코치마크(가공식품·스캔)·스캔 종료 넛지가 띄우기로 정한 순간 markPromptShown → 피드백은 다음 실행. 스캔 종료 넛지·리뷰 유도는 피드백 시트가 떠 있으면 비켜 줌.
+- 시트: 문의 작성 입력·사진·제출을 features/feedback/FeedbackForm(useFeedbackForm + FeedbackFields)으로 빼 문의 화면과 공유(useSubmitFeedback·업로드 취소·공용 제출 가드 그대로). NotificationSheet 문법(fade Modal + useSheetSwipeDismiss, 제스처 = 머리만) + Modal 안 KAV + 본문 ScrollView. 전송 중 닫기 무시.
+- 계측: feedback_prompt_shown · submitted(has_photos, photo_count) · dismissed(via) · never_again — 본문 0. 네이밍 도메인에 feedback 추가.
+- 신규 i18n 3키 × 10로케일: feedbackPrompt.{title, body, neverAgain}.
 ## 2026-11-04 · P-598 KB-969 후속 — packagedVisionScan 전 채널 ON
 
 - flags.ts packagedVisionScan: DEV_SERVER_CHANNEL → true(운영 서버 #542 배포 26.11.5, 11/4 03:47). ML Kit 가공식품 경로·탭은 코드에 남김(운영 확인 뒤 후속 PR).

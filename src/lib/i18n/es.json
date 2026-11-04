@@ -1109,6 +1109,11 @@
     "editPhotoNotReady": "La subida de la foto no terminó. Inténtalo de nuevo.",
     "editNotFound": "No se encontró este pedido. Actualiza e inténtalo de nuevo."
   },
+  "feedbackPrompt": {
+    "title": "Escríbele directamente al equipo de K-Bap",
+    "body": "Algo que te moleste, una función que quieras: todo nos sirve.",
+    "neverAgain": "No volver a mostrar"
+  },
   "feedback": {
     "title": "Contáctanos",
     "newInquiry": "Nueva",

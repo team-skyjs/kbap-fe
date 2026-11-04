@@ -1105,6 +1105,11 @@
     "editPhotoNotReady": "The photo upload didn't finish. Try again.",
     "editNotFound": "Couldn't find this order. Refresh and try again."
   },
+  "feedbackPrompt": {
+    "title": "Tell the K-Bap team directly",
+    "body": "Something bugging you, or a feature you'd like? Anything helps.",
+    "neverAgain": "Don't show again"
+  },
   "feedback": {
     "title": "Contact us",
     "newInquiry": "New",

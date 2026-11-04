@@ -1109,6 +1109,11 @@
     "editPhotoNotReady": "사진 업로드가 끝나지 않았어요. 다시 시도해 주세요.",
     "editNotFound": "주문 정보를 찾을 수 없어요. 새로고침해 주세요."
   },
+  "feedbackPrompt": {
+    "title": "K-Bap 팀에게 바로 보내 주세요",
+    "body": "불편한 점, 바라는 기능, 무엇이든 좋아요.",
+    "neverAgain": "다시 보지 않기"
+  },
   "feedback": {
     "title": "문의하기",
     "newInquiry": "새 문의",

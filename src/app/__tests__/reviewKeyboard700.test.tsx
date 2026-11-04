@@ -101,7 +101,8 @@ it('프로필 편집 — Save 바는 절대 위치가 아니라 KAV 안 ScrollVi
 it('KB-710 문의 작성 = iOS KAV(padding) · Send는 KAV 안 ScrollView 본문(키보드 위 영역에서 스크롤로 닿음) · 예외 목록에 없음', () => {
   const src = fs.readFileSync('src/app/profile/feedback/new.tsx', 'utf8');
   const kav = src.indexOf(`<KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET} testID="feedback-kav">`);
-  const send = src.indexOf('testID="feedback-send"');
+  const send = src.indexOf('<FeedbackFields form={form} onSend={onSend} />'); // KB-986: Send는 공용 폼 필드(KAV 안 ScrollView 본문 그대로)
+  expect(fs.readFileSync('src/features/feedback/FeedbackForm.tsx', 'utf8')).toContain('testID="feedback-send"');
   const close = src.lastIndexOf('</KeyboardAvoidingView>');
   expect(kav).toBeGreaterThan(-1);
   expect(send).toBeGreaterThan(kav);

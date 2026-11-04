@@ -46,6 +46,8 @@ import { useOneShotQueue } from '@/lib/oneShotQueue';
 import { PackagedCoachOverlay, packagedCoachFoodHref, presentHomeCoach, queuePackagedCoachStep2, usePackagedCoach } from '@/features/coach/PackagedCoach';
 import { MarketingConsentSheet, useMarketingConsentSheet } from '@/features/push/MarketingConsentSheet';
 import { presentHomeMarketingConsent } from '@/features/push/marketingConsentPrompt';
+import { presentHomeFeedbackPrompt } from '@/features/feedback/feedbackPrompt';
+import { FeedbackPromptSheet, useFeedbackPromptSheet } from '@/features/feedback/FeedbackPromptSheet';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900 (D-1 Chip과 동일 명시값)
 
@@ -101,16 +103,22 @@ function HomeBody() {
   const consent = useMarketingConsentSheet('home');
   const showConsent = consent.show;
   const abortConsent = consent.abort;
+  // KB-986: 재방문(두 번째 실행부터) 피드백 시트 — 큐 마지막(그 실행에 다른 일회성 시트가 떴으면 다음 실행으로)
+  const feedbackPrompt = useFeedbackPromptSheet();
+  const showFeedback = feedbackPrompt.show;
+  const abortFeedback = feedbackPrompt.abort;
   useFocusEffect(
     useCallback(() => {
       modalQueue.add({ key: 'packagedCoach', present: (done, signal) => presentHomeCoach(showHomeCoach, done, signal) });
       const addConsent = () => modalQueue.add({ key: 'marketingConsent', present: (done, signal) => presentHomeMarketingConsent(showConsent, done, signal) });
       addConsent();
+      // KB-986: 피드백 = 포커스 때 큐 마지막(실행당 하나 — promptSlot·실행 수 판정이 복귀 재판정을 거른다)
+      modalQueue.add({ key: 'feedbackPrompt', present: (done, signal) => presentHomeFeedbackPrompt(showFeedback, done, signal) });
       // KB-987: 백그라운드 복귀는 focus를 다시 쏘지 않는다 — 홈이 포커스인 동안만 전경 전환마다 같은 판정(3시간 게이트가 중복을 거른다)
       const sub = AppState.addEventListener('change', (st) => { if (st === 'active') addConsent(); });
-      // 블러 = 대기 스텝 폐기 + 떠 있는 코치마크·동의 시트도 닫기(#398 Codex — 목적지 탭 위에 남지 않게)
-      return () => { sub.remove(); modalQueue.clear(); abortHomeCoach(); abortConsent(); };
-    }, [modalQueue, showHomeCoach, abortHomeCoach, showConsent, abortConsent]),
+      // 블러 = 대기 스텝 폐기 + 떠 있는 코치마크·동의 시트·피드백 시트도 닫기(#398 Codex — 목적지 탭 위에 남지 않게)
+      return () => { sub.remove(); modalQueue.clear(); abortHomeCoach(); abortConsent(); abortFeedback(); };
+    }, [modalQueue, showHomeCoach, abortHomeCoach, showConsent, abortConsent, showFeedback, abortFeedback]),
   );
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];
@@ -154,6 +162,7 @@ function HomeBody() {
         <StickyHeader hidden={hidden} atTop={atTop} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
         <PackagedCoachOverlay {...homeCoach.props} />
       <MarketingConsentSheet {...consent.props} />
+      <FeedbackPromptSheet key="feedback-prompt" {...feedbackPrompt.props} />{/* #421 Codex P2: 로딩·에러·정상 반환이 같은 루트 View — 고정 key로 분기가 바뀌어도 같은 인스턴스(입력·업로드 유지) */}
       </View>
     );
   }
@@ -281,6 +290,7 @@ function HomeBody() {
 
       <PackagedCoachOverlay {...homeCoach.props} />
       <MarketingConsentSheet {...consent.props} />
+      <FeedbackPromptSheet key="feedback-prompt" {...feedbackPrompt.props} />{/* #421 Codex P2: 로딩·에러·정상 반환이 같은 루트 View — 고정 key로 분기가 바뀌어도 같은 인스턴스(입력·업로드 유지) */}
     </View>
   );
 }

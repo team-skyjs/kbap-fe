@@ -32,6 +32,7 @@ import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type Engagem
  * |                              | entry (intro|gate_*|profile|other)         |
  * | auth_guest_enter              | (props 없음)                                |
  * | profile_feedback_submit      | has_photos, photo_count                    |
+ * | feedback_prompt_*            | KB-986 재방문 피드백 시트: shown · submitted(has_photos, photo_count) · dismissed(via) · never_again — 본문 금지 |
  * | app_tab_view                 | tab (home|food|reviews|community|profile), |
  * |                              | user_type (guest|registered)               |
  * | auth_gate_view           | trigger (게스트 게이트 노출 계기)             |
@@ -110,6 +111,10 @@ export const EVENTS = {
   profile_feedback_submit: 'profile_feedback_submit',
   // KB-730: 리뷰 유도 시트 노출·응답. CSV 등재 요청(스펙 레포)
   review_prompt_view: 'review_prompt_view',
+  feedback_prompt_shown: 'feedback_prompt_shown', // KB-986 재방문 피드백 시트
+  feedback_prompt_submitted: 'feedback_prompt_submitted',
+  feedback_prompt_dismissed: 'feedback_prompt_dismissed',
+  feedback_prompt_never_again: 'feedback_prompt_never_again',
   review_prompt_response: 'review_prompt_response',
   // KB-739: AdMob 4종. CSV 등재는 커맨드 센터. 값은 enum만(format·placement·status) + remaining 정수
   ad_impression: 'ad_impression',
@@ -190,6 +195,10 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_item_remove: ['risk'],
   order_done: ['item_count'],
   review_prompt_view: ['trigger'], // scan|review|order (KB-730)
+  feedback_prompt_shown: [], // KB-986
+  feedback_prompt_submitted: ['has_photos', 'photo_count'], // 개수·유무만(본문 금지)
+  feedback_prompt_dismissed: ['via'], // close|backdrop|swipe|back
+  feedback_prompt_never_again: [],
   // KB-739: format = banner|native|interstitial|rewarded · placement = lib/ads/units AdPlacement · status = UMP 상태 소문자|error
   // KB-765: surface = 'dialog'(홈 스캔 한도 다이얼로그에서 난 보상형 이벤트 — 스캔 화면은 미지정)
   ad_impression: ['format', 'placement', 'surface'],
