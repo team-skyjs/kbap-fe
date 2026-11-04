@@ -35,7 +35,7 @@ const USES = {
     'src/app/food/[id]/review.tsx',
     'src/app/community/compose.tsx',
     'src/lib/data/profileImage.ts',
-    'src/app/profile/feedback/new.tsx', // KB-586 머지 후 합류 — 아직 develop에 없으면 건너뛴다
+    'src/features/feedback/FeedbackForm.tsx', // KB-586 → KB-986: 문의 사진 선택 = 공용 폼(문의 화면·재방문 피드백 시트)
   ],
   location: ['src/lib/api/places.ts', 'src/lib/data/orders.ts'],
   motion: ['src/app/scan.tsx'], // DeviceMotion — 가로 힌트(9/22 ITMS-90683으로 발견)

@@ -154,7 +154,7 @@ it('① 게스트도 진입 — 프로필 게스트 분기에 행이 있고, 문
   // P-406: 두 진입점 모두 **목록**으로 간다(작성 직행 금지)
   expect(profile.match(/router\.push\('\/profile\/feedback' as Href\)/g)?.length).toBe(2);
   expect(profile).not.toContain("'/profile/feedback/new'");
-  const compose = read('src/app/profile/feedback/new.tsx');
+  const compose = read('src/app/profile/feedback/new.tsx') + read('src/features/feedback/FeedbackForm.tsx'); // KB-986: 입력·제출은 공용 폼
   expect(compose).not.toMatch(/AuthGate|useIsGuest|requireLogin/);
 });
 
@@ -264,7 +264,7 @@ it('③ 전송 중 화면을 떠났으면 성공해도 back 하지 않는다(늦
 });
 
 it('④ 갤러리 권한 거부 안내는 카메라 문구(scan.*)를 쓰지 않는다', () => {
-  const compose = read('src/app/profile/feedback/new.tsx');
+  const compose = read('src/features/feedback/FeedbackForm.tsx'); // KB-986: 사진 선택은 공용 폼
   expect(compose).not.toContain("scan.permission");
   expect(compose).toContain("t('photo.libraryPermTitle')");
   expect(compose).toContain("t('photo.libraryPermBody')");

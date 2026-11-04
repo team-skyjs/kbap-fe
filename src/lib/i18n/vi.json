@@ -1109,6 +1109,11 @@
     "editPhotoNotReady": "Ảnh chưa tải lên xong. Hãy thử lại.",
     "editNotFound": "Không tìm thấy đơn này. Hãy làm mới rồi thử lại."
   },
+  "feedbackPrompt": {
+    "title": "Gửi thẳng cho đội ngũ K-Bap",
+    "body": "Điều gì bất tiện, tính năng bạn muốn, gì cũng được.",
+    "neverAgain": "Không hiện lại"
+  },
   "feedback": {
     "title": "Liên hệ",
     "newInquiry": "Mới",

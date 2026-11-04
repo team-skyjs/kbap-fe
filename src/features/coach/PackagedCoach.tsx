@@ -8,6 +8,7 @@
  * 오버레이 = RN Modal + react-native-svg evenodd 경로(새 네이티브 의존성 0 — 지문 무변).
  */
 import * as React from 'react';
+import { markPromptShown } from '@/lib/engagement/promptSlot';
 import { Platform, StyleSheet, View, type LayoutRectangle } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path } from 'react-native-svg';
@@ -219,6 +220,7 @@ export function usePackagedCoach(step: CoachStep, after: { next: () => void }) {
   const show = React.useCallback((done?: () => void) => {
     markPackagedCoachSeen(); // 표시 즉시 기록 — 중간에 앱을 꺼도 다시 안 뜬다
     flowActive = true;
+    markPromptShown(); // KB-986
     pending.current = { done, next: false, closing: false };
     setOpen(true);
     track(EVENTS.food_packaged_coach_shown, { step });

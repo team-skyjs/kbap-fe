@@ -1109,6 +1109,11 @@
     "editPhotoNotReady": "照片上传未完成，请重试。",
     "editNotFound": "找不到这个订单，请刷新后重试。"
   },
+  "feedbackPrompt": {
+    "title": "直接发给 K-Bap 团队",
+    "body": "不方便的地方、想要的功能，什么都可以。",
+    "neverAgain": "不再显示"
+  },
   "feedback": {
     "title": "联系我们",
     "newInquiry": "新建",

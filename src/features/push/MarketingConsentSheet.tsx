@@ -16,6 +16,7 @@ import { patchNotificationSettings, useNotificationSettings } from '@/lib/data/u
 import { getPermissionStatus, registerPushToken, requestPermission } from '@/lib/push/pushAdapter';
 import { isOccluded, subscribeOcclusion } from '@/lib/engagement/occlusion';
 import { isMarketingConsentActive, isUnconsented, setMarketingConsentActive } from '@/features/push/marketingConsentPrompt';
+import { markPromptShown } from '@/lib/engagement/promptSlot';
 
 type Surface = 'home' | 'inbox';
 
@@ -62,6 +63,7 @@ export function useMarketingConsentSheet(surface: Surface) {
   const show = React.useCallback((done?: () => void) => {
     pending.current = { done };
     setMarketingConsentActive(true);
+    markPromptShown(); // KB-986
     setOpen(true);
   }, []);
   /** 블러 — 떠 있으면 닫고 즉시 풀어 준다(#398 Codex 선례: 목적지 위에 남지 않게). 계측 없음(계획 A-4) */

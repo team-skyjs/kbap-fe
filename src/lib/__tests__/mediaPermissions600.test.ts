@@ -17,7 +17,7 @@ it('저장 권한 — iOS·Android 10(API 29) 이하만 요청, Android 11+는 �
 });
 
 it('배선 — 문의 앨범 선택·스토리 카드 저장이 헬퍼를 탄다 · Android 무조건 요청 경로 0', () => {
-  const feedback = fs.readFileSync('src/app/profile/feedback/new.tsx', 'utf8');
+  const feedback = fs.readFileSync('src/features/feedback/FeedbackForm.tsx', 'utf8'); // KB-986: 앨범 선택 = 공용 폼
   expect(feedback).toMatch(/if \(needsPhotoLibraryPermission\(\)\)/);
   const share = fs.readFileSync('src/features/order/shareExport.ts', 'utf8');
   expect(share).toContain('if (!needsSavePermission()) return true;');

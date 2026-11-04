@@ -46,6 +46,8 @@ import { useOneShotQueue } from '@/lib/oneShotQueue';
 import { PackagedCoachOverlay, packagedCoachFoodHref, presentHomeCoach, queuePackagedCoachStep2, usePackagedCoach } from '@/features/coach/PackagedCoach';
 import { MarketingConsentSheet, useMarketingConsentSheet } from '@/features/push/MarketingConsentSheet';
 import { presentHomeMarketingConsent } from '@/features/push/marketingConsentPrompt';
+import { presentHomeFeedbackPrompt } from '@/features/feedback/feedbackPrompt';
+import { FeedbackPromptSheet, useFeedbackPromptSheet } from '@/features/feedback/FeedbackPromptSheet';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900 (D-1 Chip과 동일 명시값)
 
@@ -101,13 +103,18 @@ function HomeBody() {
   const consent = useMarketingConsentSheet('home');
   const showConsent = consent.show;
   const abortConsent = consent.abort;
+  // KB-986: 재방문(두 번째 실행부터) 피드백 시트 — 큐 마지막(그 실행에 다른 일회성 시트가 떴으면 다음 실행으로)
+  const feedbackPrompt = useFeedbackPromptSheet();
+  const showFeedback = feedbackPrompt.show;
+  const abortFeedback = feedbackPrompt.abort;
   useFocusEffect(
     useCallback(() => {
       modalQueue.add({ key: 'packagedCoach', present: (done, signal) => presentHomeCoach(showHomeCoach, done, signal) });
       modalQueue.add({ key: 'marketingConsent', present: (done, signal) => presentHomeMarketingConsent(showConsent, done, signal) });
-      // 블러 = 대기 스텝 폐기 + 떠 있는 코치마크·동의 시트도 닫기(#398 Codex — 목적지 탭 위에 남지 않게)
-      return () => { modalQueue.clear(); abortHomeCoach(); abortConsent(); };
-    }, [modalQueue, showHomeCoach, abortHomeCoach, showConsent, abortConsent]),
+      modalQueue.add({ key: 'feedbackPrompt', present: (done, signal) => presentHomeFeedbackPrompt(showFeedback, done, signal) });
+      // 블러 = 대기 스텝 폐기 + 떠 있는 코치마크·동의 시트·피드백 시트도 닫기(#398 Codex — 목적지 탭 위에 남지 않게)
+      return () => { modalQueue.clear(); abortHomeCoach(); abortConsent(); abortFeedback(); };
+    }, [modalQueue, showHomeCoach, abortHomeCoach, showConsent, abortConsent, showFeedback, abortFeedback]),
   );
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];
@@ -151,6 +158,7 @@ function HomeBody() {
         <StickyHeader hidden={hidden} atTop={atTop} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
         <PackagedCoachOverlay {...homeCoach.props} />
       <MarketingConsentSheet {...consent.props} />
+      <FeedbackPromptSheet {...feedbackPrompt.props} />
       </View>
     );
   }
@@ -278,6 +286,7 @@ function HomeBody() {
 
       <PackagedCoachOverlay {...homeCoach.props} />
       <MarketingConsentSheet {...consent.props} />
+      <FeedbackPromptSheet {...feedbackPrompt.props} />
     </View>
   );
 }

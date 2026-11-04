@@ -1109,6 +1109,11 @@
     "editPhotoNotReady": "Unggahan foto belum selesai. Coba lagi.",
     "editNotFound": "Pesanan ini tidak ditemukan. Muat ulang lalu coba lagi."
   },
+  "feedbackPrompt": {
+    "title": "Kirim langsung ke tim K-Bap",
+    "body": "Hal yang mengganggu, fitur yang kamu mau, apa saja boleh.",
+    "neverAgain": "Jangan tampilkan lagi"
+  },
   "feedback": {
     "title": "Hubungi kami",
     "newInquiry": "Baru",
