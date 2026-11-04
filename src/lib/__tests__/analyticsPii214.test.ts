@@ -88,8 +88,12 @@ describe('② ③ ④ 배선 소스 잠금 — 공용 1곳 원칙', () => {
 
   it('③ 스캔 퍼널 — 담기/빼기·Done 확정·사장님 확인 3진입·권한 4상태', () => {
     const scan = read('src/app/scan.tsx');
-    expect(scan).toContain('EVENTS.scan_item_add');
-    expect(scan).toContain('EVENTS.scan_item_remove');
+    // KB-982: 담기·빼기 계측 = 카트 스토어 한 곳(결과 리스트·스캔 진입 상세 공유) — scan.tsx는 그 함수로만 연결
+    const cart = read('src/features/scan/scanCartStore.ts');
+    expect(cart).toContain('EVENTS.scan_item_add');
+    expect(cart).toContain('EVENTS.scan_item_remove');
+    expect(scan).toContain('onAdd={addScanItem}');
+    expect(scan).toContain('onRemove={removeScanItem}');
     // 4상태 — grant/deny는 요청 결과 삼항에서 나온다
     expect(scan).toContain("state: 'view'");
     expect(scan).toContain("r?.granted ? 'grant' : 'deny'");

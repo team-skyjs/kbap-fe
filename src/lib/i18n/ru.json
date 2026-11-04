@@ -347,6 +347,8 @@
     "addToOrder": "Добавить в заказ",
     "removeFromOrder": "Убрать одну",
     "inOrder_one": "В заказе: {{count}}",
+    "inOrder_few": "В заказе: {{count}}",
+    "inOrder_many": "В заказе: {{count}}",
     "inOrder_other": "В заказе: {{count}}",
     "orderCount_one": "Позиций: {{count}}",
     "orderCount_other": "Позиций: {{count}}",

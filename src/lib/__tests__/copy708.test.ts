@@ -12,7 +12,7 @@ const load = (l: string) => require(`@/lib/i18n/${l}.json`) as { search: Record<
 // (2) + #236 /review A: Hermes엔 Intl.PluralRules가 없어 i18next는 `count === 1 ? one : other` 더미 규칙으로 떨어진다(폴리필 0).
 // `_other`만 둔 로케일은 1건에서 `_one`을 못 찾아 en으로 폴백("1 result"), ru는 few/many가 영영 안 골라진다. jest(Node Intl)에선 안 보임.
 // #236 /review 2R: 호출 0이던 죽은 키 4개(home·restrictionsEdit.avoidCount · scan.badgeUnit · feedback.replyCount)는 삭제
-const PLURAL_BASES = ['search.resultCount', 'scan.freeLeft', 'saved.count', 'myFoods.itemCount', 'scan.quotaTileAdTitle', 'reviewTime.minutesAgo', 'reviewTime.hoursAgo', 'reviewTime.daysAgo',
+const PLURAL_BASES = ['search.resultCount', 'scan.freeLeft', 'scan.inOrder', 'saved.count', 'myFoods.itemCount', 'scan.quotaTileAdTitle', 'reviewTime.minutesAgo', 'reviewTime.hoursAgo', 'reviewTime.daysAgo',
   // KB-777(QA B1-8·A2-3 "1 items"·"1 reviews"): 셀 수 있는 명사 문구 10개
   'community.viewReplies', 'scan.resultTitle', 'scan.resultsSub', 'scan.orderCount', 'order.headerSub', 'reviews.subtitle', 'ranking.reviewsDetail', 'ranking.diversityDetail', 'ranking.scansDetail', 'detail.allUsers',
   // KB-907(T-103): 나가기 확인 "2 added item(s)" → 복수형
