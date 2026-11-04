@@ -1,4 +1,4 @@
-/** P-609: OCR evidence only. No model scores, labels, credentials or API client. */
+/** P-610: OCR evidence only. No model scores, labels, credentials or API client. */
 import { runtimeContext } from '@/lib/engagement/runtimeContext';
 import type { OcrLine } from '@/lib/scan/ocr';
 
