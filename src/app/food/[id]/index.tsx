@@ -49,7 +49,9 @@ import { FeedAd } from '@/features/ads/FeedAd';
 import { withFeedAds } from '@/lib/ads/feedSlots';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { IconEdit } from '@/components/icons';
+import { IconEdit, IconPlus } from '@/components/icons';
+import { D4Minus } from '@/components/design4Assets';
+import { addScanItem, removeScanItem, useScanCart, useScanCartDish } from '@/features/scan/scanCartStore';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -70,7 +72,10 @@ const REVIEW_PREVIEW_N = 3; // 발주 §1-7: 카드 ×3
 
 export default function FoodDetailScreen() {
   // P-012(KB-179): price는 스캔 결과 진입에만 실리는 표시 전용 param — 조작 방어 파싱
-  const { id, price, src } = useLocalSearchParams<{ id: string; price?: string; src?: string }>();
+  const { id, price, src, item } = useLocalSearchParams<{ id: string; price?: string; src?: string; item?: string }>();
+  // KB-982: 메뉴판 스캔 진입 = 결과 화면과 같은 카트 항목(itemId). 스캔 세션이 끝났으면(스토어 비움) 담기 0
+  const cartDish = useScanCartDish(src === 'scan' && typeof item === 'string' && /^-?\d+$/.test(item) ? Number(item) : null);
+  const cartQty = useScanCart().get(cartDish?.itemId ?? Number.NaN) ?? 0;
   // P-083: 상세 진입 계측 — 진입 경로 1회
   useEffect(() => {
     const source = src && ['scan', 'list', 'search', 'home', 'saved', 'my_reviews', 'feed', 'tag_sheet', 'idol_pick'].includes(src) ? src : 'other'; // KB-847: review_detail 제거(#288 되돌림) · idol_pick 유지(#313)
@@ -235,6 +240,7 @@ export default function FoodDetailScreen() {
           bottom={band.bottom}
           guest={isGuest}
           scanEntry={src === 'scan'}
+          cart={cartDish ? { qty: cartQty, onAdd: () => addScanItem(cartDish), onRemove: () => removeScanItem(cartDish) } : undefined}
           onHeight={(h) => { band.onHeight(h); pill.onBand(h + 8); }}
           t={t}
           onWrite={() => {
@@ -300,8 +306,11 @@ function RegisteredBottomBar({
   onWrite,
   onAsk,
   scanEntry = false,
+  cart,
   onHeight,
 }: {
+  /** KB-982: 메뉴판 스캔 진입 담기 — 결과 리스트와 같은 카트·이벤트(scanCartStore). 없음 = 담기 미렌더 */
+  cart?: { qty: number; onAdd: () => void; onRemove: () => void };
   /** 표시 여부(useScrollAwarePill) — 숨김 = 아래로 미끄러지며 투명(스크린리더 포커스는 유지) */
   shown: boolean;
   /** 첫 측정 전 = 애니메이션 없이 숨김(KB-871 QA AP — 진입 때 카드 위로 번쩍 보였다 사라짐) */
@@ -326,7 +335,7 @@ function RegisteredBottomBar({
     transform: [{ translateY: reduced ? 0 : !ready ? hideY : withTiming(shown ? 0 : hideY, { duration: PILL_FADE_MS, easing: Easing.out(Easing.cubic) }) }],
   }));
   const write = FLAGS.reviewsEnabled && !scanEntry; // KB-981: 스캔 진입 = Ask 유무와 무관하게 Write 0(빠져나가려는 흐름에 리뷰 유도 금지)
-  if (!write && !onAsk) return null;
+  if (!write && !onAsk && !cart) return null;
   return (
     <Animated.View
       style={[pillCta.band, { paddingBottom: bottom }, anim]}
@@ -341,10 +350,29 @@ function RegisteredBottomBar({
           <Text style={styles.pillPrimaryText} {...PILL_LABEL}>{t('reviews.writeReview')}</Text>
         </Pressable>
       )}
+      {cart && (
+        // KB-982: 담기 = primary(주문 맥락의 주 행동) · 담긴 뒤 = 같은 알약 틀 안 스테퍼(프레임 불변 — 색·내용만)
+        cart.qty > 0 ? (
+            <View style={styles.pillPrimary} testID="bottom-cart">
+              <Pressable hitSlop={10} onPress={cart.onRemove} accessibilityRole="button" accessibilityLabel={t('scan.removeFromOrder')} testID="bottom-cart-dec" style={styles.cartStep}>
+                <D4Minus size={20} color="#FFFFFF" />
+              </Pressable>
+              <Text style={[styles.pillPrimaryText, styles.cartLabel]} {...PILL_LABEL} testID="bottom-cart-qty">{t('scan.inOrder', { count: cart.qty })}</Text>
+              <Pressable hitSlop={10} onPress={cart.onAdd} accessibilityRole="button" accessibilityLabel={t('scan.addToOrder')} testID="bottom-cart-inc" style={styles.cartStep}>
+                <IconPlus size={20} color="#FFFFFF" />
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={styles.pillPrimary} onPress={cart.onAdd} accessibilityRole="button" testID="bottom-add">
+              <IconPlus size={20} color="#FFFFFF" />
+              <Text style={styles.pillPrimaryText} {...PILL_LABEL}>{t('scan.addToOrder')}</Text>
+            </Pressable>
+          )
+      )}
       {onAsk && (
-        // 회원 = Write 아래 테두리 한 줄 · 스캔 진입(Write 없음) = primary 한 줄(P-353)
-        <Pressable style={write ? styles.pillOutline : styles.pillPrimary} onPress={onAsk} accessibilityRole="button" testID="bottom-ask">
-          <Text style={write ? styles.pillOutlineText : styles.pillPrimaryText} {...PILL_LABEL}>{t('detail.askOwner')}</Text>
+        // 회원 = Write(또는 KB-982 담기) 아래 테두리 한 줄 · 스캔 진입(Write·담기 없음) = primary 한 줄(P-353)
+        <Pressable style={write || cart ? styles.pillOutline : styles.pillPrimary} onPress={onAsk} accessibilityRole="button" testID="bottom-ask">
+          <Text style={write || cart ? styles.pillOutlineText : styles.pillPrimaryText} {...PILL_LABEL}>{t('detail.askOwner')}</Text>
         </Pressable>
       )}
     </Animated.View>
@@ -874,6 +902,9 @@ const styles = StyleSheet.create({
   pillPrimaryText: pillCta.pillPrimaryText,
   pullSpin: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 5 }, // QA Q-388 ①: 당김 새로고침 스피너(iOS) — 플로팅 헤더 줄 바로 아래
   pillOutline: pillCta.pillOutline,
+  // KB-982: 담기 전후 틀 = 둘 다 pillPrimary(같은 메트릭) · 스테퍼 버튼 = 44 터치(음수 margin으로 알약 높이 불변)
+  cartStep: { width: 44, height: 44, marginVertical: -10, alignItems: 'center', justifyContent: 'center' },
+  cartLabel: { flex: 1 },
   pillOutlineText: pillCta.pillOutlineText,
 
   // Unregistered(현행 유지 — 토큰만)

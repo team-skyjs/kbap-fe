@@ -1,3 +1,10 @@
+## 2026-11-04 · P-596 KB-982 메뉴판 스캔 음식 상세에 메뉴 담기
+
+- 카트 = 모듈 스토어 src/features/scan/scanCartStore.ts(useSyncExternalStore — 구 scan.tsx 로컬 Map 상태). 담기·빼기 이벤트(scan_item_add·scan_item_remove·airbridge.addToCart)도 스토어 한 곳 — 결과 리스트·상세 같은 계측.
+- openDish = rememberScanDish + push `src=scan&item=<itemId>`. 상세(src=scan + item + 스토어에 그 메뉴) = 하단 primary "메뉴 담기" → 담긴 뒤 같은 알약 틀 안 스테퍼(− "N개 담았어요" +, 44 터치) · Ask = 아래 테두리. Write는 KB-981대로 0.
+- 세션: 재촬영 = resetScanCart(구 setCart(new Map()) 자리) · 스캔 화면 언마운트 = 초기화 · useLeaveConfirm은 같은 cartCount.
+- 신규 i18n 4키 × 10로케일: scan.addToOrder · scan.removeFromOrder(빼기 버튼 접근성 라벨) · scan.inOrder_one/_other.
+
 ## 2026-11-04 · P-595 KB-981 스캔 진입 상세 — 리뷰 작성 숨김·Done·Scan something else
 
 - 음식 상세 src=scan = Ask 유무와 무관하게 Write 0(전에는 Ask가 없으면 Write가 떴다) · Ask는 그대로.
