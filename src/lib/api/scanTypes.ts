@@ -81,7 +81,7 @@ export interface ScanResultWire {
   pendingId?: string | null;
 }
 
-/** KB-992 AI 추정 항목(초안). riskLevel은 CAUTION|UNABLE만 오기로 했지만 어댑터가 다시 거른다. */
+/** KB-992 AI 추정 항목(S-959 확정 11/5 — dev 배포 전, 배포 뒤 Swagger 정본). riskLevel = CAUTION|UNKNOWN만(SAFE 없음) — 어댑터가 다시 거른다. */
 export interface ScanPendingItemWire {
   pendingId: string;
   kind: string; // 'DISH' | 'DRINK' | 'NOT_FOOD'
@@ -89,10 +89,13 @@ export interface ScanPendingItemWire {
   koreanName?: string | null;
   description?: string | null;
   riskLevel?: string | null;
-  avoidances?: AvoidanceOverlapWire[] | null;
-  spiciness?: number | null;
+  /** 확정: 회피 재료 코드 목록(IngredientCode[]). 초안 객체 모양도 받는다(방어). */
+  avoidances?: (string | AvoidanceOverlapWire)[] | null;
+  spiciness?: number | null; // 0~10, -1 = 모름 — 아직 화면 미사용
   confidence?: number | null;
   aiEstimated?: boolean;
+  existsNotReady?: boolean; // 아직 화면 미사용
+  foodId?: number | null; // 아직 화면 미사용
 }
 
 export interface ScanPendingPayload {

@@ -166,7 +166,10 @@ export interface AiPendingItem {
   description: string | null;
   /** caution | unable만 — AI 추정은 안전 판정을 내리지 않는다(헌법 III). */
   risk: 'caution' | 'unable';
-  avoidances: AvoidanceHit[];
+  /** 들어 있을 수 있는 회피 재료 코드 — 표시 이름은 화면이 렌더 시점에(restrictionLabel — 언어 전환 즉시 반영) */
+  avoidCodes: string[];
+  /** false = 서버 15초 마감 채움(DISH·UNKNOWN·설명·재료 0) — 추정이 아니라 미도착과 같게 다룬다(현행 unable 행) */
+  estimated: boolean;
 }
 
 /**
@@ -176,13 +179,20 @@ export interface AiPendingItem {
 export function adaptPendingItem(w: ScanPendingItemWire): AiPendingItem {
   const lv = w.riskLevel;
   const text = (v: string | null | undefined) => (typeof v === 'string' && v.trim() ? v : null);
+  const risk: AiPendingItem['risk'] = lv === 'CAUTION' || lv === 'DANGER' ? 'caution' : 'unable'; // UNKNOWN·SAFE·미지 = unable
+  const description = text(w.description);
+  // 확정 계약 = 코드 문자열 배열. 초안의 객체 모양(overlapped)도 받는다 — 겹친 것만
+  const avoidCodes = [...new Set((w.avoidances ?? []).flatMap((a) =>
+    typeof a === 'string' ? (a.trim() ? [a.trim()] : []) : a && a.overlapped === true && a.code ? [a.code] : [],
+  ))];
   return {
     pendingId: w.pendingId,
     kind: w.kind === 'NOT_FOOD' ? 'notFood' : w.kind === 'DRINK' ? 'drink' : 'dish',
     name: text(w.name),
     koreanName: text(w.koreanName),
-    description: text(w.description),
-    risk: lv === 'CAUTION' || lv === 'DANGER' ? 'caution' : 'unable',
-    avoidances: mapAvoidances(w.avoidances),
+    description,
+    risk,
+    avoidCodes,
+    estimated: risk === 'caution' || description != null || avoidCodes.length > 0,
   };
 }

@@ -1,3 +1,10 @@
+## 2026-11-05 · P-605 #428 S-959 계약 확정 반영(dev 배포 전)
+
+- 대기 항목 riskLevel = CAUTION|UNKNOWN만(UNKNOWN = unable 시각) — 기존 매핑 그대로 통과(SAFE·미지 = unable 유지).
+- avoidances = 회피 재료 코드 배열(IngredientCode[]) → AiPendingItem.avoidCodes, 칩·안내 카드 이름은 렌더 시점 restrictionLabel(언어 전환 즉시), 칩 = caution(재료별 위험도 없음 — safe 0). 초안 객체 모양도 방어 수용.
+- 15초 마감 서버 채움(DISH·UNKNOWN·설명 null·재료 0) = estimated false → 미도착과 같게(폴링 끝 = 현행 unable 행, AI 칩 0).
+- 404 SCAN-014(주인 아님·만료·모르는 scanId) = 기존 "실패 = 즉시 종료 → 현행 unable" 경로 그대로. existsNotReady·foodId·spiciness·confidence는 타입만(화면 미사용).
+
 ## 2026-11-04 · P-603 KB-992 메뉴판 스캔 결과 'AI 추정' 섹션(Draft — 서버 S-959 dev 배포 전)
 
 - 계약 초안 기준(확정 시 dev Swagger 정본): 결과 항목 `pendingId`(미매칭·비대체만 — 어댑터가 매칭·대체분은 무시) · 응답 `scanId`(초안에 위치 미기재 → payload 최상위 옵셔널로 가정, 없으면 폴링 0 = 현행 그대로) · `GET /api/scans/{scanId}/pending?lang=`.

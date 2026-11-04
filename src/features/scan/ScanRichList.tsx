@@ -25,6 +25,7 @@ import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow, type RiskState, radius } from '@/lib/theme';
 import type { AiPendingItem } from '@/lib/api/scanAdapter';
 import { SkBar, SkImg } from '@/components/Skeleton';
+import { restrictionLabel } from '@/lib/onboarding/data';
 
 /** P-171 ① → P-223: 칩 폭 근사 — 통합 칩 메트릭(패딩 8×2·보더·RiskMark 11) 기반.
  *  CJK ≈ 폰트폭, 라틴/숫자 ≈ 절반. ponytail: 문자폭 근사 휴리스틱 — 오차는 이르게
@@ -323,7 +324,8 @@ function AiFilledRow({ row, ai, onOpen, t }: { row: AiRow; ai: AiPendingItem; on
   const d = row.dish;
   const ko = ai.koreanName ?? d.koreanName ?? d.rawMenuName;
   const name = ai.name ?? d.displayName ?? ko;
-  const warns = [...ai.avoidances].sort((a, b) => (a.risk === b.risk ? 0 : a.risk === 'danger' ? -1 : 1));
+  // S-959: 회피 재료 = 코드만 온다(재료별 위험도 없음) → caution 칩(형태+색, safe 0), 이름은 렌더 시점 라벨
+  const warns = ai.avoidCodes.map((code) => ({ code, name: restrictionLabel(code), risk: 'caution' as const }));
   return (
     <Pressable style={styles.row} onPress={onOpen} testID={`ai-${d.itemId}`}>
       <View style={styles.thumbWrap}>

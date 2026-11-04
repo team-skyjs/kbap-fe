@@ -28,7 +28,8 @@ describe('어댑터', () => {
     expect(out.map((o) => o.pendingId)).toEqual(['p1', null, null, null, null]);
   });
 
-  it('위험도: CAUTION·DANGER = caution · SAFE·UNABLE·미지·결측 = unable (SAFE 렌더 0, 헌법 III)', () => {
+  it('위험도: CAUTION·DANGER = caution · UNKNOWN(S-959 확정)·SAFE·UNABLE·미지·결측 = unable (SAFE 렌더 0, 헌법 III)', () => {
+    expect(adaptPendingItem({ ...item('a'), riskLevel: 'UNKNOWN' } as never).risk).toBe('unable');
     const r = (riskLevel: unknown) => adaptPendingItem({ ...item('a'), riskLevel } as never).risk;
     expect(r('CAUTION')).toBe('caution');
     expect(r('DANGER')).toBe('caution');
@@ -38,12 +39,21 @@ describe('어댑터', () => {
     expect(r(undefined)).toBe('unable');
   });
 
-  it('kind: NOT_FOOD = notFood · DRINK = drink · 그 밖 = dish(숨김보다 표시) · 회피 재료는 overlapped만·safe는 caution 강등', () => {
+  it('kind: NOT_FOOD = notFood · DRINK = drink · 그 밖 = dish(숨김보다 표시) · 회피 재료 = 코드 배열(S-959) — 빈 값·중복 버림, 초안 객체 모양은 overlapped만', () => {
     expect(adaptPendingItem(item('a', { kind: 'NOT_FOOD' }) as never).kind).toBe('notFood');
     expect(adaptPendingItem(item('a', { kind: 'DRINK' }) as never).kind).toBe('drink');
     expect(adaptPendingItem(item('a', { kind: '??' }) as never).kind).toBe('dish');
+    expect(adaptPendingItem(item('a', { avoidances: ['EGG', 'MILK', ' ', 'EGG'] }) as never).avoidCodes).toEqual(['EGG', 'MILK']);
     const a = adaptPendingItem(item('a', { avoidances: [{ code: 'EGG', name: 'Egg', overlapped: true, riskLevel: 'SAFE' }, { code: 'MILK', overlapped: false }] }) as never);
-    expect(a.avoidances).toEqual([{ code: 'EGG', name: 'Egg', risk: 'caution' }]);
+    expect(a.avoidCodes).toEqual(['EGG']);
+  });
+
+  it('S-959 15초 마감 채움(DISH·UNKNOWN·설명 null·재료 0) = estimated false · 설명·재료·CAUTION 중 하나라도 있으면 true', () => {
+    const filler = { pendingId: 'p9', kind: 'DISH', name: '김치전', koreanName: '김치전', description: null, riskLevel: 'UNKNOWN', avoidances: [], aiEstimated: true };
+    expect(adaptPendingItem(filler as never).estimated).toBe(false);
+    expect(adaptPendingItem({ ...filler, description: 'Pancake' } as never).estimated).toBe(true);
+    expect(adaptPendingItem({ ...filler, avoidances: ['EGG'] } as never).estimated).toBe(true);
+    expect(adaptPendingItem({ ...filler, riskLevel: 'CAUTION' } as never).estimated).toBe(true);
   });
 });
 

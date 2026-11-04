@@ -921,8 +921,8 @@ describe('KB-992 AI 추정 섹션', () => {
     mockScanExtra.v = { photoOnly, scanId: 's1' };
     mockPending.polling = true;
     mockPending.items = [
-      { pendingId: 'p1', kind: 'dish', name: 'Kimchi pancake', koreanName: '김치전', description: 'Pan-fried kimchi pancake', risk: 'caution', avoidances: [{ code: 'EGG', name: 'Egg', risk: 'caution' }] },
-      { pendingId: 'p2', kind: 'notFood', name: null, koreanName: null, description: null, risk: 'unable', avoidances: [] },
+      { pendingId: 'p1', kind: 'dish', name: 'Kimchi pancake', koreanName: '김치전', description: 'Pan-fried kimchi pancake', risk: 'caution', avoidCodes: ['EGG'], estimated: true },
+      { pendingId: 'p2', kind: 'notFood', name: null, koreanName: null, description: null, risk: 'unable', avoidCodes: [], estimated: true },
     ];
     const tree = await toResult();
     expect(has(tree, 'ai--1')).toBe(true);
@@ -937,7 +937,7 @@ describe('KB-992 AI 추정 섹션', () => {
 
   it('AI 행 탭 = 미등록 안내 카드 재사용 + 위에 AI 설명·추정 재료 한 줄(상세 이동 0)', async () => {
     mockScanExtra.v = { photoOnly, scanId: 's1' };
-    mockPending.items = [{ pendingId: 'p1', kind: 'dish', name: 'Kimchi pancake', koreanName: '김치전', description: 'Pan-fried kimchi pancake', risk: 'caution', avoidances: [{ code: 'EGG', name: 'Egg', risk: 'caution' }] }];
+    mockPending.items = [{ pendingId: 'p1', kind: 'dish', name: 'Kimchi pancake', koreanName: '김치전', description: 'Pan-fried kimchi pancake', risk: 'caution', avoidCodes: ['EGG'], estimated: true }];
     const tree = await toResult();
     act(() => tree.root.findAll((n) => n.props?.testID === 'ai--1' && typeof n.props.onPress === 'function')[0].props.onPress());
     const s = JSON.stringify(tree.toJSON());
@@ -950,6 +950,16 @@ describe('KB-992 AI 추정 섹션', () => {
     act(() => tree.root.findAll((n) => n.props?.testID === 'unmatched-backdrop' && typeof n.props.onPress === 'function')[0].props.onPress());
     act(() => list(tree).props.onOpen(list(tree).props.dishes.find((d: { displayName: string }) => d.displayName === '순대')));
     expect(has(tree, 'unmatched-ai')).toBe(false);
+  });
+
+  it('S-959 15초 마감 채움(estimated false) = 추정 아님 → 폴링 끝이면 현행 unable 행(위 목록·담기 가능)', async () => {
+    mockScanExtra.v = { photoOnly, scanId: 's1' };
+    mockPending.polling = false;
+    mockPending.items = [{ pendingId: 'p1', kind: 'dish', name: '김치전', koreanName: '김치전', description: null, risk: 'unable', avoidCodes: [], estimated: false }];
+    const tree = await toResult();
+    expect(has(tree, 'ai--1')).toBe(false);
+    expect(names(tree)).toContain('김치전');
+    expect(has(tree, 'add--1')).toBe(true);
   });
 
   it('폴링 종료·미도착 = 현행 unable 행으로 위 목록(담기 가능) · 섹션 없음', async () => {

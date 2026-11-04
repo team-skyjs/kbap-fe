@@ -57,6 +57,7 @@ import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { AiPendingItem, PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { useScanPending } from '@/lib/data/useScanPending';
+import { restrictionLabel } from '@/lib/onboarding/data';
 import { OrderPill, ScanRichList, type AiRow } from '@/features/scan/ScanRichList';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, formatKrw, orderNameKo, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
@@ -1067,7 +1068,9 @@ export default function Scan() {
     const aiRows: AiRow[] = [];
     const allDishes = [...resultDishes, ...photoDishes].filter((d) => {
       if (!d.pendingId || !scanId) return true;
-      const ai = aiById.get(d.pendingId);
+      // S-959: 15초 마감 채움(estimated=false)은 추정이 아니다 → 미도착과 같게(폴링 끝 = 현행 unable 행)
+      const got = aiById.get(d.pendingId);
+      const ai = got?.estimated === false ? undefined : got;
       if (ai?.kind === 'notFood') return false;
       if (ai || aiPending.polling) {
         aiRows.push({ dish: d, ai: ai ?? null });
@@ -1446,9 +1449,9 @@ function UnmatchedNotice({ open, ai, onClose, t }: { open: boolean; ai?: AiPendi
               <Text style={styles.noticeAiChipText}>{t('scan.aiSectionTitle')}</Text>
             </View>
             {!!ai.description && <Text style={styles.noticeBody}>{ai.description}</Text>}
-            {ai.avoidances.length > 0 && (
+            {ai.avoidCodes.length > 0 && (
               <Text style={styles.noticeBody} testID="unmatched-ai-ingredients">
-                {t('scan.aiIngredientsLine', { names: ai.avoidances.map((a) => a.name).join(', ') })}
+                {t('scan.aiIngredientsLine', { names: ai.avoidCodes.map(restrictionLabel).join(', ') })}
               </Text>
             )}
           </View>
