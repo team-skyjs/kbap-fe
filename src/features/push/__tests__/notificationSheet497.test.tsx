@@ -5,6 +5,7 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { AccessibilityInfo, Modal, StyleSheet } from 'react-native';
+import { color as C } from '@/lib/theme';
 
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
@@ -90,7 +91,8 @@ it('(a) primer: 제목·본문·확인·나중에, 체크 행 없음, 확인 →
   expect(p.onConfirm).toHaveBeenCalledWith(undefined);
 });
 
-const boxOn = (tree: ReactTestRenderer, kind: string) => (StyleSheet.flatten(host(tree, `consent-${kind}-box`)[0].props.style) as { backgroundColor?: string }).backgroundColor !== 'transparent';
+// KB-987: off = 회색(line2) 원 + 흰 체크 · on = primary — 색으로 판정
+const boxOn = (tree: ReactTestRenderer, kind: string) => (StyleSheet.flatten(host(tree, `consent-${kind}-box`)[0].props.style) as { backgroundColor?: string }).backgroundColor === C.primary;
 const noticeShown = (tree: ReactTestRenderer) => (StyleSheet.flatten(host(tree, 'notif-sheet-notice')[0].props.style) as { opacity?: number }).opacity !== 0;
 
 it('(b) consent(9/14 종한): 둘 다 체크된 채 열림 → 즉시 확인 가능 · 하나 해제 후 확인 = onConfirm 0 + "둘 다 동의" 안내 · 다시 체크 = 안내 소거 + onConfirm 1회', async () => {
@@ -204,20 +206,52 @@ it('(g) KB-553 소스 잠금: Modal fade(딤만 — slide는 딤까지 밀어 �
   expect(src).toMatch(/<Modal[^>]*>\s*(\{\/\*[\s\S]*?\*\/\}\s*)?<GestureHandlerRootView/);
 });
 
-it('(j) 프레임 불변(P-151, FR-009): 시트 컨테이너 메트릭이 open 전환·체크 전후 동일, 핸들 36×4 1개', async () => {
+const handles = (tree: ReactTestRenderer) => tree.root.findAll((n) => {
+  if (typeof n.type !== 'string') return false;
+  const f = StyleSheet.flatten(n.props?.style as never) as { width?: number; height?: number } | undefined;
+  return f?.width === 36 && f?.height === 4;
+});
+const shadowKeys = (st: unknown) => Object.keys(StyleSheet.flatten(st as never) as object).filter((k) => /^shadow|^elevation$/.test(k));
+
+it('(j) 프레임 불변(P-151, FR-009) + KB-987 B안: consent 시트 = 플랫(pt36·pb34·ph24·라운드24·그림자 0·핸들 0), open 전환·체크 전후 동일', async () => {
   const p = props({ variant: 'consent' });
   const tree = render(<NotificationSheet {...p} open={false} />);
   act(() => { tree.update(<NotificationSheet {...p} open />); });
-  const before = frame(host(tree, 'notif-sheet-consent')[0].props.style);
-  expect(before).toEqual({ pt: 10, pb: 34, ph: 20, rl: 24, rr: 24, gap: 12 });
+  const st = () => host(tree, 'notif-sheet-consent')[0].props.style;
+  const before = frame(st());
+  expect(before).toEqual({ pt: 36, pb: 34, ph: 24, rl: 24, rr: 24, gap: undefined });
+  expect(shadowKeys(st())).toEqual([]);
   await tap(tree, 'consent-privacy');
-  expect(frame(host(tree, 'notif-sheet-consent')[0].props.style)).toEqual(before);
-  const handles = tree.root.findAll((n) => {
-    if (typeof n.type !== 'string') return false;
-    const f = StyleSheet.flatten(n.props?.style as never) as { width?: number; height?: number } | undefined;
-    return f?.width === 36 && f?.height === 4;
-  });
-  expect(handles).toHaveLength(1);
+  expect(frame(st())).toEqual(before);
+  expect(handles(tree)).toHaveLength(0);
+  expect(host(tree, 'notif-sheet-grab')).toHaveLength(0);
+});
+
+it('(j2) KB-987 primer 불변 잠금: pt10·pb34·ph20·라운드24·gap12·그림자 있음·핸들 36×4 1개 · 제목 줄 제한 없음', () => {
+  const tree = render(<NotificationSheet {...props({ variant: 'primer' })} />);
+  const st = host(tree, 'notif-sheet-primer')[0].props.style;
+  expect(frame(st)).toEqual({ pt: 10, pb: 34, ph: 20, rl: 24, rr: 24, gap: 12 });
+  expect(shadowKeys(st).length).toBeGreaterThan(0);
+  expect(handles(tree)).toHaveLength(1);
+  const title = host(tree, 'notif-sheet-title')[0];
+  expect(title.props.numberOfLines).toBeUndefined();
+  expect(StyleSheet.flatten(title.props.style)).toMatchObject({ fontSize: 18, lineHeight: 25 });
+  expect(StyleSheet.flatten(pressable(tree, 'notif-sheet-confirm').props.style ?? {})).not.toHaveProperty('minHeight', 56);
+});
+
+it('(r) KB-987 consent 타이포·동의 영역·버튼: 제목 24/32 3줄 축소(하한 0.8) · 본문 15/22 · 회색 박스 없음 · 체크 원 22 · 확인 56 · 나중에 48', () => {
+  const tree = render(<NotificationSheet {...props({ variant: 'consent' })} />);
+  const title = host(tree, 'notif-sheet-title')[0];
+  expect(title.props.numberOfLines).toBe(3);
+  expect(title.props.adjustsFontSizeToFit).toBe(true);
+  expect(title.props.minimumFontScale).toBe(0.8); // 큰글씨 ×1.3·320pt에서 id 3줄에 0.855 필요(R-12 실측) — 하한 0.8
+  expect(StyleSheet.flatten(title.props.style)).toMatchObject({ fontSize: 24, lineHeight: 32, color: C.ink });
+  const consents = StyleSheet.flatten(host(tree, 'notif-sheet-consents')[0].props.style) as Record<string, unknown>;
+  expect(consents.backgroundColor).toBeUndefined();
+  expect(StyleSheet.flatten(host(tree, 'consent-privacy-box')[0].props.style)).toMatchObject({ width: 22, height: 22, borderWidth: 1.5 });
+  const confirmHost = tree.root.findAll((n) => n.props?.testID === 'notif-sheet-confirm' && typeof n.type === 'string')[0];
+  expect(StyleSheet.flatten(confirmHost.props.style)).toMatchObject({ minHeight: 56 });
+  expect(StyleSheet.flatten(host(tree, 'notif-sheet-later')[0].props.style)).toMatchObject({ minHeight: 48 });
 });
 
 type PanEvent = { translationY: number; velocityY: number };
@@ -253,10 +287,13 @@ it('(i) 제스처 영역 = 시트 전체(9/14 종한 — 본문 스크롤 없어
   expect(area).toHaveLength(1);
   const inside = (id: string) => area[0].findAll((n) => n.props?.testID === id && typeof n.type === 'string');
   expect(inside('notif-sheet-consent')).toHaveLength(1); // 시트 컨테이너가 제스처 영역 직계
-  for (const id of ['notif-sheet-grab', 'consent-privacy', 'consent-privacy-full', 'notif-sheet-confirm', 'notif-sheet-later']) {
+  for (const id of ['notif-sheet-title', 'consent-privacy', 'consent-privacy-full', 'notif-sheet-confirm', 'notif-sheet-later']) {
     expect({ id, inside: inside(id).length }).toEqual({ id, inside: 1 });
   }
+  expect(inside('notif-sheet-grab')).toHaveLength(0); // KB-987 B안: 핸들 없음 — 시트 전체가 제스처 영역이라 닫기 동작은 그대로
   expect(inside('notif-sheet-backdrop')).toHaveLength(0); // 스크림은 드래그 대상 아님(탭 닫힘만)
+  const primer = render(<NotificationSheet {...props({ variant: 'primer' })} />);
+  expect(host(primer, 'notif-sheet-gesture')[0].findAll((n) => n.props?.testID === 'notif-sheet-grab' && typeof n.type === 'string')).toHaveLength(1);
 });
 
 it('(k) 소스 잠금: 훅에 open 전달(재오픈 리셋, FR-007) · dimStyle/sheetStyle/onSheetLayout 배선(FR-004/FR-008)', () => {
@@ -388,6 +425,8 @@ it('(p) KB-630·KB-979 consent 이벤트: 열림 = view{surface} 1회 · 체크 
   expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'uncheck', target: 'privacy', surface: 'settings' });
   await tap(tree, 'consent-receive-full');
   expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'full_text', target: 'receive', surface: 'settings' });
+  // KB-987: 전문 보기 = chevron 아이콘 링크 — 스크린리더 라벨은 기존 문구
+  expect(pressable(tree, 'consent-receive-full').props).toMatchObject({ accessibilityRole: 'link', accessibilityLabel: 'notif.viewFull' });
   await tap(tree, 'notif-sheet-confirm'); // 하나 해제 상태 = 차단
   expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_consent_response', { action: 'blocked', surface: 'settings' });
   await tap(tree, 'consent-privacy');

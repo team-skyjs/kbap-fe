@@ -97,6 +97,7 @@ function NotificationSettingsScreen() {
   };
   const confirmConsent = () => {
     track(EVENTS.push_pref_toggle, { key: 'news', on: true });
+    track(EVENTS.push_pref_toggle, { key: 'activity', on: true, source: 'consent' }); // KB-987: 확인 = 활동 알림도 ON
     patch(MARKETING_CONSENT_PATCH); // KB-979: 홈·알림함 동의 시트와 같은 body(consent.ts 공용 상수)
     setConsentOpen(false);
   };

@@ -245,7 +245,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   review_helpful_toggle: ['on', 'surface', 'target_type'], // KB-812 2차 target_type: food|packaged
   review_translate_toggle: ['action', 'target', 'result', 'source'], // action: translate|original · target: review|post · result: ok|fail|same(KB-679 — 번역 시도 결과, original엔 없음 · KB-689 same = 원문 언어 == 요청 언어) · source: auto(KB-941 리뷰 탭 첫 묶음 자동 — 수동 탭엔 없음)
   push_primer_response: ['action', 'surface'], // accept|later · onboarding|scan
-  push_pref_toggle: ['key', 'on'],
+  push_pref_toggle: ['key', 'on', 'source'], // source: consent(KB-987 — 동의 시트 확인으로 켜짐, 설정 토글엔 없음)
   // KB-630 — 값은 enum만(문구·URL 금지). state 체계는 scan_permission 준용.
   push_permission: ['state'], // grant|deny|settings_open
   push_consent_response: ['action', 'target', 'surface'], // action: check|uncheck|full_text|blocked|later|confirm(KB-979: 둘 다 체크한 채 확인) · target: privacy|receive(check·uncheck·full_text만) · surface: home|inbox|settings(KB-979)
