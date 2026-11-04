@@ -336,6 +336,15 @@ describe('확인 — 공용 PATCH + OS 권한', () => {
     mount();
     expect(mockSheet.last).toMatchObject({ open: true, variant: 'consent', consentSurface: 'home', title: 'push.consentPromptTitle', body: 'push.consentPromptBody', confirmLabel: 'push.consentConfirm' });
   });
+  it('KB-987 문구(ko 정본): 제목 = 동의 조건절 없음 · 본문 = "알림에 동의하시면"으로 시작 · 10개 로케일 두 키 존재', () => {
+    const ko = JSON.parse(fs.readFileSync('src/lib/i18n/ko.json', 'utf8')).push;
+    expect(ko.consentPromptTitle).toBe('취향에 맞춰 먹고 싶은 K-Food를 추천해드려요!');
+    expect(ko.consentPromptBody).toBe('알림에 동의하시면 귀찮게 하지 않고 맛있는 음식 추천만 해드려요 👍');
+    for (const l of ['en', 'ja', 'zh-Hans', 'zh-Hant', 'es', 'vi', 'th', 'id', 'ru']) {
+      const push = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).push;
+      expect({ l, t: typeof push.consentPromptTitle, b: typeof push.consentPromptBody }).toEqual({ l, t: 'string', b: 'string' });
+    }
+  });
   it('PATCH body == 계약(설정 화면과 같은 상수) · undetermined → 요청 → 허용 = 토큰 등록 → 닫기', async () => {
     expect(MARKETING_CONSENT_PATCH).toEqual({ activity: true, news: { consent: true, privacyConsentVersion: 2, receiveConsentVersion: 2, enabled: true, mealTime: true } });
     const onClose = mount();

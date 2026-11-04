@@ -150,8 +150,8 @@ export function NotificationSheet({
         <GestureDetector gesture={swipe.gesture}>
         <Animated.View style={[flat ? styles.sheetFlat : styles.sheet, sheetPad, swipe.sheetStyle]} onLayout={swipe.onSheetLayout} testID={`notif-sheet-${variant}`}>
           {!flat && <View style={styles.handle} testID="notif-sheet-grab" />}
-          {/* KB-987: 3줄 안에서 네이티브 축소(KB-856 선례) — 수동 개행 금지. 기본 글자 크기는 10개 로케일 모두 축소 없이 ≤3줄(360pt 폭 실측),
-              큰글씨 상한(×1.3)에서 en·es·ru ≈0.87·id 0.80이 필요해 하한 0.8 */}
+          {/* KB-987: 3줄 안에서 네이티브 축소(KB-856 선례) — 수동 개행 금지. 기본 글자 크기는 10개 로케일 모두 축소 없이 ≤3줄(320pt 폭 실측),
+              큰글씨 상한(×1.3)에선 id만 0.855가 필요 — 하한 0.8(긴 번역 여유) */}
           <Text style={flat ? styles.titleFlat : styles.title} numberOfLines={flat ? 3 : undefined} adjustsFontSizeToFit={flat} minimumFontScale={flat ? 0.8 : undefined} testID="notif-sheet-title">{title}</Text>
           <Text style={flat ? styles.bodyFlat : styles.body}>{body}</Text>
           {needsConsent && (

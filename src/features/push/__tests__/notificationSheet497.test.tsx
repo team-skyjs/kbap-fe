@@ -244,7 +244,7 @@ it('(r) KB-987 consent 타이포·동의 영역·버튼: 제목 24/32 3줄 축�
   const title = host(tree, 'notif-sheet-title')[0];
   expect(title.props.numberOfLines).toBe(3);
   expect(title.props.adjustsFontSizeToFit).toBe(true);
-  expect(title.props.minimumFontScale).toBe(0.8); // 큰글씨 ×1.3에서 id 3줄에 0.80 필요(R-12 실측)
+  expect(title.props.minimumFontScale).toBe(0.8); // 큰글씨 ×1.3·320pt에서 id 3줄에 0.855 필요(R-12 실측) — 하한 0.8
   expect(StyleSheet.flatten(title.props.style)).toMatchObject({ fontSize: 24, lineHeight: 32, color: C.ink });
   const consents = StyleSheet.flatten(host(tree, 'notif-sheet-consents')[0].props.style) as Record<string, unknown>;
   expect(consents.backgroundColor).toBeUndefined();
