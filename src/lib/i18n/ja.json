@@ -1365,6 +1365,7 @@
     "reviewPhotos_one": "写真{{count}}枚を確認",
     "reviewPhotos_other": "写真{{count}}枚を確認",
     "done": "完了",
+    "scanAnother": "別の商品をスキャン",
     "resultAvoid": "避けたい食材と一致: {{names}}。",
     "resultCaution": "同じ製造施設の表示に記載: {{names}}。",
     "resultMajorSet": "{{contains}}。避けたい食材を設定すると、自分向けの結果を見られます。",

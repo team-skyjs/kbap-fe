@@ -1,3 +1,10 @@
+## 2026-11-04 · P-595 KB-981 스캔 진입 상세 — 리뷰 작성 숨김·Done·Scan something else
+
+- 음식 상세 src=scan = Ask 유무와 무관하게 Write 0(전에는 Ask가 없으면 Write가 떴다) · Ask는 그대로.
+- 가공식품 상세 ?scan=1 = 작성 알약 대신 primary Done(packagedScan.done 재사용) + 테두리 Scan something else(신규 packagedScan.scanAnother × 10로케일, ko "다른 상품 스캔하기").
+- Done = 루트 스택에서 마지막 scan 화면까지 dismiss(scanFlowDepth) — 스캔 전 화면, 스캔 화면 재노출 0 · 스캔 화면이 없으면(딥링크) 뒤로. Scan something else = 같은 dismiss 뒤 /scan?mode=packaged 새 push(새 인스턴스라 이전 단계 상태 0).
+- pillOutline을 pillCta 공용으로 올림(음식 상세 Ask가 쓰던 값). 리뷰 섹션 안 작성 링크는 바가 없을 때 보이는 기존 규칙 그대로(writeInBar false).
+
 ## 2026-11-04 · P-594 KB-980 권한 팝업 닫힘을 OTA 복귀로 치지 않기
 
 - 복귀 판정 = background를 거친 active만(OtaAutoApplyHost). iOS 시스템 팝업(알림·카메라·사진·위치·ATT)은 inactive만 거쳐 창·체크·이벤트 0. background→inactive→active는 복귀.

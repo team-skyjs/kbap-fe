@@ -1409,6 +1409,7 @@
     "reviewPhotos_many": "Проверить фото ({{count}})",
     "reviewPhotos_other": "Проверить фото ({{count}})",
     "done": "Готово",
+    "scanAnother": "Сканировать другой товар",
     "resultAvoid": "Совпадает с вашими исключениями: {{names}}.",
     "resultCaution": "В указании об общем производстве упоминается: {{names}}.",
     "resultMajorSet": "{{contains}}. Выберите исключения, чтобы увидеть личный результат.",

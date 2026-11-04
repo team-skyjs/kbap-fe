@@ -311,7 +311,7 @@ function RegisteredBottomBar({
   t: TFn;
   onWrite: () => void;
   onAsk?: () => void;
-  /** P-353 ②(KB-515): 스캔 진입 = Write 미렌더·Ask 단독(스캔한 음식이라 리뷰 유도 대신 문의 단독) */
+  /** P-353 ②(KB-515) → KB-981: 스캔 진입 = Write 미렌더(Ask 없으면 바 없음) */
   scanEntry?: boolean;
   /** 띠 실높이(알약 + 위 여백 + 안전 영역) 보고 — 스크롤 하단 여백 파생(큰 글씨·긴 번역 대응) */
   onHeight?: (h: number) => void;
@@ -324,7 +324,7 @@ function RegisteredBottomBar({
     opacity: !ready ? 0 : withTiming(shown ? 1 : 0, { duration: reduced ? 120 : PILL_FADE_MS, easing: Easing.out(Easing.cubic) }),
     transform: [{ translateY: reduced ? 0 : !ready ? hideY : withTiming(shown ? 0 : hideY, { duration: PILL_FADE_MS, easing: Easing.out(Easing.cubic) }) }],
   }));
-  const write = FLAGS.reviewsEnabled && !(scanEntry && onAsk);
+  const write = FLAGS.reviewsEnabled && !scanEntry; // KB-981: 스캔 진입 = Ask 유무와 무관하게 Write 0(빠져나가려는 흐름에 리뷰 유도 금지)
   if (!write && !onAsk) return null;
   return (
     <Animated.View
@@ -869,8 +869,8 @@ const styles = StyleSheet.create({
   pillPrimary: pillCta.pillPrimary,
   pillPrimaryText: pillCta.pillPrimaryText,
   pullSpin: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 5 }, // QA Q-388 ①: 당김 새로고침 스피너(iOS) — 플로팅 헤더 줄 바로 아래
-  pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
-  pillOutlineText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink, textAlign: 'center' },
+  pillOutline: pillCta.pillOutline,
+  pillOutlineText: pillCta.pillOutlineText,
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },

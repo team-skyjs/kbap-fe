@@ -449,6 +449,32 @@ describe('P-228: Ask the owner 플로팅', () => {
     }
   });
 
+  it('KB-981: 스캔 진입 + Ask 없음(게스트) = Write도 0(바째 없음) · 스캔이 아닌 진입 게스트 = Write 그대로(회귀)', () => {
+    mockIsGuest.mockReturnValue(true);
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe', { reviewSummaryMissing: false, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    mockParams = { id: '7', src: 'scan' };
+    try {
+      const tree = render(<FoodDetailScreen />);
+      expect(byId(tree, 'bottom-ask')).toHaveLength(0);
+      expect(byId(tree, 'bottom-write')).toHaveLength(0);
+      expect(byId(tree, 'detail-bottom-bar')).toHaveLength(0);
+    } finally {
+      mockParams = { id: '7' };
+    }
+    for (const src of [undefined, 'list', 'search', 'home']) {
+      mockParams = src ? { id: '7', src } : { id: '7' };
+      try {
+        const tree = render(<FoodDetailScreen />);
+        expect({ src, n: byId(tree, 'bottom-write').length >= 1 }).toEqual({ src, n: true });
+      } finally {
+        mockParams = { id: '7' };
+      }
+    }
+  });
+
   it('회원+등록 음식 = 하단 두 줄(primary Write + 테두리 Ask) + 콘텐츠 바닥 여백', () => {
     const tree = render(<FoodDetailScreen />);
     expect(byId(tree, 'detail-bottom-bar').length).toBeGreaterThanOrEqual(1);

@@ -47,7 +47,11 @@ jest.mock('@/components/icons', () => ({ ...jest.requireActual('@/components/ico
 jest.mock('@/lib/onboarding/data', () => ({ restrictionLabel: (c: string) => `L(${c})` }));
 const mockBack = jest.fn();
 const mockPush = jest.fn();
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: mockBack, navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => ({ id: '1711' }), useSegments: () => [], Redirect: () => null }));
+const mockDismiss = jest.fn();
+let mockParams: Record<string, string> = { id: '1711' };
+// KB-981: 상세가 누른 순간 읽는 루트 스택 상태(이름만)
+let mockNavState: { index: number; routes: { name: string }[] } | undefined;
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: mockBack, dismiss: mockDismiss, navigate: jest.fn(), canGoBack: () => true }), useLocalSearchParams: () => mockParams, useNavigation: () => ({ getState: () => mockNavState }), useSegments: () => [], Redirect: () => null }));
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 const mockGet = jest.fn();
@@ -96,7 +100,7 @@ const W1711: DetailWire = {
 };
 
 const trees: ReactTestRenderer[] = [];
-afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); mockGuest = true; mockMe = undefined; mockMeError = false; jest.requireMock('@/lib/i18n').default.language = 'en'; });
+afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.clearAllMocks(); mockParams = { id: '1711' }; mockNavState = undefined; mockGuest = true; mockMe = undefined; mockMeError = false; jest.requireMock('@/lib/i18n').default.language = 'en'; });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(el); }); trees.push(t); return t; };
 const q = (over: Partial<Q>): Q => ({ isPending: false, isError: false, refetch: jest.fn(), ...over });
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
@@ -311,6 +315,80 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     } finally {
       [F.reviewsEnabled, F.reviewsLiveEnabled, F.packagedReviewWrite] = prev;
     }
+  });
+  describe('KB-981 스캔 진입(?scan=1) 하단 = Done·Scan something else(리뷰 작성 알약 0)', () => {
+    const F = FLAGS as unknown as Record<string, boolean>;
+    let prev: boolean[];
+    beforeEach(() => { prev = [F.reviewsEnabled, F.reviewsLiveEnabled, F.packagedReviewWrite]; F.reviewsEnabled = F.reviewsLiveEnabled = F.packagedReviewWrite = true; member(); });
+    afterEach(() => { [F.reviewsEnabled, F.reviewsLiveEnabled, F.packagedReviewWrite] = prev; });
+    // 탭(음식) → 스캔(fullScreenModal) → 상세: 스캔 화면까지 2개를 닫아야 스캔 전 화면
+    const SCAN_STACK = { index: 2, routes: [{ name: '(tabs)' }, { name: 'scan' }, { name: 'processed-foods/[id]' }] };
+
+    it('스캔 진입 = 작성 알약·작성 띠 0 · primary Done + 테두리 Scan something else(공용 pillPrimary·pillOutline) · 리뷰 섹션 링크는 섹션 몫(writeInBar false)', () => {
+      mockParams = { id: '10201', scan: '1', charged: '0' };
+      const t = detail({ verdict: 'SAFE' });
+      expect(ids(t)).not.toContain('pf-write-review-bar');
+      expect(ids(t)).not.toContain('pf-write-band');
+      expect(ids(t)).not.toContain('bottom-write');
+      const st = (id: string) => StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0].props.style);
+      const { pillCta } = jest.requireActual<typeof import('@/features/food/pillCta')>('@/features/food/pillCta');
+      expect(st('pf-scan-done')).toEqual(StyleSheet.flatten(pillCta.pillPrimary));
+      expect(st('pf-scan-another')).toEqual(StyleSheet.flatten(pillCta.pillOutline));
+      expect(text(t)).toContain('packagedScan.done');
+      expect(text(t)).toContain('packagedScan.scanAnother');
+      expect(mockReviewsProps.mock.calls.at(-1)?.[0]).toMatchObject({ writeInBar: false });
+    });
+
+    it('Done = 스캔 화면까지 스택째 닫기(dismiss 2 — 스캔 화면이 다시 보이지 않음) · push 0', () => {
+      mockParams = { id: '10201', scan: '1' };
+      mockNavState = SCAN_STACK;
+      const t = detail({ verdict: 'SAFE' });
+      press(t, 'pf-scan-done');
+      expect(mockDismiss).toHaveBeenCalledWith(2);
+      expect(mockPush).not.toHaveBeenCalled();
+      expect(mockBack).not.toHaveBeenCalled();
+    });
+
+    it('Scan something else = 옛 스캔 화면째 닫고 새 가공식품 스캔 push(새 인스턴스 = 이전 단계 상태 0)', () => {
+      mockParams = { id: '10201', scan: '1' };
+      mockNavState = SCAN_STACK;
+      const t = detail({ verdict: 'SAFE' });
+      press(t, 'pf-scan-another');
+      expect(mockDismiss).toHaveBeenCalledWith(2);
+      expect(mockPush).toHaveBeenCalledTimes(1);
+      expect(mockPush.mock.calls[0][0]).toMatch(/^\/scan\?mode=packaged&t=\d+$/);
+      expect(mockDismiss.mock.invocationCallOrder[0]).toBeLessThan(mockPush.mock.invocationCallOrder[0]); // 닫고 나서 연다
+    });
+
+    it('스택에 스캔 화면이 없으면(딥링크·복원) Done = 뒤로 · Scan something else = dismiss 없이 새 스캔', () => {
+      mockParams = { id: '10201', scan: '1' };
+      mockNavState = { index: 1, routes: [{ name: '(tabs)' }, { name: 'processed-foods/[id]' }] };
+      const t = detail({ verdict: 'SAFE' });
+      press(t, 'pf-scan-done');
+      expect(mockDismiss).not.toHaveBeenCalled();
+      expect(mockBack).toHaveBeenCalledTimes(1);
+      press(t, 'pf-scan-another');
+      expect(mockDismiss).not.toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledTimes(1);
+    });
+
+    it('회귀: 스캔이 아닌 진입(탭·검색·홈) = 작성 알약 그대로 · Done·Scan something else 0', () => {
+      for (const p of [{ id: '10201' }, { id: '10201', src: 'search' }, { id: '10201', src: 'home' }]) {
+        mockParams = p;
+        const t = detail({ verdict: 'SAFE' });
+        expect(ids(t)).toContain('pf-write-review-bar');
+        expect(ids(t).filter((i) => i.startsWith('pf-scan-'))).toEqual([]);
+      }
+    });
+
+    it('scanFlowDepth: 마지막 스캔 화면부터 현재까지 · 스캔 0 = 0 · 상태 없음 = 0', () => {
+      const { scanFlowDepth } = jest.requireActual<typeof import('@/app/processed-foods/[id]')>('@/app/processed-foods/[id]');
+      expect(scanFlowDepth(SCAN_STACK)).toBe(2);
+      expect(scanFlowDepth({ index: 3, routes: [{ name: '(tabs)' }, { name: 'scan' }, { name: 'processed-foods/[id]' }, { name: 'processed-foods/[id]' }] })).toBe(3);
+      expect(scanFlowDepth({ index: 4, routes: [{ name: 'scan' }, { name: 'x' }, { name: 'scan' }, { name: 'processed-foods/[id]' }, { name: 'processed-foods/[id]/review' }] })).toBe(3);
+      expect(scanFlowDepth({ index: 1, routes: [{ name: '(tabs)' }, { name: 'processed-foods/[id]' }] })).toBe(0);
+      expect(scanFlowDepth(undefined)).toBe(0);
+    });
   });
   it('회원인데 verdict null(원재료·표시 둘 다 없음) = 판정 리본 없이 "확인 못 함"(KB-914: 회색 unable 띠 — 4상태의 "판정 불가")', () => {
     member();
