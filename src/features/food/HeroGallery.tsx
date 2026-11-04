@@ -3,11 +3,12 @@
  * 1장 이하는 이 컴포넌트를 쓰지 않는다(화면이 현행 정적 히어로를 그대로 렌더).
  *
  * - 가로 페이징 FlatList, 장마다 CardPhoto(원격 이미지 규칙 — 스켈레톤·실패 폴백 포함)
- * - 2초 자동 넘김(useAutoSlide) — 화면 blur·앱 background·reduce motion이면 멈춘다
+ * - 5초 자동 넘김(useAutoSlide) — 화면 blur·앱 background·reduce motion이면 멈춘다
+ * - 자동 넘김 전환 = SLIDE_MS 동안 직접 그리는 이징 스크롤(플랫폼 animated 스크롤은 시간 조절 불가)
  * - 하단 도트는 View로 그린다(이모지 금지), 히어로 안쪽 하단
  */
 import * as React from 'react';
-import { FlatList, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Easing, FlatList, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { CardPhoto } from '@/components';
 import { color as C, radius } from '@/lib/theme';
@@ -19,11 +20,21 @@ export const DOT_ACTIVE = C.primary;
 export const DOT_INACTIVE = C.ink3;
 /** 손을 뗀 뒤 스크롤 이벤트가 이만큼 끊기면 스냅 완료로 본다(스로틀 16ms의 충분한 배수). */
 export const QUIET_MS = 250;
+/** KB-965(예진 11/5 실기): 자동 넘김 전환 시간 — 플랫폼 기본 animated 스크롤(~300ms, 시간 인자 없음)의 약 2배.
+ *  ponytail: 프레임마다 JS가 scrollToOffset(animated:false) — UI 스레드 구동(reanimated scrollTo)은 끊김이 실기에서 보이면. */
+export const SLIDE_MS = 600;
+/** 이징 = 플랫폼 기본 페이지 스크롤과 같은 계열(가속 후 감속). 시간만 늘린다. */
+const SLIDE_EASE = Easing.inOut(Easing.ease);
 
-export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위·도트 아래 레이어(그라데이션) */ overlay?: React.ReactNode }) {
+/** renderPage(KB-965) = 장 하나 그리기 — 없으면 CardPhoto(음식 상세 cover). 가공식품 상세는 누끼·실사진을 같은 바탕에 contain으로 */
+export function HeroGallery({ urls, overlay, renderPage }: { urls: string[]; /** 사진 위·도트 아래 레이어(그라데이션) */ overlay?: React.ReactNode; renderPage?: (url: string, index: number) => React.ReactNode }) {
   const { width } = useWindowDimensions();
   const paused = useMotionPaused();
-  const { index, onUserSwipe, pause } = useAutoSlide(urls.length, paused);
+  // KB-965(P-609, 예진 11/5 실기 — 첫 장 뒤 장마다 ~2초 로딩): 들어오는 즉시 **전부** 미리 받고(장마다 따로 — 준비 시점을 장 단위로 안다),
+  // 자동 넘김은 다음 장이 준비될 때까지 기다린다. 실패도 "준비"로 친다 — 깨진 장 하나에 캐러셀이 멈추지 않게(그 장은 CardPhoto 폴백).
+  const [ready, setReady] = React.useState<ReadonlySet<string>>(() => new Set());
+  const isReady = (i: number) => ready.has(urls[i]);
+  const { index, onUserSwipe, pause, notifyReady } = useAutoSlide(urls.length, paused, isReady);
   const listRef = React.useRef<FlatList<string>>(null);
   // 제스처 상태는 **손가락 기준 두 가지뿐**이다: 누르고 있나(touching), 뗐나(released).
   // Codex 2R~6R은 전부 "이 스크롤 이벤트가 사용자 것인가 타이머 것인가"를 분류하려다 난 경합이었다
@@ -33,15 +44,29 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
   const releasedRef = React.useRef(false);
   const offsetRef = React.useRef(0); // 최신 스크롤 오프셋
   const quietTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const slideRef = React.useRef<number | null>(null); // 진행 중인 전환 프레임
+  const stopSlide = () => {
+    if (slideRef.current != null) cancelAnimationFrame(slideRef.current);
+    slideRef.current = null;
+  };
 
   React.useEffect(() => () => {
     if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
   }, []);
 
-  // 2장째부터 미리 받아 둔다(첫 장은 CardPhoto 스켈레톤 규칙 그대로)
   React.useEffect(() => {
-    if (urls.length > 1) void Image.prefetch(urls.slice(1)).catch(() => {});
+    if (urls.length < 2) return;
+    let alive = true;
+    const done = (u: string) => alive && setReady((s) => (s.has(u) ? s : new Set(s).add(u)));
+    for (const u of urls) void Image.prefetch(u, 'memory-disk').then(() => done(u), () => done(u));
+    return () => {
+      alive = false;
+    };
   }, [urls]);
+  // 장이 준비될 때마다 — 기다리던 자동 넘김을 풀어 준다
+  React.useEffect(() => {
+    notifyReady();
+  }, [ready, notifyReady]);
 
   // 타이머가 넘긴 장으로 스크롤(사용자가 넘긴 경우엔 이미 그 위치라 사실상 무동작)
   // Codex P2(5R): 마지막 → 처음 순환을 애니메이션으로 스크롤하면 중간 장을 전부 **거꾸로**
@@ -51,7 +76,27 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
     if (urls.length < 2) return;
     const wrapped = index === 0 && prevIndexRef.current === urls.length - 1;
     prevIndexRef.current = index;
-    listRef.current?.scrollToOffset({ offset: index * width, animated: !wrapped });
+    const to = index * width;
+    if (wrapped) {
+      listRef.current?.scrollToOffset({ offset: to, animated: false });
+      return;
+    }
+    // KB-965: SLIDE_MS 동안 이징으로 직접 그린다 — 사용자가 이미 그 장에 있으면(스와이프 안착) 그릴 게 없다
+    const from = offsetRef.current;
+    if (Math.abs(to - from) < 1) return;
+    const t0 = Date.now();
+    const step = () => {
+      const p = Math.min(1, (Date.now() - t0) / SLIDE_MS);
+      const x = from + (to - from) * SLIDE_EASE(p);
+      offsetRef.current = x; // 다음 전환·재개 판단의 출발점(스로틀된 onScroll을 기다리지 않는다)
+      listRef.current?.scrollToOffset({ offset: x, animated: false });
+      slideRef.current = p < 1 ? requestAnimationFrame(step) : null;
+    };
+    slideRef.current = requestAnimationFrame(step);
+    return () => {
+      if (slideRef.current != null) cancelAnimationFrame(slideRef.current);
+      slideRef.current = null;
+    };
   }, [index, width, urls.length]);
 
   /** 손을 뗀 뒤 스크롤 이벤트가 QUIET_MS 동안 없으면 = 스냅이 끝났다 → 그 자리에서 재개. */
@@ -61,8 +106,14 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
       if (!touchingRef.current || !releasedRef.current) return; // 새 드래그가 시작됐다
       touchingRef.current = false;
       releasedRef.current = false;
-      const page = Math.round(offsetRef.current / width); // 스크롤이 멈춘 뒤라 최종 오프셋이다
-      onUserSwipe(Math.max(0, Math.min(urls.length - 1, page)));
+      const page = Math.max(0, Math.min(urls.length - 1, Math.round(offsetRef.current / width))); // 스크롤이 멈춘 뒤라 최종 오프셋이다
+      // Codex #432 P2: 자동 전환을 절반 넘어 닿았다 떼면 가까운 장 = 이미 넘긴 index — setIndex가 같은 값이라 스크롤 effect가
+      // 다시 안 돌아 두 장 사이에 멈춘다. 장 경계가 아니면 그 장으로 직접 맞춘다(사용자 놓음 = 네이티브 스냅 애니메이션).
+      if (Math.abs(offsetRef.current - page * width) >= 1) {
+        offsetRef.current = page * width;
+        listRef.current?.scrollToOffset({ offset: page * width, animated: true });
+      }
+      onUserSwipe(page);
     }, QUIET_MS);
   };
 
@@ -70,6 +121,7 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
   // 넘어야 오므로, 손을 올려만 두거나 조금만 움직이면 그 전에 틱이 화면을 끌어간다.
   // 드래그 인식도 같은 처리로 받는다(터치 이벤트가 네이티브 스크롤에 뺏기는 경우 대비).
   const press = () => {
+    stopSlide(); // 전환 중에 닿으면 그 자리에서 손가락에 넘긴다
     touchingRef.current = true;
     releasedRef.current = false;
     if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
@@ -113,9 +165,9 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
         onTouchCancel={() => release()}
         onScrollBeginDrag={press}
         onScrollEndDrag={onDragEnd}
-        renderItem={({ item }) => (
+        renderItem={({ item, index: i }) => (
           <View style={{ width, height: '100%' }}>
-            <CardPhoto uri={item} transition={200} borderRadius={0} />
+            {renderPage ? renderPage(item, i) : <CardPhoto uri={item} transition={200} borderRadius={0} />}
           </View>
         )}
       />
