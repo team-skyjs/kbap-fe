@@ -226,6 +226,67 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     mockDetail = q({ data: undefined, isPending: true }); // 로딩 중에도 뒤로가 있다(제목 줄이 없으니)
     expect(ids(render(<Detail />))).toContain('pf-back');
   });
+  // KB-990(D-34 B): README 예시 데이터(툼바) — 전자레인지 220ml·1000W 2분/700W 2분 40초 + 끓는 물(면이 잠길 만큼·3분)
+  describe('KB-990 조리법', () => {
+    const TOOMBA = {
+      source: 'package_label',
+      methods: [
+        { type: 'boiling_water', water: { ml: null, line: 'cover_noodles' }, power: [], waitSeconds: 180, steps: [{ text: 'Pour boiling water.' }], cautions: [] },
+        { type: 'MICROWAVE', water: { ml: 220, line: 'INNER' }, power: [{ watt: 1000, seconds: 120 }, { watt: 700, seconds: 160 }], waitSeconds: null, steps: [{ text: 'Open the lid.' }, { text: 'Add water.' }], cautions: ["Don't pour out the water."] },
+      ],
+    } as DetailWire['recipe'];
+    const node = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string');
+    const str = (t: ReactTestRenderer, id: string) => node(t, id)[0].findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string).join('|');
+
+    it('위치 = 상품명 블록 뒤·What\'s inside 앞 · 전자레인지가 먼저 · 행 사실 = 물 + 첫 전력(간격 구분) / 물 선 + 대기 · 없으면 섹션 숨김', () => {
+      const t = detail({ recipe: TOOMBA });
+      const order = ids(t);
+      expect(order.indexOf('pf-name')).toBeLessThan(order.indexOf('pf-recipe'));
+      expect(order.indexOf('pf-recipe')).toBeLessThan(order.indexOf('pf-inside'));
+      expect(order.filter((i) => i.startsWith('pf-recipe-row-'))).toEqual(['pf-recipe-row-MICROWAVE', 'pf-recipe-row-BOILING_WATER']);
+      const mw = str(t, 'pf-recipe-row-MICROWAVE');
+      expect(mw).toContain('packaged.recipe.ml:{"value":220}');
+      expect(mw).toContain('packaged.recipe.atWatt');
+      expect(str(t, 'pf-recipe-row-BOILING_WATER')).toContain('packaged.recipe.lineCover');
+      expect(ids(detail({ recipe: null }))).not.toContain('pf-recipe');
+      expect(ids(detail())).not.toContain('pf-recipe');
+    });
+
+    it('행 탭 = 그 방식으로 시트 · 칩(2개 이상일 때) 전환 · 타일(전자레인지 = 물·W 2개 / 끓는 물 = 물·대기) · 번호 단계 · 주의 · 출처 · 닫기', () => {
+      const t = detail({ recipe: TOOMBA });
+      press(t, 'pf-recipe-row-BOILING_WATER');
+      expect(ids(t)).toContain('pf-recipe-sheet');
+      expect(node(t, 'pf-recipe-chip-BOILING_WATER').length).toBeGreaterThan(0);
+      expect(ids(t).filter((i) => i.startsWith('pf-recipe-tile-'))).toEqual(['pf-recipe-tile-water', 'pf-recipe-tile-wait']);
+      expect(ids(t)).not.toContain('pf-recipe-caution');
+      press(t, 'pf-recipe-chip-MICROWAVE');
+      expect(ids(t).filter((i) => i.startsWith('pf-recipe-tile-'))).toEqual(['pf-recipe-tile-water', 'pf-recipe-tile-w1000', 'pf-recipe-tile-w700']);
+      expect(ids(t)).toContain('pf-recipe-caution');
+      const sheet = text(t);
+      expect(sheet).toContain('Open the lid.');
+      expect(sheet).toContain('packaged.recipe.source');
+      press(t, 'pf-recipe-close');
+      expect(ids(t)).not.toContain('pf-recipe-sheet');
+    });
+
+    it('방식 1개 = 칩 없음 · 소스 잠금: 위험도 색 0·가운데 점 0', () => {
+      const t = detail({ recipe: { methods: [TOOMBA!.methods![1]] } });
+      press(t, 'pf-recipe-row-MICROWAVE');
+      expect(ids(t).some((i) => i.startsWith('pf-recipe-chip-'))).toBe(false);
+      const src = require('fs').readFileSync(require('path').join(__dirname, '../RecipeSection.tsx'), 'utf8') as string;
+      expect(src).not.toMatch(/riskTone|riskSafe|riskCaution|riskDanger|riskUnable|riskText/);
+      expect(src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')).not.toContain('·');
+    });
+
+    it('시간 문구: 120초 = 분 · 160초 = 분+초 · 40초 = 초', () => {
+      const { formatDuration } = require('@/features/processedFood/RecipeSection') as typeof import('@/features/processedFood/RecipeSection');
+      const tt = (k: string, o?: Record<string, unknown>) => `${k}:${JSON.stringify(o)}`;
+      expect(formatDuration(120, tt)).toBe('packaged.recipe.min:{"value":2}');
+      expect(formatDuration(160, tt)).toBe('packaged.recipe.minSec:{"min":2,"sec":40}');
+      expect(formatDuration(40, tt)).toBe('packaged.recipe.sec:{"value":40}');
+    });
+  });
+
   it('Codex #338: 비회원 = 서버 verdict가 와도 회원 판정 0(위험 리본 0) · majorAllergens 필드 없음 = null(모름)', () => {
     mockGuest = true; mockMe = undefined;
     expect(ids(detail({ verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: [] }] })).some((i) => i === 'badge-danger')).toBe(false);

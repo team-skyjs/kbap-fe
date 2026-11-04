@@ -1287,7 +1287,24 @@
     "noAvoidMatchTitle": "与避免清单无匹配",
     "safeBasis_one": "已将标签与你要避免的 {{count}} 种食材进行比对。",
     "safeBasis_other": "已将标签与你要避免的 {{count}} 种食材进行比对。",
-    "findMore": "继续查找"
+    "findMore": "继续查找",
+    "recipe": {
+      "title": "做法",
+      "microwave": "微波炉",
+      "boilingWater": "开水",
+      "water": "水",
+      "wait": "等待",
+      "watt": "{{value}} W",
+      "ml": "{{value}} 毫升",
+      "lineInner": "内侧线",
+      "lineOuter": "外侧线",
+      "lineCover": "没过面饼",
+      "min": "{{value}} 分钟",
+      "sec": "{{value}} 秒",
+      "minSec": "{{min}} 分 {{sec}} 秒",
+      "atWatt": "{{watt}} W 加热 {{time}}",
+      "source": "内容来自包装标签。如有不同，请以包装为准。"
+    }
   },
   "scanMode": {
     "menu": "菜单",

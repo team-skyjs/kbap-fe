@@ -1283,7 +1283,24 @@
     "noAvoidMatchTitle": "No matches to your avoid list",
     "safeBasis_one": "We checked the label against your {{count}} avoided ingredient.",
     "safeBasis_other": "We checked the label against your {{count}} avoided ingredients.",
-    "findMore": "Find more"
+    "findMore": "Find more",
+    "recipe": {
+      "title": "How to cook",
+      "microwave": "Microwave",
+      "boilingWater": "Boiling water",
+      "water": "Water",
+      "wait": "Wait",
+      "watt": "{{value}} W",
+      "ml": "{{value}} ml",
+      "lineInner": "Inner line",
+      "lineOuter": "Outer line",
+      "lineCover": "Cover the noodles",
+      "min": "{{value}} min",
+      "sec": "{{value}} s",
+      "minSec": "{{min}} min {{sec}} s",
+      "atWatt": "{{time}} at {{watt}} W",
+      "source": "From the package label. If anything differs, follow the package."
+    }
   },
   "scanMode": {
     "menu": "Menu",

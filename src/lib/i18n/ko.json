@@ -1287,7 +1287,24 @@
     "noAvoidMatchTitle": "확인한 성분 중 피하는 재료 없음",
     "safeBasis_one": "피하는 재료 {{count}}개와 성분표를 대조했어요.",
     "safeBasis_other": "피하는 재료 {{count}}개와 성분표를 대조했어요.",
-    "findMore": "더 찾아보기"
+    "findMore": "더 찾아보기",
+    "recipe": {
+      "title": "조리 방법",
+      "microwave": "전자레인지",
+      "boilingWater": "끓는 물",
+      "water": "물",
+      "wait": "기다리기",
+      "watt": "{{value}}W",
+      "ml": "{{value}}ml",
+      "lineInner": "안쪽 선",
+      "lineOuter": "바깥쪽 선",
+      "lineCover": "면이 잠길 만큼",
+      "min": "{{value}}분",
+      "sec": "{{value}}초",
+      "minSec": "{{min}}분 {{sec}}초",
+      "atWatt": "{{watt}}W에서 {{time}}",
+      "source": "포장지 표기를 옮긴 내용이에요. 다른 점이 있으면 포장지를 따라 주세요."
+    }
   },
   "scanMode": {
     "menu": "메뉴판",

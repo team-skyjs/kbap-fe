@@ -1287,7 +1287,24 @@
     "noAvoidMatchTitle": "Sin coincidencias con tu lista",
     "safeBasis_one": "Comparamos la etiqueta con {{count}} ingrediente que evitas.",
     "safeBasis_other": "Comparamos la etiqueta con {{count}} ingredientes que evitas.",
-    "findMore": "Buscar más"
+    "findMore": "Buscar más",
+    "recipe": {
+      "title": "Cómo prepararlo",
+      "microwave": "Microondas",
+      "boilingWater": "Agua hirviendo",
+      "water": "Agua",
+      "wait": "Reposo",
+      "watt": "{{value}} W",
+      "ml": "{{value}} ml",
+      "lineInner": "Línea interior",
+      "lineOuter": "Línea exterior",
+      "lineCover": "Cubrir los fideos",
+      "min": "{{value}} min",
+      "sec": "{{value}} s",
+      "minSec": "{{min}} min {{sec}} s",
+      "atWatt": "{{time}} a {{watt}} W",
+      "source": "Según la etiqueta del envase. Si algo no coincide, sigue el envase."
+    }
   },
   "scanMode": {
     "menu": "Menú",
