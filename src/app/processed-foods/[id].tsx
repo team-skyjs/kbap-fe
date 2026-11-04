@@ -262,9 +262,11 @@ export function ProcessedFoodDetailScreen() {
           {!!d.maker && <Text style={s.maker}>{d.maker}</Text>}
           {/* KB-914(R-140): 이름 = 공용 ProductName(영어 굵게 + 한국어 작게 — 어느 경로로 와도 같은 표기) · 유형은 그 아래 */}
           <ProductName name={d.name} nameKo={d.nameKo} size="title" lines={4} header testID="pf-name" />
-          {(!!d.type || !!d.foodType) && (
+          {(!!d.type || !!d.foodType || d.kcal != null) && (
             <View style={s.metaRow} testID="pf-meta">
-              <Text style={s.meta}>{d.type ? t(packagedTypeKey(d.type)) : d.foodType}</Text>
+              {(!!d.type || !!d.foodType) && <Text style={s.meta}>{d.type ? t(packagedTypeKey(d.type)) : d.foodType}</Text>}
+              {/* KB-989: 포장 전체 kcal — 값만, 구분은 columnGap(가운데 점 0) · 영양성분 비표시 */}
+              {d.kcal != null && <Text style={s.meta} testID="pf-kcal">{t('packaged.kcal', { value: d.kcal })}</Text>}
             </View>
           )}
         </View>
