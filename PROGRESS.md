@@ -15,6 +15,17 @@
 - 배지: AI 항목은 caution|unable만 — SAFE·미지 = unable, DANGER = caution(어댑터 잠금, 타입도 두 값). AI 칩 = IconSparkles SVG. AI 행엔 담기 슬롯 없음.
 - 탭: 미등록 안내 카드(UnmatchedNotice) 재사용 + 위에 AI 설명·"들어 있을 수 있는 기피 재료" 한 줄. 판정 문구·unable 마크 무변, 상세 이동 0.
 - 계측 scan_ai_section_shown{count}(스캔당 1회) · scan_ai_item_filled{kind}. i18n 3키 × 10로케일(scan.aiSectionTitle·aiSectionNote·aiIngredientsLine).
+## 2026-11-05 · P-609 KB-965 상세 사진 미리 받기(예진 11/5 실기 — 첫 장 뒤 장마다 ~2초 로딩)
+
+- HeroGallery(음식·가공식품 공통): urls가 들어오는 즉시 전 장(첫 장 포함)을 expo-image Image.prefetch(u, 'memory-disk')로 장마다 따로 — 장 단위 준비 시점을 안다. 실패도 준비로 친다(깨진 장 하나에 멈춤 방지 — 그 장은 CardPhoto 폴백).
+- useAutoSlide(isReady): 다음 장이 준비 전이면 틱을 넘기지 않고 기다림 → notifyReady(준비될 때마다)가 즉시 넘기고 간격을 새로 센다. 정지·제스처 중이면 무동작. 사용자 스와이프는 기다리지 않음(준비 전이면 기존 스켈레톤).
+- 비범위: 목록·검색 카드 탭 시점 선행 프리페치(상세 응답이 와야 URL을 앎 — 갤러리 마운트와 같은 시점이라 이득 작음).
+
+## 2026-11-05 · P-608 KB-965 히어로 캐러셀 5초·느린 전환(예진 11/5 실기)
+
+- HeroGallery(음식·가공식품 공통): 자동 넘김 AUTO_SLIDE_MS 2000 → 5000. 스와이프 뒤 재시작 규칙 무변.
+- 전환: 플랫폼 animated 스크롤(~300ms)은 시간 인자가 없어 SLIDE_MS 600 동안 requestAnimationFrame으로 직접 그린다(Easing.inOut(ease) — 가속 후 감속, 기본 페이지 스크롤과 같은 계열). 순환(마지막 → 처음)은 기존대로 즉시. 전환 중 닿으면 그 프레임에서 멈추고 손가락에 넘긴다.
+- ponytail: JS 프레임 구동 — 실기에서 끊기면 reanimated scrollTo(UI 스레드)로. 제스처 영역이라 실기 확인 뒤 발행.
 ## 2026-11-05 · P-607 KB-997 가공식품 원재료 3줄 미리 보기(예진 11/5 실기)
 
 - 접힘 = "Ingredients" + 번역(없으면 한국어 원문) 3줄(numberOfLines 3) + 아래 페이드(expo-linear-gradient, 바탕 → 투명, 40) + See all. "Ingredients and source" 알약 대체.

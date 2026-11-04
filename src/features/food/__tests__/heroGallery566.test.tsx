@@ -5,6 +5,10 @@
 import * as React from 'react';
 import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { AccessibilityInfo, FlatList } from 'react-native';
+import { useAutoSlide, AUTO_SLIDE_MS } from '../useAutoSlide';
+import { HeroGallery, QUIET_MS, SLIDE_MS } from '../HeroGallery';
+import { adaptFoodImages } from '@/lib/api/foodAdapter';
 
 // HeroGallery 의존 표면 목(호이스팅) — isolateModules로 따로 부르면 React가 두 벌 로드돼
 // 훅 디스패처가 null이 된다(실측). 정지 판단 자체는 실제 usePaused 경로를 탄다.
@@ -19,10 +23,6 @@ jest.mock('expo-router', () => ({
 jest.mock('expo-image', () => ({ Image: { prefetch: jest.fn(() => Promise.resolve(true)) } }));
 jest.mock('@/components', () => ({ CardPhoto: () => null }));
 
-import { AccessibilityInfo } from 'react-native';
-import { useAutoSlide, AUTO_SLIDE_MS } from '../useAutoSlide';
-import { HeroGallery, QUIET_MS } from '../HeroGallery';
-import { adaptFoodImages } from '@/lib/api/foodAdapter';
 
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
@@ -71,7 +71,8 @@ describe('useAutoSlide — 타이머 규칙', () => {
     expect(out.current!.index).toBe(0); // 순환
   });
 
-  it('간격이 정확히 2000ms — 1999ms엔 안 넘어간다', () => {
+  it('간격이 정확히 5000ms(KB-965 예진 11/5: 2초 → 5초) — 4999ms엔 안 넘어간다', () => {
+    expect(AUTO_SLIDE_MS).toBe(5000);
     const { out } = mountSlide(3);
     act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS - 1); });
     expect(out.current!.index).toBe(0);
@@ -79,15 +80,34 @@ describe('useAutoSlide — 타이머 규칙', () => {
     expect(out.current!.index).toBe(1);
   });
 
-  it('사용자 스와이프 = 그 장으로 맞추고 2초를 새로 센다(직후 즉시 안 넘어감)', () => {
+  it('사용자 스와이프 = 그 장으로 맞추고 간격을 새로 센다(직후 즉시 안 넘어감)', () => {
     const { out } = mountSlide(4);
-    act(() => { jest.advanceTimersByTime(1500); }); // 다음 틱까지 500ms 남은 시점
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS - 500); }); // 다음 틱까지 500ms 남은 시점
     act(() => { out.current!.onUserSwipe(2); });
     expect(out.current!.index).toBe(2);
     act(() => { jest.advanceTimersByTime(500); }); // 옛 타이머였다면 여기서 넘어갔을 것
     expect(out.current!.index).toBe(2);
-    act(() => { jest.advanceTimersByTime(1500); }); // 스와이프로부터 2초
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS - 500); }); // 스와이프로부터 한 간격
     expect(out.current!.index).toBe(3);
+  });
+
+  it('P-609 isReady: 다음 장이 준비 안 됐으면 틱이 와도 그대로 · notifyReady = 준비되면 즉시 넘김 · 스와이프는 기다리지 않음', () => {
+    const ready = new Set([0]);
+    const out: { current: ReturnType<typeof useAutoSlide> | null } = { current: null };
+    function Probe() {
+      out.current = useAutoSlide(3, false, (i) => ready.has(i));
+      return null;
+    }
+    act(() => { renderer.create(<Probe />); });
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS * 2); });
+    expect(out.current!.index).toBe(0);
+    act(() => { out.current!.notifyReady(); }); // 아직 안 됨 = 무동작
+    expect(out.current!.index).toBe(0);
+    ready.add(1);
+    act(() => { out.current!.notifyReady(); });
+    expect(out.current!.index).toBe(1);
+    act(() => { out.current!.onUserSwipe(2); }); // 준비 전 장으로도 사용자는 간다(스켈레톤)
+    expect(out.current!.index).toBe(2);
   });
 
   it('언마운트 = clearInterval(타이머 누수 없음)', () => {
@@ -212,7 +232,7 @@ describe('소스 잠금 — 배선·금지 규칙', () => {
     expect(src).toContain('<CardPhoto uri={food.photoUrl} transition={200} borderRadius={0} />'); // 정적 경로 무변
   });
 
-  it('갤러리 = 페이징·blur/background/reduce motion 정지·2장째부터 prefetch·도트는 View', () => {
+  it('갤러리 = 페이징·blur/background/reduce motion 정지·전 장 prefetch(memory-disk, KB-965 P-609)·도트는 View', () => {
     const g = read('src/features/food/HeroGallery.tsx');
     // KB-680: 정지 훅은 공용 lib/useMotionPaused로 이동(카운트다운 뱃지와 공유) — 갤러리는 그 훅 경유
     const pausedHook = read('src/lib/useMotionPaused.ts');
@@ -221,7 +241,8 @@ describe('소스 잠금 — 배선·금지 규칙', () => {
     expect(pausedHook).toContain('useFocusEffect');
     expect(pausedHook).toContain("AppState.addEventListener('change'");
     expect(pausedHook).toContain('isReduceMotionEnabled');
-    expect(g).toContain('Image.prefetch(urls.slice(1))');
+    expect(g).toContain("Image.prefetch(u, 'memory-disk')");
+    expect(g).not.toContain('urls.slice(1)'); // 첫 장도 미리 받는다
     expect(g).toContain('dot: { width: 6, height: 6, borderRadius: radius.pill }'); // 상태 전환은 색만(프레임 불변)
   });
 
@@ -330,6 +351,36 @@ describe('드래그 — 누르면 멈추고, 손 뗀 뒤 스크롤이 멈춘 자
     await act(async () => { await Promise.resolve(); });
     return tree;
   };
+
+  // KB-965(P-609, 예진 11/5 실기 — 장마다 ~2초 로딩): 전 장 미리 받기 + 다음 장이 준비될 때까지 자동 넘김 대기
+  describe('P-609 미리 받기', () => {
+    const prefetch = () => (jest.requireMock('expo-image') as { Image: { prefetch: jest.Mock } }).Image.prefetch;
+    afterEach(() => prefetch().mockImplementation(() => Promise.resolve(true)));
+    it('들어오는 즉시 전 장(첫 장 포함)을 memory-disk로 장마다 미리 받는다', async () => {
+      prefetch().mockClear();
+      await renderIt();
+      expect(prefetch().mock.calls).toEqual(URLS.map((u) => [u, 'memory-disk']));
+    });
+    it('다음 장이 아직이면 간격이 지나도 안 넘어감 → 받아지는 순간 넘기고 간격을 새로 센다', async () => {
+      const pending: Record<string, () => void> = {};
+      prefetch().mockImplementation((u: string) => (u === URLS[1] ? new Promise<boolean>((r) => { pending[u] = () => r(true); }) : Promise.resolve(true)));
+      const tree = await renderIt();
+      tick(AUTO_SLIDE_MS * 3);
+      expect(dotIdx(tree)).toBe(0); // 빈 화면으로 넘기지 않는다
+      await act(async () => { pending[URLS[1]](); await Promise.resolve(); });
+      expect(dotIdx(tree)).toBe(1); // 준비 = 바로
+      tick(AUTO_SLIDE_MS - 1);
+      expect(dotIdx(tree)).toBe(1); // 간격은 넘긴 순간부터
+      tick(1);
+      expect(dotIdx(tree)).toBe(2);
+    });
+    it('미리 받기 실패도 준비로 친다 — 깨진 장 하나에 캐러셀이 멈추지 않는다', async () => {
+      prefetch().mockImplementation((u: string) => (u === URLS[1] ? Promise.reject(new Error('404')) : Promise.resolve(true)));
+      const tree = await renderIt();
+      tick(AUTO_SLIDE_MS);
+      expect(dotIdx(tree)).toBe(1);
+    });
+  });
 
   it('Codex P2(2R) — 틱 직전에 드래그를 시작하면 누르고 있는 동안 넘어가지 않는다', async () => {
     const tree = await renderIt();
@@ -474,12 +525,53 @@ describe('드래그 — 누르면 멈추고, 손 뗀 뒤 스크롤이 멈춘 자
     const scrollSpy = jest.spyOn(inst, 'scrollToOffset').mockImplementation(() => {});
     // 틱은 실제로 2초 간격으로 따로 온다 — 한 act에 몰면 React가 한 렌더로 묶어 중간 스크롤이 사라진다
     for (let k = 0; k < 4; k++) tick(AUTO_SLIDE_MS);
-    expect(scrollSpy.mock.calls.map((c) => c[0])).toEqual([
-      { offset: WIDTH * 1, animated: true },
-      { offset: WIDTH * 2, animated: true },
-      { offset: WIDTH * 3, animated: true },
-      { offset: 0, animated: false },
-    ]);
+    // KB-965: 전환 = 이징 프레임(animated:false)으로 각 장에 도착 · 순환은 프레임 없이 0으로 한 번
+    const offs = scrollSpy.mock.calls.map((c) => c[0] as { offset: number; animated: boolean });
+    expect(offs.every((o) => o.animated === false)).toBe(true);
+    const arrivals = offs.map((o) => o.offset).filter((x, i, a) => (x === WIDTH || x === WIDTH * 2 || x === WIDTH * 3) && a[i - 1] !== x); // 다음 전환 첫 프레임 = 직전 도착점(연속 중복 제거)
+    expect(arrivals).toEqual([WIDTH, WIDTH * 2, WIDTH * 3]);
+    expect(offs[offs.length - 1].offset).toBe(0);
+    expect(offs.filter((o) => o.offset < 0 || o.offset > WIDTH * 3)).toEqual([]); // 넘침 없음
+    const before0 = offs.slice(0, -1).map((o) => o.offset);
+    expect(before0).toEqual([...before0].sort((a, b) => a - b)); // 순환 전까지 앞으로만(거꾸로 훑기 0)
+  });
+
+  it('KB-965 느린 전환: SLIDE_MS(600 — 플랫폼 기본 ~300의 약 2배) 동안 중간 위치를 지나 도착 · 전환 중 닿으면 그 자리에서 멈춤', async () => {
+    expect(SLIDE_MS).toBe(600);
+    const tree = await renderIt();
+    const inst = tree.root.findByType(FlatList).instance as { scrollToOffset: (p: unknown) => void };
+    const spy = jest.spyOn(inst, 'scrollToOffset').mockImplementation(() => {});
+    const last = () => (spy.mock.calls[spy.mock.calls.length - 1][0] as { offset: number }).offset;
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
+    act(() => { jest.advanceTimersByTime(SLIDE_MS / 2); });
+    expect(last()).toBeGreaterThan(0);
+    expect(last()).toBeLessThan(WIDTH); // 반쯤 = 아직 가는 중(즉시 이동 아님)
+    act(() => { jest.advanceTimersByTime(SLIDE_MS); });
+    expect(last()).toBe(WIDTH); // 도착
+    // 다음 전환 도중 닿으면 프레임이 더 오지 않는다
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
+    act(() => { jest.advanceTimersByTime(SLIDE_MS / 3); });
+    act(() => { list(tree).props.onTouchStart(); });
+    const n = spy.mock.calls.length;
+    act(() => { jest.advanceTimersByTime(SLIDE_MS); });
+    expect(spy.mock.calls.length).toBe(n);
+  });
+
+  it('Codex #432 P2: 자동 전환을 절반 넘어 닿았다 떼면(드래그 없음) 가까운 장으로 맞춘다 — 두 장 사이에 멈추지 않는다', async () => {
+    const tree = await renderIt();
+    const inst = tree.root.findByType(FlatList).instance as { scrollToOffset: (p: unknown) => void };
+    const spy = jest.spyOn(inst, 'scrollToOffset').mockImplementation(() => {});
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); }); // 0 → 1 전환 시작
+    act(() => { jest.advanceTimersByTime(Math.round(SLIDE_MS * 0.7)); }); // 절반 넘음(index는 이미 1)
+    const mid = (spy.mock.calls[spy.mock.calls.length - 1][0] as { offset: number }).offset;
+    expect(mid).toBeGreaterThan(WIDTH / 2);
+    expect(mid).toBeLessThan(WIDTH);
+    act(() => { list(tree).props.onTouchStart(); }); // 그 자리에서 멈춤
+    act(() => { list(tree).props.onTouchEnd(touchEv(0)); }); // 드래그 없이 뗌
+    spy.mockClear();
+    tick(QUIET_MS + 10);
+    expect(spy.mock.calls.map((c) => c[0])).toEqual([{ offset: WIDTH, animated: true }]); // 가까운 장(1)으로 정렬
+    expect(dotIdx(tree)).toBe(1);
   });
 
   it('구조 잠금 — 사용자/타이머 이벤트 분류 코드가 되살아나지 않는다', () => {
