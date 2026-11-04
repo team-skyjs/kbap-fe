@@ -1424,5 +1424,26 @@
     "homeTitle": "Pindai makanan minimarket juga!",
     "homeBody": "Cek isi camilan, ramyeon, dan minuman.",
     "foodBody": "Jelajahi makanan minimarket, yang terpopuler dulu."
+  },
+  "ocrCollector": {
+    "prepared": "Foto siap. Periksa detail perangkat lalu mulai.",
+    "import": "Impor manifest dan 32 foto dari File",
+    "title": "Pengumpulan input ML Kit",
+    "intro": "Simpan teks dan koordinat dari 32 foto pengembangan di perangkat. Setelah diunduh, jalankan dalam mode pesawat. Ini bukan uji kualitas akhir.",
+    "host": "Alamat IPv4 lokal Mac pengembangan",
+    "download": "Unduh 32 foto",
+    "progress": "{{done}} / {{total}} foto",
+    "model": "Konfirmasi dan masukkan model perangkat",
+    "physical": "Perangkat fisik. Ketuk untuk simulator",
+    "simulator": "Simulator. Ketuk untuk perangkat fisik",
+    "run": "Jalankan foto tersisa",
+    "cancel": "Hentikan",
+    "export": "Ekspor JSON",
+    "retry": "Ulangi foto ini",
+    "stopping": "Penjadwalan dihentikan. Tunggu tugas aktif selesai.",
+    "error": "Belum selesai. Periksa alamat, berkas, dan detail perangkat, lalu coba lagi.",
+    "saved": "Hasil yang selesai disimpan di perangkat.",
+    "ok": "{{id}}: {{count}} baris, {{ms}} ms",
+    "failed": "{{id}}: galat {{code}}, {{ms}} ms"
   }
 }

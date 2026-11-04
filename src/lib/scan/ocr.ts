@@ -107,24 +107,29 @@ export async function recognizeMenuLines(
   uri: string,
   fallbackW: number,
   fallbackH: number,
+  options: {
+    diagnostics?: boolean;
+    onGeometry?: (value: { measured: Dims | null; pxW: number; pxH: number; basis: string }) => void;
+  } = {},
 ): Promise<OcrLine[]> {
+  const log = options.diagnostics === false ? () => {} : console.log;
   const safeUri = ensureScheme(uri);
 
   // 후보 치수 수집 — 분모 확정은 frame 최대 좌표를 본 뒤(아래, P-056)
   const measured = await getPixelSize(safeUri);
-  console.log(
+  log(
     '[ocr] dims reported(point?) =',
     JSON.stringify({ fallbackW, fallbackH }),
     '| measured(pixel) =',
     JSON.stringify(measured),
   );
 
-  console.log('[ocr] recognize ←', safeUri);
+  log('[ocr] recognize ←', safeUri);
   // ⑥ 용량: iOS 바이너리에 Korean 모델만 번들됨(patches/@react-native-ml-kit* —
   // 한국어 인식기가 라틴 문자도 읽음). KOREAN 외 스크립트를 쓰려면 podspec 패치에
   // 해당 pod을 복원해야 함 — 안 하면 네이티브가 "Unsupported script"로 reject.
   const result = await TextRecognition.recognize(safeUri, TextRecognitionScript.KOREAN);
-  console.log('[ocr] blocks =', result.blocks.length, '| fullText =', JSON.stringify(result.text));
+  log('[ocr] blocks =', result.blocks.length, '| fullText =', JSON.stringify(result.text));
 
   // 1차 수집: 텍스트+frame만 — 분모 선택에 frame 최대 좌표가 필요 (P-056)
   const raw: { text: string; frame: { left: number; top: number; width: number; height: number } }[] = [];
@@ -132,10 +137,10 @@ export async function recognizeMenuLines(
   let maxBottom = 0;
   result.blocks.forEach((block, bi) => {
     block.lines.forEach((line, li) => {
-      console.log(`[ocr] block${bi}.line${li} raw =`, JSON.stringify({ text: line.text, frame: line.frame }));
+      log(`[ocr] block${bi}.line${li} raw =`, JSON.stringify({ text: line.text, frame: line.frame }));
       const text = line.text.trim();
       if (!text || !line.frame) {
-        console.log(`[ocr] block${bi}.line${li} skipped (empty text or no frame)`);
+        log(`[ocr] block${bi}.line${li} skipped (empty text or no frame)`);
         return;
       }
       raw.push({ text, frame: line.frame });
@@ -151,17 +156,19 @@ export async function recognizeMenuLines(
     maxRight,
     maxBottom,
   );
-  console.log(
+  log(
     '[ocr] denominator =',
     JSON.stringify({ pxW, pxH, basis, maxRight: Math.round(maxRight), maxBottom: Math.round(maxBottom) }),
   );
 
+  options.onGeometry?.({ measured, pxW, pxH, basis });
+
   const lines: OcrLine[] = raw.map(({ text, frame }) => {
     const box = normalize(frame, pxW, pxH);
-    console.log('[ocr] norm =', JSON.stringify({ text, box }));
+    log('[ocr] norm =', JSON.stringify({ text, box }));
     return { text, box };
   });
 
-  console.log('[ocr] total usable lines =', lines.length);
+  log('[ocr] total usable lines =', lines.length);
   return lines;
 }
