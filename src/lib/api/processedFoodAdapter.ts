@@ -49,6 +49,8 @@ export type ProcessedReviewSummary = { overall: ProcessedAxis; taste: ProcessedA
 
 export type ProcessedFoodDetail = ProcessedFoodSummary & {
   capacity: string | null;
+  /** KB-989(S-957 초안): 포장 전체 kcal — null = 미표시(용량이 다른 묶음 등은 서버가 null, FE 판단 0) */
+  kcal: number | null;
   rawMaterials: string | null;
   /** 알레르기 표시란 원문 — DECLARED일 때만 의미가 있다('알수없음' 등은 null로) */
   allergens: string | null;
@@ -102,6 +104,8 @@ export type DetailWire = SummaryWire & {
   /** KB-965(S-953, 가산·옵셔널): kind = 누끼·실사진 구분 — 화면은 모든 장을 같은 바탕·contain으로 그려 아직 쓰지 않는다 */
   images?: { url?: string | null; kind?: string | null }[] | null; // S-953: Swagger는 url·kind 필수 — 운영 서버 배포 전·이상값 방어로 옵셔널 유지
   capacity?: string | null;
+  kcal?: number | null; // KB-989(S-957 #562) — dev Swagger integer·nullable 대조 11/5. 운영 배포 전 방어로 옵셔널 유지
+
   rawMaterials?: string | null;
   allergens?: string | null;
   labelSource: string;
@@ -230,6 +234,7 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     ...adaptProcessedSummary(w),
     imageUrl: toHttps(w.image?.url ?? w.imageUrl),
     capacity: blankToNull(w.capacity),
+    kcal: typeof w.kcal === 'number' && Number.isFinite(w.kcal) && w.kcal >= 0 ? Math.round(w.kcal) : null,
     rawMaterials: blankToNull(w.rawMaterials),
     allergens,
     labelSource,

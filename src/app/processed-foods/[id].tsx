@@ -32,9 +32,9 @@ import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { IconArrowLeft, IconEdit } from '@/components/icons';
 import { PILL_MAX_SCALE, pillCta, useBottomBand } from '@/features/food/pillCta';
 import { Txt as Text } from '@/components/Txt';
-import { Btn } from '@/components/Btn';
 import { Pressable } from '@/components/Pressable';
 import { RemoteImage } from '@/components/RemoteImage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { HeroGallery } from '@/features/food/HeroGallery';
 import { Shimmer } from '@/components/Skeleton';
 import { Chip } from '@/components/Chip';
@@ -103,6 +103,47 @@ function Expanded({ d, showTranslation }: { d: ProcessedFoodDetail; showTranslat
         </View>
         <Text style={s.disclaimer} testID="pf-source-disclaimer">{t('packaged.disclaimer')}</Text>
       </View>
+    </View>
+  );
+}
+
+const PREVIEW_LINES = 3;
+
+/** KB-997(예진 11/5 실기 — 원재료가 버튼 뒤에 완전히 숨음): 접힌 상태 = "Ingredients" + 번역(없으면 한국어 원문) 3줄 + 아래 페이드 + See all.
+ *  3줄을 넘는지는 제한 없는 투명 사본의 onTextLayout 줄 수로 판단(numberOfLines가 걸린 Text는 안드가 잘린 줄만 준다).
+ *  3줄 이하·원재료 없음 = 접을 게 없다 → 전체 섹션(번역·원문·알레르기·출처)을 그대로 — 버튼이 없어도 출처 고지·원문에 닿는다.
+ *  측정은 글 키로 보관(언어 전환으로 글이 바뀌면 다시 잰다 — 렌더 중 비교, effect 리셋 없음). */
+function IngredientsPreview({ d, showTranslation, onSeeAll }: { d: ProcessedFoodDetail; showTranslation: boolean; onSeeAll: () => void }) {
+  const { t } = useTranslation();
+  const text = (showTranslation ? d.ingredients.translated : null) ?? d.ingredients.original;
+  const [measured, setMeasured] = React.useState<{ text: string; lines: number } | null>(null);
+  const lines = measured && measured.text === text ? measured.lines : null;
+  if (!text || (lines != null && lines <= PREVIEW_LINES)) return <Expanded d={d} showTranslation={showTranslation} />;
+  const long = lines != null;
+  return (
+    <View style={s.block} testID="pf-ingredients-peek">
+      <Text style={s.h2}>{t('packaged.ingredientsHeading')}</Text>
+      <View>
+        <Text style={s.body} numberOfLines={PREVIEW_LINES} testID="pf-preview-text">{text}</Text>
+        <Text
+          style={[s.body, s.measure]}
+          onTextLayout={(e) => {
+            const n = e.nativeEvent.lines.length;
+            if (!measured || measured.text !== text || measured.lines !== n) setMeasured({ text, lines: n });
+          }}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          testID="pf-preview-measure"
+        >
+          {text}
+        </Text>
+        {long && <LinearGradient colors={['rgba(255,255,255,0)', C.card]} style={s.fade} pointerEvents="none" testID="pf-preview-fade" />}
+      </View>
+      {long && (
+        <Pressable style={s.seeLess} onPress={onSeeAll} accessibilityRole="button" testID="pf-see-all">
+          <Text style={s.seeLessText}>{t('packaged.ingredients.seeAll')}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -262,9 +303,11 @@ export function ProcessedFoodDetailScreen() {
           {!!d.maker && <Text style={s.maker}>{d.maker}</Text>}
           {/* KB-914(R-140): 이름 = 공용 ProductName(영어 굵게 + 한국어 작게 — 어느 경로로 와도 같은 표기) · 유형은 그 아래 */}
           <ProductName name={d.name} nameKo={d.nameKo} size="title" lines={4} header testID="pf-name" />
-          {(!!d.type || !!d.foodType) && (
+          {(!!d.type || !!d.foodType || d.kcal != null) && (
             <View style={s.metaRow} testID="pf-meta">
-              <Text style={s.meta}>{d.type ? t(packagedTypeKey(d.type)) : d.foodType}</Text>
+              {(!!d.type || !!d.foodType) && <Text style={s.meta}>{d.type ? t(packagedTypeKey(d.type)) : d.foodType}</Text>}
+              {/* KB-989: 포장 전체 kcal — 값만, 구분은 columnGap(가운데 점 0) · 영양성분 비표시 */}
+              {d.kcal != null && <Text style={s.meta} testID="pf-kcal">{t('packaged.kcal', { value: d.kcal })}</Text>}
             </View>
           )}
         </View>
@@ -287,16 +330,16 @@ export function ProcessedFoodDetailScreen() {
           </>
         )}
 
-        {/* KB-945: 원재료 원문·알레르기 표시·출처 = 접힌 상태로만(처음 접힘) */}
+        {/* KB-945 → KB-997: 접힘 = 원재료 3줄 미리 보기(See all) · 펼침 = 전체 섹션 제자리 + Show less. 계측 action은 기존 값 유지(퍼널 연속) */}
         {expanded ? (
           <>
             <Expanded d={d} showTranslation={showTranslation} />
             <Pressable style={s.seeLess} onPress={() => toggle(false, 'see_less')} accessibilityRole="button" testID="pf-see-less">
-              <Text style={s.seeLessText}>{t('packaged.seeLess')}</Text>
+              <Text style={s.seeLessText}>{t('packaged.ingredients.showLess')}</Text>
             </Pressable>
           </>
         ) : (
-          <Btn variant="ghost" onPress={() => toggle(true, 'ingredients_source')} testID="pf-ingredients-source">{t('packaged.ingredientsAndSource')}</Btn>
+          <IngredientsPreview d={d} showTranslation={showTranslation} onSeeAll={() => toggle(true, 'ingredients_source')} />
         )}
 
         {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <View style={s.thickDivider} />}
@@ -368,6 +411,8 @@ const s = StyleSheet.create({
   preview: { fontFamily: font.body, fontSize: 16, lineHeight: 22, color: C.ink2 },
   expanded: { gap: 24 },
   disclaimer: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
+  measure: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0 }, // KB-997: 줄 수 측정용 투명 사본(같은 폭)
+  fade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 40 }, // KB-997: 3줄 끝 페이드(바탕 → 투명)
   seeLess: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, justifyContent: 'center' },
   seeLessText: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
   thickDivider: { height: 8, backgroundColor: '#F5F5F5', marginHorizontal: -GUTTER }, // 음식 상세 thickDivider와 같은 값 — 화면 폭
