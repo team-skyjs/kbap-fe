@@ -208,6 +208,13 @@ describe('시트 — 보내기·닫기·다시 보지 않기', () => {
     expect(t.root.findAll((n) => n.props?.testID === 'feedback-body')[0].props.value).toBe('전송 중 본문');
   });
 
+  it('#421 Codex P2: Modal 안에 키보드 내리기 바(modal 변형) — 루트 바는 Modal 뒤에 가린다(안드)', () => {
+    const { KeyboardDismissBar } = jest.requireActual<typeof import('@/components/KeyboardDismissBar')>('@/components/KeyboardDismissBar');
+    const t = mount();
+    const modal = t.root.findAll((n) => n.props?.transparent === true && n.props?.animationType === 'fade')[0];
+    expect(modal.findAll((n) => n.type === KeyboardDismissBar && n.props.modal === true)).toHaveLength(1);
+  });
+
   it('다시 보지 않기 = 종료 기록 + never_again → 닫힘', async () => {
     const t = mount();
     await act(async () => { byId(t, 'feedback-prompt-never').props.onPress(); });

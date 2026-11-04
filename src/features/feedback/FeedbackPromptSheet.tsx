@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
+import { KeyboardDismissBar } from '@/components/KeyboardDismissBar';
 import { IconClose } from '@/components/icons';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -32,6 +33,8 @@ export function FeedbackPromptSheet({ open, onClose, onDismiss }: { open: boolea
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={() => back.current?.()} onDismiss={onDismiss}>
       {open && <SheetBody open={open} onClose={onClose} backRef={back} />}
+      {/* #421 Codex P2: Modal = 별도 네이티브 루트 — 루트의 안드 내리기 바가 Modal 뒤에 가린다 → 입력 Modal마다 modal 변형(iOS null) */}
+      <KeyboardDismissBar modal />
     </Modal>
   );
 }
