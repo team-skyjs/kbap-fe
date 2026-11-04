@@ -234,7 +234,7 @@ describe('배선 소스 잠금', () => {
     expect(home).toContain('abortFeedback(); };');
     const users = files('src').filter((f) => /presentHomeFeedbackPrompt\(|<FeedbackPromptSheet/.test(read(f)));
     expect(users.sort()).toEqual(['src/app/(tabs)/index.tsx', 'src/features/feedback/feedbackPrompt.ts']);
-    expect(read('src/app/_layout.tsx')).toContain('useEffect(() => { void recordLaunch(); }, []);');
+    expect(read('src/app/_layout.tsx')).toContain('useEffect(() => void recordLaunch(), []);');
   });
 
   it('다른 일회성 시트 4종이 띄우기로 정한 순간 자리를 찍는다 · 스캔 종료 넛지·리뷰 유도는 피드백 시트가 떠 있으면 비켜 준다', () => {

@@ -83,7 +83,7 @@ function AppRoot() {
   // P-217: 인트로 3슬라이드 폐지(멘토링 8/15) — 최초 실행 = **로그인 직행**.
   // 판별은 freshInstall 센티널 하나(구 introSeen 플래그·모듈 소멸).
   const needsLogin = useRef(false);
-  useEffect(() => { void recordLaunch(); }, []); // KB-986: 콜드 스타트 수(재방문 피드백 시트 대상 판정) — 런타임당 1회
+  useEffect(() => void recordLaunch(), []); // KB-986: 콜드 스타트 수(재방문 피드백 시트 대상 판정) — 런타임당 1회
 
   useEffect(() => {
     // P-041(KB-152 재수정): **정리가 프리페치·렌더 모두보다 선행**. 기존 주석

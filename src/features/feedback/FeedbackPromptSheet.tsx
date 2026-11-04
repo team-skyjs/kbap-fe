@@ -16,7 +16,7 @@ import { Txt as Text } from '@/components/Txt';
 import { IconClose } from '@/components/icons';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { useBottomInset } from '@/lib/useBottomInset';
-import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
+import { KAV_BEHAVIOR, KAV_OFFSET } from '@/lib/keyboardAvoid';
 import { EVENTS, track } from '@/lib/analytics';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { FeedbackFields, useFeedbackForm } from './FeedbackForm';
@@ -77,9 +77,9 @@ function SheetBody({ open, onClose, backRef }: { open: boolean; onClose: () => v
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID="feedback-prompt-kav">
+      <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET} testID="feedback-prompt-kav">
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, swipe.dimStyle]} pointerEvents="none" />
-        <Pressable style={{ flex: 1 }} onPress={() => requestClose('backdrop')} noTrack testID="feedback-prompt-backdrop" />
+        <Pressable style={{ flex: 1 }} onPress={() => requestClose('backdrop')} testID="feedback-prompt-backdrop" />
         <Animated.View style={[styles.sheet, { paddingBottom: 20 + bottom }, swipe.sheetStyle]} onLayout={swipe.onSheetLayout} testID="feedback-prompt">
           <GestureDetector gesture={swipe.gesture}>
             <View testID="feedback-prompt-head">
