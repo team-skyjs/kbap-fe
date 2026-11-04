@@ -1287,7 +1287,11 @@
     "noAvoidMatchTitle": "확인한 성분 중 피하는 재료 없음",
     "safeBasis_one": "피하는 재료 {{count}}개와 성분표를 대조했어요.",
     "safeBasis_other": "피하는 재료 {{count}}개와 성분표를 대조했어요.",
-    "findMore": "더 찾아보기"
+    "findMore": "더 찾아보기",
+    "ingredients": {
+      "seeAll": "전체 보기",
+      "showLess": "접기"
+    }
   },
   "scanMode": {
     "menu": "메뉴판",

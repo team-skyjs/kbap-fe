@@ -1287,7 +1287,11 @@
     "noAvoidMatchTitle": "Tidak cocok dengan daftar hindari",
     "safeBasis_one": "Kami sudah mencocokkan label dengan {{count}} bahan yang kamu hindari.",
     "safeBasis_other": "Kami sudah mencocokkan label dengan {{count}} bahan yang kamu hindari.",
-    "findMore": "Cari lagi"
+    "findMore": "Cari lagi",
+    "ingredients": {
+      "seeAll": "Lihat semua",
+      "showLess": "Tampilkan lebih sedikit"
+    }
   },
   "scanMode": {
     "menu": "Menu",

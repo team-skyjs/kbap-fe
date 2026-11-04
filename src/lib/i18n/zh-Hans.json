@@ -1287,7 +1287,11 @@
     "noAvoidMatchTitle": "与避免清单无匹配",
     "safeBasis_one": "已将标签与你要避免的 {{count}} 种食材进行比对。",
     "safeBasis_other": "已将标签与你要避免的 {{count}} 种食材进行比对。",
-    "findMore": "继续查找"
+    "findMore": "继续查找",
+    "ingredients": {
+      "seeAll": "查看全部",
+      "showLess": "收起"
+    }
   },
   "scanMode": {
     "menu": "菜单",
