@@ -1,6 +1,6 @@
 /**
- * KB-979 — 홈·알림함 광고성 동의 시트.
- * 게이트 순수 함수(로컬 날짜·같은 날·어제·미래) · 홈 큐 스텝(런타임 1회·게스트·동의·실패·abort·코치마크 뒤·재가입) ·
+ * KB-979 → KB-987 — 홈·알림함 광고성 동의 시트.
+ * 게이트 순수 함수(3시간) · 홈 큐 스텝(3시간·시계 되돌림·게스트·동의 캐시·실패·abort·코치마크 뒤·재가입) ·
  * 확인(공용 PATCH·권한 undetermined만 요청·실패 토스트) · 알림함(transitionEnd 뒤·포커스마다·덮개 대기) · ScanExitPrompts 상호 배제 · 계측 화이트리스트.
  */
 /* eslint-disable import/first, @typescript-eslint/no-require-imports -- jest.mock 뒤 · 호이스팅되는 목 팩토리 안은 require만 가능 */
@@ -44,6 +44,11 @@ jest.mock('@/lib/push/pushAdapter', () => ({
   requestPermission: () => mockRequestPermission(),
   registerPushToken: () => mockRegister(),
 }));
+const mockTrack = jest.fn();
+jest.mock('@/lib/analytics', () => {
+  const actual = jest.requireActual('@/lib/analytics');
+  return { ...actual, track: (...a: unknown[]) => mockTrack(...a) };
+});
 const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
 // 시트 본체(NotificationSheet)는 notificationSheet497 담당 — 여기선 넘겨받은 props만
@@ -91,14 +96,14 @@ import { pushOcclusion, _resetOcclusionForTest } from '@/lib/engagement/occlusio
 import { sanitize, EVENTS } from '@/lib/analytics';
 import { MARKETING_CONSENT_PATCH } from '@/lib/push/consent';
 import {
-  HOME_SHOWN_DATE_KEY,
+  HOME_INTERVAL_MS,
+  HOME_LAST_SHOWN_KEY,
   _resetMarketingConsentForTest,
+  homeConsentDue,
   isMarketingConsentActive,
   isUnconsented,
-  localDateKey,
   presentHomeMarketingConsent,
   setMarketingConsentActive,
-  shouldCheckHome,
 } from '../marketingConsentPrompt';
 import { InboxMarketingConsent, MarketingConsentSheet } from '../MarketingConsentSheet';
 import { ScanExitPrompts, armScanExitPrompt, fireScanExitPrompt } from '@/features/scan/ScanExitPrompts';
@@ -137,29 +142,25 @@ beforeEach(async () => {
   mockRefetch.mockClear();
   mockPrimer.open = false;
 });
-afterEach(() => { act(() => trees.forEach((t) => t.unmount())); trees.length = 0; });
+afterEach(() => { act(() => trees.forEach((t) => t.unmount())); trees.length = 0; jest.restoreAllMocks(); });
 
 const step = (signal = new AbortController().signal) => {
   const show = jest.fn();
   const done = jest.fn();
   return { show, done, run: () => presentHomeMarketingConsent(show, done, signal) };
 };
-const today = () => localDateKey(new Date());
+const NOW = 1_800_000_000_000;
+const H = 60 * 60 * 1000;
+let now = NOW;
+beforeEach(() => { now = NOW; jest.spyOn(Date, 'now').mockImplementation(() => now); });
 
 describe('게이트 순수 함수', () => {
-  it('localDateKey = 기기 로컬 날짜(자정 경계는 로컬 시계) · 0 패딩', () => {
-    expect(localDateKey(new Date(2026, 10, 4, 0, 5))).toBe('2026-11-04');
-    expect(localDateKey(new Date(2026, 10, 3, 23, 59))).toBe('2026-11-03');
-    expect(localDateKey(new Date(2026, 0, 9, 12))).toBe('2026-01-09');
-    // UTC 금지 — 로컬 구성요소와 같아야 한다(TZ와 무관하게)
-    const d = new Date(Date.UTC(2026, 10, 4, 23, 30));
-    expect(localDateKey(d)).toBe(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
-  });
-  it('shouldCheckHome: 같은 날 = skip · 어제·미래(시계 되돌림)·없음 = 통과', () => {
-    expect(shouldCheckHome('2026-11-04', '2026-11-04')).toBe(false);
-    expect(shouldCheckHome('2026-11-03', '2026-11-04')).toBe(true);
-    expect(shouldCheckHome('2026-11-05', '2026-11-04')).toBe(true);
-    expect(shouldCheckHome(null, '2026-11-04')).toBe(true);
+  it('homeConsentDue: 없음 = 통과 · 2:59:59 = skip · 3:00:00 이상 = 통과', () => {
+    expect(HOME_INTERVAL_MS).toBe(3 * H);
+    expect(homeConsentDue(null, NOW)).toBe(true);
+    expect(homeConsentDue(NOW - (3 * H - 1000), NOW)).toBe(false);
+    expect(homeConsentDue(NOW - 3 * H, NOW)).toBe(true);
+    expect(homeConsentDue(NOW - 30 * H, NOW)).toBe(true);
   });
   it('isUnconsented: 둘 중 하나라도 null = 미동의', () => {
     expect(isUnconsented(UNCONSENTED)).toBe(true);
@@ -169,28 +170,39 @@ describe('게이트 순수 함수', () => {
 });
 
 describe('홈 큐 스텝', () => {
-  it('미동의 = 시트 1 + 오늘 날짜 기록 · 같은 런타임 두 번째 = GET 0·시트 0', async () => {
+  it('미동의 = 시트 1 + 노출 시각(epoch ms) 기록 · 3시간 안 두 번째 = GET 0·시트 0(런타임 리셋 없이도)', async () => {
     const a = step();
     expect(await a.run()).toBe(true);
     expect(a.show).toHaveBeenCalledWith(a.done);
     expect(mockFetch).toHaveBeenCalledTimes(1);
     await flush();
-    expect(await AsyncStorage.getItem(HOME_SHOWN_DATE_KEY)).toBe(today());
+    expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBe(String(NOW));
+    now = NOW + 3 * H - 1000;
     const b = step();
     expect(await b.run()).toBe(false);
     expect(mockFetch).toHaveBeenCalledTimes(1);
     expect(b.show).not.toHaveBeenCalled();
   });
 
-  it('저장 날짜 == 오늘(나중에 후 같은 날 재시작) = GET 0 · 어제·미래 = 판정', async () => {
-    await AsyncStorage.setItem(HOME_SHOWN_DATE_KEY, today());
+  it('1시간 전 = GET 0 · 3시간 경과 = 판정(콜드 스타트 리셋 없이) · 미래값 = 시트 0 + now로 보정 · 깨진 값 = 통과', async () => {
+    await AsyncStorage.setItem(HOME_LAST_SHOWN_KEY, String(NOW - H));
     expect(await step().run()).toBe(false);
     expect(mockFetch).not.toHaveBeenCalled();
-    _resetMarketingConsentForTest(); // 새 런타임
-    await AsyncStorage.setItem(HOME_SHOWN_DATE_KEY, '2000-01-01');
+    now = NOW + 2 * H; // 마지막 노출 후 3시간
     expect(await step().run()).toBe(true);
-    _resetMarketingConsentForTest();
-    await AsyncStorage.setItem(HOME_SHOWN_DATE_KEY, '2999-12-31');
+    await flush();
+    expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBe(String(NOW + 2 * H));
+    // 시계 되돌림 — 저장값이 미래
+    now = NOW;
+    const f = step();
+    expect(await f.run()).toBe(false);
+    expect(f.show).not.toHaveBeenCalled();
+    await flush();
+    expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBe(String(NOW)); // 기준점 재설정(안 하면 미래 시각까지 영영 막힘)
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    now = NOW + 3 * H;
+    expect(await step().run()).toBe(true); // 보정된 기준점에서 3시간
+    await AsyncStorage.setItem(HOME_LAST_SHOWN_KEY, 'garbage');
     expect(await step().run()).toBe(true);
   });
 
@@ -210,31 +222,41 @@ describe('홈 큐 스텝', () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it('동의 회원 = 시트 0·날짜 기록 0 · 런타임 소모(그날 다시 GET 안 함)', async () => {
+  it('동의 회원 = 시트 0·기록 0 · 두 번째 포커스 = 캐시로 GET 0 · 인증 경계(queryClient.clear) 후 = 다시 GET', async () => {
     mockFetch.mockResolvedValue(CONSENTED);
     const a = step();
     expect(await a.run()).toBe(false);
     expect(a.show).not.toHaveBeenCalled();
     await flush();
-    expect(await AsyncStorage.getItem(HOME_SHOWN_DATE_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBeNull();
     expect(await step().run()).toBe(false);
     expect(mockFetch).toHaveBeenCalledTimes(1);
+    queryClient.clear();
+    expect(await step().run()).toBe(false);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('미동의로 캐시된 세션은 매 판정마다 서버 재확인(캐시 생략은 동의일 때만)', async () => {
+    expect(await step().run()).toBe(true);
+    now = NOW + 3 * H;
+    expect(await step().run()).toBe(true);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
   it('재가입: 이전 회원이 동의했던 기기여도 서버 null이면 노출(로컬 동의 캐시 없음)', async () => {
     mockFetch.mockResolvedValue(CONSENTED);
     expect(await step().run()).toBe(false);
     expect(await AsyncStorage.getAllKeys()).toEqual([]); // 동의 사실은 아무것도 저장하지 않는다
-    _resetMarketingConsentForTest(); // 탈퇴 → 재가입 → 새 런타임
+    queryClient.clear(); // 탈퇴 → 재가입(인증 경계가 캐시를 비운다)
     mockFetch.mockResolvedValue(UNCONSENTED);
     expect(await step().run()).toBe(true);
-    expect(await AsyncStorage.getAllKeys()).toEqual([HOME_SHOWN_DATE_KEY]);
+    expect(await AsyncStorage.getAllKeys()).toEqual([HOME_LAST_SHOWN_KEY]);
   });
 
   it('GET 실패 = 시트 0·소모 0(다음 포커스 재판정)', async () => {
     mockFetch.mockRejectedValueOnce(new Error('net'));
     expect(await step().run()).toBe(false);
-    expect(await AsyncStorage.getItem(HOME_SHOWN_DATE_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBeNull();
     expect(await step().run()).toBe(true);
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
@@ -263,7 +285,7 @@ describe('홈 큐 스텝', () => {
     ac2.abort();
     expect(await p2).toBe(false);
     release();
-    expect(await AsyncStorage.getItem(HOME_SHOWN_DATE_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBeNull();
     expect(await step().run()).toBe(true); // 소모 0
   });
 
@@ -281,6 +303,13 @@ describe('홈 큐 스텝', () => {
     act(() => release());
     expect(await p).toBe(true);
     expect(s.show).toHaveBeenCalledTimes(1);
+  });
+
+  it('홈 화면: 포커스 동안 전경 복귀(AppState active)마다 같은 스텝 재등록 · 블러에 구독 해제 · 콜드 스타트 플래그 없음(소스 잠금)', () => {
+    const src = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8');
+    expect(src).toMatch(/AppState\.addEventListener\('change', \(st\) => \{ if \(st === 'active'\) addConsent\(\); \}\)/);
+    expect(src).toContain('return () => { sub.remove(); modalQueue.clear();');
+    expect(fs.readFileSync('src/features/push/marketingConsentPrompt.ts', 'utf8')).not.toContain('homeChecked');
   });
 
   it('코치마크 스텝 뒤 — 코치마크가 완전히 닫히기(done) 전엔 판정·시트 0', async () => {
@@ -308,10 +337,11 @@ describe('확인 — 공용 PATCH + OS 권한', () => {
     expect(mockSheet.last).toMatchObject({ open: true, variant: 'consent', consentSurface: 'home', title: 'push.consentPromptTitle', body: 'push.consentPromptBody', confirmLabel: 'push.consentConfirm' });
   });
   it('PATCH body == 계약(설정 화면과 같은 상수) · undetermined → 요청 → 허용 = 토큰 등록 → 닫기', async () => {
-    expect(MARKETING_CONSENT_PATCH).toEqual({ news: { consent: true, privacyConsentVersion: 2, receiveConsentVersion: 2, enabled: true, mealTime: true } });
+    expect(MARKETING_CONSENT_PATCH).toEqual({ activity: true, news: { consent: true, privacyConsentVersion: 2, receiveConsentVersion: 2, enabled: true, mealTime: true } });
     const onClose = mount();
     await act(async () => { await mockSheet.last!.onConfirm(); });
     expect(mockPatch).toHaveBeenCalledWith(MARKETING_CONSENT_PATCH);
+    expect(mockPatch.mock.calls[0][0].activity).toBe(true);
     expect(mockRequestPermission).toHaveBeenCalledTimes(1);
     expect(mockRegister).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -329,6 +359,13 @@ describe('확인 — 공용 PATCH + OS 권한', () => {
       expect(mockRequestPermission).not.toHaveBeenCalled();
     }
   });
+  it('확인 = push_pref_toggle{activity,on,source:consent} 1건, PATCH 직전(실패해도 1건 — A-3)', async () => {
+    mockPatch.mockImplementationOnce(async () => { expect(mockTrack).toHaveBeenCalledTimes(1); throw new Error('net'); });
+    mount();
+    await act(async () => { await mockSheet.last!.onConfirm(); });
+    const toggles = mockTrack.mock.calls.filter(([e]) => e === EVENTS.push_pref_toggle);
+    expect(toggles).toEqual([[EVENTS.push_pref_toggle, { key: 'activity', on: true, source: 'consent' }]]);
+  });
   it('PATCH 실패 = 오류 토스트 + 닫기 · OS 팝업 0', async () => {
     mockPatch.mockRejectedValueOnce(new Error('net'));
     const onClose = mount();
@@ -340,6 +377,7 @@ describe('확인 — 공용 PATCH + OS 권한', () => {
   it('설정 화면 confirmConsent도 같은 상수(소스 잠금)', () => {
     const src = fs.readFileSync('src/app/profile/notifications.tsx', 'utf8');
     expect(src).toContain('patch(MARKETING_CONSENT_PATCH)');
+    expect(src).toContain("track(EVENTS.push_pref_toggle, { key: 'activity', on: true, source: 'consent' })"); // KB-987
     expect(src).toContain('consentSurface="settings"');
     expect(src).not.toContain('privacyConsentVersion: PRIVACY_CONSENT_VERSION');
   });
@@ -440,7 +478,7 @@ describe('P-599 플래그 OFF(운영) — 노출·이벤트·큐 소모 0, 다�
     expect(await a.run()).toBe(false);
     expect(mockFetch).not.toHaveBeenCalled();
     expect(a.show).not.toHaveBeenCalled();
-    expect(await AsyncStorage.getItem(HOME_SHOWN_DATE_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBeNull();
     FLAGS.marketingConsentPrompt = true;
     const b = step();
     expect(await b.run()).toBe(true);
@@ -478,7 +516,7 @@ describe('P-599 플래그 OFF(운영) — 노출·이벤트·큐 소모 0, 다�
   });
 
   it('진입점 게이트 소스 잠금: 홈 스텝 첫 줄 · 알림함 마운트 · 플래그 = DEV_SERVER_CHANNEL', () => {
-    expect(fs.readFileSync('src/features/push/marketingConsentPrompt.ts', 'utf8')).toContain('if (!FLAGS.pushEnabled || !FLAGS.marketingConsentPrompt || homeChecked) return false;');
+    expect(fs.readFileSync('src/features/push/marketingConsentPrompt.ts', 'utf8')).toContain('if (!FLAGS.pushEnabled || !FLAGS.marketingConsentPrompt) return false;');
     expect(fs.readFileSync('src/app/notifications.tsx', 'utf8')).toContain('{FLAGS.marketingConsentPrompt && <InboxMarketingConsent />}');
     expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toMatch(/\n  marketingConsentPrompt: DEV_SERVER_CHANNEL,\n/);
   });
@@ -518,5 +556,8 @@ describe('계측 화이트리스트', () => {
     expect(EVENTS.push_consent_view).toBe('push_consent_view');
     expect(sanitize(EVENTS.push_consent_view, { surface: 'home', x: 1 })).toEqual({ surface: 'home' });
     expect(sanitize(EVENTS.push_consent_response, { action: 'confirm', surface: 'inbox', target: 'privacy', y: 2 })).toEqual({ action: 'confirm', surface: 'inbox', target: 'privacy' });
+  });
+  it('push_pref_toggle{key,on,source} — KB-987 source 통과', () => {
+    expect(sanitize(EVENTS.push_pref_toggle, { key: 'activity', on: true, source: 'consent', z: 3 })).toEqual({ key: 'activity', on: true, source: 'consent' });
   });
 });

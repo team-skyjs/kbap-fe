@@ -7,6 +7,13 @@
 - flags.ts marketingConsentPrompt = DEV_SERVER_CHANNEL(teamtest dev 타깃·development ON, production OFF) — 예진: 운영 OTA엔 시트 끔.
 - 게이트 = 진입점 두 곳: 홈 큐 스텝 첫 줄(즉시 false — 설정 GET·날짜 기록·대기·런타임 소모 0, 큐는 다음 스텝으로) · 알림함 InboxMarketingConsent 마운트(OFF = 마운트 0). #416 로직 무변.
 - OFF면 isMarketingConsentActive가 계속 false라 ScanExitPrompts·useReviewPrompt(blocked) 동작은 #416 전과 같다.
+## 2026-11-04 · P-597 KB-987 광고성 동의 시트 토스 B안 + 홈 3시간 주기
+
+- NotificationSheet consent 변형만 B안(흰 플랫 pt36·pb34·ph24, 그림자·핸들 0 · 제목 24/32 Bold 최대 3줄 네이티브 축소 하한 0.8 · 본문 15/22 ink3 · 회색 박스 없이 체크 원 22(on primary / off line2 + 흰 체크, 메트릭 동일 P-151) + 전문 보기 chevron(accessibilityLabel notif.viewFull, 44pt) · 확인 Btn minHeight 56 알약 · 나중에 15 ink3 높이 48). primer(스캔 직후 OS 권한 안내)는 그대로 — 497 (j2) 잠금.
+- 제목 실측(macOS CoreText = iOS 시스템 폰트, 360pt 폭): 10개 로케일 모두 축소 없이 ≤3줄. 큰글씨 ×1.3에선 en·es·ru ≈0.87, id 0.80이 필요해 하한을 0.9 → 0.8.
+- 홈 게이트: 콜드 스타트·하루 1회 → 마지막 노출 후 3시간(homeLastShownAt epoch ms, 실제로 띄운 순간만 기록). 미래값(시계 되돌림) = now로 재설정 후 이번엔 미노출. homeChecked 삭제 · 이미 동의로 캐시된 세션은 GET 생략(인증 경계 queryClient.clear()가 캐시를 비움). 구 키 homeShownDate는 방치(업데이트 직후 1회 추가 노출 허용).
+- 백그라운드 복귀는 focus를 다시 쏘지 않아 홈이 포커스인 동안 AppState active마다 같은 스텝 재등록.
+- 확인 PATCH(MARKETING_CONSENT_PATCH) activity:true 추가 · push_pref_toggle {key:activity,on:true,source:consent} 1건(홈·알림함·설정, PATCH 직전) · analytics ALLOWED에 source.
 
 ## 2026-11-04 · P-596 KB-982 메뉴판 스캔 음식 상세에 메뉴 담기
 

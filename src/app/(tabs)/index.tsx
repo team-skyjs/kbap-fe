@@ -6,7 +6,7 @@
  * 구 표면(인사말·식단 배너·스캔 CTA·Safe for you·카테고리)은 시안 부재로 제거.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AppState, FlatList, RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
@@ -97,16 +97,19 @@ function HomeBody() {
   });
   const showHomeCoach = homeCoach.show;
   const abortHomeCoach = homeCoach.abort;
-  // KB-979: 미동의 회원 = 콜드 스타트 1회·하루 1회 동의 시트(코치마크가 완전히 닫힌 뒤)
+  // KB-979 → KB-987: 미동의 회원 = 홈 포커스마다 마지막 노출 후 3시간이면 동의 시트(코치마크가 완전히 닫힌 뒤)
   const consent = useMarketingConsentSheet('home');
   const showConsent = consent.show;
   const abortConsent = consent.abort;
   useFocusEffect(
     useCallback(() => {
       modalQueue.add({ key: 'packagedCoach', present: (done, signal) => presentHomeCoach(showHomeCoach, done, signal) });
-      modalQueue.add({ key: 'marketingConsent', present: (done, signal) => presentHomeMarketingConsent(showConsent, done, signal) });
+      const addConsent = () => modalQueue.add({ key: 'marketingConsent', present: (done, signal) => presentHomeMarketingConsent(showConsent, done, signal) });
+      addConsent();
+      // KB-987: 백그라운드 복귀는 focus를 다시 쏘지 않는다 — 홈이 포커스인 동안만 전경 전환마다 같은 판정(3시간 게이트가 중복을 거른다)
+      const sub = AppState.addEventListener('change', (st) => { if (st === 'active') addConsent(); });
       // 블러 = 대기 스텝 폐기 + 떠 있는 코치마크·동의 시트도 닫기(#398 Codex — 목적지 탭 위에 남지 않게)
-      return () => { modalQueue.clear(); abortHomeCoach(); abortConsent(); };
+      return () => { sub.remove(); modalQueue.clear(); abortHomeCoach(); abortConsent(); };
     }, [modalQueue, showHomeCoach, abortHomeCoach, showConsent, abortConsent]),
   );
   const recent = home?.recent ?? [];

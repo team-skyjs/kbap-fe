@@ -1,6 +1,6 @@
 /**
  * MarketingConsentSheet (KB-979) — 홈·알림함 광고성 동의 시트. 기존 NotificationSheet consent 변형 + 새 제목·본문.
- * 확인 = 설정 화면과 같은 PATCH(MARKETING_CONSENT_PATCH) → OS 권한 `undetermined`면 요청 → 허용 시 토큰 등록 → 닫기
+ * 확인 = 설정 화면과 같은 PATCH(MARKETING_CONSENT_PATCH — KB-987: activity도 ON) → OS 권한 `undetermined`면 요청 → 허용 시 토큰 등록 → 닫기
  * (PushPrimerModal.accept와 같은 순서: 시트가 열린 채 OS 팝업). PATCH 실패 = 오류 토스트 후 닫기(OS 팝업 0 — 다음 기회에 다시 묻는다).
  * 동의되면 PATCH 응답이 설정 캐시를 교체해 알림함은 다음 포커스부터 자동 미노출.
  */
@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { NotificationSheet } from '@/features/push/NotificationSheet';
 import { showTopToast } from '@/components/topToastStore';
 import { FLAGS } from '@/lib/flags';
+import { EVENTS, track } from '@/lib/analytics';
 import { MARKETING_CONSENT_PATCH } from '@/lib/push/consent';
 import { patchNotificationSettings, useNotificationSettings } from '@/lib/data/useNotificationSettings';
 import { getPermissionStatus, registerPushToken, requestPermission } from '@/lib/push/pushAdapter';
@@ -22,6 +23,7 @@ type Surface = 'home' | 'inbox';
 export function MarketingConsentSheet({ open, surface, onClose, onDismiss }: { open: boolean; surface: Surface; onClose: () => void; onDismiss?: () => void }) {
   const { t } = useTranslation();
   const confirm = async () => {
+    track(EVENTS.push_pref_toggle, { key: 'activity', on: true, source: 'consent' }); // KB-987: PATCH가 activity도 켠다(실패해도 1건 — 계획 A-3)
     try {
       await patchNotificationSettings(MARKETING_CONSENT_PATCH);
     } catch {
