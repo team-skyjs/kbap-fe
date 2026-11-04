@@ -1,3 +1,8 @@
+## 2026-11-05 · P-608 KB-965 히어로 캐러셀 5초·느린 전환(예진 11/5 실기)
+
+- HeroGallery(음식·가공식품 공통): 자동 넘김 AUTO_SLIDE_MS 2000 → 5000. 스와이프 뒤 재시작 규칙 무변.
+- 전환: 플랫폼 animated 스크롤(~300ms)은 시간 인자가 없어 SLIDE_MS 600 동안 requestAnimationFrame으로 직접 그린다(Easing.inOut(ease) — 가속 후 감속, 기본 페이지 스크롤과 같은 계열). 순환(마지막 → 처음)은 기존대로 즉시. 전환 중 닿으면 그 프레임에서 멈추고 손가락에 넘긴다.
+- ponytail: JS 프레임 구동 — 실기에서 끊기면 reanimated scrollTo(UI 스레드)로. 제스처 영역이라 실기 확인 뒤 발행.
 ## 2026-11-05 · P-607 KB-997 가공식품 원재료 3줄 미리 보기(예진 11/5 실기)
 
 - 접힘 = "Ingredients" + 번역(없으면 한국어 원문) 3줄(numberOfLines 3) + 아래 페이드(expo-linear-gradient, 바탕 → 투명, 40) + See all. "Ingredients and source" 알약 대체.
