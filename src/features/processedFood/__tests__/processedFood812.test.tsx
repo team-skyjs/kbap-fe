@@ -245,6 +245,9 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(adaptProcessedDetail({ ...V4, kcal: -5 }).kcal).toBeNull();
     expect(adaptProcessedDetail({ ...V4, kcal: NaN }).kcal).toBeNull();
     expect(adaptProcessedDetail({ ...V4, kcal: 469.6 }).kcal).toBe(470);
+    // dev 실응답(S-957 #562, 11/5 대조 — Swagger integer·nullable): 5817 칸타타 아이스 블랙 7 · 2291 스파게티컵 485 · 1625 마이구미 204 · 14726 묶음 용량 갈림 = null
+    for (const [kcal, want] of [[7, 7], [485, 485], [204, 204], [null, null]] as const) expect(adaptProcessedDetail({ ...V4, kcal }).kcal).toBe(want);
+    expect(t.root.findAll((n) => n.props?.testID === 'pf-kcal' && typeof n.type === 'string').length).toBe(1);
     // 유형이 없어도 kcal만으로 메타 줄이 선다
     const only = detail({ type: null, foodType: null, kcal: 120 });
     expect(ids(only)).toEqual(expect.arrayContaining(['pf-meta', 'pf-kcal']));

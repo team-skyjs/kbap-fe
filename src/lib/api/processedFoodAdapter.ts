@@ -104,7 +104,7 @@ export type DetailWire = SummaryWire & {
   /** KB-965(S-953, 가산·옵셔널): kind = 누끼·실사진 구분 — 화면은 모든 장을 같은 바탕·contain으로 그려 아직 쓰지 않는다 */
   images?: { url?: string | null; kind?: string | null }[] | null; // S-953: Swagger는 url·kind 필수 — 운영 서버 배포 전·이상값 방어로 옵셔널 유지
   capacity?: string | null;
-  kcal?: number | null; // KB-989 — 서버 배포 전 옵셔널
+  kcal?: number | null; // KB-989(S-957 #562) — dev Swagger integer·nullable 대조 11/5. 운영 배포 전 방어로 옵셔널 유지
 
   rawMaterials?: string | null;
   allergens?: string | null;
