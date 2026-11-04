@@ -1424,5 +1424,26 @@
     "homeTitle": "¡Escanea también comida de tiendas de conveniencia!",
     "homeBody": "Mira qué llevan los snacks, el ramyeon y las bebidas.",
     "foodBody": "Explora comida de tiendas de conveniencia, lo más popular primero."
+  },
+  "ocrCollector": {
+    "prepared": "Las fotos están listas. Revisa los datos del dispositivo y comienza.",
+    "import": "Importar manifest y 32 fotos desde Archivos",
+    "title": "Recogida de entradas ML Kit",
+    "intro": "Guarda texto y coordenadas de 32 fotos de desarrollo en el dispositivo. Tras descargarlas, puedes usar el modo avión. No es una prueba final de calidad.",
+    "host": "Dirección IPv4 local del Mac de desarrollo",
+    "download": "Descargar 32 fotos",
+    "progress": "{{done}} / {{total}} fotos",
+    "model": "Confirma e introduce el modelo del dispositivo",
+    "physical": "Dispositivo físico. Toca para simulador",
+    "simulator": "Simulador. Toca para dispositivo físico",
+    "run": "Procesar fotos restantes",
+    "cancel": "Detener",
+    "export": "Exportar JSON",
+    "retry": "Reintentar esta foto",
+    "stopping": "Se detuvo la cola. Espera a que termine la tarea activa.",
+    "error": "No se pudo terminar. Revisa la dirección, los archivos y el dispositivo e inténtalo de nuevo.",
+    "saved": "Los resultados terminados están guardados en el dispositivo.",
+    "ok": "{{id}}: {{count}} líneas, {{ms}} ms",
+    "failed": "{{id}}: error {{code}}, {{ms}} ms"
   }
 }

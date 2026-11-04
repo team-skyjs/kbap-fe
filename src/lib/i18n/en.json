@@ -1420,5 +1420,26 @@
     "homeTitle": "Scan convenience store food, too!",
     "homeBody": "Check what's in snacks, ramyeon and drinks.",
     "foodBody": "Browse convenience store food, most popular first."
+  },
+  "ocrCollector": {
+    "prepared": "Photos are ready. Check device details and start.",
+    "import": "Import manifest and 32 photos from Files",
+    "title": "ML Kit input collector",
+    "intro": "Save text and boxes from 32 development photos locally. After downloading, you can run in airplane mode. This is not a final quality test.",
+    "host": "Development Mac local IPv4 address",
+    "download": "Download 32 photos",
+    "progress": "{{done}} / {{total}} photos",
+    "model": "Confirm and enter device model",
+    "physical": "Physical device. Tap for simulator",
+    "simulator": "Simulator. Tap for physical device",
+    "run": "Run remaining photos",
+    "cancel": "Stop",
+    "export": "Export JSON",
+    "retry": "Retry this photo",
+    "stopping": "Stopped scheduling. Wait for the active task to finish.",
+    "error": "Could not finish. Check the address, files and device details, then retry.",
+    "saved": "Completed results are saved on this device.",
+    "ok": "{{id}}: {{count}} lines, {{ms}} ms",
+    "failed": "{{id}}: error {{code}}, {{ms}} ms"
   }
 }

@@ -10,6 +10,9 @@
  * 정착 뒤 일반 화면(탭·탭 밖 상세 스택)에선 즉시 이동.
  */
 import * as React from 'react';
+import * as Updates from 'expo-updates';
+import { BE_BASE } from '@/lib/data/config';
+import { allowed as collectorAllowed } from '@/features/ocrCollector/protocol';
 import { router, type Href } from 'expo-router';
 
 export const DEEPLINK_SCHEME = 'kbap';
@@ -59,6 +62,10 @@ export function resolveDeeplink(url: string): string | null {
     path = decodeURIComponent(m[1]);
   } catch {
     return null;
+  }
+  // Internal development tool: not part of the public marketing-link table.
+  if (/^\/?ocr-collector\/?$/i.test(path)) {
+    return collectorAllowed(Updates.channel, __DEV__, BE_BASE) ? '/ocr-collector' : null;
   }
   return match(path);
 }

@@ -1424,5 +1424,26 @@
     "homeTitle": "便利店食品也能扫描！",
     "homeBody": "看看零食、拉面和饮料里有什么。",
     "foodBody": "按人气浏览便利店食品。"
+  },
+  "ocrCollector": {
+    "prepared": "照片已准备好。请确认设备信息后运行。",
+    "import": "从文件导入manifest和32张照片",
+    "title": "ML Kit 输入采集",
+    "intro": "将32张开发照片的文字和坐标保存到设备。下载后可在飞行模式下运行。这不是最终性能测试。",
+    "host": "开发Mac的本地IPv4地址",
+    "download": "下载32张照片",
+    "progress": "{{done}} / {{total}}张",
+    "model": "确认并输入设备型号",
+    "physical": "真机。点击切换模拟器",
+    "simulator": "模拟器。点击切换真机",
+    "run": "运行剩余照片",
+    "cancel": "停止",
+    "export": "导出JSON",
+    "retry": "重试此照片",
+    "stopping": "已停止安排任务。请等待当前任务结束。",
+    "error": "未能完成。请检查地址、文件和设备信息后重试。",
+    "saved": "已完成的结果已保存在设备上。",
+    "ok": "{{id}}: {{count}}行，{{ms}} ms",
+    "failed": "{{id}}: 错误 {{code}}，{{ms}} ms"
   }
 }

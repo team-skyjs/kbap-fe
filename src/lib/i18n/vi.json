@@ -1424,5 +1424,26 @@
     "homeTitle": "Quét cả đồ ăn cửa hàng tiện lợi nữa!",
     "homeBody": "Xem bánh kẹo, mì ramyeon và đồ uống có gì bên trong.",
     "foodBody": "Xem đồ ăn cửa hàng tiện lợi, phổ biến nhất trước."
+  },
+  "ocrCollector": {
+    "prepared": "Ảnh đã sẵn sàng. Kiểm tra thông tin thiết bị rồi bắt đầu.",
+    "import": "Nhập manifest và 32 ảnh từ Tệp",
+    "title": "Thu thập đầu vào ML Kit",
+    "intro": "Lưu chữ và tọa độ từ 32 ảnh phát triển trên thiết bị. Sau khi tải, có thể chạy ở chế độ máy bay. Đây không phải kiểm thử chất lượng cuối cùng.",
+    "host": "Địa chỉ IPv4 cục bộ của Mac phát triển",
+    "download": "Tải 32 ảnh",
+    "progress": "{{done}} / {{total}} ảnh",
+    "model": "Xác nhận và nhập mẫu thiết bị",
+    "physical": "Thiết bị thật. Nhấn để chọn giả lập",
+    "simulator": "Giả lập. Nhấn để chọn thiết bị thật",
+    "run": "Chạy các ảnh còn lại",
+    "cancel": "Dừng",
+    "export": "Xuất JSON",
+    "retry": "Thử lại ảnh này",
+    "stopping": "Đã dừng xếp việc. Chờ tác vụ hiện tại kết thúc.",
+    "error": "Chưa hoàn tất. Kiểm tra địa chỉ, tệp và thông tin thiết bị rồi thử lại.",
+    "saved": "Kết quả đã hoàn tất được lưu trên thiết bị.",
+    "ok": "{{id}}: {{count}} dòng, {{ms}} ms",
+    "failed": "{{id}}: lỗi {{code}}, {{ms}} ms"
   }
 }

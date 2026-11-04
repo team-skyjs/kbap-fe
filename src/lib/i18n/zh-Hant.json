@@ -1424,5 +1424,26 @@
     "homeTitle": "便利商店食品也能掃描！",
     "homeBody": "看看零食、泡麵和飲料裡有什麼。",
     "foodBody": "依人氣瀏覽便利商店食品。"
+  },
+  "ocrCollector": {
+    "prepared": "照片已準備好。請確認裝置資訊後執行。",
+    "import": "從檔案匯入manifest和32張照片",
+    "title": "ML Kit 輸入收集",
+    "intro": "將32張開發照片的文字和座標儲存到裝置。下載後可在飛航模式下執行。這不是最終效能測試。",
+    "host": "開發Mac的本機IPv4位址",
+    "download": "下載32張照片",
+    "progress": "{{done}} / {{total}}張",
+    "model": "確認並輸入裝置型號",
+    "physical": "實機。點擊切換模擬器",
+    "simulator": "模擬器。點擊切換實機",
+    "run": "執行剩餘照片",
+    "cancel": "停止",
+    "export": "匯出JSON",
+    "retry": "重試此照片",
+    "stopping": "已停止安排工作。請等待目前工作結束。",
+    "error": "未能完成。請檢查位址、檔案和裝置資訊後重試。",
+    "saved": "已完成的結果已儲存在裝置上。",
+    "ok": "{{id}}: {{count}}行，{{ms}} ms",
+    "failed": "{{id}}: 錯誤 {{code}}，{{ms}} ms"
   }
 }
