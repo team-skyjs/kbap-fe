@@ -1286,7 +1286,12 @@
     "noAvoidMatchTitle": "No matches to your avoid list",
     "safeBasis_one": "We checked the label against your {{count}} avoided ingredient.",
     "safeBasis_other": "We checked the label against your {{count}} avoided ingredients.",
-    "findMore": "Find more"
+    "findMore": "Find more",
+    "kcal": "{{value}} kcal",
+    "ingredients": {
+      "seeAll": "See all",
+      "showLess": "Show less"
+    }
   },
   "scanMode": {
     "menu": "Menu",
