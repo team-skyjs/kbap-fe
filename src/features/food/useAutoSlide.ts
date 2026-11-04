@@ -62,6 +62,7 @@ export function useAutoSlide(count: number, paused: boolean, isReady?: (i: numbe
         return;
       }
       waitingRef.current = null;
+      indexRef.current = next; // 렌더 전에 다음 틱이 와도(묶인 틱) 이어서 센다 — 함수형 업데이트와 같은 누적
       setIndex(next);
     }, AUTO_SLIDE_MS);
   }, [stop]);
@@ -81,6 +82,7 @@ export function useAutoSlide(count: number, paused: boolean, isReady?: (i: numbe
     (next: number) => {
       holdRef.current = false; // 손을 뗐다 — 제스처 정지 해제
       waitingRef.current = null;
+      indexRef.current = next;
       setIndex(next);
       start();
     },
@@ -100,6 +102,7 @@ export function useAutoSlide(count: number, paused: boolean, isReady?: (i: numbe
     if (w == null || pausedRef.current || holdRef.current || !timerRef.current) return;
     if (readyRef.current && !readyRef.current(w)) return;
     waitingRef.current = null;
+    indexRef.current = w;
     setIndex(w);
     start();
   }, [start]);
