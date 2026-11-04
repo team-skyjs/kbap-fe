@@ -507,6 +507,23 @@ describe('드래그 — 누르면 멈추고, 손 뗀 뒤 스크롤이 멈춘 자
     expect(spy.mock.calls.length).toBe(n);
   });
 
+  it('Codex #432 P2: 자동 전환을 절반 넘어 닿았다 떼면(드래그 없음) 가까운 장으로 맞춘다 — 두 장 사이에 멈추지 않는다', async () => {
+    const tree = await renderIt();
+    const inst = tree.root.findByType(FlatList).instance as { scrollToOffset: (p: unknown) => void };
+    const spy = jest.spyOn(inst, 'scrollToOffset').mockImplementation(() => {});
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); }); // 0 → 1 전환 시작
+    act(() => { jest.advanceTimersByTime(Math.round(SLIDE_MS * 0.7)); }); // 절반 넘음(index는 이미 1)
+    const mid = (spy.mock.calls[spy.mock.calls.length - 1][0] as { offset: number }).offset;
+    expect(mid).toBeGreaterThan(WIDTH / 2);
+    expect(mid).toBeLessThan(WIDTH);
+    act(() => { list(tree).props.onTouchStart(); }); // 그 자리에서 멈춤
+    act(() => { list(tree).props.onTouchEnd(touchEv(0)); }); // 드래그 없이 뗌
+    spy.mockClear();
+    tick(QUIET_MS + 10);
+    expect(spy.mock.calls.map((c) => c[0])).toEqual([{ offset: WIDTH, animated: true }]); // 가까운 장(1)으로 정렬
+    expect(dotIdx(tree)).toBe(1);
+  });
+
   it('구조 잠금 — 사용자/타이머 이벤트 분류 코드가 되살아나지 않는다', () => {
     const g = read('src/features/food/HeroGallery.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
     expect(g).not.toContain('onMomentumScrollEnd');

@@ -93,8 +93,14 @@ export function HeroGallery({ urls, overlay, renderPage }: { urls: string[]; /**
       if (!touchingRef.current || !releasedRef.current) return; // 새 드래그가 시작됐다
       touchingRef.current = false;
       releasedRef.current = false;
-      const page = Math.round(offsetRef.current / width); // 스크롤이 멈춘 뒤라 최종 오프셋이다
-      onUserSwipe(Math.max(0, Math.min(urls.length - 1, page)));
+      const page = Math.max(0, Math.min(urls.length - 1, Math.round(offsetRef.current / width))); // 스크롤이 멈춘 뒤라 최종 오프셋이다
+      // Codex #432 P2: 자동 전환을 절반 넘어 닿았다 떼면 가까운 장 = 이미 넘긴 index — setIndex가 같은 값이라 스크롤 effect가
+      // 다시 안 돌아 두 장 사이에 멈춘다. 장 경계가 아니면 그 장으로 직접 맞춘다(사용자 놓음 = 네이티브 스냅 애니메이션).
+      if (Math.abs(offsetRef.current - page * width) >= 1) {
+        offsetRef.current = page * width;
+        listRef.current?.scrollToOffset({ offset: page * width, animated: true });
+      }
+      onUserSwipe(page);
     }, QUIET_MS);
   };
 
