@@ -19,8 +19,23 @@ import { isOccluded, subscribeOcclusion } from '@/lib/engagement/occlusion';
 export const HOME_LAST_SHOWN_KEY = 'kbap.marketingConsent.homeLastShownAt';
 const FETCH_CAP_MS = 8000;
 
-/** P-600: 홈 노출 기록이 없을 때만 — 한 번 띄운 기기는 영구 미노출(알림함은 별개) */
+/** P-600: 노출 기록이 없을 때만 — 한 번 띄운 기기는 영구 미노출(홈·알림함 공통 기록) */
 export const homeConsentDue = (last: number | null): boolean => last == null;
+
+/** P-600(#424 Codex P1 → 예진 11/4): 홈·알림함 **공통** 노출 기록 — 어느 쪽이든 한 번 떴으면 양쪽 다 0.
+ *  키 문자열은 기존 홈 키 그대로(이미 홈에서 본 기기 승계). true = 이미 노출 · false = 미노출 · null = 스토리지 오류(띄우지 않음). 깨진 값 = 미노출 */
+export async function consentShownBefore(): Promise<boolean | null> {
+  try {
+    const n = Number((await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)) ?? NaN);
+    return !homeConsentDue(Number.isFinite(n) ? n : null);
+  } catch {
+    return null;
+  }
+}
+/** 실제로 띄운 순간에만(홈·알림함 공통) */
+export function recordConsentShown(): void {
+  void AsyncStorage.setItem(HOME_LAST_SHOWN_KEY, String(Date.now())).catch(() => {});
+}
 /** 미동의 = 두 동의 중 하나라도 없음(홈·알림함 공용) */
 export const isUnconsented = (s: NotificationSettings): boolean => !s.news.privacyConsent || !s.news.receiveConsent;
 
@@ -34,14 +49,8 @@ export function setMarketingConsentActive(v: boolean): void {
 export async function presentHomeMarketingConsent(show: (done: () => void) => void, done: () => void, signal: AbortSignal): Promise<boolean> {
   if (!FLAGS.pushEnabled || !FLAGS.marketingConsentPrompt) return false; // P-599: 운영 OFF = 판정 전 즉시 false(GET·기록·대기 0 — 큐는 다음 스텝으로)
   if (getSessionState() !== true) return false; // 홈 응답 전에 스텝이 돈다 — home.authenticated 대신 세션
-  let last: number | null;
-  try {
-    const n = Number(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY) ?? NaN);
-    last = Number.isFinite(n) ? n : null; // 없음·깨진 값 = 통과
-  } catch {
-    return false; // 스토리지 오류 — 흐름 방해 금지(코치마크 선례)
-  }
-  if (!homeConsentDue(last)) return false; // P-600: 최초 1회 — 시계와 무관(기록 = 이미 노출)
+  // P-600: 최초 1회(홈·알림함 공통 기록) — 이미 노출·스토리지 오류(null) = 안 띄움(흐름 방해 금지, 코치마크 선례)
+  if ((await consentShownBefore()) !== false) return false;
   const cached = queryClient.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY);
   if (cached && !isUnconsented(cached)) return false; // 이미 동의(이 세션 서버 응답) — 포커스마다 GET 방지
   const r = await waitStep(queryClient.fetchQuery({ queryKey: NOTIF_SETTINGS_KEY, queryFn: fetchNotificationSettings }), signal, FETCH_CAP_MS);
@@ -50,7 +59,7 @@ export async function presentHomeMarketingConsent(show: (done: () => void) => vo
   // 첫 실행 UMP·ATT 위에 Modal을 올리면 iOS가 present를 버린다 — 광고 기동 끝 + 덮개 없음까지(presentHomeCoach와 같은 대기)
   if (!(await waitUntil(isAdsSettled, subscribeAds, signal))) return false;
   if (!(await waitUntil(() => !isOccluded(), subscribeOcclusion, signal))) return false;
-  void AsyncStorage.setItem(HOME_LAST_SHOWN_KEY, String(Date.now())).catch(() => {});
+  recordConsentShown();
   show(done);
   return true;
 }

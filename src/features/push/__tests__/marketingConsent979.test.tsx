@@ -387,11 +387,13 @@ describe('알림함', () => {
   const emit = (closing: boolean) => act(() => mockNav.listeners.get('transitionEnd')?.forEach((f) => f({ data: { closing } })));
   const open = () => mockSheet.last?.open ?? false;
   const closeSheet = () => act(() => { mockSheet.last!.onClose(); mockSheet.last!.onDismiss?.(); });
-  const mount = () => { act(() => { trees.push(renderer.create(<InboxMarketingConsent />)); }); };
+  // P-600: 공통 노출 기록을 포커스마다 비동기로 읽는다 — 마운트·재포커스 뒤 한 번 비운다
+  const mount = async () => { act(() => { trees.push(renderer.create(<InboxMarketingConsent />)); }); await flush(); };
+  const refocus = async () => { act(() => { mockFocus.cleanup = mockFocus.cb!(); }); await flush(); };
 
-  it('미동의: transitionEnd{closing:false} 전엔 0 · closing:true 무시 · 후 1 · 떠 있는 동안 활성 플래그', () => {
+  it('미동의: transitionEnd{closing:false} 전엔 0 · closing:true 무시 · 후 1 · 떠 있는 동안 활성 플래그 · 띄운 순간 공통 기록', async () => {
     mockQuery = { isSuccess: true, dataUpdatedAt: Date.now(), data: UNCONSENTED };
-    mount();
+    await mount();
     expect(open()).toBe(false);
     emit(true);
     expect(open()).toBe(false);
@@ -399,6 +401,8 @@ describe('알림함', () => {
     expect(open()).toBe(true);
     expect(mockSheet.last!.consentSurface).toBe('inbox');
     expect(isMarketingConsentActive()).toBe(true);
+    await flush();
+    expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBe(String(NOW)); // 홈과 같은 키
     closeSheet();
     expect(open()).toBe(false);
     expect(isMarketingConsentActive()).toBe(false);
@@ -406,56 +410,90 @@ describe('알림함', () => {
     expect(open()).toBe(false);
   });
 
-  it('블러 → 재포커스(+transitionEnd) = 다시 1 · 떠 있는 채 블러 = 닫힘', () => {
+  it('P-600: 떠 있는 채 블러 = 닫힘 · 재포커스(+transitionEnd)·재진입(새 마운트) = 0(공통 최초 1회)', async () => {
     mockQuery = { isSuccess: true, dataUpdatedAt: Date.now(), data: UNCONSENTED };
-    mount();
+    await mount();
     emit(false);
     expect(open()).toBe(true);
     act(() => { if (typeof mockFocus.cleanup === 'function') mockFocus.cleanup(); }); // 자식 화면 push = 블러
     expect(open()).toBe(false);
     expect(isMarketingConsentActive()).toBe(false);
-    act(() => { mockFocus.cleanup = mockFocus.cb!(); }); // 복귀 = 포커스
-    expect(open()).toBe(false); // 전환 끝나기 전
+    await refocus();
     emit(false);
-    expect(open()).toBe(true);
+    expect(open()).toBe(false);
+    act(() => trees.pop()!.unmount());
+    mockSheet.last = null;
+    await mount(); // 알림함 재진입
+    emit(false);
+    expect(open()).toBe(false);
   });
 
-  it('동의 회원 = 0 · 이번 마운트 응답 전(캐시만) = 0 · 실패 = 0', () => {
+  it('P-600 공통 기록: 홈에서 뜬 뒤 알림함 0 · 알림함에서 뜬 뒤 홈 0', async () => {
+    expect(await step().run()).toBe(true); // 홈 최초 노출
+    await flush();
+    mockQuery = { isSuccess: true, dataUpdatedAt: Date.now(), data: UNCONSENTED };
+    await mount();
+    emit(false);
+    expect(open()).toBe(false);
+    act(() => trees.pop()!.unmount());
+    await AsyncStorage.clear(); // 새 기기: 알림함이 먼저
+    mockSheet.last = null;
+    await mount();
+    emit(false);
+    expect(open()).toBe(true);
+    await flush();
+    const h = step();
+    expect(await h.run()).toBe(false);
+    expect(h.show).not.toHaveBeenCalled();
+  });
+
+  it('P-600 같은 기록 키 잠금: 홈 스텝·알림함 모두 consentShownBefore·recordConsentShown(HOME_LAST_SHOWN_KEY) 경유', () => {
+    const prompt = fs.readFileSync('src/features/push/marketingConsentPrompt.ts', 'utf8');
+    const sheet = fs.readFileSync('src/features/push/MarketingConsentSheet.tsx', 'utf8');
+    expect(prompt.match(/AsyncStorage\.(get|set)Item\(HOME_LAST_SHOWN_KEY/g)).toHaveLength(2); // 읽기·쓰기 각 한 곳(공용 함수)
+    expect(prompt).toContain('if ((await consentShownBefore()) !== false) return false;');
+    expect(prompt).toContain('recordConsentShown();\n  show(done);');
+    expect(sheet).toContain('void consentShownBefore().then(');
+    expect(sheet).toContain('recordConsentShown(); // P-600');
+    expect(sheet).not.toMatch(/AsyncStorage/); // 알림함이 자체 키를 두지 않는다
+  });
+
+  it('동의 회원 = 0 · 이번 마운트 응답 전(캐시만) = 0 · 실패 = 0', async () => {
     mockQuery = { isSuccess: true, dataUpdatedAt: Date.now(), data: CONSENTED };
-    mount();
+    await mount();
     emit(false);
     expect(open()).toBe(false);
     act(() => trees.pop()!.unmount());
     mockQuery = { isSuccess: true, dataUpdatedAt: 0, data: UNCONSENTED };
     mockRefetch.mockImplementationOnce(() => Promise.resolve()); // 재조회 미완 = 옛 캐시만
-    mount();
+    await mount();
     emit(false);
     expect(open()).toBe(false);
     act(() => trees.pop()!.unmount());
     mockQuery = { isSuccess: false, dataUpdatedAt: Date.now(), data: UNCONSENTED };
-    mount();
+    await mount();
     emit(false);
     expect(open()).toBe(false);
   });
 
-  it('포커스마다 refetch — 첫 GET 실패 뒤 복귀하면 재시도해 1 · 복귀 전 옛 캐시로는 0 (#416 Codex P2)', () => {
+  it('포커스마다 refetch — 첫 GET 실패 뒤 복귀하면 재시도해 1 · 복귀 전 옛 캐시로는 0 (#416 Codex P2)', async () => {
     mockQuery = { isSuccess: false, dataUpdatedAt: 0, data: UNCONSENTED };
-    mount();
+    await mount();
     expect(mockRefetch).toHaveBeenCalledTimes(1);
     emit(false);
     expect(open()).toBe(false);
     act(() => { if (typeof mockFocus.cleanup === 'function') mockFocus.cleanup(); }); // 자식 화면 push
     mockRefetch.mockImplementationOnce(() => { mockQuery = { isSuccess: true, dataUpdatedAt: Date.now(), data: UNCONSENTED }; return Promise.resolve(); });
-    act(() => { mockFocus.cleanup = mockFocus.cb!(); }); // 복귀 = 재조회 성공
+    await refocus(); // 복귀 = 재조회 성공
     expect(mockRefetch).toHaveBeenCalledTimes(2);
     emit(false);
     expect(open()).toBe(true);
   });
 
-  it('다른 덮개가 떠 있으면 풀릴 때까지 대기', () => {
+  it('다른 덮개가 떠 있으면 풀릴 때까지 대기', async () => {
     mockQuery = { isSuccess: true, dataUpdatedAt: Date.now(), data: UNCONSENTED };
     const release = pushOcclusion();
-    mount();
+    await mount();
     emit(false);
     expect(open()).toBe(false);
     act(() => release());

@@ -16,7 +16,7 @@ import { MARKETING_CONSENT_PATCH } from '@/lib/push/consent';
 import { patchNotificationSettings, useNotificationSettings } from '@/lib/data/useNotificationSettings';
 import { getPermissionStatus, registerPushToken, requestPermission } from '@/lib/push/pushAdapter';
 import { isOccluded, subscribeOcclusion } from '@/lib/engagement/occlusion';
-import { isMarketingConsentActive, isUnconsented, setMarketingConsentActive } from '@/features/push/marketingConsentPrompt';
+import { consentShownBefore, isMarketingConsentActive, isUnconsented, recordConsentShown, setMarketingConsentActive } from '@/features/push/marketingConsentPrompt';
 import { markPromptShown } from '@/lib/engagement/promptSlot';
 
 type Surface = 'home' | 'inbox';
@@ -94,6 +94,8 @@ export function InboxMarketingConsent() {
   const clear = React.useSyncExternalStore(subscribeOcclusion, () => !isOccluded());
   const shown = React.useRef(false);
   const focusedAt = React.useRef(Number.POSITIVE_INFINITY);
+  // P-600(예진 11/4): 홈·알림함 공통 최초 1회 — 포커스마다 공통 기록을 읽는다(null = 읽는 중). 오류 = 띄우지 않음
+  const [shownBefore, setShownBefore] = React.useState<boolean | null>(null);
   const refetch = query.refetch;
   React.useEffect(() => navigation.addListener('transitionEnd', (e) => { if (!e.data.closing) setSettled(true); }), [navigation]);
   // #416 Codex P2: 자식 화면 밑에 살아 있다 복귀해도 재조회(전역 refetchOnWindowFocus=false) — 첫 GET 실패도 복귀 때 재시도
@@ -101,7 +103,11 @@ export function InboxMarketingConsent() {
     React.useCallback(() => {
       focusedAt.current = Date.now();
       void refetch();
+      let alive = true;
+      void consentShownBefore().then((v) => { if (alive) setShownBefore(v ?? true); });
       return () => {
+        alive = false;
+        setShownBefore(null);
         setSettled(false);
         shown.current = false;
         abort();
@@ -109,11 +115,12 @@ export function InboxMarketingConsent() {
     }, [abort, refetch]),
   );
   // 이번 포커스 이후 받은 성공 응답만(캐시된 옛 값으로 판정 금지 — 재가입 등은 서버가 정본). ref 비교는 effect 안에서(react-hooks/refs)
-  const due = settled && clear && query.isSuccess && isUnconsented(query.data);
+  const due = shownBefore === false && settled && clear && query.isSuccess && isUnconsented(query.data);
   const updatedAt = query.dataUpdatedAt;
   React.useEffect(() => {
     if (!due || updatedAt < focusedAt.current || shown.current || isMarketingConsentActive()) return;
     shown.current = true;
+    recordConsentShown(); // P-600: 실제로 띄운 순간 공통 기록
     show();
   }, [due, updatedAt, show]);
   return <MarketingConsentSheet {...props} />;
