@@ -77,6 +77,9 @@ jest.mock('@/features/processedFood/PackagedReviews', () => {
 
 /* eslint-disable import/first -- jest.mock 뒤 */
 import { ApiError } from '@/lib/api/client';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { formatDuration } from '@/features/processedFood/RecipeSection';
 import { adaptProcessedDetail, adaptProcessedSummary, packagedTypeOf, toHttps, VERDICT_RISK, type DetailWire } from '@/lib/api/processedFoodAdapter';
 import { fetchProcessedDetail, fetchProcessedSearch } from '@/lib/data/useProcessedFoods';
 import { ProcessedFoodDetailScreen as Detail } from '@/app/processed-foods/[id]'; // KB-870: 기본 내보내기 = 채널 게이트 — 화면 자체를 직접 렌더
@@ -273,13 +276,12 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
       const t = detail({ recipe: { methods: [TOOMBA!.methods![1]] } });
       press(t, 'pf-recipe-row-MICROWAVE');
       expect(ids(t).some((i) => i.startsWith('pf-recipe-chip-'))).toBe(false);
-      const src = require('fs').readFileSync(require('path').join(__dirname, '../RecipeSection.tsx'), 'utf8') as string;
+      const src = readFileSync(join(__dirname, '../RecipeSection.tsx'), 'utf8');
       expect(src).not.toMatch(/riskTone|riskSafe|riskCaution|riskDanger|riskUnable|riskText/);
       expect(src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')).not.toContain('·');
     });
 
     it('시간 문구: 120초 = 분 · 160초 = 분+초 · 40초 = 초', () => {
-      const { formatDuration } = require('@/features/processedFood/RecipeSection') as typeof import('@/features/processedFood/RecipeSection');
       const tt = (k: string, o?: Record<string, unknown>) => `${k}:${JSON.stringify(o)}`;
       expect(formatDuration(120, tt)).toBe('packaged.recipe.min:{"value":2}');
       expect(formatDuration(160, tt)).toBe('packaged.recipe.minSec:{"min":2,"sec":40}');
