@@ -1,3 +1,7 @@
+## 2026-11-04 · P-598 KB-969 후속 — packagedVisionScan 전 채널 ON
+
+- flags.ts packagedVisionScan: DEV_SERVER_CHANNEL → true(운영 서버 #542 배포 26.11.5, 11/4 03:47). ML Kit 가공식품 경로·탭은 코드에 남김(운영 확인 뒤 후속 PR).
+- 탭·메뉴판·ML Kit 흐름을 보는 스위트 8개는 OFF 고정(scanDesign 관례) · prodHide870에 기본값 true 잠금.
 ## 2026-11-04 · P-599 #416 광고성 동의 시트 운영 채널 OFF 플래그
 
 - flags.ts marketingConsentPrompt = DEV_SERVER_CHANNEL(teamtest dev 타깃·development ON, production OFF) — 예진: 운영 OTA엔 시트 끔.

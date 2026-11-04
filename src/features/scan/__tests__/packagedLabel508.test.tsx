@@ -574,3 +574,9 @@ describe('흐름(KB-865 ③ — 성분표 카메라 → 면 검토 24·25 → �
     expect(texts(t2)).toContain('packagedScan.anotherBodyNameOnly');
   });
 });
+
+// P-598: packagedVisionScan 전 채널 ON — 이 스위트는 탭·메뉴판·ML Kit 흐름(아직 코드에 남은 OFF 경로)을 본다 → OFF 고정(scanDesign 관례)
+const visionFlags = (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS;
+const visionPrev = visionFlags.packagedVisionScan;
+beforeEach(() => { visionFlags.packagedVisionScan = false; });
+afterAll(() => { visionFlags.packagedVisionScan = visionPrev; });

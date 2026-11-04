@@ -217,10 +217,10 @@ export const FLAGS = {
   /**
    * KB-969(P-592): 가공식품 사진 스캔 = 서버 비전(POST /api/processed-foods/scan/vision, 서버 #542) — 스캔 화면 Menu/Packaged 탭 없이 카메라 하나,
    * 사진마다 종류 판별(앞면 후보·성분표 결과·메뉴판 = 같은 사진으로 메뉴 v2·그 밖 = 다시 찍기). 성분표 면 추가도 비전(읽은 원문으로 /scan/label 합침).
-   * **채널 게이트 의도**: 운영 서버에 #542가 배포되기 전 = dev 서버 채널만. OFF = 현행(탭 + 온디바이스 ML Kit OCR) 그대로.
-   * 운영 배포 뒤 전 채널 true + ML Kit 가공식품 경로·탭 삭제는 후속 PR(커맨드 11/03 합의).
+   * 운영 서버 #542 배포 완료(26.11.5, 11/4 03:47) → 전 채널 ON(P-598). OFF 경로(탭 + 온디바이스 ML Kit OCR)는 아직 코드에 남겨 둔다 —
+   * ML Kit 가공식품 경로·탭 삭제는 운영 확인 뒤 후속 PR.
    */
-  packagedVisionScan: DEV_SERVER_CHANNEL,
+  packagedVisionScan: true,
   /**
    * P-599(예진 11/04): KB-979(#416) 광고성 동의 시트(홈·알림함) — 운영 OTA에선 끈다. teamtest(dev 타깃)·development = ON, production = OFF.
    * OFF = 노출·이벤트·설정 GET·홈 큐 소모 전부 0(진입점 두 곳에서 게이트: 홈 큐 스텝 · 알림함 마운트). 시트 로직은 무변.

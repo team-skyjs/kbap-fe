@@ -114,6 +114,8 @@ describe('표면 게이트(소스·라우트)', () => {
     expect(scan.match(/<ScanModeTabs /g)).toHaveLength(2);
     // KB-969: 사진 스캔(packagedVisionScan) on = 탭 없음(카메라 하나) — 탭 게이트 = 가공식품 켜짐 && 사진 스캔 꺼짐
     expect(scan.match(/\{FLAGS\.processedFoodEnabled && !FLAGS\.packagedVisionScan && \((?:\s*\/\*[^*]*\*\/)?\s*<View style=\{\[styles\.camModeTabs/g)).toHaveLength(2);
+    // P-598: 운영 서버 #542 배포(26.11.5) → 사진 스캔 전 채널 ON(채널 게이트 아님 — 운영에서도 탭 없음)
+    expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toMatch(/\n  packagedVisionScan: true,\n/);
     const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8');
     expect(home).toContain('{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}');
     const idol = fs.readFileSync('src/lib/data/useIdolPicks.ts', 'utf8');
