@@ -28,7 +28,7 @@ import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { EVENTS, track } from '@/lib/analytics';
 import { openNotificationSettings, openWebPage } from '@/lib/openExternal';
-import { consentUrl, PRIVACY_CONSENT_VERSION, RECEIVE_CONSENT_VERSION } from '@/lib/push/consent';
+import { consentUrl, MARKETING_CONSENT_PATCH } from '@/lib/push/consent';
 import { useNotificationSettings, useUpdateNotificationSettings, type NotificationSettings as Settings } from '@/lib/data/useNotificationSettings';
 import { NotificationSheet } from '@/features/push/NotificationSheet';
 import { getPermissionStatus, registerPushToken, requestPermission, type PushPermission } from '@/lib/push/pushAdapter';
@@ -97,9 +97,8 @@ function NotificationSettingsScreen() {
   };
   const confirmConsent = () => {
     track(EVENTS.push_pref_toggle, { key: 'news', on: true });
-    // KB-544 계약(dev Swagger 9/14): 동의 기록은 consent:true + 버전 2종, 기기 수신은 enabled, 하위 식사 시간도 함께 ON(종한).
-    // 서버 처리 순서 consent → enabled → mealTime 이라 한 요청에 담아도 NOTIFICATION-001 없음.
-    patch({ news: { consent: true, privacyConsentVersion: PRIVACY_CONSENT_VERSION, receiveConsentVersion: RECEIVE_CONSENT_VERSION, enabled: true, mealTime: true } });
+    track(EVENTS.push_pref_toggle, { key: 'activity', on: true, source: 'consent' }); // KB-987: 확인 = 활동 알림도 ON
+    patch(MARKETING_CONSENT_PATCH); // KB-979: 홈·알림함 동의 시트와 같은 body(consent.ts 공용 상수)
     setConsentOpen(false);
   };
 
@@ -217,6 +216,7 @@ function NotificationSettingsScreen() {
       <NotificationSheet
         open={consentOpen}
         variant="consent"
+        consentSurface="settings"
         title={t('push.consentSheetTitle')}
         body={t('push.consentSheetBody')}
         confirmLabel={t('push.consentConfirm')}

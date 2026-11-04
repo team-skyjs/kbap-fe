@@ -21,6 +21,7 @@ import i18n from '@/lib/i18n';
 import { api, apiLang } from '@/lib/api/client';
 import { hasBeSession } from '@/lib/auth/beAuth';
 import { patchNotificationSettings } from '@/lib/data/useNotificationSettings';
+import { withPermissionPrompt } from '@/lib/permissionPrompt';
 
 const PROMPTED_KEY = 'kbap.push.prompted.v1';
 const ACTIVITY_PENDING_KEY = 'kbap.push.activityDefaultPending.v1'; // KB-631: 로그인 팝업 허용 → 로그인 후 activity 기본값 1회 적용 대기
@@ -87,7 +88,7 @@ export async function requestPermission(): Promise<boolean> {
   const N = loadNotifications();
   if (!N) return false;
   try {
-    const { status } = await N.requestPermissionsAsync();
+    const { status } = await withPermissionPrompt(() => N.requestPermissionsAsync());
     trackEvent(EVENTS.push_permission, { state: status === 'granted' ? 'grant' : 'deny' }); // KB-630: 호출처 무관 1곳 — 예외(팝업 미표시)는 결과 아님
     return status === 'granted';
   } catch {
@@ -207,7 +208,7 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
     }
   };
   try {
-    // KB-498: Android 채널 2종 — activity(MAX: HELPFUL·REVIEW_REMINDER) · news(HIGH: 광고성 3종, 기기 설정에서 따로 끌 수 있게 분리).
+    // KB-498: Android 채널 2종 — activity(MAX: HELPFUL·REVIEW_REMINDER) · news(HIGH: 광고성 4종, 기기 설정에서 따로 끌 수 있게 분리).
     // 채널 중요도는 생성 후 변경 불가라 'default'는 만들지 않는다(서버가 default로 보내면 expo 폴백 채널 = 지금과 동일).
     // 이름은 설정 화면 그룹명 i18n 재사용. 멱등(재호출 = 이름만 갱신) · iOS 무동작 · 결과 대기 없음(부팅 지연 0).
     if (Platform.OS === 'android') {
@@ -256,7 +257,7 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
 
 /* ---- 푸시 유형 (KB-498 — 서버 enum과 동일, 정확 일치만) ---- */
 
-export const PUSH_TYPES = ['HELPFUL', 'SCAN_SUGGESTION', 'REVIEW_REMINDER', 'NEWS', 'MEAL_TIME'] as const;
+export const PUSH_TYPES = ['HELPFUL', 'SCAN_SUGGESTION', 'REVIEW_REMINDER', 'NEWS', 'MEAL_TIME', 'FOOD_DISCOVERY'] as const;
 export type PushType = (typeof PUSH_TYPES)[number];
 
 export function isPushType(v: unknown): v is PushType {
@@ -266,7 +267,7 @@ export function isPushType(v: unknown): v is PushType {
 /* ---- 딥링크 라우팅 (순수 함수 — 서버 data 계약 KB-498, 여기만 배선) ---- */
 
 export function routeForNotificationData(data: unknown): string | null {
-  const d = data as { type?: string; orderId?: string | number } | null | undefined;
+  const d = data as { type?: string; orderId?: string | number; foodId?: string | number } | null | undefined;
   // KB-573(2026-09-16 종한 확정): 매핑은 FE 소유 — 서버는 type + 대상 id만. "어떻게 가는가"(홈 = 스택 리셋 +
   // 탭 점프 · 그 외 navigate 재사용)는 lib/nav openNotificationRoute 한 곳. 여기는 경로 문자열만.
   switch (d?.type) {
@@ -280,6 +281,11 @@ export function routeForNotificationData(data: unknown): string | null {
       // 구 로컬 알림의 foodId는 폐기 — 값이 와도 무동작(오착지 금지).
       const s = d.orderId == null ? '' : String(d.orderId);
       return /^\d+$/.test(s) ? `/profile/order/${s}` : null;
+    }
+    case 'FOOD_DISCOVERY': {
+      // KB-985: 음식 발견 푸시(광고성) = data.foodId(int64) → 음식 상세. REVIEW_REMINDER orderId와 같은 숫자 규칙.
+      const s = d.foodId == null ? '' : String(d.foodId);
+      return /^\d+$/.test(s) ? `/food/${s}` : null;
     }
     case 'NEWS':
       return null; // 앱만 켜짐 — 이동 없음(알림함 열람·읽음 처리만)

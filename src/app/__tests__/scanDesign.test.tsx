@@ -169,13 +169,21 @@ jest.mock('@/lib/data/useScan', () => ({
 
 import Scan from '../scan';
 
+// KB-982: 담기 카트가 모듈 스토어라 남은 Scan 트리도 같이 다시 그린다(전역 __prevent를 덮음) — 테스트마다 정리
+const mounted: ReactTestRenderer[] = [];
 function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
     tree = renderer.create(el);
   });
+  mounted.push(tree);
   return tree;
 }
+afterEach(() => {
+  for (const t of mounted.splice(0)) {
+    try { act(() => t.unmount()); } catch { /* 이미 정리됨 */ }
+  }
+});
 const texts = (tree: ReactTestRenderer, s: string) => tree.root.findAll((n) => n.props?.children === s).length;
 const galleryBtn = (tree: ReactTestRenderer) =>
   tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto' && typeof n.props?.onPress === 'function')[0];
@@ -184,6 +192,7 @@ const galleryBtn = (tree: ReactTestRenderer) =>
 beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 beforeEach(() => {
   jest.clearAllMocks();
+  (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS.packagedVisionScan = false; // KB-969: 탭·메뉴 기본 = 플래그 OFF 흐름(이 스위트는 dev 서버 채널로 풀려 기본 ON) — 사진 스캔은 visionScan969·scanVisionMenu969
   mockRemoveGuards.length = 0;
   mockPreview.color = '#000000';
   mockPermission.granted = true; mockPermission.canAskAgain = true;

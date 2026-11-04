@@ -332,6 +332,10 @@
     "searchOnGoogle": "구글에서 검색",
     "resultsEmpty": "스캔 결과가 없어요",
     "viewOrderAction": "주문 보기",
+    "addToOrder": "메뉴 담기",
+    "removeFromOrder": "하나 빼기",
+    "inOrder_one": "{{count}}개 담았어요",
+    "inOrder_other": "{{count}}개 담았어요",
     "orderCount_one": "담은 메뉴 {{count}}개",
     "orderCount_other": "담은 메뉴 {{count}}개",
     "retakeBodyWithCart_one": "지금 결과와 담은 메뉴 {{count}}개가 사라져요.",
@@ -1035,6 +1039,8 @@
     "primerLater": "나중에",
     "consentSheetTitle": "K-Bap 소식을 받을까요?",
     "consentSheetBody": "이벤트/새 기능 소식을 광고성 알림으로 보내요.",
+    "consentPromptTitle": "취향에 맞춰 먹고 싶은 K-Food를 추천해드려요!",
+    "consentPromptBody": "알림에 동의하시면 귀찮게 하지 않고 맛있는 음식 추천만 해드려요 👍",
     "privacyConsent": "마케팅 목적 개인정보 수집/이용 동의 (선택)",
     "receiveConsent": "광고성 정보 수신 동의 (선택)",
     "consentBothRequired": "두 항목에 모두 동의해야 알림을 켤 수 있어요.",
@@ -1102,6 +1108,11 @@
     "editFailed": "변경하지 못했어요. 다시 시도해 주세요.",
     "editPhotoNotReady": "사진 업로드가 끝나지 않았어요. 다시 시도해 주세요.",
     "editNotFound": "주문 정보를 찾을 수 없어요. 새로고침해 주세요."
+  },
+  "feedbackPrompt": {
+    "title": "K-Bap 팀에게 바로 보내 주세요",
+    "body": "불편한 점, 바라는 기능, 무엇이든 좋아요.",
+    "neverAgain": "다시 보지 않기"
   },
   "feedback": {
     "title": "문의하기",
@@ -1323,7 +1334,13 @@
       "unreadableTitle": "성분표를 읽지 못했어요",
       "unreadableBody": "원재료명이 잘 보이게 다시 찍어 주세요.",
       "newAnalysisTitle": "새로 분석해 주세요",
-      "newAnalysisBody": "이 분석에는 사진을 더 추가할 수 없어요. 새로 분석해 주세요."
+      "newAnalysisBody": "이 분석에는 사진을 더 추가할 수 없어요. 새로 분석해 주세요.",
+      "visionLimitTitle": "오늘 사진 스캔을 모두 썼어요",
+      "visionLimitBody": "내일 다시 스캔할 수 있어요. 제품 이름 검색은 계속 쓸 수 있어요.",
+      "tooLargeTitle": "사진이 너무 커요",
+      "tooLargeBody": "다시 찍어 주세요.",
+      "busyTitle": "지금 스캔이 몰려 있어요",
+      "busyBody": "잠시 뒤 다시 시도해 주세요."
     },
     "debugLabel": "OCR 텍스트(테스트 전용)",
     "debugPlaceholder": "포장 글자를 한 줄씩 입력",
@@ -1359,9 +1376,21 @@
     "reviewPhotos_one": "사진 {{count}}장 검토",
     "reviewPhotos_other": "사진 {{count}}장 검토",
     "done": "완료",
+    "scanAnother": "다른 상품 스캔하기",
     "resultAvoid": "피하는 재료와 일치해요: {{names}}.",
     "resultCaution": "같은 제조시설 표기에 있어요: {{names}}.",
-    "resultMajorSet": "{{contains}}. 피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요."
+    "resultMajorSet": "{{contains}}. 피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요.",
+    "vision": {
+      "retakeTitle": "다시 찍어 볼까요",
+      "blurry": "사진이 흐려요. 흔들리지 않게 잡고 화면을 눌러 초점을 맞춰 주세요.",
+      "tooDark": "너무 어두워요. 밝은 곳에서 찍어 주세요.",
+      "glare": "포장에 빛이 반사돼요. 살짝 기울여서 찍어 주세요.",
+      "cropped": "일부가 잘렸어요. 포장 앞면이나 성분표 전체가 화면에 들어오게 찍어 주세요.",
+      "notFood": "메뉴판이나 식품 포장이 아닌 것 같아요. 메뉴판, 포장 앞면, 성분표를 찍어 주세요.",
+      "unknown": "이 사진은 읽지 못했어요. 메뉴판, 포장 앞면, 성분표를 찍어 주세요.",
+      "reading": "사진을 읽고 있어요…",
+      "notLabel": "성분표가 아닌 것 같아요. 원재료명이 적힌 면을 찍어 주세요."
+    }
   },
   "scanCamera": {
     "title": "스캔",
@@ -1378,7 +1407,8 @@
     "capturedPackage": "찍은 포장",
     "capturedLabel": "찍은 성분표",
     "choosePhoto": "사진 선택",
-    "switchCamera": "카메라 전환"
+    "switchCamera": "카메라 전환",
+    "capturedPhoto": "찍은 사진"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

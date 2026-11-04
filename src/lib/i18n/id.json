@@ -332,6 +332,10 @@
     "searchOnGoogle": "Cari di Google",
     "resultsEmpty": "Tidak ada hasil pemindaian",
     "viewOrderAction": "Lihat pesanan",
+    "addToOrder": "Tambah ke pesanan",
+    "removeFromOrder": "Kurangi satu",
+    "inOrder_one": "{{count}} di pesananmu",
+    "inOrder_other": "{{count}} di pesananmu",
     "orderCount_one": "{{count}} item",
     "orderCount_other": "{{count}} item",
     "retakeBodyWithCart_one": "Hasil dan {{count}} item yang ditambahkan akan dihapus.",
@@ -1035,6 +1039,8 @@
     "primerLater": "Nanti saja",
     "consentSheetTitle": "Terima berita K-Bap?",
     "consentSheetBody": "Berita acara dan fitur baru dikirim sebagai notifikasi promosi.",
+    "consentPromptTitle": "Kami akan merekomendasikan K-Food sesuai seleramu!",
+    "consentPromptBody": "Aktifkan notifikasi — tanpa spam, hanya rekomendasi makanan lezat 👍",
     "privacyConsent": "Setuju pengumpulan dan penggunaan data pribadi untuk pemasaran (opsional)",
     "receiveConsent": "Setuju menerima informasi promosi (opsional)",
     "consentBothRequired": "Setujui kedua item untuk mengaktifkan notifikasi.",
@@ -1102,6 +1108,11 @@
     "editFailed": "Perubahan tidak tersimpan. Coba lagi.",
     "editPhotoNotReady": "Unggahan foto belum selesai. Coba lagi.",
     "editNotFound": "Pesanan ini tidak ditemukan. Muat ulang lalu coba lagi."
+  },
+  "feedbackPrompt": {
+    "title": "Kirim langsung ke tim K-Bap",
+    "body": "Hal yang mengganggu, fitur yang kamu mau, apa saja boleh.",
+    "neverAgain": "Jangan tampilkan lagi"
   },
   "feedback": {
     "title": "Hubungi kami",
@@ -1323,7 +1334,13 @@
       "unreadableTitle": "Label tidak terbaca",
       "unreadableBody": "Foto ulang dengan daftar bahan terlihat jelas.",
       "newAnalysisTitle": "Mulai analisis baru",
-      "newAnalysisBody": "Tidak bisa menambah foto lagi ke analisis ini. Silakan mulai analisis baru."
+      "newAnalysisBody": "Tidak bisa menambah foto lagi ke analisis ini. Silakan mulai analisis baru.",
+      "visionLimitTitle": "Pemindaian foto hari ini sudah habis",
+      "visionLimitBody": "Kamu bisa memindai lagi besok. Kamu tetap bisa mencari produk berdasarkan nama.",
+      "tooLargeTitle": "Foto terlalu besar",
+      "tooLargeBody": "Silakan ambil foto lagi.",
+      "busyTitle": "Pemindaian sedang sibuk",
+      "busyBody": "Coba lagi sebentar lagi."
     },
     "debugLabel": "Teks OCR (khusus uji)",
     "debugPlaceholder": "Satu baris teks kemasan per baris",
@@ -1359,9 +1376,21 @@
     "reviewPhotos_one": "Tinjau {{count}} foto",
     "reviewPhotos_other": "Tinjau {{count}} foto",
     "done": "Selesai",
+    "scanAnother": "Pindai produk lain",
     "resultAvoid": "Cocok dengan daftar hindari: {{names}}.",
     "resultCaution": "Pernyataan fasilitas bersama menyebut: {{names}}.",
-    "resultMajorSet": "{{contains}}. Atur bahan yang dihindari untuk hasil pribadi."
+    "resultMajorSet": "{{contains}}. Atur bahan yang dihindari untuk hasil pribadi.",
+    "vision": {
+      "retakeTitle": "Ayo foto sekali lagi",
+      "blurry": "Fotonya buram. Pegang dengan stabil dan ketuk layar untuk fokus.",
+      "tooDark": "Terlalu gelap. Pindah ke tempat yang lebih terang.",
+      "glare": "Kemasan memantulkan cahaya. Miringkan sedikit.",
+      "cropped": "Ada bagian yang terpotong. Masukkan seluruh bagian depan kemasan atau label ke dalam bingkai.",
+      "notFood": "Ini sepertinya bukan menu atau kemasan makanan. Foto menu, bagian depan kemasan, atau label komposisi.",
+      "unknown": "Kami tidak bisa membaca foto ini. Foto menu, bagian depan kemasan, atau label komposisi.",
+      "reading": "Membaca fotomu…",
+      "notLabel": "Sepertinya ini bukan label komposisi. Foto sisi yang berisi daftar komposisi."
+    }
   },
   "scanCamera": {
     "title": "Pindai",
@@ -1378,7 +1407,8 @@
     "capturedPackage": "Kemasan yang Anda foto",
     "capturedLabel": "Label yang Anda foto",
     "choosePhoto": "Pilih foto",
-    "switchCamera": "Ganti kamera"
+    "switchCamera": "Ganti kamera",
+    "capturedPhoto": "Fotomu"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

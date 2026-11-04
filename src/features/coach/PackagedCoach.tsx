@@ -8,6 +8,7 @@
  * 오버레이 = RN Modal + react-native-svg evenodd 경로(새 네이티브 의존성 0 — 지문 무변).
  */
 import * as React from 'react';
+import { markPromptShown } from '@/lib/engagement/promptSlot';
 import { Platform, StyleSheet, View, type LayoutRectangle } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path } from 'react-native-svg';
@@ -22,6 +23,7 @@ import { EVENTS, track } from '@/lib/analytics';
 import { measureCoachTarget, type CoachTarget } from '@/lib/coachTargets';
 import { isAdsSettled, subscribeAds } from '@/lib/ads/adsSession';
 import { isOccluded, subscribeOcclusion } from '@/lib/engagement/occlusion';
+import { waitUntil } from '@/lib/oneShotQueue';
 
 const SEEN_KEY = 'kbap.packagedCoach.v1';
 
@@ -40,18 +42,6 @@ export function markPackagedCoachSeen(): void {
 /** 떠 있다가 화면 이탈로 닫힘 = 못 본 것 — 다음 포커스에 다시 */
 export function unmarkPackagedCoachSeen(): void {
   void AsyncStorage.removeItem(SEEN_KEY).catch(() => {});
-}
-
-/** 조건이 참이 될 때까지(구독 알림마다 재판정) — 홈을 떠나면(큐 clear = abort) false. 상한 없음(Q-398: 20초 상한에 걸려 홈에 계속 있어도 안 떴다) */
-function waitUntil(ready: () => boolean, subscribe: (fn: () => void) => () => void, signal: AbortSignal): Promise<boolean> {
-  if (signal.aborted) return Promise.resolve(false);
-  if (ready()) return Promise.resolve(true);
-  return new Promise((resolve) => {
-    const finish = (v: boolean) => { off(); signal.removeEventListener('abort', onAbort); resolve(v); };
-    const onAbort = () => finish(false);
-    const off = subscribe(() => { if (ready()) finish(true); });
-    signal.addEventListener('abort', onAbort);
-  });
 }
 
 /** 홈 큐 스텝(1단계). 첫 실행 = 탭 진입 직후 UMP 동의 폼·ATT가 뜬다 — 그 위에 Modal을 올리면 iOS가 present를 버려
@@ -230,6 +220,7 @@ export function usePackagedCoach(step: CoachStep, after: { next: () => void }) {
   const show = React.useCallback((done?: () => void) => {
     markPackagedCoachSeen(); // 표시 즉시 기록 — 중간에 앱을 꺼도 다시 안 뜬다
     flowActive = true;
+    markPromptShown(); // KB-986
     pending.current = { done, next: false, closing: false };
     setOpen(true);
     track(EVENTS.food_packaged_coach_shown, { step });

@@ -332,6 +332,10 @@
     "searchOnGoogle": "在Google搜索",
     "resultsEmpty": "没有扫描结果",
     "viewOrderAction": "查看订单",
+    "addToOrder": "加入点单",
+    "removeFromOrder": "减少一份",
+    "inOrder_one": "已点 {{count}} 份",
+    "inOrder_other": "已点 {{count}} 份",
     "orderCount_one": "已选 {{count}} 项",
     "orderCount_other": "已选 {{count}} 项",
     "retakeBodyWithCart_one": "当前结果和已加入的{{count}}项将被清除。",
@@ -1035,6 +1039,8 @@
     "primerLater": "以后再说",
     "consentSheetTitle": "要接收 K-Bap 资讯吗？",
     "consentSheetBody": "以广告通知的形式发送活动和新功能资讯。",
+    "consentPromptTitle": "按你的口味推荐想吃的K-Food！",
+    "consentPromptBody": "同意通知后，不打扰你，只推荐美味 👍",
     "privacyConsent": "同意为营销目的收集和使用个人信息（可选）",
     "receiveConsent": "同意接收广告信息（可选）",
     "consentBothRequired": "需同意两项才能开启通知。",
@@ -1102,6 +1108,11 @@
     "editFailed": "未能保存更改，请重试。",
     "editPhotoNotReady": "照片上传未完成，请重试。",
     "editNotFound": "找不到这个订单，请刷新后重试。"
+  },
+  "feedbackPrompt": {
+    "title": "直接发给 K-Bap 团队",
+    "body": "不方便的地方、想要的功能，什么都可以。",
+    "neverAgain": "不再显示"
   },
   "feedback": {
     "title": "联系我们",
@@ -1323,7 +1334,13 @@
       "unreadableTitle": "没能读取配料表",
       "unreadableBody": "请让配料清晰可见后重新拍摄。",
       "newAnalysisTitle": "请重新分析",
-      "newAnalysisBody": "此分析无法再添加照片。请重新分析。"
+      "newAnalysisBody": "此分析无法再添加照片。请重新分析。",
+      "visionLimitTitle": "今天的照片扫描次数已用完",
+      "visionLimitBody": "明天可以再次扫描。仍可按名称搜索产品。",
+      "tooLargeTitle": "照片太大",
+      "tooLargeBody": "请重新拍摄。",
+      "busyTitle": "当前扫描繁忙",
+      "busyBody": "请稍后再试。"
     },
     "debugLabel": "OCR 文本(仅限测试)",
     "debugPlaceholder": "每行输入一行包装文字",
@@ -1359,9 +1376,21 @@
     "reviewPhotos_one": "查看{{count}}张照片",
     "reviewPhotos_other": "查看{{count}}张照片",
     "done": "完成",
+    "scanAnother": "扫描其他商品",
     "resultAvoid": "与要避免的食材一致：{{names}}。",
     "resultCaution": "同工厂标示中提到：{{names}}。",
-    "resultMajorSet": "{{contains}}。设置要避免的食材后可查看个人结果。"
+    "resultMajorSet": "{{contains}}。设置要避免的食材后可查看个人结果。",
+    "vision": {
+      "retakeTitle": "再拍一次吧",
+      "blurry": "照片模糊。请拿稳，并点按屏幕对焦。",
+      "tooDark": "太暗了。请到明亮的地方拍摄。",
+      "glare": "包装上有反光。请稍微倾斜后拍摄。",
+      "cropped": "有部分被裁掉了。请让包装正面或配料表完整入框。",
+      "notFood": "这看起来不像菜单或食品包装。请拍摄菜单、包装正面或配料表。",
+      "unknown": "无法识别这张照片。请拍摄菜单、包装正面或配料表。",
+      "reading": "正在读取你的照片…",
+      "notLabel": "这似乎不是配料表。请拍摄印有配料表的那一面。"
+    }
   },
   "scanCamera": {
     "title": "扫描",
@@ -1378,7 +1407,8 @@
     "capturedPackage": "你拍的包装",
     "capturedLabel": "你拍的配料表",
     "choosePhoto": "选择照片",
-    "switchCamera": "切换相机"
+    "switchCamera": "切换相机",
+    "capturedPhoto": "你拍的照片"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

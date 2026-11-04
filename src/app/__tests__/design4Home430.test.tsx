@@ -17,6 +17,7 @@ jest.mock('@/lib/data/useProcessedFoods', () => {
     useProcessedSearchPaged: () => ({ ...empty, data: { items: [], pageSizes: [0] } }),
   };
 });
+jest.mock('@/features/push/MarketingConsentSheet', () => ({ ...jest.requireActual('@/features/push/MarketingConsentSheet'), InboxMarketingConsent: () => null })); // KB-979: 알림함 동의 시트(navigation 이벤트) — marketingConsent979 담당
 jest.mock('@/features/curation/CurationSection', () => ({ CurationSection: () => null })); // KB-796: 홈 큐레이션(자체 쿼리) — 이 스위트 범위 밖
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
@@ -74,15 +75,36 @@ const mockFood = (id: string, risk: string) => ({
   overall: { average: 4, count: 2 },
   bookmarked: false,
 });
+// KB-986 #421: 시트가 열린 채 홈 요청 실패로 분기 전환 — 실제 쿼리처럼 구독으로 다시 그린다(렌더 메모이즈 우회)
+const mockHomeErr = { on: false, subs: new Set<() => void>(), set(v: boolean) { this.on = v; this.subs.forEach((f) => f()); } };
 jest.mock('@/lib/data/useHome', () => ({
-  useHome: () => ({
-    isLoading: false,
-    isError: false,
-    error: null,
-    refetch: jest.fn(),
-    data: { authenticated: true, recent: [mockFood('r1', 'safe')], recommended: [], avoided: [] },
-  }),
+  useHome: () => (jest.requireActual<typeof import('react')>('react').useSyncExternalStore((f: () => void) => { mockHomeErr.subs.add(f); return () => mockHomeErr.subs.delete(f); }, () => mockHomeErr.on)
+    ? { isLoading: false, isPending: false, isError: true, error: new Error('NETWORK'), refetch: jest.fn(), data: undefined }
+    : {
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+      data: { authenticated: true, recent: [mockFood('r1', 'safe')], recommended: [], avoided: [] },
+    }),
 }));
+// KB-986 #421: 피드백 시트를 연 상태로 고정(큐 판정은 feedbackPrompt986 담당) — 시트 자체는 실제 컴포넌트
+jest.mock('react-native-gesture-handler', () => {
+  const R = jest.requireActual<typeof import('react')>('react');
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
+  const pan = () => {
+    const b: Record<string, () => unknown> = {};
+    for (const k of ['runOnJS', 'onUpdate', 'onFinalize', 'onStart', 'onEnd', 'onChange', 'enabled', 'minDistance', 'activeOffsetY']) b[k] = () => b;
+    return b;
+  };
+  return { GestureDetector: ({ children }: { children: unknown }) => R.createElement(View, null, children), GestureHandlerRootView: View, Gesture: { Pan: pan, Tap: pan } };
+});
+const mockFeedbackOpen = { on: false };
+jest.mock('@/features/feedback/FeedbackPromptSheet', () => ({
+  ...jest.requireActual('@/features/feedback/FeedbackPromptSheet'),
+  useFeedbackPromptSheet: () => ({ show: () => {}, abort: () => {}, props: { open: mockFeedbackOpen.on, onClose: () => {} } }),
+}));
+jest.mock('@/lib/data/useFeedback', () => ({ FEEDBACK_MAX_LEN: 2000, FEEDBACK_MAX_PHOTOS: 3, useSubmitFeedback: () => ({ mutateAsync: jest.fn() }) }));
 jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: { nickname: 'A', restrictions: [{ code: 'PEANUT' }], nationality: 'US', id: '1' } }),
 }));
@@ -251,4 +273,25 @@ it('④ 리뷰 탭 컨트롤 — 프로필 토글(P-331: 같은 국적 필터 �
   }
   // 정렬 5종 전부 시트에 노출
   expect(feed).toContain("['latest', 'rating_high', 'rating_low', 'food_review_count', 'helpful']");
+});
+
+it('KB-986 #421 Codex P2: 피드백 시트가 열린 채 홈 요청이 실패해 에러 화면으로 바뀌어도 시트는 같은 인스턴스(본문 유지)', () => {
+  mockFeedbackOpen.on = true;
+  try {
+    const tree = render(<Home />);
+    const body = () => tree.root.findAll((n) => n.props?.testID === 'feedback-body' && typeof n.props.onChangeText === 'function');
+    expect(body().length).toBeGreaterThan(0); // Input 래퍼·TextInput·호스트 = 한 입력칸
+    const sheets = () => tree.root.findAll((n) => n.props?.testID === 'feedback-prompt' && typeof n.type === 'string');
+    expect(sheets()).toHaveLength(1);
+    act(() => body()[0].props.onChangeText('검색이 느려요'));
+    act(() => mockHomeErr.set(true));
+    expect(tree.root.findAll((n) => typeof n.props?.onRetry === 'function').length).toBeGreaterThan(0); // 에러 화면으로 실제 전환
+    expect(tree.root.findAll((n) => n.props?.testID === 'feedback-body')[0].props.value).toBe('검색이 느려요');
+    expect(sheets()).toHaveLength(1);
+    act(() => mockHomeErr.set(false));
+    expect(tree.root.findAll((n) => n.props?.testID === 'feedback-body')[0].props.value).toBe('검색이 느려요');
+  } finally {
+    mockFeedbackOpen.on = false;
+    mockHomeErr.on = false;
+  }
 });

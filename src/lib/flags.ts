@@ -215,6 +215,18 @@ export const FLAGS = {
    */
   packagedNameScanPhoto: DEV_SERVER_CHANNEL,
   /**
+   * KB-969(P-592): 가공식품 사진 스캔 = 서버 비전(POST /api/processed-foods/scan/vision, 서버 #542) — 스캔 화면 Menu/Packaged 탭 없이 카메라 하나,
+   * 사진마다 종류 판별(앞면 후보·성분표 결과·메뉴판 = 같은 사진으로 메뉴 v2·그 밖 = 다시 찍기). 성분표 면 추가도 비전(읽은 원문으로 /scan/label 합침).
+   * 운영 서버 #542 배포 완료(26.11.5, 11/4 03:47) → 전 채널 ON(P-598). OFF 경로(탭 + 온디바이스 ML Kit OCR)는 아직 코드에 남겨 둔다 —
+   * ML Kit 가공식품 경로·탭 삭제는 운영 확인 뒤 후속 PR.
+   */
+  packagedVisionScan: true,
+  /**
+   * P-599 → P-600: KB-979(#416) 광고성 동의 시트(홈·알림함) — 예진 11/4 실기 확인 후 전 채널 ON(홈은 최초 1회).
+   * 게이트(홈 큐 스텝·알림함 마운트)는 다시 끌 때 쓰는 스위치로 유지 — false = 노출·이벤트·설정 GET·홈 큐 소모 전부 0.
+   */
+  marketingConsentPrompt: true,
+  /**
    * KB-870/P-528 OTA2 채널 게이트 의도: 사용자 검수·공개 승인으로 큐레이션·K-pop·회피6만 전 채널 공개.
    * 운영 큐레이션 게시/GET·idol GET·회피 catalog/profile PATCH 왕복 확인 뒤 develop 머지/발행한다.
    * PF3종과 리뷰 버전은 DEV_SERVER_CHANNEL에 유지한다. 공용 dev 게이트를 켜지 않는다.

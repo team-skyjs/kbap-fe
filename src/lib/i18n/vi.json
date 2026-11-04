@@ -332,6 +332,10 @@
     "searchOnGoogle": "Tìm trên Google",
     "resultsEmpty": "Không có kết quả quét",
     "viewOrderAction": "Xem đơn",
+    "addToOrder": "Thêm vào đơn",
+    "removeFromOrder": "Bớt một",
+    "inOrder_one": "{{count}} món trong đơn",
+    "inOrder_other": "{{count}} món trong đơn",
     "orderCount_one": "{{count}} món",
     "orderCount_other": "{{count}} món",
     "retakeBodyWithCart_one": "Kết quả và {{count}} mục đã thêm sẽ bị xóa.",
@@ -1035,6 +1039,8 @@
     "primerLater": "Để sau",
     "consentSheetTitle": "Nhận tin từ K-Bap?",
     "consentSheetBody": "Gửi tin về sự kiện và tính năng mới dưới dạng thông báo quảng cáo.",
+    "consentPromptTitle": "Gợi ý K-Food hợp khẩu vị của bạn!",
+    "consentPromptBody": "Bật thông báo: không làm phiền, chỉ gợi ý món ngon 👍",
     "privacyConsent": "Đồng ý thu thập và sử dụng thông tin cá nhân cho tiếp thị (tùy chọn)",
     "receiveConsent": "Đồng ý nhận thông tin quảng cáo (tùy chọn)",
     "consentBothRequired": "Hãy đồng ý cả hai mục để bật thông báo.",
@@ -1102,6 +1108,11 @@
     "editFailed": "Không lưu được thay đổi. Hãy thử lại.",
     "editPhotoNotReady": "Ảnh chưa tải lên xong. Hãy thử lại.",
     "editNotFound": "Không tìm thấy đơn này. Hãy làm mới rồi thử lại."
+  },
+  "feedbackPrompt": {
+    "title": "Gửi thẳng cho đội ngũ K-Bap",
+    "body": "Điều gì bất tiện, tính năng bạn muốn, gì cũng được.",
+    "neverAgain": "Không hiện lại"
   },
   "feedback": {
     "title": "Liên hệ",
@@ -1323,7 +1334,13 @@
       "unreadableTitle": "Không đọc được nhãn",
       "unreadableBody": "Hãy chụp lại sao cho danh sách thành phần rõ nét.",
       "newAnalysisTitle": "Hãy bắt đầu phân tích mới",
-      "newAnalysisBody": "Không thể thêm ảnh vào lần phân tích này. Hãy bắt đầu phân tích mới."
+      "newAnalysisBody": "Không thể thêm ảnh vào lần phân tích này. Hãy bắt đầu phân tích mới.",
+      "visionLimitTitle": "Bạn đã dùng hết lượt quét ảnh hôm nay",
+      "visionLimitBody": "Bạn có thể quét lại vào ngày mai. Bạn vẫn có thể tìm sản phẩm theo tên.",
+      "tooLargeTitle": "Ảnh quá lớn",
+      "tooLargeBody": "Vui lòng chụp lại.",
+      "busyTitle": "Hệ thống quét đang bận",
+      "busyBody": "Vui lòng thử lại sau giây lát."
     },
     "debugLabel": "Văn bản OCR (chỉ để thử)",
     "debugPlaceholder": "Mỗi dòng một dòng chữ trên bao bì",
@@ -1359,9 +1376,21 @@
     "reviewPhotos_one": "Xem lại {{count}} ảnh",
     "reviewPhotos_other": "Xem lại {{count}} ảnh",
     "done": "Xong",
+    "scanAnother": "Quét sản phẩm khác",
     "resultAvoid": "Khớp với danh sách cần tránh: {{names}}.",
     "resultCaution": "Ghi chú cơ sở sản xuất chung có nêu: {{names}}.",
-    "resultMajorSet": "{{contains}}. Đặt nguyên liệu cần tránh để xem kết quả riêng."
+    "resultMajorSet": "{{contains}}. Đặt nguyên liệu cần tránh để xem kết quả riêng.",
+    "vision": {
+      "retakeTitle": "Chụp lại nhé",
+      "blurry": "Ảnh bị mờ. Giữ chắc tay và chạm vào màn hình để lấy nét.",
+      "tooDark": "Quá tối. Hãy chụp ở nơi sáng hơn.",
+      "glare": "Bao bì bị lóa sáng. Hãy nghiêng nhẹ rồi chụp.",
+      "cropped": "Một phần bị cắt mất. Hãy để toàn bộ mặt trước bao bì hoặc nhãn thành phần nằm trong khung.",
+      "notFood": "Có vẻ đây không phải thực đơn hay bao bì thực phẩm. Hãy chụp thực đơn, mặt trước bao bì hoặc nhãn thành phần.",
+      "unknown": "Không đọc được ảnh này. Hãy chụp thực đơn, mặt trước bao bì hoặc nhãn thành phần.",
+      "reading": "Đang đọc ảnh của bạn…",
+      "notLabel": "Có vẻ đây không phải nhãn thành phần. Hãy chụp mặt có danh sách thành phần."
+    }
   },
   "scanCamera": {
     "title": "Quét",
@@ -1378,7 +1407,8 @@
     "capturedPackage": "Bao bì bạn đã chụp",
     "capturedLabel": "Nhãn bạn đã chụp",
     "choosePhoto": "Chọn ảnh",
-    "switchCamera": "Đổi camera"
+    "switchCamera": "Đổi camera",
+    "capturedPhoto": "Ảnh của bạn"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

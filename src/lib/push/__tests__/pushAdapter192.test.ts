@@ -40,6 +40,7 @@ import {
   addNotificationTapListener,
   getPermissionStatus,
   getPrimerResult,
+  isPushType,
   markPrimerResult,
   registerPushToken,
   requestPermission,
@@ -278,6 +279,27 @@ describe('KB-770: OS 권한 판정 — Android 13+ 미요청(denied+canAskAgain)
     perm({ status: 'undetermined', canAskAgain: true });
     expect(await getPermissionStatus()).toBe('undetermined');
   });
+});
+
+it('KB-985 FOOD_DISCOVERY — 알려진 유형 · data.foodId(숫자·숫자 문자열만) → /food/{id} · 없음·비숫자 = 무동작 · 탭 콜백 (경로, id, 유형)', () => {
+  expect(isPushType('FOOD_DISCOVERY')).toBe(true);
+  expect(isPushType('food_discovery')).toBe(false);
+  expect(routeForNotificationData({ type: 'FOOD_DISCOVERY', foodId: 6 })).toBe('/food/6');
+  expect(routeForNotificationData({ type: 'FOOD_DISCOVERY', foodId: '6' })).toBe('/food/6');
+  expect(routeForNotificationData({ type: 'FOOD_DISCOVERY', foodId: '9007199254740993' })).toBe('/food/9007199254740993'); // 정밀도 문자열 보존
+  expect(routeForNotificationData({ type: 'FOOD_DISCOVERY' })).toBeNull();
+  expect(routeForNotificationData({ type: 'FOOD_DISCOVERY', foodId: 'abc' })).toBeNull();
+  expect(routeForNotificationData({ type: 'FOOD_DISCOVERY', foodId: -1 })).toBeNull();
+  expect(routeForNotificationData({ type: 'FOOD_DISCOVERY', foodId: 1.5 })).toBeNull();
+  expect(routeForNotificationData({ type: 'FOOD_DISCOVERY', foodId: '' })).toBeNull();
+  expect(routeForNotificationData({ type: 'FOOD_DISCOVERY', orderId: 6 })).toBeNull(); // 다른 필드로는 이동 0
+  const onRoute = jest.fn();
+  addNotificationTapListener(onRoute);
+  const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls.at(-1)[0] as (r: unknown) => void;
+  handler({ notification: { request: { identifier: 'f1', content: { data: { type: 'FOOD_DISCOVERY', foodId: 6, notificationId: 98123 } } } } });
+  expect(onRoute).toHaveBeenLastCalledWith('/food/6', 98123, 'FOOD_DISCOVERY');
+  handler({ notification: { request: { identifier: 'f2', content: { data: { type: 'FOOD_DISCOVERY', notificationId: 98124 } } } } });
+  expect(onRoute).toHaveBeenLastCalledWith(null, 98124, 'FOOD_DISCOVERY'); // 이동 없어도 id(읽음)·유형(push_open) 전달
 });
 
 it('KB-629 push_open: 탭 콜백 3번째 인자 = 푸시 유형(PUSH_TYPES 정확 일치) · 미지·없음 = undefined · 콜드 스타트 + 리스너 같은 탭 = 1회', async () => {

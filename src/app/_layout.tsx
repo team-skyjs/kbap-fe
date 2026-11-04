@@ -8,6 +8,7 @@
  * The (tabs) app shell is built in a later unit; this just boots the foundation.
  */
 import 'react-native-gesture-handler';
+import { recordLaunch } from '@/features/feedback/feedbackPrompt';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { Stack, useRouter, type Href } from 'expo-router';
@@ -45,7 +46,7 @@ import { KeyboardDismissBar } from '@/components';
 import { ScanExitPrompts } from '@/features/scan/ScanExitPrompts';
 import { VersionGateOverlay } from '@/components/VersionGate';
 import { PhotoSourceSheetHost } from '@/components/PhotoSourceSheetHost';
-import { OtaAutoApplyHost } from '@/lib/ota/OtaAutoApplyHost';
+import { OtaAutoApplyHost, OtaLaunchGate } from '@/lib/ota/OtaAutoApplyHost';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -57,7 +58,16 @@ initSentry();
 // beAuth는 RNFB를 임포트하지 않아 웹 번들에서도 안전하다.
 installBeAuth();
 
+/** KB-978: 트리 마운트 전 OTA 판정(최대 3초, 네이티브 스플래시 유지) — 받으면 바로 reload, 아니면 현재 번들로. */
 export default function RootLayout() {
+  return (
+    <OtaLaunchGate>
+      <AppRoot />
+    </OtaLaunchGate>
+  );
+}
+
+function AppRoot() {
   useScreenTracking(); // KB-784: screen_view — 라우트 패턴이 바뀔 때 1회(포그라운드 복귀 재발화 없음)
   const [fontsLoaded, fontError] = useAppFonts();
   const router = useRouter();
@@ -73,6 +83,7 @@ export default function RootLayout() {
   // P-217: 인트로 3슬라이드 폐지(멘토링 8/15) — 최초 실행 = **로그인 직행**.
   // 판별은 freshInstall 센티널 하나(구 introSeen 플래그·모듈 소멸).
   const needsLogin = useRef(false);
+  useEffect(() => void recordLaunch(), []); // KB-986: 콜드 스타트 수(재방문 피드백 시트 대상 판정) — 런타임당 1회
 
   useEffect(() => {
     // P-041(KB-152 재수정): **정리가 프리페치·렌더 모두보다 선행**. 기존 주석
@@ -239,9 +250,8 @@ export default function RootLayout() {
               <PhotoSourceSheetHost />
               {/* P-339 ⑤(KB-494): 북마크 등 상단 다크 토스트 — 전 표면 공용 호스트 */}
               <TopToastHost />
-              {/* KB-420: OTA 자동 적용 — 채널별 정책(otaPolicy) + prod 대기 배너 */}
-              {/* P-304(KB-458): 스플래시 종료 = reloadAsync 부팅 가드 조건 ② */}
-              <OtaAutoApplyHost splashDone={!splashVisible} />
+              {/* KB-978: OTA 복귀 즉시 적용(작업 화면·네트워크 정적 게이트, 복귀 3초 창) */}
+              <OtaAutoApplyHost />
               </>
               )}
               {/* P-288: JS 스플래시 오버레이 — 최상위(zIndex 1000), 완료 시 언마운트.

@@ -1,3 +1,78 @@
+## 2026-11-04 · P-600 광고성 동의 시트 최초 1회·전 채널 ON(예진 11/4 결정)
+
+- flags.ts marketingConsentPrompt: DEV_SERVER_CHANNEL → true(예진 11/4 teamtest 실기 확인 후 전 채널). #423 게이트(홈 큐 스텝·알림함 마운트)는 끌 스위치로 유지.
+- 홈 동의 시트 = 최초 1회(#422 3시간 주기 폐기): homeConsentDue = 노출 기록 없음일 때만 · 시계 되돌림 보정 제거(기록 = 이미 노출). 포커스·전경 복귀 재판정 모두 같은 기준. 알림함은 무변.
+- 피드백 모달(KB-986) 원칙 무변(코치마크 → 동의 → 피드백, 실행당 하나) — 동의가 한 번 뜬 뒤 실행부터 피드백 차례.
+- #424 Codex P1 → 예진 11/4 결정: 알림함도 최초 1회 — 홈·알림함 **공통** 노출 기록(같은 키, consentShownBefore·recordConsentShown). 어느 쪽이든 한 번 뜨면 양쪽 0 · 알림함은 포커스마다 기록을 읽고 띄운 순간 기록.
+- 👍 이모지 문구(consentPromptBody)는 예진 허용(헌법 v2.3 선별 허용)으로 무변.
+
+## 2026-11-04 · P-597 KB-986 재방문 피드백 모달(홈)
+
+- 대상: 두 번째 이상 실행(콜드 스타트 수 — AsyncStorage kbap.feedbackPrompt.v1, 루트·홈이 같은 런타임 1회 약속 공유) + 홈 큐 마지막 스텝(코치마크 → 광고성 동의 → 피드백). 홈이 아닌 화면 배선 0.
+- 빈도: 보낼 때까지 매 실행 · 보내기 성공(응답 뒤)·"다시 보지 않기" = 영구 종료 · 닫기(X·바깥 탭·스와이프·뒤로) = 다음 실행 재노출.
+- 한 실행 하나: src/lib/engagement/promptSlot.ts — 스토어 리뷰 시트(useReviewPrompt.request)·광고성 동의(useMarketingConsentSheet.show)·코치마크(가공식품·스캔)·스캔 종료 넛지가 띄우기로 정한 순간 markPromptShown → 피드백은 다음 실행. 스캔 종료 넛지·리뷰 유도는 피드백 시트가 떠 있으면 비켜 줌.
+- 시트: 문의 작성 입력·사진·제출을 features/feedback/FeedbackForm(useFeedbackForm + FeedbackFields)으로 빼 문의 화면과 공유(useSubmitFeedback·업로드 취소·공용 제출 가드 그대로). NotificationSheet 문법(fade Modal + useSheetSwipeDismiss, 제스처 = 머리만) + Modal 안 KAV + 본문 ScrollView. 전송 중 닫기 무시.
+- 계측: feedback_prompt_shown · submitted(has_photos, photo_count) · dismissed(via) · never_again — 본문 0. 네이밍 도메인에 feedback 추가.
+- 신규 i18n 3키 × 10로케일: feedbackPrompt.{title, body, neverAgain}.
+## 2026-11-04 · P-598 KB-969 후속 — packagedVisionScan 전 채널 ON
+
+- flags.ts packagedVisionScan: DEV_SERVER_CHANNEL → true(운영 서버 #542 배포 26.11.5, 11/4 03:47). ML Kit 가공식품 경로·탭은 코드에 남김(운영 확인 뒤 후속 PR).
+- 탭·메뉴판·ML Kit 흐름을 보는 스위트 8개는 OFF 고정(scanDesign 관례) · prodHide870에 기본값 true 잠금.
+## 2026-11-04 · P-599 #416 광고성 동의 시트 운영 채널 OFF 플래그
+
+- flags.ts marketingConsentPrompt = DEV_SERVER_CHANNEL(teamtest dev 타깃·development ON, production OFF) — 예진: 운영 OTA엔 시트 끔.
+- 게이트 = 진입점 두 곳: 홈 큐 스텝 첫 줄(즉시 false — 설정 GET·날짜 기록·대기·런타임 소모 0, 큐는 다음 스텝으로) · 알림함 InboxMarketingConsent 마운트(OFF = 마운트 0). #416 로직 무변.
+- OFF면 isMarketingConsentActive가 계속 false라 ScanExitPrompts·useReviewPrompt(blocked) 동작은 #416 전과 같다.
+## 2026-11-04 · P-597 KB-987 광고성 동의 시트 토스 B안 + 홈 3시간 주기
+
+- NotificationSheet consent 변형만 B안(흰 플랫 pt36·pb34·ph24, 그림자·핸들 0 · 제목 24/32 Bold 최대 3줄 네이티브 축소 하한 0.8 · 본문 15/22 ink3 · 회색 박스 없이 체크 원 22(on primary / off line2 + 흰 체크, 메트릭 동일 P-151) + 전문 보기 chevron(accessibilityLabel notif.viewFull, 44pt) · 확인 Btn minHeight 56 알약 · 나중에 15 ink3 높이 48). primer(스캔 직후 OS 권한 안내)는 그대로 — 497 (j2) 잠금.
+- 문구(종한 결정): 제목에서 동의 조건절 제거("취향에 맞춰 먹고 싶은 K-Food를 추천해드려요!") · 본문 앞에 조건절("알림에 동의하시면 …👍") — 10개 로케일 두 키.
+- 제목 실측(macOS CoreText = iOS 시스템 폰트, 320pt 폭): 10개 로케일 모두 축소 없이 ≤3줄. 큰글씨 ×1.3에선 id만 0.855 필요 — 하한 0.8(KB-856 0.9보다 여유).
+- 홈 게이트: 콜드 스타트·하루 1회 → 마지막 노출 후 3시간(homeLastShownAt epoch ms, 실제로 띄운 순간만 기록). 미래값(시계 되돌림) = now로 재설정 후 이번엔 미노출. homeChecked 삭제 · 이미 동의로 캐시된 세션은 GET 생략(인증 경계 queryClient.clear()가 캐시를 비움). 구 키 homeShownDate는 방치(업데이트 직후 1회 추가 노출 허용).
+- 백그라운드 복귀는 focus를 다시 쏘지 않아 홈이 포커스인 동안 AppState active마다 같은 스텝 재등록.
+- 확인 PATCH(MARKETING_CONSENT_PATCH) activity:true 추가 · push_pref_toggle {key:activity,on:true,source:consent} 1건(홈·알림함·설정, PATCH 직전) · analytics ALLOWED에 source.
+
+## 2026-11-04 · P-596 KB-982 메뉴판 스캔 음식 상세에 메뉴 담기
+
+- 카트 = 모듈 스토어 src/features/scan/scanCartStore.ts(useSyncExternalStore — 구 scan.tsx 로컬 Map 상태). 담기·빼기 이벤트(scan_item_add·scan_item_remove·airbridge.addToCart)도 스토어 한 곳 — 결과 리스트·상세 같은 계측.
+- openDish = rememberScanDish + push `src=scan&item=<itemId>`. 상세(src=scan + item + 스토어에 그 메뉴) = 하단 primary "메뉴 담기" → 담긴 뒤 같은 알약 틀 안 스테퍼(− "N개 담았어요" +, 44 터치) · Ask = 아래 테두리. Write는 KB-981대로 0.
+- 세션: 재촬영 = resetScanCart(구 setCart(new Map()) 자리) · 스캔 화면 언마운트 = 초기화 · useLeaveConfirm은 같은 cartCount.
+- 신규 i18n 4키 × 10로케일: scan.addToOrder · scan.removeFromOrder(빼기 버튼 접근성 라벨) · scan.inOrder_one/_other.
+
+## 2026-11-04 · P-595 KB-981 스캔 진입 상세 — 리뷰 작성 숨김·Done·Scan something else
+
+- 음식 상세 src=scan = Ask 유무와 무관하게 Write 0(전에는 Ask가 없으면 Write가 떴다) · Ask는 그대로.
+- 가공식품 상세 ?scan=1 = 작성 알약 대신 primary Done(packagedScan.done 재사용) + 테두리 Scan something else(신규 packagedScan.scanAnother × 10로케일, ko "다른 상품 스캔하기").
+- Done = 루트 스택에서 마지막 scan 화면까지 dismiss(scanFlowDepth) — 스캔 전 화면, 스캔 화면 재노출 0 · 스캔 화면이 없으면(딥링크) 뒤로. Scan something else = 같은 dismiss 뒤 /scan?mode=packaged 새 push(새 인스턴스라 이전 단계 상태 0).
+- pillOutline을 pillCta 공용으로 올림(음식 상세 Ask가 쓰던 값).
+- 예진 추가 결정("숨겨줘"): 스캔 진입 = 리뷰 섹션 안 작성 링크도 0 — 음식 본문 작성 상자(review-empty-cta)·가공식품 섹션 링크(writeInBar). 스캔이 아닌 진입은 기존 규칙 그대로.
+
+## 2026-11-04 · P-594 KB-980 권한 팝업 닫힘을 OTA 복귀로 치지 않기
+
+- 복귀 판정 = background를 거친 active만(OtaAutoApplyHost). iOS 시스템 팝업(알림·카메라·사진·위치·ATT)은 inactive만 거쳐 창·체크·이벤트 0. background→inactive→active는 복귀.
+- 권한 요청 중 + 응답 뒤 5초 = tryApply 차단(Android는 팝업에서도 background 전이) — 창이 닫히면 기존처럼 deferred, 다음 진짜 복귀·콜드 스타트에 적용.
+- 공통 지점 src/lib/permissionPrompt.ts withPermissionPrompt — 요청 11곳(알림 pushAdapter·ATT adsSession·카메라 scan 훅/ImagePicker·사진·위치 2·저장) 감쌈, src 전수 잠금(otaPermission980).
+- 기존 OTA 테스트 복귀 헬퍼 = background→active로(978·657·695×2). 시작 3초 상한·네이티브 fallbackToCacheTimeout 무변 · 새 카피 0.
+
+## 2026-11-03 · P-592 KB-969 가공식품 사진 스캔 = 서버 비전(서버 #542) — 카메라 하나·종류 자동 판별
+
+- 플래그 packagedVisionScan = DEV_SERVER_CHANNEL(커맨드 합의: 운영 서버 #542 배포 전 운영 무변 · OFF = 현행 탭 + ML Kit). 운영 배포 뒤 전 채널 ON + ML Kit 가공식품 경로·탭 삭제는 후속 PR.
+- ON: 스캔 화면 Menu/Packaged 탭 없음(카메라 하나 = 가공식품 흐름) · 셔터·갤러리 → 긴 변 1600px·JPEG 0.8 → PACKAGED_SCAN 업로드(실패 = 오류 화면) → POST /api/processed-foods/scan/vision {imagePath, clientRequestId(촬영 1회 UUID), lang}(3.2·120초).
+- 분기(경로 = 서버 state 정본, adaptVisionScan): PACKAGE_FRONT 후보 → 기존 후보·확정(같은 analysisId) / 후보 없음 → 기존 이름 찾기·성분표 / INGREDIENT_LABEL → 기존 성분표 결과(한 면 더 = 다시 비전 → 읽은 원문을 같은 분석에 /scan/label로 합침, 성분표가 아니면 다시 찍기) / MENU → 같은 사진·이미 올린 경로로 메뉴 v2(postScan uploadedPath — 재업로드 0, 티켓·소진 화면 그대로, scan_start source vision) / OTHER → reason별 안내 + 다시 찍기 / CONFIRMED → 멱등 확정으로 상세.
+- 오류: PFOOD-013 = 하루 상한(닫기만) · PFOOD-014 = 용량 · SCAN-006·008 = 혼잡(같은 키·같은 경로로 다시) · 전송 실패 = 같은 키 재시도 · PFOOD-006 = 다시 찍기. 매핑은 코드로만(상태 503·429로 넓히면 이름·성분표 기존 문구가 바뀐다).
+- 계측 신규 food_packaged_scan_vision(kind·state·confidence 구간·reason·side) · food_packaged_scan_start mode vision · food_packaged_scan_fail stage vision.
+- 시뮬 주입: 구 OCR 입력칸 자리 = VisionDebug(글자 → 실제 이름 스캔/성분표 분석으로 응답을 만들어 같은 분기, 다시 찍기 목).
+- #542 공부 반영(커맨드 11/03): reason UNKNOWN(키 재시도 초과·만료 — 비전 호출 0)·모르는 reason = 안내 unknown + 다시 찍기(새 키) · 재전송 REJECTED = 후보 없음 · kind와 어긋난·모르는 state = 다시 찍기(앞면이라도 "후보 없음"으로 보내지 않는다).
+- 신규 i18n 13키 × 10로케일: packagedScan.vision.{retakeTitle, blurry, tooDark, glare, cropped, notFood, unknown} · packagedScan.err.{visionLimit, tooLarge, busy}{Title, Body}.
+- Q-412 보정(11/04): 판정 전 로딩 = 중립 문구(packagedScan.vision.reading·scanCamera.capturedPhoto — 메뉴판도 처음엔 "포장" 문구였다) · 한 면 더에 성분표가 아닌 사진(앞면·메뉴·OTHER·성분표 못 읽음) = packagedScan.vision.notLabel(품질 reason이 있으면 그 안내 우선 — 전에는 reason null → unknown). 신규 3키 × 10로케일.
+- Codex P2 3건(11/04): 혼잡(SCAN-006·008) 화면에도 다시 시도(같은 키·경로) · 업로드 중 로딩을 닫으면 비전 호출 0(하루 상한 소모 금지) · 성분표 결과 → 사진 보기 → 다시 찍기 = 잘라낸 면 목록에 합쳐 마지막 면 교체(전에는 원본에 붙어 4면이면 새 면이 잘려 나갔다).
+## 2026-11-04 · P-593 KB-978 OTA 즉시 적용 — 시작·복귀 때 확인 후 바로 다시 로드(예진 결정: P-316 변경)
+
+- 시작: OtaLaunchGate가 루트 트리(QueryClient·인증 부트스트랩) 마운트 **전**에 체크→fetch(상한 3초, 네이티브 스플래시 유지). 받으면 바로 reloadAsync(트리를 띄우지 않아 진행 중 요청 0 — P-347 창 없음). 없음·3초 초과·에러 = 현재 번들로 마운트. 3초 뒤 늦게 받으면 그 런타임에선 reload 0, 다음 복귀가 재체크 없이 적용.
+- 복귀: active 전환 순간부터 3초 창 안에서만 reload — 작업 화면 차단(스캔·리뷰 작성·로그인·온보딩·검색·프로필 편집 등, 로그인 시트·사진 선택기 복귀도 active)·네트워크 정적 500ms 게이트(P-347)·2분 스로틀 유지. 창이 닫히면 deferred(다음 복귀/콜드 스타트).
+- 운영·비운영 같은 로직: P-316 "운영 항상 defer"·isProdChannel 분기·부팅 8초 가드(P-304 — expo-modules-core 56 레이스, 57.0.0 수정) 삭제.
+- 계측 신규 app_ota_apply {result: applied|none|timeout|error|deferred, trigger: launch|resume}. 사용자 문구 추가 0. 네이티브 설정(fallbackToCacheTimeout) 무변 — 지문 불변.
+
 ## 2026-11-03 · P-590 KB-977 가공식품 상세·작성 다듬기 3건(예진 운영 실기)
 
 - ① 상세 판정 띠 아래 근거 줄(MatchEvidence "Milk: 원유") 제거 — 띠 본문 그대로. 키 packaged.matchEvidence는 사용처 0(로케일 파일엔 남김).

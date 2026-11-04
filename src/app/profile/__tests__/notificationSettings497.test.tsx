@@ -196,7 +196,7 @@ it('US2(a) 소식 OFF에서 소식 토글 탭 → mutate 0회 + 동의 시트 op
   expect(has(tree, 'notif-sheet-consent')).toBe(true);
 });
 
-it('US2(b) 시트(사전 체크, 9/14 종한): 하나 해제 + 확인 = 무동작·안내 → 다시 체크 + 확인 → mutate({news:{enabled:true, 버전 2종}}) 1회 + 시트 닫힘', async () => {
+it('US2(b) 시트(사전 체크, 9/14 종한): 하나 해제 + 확인 = 무동작·안내 → 다시 체크 + 확인 → mutate({activity:true, news:{enabled:true, 버전 2종}}) 1회 + 시트 닫힘 + 토글 이벤트 2건', async () => {
   mockData.query.data = OFF;
   const tree = await render();
   await tap(tree, 'notif-news');
@@ -207,7 +207,10 @@ it('US2(b) 시트(사전 체크, 9/14 종한): 하나 해제 + 확인 = 무동�
   await tap(tree, 'notif-sheet-confirm');
   expect(mockData.update.mutate).toHaveBeenCalledTimes(1);
   // 버전 2 = kbap-legal 전문 페이지 "동의 문구 버전: 2"(시행일 2026-09-14)와 일치해야 한다 — 페이지 개정 시 함께 올린다.
-  expect(mockData.update.mutate).toHaveBeenCalledWith({ news: { consent: true, privacyConsentVersion: 2, receiveConsentVersion: 2, enabled: true, mealTime: true } });
+  expect(mockData.update.mutate).toHaveBeenCalledWith({ activity: true, news: { consent: true, privacyConsentVersion: 2, receiveConsentVersion: 2, enabled: true, mealTime: true } }); // KB-987: activity도 ON
+  // KB-987: 확인 = push_pref_toggle 2건 — 소식 ON + 활동 ON(source: consent)
+  const toggles = (jest.requireMock('@/lib/analytics') as { track: jest.Mock }).track.mock.calls.filter(([e]) => e === 'push_pref_toggle');
+  expect(toggles).toEqual([['push_pref_toggle', { key: 'news', on: true }], ['push_pref_toggle', { key: 'activity', on: true, source: 'consent' }]]);
   expect(has(tree, 'notif-sheet-consent')).toBe(false);
 });
 

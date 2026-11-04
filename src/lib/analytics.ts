@@ -32,6 +32,7 @@ import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type Engagem
  * |                              | entry (intro|gate_*|profile|other)         |
  * | auth_guest_enter              | (props 없음)                                |
  * | profile_feedback_submit      | has_photos, photo_count                    |
+ * | feedback_prompt_*            | KB-986 재방문 피드백 시트: shown · submitted(has_photos, photo_count) · dismissed(via) · never_again — 본문 금지 |
  * | app_tab_view                 | tab (home|food|reviews|community|profile), |
  * |                              | user_type (guest|registered)               |
  * | auth_gate_view           | trigger (게스트 게이트 노출 계기)             |
@@ -94,7 +95,9 @@ export const EVENTS = {
   // KB-630: 알림 켜기 흐름 클릭 3종. CSV 등재 예정
   push_permission: 'push_permission', // OS 팝업 결과·설정 열기
   push_consent_response: 'push_consent_response', // 광고성 동의 시트 클릭
+  push_consent_view: 'push_consent_view', // KB-979: 광고성 동의 시트 노출(열릴 때마다 1회)
   push_settings_tap: 'push_settings_tap', // 알림 설정 화면 보조 클릭(토글은 push_pref_toggle)
+  app_ota_apply: 'app_ota_apply', // KB-978: OTA 즉시 적용 판정 결과(시작·복귀)
   push_open: 'push_open', // KB-629: 푸시 알림 탭으로 앱 진입(콜드 스타트·백그라운드 공통, 탭 1번 = 1회)
   profile_avoid_update: 'profile_avoid_update',
   community_post_submit: 'community_post_submit',
@@ -108,6 +111,10 @@ export const EVENTS = {
   profile_feedback_submit: 'profile_feedback_submit',
   // KB-730: 리뷰 유도 시트 노출·응답. CSV 등재 요청(스펙 레포)
   review_prompt_view: 'review_prompt_view',
+  feedback_prompt_shown: 'feedback_prompt_shown', // KB-986 재방문 피드백 시트
+  feedback_prompt_submitted: 'feedback_prompt_submitted',
+  feedback_prompt_dismissed: 'feedback_prompt_dismissed',
+  feedback_prompt_never_again: 'feedback_prompt_never_again',
   review_prompt_response: 'review_prompt_response',
   // KB-739: AdMob 4종. CSV 등재는 커맨드 센터. 값은 enum만(format·placement·status) + remaining 정수
   ad_impression: 'ad_impression',
@@ -143,6 +150,7 @@ export const EVENTS = {
   // KB-973 가공식품 출시 계측 보강 — 촬영 시작(scan_start는 메뉴 시계열 그대로 두고 따로)·이름 검색/확정 실패·세그먼트·리뷰 탭 대상 필터
   food_packaged_scan_start: 'food_packaged_scan_start',
   food_packaged_scan_fail: 'food_packaged_scan_fail',
+  food_packaged_scan_vision: 'food_packaged_scan_vision', // KB-969 사진 스캔(서버 비전) 판별 결과
   food_segment_select: 'food_segment_select',
   review_feed_target_select: 'review_feed_target_select',
   food_packaged_label_scan: 'food_packaged_label_scan', // P-508 성분표 분석 결과(pages 1~4 · charged = 서버값 · result ok|unreadable|newAnalysis|expired|quota|network… — OCR 원문 금지)
@@ -187,6 +195,10 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_item_remove: ['risk'],
   order_done: ['item_count'],
   review_prompt_view: ['trigger'], // scan|review|order (KB-730)
+  feedback_prompt_shown: [], // KB-986
+  feedback_prompt_submitted: ['has_photos', 'photo_count'], // 개수·유무만(본문 금지)
+  feedback_prompt_dismissed: ['via'], // close|backdrop|swipe|back
+  feedback_prompt_never_again: [],
   // KB-739: format = banner|native|interstitial|rewarded · placement = lib/ads/units AdPlacement · status = UMP 상태 소문자|error
   // KB-765: surface = 'dialog'(홈 스캔 한도 다이얼로그에서 난 보상형 이벤트 — 스캔 화면은 미지정)
   ad_impression: ['format', 'placement', 'surface'],
@@ -214,8 +226,10 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   home_idol_pick_list_view: ['count'],
   food_idol_video_open: ['food_id', 'platform', 'video_position'],
   food_packaged_label_scan: ['pages', 'charged', 'result'],
-  food_packaged_scan_start: ['mode', 'source'], // mode packaged(앞면)|label(성분표) · source camera|gallery(scan_start와 같은 값)
-  food_packaged_scan_fail: ['stage', 'result'], // stage name(이름 인식)|confirm(확정) · result = scanFailureOf(network|quota|… — 성분표 food_packaged_label_scan result와 같은 값)
+  food_packaged_scan_start: ['mode', 'source'], // mode packaged(앞면)|label(성분표)|vision(KB-969 사진 스캔 — 종류는 서버 판별) · source camera|gallery(scan_start와 같은 값)
+  // KB-969: kind MENU|PACKAGE_FRONT|INGREDIENT_LABEL|OTHER · state = 다음 단계(candidates|none|label|menu|other|confirmed) · confidence low|mid|high(구간) · reason(OTHER 근거|none) · side first|add(성분표 한 면 더). 사진·경로·읽은 글자 0
+  food_packaged_scan_vision: ['kind', 'state', 'confidence', 'reason', 'side'],
+  food_packaged_scan_fail: ['stage', 'result'], // stage name(이름 인식)|confirm(확정)|vision(KB-969 사진 스캔) · result = scanFailureOf(network|quota|… — 성분표 food_packaged_label_scan result와 같은 값)
   food_segment_select: ['segment', 'source'], // segment dishes|packaged · source tap|coach|see_all
   review_feed_target_select: ['target'], // all|food|packaged
   food_packaged_type_select: ['type'],
@@ -231,12 +245,14 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   review_helpful_toggle: ['on', 'surface', 'target_type'], // KB-812 2차 target_type: food|packaged
   review_translate_toggle: ['action', 'target', 'result', 'source'], // action: translate|original · target: review|post · result: ok|fail|same(KB-679 — 번역 시도 결과, original엔 없음 · KB-689 same = 원문 언어 == 요청 언어) · source: auto(KB-941 리뷰 탭 첫 묶음 자동 — 수동 탭엔 없음)
   push_primer_response: ['action', 'surface'], // accept|later · onboarding|scan
-  push_pref_toggle: ['key', 'on'],
+  push_pref_toggle: ['key', 'on', 'source'], // source: consent(KB-987 — 동의 시트 확인으로 켜짐, 설정 토글엔 없음)
   // KB-630 — 값은 enum만(문구·URL 금지). state 체계는 scan_permission 준용.
   push_permission: ['state'], // grant|deny|settings_open
-  push_consent_response: ['action', 'target'], // action: check|uncheck|full_text|blocked|later · target: privacy|receive(check·uncheck·full_text만)
+  push_consent_response: ['action', 'target', 'surface'], // action: check|uncheck|full_text|blocked|later|confirm(KB-979: 둘 다 체크한 채 확인) · target: privacy|receive(check·uncheck·full_text만) · surface: home|inbox|settings(KB-979)
+  push_consent_view: ['surface'], // KB-979 home|inbox|settings
   push_settings_tap: ['target'], // news_off_cancel|consent_full|retry_save|retry_load
-  push_open: ['type'], // KB-629: PUSH_TYPES 값만(HELPFUL|SCAN_SUGGESTION|REVIEW_REMINDER|NEWS|MEAL_TIME) — 미지 유형 = 속성 생략
+  app_ota_apply: ['result', 'trigger'], // KB-978 result: applied|none|timeout|error|deferred · trigger: launch|resume
+  push_open: ['type'], // KB-629: PUSH_TYPES 값만(HELPFUL|SCAN_SUGGESTION|REVIEW_REMINDER|NEWS|MEAL_TIME|FOOD_DISCOVERY) — 미지 유형 = 속성 생략
   profile_avoid_update: ['count', 'delta', 'via'], // via: manual|preset (항목명 금지 — 개수만)
   community_post_submit: ['photo_count', 'food_tag_count', 'has_place'], // 장소명 금지 — boolean만
   community_comment_submit: ['is_reply'],

@@ -4,7 +4,7 @@
  *
  * 데이터 = GET /api/notifications(lib/data/useNotifications) — 이 기기(X-Installation-Id)로 온 최근 7일, 최신순.
  * 제목·본문은 발송 시점 언어로 서버가 저장한 문자열 그대로(앱 가공 0). 상대 시각은 커뮤니티 공용 timeAgo.
- * 항목 탭 = 미읽음이면 낙관 읽음(PATCH) + routeForNotificationData(type·orderId — 없으면 이동 없음).
+ * 항목 탭 = 미읽음이면 낙관 읽음(PATCH) + routeForNotificationData(type·orderId·foodId — 없으면 이동 없음).
  * 전체 읽음 계약이 없어 "모두 읽음"은 없다. 게스트 = 로그인 직행(Redirect, 2026-09-16 clarify).
  */
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -23,6 +23,7 @@ import type { InboxItem } from '@/lib/api/notificationAdapter';
 import { openNotificationRoute } from '@/lib/nav';
 import { routeForNotificationData } from '@/lib/push/pushAdapter';
 import { timeAgo } from '@/features/community/parts';
+import { InboxMarketingConsent } from '@/features/push/MarketingConsentSheet';
 
 export default function Notifications() {
   const router = useRouter();
@@ -38,16 +39,18 @@ export default function Notifications() {
 
   const items = data ?? [];
 
-  // 이동은 읽음 응답을 기다리지 않는다(US3 ③). type·orderId(REVIEW_REMINDER만, KB-500) — 없거나 미지 유형이면 null → 알림함 유지.
+  // 이동은 읽음 응답을 기다리지 않는다(US3 ③). type·orderId(REVIEW_REMINDER만, KB-500)·foodId(FOOD_DISCOVERY만, KB-985) — 없거나 미지 유형이면 null → 알림함 유지.
   const open = (n: InboxItem) => {
     if (!n.read) markRead.mutate(n.id);
-    const href = routeForNotificationData({ type: n.type, orderId: n.orderId });
+    const href = routeForNotificationData({ type: n.type, orderId: n.orderId, foodId: n.foodId });
     if (href) openNotificationRoute(router, href); // KB-573: 홈은 스택 리셋(알림함 화면도 닫힘)
   };
 
   return (
     <View style={styles.root}>
       <SubHeader title={t('inbox.title')} onBack={() => router.back()} />
+      {/* KB-979: 미동의 회원 = 진입마다 광고성 동의 시트(전환 끝난 뒤). 게스트는 위 Redirect라 여기 안 온다 */}
+      {FLAGS.marketingConsentPrompt && <InboxMarketingConsent />}{/* P-599: 운영 OFF = 마운트 0(설정 GET·시트 0) */}
       {isError && !data ? (
         /* P-164/P-207: 로드 실패 = 공용 에러(+재시도) — 빈 상태로 위장 금지 */
         <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />

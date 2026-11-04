@@ -24,7 +24,7 @@
 import * as React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { usePullRefresh } from '@/lib/data/usePullRefresh';
-import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { Redirect, useLocalSearchParams, useNavigation, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VerdictLockRow } from '@/components/VerdictBand';
@@ -126,6 +126,21 @@ export function ProcessedFoodDetailScreen() {
   const heroH = useWindowDimensions().width; // KB-974: 히어로 = 정방(음식 상세 hero aspectRatio 1과 같은 높이)
   const loadMoreReviews = React.useRef<(() => void) | null>(null); // 리뷰 섹션이 채운다 — 바닥 근처 스크롤 = 다음 페이지(무한 스크롤, Read reviews 버튼 없음)
   const back = () => (router.canGoBack() ? router.back() : router.navigate('/(tabs)/food' as Href));
+  // KB-981: 스캔 진입(PackagedScanFlow push) = 하단 Done·Scan something else — 리뷰 작성 알약 없음
+  const scanEntry = params.scan === '1';
+  const navigation = useNavigation();
+  /** Done = 스캔 화면까지 스택째 닫기(스캔 전 화면). 스캔 화면이 없으면(딥링크 등) 뒤로 */
+  const closeScan = (): boolean => {
+    const n = scanFlowDepth(navigation.getState());
+    if (n > 0) router.dismiss(n);
+    return n > 0;
+  };
+  const onScanDone = () => { if (!closeScan()) back(); };
+  /** 새 스캔 = 옛 스캔 화면을 닫고 새로 연다(이전 결과·단계 상태가 남지 않게 — 화면 인스턴스째 교체) */
+  const onScanAnother = () => {
+    closeScan();
+    router.push(`/scan?mode=packaged&t=${Date.now()}` as Href);
+  };
   const d = q.data;
   const unavailable = processedUnavailable(q.error);
   // 한국어 사용자 = 번역이 원문과 같은 언어 — 번역 줄 생략
@@ -186,12 +201,12 @@ export function ProcessedFoodDetailScreen() {
     const hasVerdict = !guest && d.verdict != null;
     // 표시 근거 없음(labelSource NONE — 서버 목록 labelKnown false와 같은 규칙, S-928) = 회원도 verdict null인 제품(#457) — 회피 미설정이어도 Safe로 그리지 않는다
     const noLabel = d.labelSource === 'NONE';
-    const canWrite = FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && FLAGS.packagedReviewWrite;
+    const canWrite = FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && FLAGS.packagedReviewWrite && !scanEntry; // KB-981: 스캔 진입 = 작성 알약 0
     const codes = insideCodes(d);
     body = (
       <ScrollView
         refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={C.ink3} />}
-        contentContainerStyle={[s.pad, { paddingBottom: canWrite ? band.scrollPad : insets.bottom + 32 }]}
+        contentContainerStyle={[s.pad, { paddingBottom: canWrite || scanEntry ? band.scrollPad : insets.bottom + 32 }]}
         scrollEventThrottle={64}
         onScroll={(e) => {
           const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
@@ -279,12 +294,26 @@ export function ProcessedFoodDetailScreen() {
 
         {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <View style={s.thickDivider} />}
         {/* 롤백 스위치(reviewsLiveEnabled off) = 가공식품 리뷰는 목 경로가 없어 목록이 비는데 서버 요약은 남는다 — 섹션째 숨김(Codex #314 R2) */}
-        {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} loadMoreRef={loadMoreReviews} writeInBar={canWrite} />}
+        {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} loadMoreRef={loadMoreReviews} writeInBar={canWrite || scanEntry} /* KB-981: 스캔 진입 = 섹션 작성 링크도 0(예진) */ />}
       </ScrollView>
     );
     // KB-914(R-137): 하단 고정 CTA = 음식 상세와 같은 알약(구 리뷰 섹션 텍스트 링크 — 섹션 링크는 이 바가 있을 때 숨김)
     // KB-977(예진 운영 실기): 알약 뒤 흰 띠 제거 — 음식 상세(KB-932)와 같은 투명 떠 있는 띠 + 연필 아이콘 알약. 띠 바탕 탭은 아래 콘텐츠로(box-none)
-    if (canWrite) {
+    if (scanEntry) {
+      body = (
+        <>
+          {body}
+          <View style={[pillCta.band, { paddingBottom: band.bottom }]} pointerEvents="box-none" onLayout={(e) => band.onHeight(e.nativeEvent.layout.height)} testID="pf-scan-band">
+            <Pressable style={pillCta.pillPrimary} onPress={onScanDone} accessibilityRole="button" testID="pf-scan-done">
+              <Text style={pillCta.pillPrimaryText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={PILL_MAX_SCALE}>{t('packagedScan.done')}</Text>
+            </Pressable>
+            <Pressable style={pillCta.pillOutline} onPress={onScanAnother} accessibilityRole="button" testID="pf-scan-another">
+              <Text style={pillCta.pillOutlineText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={PILL_MAX_SCALE}>{t('packagedScan.scanAnother')}</Text>
+            </Pressable>
+          </View>
+        </>
+      );
+    } else if (canWrite) {
       body = (
         <>
           {body}
@@ -339,3 +368,11 @@ const s = StyleSheet.create({
   skelLine: { height: 14, borderRadius: radius.xs },
   skelRow: { height: 63, borderRadius: radius.xs },
 });
+
+/** KB-981: 루트 스택에서 마지막 스캔 화면부터 현재 화면까지 개수 — 스캔 화면이 없으면 0 */
+export function scanFlowDepth(state: { index?: number; routes: readonly { name: string }[] } | undefined): number {
+  if (!state) return 0;
+  const i = state.routes.map((r) => r.name).lastIndexOf('scan');
+  const top = state.index ?? state.routes.length - 1;
+  return i < 0 || i > top ? 0 : top - i + 1;
+}

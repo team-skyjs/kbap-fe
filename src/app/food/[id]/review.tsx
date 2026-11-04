@@ -55,6 +55,7 @@ import { isUploadAborted } from '@/lib/api/uploadAbort';
 import { useReviewPrompt } from '@/lib/useReviewPrompt';
 import { useOneShotQueue } from '@/lib/oneShotQueue';
 import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
+import { withPermissionPrompt } from '@/lib/permissionPrompt';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
 // ponytail: 이모지·예측 바 전환(+44~53pt)만 줄어든 만큼 내린다 — 키보드가 통째로 다시 올라오는 큰 축소(앱 복귀 등 ~300pt)는
@@ -186,7 +187,7 @@ export function ReviewComposeScreen({ packaged = false }: { packaged?: boolean }
     try {
       if (src === 'camera') {
         // 권한 거부 = 스캔 문법(설정 유도 알럿 — scan.tsx 동일)
-        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        const perm = await withPermissionPrompt(() => ImagePicker.requestCameraPermissionsAsync());
         if (!perm.granted) {
           Alert.alert(t('scan.permissionTitle'), t('scan.permissionSettingsBody'), [
             { text: t('common.cancel'), style: 'cancel' },

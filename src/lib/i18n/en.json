@@ -328,6 +328,10 @@
     "searchOnGoogle": "Search on Google",
     "resultsEmpty": "No scan results",
     "viewOrderAction": "View order",
+    "addToOrder": "Add to order",
+    "removeFromOrder": "Remove one",
+    "inOrder_one": "{{count}} in your order",
+    "inOrder_other": "{{count}} in your order",
     "orderCount_one": "{{count}} item",
     "orderCount_other": "{{count}} items",
     "retakeBodyWithCart_one": "Your results and {{count}} added item will be discarded.",
@@ -1031,6 +1035,8 @@
     "primerLater": "Not now",
     "consentSheetTitle": "Get K-Bap news?",
     "consentSheetBody": "Promotional alerts about events and new features.",
+    "consentPromptTitle": "We'll recommend K-Food that suits your taste!",
+    "consentPromptBody": "Turn on notifications — no spam, just tasty food picks 👍",
     "privacyConsent": "Consent to marketing data collection and use (optional)",
     "receiveConsent": "Consent to receive promotional messages (optional)",
     "consentBothRequired": "Please agree to both items to turn on notifications.",
@@ -1098,6 +1104,11 @@
     "editFailed": "Couldn't save the change. Try again.",
     "editPhotoNotReady": "The photo upload didn't finish. Try again.",
     "editNotFound": "Couldn't find this order. Refresh and try again."
+  },
+  "feedbackPrompt": {
+    "title": "Tell the K-Bap team directly",
+    "body": "Something bugging you, or a feature you'd like? Anything helps.",
+    "neverAgain": "Don't show again"
   },
   "feedback": {
     "title": "Contact us",
@@ -1319,7 +1330,13 @@
       "unreadableTitle": "We couldn't read the label",
       "unreadableBody": "Keep the ingredient list in focus and take the photo again.",
       "newAnalysisTitle": "Start a new analysis",
-      "newAnalysisBody": "You can't add more photos to this analysis. Please start a new one."
+      "newAnalysisBody": "You can't add more photos to this analysis. Please start a new one.",
+      "visionLimitTitle": "You've reached today's photo scan limit",
+      "visionLimitBody": "You can scan again tomorrow. You can still search products by name.",
+      "tooLargeTitle": "This photo is too large",
+      "tooLargeBody": "Please take the photo again.",
+      "busyTitle": "Scanning is busy right now",
+      "busyBody": "Please try again in a moment."
     },
     "debugLabel": "OCR text (test only)",
     "debugPlaceholder": "One line per row of the package text",
@@ -1355,9 +1372,21 @@
     "reviewPhotos_one": "Review photo",
     "reviewPhotos_other": "Review {{count}} photos",
     "done": "Done",
+    "scanAnother": "Scan something else",
     "resultAvoid": "Matches your avoid list: {{names}}.",
     "resultCaution": "A shared-facility statement mentions: {{names}}.",
-    "resultMajorSet": "{{contains}}. Set your avoid ingredients to see a personal result."
+    "resultMajorSet": "{{contains}}. Set your avoid ingredients to see a personal result.",
+    "vision": {
+      "retakeTitle": "Let's take that again",
+      "blurry": "The photo is blurry. Hold still and tap the screen to focus.",
+      "tooDark": "It's too dark. Move somewhere brighter.",
+      "glare": "Light is reflecting off the package. Tilt it a little.",
+      "cropped": "Part of it is cut off. Fit the whole package front or label in the frame.",
+      "notFood": "This doesn't look like a menu or food package. Take a photo of a menu, package front, or ingredient label.",
+      "unknown": "We couldn't read this photo. Take a photo of a menu, package front, or ingredient label.",
+      "reading": "Reading your photo…",
+      "notLabel": "This doesn't look like an ingredient label. Photograph the side with the ingredient list."
+    }
   },
   "scanCamera": {
     "title": "Scan",
@@ -1374,7 +1403,8 @@
     "capturedPackage": "Your captured package",
     "capturedLabel": "Your captured label",
     "choosePhoto": "Choose photo",
-    "switchCamera": "Switch camera"
+    "switchCamera": "Switch camera",
+    "capturedPhoto": "Your photo"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

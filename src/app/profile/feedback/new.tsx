@@ -5,28 +5,17 @@
  * `SubHeader`·`Btn`·공용 제출 가드·토스트. **새 스타일 상수는 두지 않는다**(치수는 리뷰 작성과 동일값).
  *
  * P-387 규약: 완료 안내는 **응답 성공 후에만**. 실패면 본문·사진을 유지하고 재시도.
+ * KB-986: 입력·사진·제출은 features/feedback/FeedbackForm(재방문 피드백 시트와 공유) — 이 화면은 헤더·키보드 회피·이탈 확인·닫기.
  */
 import * as React from 'react';
-import { Image, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
-import { Alert } from '@/lib/engagement/occlusionSurfaces';
-import { launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
-import { Pressable } from '@/components/Pressable';
+import { KeyboardAvoidingView, ScrollView, StyleSheet } from 'react-native';
 import { KAV_BEHAVIOR, KAV_OFFSET } from '@/lib/keyboardAvoid';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import * as ImagePicker from 'expo-image-picker';
-import { Btn, IconCamera, IconClose, SubHeader } from '@/components';
-import { Input } from '@/components/KeyboardDismissBar';
-import { showTopToast } from '@/components/topToastStore';
+import { SubHeader } from '@/components';
 import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
-import { useSubmitGuard } from '@/lib/useSubmitGuard';
-import { openAppSettings } from '@/lib/openExternal';
-import { needsPhotoLibraryPermission } from '@/lib/mediaPermissions';
 import { EVENTS, track } from '@/lib/analytics';
-import { FEEDBACK_MAX_LEN, FEEDBACK_MAX_PHOTOS, useSubmitFeedback } from '@/lib/data/useFeedback';
-import { color as C, radius } from '@/lib/theme';
-import { useUploadAbort } from '@/lib/useUploadAbort';
-import { isUploadAborted } from '@/lib/api/uploadAbort';
+import { FeedbackFields, useFeedbackForm } from '@/features/feedback/FeedbackForm';
 
 export default function FeedbackComposeScreen() {
   const router = useRouter();
@@ -38,14 +27,9 @@ export default function FeedbackComposeScreen() {
     prefill === 'ad' ? t('ads.reportPrefill')
     : prefill === 'photoRemoval' ? t('ugc.photoRemovalPrefill', { product: product ?? '', reviewId: reviewId ?? '' })
     : '';
-  const [body, setBody] = React.useState(initialBody);
-  const [photos, setPhotos] = React.useState<string[]>([]);
-  const [importing, setImporting] = React.useState(false);
-  const submit = useSubmitFeedback();
-  const guard = useSubmitGuard(); // P-173: 동기 ref + busy — 같은 틱 더블탭 1건만
-  const nextUploadSignal = useUploadAbort(); // KB-711: 전송 중 화면을 떠나면 사진 업로드 취소
+  const form = useFeedbackForm(initialBody);
   // KB-708: 본문·사진이 있으면 이탈 확인(헤더 뒤로·스와이프·하드웨어 뒤로). 전송 성공 뒤엔 막지 않고 닫힘
-  const leave = useLeaveConfirm((body.trim().length > 0 && body.trim() !== initialBody.trim()) || photos.length > 0, guard.busy); // 프리필만·프리필 지운 빈 폼 = 이탈 확인 0(/review 10) // 전송 중 = 막지 않음(그냥 나감)
+  const leave = useLeaveConfirm((form.body.trim().length > 0 && form.body.trim() !== initialBody.trim()) || form.photos.length > 0, form.busy); // 프리필만·프리필 지운 빈 폼 = 이탈 확인 0(/review 10) // 전송 중 = 막지 않음(그냥 나감)
   // 업로드·전송이 끝나기 전에 유저가 뒤로 가거나 "내 문의"로 넘어갈 수 있다. 그때 늦게
   // 도착한 성공 콜백이 router.back()을 부르면 **지금 화면**이 닫힌다(내 문의 → 작성으로
   // 되돌아가는 역주행). 이 화면이 아직 떠 있을 때만 닫는다(Codex #170).
@@ -59,56 +43,13 @@ export default function FeedbackComposeScreen() {
     }, []),
   );
 
-  const pickPhoto = async () => {
-    const remaining = FEEDBACK_MAX_PHOTOS - photos.length;
-    if (remaining <= 0 || importing) return;
-    setImporting(true);
-    try {
-      // KB-600(P-408): Android는 시스템 Photo Picker — READ_MEDIA 권한을 제거했으므로 요청하면 즉시 denied. iOS만 요청.
-      if (needsPhotoLibraryPermission()) {
-        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!perm.granted) {
-          // 사진 라이브러리 권한이다 — 카메라 문구(scan.*)를 쓰면 유저가 엉뚱한 설정을
-          // 바꾸고도 첨부를 못 한다(Codex #170). 권한이 다르면 문구도 달라야 한다.
-          Alert.alert(t('photo.libraryPermTitle'), t('photo.libraryPermBody'), [
-            { text: t('common.cancel'), style: 'cancel' },
-            { text: t('photo.openSettings'), onPress: () => void openAppSettings() },
-          ]);
-          return;
-        }
-      }
-      const res = await launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.8,
-        allowsMultipleSelection: true,
-        selectionLimit: remaining,
-      });
-      if (!res.canceled && res.assets?.length) {
-        // Codex #196: 픽커를 두 번 열어 같은 사진을 고르면 URI가 중복돼 key 충돌·삭제 시 둘 다 제거·업로드 2회 — Set으로 중복 제거
-        setPhotos((cur) => [...new Set([...cur, ...res.assets.map((a) => a.uri)])].slice(0, FEEDBACK_MAX_PHOTOS));
-      }
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const canSend = body.trim().length > 0;
   const onSend = () =>
-    void guard.run(async () => {
-      try {
-        await submit.mutateAsync({ content: body.trim(), photoUris: photos, signal: nextUploadSignal() });
-        // P-387: 성공 응답 뒤에만 완료 — 계측 속성은 개수·유무만(본문·기기정보 금지)
-        track(EVENTS.profile_feedback_submit, { has_photos: photos.length > 0, photo_count: photos.length });
-        showTopToast(t('feedback.sent')); // 토스트 호스트는 루트에 있어 어느 화면이든 뜬다
-        leave.release(() => {
-          if (focused.current) router.back();
-        });
-      } catch (e) {
-        if (isUploadAborted(e)) return; // KB-711: 화면을 떠나 업로드를 취소한 것 — 다른 화면 위에 실패 토스트를 띄우지 않는다
-        // 429(일일 한도)는 전용 안내 — 일반 실패와 구분된다
-        const code = (e as { code?: string })?.code;
-        showTopToast(t(code === 'FEEDBACK-003' ? 'feedback.rateLimited' : 'feedback.sendFailed'), { error: true });
-      }
+    form.send(({ photoCount }) => {
+      // P-387: 성공 응답 뒤에만 완료 — 계측 속성은 개수·유무만(본문·기기정보 금지)
+      track(EVENTS.profile_feedback_submit, { has_photos: photoCount > 0, photo_count: photoCount });
+      leave.release(() => {
+        if (focused.current) router.back();
+      });
     });
 
   return (
@@ -119,45 +60,7 @@ export default function FeedbackComposeScreen() {
       <SubHeader title={t('feedback.newTitle')} onBack={() => router.back()} />
       <LeaveConfirmModal {...leave.modal} />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <Input
-          value={body}
-          onChangeText={(v) => setBody(v.slice(0, FEEDBACK_MAX_LEN))}
-          placeholder={t('feedback.placeholder')}
-          placeholderTextColor={C.ink3}
-          multiline
-          style={styles.input}
-          textAlignVertical="top"
-          testID="feedback-body"
-        />
-        {/* 사진 = 리뷰 작성과 같은 스트립 문법(슬롯 100 r8, 개별 삭제) */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
-          {photos.map((uri) => (
-            <View key={uri} style={styles.photoThumbWrap}>
-              <Image source={{ uri }} style={styles.photoThumb} />
-              <Pressable testID="feedback-photo-remove"
-                accessibilityLabel={t('review.removePhoto')}
-                style={styles.photoDel}
-                hitSlop={8}
-                onPress={() => setPhotos((cur) => cur.filter((u) => u !== uri))}
-              >
-                <IconClose size={10} color="#fff" />
-              </Pressable>
-            </View>
-          ))}
-          {photos.length < FEEDBACK_MAX_PHOTOS && (
-            <Pressable
-              accessibilityLabel={t('review.addPhoto')}
-              style={styles.photoAdd}
-              onPress={() => void pickPhoto()}
-              testID="feedback-photo-add"
-            >
-              <IconCamera size={24} color={C.ink3} />
-            </Pressable>
-          )}
-        </ScrollView>
-        <Btn variant={canSend ? 'ink' : 'off'} /* KB-635: 검정(알약과 같은 C.ink) · 비활성은 기존 off 그대로 */ onPress={canSend ? onSend : undefined} busy={guard.busy} testID="feedback-send">
-          {t('feedback.send')}
-        </Btn>
+        <FeedbackFields form={form} onSend={onSend} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -166,30 +69,4 @@ export default function FeedbackComposeScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FFFFFF' },
   body: { padding: 20, gap: 16 },
-  // 치수는 리뷰 작성 화면과 동일값(새 시안 없음 — 기존 문법 이식)
-  input: { minHeight: 160, borderWidth: 1, borderColor: C.line, borderRadius: radius.md, padding: 12, fontSize: 16 },
-  photoRow: { flexDirection: 'row', gap: 8 },
-  photoThumbWrap: { width: 100, height: 100 },
-  photoThumb: { width: 100, height: 100, borderRadius: radius.md },
-  photoDel: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 18,
-    height: 18,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoAdd: {
-    width: 100,
-    height: 100,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: C.line,
-    backgroundColor: C.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

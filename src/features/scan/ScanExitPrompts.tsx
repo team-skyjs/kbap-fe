@@ -11,10 +11,13 @@ import * as React from 'react';
 import { InteractionManager } from 'react-native';
 import { FLAGS } from '@/lib/flags';
 import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
+import { markPromptShown } from '@/lib/engagement/promptSlot';
+import { isFeedbackPromptActive } from '@/features/feedback/feedbackPrompt';
 import { useReviewPrompt } from '@/lib/useReviewPrompt';
 import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 import { PushPrimerModal } from '@/features/push/PushPrimerModal';
 import { isPackagedCoachActive, shouldShowPackagedCoach } from '@/features/coach/PackagedCoach';
+import { isMarketingConsentActive } from '@/features/push/marketingConsentPrompt';
 
 type Armed = { isGuest: boolean; ready: Promise<unknown> };
 let armed: Armed | null = null;
@@ -47,15 +50,21 @@ export function ScanExitPrompts() {
         void (async () => {
           // KB-968: 가공식품 코치마크를 아직 안 봤으면 이번엔 건너뜀(코치마크 우선 — 홈에서 동시 노출 0, 빈도 판정은 다음 스캔에)
           // #398 Codex P2: 이미 떠 있는 흐름도(봤음 키는 표시 즉시 써진다) — 1단계 ~ 2단계 사이 전환까지
-          if (isPackagedCoachActive() || (await shouldShowPackagedCoach())) { busy.current = false; return; }
+          // KB-979: 광고성 동의 시트(홈·알림함)가 떠 있어도 이번엔 건너뜀(동시 노출 0)
+          // KB-986: 재방문 피드백 시트가 떠 있어도 이번엔 건너뜀(동시 노출 0)
+          if (isPackagedCoachActive() || isMarketingConsentActive() || isFeedbackPromptActive() || (await shouldShowPackagedCoach())) { busy.current = false; return; }
           const m = FLAGS.pushEnabled ? await decideScanNudge(a.isGuest).catch(() => null) : null;
+          // 위 await 사이에 동의 시트가 떴을 수 있다 — 띄우기 직전 한 번 더
+          if (isMarketingConsentActive() || isFeedbackPromptActive()) { busy.current = false; return; }
           if (m) {
+            markPromptShown(); // KB-986
             setNudgeMode(m);
             setNudgeOpen(true);
             return;
           }
           await a.ready; // 성공 카운트 저장이 끝난 뒤 판정(스캔 2회 이상 규칙)
-          const shown = await request('scan', { onClosed: () => { busy.current = false; } });
+          // request() 내부 await(프롬프트 상태 로드) 뒤에도 재확인 — 함수형 blocked (#416 Codex P2)
+          const shown = await request('scan', { blocked: () => isMarketingConsentActive() || isFeedbackPromptActive(), onClosed: () => { busy.current = false; } });
           if (!shown) busy.current = false;
         })();
       });

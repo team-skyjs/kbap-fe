@@ -6,7 +6,7 @@ const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 it('② 스캔 진입 상세 — src===scan = Write 미렌더 + Ask 전폭, 그 외 현행 2분할', () => {
   const fd = read('src/app/food/[id]/index.tsx');
   expect(fd).toContain("scanEntry={src === 'scan'}");
-  expect(fd).toContain('const write = FLAGS.reviewsEnabled && !(scanEntry && onAsk);'); // KB-851 알약도 같은 규칙 — 스캔 진입 = Ask 단독
+  expect(fd).toContain('const write = FLAGS.reviewsEnabled && !scanEntry;'); // KB-851 → KB-981: 스캔 진입 = Ask 유무와 무관하게 Write 0
 });
 
 it('④ My Foods Ordered 행 — thumbnails[0] = CardPhoto r8, 없으면 핀 현행', () => {

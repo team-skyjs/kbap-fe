@@ -14,6 +14,7 @@ import Constants from 'expo-constants';
 import { SHARE_CARD_W } from './shareCard';
 import { reportShareFailure, shareFailureSummary } from '@/lib/sentry';
 import { needsSavePermission } from '@/lib/mediaPermissions';
+import { withPermissionPrompt } from '@/lib/permissionPrompt';
 
 /** 내보내기 픽셀 규격 — 인스타 스토리 기준. */
 export const EXPORT_W = 1080;
@@ -175,7 +176,7 @@ export const defaultDeps: ShareDeps = {
     const cur = await MediaLibrary.getPermissionsAsync(true);
     if (cur.granted) return true;
     if (!cur.canAskAgain) return false; // 기거부 = 재요청 금지(P-302 문법), 화면이 설정 안내
-    return (await MediaLibrary.requestPermissionsAsync(true)).granted;
+    return (await withPermissionPrompt(() => MediaLibrary.requestPermissionsAsync(true))).granted;
   },
   saveToLibrary: async (uri) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports

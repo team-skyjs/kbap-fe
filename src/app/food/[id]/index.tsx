@@ -49,7 +49,9 @@ import { FeedAd } from '@/features/ads/FeedAd';
 import { withFeedAds } from '@/lib/ads/feedSlots';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { IconEdit } from '@/components/icons';
+import { IconEdit, IconPlus } from '@/components/icons';
+import { D4Minus } from '@/components/design4Assets';
+import { addScanItem, removeScanItem, useScanCart, useScanCartDish } from '@/features/scan/scanCartStore';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -70,7 +72,10 @@ const REVIEW_PREVIEW_N = 3; // 발주 §1-7: 카드 ×3
 
 export default function FoodDetailScreen() {
   // P-012(KB-179): price는 스캔 결과 진입에만 실리는 표시 전용 param — 조작 방어 파싱
-  const { id, price, src } = useLocalSearchParams<{ id: string; price?: string; src?: string }>();
+  const { id, price, src, item } = useLocalSearchParams<{ id: string; price?: string; src?: string; item?: string }>();
+  // KB-982: 메뉴판 스캔 진입 = 결과 화면과 같은 카트 항목(itemId). 스캔 세션이 끝났으면(스토어 비움) 담기 0
+  const cartDish = useScanCartDish(src === 'scan' && typeof item === 'string' && /^-?\d+$/.test(item) ? Number(item) : null);
+  const cartQty = useScanCart().get(cartDish?.itemId ?? Number.NaN) ?? 0;
   // P-083: 상세 진입 계측 — 진입 경로 1회
   useEffect(() => {
     const source = src && ['scan', 'list', 'search', 'home', 'saved', 'my_reviews', 'feed', 'tag_sheet', 'idol_pick'].includes(src) ? src : 'other'; // KB-847: review_detail 제거(#288 되돌림) · idol_pick 유지(#313)
@@ -108,7 +113,7 @@ export default function FoodDetailScreen() {
   // KB-851 → KB-871: 하단 리뷰 버튼 영역 — 아래로 스크롤 = 숨김 · 위로·제스처 끝 멈춤·맨 위/아래 = 표시 · 한 제스처 안 전환 1회 · K-pop 카드는 버튼 자리와 겹칠 때만 숨김
   // KB-871 QA AP: 겹침 대상(K-pop 카드 캐시 · 리뷰 0 본문 상자)이 있으면 측정 전까지 버튼을 애니메이션 없이 숨겨 둔다(진입 번쩍임 0)
   const idolExpected = !!useIdolPickVideo(id ?? '');
-  const emptyCtaExpected = !!food && food.isRegistered && FLAGS.reviewsEnabled && !isGuest && !food.reviewSummaryMissing && food.overall.count === 0;
+  const emptyCtaExpected = !!food && food.isRegistered && FLAGS.reviewsEnabled && !isGuest && !food.reviewSummaryMissing && food.overall.count === 0 && src !== 'scan'; // KB-981: Registered emptyCta와 같은 조건
   const pill = useScrollAwarePill({ card: idolExpected, emptyCta: emptyCtaExpected });
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setSolid(e.nativeEvent.contentOffset.y > HEADER_SOLID_Y);
@@ -202,6 +207,7 @@ export default function FoodDetailScreen() {
             {food.isRegistered ? (
               <Registered
                 guest={isGuest}
+                scanEntry={src === 'scan'}
                 setCoachOpen={setCoachOpen}
                 scanPrice={scanPrice}
                 food={food}
@@ -234,6 +240,7 @@ export default function FoodDetailScreen() {
           bottom={band.bottom}
           guest={isGuest}
           scanEntry={src === 'scan'}
+          cart={cartDish ? { qty: cartQty, onAdd: () => addScanItem(cartDish), onRemove: () => removeScanItem(cartDish) } : undefined}
           onHeight={(h) => { band.onHeight(h); pill.onBand(h + 8); }}
           t={t}
           onWrite={() => {
@@ -299,8 +306,11 @@ function RegisteredBottomBar({
   onWrite,
   onAsk,
   scanEntry = false,
+  cart,
   onHeight,
 }: {
+  /** KB-982: 메뉴판 스캔 진입 담기 — 결과 리스트와 같은 카트·이벤트(scanCartStore). 없음 = 담기 미렌더 */
+  cart?: { qty: number; onAdd: () => void; onRemove: () => void };
   /** 표시 여부(useScrollAwarePill) — 숨김 = 아래로 미끄러지며 투명(스크린리더 포커스는 유지) */
   shown: boolean;
   /** 첫 측정 전 = 애니메이션 없이 숨김(KB-871 QA AP — 진입 때 카드 위로 번쩍 보였다 사라짐) */
@@ -311,7 +321,7 @@ function RegisteredBottomBar({
   t: TFn;
   onWrite: () => void;
   onAsk?: () => void;
-  /** P-353 ②(KB-515): 스캔 진입 = Write 미렌더·Ask 단독(스캔한 음식이라 리뷰 유도 대신 문의 단독) */
+  /** P-353 ②(KB-515) → KB-981: 스캔 진입 = Write 미렌더(Ask 없으면 바 없음) */
   scanEntry?: boolean;
   /** 띠 실높이(알약 + 위 여백 + 안전 영역) 보고 — 스크롤 하단 여백 파생(큰 글씨·긴 번역 대응) */
   onHeight?: (h: number) => void;
@@ -324,8 +334,8 @@ function RegisteredBottomBar({
     opacity: !ready ? 0 : withTiming(shown ? 1 : 0, { duration: reduced ? 120 : PILL_FADE_MS, easing: Easing.out(Easing.cubic) }),
     transform: [{ translateY: reduced ? 0 : !ready ? hideY : withTiming(shown ? 0 : hideY, { duration: PILL_FADE_MS, easing: Easing.out(Easing.cubic) }) }],
   }));
-  const write = FLAGS.reviewsEnabled && !(scanEntry && onAsk);
-  if (!write && !onAsk) return null;
+  const write = FLAGS.reviewsEnabled && !scanEntry; // KB-981: 스캔 진입 = Ask 유무와 무관하게 Write 0(빠져나가려는 흐름에 리뷰 유도 금지)
+  if (!write && !onAsk && !cart) return null;
   return (
     <Animated.View
       style={[pillCta.band, { paddingBottom: bottom }, anim]}
@@ -340,10 +350,29 @@ function RegisteredBottomBar({
           <Text style={styles.pillPrimaryText} {...PILL_LABEL}>{t('reviews.writeReview')}</Text>
         </Pressable>
       )}
+      {cart && (
+        // KB-982: 담기 = primary(주문 맥락의 주 행동) · 담긴 뒤 = 같은 알약 틀 안 스테퍼(프레임 불변 — 색·내용만)
+        cart.qty > 0 ? (
+            <View style={styles.pillPrimary} testID="bottom-cart">
+              <Pressable hitSlop={10} onPress={cart.onRemove} accessibilityRole="button" accessibilityLabel={t('scan.removeFromOrder')} testID="bottom-cart-dec" style={styles.cartStep}>
+                <D4Minus size={20} color="#FFFFFF" />
+              </Pressable>
+              <Text style={[styles.pillPrimaryText, styles.cartLabel]} {...PILL_LABEL} testID="bottom-cart-qty">{t('scan.inOrder', { count: cart.qty })}</Text>
+              <Pressable hitSlop={10} onPress={cart.onAdd} accessibilityRole="button" accessibilityLabel={t('scan.addToOrder')} testID="bottom-cart-inc" style={styles.cartStep}>
+                <IconPlus size={20} color="#FFFFFF" />
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={styles.pillPrimary} onPress={cart.onAdd} accessibilityRole="button" testID="bottom-add">
+              <IconPlus size={20} color="#FFFFFF" />
+              <Text style={styles.pillPrimaryText} {...PILL_LABEL}>{t('scan.addToOrder')}</Text>
+            </Pressable>
+          )
+      )}
       {onAsk && (
-        // 회원 = Write 아래 테두리 한 줄 · 스캔 진입(Write 없음) = primary 한 줄(P-353)
-        <Pressable style={write ? styles.pillOutline : styles.pillPrimary} onPress={onAsk} accessibilityRole="button" testID="bottom-ask">
-          <Text style={write ? styles.pillOutlineText : styles.pillPrimaryText} {...PILL_LABEL}>{t('detail.askOwner')}</Text>
+        // 회원 = Write(또는 KB-982 담기) 아래 테두리 한 줄 · 스캔 진입(Write·담기 없음) = primary 한 줄(P-353)
+        <Pressable style={write || cart ? styles.pillOutline : styles.pillPrimary} onPress={onAsk} accessibilityRole="button" testID="bottom-ask">
+          <Text style={write || cart ? styles.pillOutlineText : styles.pillPrimaryText} {...PILL_LABEL}>{t('detail.askOwner')}</Text>
         </Pressable>
       )}
     </Animated.View>
@@ -365,7 +394,10 @@ function Registered({
   setCoachOpen,
   onIdolLayout,
   onEmptyCtaLayout,
+  scanEntry = false,
 }: {
+  /** KB-981(예진 "숨겨줘"): 스캔 진입 = 리뷰 섹션 안 작성 상자도 0 */
+  scanEntry?: boolean;
   /** KB-871 QA ③: 리뷰 0 본문 "Write a review" 상자의 콘텐츠 y·높이(보이는 동안 하단 버튼 숨김) */
   onEmptyCtaLayout?: (y: number, h: number) => void;
   /** KB-851: K-pop 카드의 콘텐츠 y·높이 보고(리뷰 알약 숨김 판정) */
@@ -385,7 +417,7 @@ function Registered({
 }) {
   const isNew = useIsNewFood(food.publishedAt);
   // 리뷰 0 본문 상자 — 첫 리뷰를 쓰고 돌아오면 같은 화면에서 사라진다: 높이 0을 보고해 하단 버튼이 옛 자리 기준으로 숨어 있지 않게(Codex #337)
-  const emptyCta = FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0;
+  const emptyCta = FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0 && !scanEntry;
   useEffect(() => {
     if (!emptyCta) onEmptyCtaLayout?.(0, 0);
   }, [emptyCta, onEmptyCtaLayout]);
@@ -869,8 +901,11 @@ const styles = StyleSheet.create({
   pillPrimary: pillCta.pillPrimary,
   pillPrimaryText: pillCta.pillPrimaryText,
   pullSpin: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 5 }, // QA Q-388 ①: 당김 새로고침 스피너(iOS) — 플로팅 헤더 줄 바로 아래
-  pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
-  pillOutlineText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink, textAlign: 'center' },
+  pillOutline: pillCta.pillOutline,
+  // KB-982: 담기 전후 틀 = 둘 다 pillPrimary(같은 메트릭) · 스테퍼 버튼 = 44 터치(음수 margin으로 알약 높이 불변)
+  cartStep: { width: 44, height: 44, marginVertical: -10, alignItems: 'center', justifyContent: 'center' },
+  cartLabel: { flex: 1 },
+  pillOutlineText: pillCta.pillOutlineText,
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },

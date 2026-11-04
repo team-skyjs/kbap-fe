@@ -1,42 +1,108 @@
 /**
- * OtaAutoApplyHost (KB-420/P-204) — 루트 레이아웃에 1회 마운트되는 OTA 자동
- * 적용 배선 + prod 배너.
+ * OtaAutoApplyHost (KB-420 → KB-978) — OTA 즉시 적용 배선. 운영·비운영 같은 로직(예진 11/04 P-316 변경).
  *
- * - 트리거: 마운트 + AppState active 복귀(스로틀은 otaCheck 코어).
- * - __DEV__ 또는 Updates.isEnabled=false(Metro) = 전 구간 no-op.
- * - 적용 판정은 otaPolicy 한 곳 — 비-prod 즉시 reload / prod는 안전 순간에만,
- *   아니면 상단 비차단 배너(탭 = 수동 적용). 라우트·뮤테이션 변화 시 재평가.
+ * - OtaLaunchGate: 루트 트리 마운트 **전** 체크→fetch(상한 3초, 스플래시 유지). 받으면 바로 reload,
+ *   넘거나 에러면 현재 번들로 트리 마운트.
+ * - OtaAutoApplyHost: AppState active 복귀 순간부터 3초 창 안에서만 reload — 작업 화면 차단·
+ *   네트워크 정적 게이트(P-347)·2분 스로틀 유지. 창이 닫히면 deferred(다음 복귀/콜드 스타트).
+ *   KB-980: 복귀 = background를 거친 active만(iOS 시스템 팝업은 inactive만 거친다) ·
+ *   권한 요청 중·응답 뒤 5초 = reload 금지(Android 팝업의 background 전이).
+ * - __DEV__ 또는 Updates.isEnabled=false(Metro·dev client·jest) = 호출 0.
  * - expo-updates는 지연 require(정적 import 금지 관례 — pushAdapter와 동일 계열).
  */
 import * as React from 'react';
 import { AppState } from 'react-native';
 import { usePathname } from 'expo-router';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { isProdChannel } from '@/lib/flags';
-import { checkAndFetchOta, type OtaUpdatesModule } from './otaCheck';
+import { EVENTS, track as trackEvent } from '@/lib/analytics';
+import { checkAndFetchOta, launchCheckOta, type OtaState, type OtaUpdatesModule } from './otaCheck';
 import { inflightCount, subscribeInflight, track } from '@/lib/net/inflight';
-import { OTA_BOOT_GUARD_MS, OTA_NETWORK_IDLE_MS, canReloadNow, isBlockedRoute, otaApplyDecision } from './otaPolicy';
+import { OTA_LAUNCH_TIMEOUT_MS, OTA_NETWORK_IDLE_MS, OTA_RESUME_WINDOW_MS, canReloadNow, isBlockedRoute } from './otaPolicy';
+import { permissionPromptSettled } from '@/lib/permissionPrompt';
 
-// P-304(KB-458): 부팅 시각 = 모듈 로드 시각 — reloadAsync 부팅 가드 기준점
-const BOOTED_AT = Date.now();
+type UpdatesWithReload = OtaUpdatesModule & { reloadAsync(): Promise<void> };
+type OtaResult = 'applied' | 'none' | 'timeout' | 'error' | 'deferred';
+type OtaTrigger = 'launch' | 'resume';
 
-function updatesModule(): OtaUpdatesModule | null {
+/** 시작·복귀 공유 상태 — 루트 1회 마운트 전제(quietRef와 같은 관례). */
+const otaState: OtaState = { lastCheckAt: 0, ready: false };
+let applying = false; // reload 요청 뒤 재진입(같은 창의 effect 재평가) 차단
+
+function report(result: OtaResult, trigger: OtaTrigger): void {
+  trackEvent(EVENTS.app_ota_apply, { result, trigger });
+}
+
+function updatesModule(): UpdatesWithReload | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('expo-updates') as OtaUpdatesModule;
+    return require('expo-updates') as UpdatesWithReload;
   } catch {
     return null; // 웹/모듈 부재 — no-op
   }
 }
 
-function applyNow(): void {
+/** __DEV__·모듈 부재·isEnabled false = null(호출 0). */
+function enabledUpdates(): UpdatesWithReload | null {
+  if (__DEV__) return null;
+  const u = updatesModule();
+  return u?.isEnabled ? u : null;
+}
+
+/** 이벤트를 먼저 남긴다 — reload가 성공하면 이 런타임은 끝난다(Amplitude 큐는 저장소 경유 다음 실행 전송).
+ *  true = reload 요청됨(실패 시 'error' 추가 보고 후 false로 resolve). */
+async function applyNow(u: UpdatesWithReload, trigger: OtaTrigger): Promise<boolean> {
+  if (applying) return true;
+  applying = true;
+  report('applied', trigger);
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Updates = require('expo-updates') as { reloadAsync(): Promise<void> };
-    void Updates.reloadAsync().catch((e: Error) => console.log('[ota] reload failed:', e?.message));
-  } catch {
-    /* 모듈 부재 — 무시 */
+    await u.reloadAsync();
+    return true;
+  } catch (e) {
+    console.log('[ota] reload failed:', (e as Error)?.message);
+    applying = false;
+    report('error', trigger);
+    return false;
   }
+}
+
+/** 시작 판정 — true = reload 요청됨(트리를 마운트하지 않는다). */
+export async function runLaunchOta(u: UpdatesWithReload): Promise<boolean> {
+  const r = await launchCheckOta(u, otaState, Date.now(), OTA_LAUNCH_TIMEOUT_MS);
+  if (r === 'skip') return false;
+  if (r !== 'ready') {
+    report(r, 'launch');
+    return false;
+  }
+  // 트리 전이라 보통 0 — 모듈 로드 부작용 요청이 있으면 P-347 창이라 보류(다음 복귀가 적용)
+  if (inflightCount() > 0) {
+    report('deferred', 'launch');
+    return false;
+  }
+  return applyNow(u, 'launch');
+}
+
+/** reload가 resolve됐는데 런타임이 살아 있으면(드문 경우) 이만큼 뒤 트리를 마운트 — 빈 화면 고착 방지. */
+const RELOAD_STUCK_MS = 2_000;
+
+/** 루트 트리 마운트 전 OTA 판정(KB-978). 판정 동안 null = 네이티브 스플래시 유지(hideAsync는 트리 안). */
+export function OtaLaunchGate({ children }: { children: React.ReactNode }) {
+  const [u] = React.useState(enabledUpdates);
+  const [done, setDone] = React.useState(u == null);
+  React.useEffect(() => {
+    if (!u) return;
+    let alive = true;
+    let stuck: ReturnType<typeof setTimeout> | undefined;
+    void runLaunchOta(u).then((reloading) => {
+      if (!alive) return;
+      if (!reloading) setDone(true);
+      else stuck = setTimeout(() => alive && setDone(true), RELOAD_STUCK_MS);
+    });
+    return () => {
+      alive = false;
+      clearTimeout(stuck);
+    };
+  }, [u]);
+  return done ? children : null;
 }
 
 /** P-347(KB-509): 네트워크 정적 창 — RQ 진행 카운트 + raw inflight가 전부 0으로
@@ -107,73 +173,69 @@ export function useNetworkIdle(): boolean {
   return React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
-export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }) {
-  const [ready, setReady] = React.useState(false);
-  // #109 4R: AppState 콜백에서 동기 참조용 — ready 후 재체크(네이티브 프라미스) 생략
-  const readyRef = React.useRef(false);
-  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
-  React.useLayoutEffect(() => {
-    readyRef.current = ready;
-  });
-  // P-304: 부팅 가드 반응 소스 — appState(active 복귀)·가드 충족 시각 타이머 재평가
-  const [appActive, setAppActive] = React.useState(AppState.currentState === 'active');
-  const [guardTick, setGuardTick] = React.useState(0);
+/** 테스트 전용 — 모듈 상태(otaState·applying·정적 창) 초기화. 루트 1회 마운트 전제라 앱은 부르지 않는다. */
+export function resetOtaModuleStateForTest(): void {
+  otaState.lastCheckAt = 0;
+  otaState.ready = false;
+  applying = false;
+  quietRef.since = Date.now();
+}
+
+export function OtaAutoApplyHost() {
+  /** 복귀 적용 창의 끝 시각 — 0 = 창 없음. */
+  const [windowUntil, setWindowUntil] = React.useState(0);
   const networkIdle = useNetworkIdle(); // P-347 — QueryClientProvider 안(레이아웃 확인됨)
   const queryClient = useQueryClient(); // #109 2R P1 ②: 호출 시점 동기 재확인용
-  // #109 5R ①: 라우트 차단 복원(비-prod) — 카메라·온보딩·편집·작성·로그인 화면의
-  // 네이티브 프라미스(takePicture·ImagePicker·소셜 로그인 등)는 화면 단위로 봉쇄.
+  // #109 5R ①: 작업 화면(카메라·온보딩·편집·작성·로그인) = 보류 — 로그인 시트·사진 선택기 복귀도 active 전환이다
   const pathname = usePathname();
-  const stateRef = React.useRef({ lastCheckAt: 0 });
 
   React.useEffect(() => {
-    const check = () => {
-      if (__DEV__) return; // Metro 개발 중 = no-op(코어의 isEnabled 게이트와 이중)
-      // #109 4R ①: 이미 받아둔 업데이트 적용 대기 중 = 재체크 불요 — 게이트 밖
-      // 네이티브 프라미스(checkForUpdateAsync/fetchUpdateAsync) 위 reload 창 제거.
-      if (readyRef.current) return;
-      const u = updatesModule();
-      if (!u) return;
-      // #109 4R ②: 그래도 도는 체크는 inflight 경유 — 정적 창이 체크 자체도 본다
-      void track(checkAndFetchOta(u, stateRef.current, Date.now())).then((r) => {
-        if (r === 'ready') setReady(true);
-      });
-    };
-    check(); // 콜드 스타트 1회
+    // KB-980: inactive→active(권한·ATT·알림 센터 등 시스템 팝업)는 복귀가 아니다 — 창·체크·이벤트 0
+    let wentBackground = false;
     const sub = AppState.addEventListener('change', (st) => {
-      setAppActive(st === 'active'); // P-304: 가드 재평가 소스
-      if (st === 'active') check(); // 포그라운드 복귀 — 스로틀은 코어가 판정
+      if (st === 'background') wentBackground = true;
+      if (st !== 'active') return;
+      if (!wentBackground) return;
+      wentBackground = false;
+      const u = enabledUpdates();
+      if (!u) return;
+      const until = Date.now() + OTA_RESUME_WINDOW_MS;
+      // #109 4R: 받아둔 업데이트(시작 상한 뒤 도착 포함) = 재체크 생략 — 네이티브 프라미스 위 reload 창 제거
+      if (otaState.ready) {
+        setWindowUntil(until);
+        return;
+      }
+      // #109 4R ②: 체크도 inflight 경유 — 정적 창이 체크 자체도 본다
+      void track(checkAndFetchOta(u, otaState, Date.now())).then((r) => {
+        if (r === 'ready') setWindowUntil(until); // 받는 데 창을 넘겼으면 아래 effect가 바로 deferred
+        else if (r !== 'skip') report(r, 'resume'); // skip = 스로틀(이벤트 없음)
+      });
     });
     return () => sub.remove();
   }, []);
 
-  // P-304: reloadAsync 부팅 가드 — 정책이 reload여도 가드(8s+스플래시 종료+active)
-  // 통과 시에만 실행. 배너 수동 탭도 동일 경로(부팅 창 크래시 봉쇄).
   const tryApply = React.useCallback((): boolean => {
-    if (isBlockedRoute(pathname)) return false; // #109 5R ①: 진행 중 작업 화면 = 보류(라우트 변경 시 deps 재평가)
-    if (!canReloadNow({ bootedAt: BOOTED_AT, now: Date.now(), splashDone, appState: appActive ? 'active' : 'background', networkIdle })) return false;
-    // #109 2R P1 ② → 9R: 렌더 상태(networkIdle)와 무관한 **호출 시점 동기 최종 게이트** —
-    // 같은 quietRef 타임스탬프 조건(짧은 busy의 커밋 전 소멸까지 봉쇄).
+    if (isBlockedRoute(pathname)) return false;
+    if (!permissionPromptSettled()) return false; // KB-980: 팝업 중·응답 뒤 5초 — 창이 닫히면 deferred
+    if (!canReloadNow({ appState: AppState.currentState, networkIdle })) return false;
+    // #109 2R P1 ② → 9R: 렌더 상태(networkIdle)와 무관한 **호출 시점 동기 최종 게이트**
     if (!networkQuietNow(queryClient)) return false;
-    applyNow();
+    const u = enabledUpdates();
+    if (!u) return false;
+    void applyNow(u, 'resume');
     return true;
-  }, [splashDone, appActive, networkIdle, queryClient, pathname]);
+  }, [networkIdle, queryClient, pathname]);
 
-  // 적용 재평가 — fetch 완료·라우트 변경·뮤테이션 종료·스플래시/포그라운드/가드 타이머마다
-  const prod = isProdChannel();
+  // 창 안 재평가 — 라우트 변경·네트워크 정착마다(deps). 창이 닫히면 deferred 1회.
   React.useEffect(() => {
-    if (!ready) return;
-    if (otaApplyDecision({ prod, pathname: '/', mutating: 0 }) !== 'reload') return; // P-316: prod 상수 defer — 라우트·뮤테이션 무관
-    if (tryApply()) return;
-    // 가드 미충족 — **시간 조건(8s) 미충족일 때만** 충족 시각에 1회 재평가 타이머.
-    // 나머지 조건(스플래시·active·networkIdle)은 deps 반응에 맡긴다 — networkIdle
-    // 대기 중 remain=50ms 타이머가 폴링 루프가 되던 것 방지(#109 P2).
-    const remainMs = OTA_BOOT_GUARD_MS - (Date.now() - BOOTED_AT);
-    if (remainMs <= 0) return;
-    const timer = setTimeout(() => setGuardTick((n) => n + 1), remainMs + 50);
+    if (windowUntil === 0) return;
+    if (Date.now() < windowUntil && tryApply()) return; // 창 밖 = 사용 중 — reload 금지
+    const timer = setTimeout(() => {
+      report('deferred', 'resume');
+      setWindowUntil(0);
+    }, Math.max(0, windowUntil - Date.now()));
     return () => clearTimeout(timer);
-  }, [ready, prod, tryApply, guardTick]);
+  }, [windowUntil, tryApply]);
 
-  // P-316: prod = 배너·수동 적용 경로 없음(다음 콜드 스타트 자동 적용) — 렌더 0
   return null;
 }
-

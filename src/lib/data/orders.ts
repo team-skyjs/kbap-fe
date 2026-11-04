@@ -15,6 +15,7 @@
 import { track } from '@/lib/net/inflight';
 import { api, apiLang } from '@/lib/api/client';
 import type { OrderItem } from '@/features/order/FlippedOrderCard';
+import { withPermissionPrompt } from '@/lib/permissionPrompt';
 
 async function grantedCoord(): Promise<{ latitude: number; longitude: number } | null> {
   try {
@@ -23,7 +24,7 @@ async function grantedCoord(): Promise<{ latitude: number; longitude: number } |
     const Location = require('expo-location') as typeof import('expo-location');
     let perm = await Location.getForegroundPermissionsAsync();
     // P-302: 미결정만 1회 요청 — 카드 flip은 호출측 fire-and-forget이라 표시를 안 막는다
-    if (perm.status === 'undetermined') perm = await Location.requestForegroundPermissionsAsync();
+    if (perm.status === 'undetermined') perm = await withPermissionPrompt(() => Location.requestForegroundPermissionsAsync());
     if (perm.status !== 'granted') return null; // 거부(기존·방금) = 좌표 생략(재요청 금지)
     // 타임아웃 3s(발주) — GPS 침묵에도 저장은 무위치로 진행
     const pos = await Promise.race([

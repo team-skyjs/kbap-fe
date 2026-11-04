@@ -44,6 +44,8 @@ jest.mock('expo-router', () => {
   };
 });
 const mockT = jest.fn((k: string, o?: { count?: number }) => (o?.count != null ? `${k}:${o.count}` : k));
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- 호이스팅되는 목 팩토리 안
+jest.mock('@/features/push/MarketingConsentSheet', () => ({ ...jest.requireActual('@/features/push/MarketingConsentSheet'), InboxMarketingConsent: () => require('react').createElement('InboxMarketingConsent') })); // KB-979: 알림함 동의 시트(navigation 이벤트) — 동작은 marketingConsent979 담당, 여기선 마운트 여부만
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: mockT, i18n: { language: 'en' } }),
   initReactI18next: { type: '3rdParty', init: () => {} },
@@ -55,7 +57,7 @@ jest.mock('@/lib/analytics', () => ({ track: jest.fn(), EVENTS: { error_state_vi
 let mockGuest = false;
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest, useSession: () => (mockGuest ? false : true) }));
 
-type Item = { id: number; title: string; body: string; at: string; read: boolean; type?: string; orderId?: string };
+type Item = { id: number; title: string; body: string; at: string; read: boolean; type?: string; orderId?: string; foodId?: string };
 const mockInbox = {
   data: undefined as Item[] | undefined,
   isPending: false,
@@ -168,6 +170,20 @@ it('⑨⑩⑪ 탭 — 미읽음만 mutate · type 없음 = 이동 0 · REVIEW_RE
   expect(mockNavigate).toHaveBeenLastCalledWith(routeForNotificationData({ type: 'HELPFUL' }));
 });
 
+it('KB-985 FOOD_DISCOVERY 행 탭 — 미읽음 읽음 처리 + /food/{foodId} · foodId 없음 = 이동 0', () => {
+  mockInbox.data = [
+    { id: 6, title: 'f', body: 'f', at: ago(1000), read: false, type: 'FOOD_DISCOVERY', foodId: '6' },
+    { id: 7, title: 'g', body: 'g', at: ago(1000), read: false, type: 'FOOD_DISCOVERY' },
+  ];
+  const tree = render();
+  press(tree, 'inbox-6');
+  expect(mockMutate).toHaveBeenLastCalledWith(6);
+  expect(mockNavigate).toHaveBeenLastCalledWith('/food/6');
+  press(tree, 'inbox-7');
+  expect(mockMutate).toHaveBeenLastCalledWith(7);
+  expect(mockNavigate).toHaveBeenCalledTimes(1);
+});
+
 it('⑫ 프레임 불변 — 읽음/미읽음 행은 backgroundColor만 다르고 점은 미읽음에만', () => {
   const tree = render();
   const flat = (id: string) => ({ ...(StyleSheet.flatten(byId(tree, id)[0].props.style) as Record<string, unknown>) });
@@ -193,6 +209,21 @@ it('⑬ 게스트 — 로그인 Redirect(returnTo=/notifications), 알림함 어
   expect(byId(tree, 'query-error-block').length).toBe(0);
   expect(byId(tree, 'notif-empty').length).toBe(0);
   expect(texts(tree)).not.toContain('inbox.title');
+  expect(tree.root.findAll((n) => n.type === 'InboxMarketingConsent').length).toBe(0); // KB-979: 게스트 = 동의 판정(설정 GET) 0
+});
+
+it('⑭ KB-979 회원 = 알림함에 동의 시트 판정 마운트 1 · P-599 플래그 OFF(운영) = 마운트 0', () => {
+  const F = (jest.requireActual('@/lib/flags') as { FLAGS: { marketingConsentPrompt: boolean } }).FLAGS;
+  const prev = F.marketingConsentPrompt;
+  mockInbox.data = [];
+  try {
+    F.marketingConsentPrompt = true;
+    expect(render().root.findAll((n) => n.type === 'InboxMarketingConsent').length).toBe(1);
+    F.marketingConsentPrompt = false;
+    expect(render().root.findAll((n) => n.type === 'InboxMarketingConsent').length).toBe(0);
+  } finally {
+    F.marketingConsentPrompt = prev;
+  }
 });
 
 it('⑤ 소스 잠금 — 로컬 스토어·모두 읽음·구 상대 시각·게이트 시트 부재, timeAgo·routeForNotificationData·returnTo 존재', () => {

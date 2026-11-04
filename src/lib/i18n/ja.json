@@ -332,6 +332,10 @@
     "searchOnGoogle": "Googleで検索",
     "resultsEmpty": "スキャン結果がありません",
     "viewOrderAction": "注文を見る",
+    "addToOrder": "注文に追加",
+    "removeFromOrder": "1つ減らす",
+    "inOrder_one": "{{count}}点追加済み",
+    "inOrder_other": "{{count}}点追加済み",
     "orderCount_one": "{{count}}品",
     "orderCount_other": "{{count}}品",
     "retakeBodyWithCart_one": "今の結果と追加した{{count}}件が破棄されます。",
@@ -1035,6 +1039,8 @@
     "primerLater": "あとで",
     "consentSheetTitle": "K-Bapのお知らせを受け取りますか？",
     "consentSheetBody": "イベントや新機能のお知らせを広告通知として送ります。",
+    "consentPromptTitle": "好みに合わせて食べたいK-Foodをおすすめします！",
+    "consentPromptBody": "通知に同意すると、しつこい連絡はなし、おいしいおすすめだけお届けします 👍",
     "privacyConsent": "マーケティング目的の個人情報収集/利用への同意（任意）",
     "receiveConsent": "広告性情報の受信への同意（任意）",
     "consentBothRequired": "通知をオンにするには両方に同意してください。",
@@ -1102,6 +1108,11 @@
     "editFailed": "変更を保存できませんでした。もう一度お試しください。",
     "editPhotoNotReady": "写真のアップロードが完了していません。もう一度お試しください。",
     "editNotFound": "この注文が見つかりません。更新してもう一度お試しください。"
+  },
+  "feedbackPrompt": {
+    "title": "K-Bapチームに直接送ってください",
+    "body": "不便な点、欲しい機能、なんでも大歓迎です。",
+    "neverAgain": "今後表示しない"
   },
   "feedback": {
     "title": "お問い合わせ",
@@ -1323,7 +1334,13 @@
       "unreadableTitle": "成分表示を読み取れませんでした",
       "unreadableBody": "原材料名がはっきり写るように撮り直してください。",
       "newAnalysisTitle": "新しく分析してください",
-      "newAnalysisBody": "この分析には写真を追加できません。新しく分析してください。"
+      "newAnalysisBody": "この分析には写真を追加できません。新しく分析してください。",
+      "visionLimitTitle": "今日の写真スキャンを使い切りました",
+      "visionLimitBody": "明日またスキャンできます。商品名での検索は引き続き使えます。",
+      "tooLargeTitle": "写真が大きすぎます",
+      "tooLargeBody": "もう一度撮ってください。",
+      "busyTitle": "ただいまスキャンが混み合っています",
+      "busyBody": "しばらくしてからもう一度お試しください。"
     },
     "debugLabel": "OCRテキスト(テスト用)",
     "debugPlaceholder": "パッケージの文字を1行ずつ入力",
@@ -1359,9 +1376,21 @@
     "reviewPhotos_one": "写真{{count}}枚を確認",
     "reviewPhotos_other": "写真{{count}}枚を確認",
     "done": "完了",
+    "scanAnother": "別の商品をスキャン",
     "resultAvoid": "避けたい食材と一致: {{names}}。",
     "resultCaution": "同じ製造施設の表示に記載: {{names}}。",
-    "resultMajorSet": "{{contains}}。避けたい食材を設定すると、自分向けの結果を見られます。"
+    "resultMajorSet": "{{contains}}。避けたい食材を設定すると、自分向けの結果を見られます。",
+    "vision": {
+      "retakeTitle": "もう一度撮ってみましょう",
+      "blurry": "写真がぼやけています。手を動かさず、画面をタップしてピントを合わせてください。",
+      "tooDark": "暗すぎます。明るい場所で撮ってください。",
+      "glare": "パッケージに光が反射しています。少し傾けて撮ってください。",
+      "cropped": "一部が切れています。パッケージ表面か成分表示の全体が入るように撮ってください。",
+      "notFood": "メニューや食品のパッケージではないようです。メニュー、パッケージ表面、成分表示を撮ってください。",
+      "unknown": "この写真は読み取れませんでした。メニュー、パッケージ表面、成分表示を撮ってください。",
+      "reading": "写真を読み取っています…",
+      "notLabel": "原材料表示ではないようです。原材料名が書かれた面を撮影してください。"
+    }
   },
   "scanCamera": {
     "title": "スキャン",
@@ -1378,7 +1407,8 @@
     "capturedPackage": "撮影したパッケージ",
     "capturedLabel": "撮影した成分表示",
     "choosePhoto": "写真を選択",
-    "switchCamera": "カメラを切り替え"
+    "switchCamera": "カメラを切り替え",
+    "capturedPhoto": "撮影した写真"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

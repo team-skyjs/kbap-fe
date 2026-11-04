@@ -14,6 +14,7 @@
  * 제스처 영역 = 시트 전체(9/14 종한): 이 시트는 본문 스크롤이 없어 P-337의 "핸들+제목 한정" 사유(리스트 스크롤
  * 충돌)가 없다. Pan은 이동 후에만 활성화되므로 체크박스·전문 링크·버튼 탭은 그대로 먹는다.
  * 확인 버튼 = useSubmitGuard + Btn busy(공용 제출 가드). 시안: 피그마 「KB-497 알림 설정 시안」 2·3.
+ * KB-987: consent 변형만 토스 B안(흰 플랫·그림자/핸들 없음·제목 24 최대 3줄·체크 원+chevron·버튼 56) — primer는 그대로.
  */
 import * as React from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
@@ -26,12 +27,15 @@ import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, shadow, radius } from '@/lib/theme';
 import { Btn } from '@/components/Btn';
-import { IconCheck } from '@/components/icons';
+import { IconCheck, IconChevron } from '@/components/icons';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { openWebPage } from '@/lib/openExternal';
 import { consentUrl, type ConsentKind } from '@/lib/push/consent';
 import { EVENTS, track } from '@/lib/analytics';
+
+/** KB-979: 동의 시트가 뜬 표면(계측 surface) */
+export type ConsentSurface = 'home' | 'inbox' | 'settings';
 
 export interface ConsentChecks {
   privacy: boolean;
@@ -41,6 +45,7 @@ export interface ConsentChecks {
 export function NotificationSheet({
   open,
   variant,
+  consentSurface,
   title,
   body,
   confirmLabel,
@@ -50,6 +55,8 @@ export function NotificationSheet({
 }: {
   open: boolean;
   variant: 'primer' | 'consent';
+  /** consent 변형의 계측 surface(KB-979) — push_consent_view·push_consent_response에 붙는다 */
+  consentSurface?: ConsentSurface;
   title: string;
   body: string;
   confirmLabel: string;
@@ -90,15 +97,22 @@ export function NotificationSheet({
   // 퇴장 중 백버튼 재입력·스와이프 퇴장 중 탭이 onClose를 두 번 부르던 경로 차단(Codex 리뷰 #150 P2).
   // 내부 시작 퇴장은 open이 그대로 true라 pointerEvents 게이트가 못 본다 → closing 상태로 즉시 무반응(Codex #150 P1).
   const needsConsent = variant === 'consent';
+  const flat = needsConsent; // KB-987 B안 스타일 = consent 변형만
+  const surface = consentSurface;
+  // KB-979: 노출 = 열릴 때마다 1회(렌더 중 부수효과 금지 — effect)
+  React.useEffect(() => {
+    if (open && needsConsent) track(EVENTS.push_consent_view, { surface });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open 전환에만 반응
+  }, [open]);
   const requestClose = () => {
     if (closing) return; // 닫힘 진행 중 재입력 — 이벤트도 1회만(KB-630)
-    if (needsConsent && !swipe.isClosing()) track(EVENTS.push_consent_response, { action: 'later' }); // KB-630: primer는 PushPrimerModal이 담당 · 드래그 퇴장 중 탭 = 중복 아님
+    if (needsConsent && !swipe.isClosing()) track(EVENTS.push_consent_response, { action: 'later', surface }); // KB-630: primer는 PushPrimerModal이 담당 · 드래그 퇴장 중 탭 = 중복 아님
     setClosing(true);
     swipe.dismiss();
   };
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
   const toggle = (kind: ConsentKind) => {
-    track(EVENTS.push_consent_response, { action: checks[kind] ? 'uncheck' : 'check', target: kind }); // KB-630
+    track(EVENTS.push_consent_response, { action: checks[kind] ? 'uncheck' : 'check', target: kind, surface }); // KB-630
     setChecks((c) => ({ ...c, [kind]: !c[kind] }));
   };
 
@@ -113,11 +127,12 @@ export function NotificationSheet({
   const confirm = () => {
     if (swipe.isClosing()) return; // 스와이프 퇴장 중 확인 탭 — "나중에/끌어 닫기"를 택한 뒤 동의가 켜지면 안 된다(Codex #150 P1)
     if (!ready) {
-      track(EVENTS.push_consent_response, { action: 'blocked' }); // KB-630
+      track(EVENTS.push_consent_response, { action: 'blocked', surface }); // KB-630
       setNotice(true); // 탭은 받되 진행 안 함 — 둘 다 동의해야 켤 수 있음을 알린다
       if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(t('push.consentBothRequired')); // Android는 liveRegion이 읽어줌(중복 방지)
       return;
     }
+    if (needsConsent) track(EVENTS.push_consent_response, { action: 'confirm', surface }); // KB-979: 표면별 동의율(노출 대비)
     void run(async () => {
       await onConfirm(needsConsent ? checks : undefined);
     });
@@ -133,21 +148,24 @@ export function NotificationSheet({
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, swipe.dimStyle]} pointerEvents="none" />
         <Pressable style={{ flex: 1 }} onPress={requestClose} testID="notif-sheet-backdrop" />
         <GestureDetector gesture={swipe.gesture}>
-        <Animated.View style={[styles.sheet, sheetPad, swipe.sheetStyle]} onLayout={swipe.onSheetLayout} testID={`notif-sheet-${variant}`}>
-          <View style={styles.handle} testID="notif-sheet-grab" />
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.body}>{body}</Text>
+        <Animated.View style={[flat ? styles.sheetFlat : styles.sheet, sheetPad, swipe.sheetStyle]} onLayout={swipe.onSheetLayout} testID={`notif-sheet-${variant}`}>
+          {!flat && <View style={styles.handle} testID="notif-sheet-grab" />}
+          {/* KB-987: 3줄 안에서 네이티브 축소(KB-856 선례) — 수동 개행 금지. 기본 글자 크기는 10개 로케일 모두 축소 없이 ≤3줄(320pt 폭 실측),
+              큰글씨 상한(×1.3)에선 id만 0.855가 필요 — 하한 0.8(긴 번역 여유) */}
+          <Text style={flat ? styles.titleFlat : styles.title} numberOfLines={flat ? 3 : undefined} adjustsFontSizeToFit={flat} minimumFontScale={flat ? 0.8 : undefined} testID="notif-sheet-title">{title}</Text>
+          <Text style={flat ? styles.bodyFlat : styles.body}>{body}</Text>
           {needsConsent && (
-            <View style={styles.consents}>
+            <View style={styles.consents} testID="notif-sheet-consents">
               <ConsentRow
                 kind="privacy"
+                surface={surface}
                 label={t('push.privacyConsent')}
                 checked={checks.privacy}
                 onToggle={() => toggle('privacy')}
               />
-              <View style={styles.hair} />
               <ConsentRow
                 kind="receive"
+                surface={surface}
                 label={t('push.receiveConsent')}
                 checked={checks.receive}
                 onToggle={() => toggle('receive')}
@@ -157,7 +175,7 @@ export function NotificationSheet({
           {needsConsent && (
             // 고정 슬롯(항상 렌더, 불투명도만) — 안내가 뜨어도 시트 높이 불변(P-151)
             <Text
-              style={[styles.notice, !notice && styles.noticeHidden]}
+              style={[styles.notice, flat && styles.noticeFlat, !notice && styles.noticeHidden]}
               testID="notif-sheet-notice"
               accessibilityLiveRegion="polite"
               accessibilityElementsHidden={!notice}
@@ -166,12 +184,12 @@ export function NotificationSheet({
               {t('push.consentBothRequired')}
             </Text>
           )}
-          <View style={styles.actions}>
-            <Btn busy={busy} onPress={confirm} testID="notif-sheet-confirm">
+          <View style={flat ? styles.actionsFlat : styles.actions}>
+            <Btn busy={busy} onPress={confirm} style={flat ? styles.confirmFlat : undefined} testID="notif-sheet-confirm">
               {confirmLabel}
             </Btn>
-            <Pressable onPress={requestClose} hitSlop={10} testID="notif-sheet-later">
-              <Text style={styles.later}>{t('push.primerLater')}</Text>
+            <Pressable onPress={requestClose} hitSlop={10} style={flat ? styles.laterFlatBox : undefined} testID="notif-sheet-later">
+              <Text style={flat ? styles.laterFlat : styles.later}>{t('push.primerLater')}</Text>
             </Pressable>
           </View>
         </Animated.View>
@@ -182,21 +200,25 @@ export function NotificationSheet({
   );
 }
 
-/** 체크 행 — 체크박스는 고정 슬롯(20×20·보더 동일), 상태로 바뀌는 건 색·아이콘 표시만(P-151). */
-function ConsentRow({ kind, label, checked, onToggle }: { kind: ConsentKind; label: string; checked: boolean; onToggle: () => void }) {
+/** 체크 행(KB-987 B안) — 체크 원은 고정 슬롯(22×22·보더 1.5), 상태로 바뀌는 건 색만(P-151). off = 회색 원 + 흰 체크(토스 패턴). */
+function ConsentRow({ kind, surface, label, checked, onToggle }: { kind: ConsentKind; surface?: ConsentSurface; label: string; checked: boolean; onToggle: () => void }) {
   const { t } = useTranslation();
   return (
     <View style={styles.row}>
       <Pressable style={styles.rowMain} onPress={onToggle} hitSlop={6} testID={`consent-${kind}`} accessibilityRole="checkbox" accessibilityState={{ checked }}>
         <View style={[styles.box, checked && styles.boxOn]} testID={`consent-${kind}-box`}>
-          <View style={[styles.boxIcon, !checked && styles.boxIconHidden]}>
-            <IconCheck size={14} color="#fff" />
-          </View>
+          <IconCheck size={14} color="#fff" />
         </View>
         <Text style={styles.rowLabel}>{label}</Text>
       </Pressable>
-      <Pressable onPress={() => { track(EVENTS.push_consent_response, { action: 'full_text', target: kind }); void openWebPage(consentUrl(kind)); }} hitSlop={8} testID={`consent-${kind}-full`}>
-        <Text style={styles.viewFull}>{t('notif.viewFull')}</Text>
+      <Pressable
+        onPress={() => { track(EVENTS.push_consent_response, { action: 'full_text', target: kind, surface }); void openWebPage(consentUrl(kind)); }}
+        hitSlop={12}
+        accessibilityRole="link"
+        accessibilityLabel={t('notif.viewFull')}
+        testID={`consent-${kind}-full`}
+      >
+        <IconChevron size={20} color={C.inkMute} />
       </Pressable>
     </View>
   );
@@ -215,22 +237,35 @@ const styles = StyleSheet.create({
     gap: 12,
     ...shadow.sh2,
   },
+  // KB-987 B안(consent) — 흰 플랫: 그림자·핸들 없음, 간격은 요소 마진(시안 14487-1333)
+  sheetFlat: {
+    backgroundColor: C.card,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingTop: 36,
+    paddingBottom: 34,
+    paddingHorizontal: 24,
+  },
   handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: radius.pill, backgroundColor: C.line, marginBottom: 6 },
   title: { fontFamily: font.bodyBold, fontSize: 18, color: C.ink, lineHeight: 25 },
   body: { fontFamily: font.body, fontSize: 16, color: C.ink3, lineHeight: 23 },
-  consents: { backgroundColor: C.surface2, borderRadius: radius.lg, paddingHorizontal: 15 },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 10 },
-  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  rowLabel: { flex: 1, fontFamily: font.bodyBold, fontSize: 16, color: C.ink, lineHeight: 22 },
-  hair: { height: 1, backgroundColor: C.hair },
-  // 체크박스: 미선택도 같은 폭 보더로 자리 유지 — 상태로 바뀌는 건 색만(P-151)
-  box: { width: 20, height: 20, borderRadius: radius.xs, borderWidth: 1.5, borderColor: C.line, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  titleFlat: { fontFamily: font.bodyBold, fontSize: 24, lineHeight: 32, color: C.ink, letterSpacing: -0.36 },
+  bodyFlat: { fontFamily: font.body, fontSize: 15, lineHeight: 22, color: C.ink3, marginTop: 8 },
+  // 동의 영역(consent 전용) — 회색 박스·구분선 없이 행 2개(행 자체 패딩)
+  consents: { marginTop: 28 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 8 },
+  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rowLabel: { flex: 1, fontFamily: font.bodySemi, fontSize: 15, color: C.ink2, lineHeight: 22 },
+  // 체크 원: on/off 같은 크기·보더 폭 — 상태로 바뀌는 건 색만(P-151)
+  box: { width: 22, height: 22, borderRadius: radius.pill, borderWidth: 1.5, borderColor: C.line2, backgroundColor: C.line2, alignItems: 'center', justifyContent: 'center' },
   boxOn: { borderColor: C.primary, backgroundColor: C.primary },
-  boxIcon: { opacity: 1 },
-  boxIconHidden: { opacity: 0 },
-  viewFull: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText, padding: 4 },
   notice: { fontFamily: font.body, fontSize: 13, lineHeight: 17, color: C.riskDangerText, textAlign: 'center', marginTop: -4 },
+  noticeFlat: { marginTop: 0 },
   noticeHidden: { opacity: 0 },
   actions: { gap: 6, marginTop: 4 },
+  actionsFlat: { gap: 4, marginTop: 6 },
+  confirmFlat: { minHeight: 56 }, // 계획 A-1: 라운드는 Btn 기본 알약(KB-909), 높이만 시안 56
   later: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink2, padding: 8, textAlign: 'center' },
+  laterFlatBox: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  laterFlat: { fontFamily: font.bodySemi, fontSize: 15, color: C.ink3, textAlign: 'center' },
 });

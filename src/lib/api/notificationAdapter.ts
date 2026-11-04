@@ -5,7 +5,7 @@
  * title/body는 발송 시점 기기 언어로 저장된 문자열 — 앱 가공 0(P-147 서버 정본).
  * `type`(필수)·`orderId`(REVIEW_REMINDER만, 그 외 null · KB-500)는 푸시 data와 같은 어휘 — 와이어 타입은 구 응답·구 행도 깨지지 않게
  * 옵션으로 두고, 모르는 유형은 routeForNotificationData가 null을 돌려 이동하지 않는다.
- * 구 `foodId`는 서버가 항상 null로 보내는 호환 필드 — 타입에서 제거(읽지 않음).
+ * `foodId`는 FOOD_DISCOVERY만 값(KB-985), 그 외 null — orderId와 같은 방식으로 문자열 보존.
  */
 export interface NotificationWire {
   id: number;
@@ -15,6 +15,7 @@ export interface NotificationWire {
   read: boolean;
   type?: string;
   orderId?: number | string | null;
+  foodId?: number | string | null;
 }
 
 export interface InboxItem {
@@ -26,6 +27,7 @@ export interface InboxItem {
   read: boolean;
   type?: string;
   orderId?: string;
+  foodId?: string;
 }
 
 export function toInboxItem(w: NotificationWire): InboxItem {
@@ -39,5 +41,6 @@ export function toInboxItem(w: NotificationWire): InboxItem {
     read: w.read,
     type: w.type,
     orderId: w.orderId != null ? String(w.orderId) : undefined,
+    foodId: w.foodId != null ? String(w.foodId) : undefined,
   };
 }
