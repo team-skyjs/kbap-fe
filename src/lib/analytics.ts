@@ -243,7 +243,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   push_consent_view: ['surface'], // KB-979 home|inbox|settings
   push_settings_tap: ['target'], // news_off_cancel|consent_full|retry_save|retry_load
   app_ota_apply: ['result', 'trigger'], // KB-978 result: applied|none|timeout|error|deferred · trigger: launch|resume
-  push_open: ['type'], // KB-629: PUSH_TYPES 값만(HELPFUL|SCAN_SUGGESTION|REVIEW_REMINDER|NEWS|MEAL_TIME) — 미지 유형 = 속성 생략
+  push_open: ['type'], // KB-629: PUSH_TYPES 값만(HELPFUL|SCAN_SUGGESTION|REVIEW_REMINDER|NEWS|MEAL_TIME|FOOD_DISCOVERY) — 미지 유형 = 속성 생략
   profile_avoid_update: ['count', 'delta', 'via'], // via: manual|preset (항목명 금지 — 개수만)
   community_post_submit: ['photo_count', 'food_tag_count', 'has_place'], // 장소명 금지 — boolean만
   community_comment_submit: ['is_reply'],
