@@ -16,8 +16,10 @@ export const RECEIVE_CONSENT_VERSION = 2;
  * 광고성 동의 확정 PATCH — 설정 화면·홈·알림함 동의 시트 공용(KB-979: 표면마다 body가 갈라지지 않게 한 곳).
  * KB-544 계약: consent:true + 버전 2종 = 동의 기록, enabled = 이 기기 소식 ON, 식사 시간도 함께 ON.
  * 서버 처리 순서 consent → enabled → mealTime 이라 한 요청에 담아도 NOTIFICATION-001 없음.
+ * KB-987: 확인 = 활동 알림(activity)도 ON(비광고성 — 추가 동의 불필요).
  */
 export const MARKETING_CONSENT_PATCH: NotificationSettingsPatch = {
+  activity: true,
   news: { consent: true, privacyConsentVersion: PRIVACY_CONSENT_VERSION, receiveConsentVersion: RECEIVE_CONSENT_VERSION, enabled: true, mealTime: true },
 };
 
