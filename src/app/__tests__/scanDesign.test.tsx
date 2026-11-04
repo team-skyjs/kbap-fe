@@ -158,13 +158,24 @@ jest.mock('@/lib/data/useScan', () => ({
       { onSuccess }: { onSuccess: (r: { items: unknown[]; photoOnly: unknown[]; degraded: boolean }) => void },
     ) =>
       onSuccess({
+        ...mockScanExtra.v, // KB-992: photoOnly·scanId 덧대기(기본 없음 = 종전 픽스처)
         degraded: false,
         items: [
           { itemId: 0, rawMenuName: '된장찌개', box: { x: 0, y: 0, width: 0.1, height: 0.1 }, risk: 'safe', matched: true, foodId: '1', displayName: 'Doenjang Jjigae', koreanName: '된장찌개', price: 8000 },
         ],
         photoOnly: [],
+        ...mockScanExtra.v,
       }),
   }),
+}));
+// KB-992: AI 추정 폴링 훅 = 표면 목(폴링 자체는 scanPending992) — 기본 = 대기 없음·종료(종전 화면 그대로)
+const mockScanExtra: { v: Record<string, unknown> } = { v: {} };
+const mockPending: { items: unknown[]; polling: boolean; calls: [string | null, boolean][] } = { items: [], polling: false, calls: [] };
+jest.mock('@/lib/data/useScanPending', () => ({
+  useScanPending: (id: string | null, active: boolean) => {
+    mockPending.calls.push([id, active]);
+    return { items: mockPending.items, polling: mockPending.polling };
+  },
 }));
 
 import Scan from '../scan';
@@ -192,6 +203,8 @@ const galleryBtn = (tree: ReactTestRenderer) =>
 beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 beforeEach(() => {
   jest.clearAllMocks();
+  mockScanExtra.v = {};
+  Object.assign(mockPending, { items: [], polling: false, calls: [] });
   (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS.packagedVisionScan = false; // KB-969: 탭·메뉴 기본 = 플래그 OFF 흐름(이 스위트는 dev 서버 채널로 풀려 기본 ON) — 사진 스캔은 visionScan969·scanVisionMenu969
   mockRemoveGuards.length = 0;
   mockPreview.color = '#000000';
@@ -869,4 +882,106 @@ it('KB-900 무료 배지·힌트 줄 = 아래 코너(32 + 28) 안쪽 — 길면 
   const m = /left: (\d+), right: (\d+)/.exec(wrap)!;
   expect(Number(m[1])).toBeGreaterThan(corner);
   expect(Number(m[2])).toBeGreaterThan(corner);
+});
+
+// KB-992: 결과 리스트 2단 — DB 판정(위) + 'AI 추정' 섹션(아래). 폴링 훅은 표면 목(mockPending)
+describe('KB-992 AI 추정 섹션', () => {
+  const ai = (pendingId: string, displayName: string) => ({ risk: 'unable', matched: false, foodId: null, displayName, koreanName: displayName, price: null, imageUrl: null, avoidances: [], substituted: false, originalScannedName: null, pendingId });
+  const photoOnly = [ai('p1', '김치전'), ai('p2', '맛나식당'), { ...ai('', '순대'), pendingId: null }];
+  const toResult = async () => {
+    const tree = render(<Scan />);
+    await act(async () => {
+      await galleryBtn(tree).props.onPress();
+    });
+    return tree;
+  };
+  const list = (tree: ReactTestRenderer) => tree.root.findAll((n) => typeof n.props?.onAdd === 'function' && Array.isArray(n.props?.dishes))[0];
+  const has = (tree: ReactTestRenderer, id: string) => tree.root.findAll((n) => n.props?.testID === id).length > 0;
+  const names = (tree: ReactTestRenderer) => (list(tree).props.dishes as { displayName: string }[]).map((d) => d.displayName);
+
+  it('도착 전 = 위 목록(매칭·대기 없는 미매칭) + 아래 섹션 스켈레톤 행 · 섹션 노출 1회 scan_ai_section_shown{count}', async () => {
+    const track = jest.spyOn(analytics, 'track');
+    try {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.polling = true;
+      const tree = await toResult();
+      expect(names(tree)).toEqual(['Doenjang Jjigae', '순대']);
+      expect(has(tree, 'ai-section')).toBe(true);
+      expect(has(tree, 'ai-pending--1')).toBe(true);
+      expect(has(tree, 'ai-pending--2')).toBe(true);
+      expect(JSON.stringify(tree.toJSON())).toContain('scan.aiSectionNote');
+      expect(mockPending.calls[mockPending.calls.length - 1]).toEqual(['s1', true]);
+      expect(track.mock.calls.filter((c) => c[0] === 'scan_ai_section_shown')).toEqual([['scan_ai_section_shown', { count: 2 }]]);
+    } finally {
+      track.mockRestore();
+    }
+  });
+
+  it('도착분 채움 · NOT_FOOD = 행 제거 · AI 행엔 담기 없음 · 배지 = caution', async () => {
+    mockScanExtra.v = { photoOnly, scanId: 's1' };
+    mockPending.polling = true;
+    mockPending.items = [
+      { pendingId: 'p1', kind: 'dish', name: 'Kimchi pancake', koreanName: '김치전', description: 'Pan-fried kimchi pancake', risk: 'caution', avoidances: [{ code: 'EGG', name: 'Egg', risk: 'caution' }] },
+      { pendingId: 'p2', kind: 'notFood', name: null, koreanName: null, description: null, risk: 'unable', avoidances: [] },
+    ];
+    const tree = await toResult();
+    expect(has(tree, 'ai--1')).toBe(true);
+    expect(has(tree, 'ai-pending--1')).toBe(false);
+    expect(has(tree, 'ai--2') || has(tree, 'ai-pending--2')).toBe(false);
+    expect(names(tree)).not.toContain('맛나식당');
+    expect(has(tree, 'add--1')).toBe(false);
+    expect(has(tree, 'ai-chip--1')).toBe(true);
+    const badge = tree.root.findAll((n) => n.props?.testID === 'ai-badge--1')[0];
+    expect(badge.findAll((n) => n.props?.state !== undefined)[0].props.state).toBe('caution');
+  });
+
+  it('AI 행 탭 = 미등록 안내 카드 재사용 + 위에 AI 설명·추정 재료 한 줄(상세 이동 0)', async () => {
+    mockScanExtra.v = { photoOnly, scanId: 's1' };
+    mockPending.items = [{ pendingId: 'p1', kind: 'dish', name: 'Kimchi pancake', koreanName: '김치전', description: 'Pan-fried kimchi pancake', risk: 'caution', avoidances: [{ code: 'EGG', name: 'Egg', risk: 'caution' }] }];
+    const tree = await toResult();
+    act(() => tree.root.findAll((n) => n.props?.testID === 'ai--1' && typeof n.props.onPress === 'function')[0].props.onPress());
+    const s = JSON.stringify(tree.toJSON());
+    expect(s).toContain('scan.unmatchedSheetTitle');
+    expect(has(tree, 'unmatched-ai')).toBe(true);
+    expect(s).toContain('Pan-fried kimchi pancake');
+    expect(s).toContain('scan.aiIngredientsLine');
+    expect(mockPush).not.toHaveBeenCalled();
+    // 일반 미매칭 행 탭 = AI 블록 없음(이전 AI 내용이 남지 않는다)
+    act(() => tree.root.findAll((n) => n.props?.testID === 'unmatched-backdrop' && typeof n.props.onPress === 'function')[0].props.onPress());
+    act(() => list(tree).props.onOpen(list(tree).props.dishes.find((d: { displayName: string }) => d.displayName === '순대')));
+    expect(has(tree, 'unmatched-ai')).toBe(false);
+  });
+
+  it('폴링 종료·미도착 = 현행 unable 행으로 위 목록(담기 가능) · 섹션 없음', async () => {
+    mockScanExtra.v = { photoOnly, scanId: 's1' };
+    mockPending.polling = false;
+    const tree = await toResult();
+    expect(has(tree, 'ai-section')).toBe(false);
+    expect(names(tree)).toEqual(['Doenjang Jjigae', '김치전', '맛나식당', '순대']);
+    expect(has(tree, 'add--1')).toBe(true);
+  });
+
+  it('scanId 없음(서버 미배포) = 대기 행도 현행 unable · 폴링 키 null', async () => {
+    mockScanExtra.v = { photoOnly };
+    mockPending.polling = true;
+    const tree = await toResult();
+    expect(has(tree, 'ai-section')).toBe(false);
+    expect(names(tree)).toHaveLength(4);
+    expect(mockPending.calls.every(([id]) => id === null)).toBe(true);
+  });
+
+  it('Safe only ON = 섹션째 숨김 · 화면이 가려지면 폴링 active=false', async () => {
+    mockScanExtra.v = { photoOnly, scanId: 's1' };
+    mockPending.polling = true;
+    const tree = await toResult();
+    act(() => tree.root.findAll((n) => n.props?.testID === 'scan-safe-toggle' && typeof n.props.onPress === 'function')[0].props.onPress());
+    expect(has(tree, 'ai-section')).toBe(false);
+    mockFocused.v = false;
+    try {
+      act(() => tree.update(<Scan />));
+      expect(mockPending.calls[mockPending.calls.length - 1]).toEqual(['s1', false]);
+    } finally {
+      mockFocused.v = true;
+    }
+  });
 });

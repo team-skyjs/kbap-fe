@@ -76,6 +76,28 @@ export interface ScanResultWire {
   substituted?: boolean;
   /** KB-789 v3.0: 대체 전 메뉴판 원문(substituted=true일 때만 의미). 2.0 = 부재. */
   originalScannedName?: string | null;
+  /** KB-992(S-959 계약 초안 — 서버 확정 시 Swagger 정본): matched=false·대체 아님 항목만 값 —
+   *  AI 추정 대기 키(`GET /api/scans/{scanId}/pending`). 부재·null = 대기 없음. */
+  pendingId?: string | null;
+}
+
+/** KB-992 AI 추정 항목(초안). riskLevel은 CAUTION|UNABLE만 오기로 했지만 어댑터가 다시 거른다. */
+export interface ScanPendingItemWire {
+  pendingId: string;
+  kind: string; // 'DISH' | 'DRINK' | 'NOT_FOOD'
+  name?: string | null;
+  koreanName?: string | null;
+  description?: string | null;
+  riskLevel?: string | null;
+  avoidances?: AvoidanceOverlapWire[] | null;
+  spiciness?: number | null;
+  confidence?: number | null;
+  aiEstimated?: boolean;
+}
+
+export interface ScanPendingPayload {
+  items?: ScanPendingItemWire[] | null;
+  done?: boolean;
 }
 
 /** POST /images/upload-url — presigned 발급 (req/res, 2026-07-16 배포). */
@@ -111,4 +133,6 @@ export interface ScanPayload {
   /** P-219 → P-242 채택: v2 서버 실환율(frankfurter/ECB) — null = 조회 실패
    *  (스캔 정상·배지 생략 규약, BE #182). 환산 = price ÷ krwPerUnit. */
   currency?: { code: string; krwPerUnit: number } | null;
+  /** KB-992(초안): AI 추정 폴링 키 — 부재 = 폴링 안 함(전부 현행 unable). */
+  scanId?: string | number | null;
 }

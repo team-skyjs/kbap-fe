@@ -54,10 +54,10 @@ export function SkeletonList() {
 
 /* ---- P-287(최종본 4003:12994~13466): 프리미티브 — 이미지 블록 #F2F3F6 r8 ·
  * 텍스트 바 #EAEBEE r4. Shimmer 스윕 유지. 치수는 발주 표 실측. ---- */
-function SkImg({ w, h, r = 8 }: { w: number | `${number}%`; h: number; r?: number }) {
+export function SkImg({ w, h, r = 8 }: { w: number | `${number}%`; h: number; r?: number }) {
   return <Shimmer style={{ width: w, height: h, borderRadius: r, backgroundColor: '#F2F3F6' }} />;
 }
-function SkBar({ w, h = 12 }: { w: number | `${number}%`; h?: number }) {
+export function SkBar({ w, h = 12 }: { w: number | `${number}%`; h?: number }) {
   // Codex #47 6차: 고정폭 바가 협폭 기기(320pt) 콘텐츠 폭 초과 — 일괄 축소 허용(전 바 공통 규칙)
   return <Shimmer style={{ width: w, maxWidth: '100%', flexShrink: 1, height: h, borderRadius: radius.xs, backgroundColor: '#EAEBEE' }} />;
 }
