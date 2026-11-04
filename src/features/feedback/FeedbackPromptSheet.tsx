@@ -14,6 +14,7 @@ import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { KeyboardDismissBar } from '@/components/KeyboardDismissBar';
+import { TopToastHost } from '@/components/TopToast';
 import { IconClose } from '@/components/icons';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -35,6 +36,8 @@ export function FeedbackPromptSheet({ open, onClose, onDismiss }: { open: boolea
       {open && <SheetBody open={open} onClose={onClose} backRef={back} />}
       {/* #421 Codex P2: Modal = 별도 네이티브 루트 — 루트의 안드 내리기 바가 Modal 뒤에 가린다 → 입력 Modal마다 modal 변형(iOS null) */}
       <KeyboardDismissBar modal />
+      {/* #421 Codex P2(P-370·#161 문법): 네이티브 Modal은 루트 토스트 호스트 위에 뜬다 — 실패 안내(시트는 열린 채)가 가려지지 않게 Modal 안에도 호스트 */}
+      {open && <TopToastHost />}
     </Modal>
   );
 }

@@ -57,7 +57,7 @@ jest.mock('expo-image-picker', () => ({ requestMediaLibraryPermissionsAsync: jes
 const mockSubmit = jest.fn();
 jest.mock('@/lib/data/useFeedback', () => ({ FEEDBACK_MAX_LEN: 2000, FEEDBACK_MAX_PHOTOS: 3, useSubmitFeedback: () => ({ mutateAsync: (...a: unknown[]) => mockSubmit(...a) }) }));
 const mockToast = jest.fn();
-jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
+jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a), subscribeTopToast: () => () => {}, dismissTopToast: () => {} })); // 호스트(TopToastHost)가 구독
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 
@@ -183,6 +183,10 @@ describe('시트 — 보내기·닫기·다시 보지 않기', () => {
     await act(async () => { byId(t, 'feedback-send').props.onPress(); });
     expect(mockToast).toHaveBeenCalledWith('feedback.sendFailed', { error: true });
     expect(open(t)).toBe(true);
+    // #421 Codex P2: 실패 토스트가 보일 자리 = 열린 시트의 Modal 안 호스트(루트 호스트는 Modal 뒤에 가린다)
+    const { TopToastHost } = jest.requireActual<typeof import('@/components/TopToast')>('@/components/TopToast');
+    const modal = t.root.findAll((n) => n.props?.transparent === true && n.props?.animationType === 'fade')[0];
+    expect(modal.findAll((n) => n.type === TopToastHost)).toHaveLength(1);
     expect(t.root.findAll((n) => n.props?.testID === 'feedback-body')[0].props.value).toBe('사진이 안 올라가요');
     expect(await stored()).toBeNull();
     expect(events()).toEqual(['feedback_prompt_shown']);
