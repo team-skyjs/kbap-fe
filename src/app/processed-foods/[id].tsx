@@ -52,6 +52,7 @@ import { packagedTypeKey, type ProcessedFoodDetail } from '@/lib/api/processedFo
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
 import { PackagedReviews } from '@/features/processedFood/PackagedReviews';
 import { ProductName } from '@/features/processedFood/ProductName';
+import { RecipeSection } from '@/features/processedFood/RecipeSection';
 import { IngredientsText, insideCodes, PackagedDetectedTiles, PackagedUnableBand, PackagedVerdictBand, safeBasis } from '@/features/processedFood/PackagedVerdict';
 
 const GUTTER = 20;
@@ -269,6 +270,15 @@ export function ProcessedFoodDetailScreen() {
           )}
         </View>
 
+        {/* KB-990(D-34 B): 조리법 — 상품명 블록 바로 아래·What's inside 앞(판정 띠는 그대로 맨 위). 없으면 숨김.
+            시안 섹션 = 화면 폭(좌우 16) · 위 8 띠 · 아래 24 뒤 다음 띠(페이지 gap 20 상쇄) */}
+        {!!d.recipe && (
+          <View style={s.recipeWrap}>
+            <View style={s.band8} />
+            <RecipeSection recipe={d.recipe} />
+          </View>
+        )}
+
         {/* KB-945: What's inside = 음식 상세와 같은 제목·칩 필터(판정 있을 때만)·재료 타일 그리드 — 마크는 회원 판정이 있을 때만 */}
         {codes.length > 0 && (
           <>
@@ -370,6 +380,8 @@ const s = StyleSheet.create({
   disclaimer: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
   seeLess: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, justifyContent: 'center' },
   seeLessText: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
+  recipeWrap: { marginHorizontal: -GUTTER, marginBottom: -20 }, // KB-990: 페이지 gutter·gap 상쇄 — 섹션 자체 패딩(16·24)이 시안 값
+  band8: { height: 8, backgroundColor: '#F5F5F5' }, // gray-100 — thickDivider와 같은 값
   thickDivider: { height: 8, backgroundColor: '#F5F5F5', marginHorizontal: -GUTTER }, // 음식 상세 thickDivider와 같은 값 — 화면 폭
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 }, // 음식 상세 ingChipRow(좌우 여백은 페이지가)
   skelLine: { height: 14, borderRadius: radius.xs },

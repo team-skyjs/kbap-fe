@@ -7,6 +7,7 @@
  *   (비회원·회피 0개). 앱은 판정을 만들지 않는다 — 모르는 verdict = null. detections·avoidance는 보조(구서버·성분표 화면).
  * - unmapped는 서버가 폐기(항상 빈 배열) — 받지 않는다(Needs checking 경로 삭제).
  */
+import { adaptRecipe, type Recipe, type RecipeWire } from './recipeAdapter';
 
 export type LabelSource = 'DECLARED' | 'INGREDIENTS_ONLY' | 'NONE';
 /** KB-867(서버 #458) 유형 8종 — 목록 칩·요청 파라미터·플레이스홀더(RAMEN = 그릇, 나머지 = 카메라 + 유형 글자). 매핑 안 되면 null(카메라 + 원문 유형). */
@@ -49,6 +50,8 @@ export type ProcessedReviewSummary = { overall: ProcessedAxis; taste: ProcessedA
 
 export type ProcessedFoodDetail = ProcessedFoodSummary & {
   capacity: string | null;
+  /** KB-990(S-961 초안): 조리법 — null = 섹션 숨김 */
+  recipe: Recipe | null;
   rawMaterials: string | null;
   /** 알레르기 표시란 원문 — DECLARED일 때만 의미가 있다('알수없음' 등은 null로) */
   allergens: string | null;
@@ -102,6 +105,7 @@ export type DetailWire = SummaryWire & {
   /** KB-965(S-953, 가산·옵셔널): kind = 누끼·실사진 구분 — 화면은 모든 장을 같은 바탕·contain으로 그려 아직 쓰지 않는다 */
   images?: { url?: string | null; kind?: string | null }[] | null; // S-953: Swagger는 url·kind 필수 — 운영 서버 배포 전·이상값 방어로 옵셔널 유지
   capacity?: string | null;
+  recipe?: RecipeWire | null; // KB-990 — 서버 배포 전 옵셔널
   rawMaterials?: string | null;
   allergens?: string | null;
   labelSource: string;
@@ -230,6 +234,7 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     ...adaptProcessedSummary(w),
     imageUrl: toHttps(w.image?.url ?? w.imageUrl),
     capacity: blankToNull(w.capacity),
+    recipe: adaptRecipe(w.recipe),
     rawMaterials: blankToNull(w.rawMaterials),
     allergens,
     labelSource,
