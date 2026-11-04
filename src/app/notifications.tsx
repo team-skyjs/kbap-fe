@@ -50,7 +50,7 @@ export default function Notifications() {
     <View style={styles.root}>
       <SubHeader title={t('inbox.title')} onBack={() => router.back()} />
       {/* KB-979: 미동의 회원 = 진입마다 광고성 동의 시트(전환 끝난 뒤). 게스트는 위 Redirect라 여기 안 온다 */}
-      <InboxMarketingConsent />
+      {FLAGS.marketingConsentPrompt && <InboxMarketingConsent />}{/* P-599: 운영 OFF = 마운트 0(설정 GET·시트 0) */}
       {isError && !data ? (
         /* P-164/P-207: 로드 실패 = 공용 에러(+재시도) — 빈 상태로 위장 금지 */
         <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />

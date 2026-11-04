@@ -1,3 +1,9 @@
+## 2026-11-04 · P-599 #416 광고성 동의 시트 운영 채널 OFF 플래그
+
+- flags.ts marketingConsentPrompt = DEV_SERVER_CHANNEL(teamtest dev 타깃·development ON, production OFF) — 예진: 운영 OTA엔 시트 끔.
+- 게이트 = 진입점 두 곳: 홈 큐 스텝 첫 줄(즉시 false — 설정 GET·날짜 기록·대기·런타임 소모 0, 큐는 다음 스텝으로) · 알림함 InboxMarketingConsent 마운트(OFF = 마운트 0). #416 로직 무변.
+- OFF면 isMarketingConsentActive가 계속 false라 ScanExitPrompts·useReviewPrompt(blocked) 동작은 #416 전과 같다.
+
 ## 2026-11-04 · P-596 KB-982 메뉴판 스캔 음식 상세에 메뉴 담기
 
 - 카트 = 모듈 스토어 src/features/scan/scanCartStore.ts(useSyncExternalStore — 구 scan.tsx 로컬 Map 상태). 담기·빼기 이벤트(scan_item_add·scan_item_remove·airbridge.addToCart)도 스토어 한 곳 — 결과 리스트·상세 같은 계측.
