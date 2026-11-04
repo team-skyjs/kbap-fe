@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""P-609: serve only hash-locked public development fixtures; no directory browsing."""
+"""P-610: serve only hash-locked public development fixtures; no directory browsing."""
 import argparse
 import hashlib
 import ipaddress

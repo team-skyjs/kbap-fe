@@ -12,8 +12,8 @@
 기존 호환 dev client를 설치한 시뮬레이터/기기에서 기능 브랜치의 Metro를 열 수 있다. teamtest 빌드/OTA를 기능 브랜치에서 발행하지 않는다. 새 바이너리가 필요하면 별도 승인된 develop 통합·푸시된 클린 커밋·build 태그 절차를 따른다.
 
 ```sh
-NODE_OPTIONS=--dns-result-order=ipv4first EXPO_PUBLIC_BE_BASE=https://dev.kbap.site EXPO_NO_TELEMETRY=1 npx expo start --dev-client --localhost --port 8098 --clear
-# 로컬 iOS 시뮬레이터. --localhost는 ::1에 바인딩될 수 있으므로 localhost 사용.
+NODE_OPTIONS=--dns-result-order=ipv4first EXPO_PUBLIC_BE_BASE=https://dev.kbap.site EXPO_NO_TELEMETRY=1 npx expo start --dev-client --localhost --port 8098 --max-workers 2 --clear
+# 로컬 iOS 시뮬레이터. IPv4 우선 옵션으로 Metro manifest의 주소와 바인딩을 맞춘다.
 xcrun simctl openurl <SIMULATOR_UDID> 'exp+kbap://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8098'
 xcrun simctl openurl <SIMULATOR_UDID> 'kbap://ocr-collector'
 ```
@@ -68,3 +68,26 @@ uv run --offline --frozen python mobile_ocr_bridge.py ingest --capture /absolute
 자동 검사는 잘못된 채널/BE, 외부 주소, 누락·중복 manifest, confidence/좌표 오류, timeout 뒤 native 작업 중첩 방지, 취소/백그라운드, 실패 재시도, 빈 텍스트, 기기유형 UNKNOWN 및 OCR 로그 차단을 확인한다. 단위 테스트는 native 실측의 대체가 아니다.
 
 별도 기기 기록에는 OS, 바이너리/JS커밋, simulator/physical, 공급 방식과 네트워크 정책,32장 ok/error/empty, ingest receipt, 스캔/업로드/티켓/차감 요청 관찰 범위를 남긴다. 연결되지 않은 기기는 미측정이다. 전체 실기 검증 전 Draft PR을 유지한다. 머지·운영 배포·teamtest 발행은 이 작업에서 하지 않는다.
+
+
+## 2026-11-05 KST 실행 기록
+
+- JS 커밋 `e4a591f8`, 별도 `kb998-collector` iPhone 17 시뮬레이터, iOS **26.4.1**, 설치된 개발 바이너리 **1.0.4/1**, ML Kit 래퍼 **2.0.0 / KOREAN**. 다른 QA 시뮬레이터는 변경하지 않았다. 새 native build/OTA 없음.
+- 실제 런타임은 `__DEV__=true`, BE=dev, `Updates.channel=""`였다. 채널 없는 로컬 개발 클라이언트에 이 값을 포함했다. 빈 채널의 release 및 prod BE는 테스트에서 계속 거부한다. 중앙 딥링크의 기존 로그인/온보딩 게이트를 거쳐 정상 게스트 진입했다.
+- UI에서 로컬 HTTP로32장 다운로드. 시뮬레이터 Documents의32장 SHA256를 다시 대조해 전부 일치. **fixture 서버 종료 후** native OCR 실행. 비행기 모드 및 앱 전체 네트워크 단절 검증은 아니다.
+- **32/32 ok, 오류0, 빈 OCR 성공1, 총1,278줄.** 시도32개이며 confidence·정답·예측 없음. 총 처리시간20,956.05ms, 사진별98.68–1,942.00ms, 중앙값525.46ms. 해시·디코드·OCR·정규화 포함, 호스트 과부하가 있던 개발 시뮬레이터 값이므로 폰 성능·순수 OCR·cold/warm 지표로 해석하지 않는다.
+- 앱 강제 종료·재시작 후32개 결과·기기 정보 복구 및 캡처 해시 불변을 확인. 준비 수 표시도 복구된 manifest에 맞춘다.
+- JSON 공유 시트가 실제 열림을 확인. 앱 Documents의 동일 파일을 로컬 실험 폴더로 복사해 `mobile_ocr_bridge.py ingest` 성공. 공유 대상 서비스로 업로드하지 않았다.
+- 캡처 SHA256: `b3aa55fa9a8e9b5f5f6577c1c52465412b036a45ae12e421e2e6cce5f606f4bc`.
+- receipt: `kbap-scan-classifier-experiment/runs/routing-v2-pilot/mobile-ocr-imports/<위 SHA256>/receipt.json`; `phone_measured=false`, `classification_evaluated=false`, `labels_used_as_model_input=false`.
+- 로컬 증거: `kbap-scan-classifier-experiment/artifacts/kb998-collector-validation/`의 캡처·집계·receipt 경로·스크린샷·검증 로그. 원본/결과 JSON/사진은 FE Git에 넣지 않았다.
+- 전체 Jest **394 suites / 3,722 tests / 7 snapshots 통과** 후 마지막 중앙 딥링크·빈 채널 변경은 관련 **7 suites / 60 tests 통과**로 추가 검증. tsc0, 변경 줄 lint14파일 새 문제0. Jest 열린 핸들/worker 종료 경고가 있어 `--forceExit`를 사용했으며 핸들 누수 해결을 주장하지 않는다.
+- 수집 화면 진입 이후 Metro 로그에서 `/scans`, `/tickets`, `/uploads`, `[MLKit]`, `[OCR]` 일치0. 수집 소스에 API client/scan hook/segmentMenu import0. 이는 로그·소스 관찰 범위이며 네이티브 SDK 전체 패킷 감사는 아니다. 일반 앱 초기 진입에는 기존 홈·광고 동의 통신이 있다.
+
+### 다음 기기 실행
+
+1. iPhone14Pro / iPhoneXS / GalaxyS22는 **모두 미측정**이다. 잠금 해제된 기기와 호환 dev client를 준비한다. 새 teamtest 바이너리가 필요하면 별도 develop 통합·빌드 승인 절차를 따른다. 이 PR은 Draft 유지한다.
+2. BE=dev로 위 Metro 명령을 기기에서 접근 가능한 LAN 모드(`--localhost` 대신 `--lan`)로 실행한다. 정상 게스트/로그인 진입 후 `kbap://ocr-collector`를 연다. release는 teamtest 또는 development 채널이어야 한다.
+3. 기기 모델을 확인하고 physical로 설정한다. 로컬 fixture 서버에서 공급하거나 Files의33개 파일을 선택한다. HTTP가 ATS/cleartext 정책으로 막히면 Files 방식으로 전환하며 전역 보안 설정을 완화하지 않는다.
+4. 준비 후 서버 종료·비행기 모드에서32장 실행, 각 기기의 OS/앱 빌드/ok·error·빈 결과를 확인한다. 취소·백그라운드·재시도·권한 거부·Files 공급은 단위 테스트 외에 실물 기기에서 추가 확인한다.
+5. JSON을 로컬로 저장·전달한 뒤 위 ingest 명령을 실행한다. 완전한32개 결과만 수입하며 미실행 행을 만들지 않는다. 기기별 캡처와 receipt를 따로 보존한다. 이 수집 결과로 모델의 분류 정확도를 자동 주장하지 않는다.

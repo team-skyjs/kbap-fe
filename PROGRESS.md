@@ -1,3 +1,13 @@
+## 2026-11-05 · P-610 / KB-998 · ML Kit 입력 수집 · 실기 검증 대기
+
+- 격리 worktree `kbap-fe-kb998`, `feat/kb998-mlkit-collector` → develop Draft PR. development/teamtest + BE=dev 전용 화면과 중앙 딥링크 게이트. 로컬 dev client의 실제 빈 채널은 __DEV__에서만 허용, release/prod 차단 유지. 기존 로그인/온보딩 게이트 무변.
+- 공개 fixture32장 로컬 HTTP/Files 공급·SHA256 검증·순차 한국어 OCR·취소/timeout/native drain·행별 저장/복구·JSON 공유. confidence·정답·모델 없음, 서버 scan/upload/ticket/차감 경로 연결0, 원문 진단 로그 제외. 새 의존성/잠금파일/native 설정 변경0. 한국어 K-140 검수 및19키×10로케일.
+- 실제 iPhone17 Simulator iOS26.4.1 / 개발 바이너리1.0.4/1: UI 다운로드32장 해시 일치 → fixture 서버 종료 → native OCR32/32 ok, error0, empty1, 총1,278줄 → 공유 시트 → strict ingest 통과 → 재시작 후 결과/기기 복구·캡처 해시 불변. receipt phone_measured=false, classification_evaluated=false.
+- 측정 JS e4a591f8. 이후 복구 화면 준비 수32표시·완료 후 빈 실행 비활성화만 추가, 시뮬 화면 확인. 처리 중앙값525.46ms(해시·디코드 포함), 과부하 개발 시뮬 값으로 폰 성능 주장 금지.
+- 전체394 suites/3,722 tests/7 snapshots 통과 후 마지막 변경 관련7 suites/60 tests 재검증, tsc0, lint 변경 줄0. Jest 강제 종료/열린 핸들 경고는 별도 한계.
+- iPhone14Pro/iPhoneXS/GalaxyS22, 실물 비행기 모드·파일 선택·권한·취소/백그라운드는 미측정. 재개 절차는 `docs/mlkit-collector-KB-998.md`. 실물/Android 완료 전 Draft 유지. 빌드/OTA/머지/유료 API 없음.
+- 증거/JSON은 실험 폴더 `artifacts/kb998-collector-validation/` 및 `runs/routing-v2-pilot/mobile-ocr-imports/b3aa55fa9a8e9b5f5f6577c1c52465412b036a45ae12e421e2e6cce5f606f4bc/`에 로컬 보존, Git 제외. 본인 fixture/Metro 종료 및 kb998-collector shutdown, 다른 QA 서버/시뮬 변경0.
+
 ## 2026-11-04 · P-602 KB-965 가공식품 상세 사진 여러 장(캐러셀)
 
 - 어댑터: 상세 응답 images[{url, kind}](S-953, 서버 dev 배포 전 — 옵셔널) → images: string[](서버 순서·https·빈 url·중복 버림) · 없음·빈 배열 = 대표(imageUrl) 한 장.

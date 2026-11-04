@@ -31,6 +31,7 @@ export default function CollectorScreen() {
     void loadLocal().then(() => {
       if (!mounted.current) return;
       setReady(!!state.manifest);
+      setProgress(state.manifest?.samples.length ?? 0);
       const device = currentDevice();
       if (device) { setModel(device.model); setKind(device.kind); }
       refresh();
@@ -71,7 +72,7 @@ export default function CollectorScreen() {
         accessibilityLabel={t('ocrCollector.model')} placeholder={t('ocrCollector.model')} />
       <Btn testID="ocr-collector-kind" disabled={busy || rows.length > 0} variant="ghost"
         onPress={() => setKind(kind === 'physical' ? 'simulator' : 'physical')}>{t(`ocrCollector.${kind}`)}</Btn>
-      <Btn testID="ocr-collector-run" disabled={busy || !ready || !model.trim()} onPress={() => {
+      <Btn testID="ocr-collector-run" disabled={busy || !ready || !model.trim() || rows.length === 32} onPress={() => {
         void run((state.manifest?.samples ?? []).filter(s => !runner.rows.has(s.sample_id)));
       }}>{t('ocrCollector.run')}</Btn>
       <Btn testID="ocr-collector-cancel" disabled={!busy} variant="ghost" onPress={() => {
