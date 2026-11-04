@@ -104,6 +104,13 @@ afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.c
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(el); }); trees.push(t); return t; };
 const q = (over: Partial<Q>): Q => ({ isPending: false, isError: false, refetch: jest.fn(), ...over });
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
+/** KB-997: 원재료 미리 보기 줄 수 보고(측정 사본의 onTextLayout) — jest는 레이아웃이 없어 직접 쏜다 */
+const layoutLines = (t: ReactTestRenderer, n: number) => act(() => t.root.findAll((x) => x.props?.testID === 'pf-preview-measure' && typeof x.props.onTextLayout === 'function')[0].props.onTextLayout({ nativeEvent: { lines: Array.from({ length: n }, () => ({})) } }));
+/** KB-997: 접힌 미리 보기 → See all(구 "Ingredients and source" 버튼 자리) */
+const seeAll = (t: ReactTestRenderer) => {
+  layoutLines(t, 5);
+  act(() => t.root.findAll((x) => x.props?.testID === 'pf-see-all' && typeof x.props.onPress === 'function')[0].props.onPress());
+};
 // FlatList(2열)는 ListHeader/Empty 엘리먼트 prop이 트리에 실려 순환 참조 — 엘리먼트 prop은 버리고 렌더 트리만(prodFlagSurfaces436 문법)
 const REACT_EL = new Set<symbol>([Symbol.for('react.element'), Symbol.for('react.transitional.element')]);
 /** TanStack 알림은 setTimeout(0) 배치라 CI(느린 러너)에선 한 틱 대기로 부족하다 — 조건이 설 때까지 실제 타이머로 기다린다(메모 tanstack-notify-settimeout, PR #336 CI) */
@@ -176,7 +183,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
   const tiles = (t: ReactTestRenderer) => ids(t).filter((i) => /^pf-detected-[A-Z]+$/.test(i));
   it('KB-974 비회원: 판정 띠 대신 음식 상세와 같은 잠금 행(Safe 0 — false-safe) · 탭 = 가입 게이트 · What\'s inside = 감지 + 주요 알레르기 + 혼입 가능 한 그리드(칩 0·회피 강조 0) · 원재료는 접힘', () => {
     const t = detail();
-    expect(ids(t)).toEqual(expect.arrayContaining(['pf-verdict-lock', 'pf-inside', 'pf-ingredients-source']));
+    expect(ids(t)).toEqual(expect.arrayContaining(['pf-verdict-lock', 'pf-inside', 'pf-ingredients-peek']));
     expect(ids(t).filter((i) => i.startsWith('badge-'))).toEqual([]);
     expect(ids(t)).not.toContain('pf-verdict-safe-unset');
     expect(text(t)).not.toContain('packaged.noAvoidMatchTitle');
@@ -276,10 +283,10 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(ids(t)).toEqual(expect.arrayContaining(['badge-safe', 'pf-verdict-safe']));
     expect(text(t)).toContain('packaged.safeBasis:{\\"count\\":1}'); // KB-959: 부제 = 근거(회피 1개와 대조) — 제목 반복 0
     expect(text(t)).not.toContain('packaged.noAvoidMatches');
-    press(t, 'pf-ingredients-source');
+    seeAll(t);
     expect(ids(t)).toEqual(expect.arrayContaining(['pf-expanded', 'pf-ingredients', 'pf-raw', 'pf-source', 'pf-source-disclaimer', 'pf-see-less'])); // 번역 전 = 원재료 본문이 원문
     expect(ids(t)).not.toContain('pf-your-avoid');
-    expect(ids(t)).not.toContain('pf-ingredients-source');
+    expect(ids(t)).not.toContain('pf-ingredients-peek');
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_detail_expand', { product_id: '10201', action: 'ingredients_source' });
     press(t, 'pf-see-less');
     expect(ids(t)).not.toContain('pf-expanded');
@@ -287,9 +294,9 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
   it('회원 AVOID(10)·CAUTION(11)·SAFE_WITH_NOTE(11b): 리본 + 판정 제목·문장(서버 matches) + Ingredients and source · 펼침엔 Your avoid list 0', () => {
     member();
     const a = detail({ verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: ['원유'] }] });
-    expect(ids(a)).toEqual(expect.arrayContaining(['badge-danger', 'pf-verdict-avoid', 'pf-ingredients-source']));
+    expect(ids(a)).toEqual(expect.arrayContaining(['badge-danger', 'pf-verdict-avoid', 'pf-ingredients-peek']));
     expect(text(a)).toContain('packaged.avoidMatchBody:{\\"names\\":\\"L(MILK)\\"}');
-    press(a, 'pf-ingredients-source');
+    seeAll(a);
     expect(ids(a)).toContain('pf-expanded');
     expect(ids(a)).not.toContain('pf-your-avoid');
     const c = detail({ verdict: 'CAUTION', mayContainMatches: [{ code: 'PEANUT', evidence: ['같은 제조시설에서 땅콩을 사용'] }] });
@@ -307,7 +314,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     const ko = '*면/소맥분(미국산,호주산),난각칼슘';
     const al = '밀,대두,돼지고기,계란,쇠고기 함유';
     const t = detail({ labelSource: 'DECLARED', ingredients: { translated: ko, original: ko }, allergenStatement: { translated: al, original: al } });
-    press(t, 'pf-ingredients-source');
+    seeAll(t);
     expect(text(t)).not.toContain('packaged.translationLabel');
     expect(ids(t)).toEqual(expect.arrayContaining(['pf-raw-original-label', 'pf-raw-original', 'pf-allergens'])); // KB-914: 원재료 한 체계(IngredientsText)
     expect(text(t)).toContain('packaged.koreanOriginal');
@@ -315,7 +322,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(allergen.findAll((n) => typeof n.type === 'string' && n.props.children === al)).toHaveLength(1);
     // 진짜 번역(lang=en: "Wheat, Soy…") = 번역 먼저 + 원문
     const w = detail({ labelSource: 'DECLARED', allergenStatement: { translated: 'Wheat, Soy contained', original: al } });
-    press(w, 'pf-ingredients-source');
+    seeAll(w);
     const a2 = w.root.findAll((n) => n.props?.testID === 'pf-allergens' && typeof n.type === 'string')[0];
     expect(a2.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string').map((n) => n.props.children)).toEqual(['packaged.allergenTitle', 'Wheat, Soy contained', al]);
   });
@@ -426,34 +433,72 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
   });
   it('QA AQ2: 번역 없음(#462 전) = 펼침 Ingredients 본문 = 원문(빈 제목 0) · "English translation"·별도 Korean original 0 (KB-945: 미리보기 소멸)', () => {
     const t = detail({ ingredients: { translated: null, original: '감자,식물성유지,조미료' } });
-    press(t, 'pf-ingredients-source');
+    seeAll(t);
     const ing = t.root.findAll((n) => n.props?.testID === 'pf-ingredients' && typeof n.type === 'string')[0];
     expect(JSON.stringify(ing.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children))).toContain('감자,식물성유지,조미료');
     expect(text(t)).not.toContain('packaged.translationLabel');
     expect(ids(t)).not.toContain('pf-raw-translation-label');
     // 번역 있음 = 번역 1줄 + 원문 1줄(시안), 펼침 = 번역 + 별도 원문
     const w = detail({ ingredients: { translated: 'Potato, oil', original: '감자,식물성유지' } });
-    press(w, 'pf-ingredients-source');
+    seeAll(w);
     expect(text(w)).toContain('packaged.translationLabel');
     expect(ids(w)).toEqual(expect.arrayContaining(['pf-raw-translation-label', 'pf-raw-original-label', 'pf-raw-original'])); // KB-914: 같은 섹션 안 같은 위계(구 별도 Korean original 섹션)
   });
   it('원재료: 번역(#462) 있으면 번역 + 원문 · 번역 전 = 원문만 · 한국어 사용자 = 번역 줄 생략', () => {
     const t = detail({ ingredients: { translated: 'Milk, water, sugar', original: '원유,정제수,백설탕' } });
-    expect(text(t)).not.toContain('Milk, water, sugar'); // KB-945: 원재료 글은 접힌 상태로만
-    press(t, 'pf-ingredients-source');
+    expect(t.root.findAll((n) => n.props?.testID === 'pf-preview-text' && typeof n.type === 'string')[0].props.children).toBe('Milk, water, sugar'); // KB-997: 접힘 = 번역 미리 보기(구 KB-945 "접힌 상태로만" 폐기)
+    seeAll(t);
     expect(text(t)).toContain('Milk, water, sugar');
     jest.requireMock('@/lib/i18n').default.language = 'ko';
     const k = detail({ ingredients: { translated: 'Milk, water, sugar', original: '원유,정제수,백설탕' } });
-    press(k, 'pf-ingredients-source');
+    seeAll(k);
     expect(text(k)).not.toContain('Milk, water, sugar');
     expect(text(k)).toContain('원유,정제수,백설탕');
   });
+  // KB-997(예진 11/5 실기): 접힘 = Ingredients + 번역(없으면 원문) 3줄 + 페이드 + See all · 3줄 이하 = 전체 그대로(버튼·페이드 0)
+  describe('KB-997 원재료 3줄 미리 보기', () => {
+    const ING = { ingredients: { translated: 'Water, sugar, salt, citric acid, sodium citrate, flavor', original: '정제수,설탕,정제소금,구연산,구연산삼나트륨,향료' } };
+    const prev = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'pf-preview-text' && typeof n.type === 'string')[0];
+    it('3줄 초과 = 번역 3줄(numberOfLines 3) + 페이드 + See all · 측정 전엔 버튼·페이드 0(깜빡임 방지)', () => {
+      const t = detail(ING);
+      expect(ids(t)).toContain('pf-ingredients-peek');
+      expect(prev(t).props.numberOfLines).toBe(3);
+      expect(prev(t).props.children).toBe(ING.ingredients.translated);
+      expect(ids(t)).not.toContain('pf-see-all');
+      layoutLines(t, 6);
+      expect(ids(t)).toEqual(expect.arrayContaining(['pf-preview-fade', 'pf-see-all']));
+      expect(ids(t)).not.toContain('pf-expanded');
+      expect(text(t)).toContain('packaged.ingredients.seeAll');
+    });
+    it('3줄 이하 = 접을 게 없다 → 전체 섹션 그대로(번역·원문·출처) · 버튼·페이드 0', () => {
+      const t = detail(ING);
+      layoutLines(t, 3);
+      expect(ids(t)).toEqual(expect.arrayContaining(['pf-expanded', 'pf-raw', 'pf-source']));
+      expect(ids(t)).not.toContain('pf-see-all');
+      expect(ids(t)).not.toContain('pf-preview-fade');
+      expect(ids(t)).not.toContain('pf-see-less');
+    });
+    it('번역 없음 = 한국어 원문 3줄', () => {
+      const t = detail({ ingredients: { translated: null, original: ING.ingredients.original } });
+      expect(prev(t).props.children).toBe(ING.ingredients.original);
+    });
+    it('See all = 제자리 펼침(번역·원문·출처) + Show less → 다시 미리 보기 · 계측 action 유지', () => {
+      const t = detail(ING);
+      seeAll(t);
+      expect(ids(t)).toEqual(expect.arrayContaining(['pf-expanded', 'pf-raw', 'pf-source', 'pf-see-less']));
+      expect(ids(t)).not.toContain('pf-ingredients-peek');
+      expect(text(t)).toContain('packaged.ingredients.showLess');
+      press(t, 'pf-see-less');
+      expect(ids(t)).toContain('pf-ingredients-peek');
+      expect(ids(t)).not.toContain('pf-expanded');
+    });
+  });
   it('출처 = HACCP 두 줄 · C002(#455) = 품목제조보고 한 줄(사진 null = 유형 대체 그림)', () => {
     const h = detail();
-    press(h, 'pf-ingredients-source');
+    seeAll(h);
     expect(text(h)).toContain('packaged.sourceData1');
     const c = detail({ source: { provider: 'C002', attributionKey: 'processedFood.source.c002' }, image: null, imageUrl: null });
-    press(c, 'pf-ingredients-source');
+    seeAll(c);
     expect(ids(c)).toContain('pf-source-c002');
     expect(text(c)).not.toContain('packaged.sourceData1');
     expect(ids(c)).toContain('packaged-placeholder');

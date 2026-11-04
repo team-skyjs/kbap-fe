@@ -1284,7 +1284,11 @@
     "safeBasis_one": "We checked the label against your {{count}} avoided ingredient.",
     "safeBasis_other": "We checked the label against your {{count}} avoided ingredients.",
     "findMore": "Find more",
-    "kcal": "{{value}} kcal"
+    "kcal": "{{value}} kcal",
+    "ingredients": {
+      "seeAll": "See all",
+      "showLess": "Show less"
+    }
   },
   "scanMode": {
     "menu": "Menu",

@@ -1288,7 +1288,11 @@
     "safeBasis_one": "피하는 재료 {{count}}개와 성분표를 대조했어요.",
     "safeBasis_other": "피하는 재료 {{count}}개와 성분표를 대조했어요.",
     "findMore": "더 찾아보기",
-    "kcal": "{{value}} kcal"
+    "kcal": "{{value}} kcal",
+    "ingredients": {
+      "seeAll": "전체 보기",
+      "showLess": "접기"
+    }
   },
   "scanMode": {
     "menu": "메뉴판",

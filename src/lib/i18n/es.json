@@ -1288,7 +1288,11 @@
     "safeBasis_one": "Comparamos la etiqueta con {{count}} ingrediente que evitas.",
     "safeBasis_other": "Comparamos la etiqueta con {{count}} ingredientes que evitas.",
     "findMore": "Buscar más",
-    "kcal": "{{value}} kcal"
+    "kcal": "{{value}} kcal",
+    "ingredients": {
+      "seeAll": "Ver todo",
+      "showLess": "Ver menos"
+    }
   },
   "scanMode": {
     "menu": "Menú",

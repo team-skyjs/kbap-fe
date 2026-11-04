@@ -1288,7 +1288,11 @@
     "safeBasis_one": "避けたい食材{{count}}件と表示を照合しました。",
     "safeBasis_other": "避けたい食材{{count}}件と表示を照合しました。",
     "findMore": "さらに探す",
-    "kcal": "{{value}} kcal"
+    "kcal": "{{value}} kcal",
+    "ingredients": {
+      "seeAll": "すべて見る",
+      "showLess": "閉じる"
+    }
   },
   "scanMode": {
     "menu": "メニュー",

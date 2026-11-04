@@ -1288,7 +1288,11 @@
     "safeBasis_one": "Kami sudah mencocokkan label dengan {{count}} bahan yang kamu hindari.",
     "safeBasis_other": "Kami sudah mencocokkan label dengan {{count}} bahan yang kamu hindari.",
     "findMore": "Cari lagi",
-    "kcal": "{{value}} kkal"
+    "kcal": "{{value}} kkal",
+    "ingredients": {
+      "seeAll": "Lihat semua",
+      "showLess": "Tampilkan lebih sedikit"
+    }
   },
   "scanMode": {
     "menu": "Menu",
