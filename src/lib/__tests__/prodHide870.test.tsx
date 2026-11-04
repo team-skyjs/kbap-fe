@@ -106,16 +106,14 @@ describe('표면 게이트(소스·라우트)', () => {
   it('Codex #335: 가공식품 리뷰 작성 경로도 직접 링크 차단', () => {
     expect(fs.readFileSync('src/app/processed-foods/[id]/review.tsx', 'utf8')).toContain('if (!FLAGS.reviewsEnabled || !FLAGS.processedFoodEnabled) return <Redirect href="/" />;');
   });
-  it('음식 탭 세그먼트·스캔 모드 탭 = processedFoodEnabled · 상세 K-pop 카드 = idolPicksEnabled · 홈 = 두 플래그', () => {
+  it('음식 탭 세그먼트 = processedFoodEnabled · 스캔 모드 탭 없음(KB-988) · 상세 K-pop 카드 = idolPicksEnabled · 홈 = 두 플래그', () => {
     const food = fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8');
     expect(food).toContain('const segRow = FLAGS.processedFoodEnabled ? <FoodSegmentRow');
     expect(food).toContain("{segRow && foodSegment === 'packaged' ? (");
     const scan = fs.readFileSync('src/app/scan.tsx', 'utf8');
-    expect(scan.match(/<ScanModeTabs /g)).toHaveLength(2);
-    // KB-969: 사진 스캔(packagedVisionScan) on = 탭 없음(카메라 하나) — 탭 게이트 = 가공식품 켜짐 && 사진 스캔 꺼짐
-    expect(scan.match(/\{FLAGS\.processedFoodEnabled && !FLAGS\.packagedVisionScan && \((?:\s*\/\*[^*]*\*\/)?\s*<View style=\{\[styles\.camModeTabs/g)).toHaveLength(2);
-    // P-598: 운영 서버 #542 배포(26.11.5) → 사진 스캔 전 채널 ON(채널 게이트 아님 — 운영에서도 탭 없음)
-    expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toMatch(/\n  packagedVisionScan: true,\n/);
+    // KB-969 → KB-988: 카메라 하나(비전) — 모드 탭·사진 스캔 플래그 자체가 없다(운영 포함 전 채널)
+    expect(scan).not.toMatch(/ScanModeTabs|scanMode|packagedVisionScan/);
+    expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).not.toContain('packagedVisionScan');
     const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8');
     expect(home).toContain('{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}');
     const idol = fs.readFileSync('src/lib/data/useIdolPicks.ts', 'utf8');

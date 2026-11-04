@@ -113,7 +113,7 @@ describe('Codex #369 P2 · R-139 어두운 페이지 상태바', () => {
     expect(dm).toContain('{lightStatusBar && <StatusBar style="light" />}');
     expect(read('src/features/scan/PackagedScanScreens.tsx')).toContain('lightStatusBar={focused}');
     const flow = read('src/features/scan/PackagedScanFlow.tsx');
-    expect(flow.match(/<MessagePage\s+focused=\{focused\}/g)).toHaveLength(3); // another · frontUnreadable · 성분표 못 읽음
+    expect(flow.match(/<MessagePage\s+focused=\{focused\}/g)).toHaveLength(2); // another · 성분표 못 읽음 (KB-988: 앞면 못 읽음 = 옛 OCR 경로라 제거)
     expect(flow).toMatch(/<ScanDarkMessage\s+testID=\{`pscan-error-\$\{f\}`\}\s+lightStatusBar=\{focused\}/);
   });
 });

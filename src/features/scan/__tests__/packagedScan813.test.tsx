@@ -54,10 +54,23 @@ let mockRestrictions: { code: string }[] = [{ code: 'SHRIMP' }];
 let mockProfileMissing = false;
 let mockFreeUntil: string | null = null; // KB-877: 서버 무료 창 끝 // 프로필 대기·실패(data 없음)
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockProfileMissing ? undefined : { id: '41', restrictions: mockRestrictions, packagedFreeUntil: mockFreeUntil } }) })); // KB-865: 판정 캐시 키 = 회피 코드 집합 · 0개 = 시안 45
+// KB-988: 앞면 촬영 = 비전(업로드 → /scan/vision). 이 스위트는 그 뒤 단계(후보·이름 찾기·확정·성분표 넘김)를 본다 —
+// 비전 응답을 "서버가 읽은 앞면 글자(mockOcr) → 실제 /scan/name"으로 만든다(진단 주입 VisionDebug와 같은 변환). 비전 분기 자체는 visionScan969
 const mockOcr = jest.fn();
-const mockUploadPhoto = jest.fn(async (_p: unknown): Promise<string | null> => null);
-jest.mock('@/lib/api/scanImage', () => ({ ...jest.requireActual('@/lib/api/scanImage'), uploadNameScanPhoto: (p: unknown) => mockUploadPhoto(p) }));
-jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockOcr(...a) }));
+const mockMlKit = jest.fn();
+jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: (...a: unknown[]) => mockMlKit(...a) }));
+jest.mock('@/lib/api/scanImage', () => ({ ...jest.requireActual('@/lib/api/scanImage'), uploadVisionScanPhoto: async () => 'images/packaged-scans/f.jpg' }));
+jest.mock('@/lib/data/useProcessedScan', () => {
+  const a = jest.requireActual('@/lib/data/useProcessedScan');
+  return {
+    ...a,
+    scanProcessedVision: async (_path: string, _key: string, lang: string) => {
+      const lines = ((await mockOcr()) ?? []) as { text: string }[];
+      const n = await a.scanProcessedName(lines.map((l) => l.text).join('\n'), lang);
+      return { analysisId: n.analysisId, kind: 'PACKAGE_FRONT', route: n.candidates.length ? 'candidates' : 'none', confidence: 0.9, reason: null, front: { productName: lines[0]?.text ?? null, maker: lines[1]?.text ?? null, reportNo: null, candidates: n.candidates }, label: null, warnings: [] };
+    },
+  };
+});
 let mockGranted = true;
 jest.mock('@/lib/openExternal', () => ({ openAppSettings: jest.fn(async () => true) }));
 jest.mock('expo-image-picker', () => ({
@@ -70,8 +83,6 @@ import { ApiError } from '@/lib/api/client';
 import { adaptScanConfirm, adaptScanName } from '@/lib/api/processedFoodAdapter';
 import { scanFailureOf, scanProcessedName } from '@/lib/data/useProcessedScan';
 import { PackagedScanFlow, type ScanCamOpts } from '../PackagedScanFlow';
-import { FLAGS } from '@/lib/flags';
-import { ScanModeTabs } from '../ScanModeTabs';
 import { ProcessedFoodDetailScreen as Detail } from '@/app/processed-foods/[id]'; // KB-870: 기본 내보내기 = 채널 게이트 — 화면 자체를 직접 렌더
 /* eslint-enable import/first */
 
@@ -80,19 +91,19 @@ const DETAIL = { id: 11, reportNo: 'R1', productName: '새우깡', maker: '농�
 
 const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
-beforeEach(() => { mockPrevent.on = false; mockPrevent.cb = null; FLAGS.packagedNameScanPhoto = false; /* KB-892: 기존 흐름 = 플래그 OFF(jest는 dev 채널이라 기본 ON) */ FLAGS.packagedVisionScan = false; /* KB-969: 온디바이스 OCR 흐름 = 플래그 OFF */ qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; mockFreeUntil = null; });
+beforeEach(() => { mockPrevent.on = false; mockPrevent.cb = null; qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } }); mockParams = {}; mockGranted = true; mockRestrictions = [{ code: 'SHRIMP' }]; mockProfileMissing = false; mockFreeUntil = null; });
 afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); qc.clear(); jest.clearAllMocks(); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
 const press = async (t: ReactTestRenderer, id: string) => { await act(async () => { await t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); }); await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); };
-/** KB-845: 공통 카메라 대역 — 모드·힌트를 그리고 셔터 = onShot(고정 사진). testID는 옛 촬영 버튼 이름 그대로(앞면 = pscan-take-photo · 성분표 = pscan-label-capture) */
+/** KB-845: 공통 카메라 대역 — 힌트를 그리고 셔터 = onShot(고정 사진). testID는 옛 촬영 버튼 이름 그대로(앞면 = pscan-take-photo · 성분표("앞면으로" 링크가 있는 카메라) = pscan-label-capture) */
 const mockShot = { uri: 'file:shot.jpg', width: 900, height: 1200 };
 function mockCamera(o: ScanCamOpts) {
   const { View, Pressable, Text } = jest.requireActual('react-native');
   return (
-    <View testID={`cam-${o.kind}`}>
+    <View testID={o.link ? 'cam-ingredient' : 'cam-package'}>
       <Text testID="cam-hint">{o.hint ?? 'default-hint'}</Text>
-      <Pressable testID={o.kind === 'package' ? 'pscan-take-photo' : 'pscan-label-capture'} onPress={() => o.onShot(mockShot)} />
+      <Pressable testID={o.link ? 'pscan-label-capture' : 'pscan-take-photo'} onPress={() => o.onShot(mockShot)} />
       {o.link && <Pressable testID={o.link.testID} onPress={o.link.onPress} />}
       {o.onClose && <Pressable testID="cam-close" onPress={o.onClose} />}
       {o.notice}
@@ -101,7 +112,7 @@ function mockCamera(o: ScanCamOpts) {
   );
 }
 const mockOnQuota = jest.fn();
-const flow = () => render(<PackagedScanFlow mode="packaged" onMode={jest.fn()} onClose={jest.fn()} renderCamera={mockCamera} onQuota={mockOnQuota} />);
+const flow = () => render(<PackagedScanFlow onClose={jest.fn()} renderCamera={mockCamera} onQuota={mockOnQuota} />);
 /** 후보 고르기(테두리) → 확정 CTA */
 // KB-914(R-138): 줄 탭 = 바로 확정(구 고르고 → 하단 확정 버튼)
 const pick = async (t: ReactTestRenderer, id: number) => { await press(t, `pscan-candidate-${id}`); };
@@ -150,7 +161,8 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(ids(t)).toEqual(expect.arrayContaining(['pscan-candidates', 'pscan-candidate-11', 'pscan-candidate-12']));
     expect(texts(t)).toContain('packagedScan.matchTitle');
     expect(JSON.stringify(texts(t))).not.toMatch(/usedOnSuccess|noScanUsed|scanUsed/); // README: 차감 문구 0
-    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_name', { candidate_count: 2, photo_attached: false });
+    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_vision', expect.objectContaining({ kind: 'PACKAGE_FRONT', state: 'candidates', side: 'first' }));
+    expect(mockMlKit).not.toHaveBeenCalled(); // KB-988: 온디바이스 ML Kit 0
     // KB-914(R-138): 확정 버튼 0 — 줄 탭이 곧 확정
     expect(ids(t)).not.toContain('pscan-confirm');
     expect(mockPost).toHaveBeenCalledTimes(1);
@@ -417,7 +429,7 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(ids(t)).not.toContain('pscan-contains-11');
     expect(ids(t)).not.toContain('pscan-personal-note');
   });
-  it('Codex #339 R8: NO_CANDIDATE → 이름으로 찾기 확정 → 돌아와 성분표 = 확정된 분석은 이어 받지 않음 → 새 성분표 분석(analysisId null · 거절 호출 0)', async () => {
+  it('Codex #339 R8: NO_CANDIDATE → 이름으로 찾기 확정 → 돌아와 성분표 = 확정된 분석은 이어 받지 않음 → 성분표 카메라(거절 호출 0)', async () => {
     const flags = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
     const prevFlag = flags.FLAGS.packagedLabelScan;
     flags.FLAGS.packagedLabelScan = true;
@@ -425,8 +437,7 @@ describe('흐름(KB-865 ③ v4)', () => {
       mockOcr.mockResolvedValueOnce([{ text: '바나나맛우유' }]);
       mockPost
         .mockResolvedValueOnce({ analysisId: 'A50', state: 'NO_CANDIDATE', candidates: [] })
-        .mockResolvedValueOnce({ analysisId: 'A50', state: 'CONFIRMED', charged: true, product: DETAIL })
-        .mockResolvedValueOnce({ analysisId: 'L50', state: 'LABEL_RESULT', labelSource: 'DECLARED', detections: [], mayContain: [], avoidance: [], rawText: 'x', charged: true, verdict: 'SAFE', avoidMatches: [], mayContainMatches: [], unclearIngredients: [], majorAllergens: [] });
+        .mockResolvedValueOnce({ analysisId: 'A50', state: 'CONFIRMED', charged: true, product: DETAIL });
       mockGet.mockResolvedValueOnce({ items: [{ id: 77, reportNo: 'R77', productName: 'a', imageUrl: null }], hasNext: false, nextCursor: null });
       const t = flow();
       await press(t, 'pscan-take-photo');
@@ -436,17 +447,12 @@ describe('흐름(KB-865 ③ v4)', () => {
       expect(mockPost.mock.calls[1][1]).toEqual({ analysisId: 'A50', reportNo: 'R77' });
       await press(t, 'pscan-none-of-these'); // 상세에서 돌아와 이름 찾기의 "None of these" = 성분표
       expect(ids(t)).toContain('cam-ingredient');
-      act(() => t.root.findAll((n) => n.props?.testID === 'pscan-label-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('원재료명: 밀'));
-      await press(t, 'pscan-label-debug-add');
-      await press(t, 'pscan-label-analyze');
-      expect(mockPost).toHaveBeenCalledTimes(3); // 거절 확정 호출 0
-      expect(mockPost.mock.calls[2][0]).toBe('/api/processed-foods/scan/label');
-      expect(mockPost.mock.calls[2][1]).toMatchObject({ analysisId: null });
+      expect(mockPost).toHaveBeenCalledTimes(2); // 거절 확정 호출 0 — 성분표 카메라는 새 분석(KB-988: 찍으면 비전이 새 분석을 연다)
     } finally {
       flags.FLAGS.packagedLabelScan = prevFlag;
     }
   });
-  it('Codex #339 R2: 이미 확정된 분석(상세에서 돌아와 None of these → 성분표) = 거절 응답이 확정 제품 → 새 성분표 분석(analysisId null)', async () => {
+  it('Codex #339 R2: 이미 확정된 분석(상세에서 돌아와 None of these → 성분표) = 거절 호출 0 → 성분표 카메라', async () => {
     const flags = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
     const prevFlag = flags.FLAGS.packagedLabelScan;
     flags.FLAGS.packagedLabelScan = true;
@@ -454,21 +460,15 @@ describe('흐름(KB-865 ③ v4)', () => {
       mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
       mockPost
         .mockResolvedValueOnce({ analysisId: 'A31', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
-        .mockResolvedValueOnce({ analysisId: 'A31', state: 'CONFIRMED', charged: true, product: DETAIL })
-        .mockResolvedValueOnce({ analysisId: 'L31', state: 'LABEL_RESULT', labelSource: 'DECLARED', detections: [], mayContain: [], avoidance: [], rawText: 'x', charged: true, verdict: 'SAFE', avoidMatches: [], mayContainMatches: [], unclearIngredients: [], majorAllergens: [] });
+        .mockResolvedValueOnce({ analysisId: 'A31', state: 'CONFIRMED', charged: true, product: DETAIL });
       const t = flow();
       await press(t, 'pscan-take-photo');
       await pick(t, 11);
       await press(t, 'pscan-none-of-these'); // 상세에서 뒤로 와서
       await press(t, 'pscan-to-label');
       expect(ids(t)).toContain('cam-ingredient');
-      act(() => t.root.findAll((n) => n.props?.testID === 'pscan-label-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('원재료명: 밀'));
-      await press(t, 'pscan-label-debug-add');
-      await press(t, 'pscan-label-analyze');
-      // R8: 이 화면에서 확정한 분석은 거절 호출 없이 바로 새 분석(거절 응답이 확정 제품인 경로는 확정 응답을 잃은 경우 대비로 유지)
-      expect(mockPost).toHaveBeenCalledTimes(3);
-      expect(mockPost.mock.calls[2][0]).toBe('/api/processed-foods/scan/label');
-      expect(mockPost.mock.calls[2][1]).toMatchObject({ analysisId: null }); // 새 분석(멱등 키는 packagedLabel508)
+      // R8: 이 화면에서 확정한 분석은 거절 호출 없이 바로 성분표 카메라(거절 응답이 확정 제품인 경로는 확정 응답을 잃은 경우 대비로 유지)
+      expect(mockPost).toHaveBeenCalledTimes(2);
     } finally {
       flags.FLAGS.packagedLabelScan = prevFlag;
     }
@@ -516,23 +516,24 @@ describe('흐름(KB-865 ③ v4)', () => {
       mockPost.mockReset();
     }
   });
-  it('KB-970: 실기 = 앞면·성분표 OCR 주입 입력칸 없음(진단 채널·개발 번들이어도) · 시뮬 = 있음', () => {
+  it('KB-970: 실기 = 비전 주입 입력칸 없음(진단 채널·개발 번들이어도) · 시뮬 = 있음 · 옛 OCR 주입 0(KB-988)', () => {
     mockSim = false;
     try {
       const t = flow();
-      expect(ids(t)).not.toContain('pscan-ocr-debug');
+      expect(ids(t)).not.toContain('pscan-vision-debug');
       expect(ids(t)).toContain('cam-package'); // 카메라는 그대로
     } finally {
       mockSim = true;
     }
-    expect(ids(flow())).toContain('pscan-ocr-debug');
+    expect(ids(flow())).toContain('pscan-vision-debug');
+    expect(ids(flow())).not.toContain('pscan-ocr-debug');
   });
-  it('Codex #310: 이름 스캔 대기 중 뒤로 = 늦게 온 응답 무시(후보 화면으로 되돌아가지 않음)', async () => {
+  it('Codex #310: 사진 판별 대기 중 뒤로 = 늦게 온 응답 무시(후보 화면으로 되돌아가지 않음)', async () => {
     let release!: (v: unknown) => void;
     mockPost.mockReturnValueOnce(new Promise((r) => (release = r)));
+    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
     const t = flow();
-    act(() => t.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
-    await act(async () => { t.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-run' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    await act(async () => { void t.root.findAll((n) => n.props?.testID === 'pscan-take-photo' && typeof n.props?.onPress === 'function')[0].props.onPress(); await new Promise((r) => setTimeout(r, 0)); });
     expect(ids(t)).toContain('pscan-reading');
     act(() => t.root.findAll((n) => n.props?.testID === 'scan-loading-close' && typeof n.props?.onPress === 'function')[0].props.onPress());
     expect(ids(t)).toContain('cam-package');
@@ -550,18 +551,6 @@ describe('흐름(KB-865 ③ v4)', () => {
     expect(scanSrc).toContain('testID="perm-denied-alert"');
     expect(scanSrc).toContain('renderCamera={cameraUi}');
   });
-  it('Codex #310 R2: OCR 대기 중 뒤로 = 늦은 OCR 결과 무시(서버 호출 0 · 촬영 화면 유지)', async () => {
-    let release!: (v: unknown) => void;
-    mockOcr.mockReturnValueOnce(new Promise((r) => (release = r)));
-    const t = flow();
-    act(() => { void t.root.findAll((n) => n.props?.testID === 'pscan-take-photo' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
-    expect(ids(t)).toContain('pscan-reading');
-    act(() => t.root.findAll((n) => n.props?.testID === 'scan-loading-close' && typeof n.props?.onPress === 'function')[0].props.onPress());
-    await act(async () => { release([{ text: '새우깡' }]); await new Promise((r) => setTimeout(r, 0)); });
-    expect(mockPost).not.toHaveBeenCalled();
-    expect(ids(t)).toContain('cam-package');
-  });
   it('Codex #310 R2: 차감된 확정 뒤 같은 후보 재확정(서버 멱등 charged false) = 1회 사용 유지', async () => {
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
     mockPost
@@ -575,16 +564,7 @@ describe('흐름(KB-865 ③ v4)', () => {
     await pick(t, 11); // 상세에서 뒤로 와서 같은 줄 다시
     expect(mockPush).toHaveBeenLastCalledWith('/processed-foods/11?scan=1&charged=1');
   });
-  it('시안 18: OCR이 글자를 못 읽음 = 서버 호출 0 · "글자를 읽지 못했어요" → 다시 찍기 = 앞면 카메라', async () => {
-    mockOcr.mockResolvedValueOnce([]);
-    const t = flow();
-    await press(t, 'pscan-take-photo');
-    expect(mockPost).not.toHaveBeenCalled();
-    expect(ids(t)).toContain('pscan-front-unreadable');
-    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_handoff', { from: 'unreadable' });
-    await press(t, 'pscan-retake');
-    expect(ids(t)).toContain('cam-package');
-  });
+
 });
 
 describe('KB-877 가공식품 1시간 무료 창(서버 freeUntil)', () => {
@@ -655,16 +635,6 @@ describe('KB-877 가공식품 1시간 무료 창(서버 freeUntil)', () => {
 });
 
 describe('모드 탭·상세 띠·배선', () => {
-  it('모드 탭: 메뉴판·가공식품 선택 · KB-963 음식 사진 = 숨김(FLAGS.foodPhotoMode 꺼짐 — 두 칸)', () => {
-    const onChange = jest.fn();
-    const t = render(<ScanModeTabs value="menu" onChange={onChange} />);
-    const tab = (m: string) => t.root.findAll((n) => n.props?.testID === `scan-mode-${m}` && n.props?.accessibilityState)[0];
-    expect(tab('menu').props.accessibilityState).toEqual({ selected: true, disabled: false });
-    expect(tab('food')).toBeUndefined();
-    expect(t.root.findAll((n) => typeof n.type === 'string' && /^scan-mode-(menu|food|packaged)$/.test(n.props?.testID ?? '')).map((n) => n.props.testID)).toEqual(['scan-mode-menu', 'scan-mode-packaged']);
-    act(() => tab('packaged').props.onPress());
-    expect(onChange).toHaveBeenCalledWith('packaged');
-  });
   it('시안 20: 스캔 확정 상세 = 일반 상세와 같은 화면 — "스캔 결과" 띠·불꽃·차감 문구 0(README)', () => {
     const { adaptProcessedDetail } = jest.requireActual('@/lib/api/processedFoodAdapter');
     qc.setQueryData(['processedFoods', 'detail', '11', 'en|member:SHRIMP'], adaptProcessedDetail(DETAIL));
@@ -673,78 +643,27 @@ describe('모드 탭·상세 띠·배선', () => {
     expect(ids(t)).not.toContain('pf-scan-result');
     expect(ids(t).some((i) => i.startsWith('flame-'))).toBe(false);
   });
-  it('스캔 화면 배선: 가공식품 모드 = PackagedScanFlow(단일 presenter 경유) · 메뉴판 카메라·런처에 모드 탭 · 기본 메뉴판 · OCR 주입은 개발·진단 채널만', () => {
+  it('스캔 화면 배선: 카메라 = PackagedScanFlow(단일 presenter 경유 — KB-988 모드 탭·메뉴 카메라 0) · 비전 주입은 개발·진단 채널만', () => {
     const src = fs.readFileSync('src/app/scan.tsx', 'utf8');
-    expect(src).toContain("useState<ScanMode>(() => (FLAGS.packagedVisionScan || (scanParams.mode === 'packaged' && FLAGS.packagedLabelScan) ? 'packaged' : 'menu'))"); // 기본 메뉴판 · P-508: 상세 "성분표 직접 확인"만 가공식품 모드로 진입
-    expect(src).toContain("if (scanMode === 'packaged' && !offline && (phase !== 'error' || packagedHold)) {\n    return withPresenter(\n      <View style={styles.camHost}>\n        {cameraLayer}\n        <PackagedScanFlow"); // KB-845 QA: 메뉴와 같은 camHost → cameraLayer 구조 · KB-865 ③: 확정 소진 = 같은 자리 흐름 위 덮개(흐름 상태 유지)
+    expect(src).not.toMatch(/ScanModeTabs|scanMode|recognizeMenuLines\(captured\.uri[^\n]*\n[^\n]*PackagedScanFlow/);
+    expect(src).toContain("if (!offline && (phase !== 'error' || packagedHold)) {\n    return withPresenter(\n      <View style={styles.camHost}>\n        {cameraLayer}\n        <PackagedScanFlow"); // KB-845 QA: 메뉴와 같은 camHost → cameraLayer 구조 · KB-865 ③: 확정 소진 = 같은 자리 흐름 위 덮개(흐름 상태 유지)
     expect(src).toContain('{phase === \'error\' && <View style={StyleSheet.absoluteFill} testID="pscan-quota-overlay">{renderError()}</View>}');
-    expect(src.match(/<ScanModeTabs /g)).toHaveLength(2);
     const flowSrc = fs.readFileSync('src/features/scan/PackagedScanFlow.tsx', 'utf8');
     expect(fs.readFileSync('src/lib/simulator.ts', 'utf8')).toContain('export const showOcrDebug = (simulator: boolean): boolean => simulator && (__DEV__ || isDiagnosticChannel());'); // KB-970: 실기 = 채널 무관 숨김(판정은 lib/simulator)
-    expect(flowSrc.match(/if \(!showOcrDebug\(sim\)\) return null;/g)).toHaveLength(3); // KB-845: 앞면·성분표 주입 패널 둘 다(카메라 위 작은 패널) + KB-969 비전 응답 주입
+    expect(flowSrc.match(/if \(!showOcrDebug\(sim\)\) return null;/g)).toHaveLength(1); // KB-969 비전 응답 주입만(KB-988: 앞면·성분표 OCR 주입 제거)
+    expect(flowSrc).not.toMatch(/recognizeMenuLines|@\/lib\/scan\/ocr/); // KB-988 DoD: 가공식품 경로 ML Kit 호출 0
   });
   it('10언어 문구 전부 · 가운데점 0', () => {
     const flat = (o: Record<string, unknown>, p = ''): string[] => Object.entries(o).flatMap(([k, v]) => (v && typeof v === 'object' ? flat(v as Record<string, unknown>, `${p}${k}.`) : [`${p}${k}`]));
     const en = JSON.parse(fs.readFileSync('src/lib/i18n/en.json', 'utf8'));
-    const keys = [...flat(en.scanMode, 'scanMode.'), ...flat(en.packagedScan, 'packagedScan.')].sort();
+    const keys = flat(en.packagedScan, 'packagedScan.').sort();
     for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'es', 'id', 'ru', 'th', 'vi']) {
       const d = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8'));
       // ru 복수형 _few·_many = copy708 규칙(네 형태 같은 문구)이 따로 잠근다 — 키 집합 비교에선 뺀다
-      expect([...flat(d.scanMode, 'scanMode.'), ...flat(d.packagedScan, 'packagedScan.')].filter((k) => !/_(few|many)$/.test(k)).sort()).toEqual(keys);
-      expect(JSON.stringify([d.scanMode, d.packagedScan])).not.toContain('·');
+      expect(flat(d.packagedScan, 'packagedScan.').filter((k) => !/_(few|many)$/.test(k)).sort()).toEqual(keys);
+      expect(JSON.stringify(d.packagedScan)).not.toContain('·');
+      expect(d.scanMode).toBeUndefined(); // KB-988: 모드 탭 문구 제거
     }
   });
 });
 
-describe('KB-892 이름 스캔 앞면 사진 동봉(dev 플래그, 그림자 모드)', () => {
-  const NO_CAND = { analysisId: 'A9', state: 'NO_CANDIDATE', candidates: [] };
-  const nameBody = () => mockPost.mock.calls.find((c) => c[0] === '/api/processed-foods/scan/name')![1];
-  afterEach(() => { FLAGS.packagedNameScanPhoto = false; });
-
-  it('플래그 OFF = 업로드 0 · body가 현행과 바이트 동일 · photo_attached false', async () => {
-    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
-    mockPost.mockResolvedValueOnce(NO_CAND);
-    await press(flow(), 'pscan-take-photo');
-    expect(mockUploadPhoto).not.toHaveBeenCalled();
-    expect(JSON.stringify(nameBody())).toBe(JSON.stringify({ ocrText: '새우깡', lang: 'en' }));
-    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_name', { candidate_count: 0, photo_attached: false });
-  });
-
-  it('ON · 업로드가 OCR보다 먼저 끝남 = 촬영 사진으로 업로드 → body에 imagePath · photo_attached true(경로는 이벤트에 없음)', async () => {
-    FLAGS.packagedNameScanPhoto = true;
-    mockUploadPhoto.mockResolvedValueOnce('scan/41/front.jpg');
-    mockOcr.mockImplementationOnce(async () => { await new Promise((r) => setTimeout(r, 0)); return [{ text: '새우깡' }]; });
-    mockPost.mockResolvedValueOnce(NO_CAND);
-    await press(flow(), 'pscan-take-photo');
-    expect(mockUploadPhoto).toHaveBeenCalledWith(mockShot);
-    expect(nameBody()).toEqual({ ocrText: '새우깡', lang: 'en', imagePath: 'scan/41/front.jpg' });
-    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_name', { candidate_count: 0, photo_attached: true });
-  });
-
-  it('ON · 업로드가 OCR보다 느림 = 기다리지 않고 imagePath 없이 바로 요청(업로드 대기 중에 이미 나감)', async () => {
-    FLAGS.packagedNameScanPhoto = true;
-    let finish!: (v: string | null) => void;
-    mockUploadPhoto.mockImplementationOnce(() => new Promise((r) => { finish = r; }));
-    mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
-    mockPost.mockResolvedValueOnce(NO_CAND);
-    await press(flow(), 'pscan-take-photo');
-    expect(nameBody()).toEqual({ ocrText: '새우깡', lang: 'en' }); // 업로드는 아직 안 끝났다
-    expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_name', { candidate_count: 0, photo_attached: false });
-    await act(async () => { finish('scan/41/late.jpg'); });
-    expect(mockPost.mock.calls.filter((c) => c[0] === '/api/processed-foods/scan/name')).toHaveLength(1); // 늦은 경로로 재요청 없음
-  });
-
-  it('ON · 업로드 실패(null) = imagePath 없이 기존대로', async () => {
-    FLAGS.packagedNameScanPhoto = true;
-    mockUploadPhoto.mockResolvedValueOnce(null);
-    mockOcr.mockImplementationOnce(async () => { await new Promise((r) => setTimeout(r, 0)); return [{ text: '새우깡' }]; });
-    mockPost.mockResolvedValueOnce(NO_CAND);
-    await press(flow(), 'pscan-take-photo');
-    expect(nameBody()).toEqual({ ocrText: '새우깡', lang: 'en' });
-  });
-
-  it('채널 규칙 = 다른 dev 서버 전용 기능과 같은 축(production OFF)', () => {
-    const src = fs.readFileSync('src/lib/flags.ts', 'utf8');
-    expect(src).toContain('packagedNameScanPhoto: DEV_SERVER_CHANNEL,');
-  });
-});

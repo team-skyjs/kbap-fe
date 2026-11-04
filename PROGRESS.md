@@ -1,3 +1,10 @@
+## 2026-11-04 · P-601 KB-988 가공식품 옛 ML Kit 스캔 경로 제거
+
+- PackagedScanFlow: 이름 스캔 OCR(runName·readText·앞면 OCR 주입)·성분표 OCR(addLabelText·면 OCR 주입)·앞면 못 읽음 단계·이름 스캔 앞면 사진 그림자 업로드(KB-892) 제거 — 촬영은 앞면·성분표 모두 비전(runVision). ML Kit import 0.
+- scan.tsx: Menu/Packaged 모드 탭·scanMode 상태 제거 → 카메라 = 늘 가공식품 흐름. 그 결과 도달 불가가 된 메뉴 카메라 분기·시스템 카메라 런처(P-137, 플래그 false)·가로 배지 함께 제거. 메뉴는 비전이 메뉴판으로 판별한 뒤(scanMenuFromVision) — v1 채널 온디바이스 ML Kit 메뉴 경로(scanImage)는 유지.
+- flags: packagedVisionScan·packagedNameScanPhoto·systemCamera·foodPhotoMode·SYSTEM_CAMERA_AUTOLAUNCH 삭제 · ScanModeTabs 컴포넌트 삭제 · 고아 i18n 키 11개 × 10로케일 삭제(scanMode 전체 등).
+- ML Kit 네이티브 패키지 유지(지문 무변). 메뉴 스위트는 visionMenuFlowMock(찍은 사진 = 메뉴판 판별)으로 메뉴 경로를 그대로 본다.
+
 ## 2026-11-04 · P-600 광고성 동의 시트 최초 1회·전 채널 ON(예진 11/4 결정)
 
 - flags.ts marketingConsentPrompt: DEV_SERVER_CHANNEL → true(예진 11/4 teamtest 실기 확인 후 전 채널). #423 게이트(홈 큐 스텝·알림함 마운트)는 끌 스위치로 유지.
