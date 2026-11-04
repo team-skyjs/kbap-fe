@@ -241,6 +241,24 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     mockDetail = q({ data: undefined, isPending: true }); // 로딩 중에도 뒤로가 있다(제목 줄이 없으니)
     expect(ids(render(<Detail />))).toContain('pf-back');
   });
+  // KB-989(S-957 초안): 포장 전체 kcal — 메타 줄에 값만(간격 구분, 가운데 점 0) · null·부재·비정상 = 미표시
+  it('KB-989 kcal: 있으면 유형 옆 "packaged.kcal {value}" · null·필드 없음 = 미표시 · 음수·NaN = null · 소수 = 반올림', () => {
+    const t = detail({ kcal: 470 });
+    expect(ids(t)).toContain('pf-kcal');
+    expect(t.root.findAll((n) => n.props?.testID === 'pf-kcal' && typeof n.type === 'string')[0].props.children).toBe('packaged.kcal:{"value":470}');
+    expect(text(t)).not.toContain('·');
+    expect(ids(detail({ kcal: null }))).not.toContain('pf-kcal');
+    expect(ids(detail())).not.toContain('pf-kcal');
+    expect(adaptProcessedDetail({ ...V4, kcal: -5 }).kcal).toBeNull();
+    expect(adaptProcessedDetail({ ...V4, kcal: NaN }).kcal).toBeNull();
+    expect(adaptProcessedDetail({ ...V4, kcal: 469.6 }).kcal).toBe(470);
+    // dev 실응답(S-957 #562, 11/5 대조 — Swagger integer·nullable): 5817 칸타타 아이스 블랙 7 · 2291 스파게티컵 485 · 1625 마이구미 204 · 14726 묶음 용량 갈림 = null
+    for (const [kcal, want] of [[7, 7], [485, 485], [204, 204], [null, null]] as const) expect(adaptProcessedDetail({ ...V4, kcal }).kcal).toBe(want);
+    expect(t.root.findAll((n) => n.props?.testID === 'pf-kcal' && typeof n.type === 'string').length).toBe(1);
+    // 유형이 없어도 kcal만으로 메타 줄이 선다
+    const only = detail({ type: null, foodType: null, kcal: 120 });
+    expect(ids(only)).toEqual(expect.arrayContaining(['pf-meta', 'pf-kcal']));
+  });
   it('Codex #338: 비회원 = 서버 verdict가 와도 회원 판정 0(위험 리본 0) · majorAllergens 필드 없음 = null(모름)', () => {
     mockGuest = true; mockMe = undefined;
     expect(ids(detail({ verdict: 'AVOID', avoidMatches: [{ code: 'MILK', evidence: [] }] })).some((i) => i === 'badge-danger')).toBe(false);

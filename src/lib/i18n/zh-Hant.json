@@ -1288,6 +1288,7 @@
     "safeBasis_one": "已將標示與你要避免的 {{count}} 種食材進行比對。",
     "safeBasis_other": "已將標示與你要避免的 {{count}} 種食材進行比對。",
     "findMore": "繼續查找",
+    "kcal": "{{value}} 大卡",
     "ingredients": {
       "seeAll": "查看全部",
       "showLess": "收合"

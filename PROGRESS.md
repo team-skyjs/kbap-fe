@@ -6,6 +6,11 @@
 - See all = 기존 펼침 제자리 + Show less(새 키). 계측 food_packaged_detail_expand action은 기존 값 유지(ingredients_source·see_less — 퍼널 연속).
 - i18n packaged.ingredients.{seeAll, showLess} × 10로케일. 새 의존성 0(linear-gradient 기존 설치).
 
+## 2026-11-04 · P-604 KB-989 가공식품 상세 칼로리(Draft — 서버 S-957 전)
+
+- 어댑터: 상세 `kcal`(포장 전체, 옵셔널 — S-957 초안) → 유한·0 이상이면 반올림 정수, 그 밖·null·부재 = null(미표시). 묶음 상품 규칙은 서버 소유.
+- 상세 메타 줄(유형 옆)에 `packaged.kcal`("{{value}} kcal") — 구분은 기존 columnGap(가운데 점 0), 유형이 없어도 kcal만으로 줄이 선다. 영양성분·목록·후보 카드 비표시.
+- i18n 1키 × 10로케일(ru ккал·id kkal·zh 千卡/大卡·th กิโลแคลอรี).
 ## 2026-11-04 · P-602 KB-965 가공식품 상세 사진 여러 장(캐러셀)
 
 - 어댑터: 상세 응답 images[{url, kind}](S-953, 서버 dev 배포 전 — 옵셔널) → images: string[](서버 순서·https·빈 url·중복 버림) · 없음·빈 배열 = 대표(imageUrl) 한 장.
