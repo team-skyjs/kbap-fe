@@ -81,7 +81,8 @@ function SheetBody({ open, onClose, backRef }: { open: boolean; onClose: () => v
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, swipe.dimStyle]} pointerEvents="none" />
         <Pressable style={{ flex: 1 }} onPress={() => requestClose('backdrop')} testID="feedback-prompt-backdrop" />
         <Animated.View style={[styles.sheet, { paddingBottom: 20 + bottom }, swipe.sheetStyle]} onLayout={swipe.onSheetLayout} testID="feedback-prompt">
-          <GestureDetector gesture={swipe.gesture}>
+          {/* #421 Codex P2: 전송 중 = 끌어 닫기 자체를 끈다(닫기·바깥 탭·뒤로와 같은 기준) — 완료 콜백에서 막으면 시트가 이미 내려간 뒤 */}
+          <GestureDetector gesture={swipe.gesture.enabled(!form.busy)}>
             <View testID="feedback-prompt-head">
               <View style={styles.handle} />
               <View style={styles.headRow}>

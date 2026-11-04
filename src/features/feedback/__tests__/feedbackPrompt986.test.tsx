@@ -32,13 +32,16 @@ jest.mock('react-native-reanimated', () => {
 jest.mock('react-native-gesture-handler', () => {
   const React = require('react');
   const { View } = require('react-native');
+  // 빌더: 등록 콜백·enabled 값을 보관(테스트가 직접 구동) — GestureDetector는 받은 gesture의 enabled를 prop으로 노출
   const pan = () => {
-    const b: Record<string, () => unknown> = {};
-    for (const k of ['runOnJS', 'onUpdate', 'onFinalize', 'onStart', 'onEnd', 'onChange', 'enabled', 'minDistance', 'activeOffsetY']) b[k] = () => b;
+    const b: Record<string, (...a: unknown[]) => unknown> & { h: Record<string, (...a: unknown[]) => unknown>; on: boolean } = { h: {}, on: true } as never;
+    for (const k of ['runOnJS', 'onUpdate', 'onFinalize', 'onStart', 'onEnd', 'onChange', 'minDistance', 'activeOffsetY']) b[k] = (cb: unknown) => { if (typeof cb === 'function') b.h[k] = cb as never; return b; };
+    b.enabled = (v: unknown) => { b.on = v !== false; return b; };
     return b;
   };
   return {
-    GestureDetector: ({ children }: { children: unknown }) => React.createElement(View, { testID: 'gesture-area' }, children),
+    GestureDetector: ({ children, gesture }: { children: unknown; gesture: { on: boolean; h: Record<string, (...a: unknown[]) => unknown> } }) =>
+      React.createElement(View, { testID: 'gesture-area', gestureOn: gesture.on, gestureRef: gesture }, children),
     GestureHandlerRootView: View,
     Gesture: { Pan: pan, Tap: pan },
   };
@@ -186,6 +189,23 @@ describe('시트 — 보내기·닫기·다시 보지 않기', () => {
     await act(async () => { byId(t, 'feedback-send').props.onPress(); });
     expect(mockSubmit).toHaveBeenCalledTimes(2);
     expect((await stored())?.done).toBe(true);
+  });
+
+  it('#421 Codex P2: 전송 중 = 끌어 닫기 제스처 꺼짐(닫히지 않고 본문 유지) · 실패 응답 뒤 다시 켜짐', async () => {
+    let reject!: (e: Error) => void;
+    mockSubmit.mockImplementation(() => new Promise<void>((_r, j) => { reject = j; }));
+    const t = mount();
+    const area = () => t.root.findAll((n) => n.props?.testID === 'gesture-area')[0];
+    expect(area().props.gestureOn).toBe(true);
+    type(t, '전송 중 본문');
+    act(() => byId(t, 'feedback-send').props.onPress());
+    expect(area().props.gestureOn).toBe(false); // RNGH는 꺼진 제스처의 onFinalize를 부르지 않는다
+    expect(open(t)).toBe(true);
+    expect(t.root.findAll((n) => n.props?.testID === 'feedback-body')[0].props.value).toBe('전송 중 본문');
+    expect(events()).toEqual(['feedback_prompt_shown']);
+    await act(async () => { reject(new Error('NETWORK')); });
+    expect(area().props.gestureOn).toBe(true); // 실패 = 다시 닫을 수 있음(본문은 그대로)
+    expect(t.root.findAll((n) => n.props?.testID === 'feedback-body')[0].props.value).toBe('전송 중 본문');
   });
 
   it('다시 보지 않기 = 종료 기록 + never_again → 닫힘', async () => {
