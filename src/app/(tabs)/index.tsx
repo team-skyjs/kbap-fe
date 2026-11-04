@@ -99,7 +99,7 @@ function HomeBody() {
   });
   const showHomeCoach = homeCoach.show;
   const abortHomeCoach = homeCoach.abort;
-  // KB-979 → KB-987: 미동의 회원 = 홈 포커스마다 마지막 노출 후 3시간이면 동의 시트(코치마크가 완전히 닫힌 뒤)
+  // KB-979 → KB-987 → P-600: 미동의 회원 = 홈에서 최초 1회 동의 시트(코치마크가 완전히 닫힌 뒤)
   const consent = useMarketingConsentSheet('home');
   const showConsent = consent.show;
   const abortConsent = consent.abort;
@@ -114,7 +114,7 @@ function HomeBody() {
       addConsent();
       // KB-986: 피드백 = 포커스 때 큐 마지막(실행당 하나 — promptSlot·실행 수 판정이 복귀 재판정을 거른다)
       modalQueue.add({ key: 'feedbackPrompt', present: (done, signal) => presentHomeFeedbackPrompt(showFeedback, done, signal) });
-      // KB-987: 백그라운드 복귀는 focus를 다시 쏘지 않는다 — 홈이 포커스인 동안만 전경 전환마다 같은 판정(3시간 게이트가 중복을 거른다)
+      // KB-987: 백그라운드 복귀는 focus를 다시 쏘지 않는다 — 홈이 포커스인 동안만 전경 전환마다 같은 판정(P-600 최초 1회 기록이 중복을 거른다)
       const sub = AppState.addEventListener('change', (st) => { if (st === 'active') addConsent(); });
       // 블러 = 대기 스텝 폐기 + 떠 있는 코치마크·동의 시트·피드백 시트도 닫기(#398 Codex — 목적지 탭 위에 남지 않게)
       return () => { sub.remove(); modalQueue.clear(); abortHomeCoach(); abortConsent(); abortFeedback(); };
