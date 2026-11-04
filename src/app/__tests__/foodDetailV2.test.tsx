@@ -339,6 +339,31 @@ it('P-182→P-186: 카드 전체 탭 제거 · ⋯ = 본인+타인(신고/차단
   expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1);
 });
 
+it('KB-981(예진 "숨겨줘"): 스캔 진입 = 리뷰 0건이어도 본문 작성 상자(review-empty-cta) 0 · 스캔이 아닌 진입 = 그대로(회귀)', () => {
+  mockUseFoodDetail.mockReturnValue({
+    data: FOOD('safe', { overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
+    isLoading: false, error: null, refetch: jest.fn(),
+  });
+  mockParams = { id: '7', src: 'scan' };
+  try {
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'review-empty-cta')).toHaveLength(0);
+    expect(byId(tree, 'detail-write-review')).toHaveLength(0);
+    expect(flat(tree)).not.toContain('reviews.writeReview');
+  } finally {
+    mockParams = { id: '7' };
+  }
+  for (const src of [undefined, 'search', 'home']) {
+    mockParams = src ? { id: '7', src } : { id: '7' };
+    try {
+      const tree = render(<FoodDetailScreen />);
+      expect({ src, n: byId(tree, 'detail-write-review').length >= 1 }).toEqual({ src, n: true });
+    } finally {
+      mockParams = { id: '7' };
+    }
+  }
+});
+
 it('P-182 ③: 리뷰 0건 = 조회 UI 전부 숨김 — 첫 리뷰 CTA만', () => {
   mockUseFoodDetail.mockReturnValue({
     data: FOOD('safe', { overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),

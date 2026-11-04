@@ -3,7 +3,8 @@
 - 음식 상세 src=scan = Ask 유무와 무관하게 Write 0(전에는 Ask가 없으면 Write가 떴다) · Ask는 그대로.
 - 가공식품 상세 ?scan=1 = 작성 알약 대신 primary Done(packagedScan.done 재사용) + 테두리 Scan something else(신규 packagedScan.scanAnother × 10로케일, ko "다른 상품 스캔하기").
 - Done = 루트 스택에서 마지막 scan 화면까지 dismiss(scanFlowDepth) — 스캔 전 화면, 스캔 화면 재노출 0 · 스캔 화면이 없으면(딥링크) 뒤로. Scan something else = 같은 dismiss 뒤 /scan?mode=packaged 새 push(새 인스턴스라 이전 단계 상태 0).
-- pillOutline을 pillCta 공용으로 올림(음식 상세 Ask가 쓰던 값). 리뷰 섹션 안 작성 링크는 바가 없을 때 보이는 기존 규칙 그대로(writeInBar false).
+- pillOutline을 pillCta 공용으로 올림(음식 상세 Ask가 쓰던 값).
+- 예진 추가 결정("숨겨줘"): 스캔 진입 = 리뷰 섹션 안 작성 링크도 0 — 음식 본문 작성 상자(review-empty-cta)·가공식품 섹션 링크(writeInBar). 스캔이 아닌 진입은 기존 규칙 그대로.
 
 ## 2026-11-04 · P-594 KB-980 권한 팝업 닫힘을 OTA 복귀로 치지 않기
 

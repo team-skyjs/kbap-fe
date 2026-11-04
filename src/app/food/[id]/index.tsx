@@ -108,7 +108,7 @@ export default function FoodDetailScreen() {
   // KB-851 → KB-871: 하단 리뷰 버튼 영역 — 아래로 스크롤 = 숨김 · 위로·제스처 끝 멈춤·맨 위/아래 = 표시 · 한 제스처 안 전환 1회 · K-pop 카드는 버튼 자리와 겹칠 때만 숨김
   // KB-871 QA AP: 겹침 대상(K-pop 카드 캐시 · 리뷰 0 본문 상자)이 있으면 측정 전까지 버튼을 애니메이션 없이 숨겨 둔다(진입 번쩍임 0)
   const idolExpected = !!useIdolPickVideo(id ?? '');
-  const emptyCtaExpected = !!food && food.isRegistered && FLAGS.reviewsEnabled && !isGuest && !food.reviewSummaryMissing && food.overall.count === 0;
+  const emptyCtaExpected = !!food && food.isRegistered && FLAGS.reviewsEnabled && !isGuest && !food.reviewSummaryMissing && food.overall.count === 0 && src !== 'scan'; // KB-981: Registered emptyCta와 같은 조건
   const pill = useScrollAwarePill({ card: idolExpected, emptyCta: emptyCtaExpected });
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setSolid(e.nativeEvent.contentOffset.y > HEADER_SOLID_Y);
@@ -202,6 +202,7 @@ export default function FoodDetailScreen() {
             {food.isRegistered ? (
               <Registered
                 guest={isGuest}
+                scanEntry={src === 'scan'}
                 setCoachOpen={setCoachOpen}
                 scanPrice={scanPrice}
                 food={food}
@@ -365,7 +366,10 @@ function Registered({
   setCoachOpen,
   onIdolLayout,
   onEmptyCtaLayout,
+  scanEntry = false,
 }: {
+  /** KB-981(예진 "숨겨줘"): 스캔 진입 = 리뷰 섹션 안 작성 상자도 0 */
+  scanEntry?: boolean;
   /** KB-871 QA ③: 리뷰 0 본문 "Write a review" 상자의 콘텐츠 y·높이(보이는 동안 하단 버튼 숨김) */
   onEmptyCtaLayout?: (y: number, h: number) => void;
   /** KB-851: K-pop 카드의 콘텐츠 y·높이 보고(리뷰 알약 숨김 판정) */
@@ -385,7 +389,7 @@ function Registered({
 }) {
   const isNew = useIsNewFood(food.publishedAt);
   // 리뷰 0 본문 상자 — 첫 리뷰를 쓰고 돌아오면 같은 화면에서 사라진다: 높이 0을 보고해 하단 버튼이 옛 자리 기준으로 숨어 있지 않게(Codex #337)
-  const emptyCta = FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0;
+  const emptyCta = FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0 && !scanEntry;
   useEffect(() => {
     if (!emptyCta) onEmptyCtaLayout?.(0, 0);
   }, [emptyCta, onEmptyCtaLayout]);

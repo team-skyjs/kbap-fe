@@ -294,7 +294,7 @@ export function ProcessedFoodDetailScreen() {
 
         {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <View style={s.thickDivider} />}
         {/* 롤백 스위치(reviewsLiveEnabled off) = 가공식품 리뷰는 목 경로가 없어 목록이 비는데 서버 요약은 남는다 — 섹션째 숨김(Codex #314 R2) */}
-        {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} loadMoreRef={loadMoreReviews} writeInBar={canWrite} />}
+        {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} loadMoreRef={loadMoreReviews} writeInBar={canWrite || scanEntry} /* KB-981: 스캔 진입 = 섹션 작성 링크도 0(예진) */ />}
       </ScrollView>
     );
     // KB-914(R-137): 하단 고정 CTA = 음식 상세와 같은 알약(구 리뷰 섹션 텍스트 링크 — 섹션 링크는 이 바가 있을 때 숨김)

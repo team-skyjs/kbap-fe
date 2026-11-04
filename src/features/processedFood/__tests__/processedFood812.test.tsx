@@ -324,7 +324,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     // 탭(음식) → 스캔(fullScreenModal) → 상세: 스캔 화면까지 2개를 닫아야 스캔 전 화면
     const SCAN_STACK = { index: 2, routes: [{ name: '(tabs)' }, { name: 'scan' }, { name: 'processed-foods/[id]' }] };
 
-    it('스캔 진입 = 작성 알약·작성 띠 0 · primary Done + 테두리 Scan something else(공용 pillPrimary·pillOutline) · 리뷰 섹션 링크는 섹션 몫(writeInBar false)', () => {
+    it('스캔 진입 = 작성 알약·작성 띠 0 · primary Done + 테두리 Scan something else(공용 pillPrimary·pillOutline) · 리뷰 섹션 작성 링크도 0(writeInBar true — 예진 "숨겨줘")', () => {
       mockParams = { id: '10201', scan: '1', charged: '0' };
       const t = detail({ verdict: 'SAFE' });
       expect(ids(t)).not.toContain('pf-write-review-bar');
@@ -336,7 +336,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
       expect(st('pf-scan-another')).toEqual(StyleSheet.flatten(pillCta.pillOutline));
       expect(text(t)).toContain('packagedScan.done');
       expect(text(t)).toContain('packagedScan.scanAnother');
-      expect(mockReviewsProps.mock.calls.at(-1)?.[0]).toMatchObject({ writeInBar: false });
+      expect(mockReviewsProps.mock.calls.at(-1)?.[0]).toMatchObject({ writeInBar: true });
     });
 
     it('Done = 스캔 화면까지 스택째 닫기(dismiss 2 — 스캔 화면이 다시 보이지 않음) · push 0', () => {
@@ -378,6 +378,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
         const t = detail({ verdict: 'SAFE' });
         expect(ids(t)).toContain('pf-write-review-bar');
         expect(ids(t).filter((i) => i.startsWith('pf-scan-'))).toEqual([]);
+        expect(mockReviewsProps.mock.calls.at(-1)?.[0]).toMatchObject({ writeInBar: true }); // 바가 작성을 맡음(기존 규칙)
       }
     });
 
