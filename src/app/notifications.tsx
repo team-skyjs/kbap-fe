@@ -23,6 +23,7 @@ import type { InboxItem } from '@/lib/api/notificationAdapter';
 import { openNotificationRoute } from '@/lib/nav';
 import { routeForNotificationData } from '@/lib/push/pushAdapter';
 import { timeAgo } from '@/features/community/parts';
+import { InboxMarketingConsent } from '@/features/push/MarketingConsentSheet';
 
 export default function Notifications() {
   const router = useRouter();
@@ -48,6 +49,8 @@ export default function Notifications() {
   return (
     <View style={styles.root}>
       <SubHeader title={t('inbox.title')} onBack={() => router.back()} />
+      {/* KB-979: 미동의 회원 = 진입마다 광고성 동의 시트(전환 끝난 뒤). 게스트는 위 Redirect라 여기 안 온다 */}
+      <InboxMarketingConsent />
       {isError && !data ? (
         /* P-164/P-207: 로드 실패 = 공용 에러(+재시도) — 빈 상태로 위장 금지 */
         <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />

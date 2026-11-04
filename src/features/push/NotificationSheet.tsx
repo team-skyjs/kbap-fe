@@ -33,6 +33,9 @@ import { openWebPage } from '@/lib/openExternal';
 import { consentUrl, type ConsentKind } from '@/lib/push/consent';
 import { EVENTS, track } from '@/lib/analytics';
 
+/** KB-979: 동의 시트가 뜬 표면(계측 surface) */
+export type ConsentSurface = 'home' | 'inbox' | 'settings';
+
 export interface ConsentChecks {
   privacy: boolean;
   receive: boolean;
@@ -41,6 +44,7 @@ export interface ConsentChecks {
 export function NotificationSheet({
   open,
   variant,
+  consentSurface,
   title,
   body,
   confirmLabel,
@@ -50,6 +54,8 @@ export function NotificationSheet({
 }: {
   open: boolean;
   variant: 'primer' | 'consent';
+  /** consent 변형의 계측 surface(KB-979) — push_consent_view·push_consent_response에 붙는다 */
+  consentSurface?: ConsentSurface;
   title: string;
   body: string;
   confirmLabel: string;
@@ -90,15 +96,21 @@ export function NotificationSheet({
   // 퇴장 중 백버튼 재입력·스와이프 퇴장 중 탭이 onClose를 두 번 부르던 경로 차단(Codex 리뷰 #150 P2).
   // 내부 시작 퇴장은 open이 그대로 true라 pointerEvents 게이트가 못 본다 → closing 상태로 즉시 무반응(Codex #150 P1).
   const needsConsent = variant === 'consent';
+  const surface = consentSurface;
+  // KB-979: 노출 = 열릴 때마다 1회(렌더 중 부수효과 금지 — effect)
+  React.useEffect(() => {
+    if (open && needsConsent) track(EVENTS.push_consent_view, { surface });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open 전환에만 반응
+  }, [open]);
   const requestClose = () => {
     if (closing) return; // 닫힘 진행 중 재입력 — 이벤트도 1회만(KB-630)
-    if (needsConsent && !swipe.isClosing()) track(EVENTS.push_consent_response, { action: 'later' }); // KB-630: primer는 PushPrimerModal이 담당 · 드래그 퇴장 중 탭 = 중복 아님
+    if (needsConsent && !swipe.isClosing()) track(EVENTS.push_consent_response, { action: 'later', surface }); // KB-630: primer는 PushPrimerModal이 담당 · 드래그 퇴장 중 탭 = 중복 아님
     setClosing(true);
     swipe.dismiss();
   };
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
   const toggle = (kind: ConsentKind) => {
-    track(EVENTS.push_consent_response, { action: checks[kind] ? 'uncheck' : 'check', target: kind }); // KB-630
+    track(EVENTS.push_consent_response, { action: checks[kind] ? 'uncheck' : 'check', target: kind, surface }); // KB-630
     setChecks((c) => ({ ...c, [kind]: !c[kind] }));
   };
 
@@ -113,11 +125,12 @@ export function NotificationSheet({
   const confirm = () => {
     if (swipe.isClosing()) return; // 스와이프 퇴장 중 확인 탭 — "나중에/끌어 닫기"를 택한 뒤 동의가 켜지면 안 된다(Codex #150 P1)
     if (!ready) {
-      track(EVENTS.push_consent_response, { action: 'blocked' }); // KB-630
+      track(EVENTS.push_consent_response, { action: 'blocked', surface }); // KB-630
       setNotice(true); // 탭은 받되 진행 안 함 — 둘 다 동의해야 켤 수 있음을 알린다
       if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(t('push.consentBothRequired')); // Android는 liveRegion이 읽어줌(중복 방지)
       return;
     }
+    if (needsConsent) track(EVENTS.push_consent_response, { action: 'confirm', surface }); // KB-979: 표면별 동의율(노출 대비)
     void run(async () => {
       await onConfirm(needsConsent ? checks : undefined);
     });
@@ -141,6 +154,7 @@ export function NotificationSheet({
             <View style={styles.consents}>
               <ConsentRow
                 kind="privacy"
+                surface={surface}
                 label={t('push.privacyConsent')}
                 checked={checks.privacy}
                 onToggle={() => toggle('privacy')}
@@ -148,6 +162,7 @@ export function NotificationSheet({
               <View style={styles.hair} />
               <ConsentRow
                 kind="receive"
+                surface={surface}
                 label={t('push.receiveConsent')}
                 checked={checks.receive}
                 onToggle={() => toggle('receive')}
@@ -183,7 +198,7 @@ export function NotificationSheet({
 }
 
 /** 체크 행 — 체크박스는 고정 슬롯(20×20·보더 동일), 상태로 바뀌는 건 색·아이콘 표시만(P-151). */
-function ConsentRow({ kind, label, checked, onToggle }: { kind: ConsentKind; label: string; checked: boolean; onToggle: () => void }) {
+function ConsentRow({ kind, surface, label, checked, onToggle }: { kind: ConsentKind; surface?: ConsentSurface; label: string; checked: boolean; onToggle: () => void }) {
   const { t } = useTranslation();
   return (
     <View style={styles.row}>
@@ -195,7 +210,7 @@ function ConsentRow({ kind, label, checked, onToggle }: { kind: ConsentKind; lab
         </View>
         <Text style={styles.rowLabel}>{label}</Text>
       </Pressable>
-      <Pressable onPress={() => { track(EVENTS.push_consent_response, { action: 'full_text', target: kind }); void openWebPage(consentUrl(kind)); }} hitSlop={8} testID={`consent-${kind}-full`}>
+      <Pressable onPress={() => { track(EVENTS.push_consent_response, { action: 'full_text', target: kind, surface }); void openWebPage(consentUrl(kind)); }} hitSlop={8} testID={`consent-${kind}-full`}>
         <Text style={styles.viewFull}>{t('notif.viewFull')}</Text>
       </Pressable>
     </View>

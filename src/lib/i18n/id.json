@@ -1035,6 +1035,8 @@
     "primerLater": "Nanti saja",
     "consentSheetTitle": "Terima berita K-Bap?",
     "consentSheetBody": "Berita acara dan fitur baru dikirim sebagai notifikasi promosi.",
+    "consentPromptTitle": "Aktifkan notifikasi dan kami akan merekomendasikan K-Food sesuai seleramu!",
+    "consentPromptBody": "Tanpa spam, hanya rekomendasi makanan lezat 👍",
     "privacyConsent": "Setuju pengumpulan dan penggunaan data pribadi untuk pemasaran (opsional)",
     "receiveConsent": "Setuju menerima informasi promosi (opsional)",
     "consentBothRequired": "Setujui kedua item untuk mengaktifkan notifikasi.",
