@@ -28,6 +28,9 @@ export const pillCta = StyleSheet.create({
   pillLabel: label,
   pillPrimary: { ...shape, backgroundColor: C.primary },
   pillPrimaryText: { ...label, color: '#FFFFFF' },
+  /** 테두리 보조 알약(음식 상세 Ask·가공식품 스캔 진입 Scan something else, KB-981) */
+  pillOutline: { ...shape, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
+  pillOutlineText: { ...label, color: C.ink },
 });
 
 /** 화면 바닥에서 알약까지 — 안전 영역, 최소 12 */

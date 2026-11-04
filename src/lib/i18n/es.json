@@ -1367,6 +1367,7 @@
     "reviewPhotos_one": "Revisar foto",
     "reviewPhotos_other": "Revisar {{count}} fotos",
     "done": "Listo",
+    "scanAnother": "Escanear otro producto",
     "resultAvoid": "Coincide con tu lista para evitar: {{names}}.",
     "resultCaution": "Una declaración de planta compartida menciona: {{names}}.",
     "resultMajorSet": "{{contains}}. Elige ingredientes a evitar para ver un resultado personal.",

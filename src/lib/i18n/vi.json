@@ -1367,6 +1367,7 @@
     "reviewPhotos_one": "Xem lại {{count}} ảnh",
     "reviewPhotos_other": "Xem lại {{count}} ảnh",
     "done": "Xong",
+    "scanAnother": "Quét sản phẩm khác",
     "resultAvoid": "Khớp với danh sách cần tránh: {{names}}.",
     "resultCaution": "Ghi chú cơ sở sản xuất chung có nêu: {{names}}.",
     "resultMajorSet": "{{contains}}. Đặt nguyên liệu cần tránh để xem kết quả riêng.",

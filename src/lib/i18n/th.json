@@ -1367,6 +1367,7 @@
     "reviewPhotos_one": "ตรวจ {{count}} รูป",
     "reviewPhotos_other": "ตรวจ {{count}} รูป",
     "done": "เสร็จ",
+    "scanAnother": "สแกนสินค้าอื่น",
     "resultAvoid": "ตรงกับรายการที่หลีกเลี่ยง: {{names}}",
     "resultCaution": "ข้อความโรงงานร่วมระบุ: {{names}}",
     "resultMajorSet": "{{contains}} ตั้งค่าส่วนผสมที่หลีกเลี่ยงเพื่อดูผลของคุณ",

@@ -1367,6 +1367,7 @@
     "reviewPhotos_one": "查看{{count}}张照片",
     "reviewPhotos_other": "查看{{count}}张照片",
     "done": "完成",
+    "scanAnother": "扫描其他商品",
     "resultAvoid": "与要避免的食材一致：{{names}}。",
     "resultCaution": "同工厂标示中提到：{{names}}。",
     "resultMajorSet": "{{contains}}。设置要避免的食材后可查看个人结果。",

@@ -1367,6 +1367,7 @@
     "reviewPhotos_one": "Tinjau {{count}} foto",
     "reviewPhotos_other": "Tinjau {{count}} foto",
     "done": "Selesai",
+    "scanAnother": "Pindai produk lain",
     "resultAvoid": "Cocok dengan daftar hindari: {{names}}.",
     "resultCaution": "Pernyataan fasilitas bersama menyebut: {{names}}.",
     "resultMajorSet": "{{contains}}. Atur bahan yang dihindari untuk hasil pribadi.",

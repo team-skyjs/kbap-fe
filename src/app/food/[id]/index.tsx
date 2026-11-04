@@ -108,7 +108,7 @@ export default function FoodDetailScreen() {
   // KB-851 → KB-871: 하단 리뷰 버튼 영역 — 아래로 스크롤 = 숨김 · 위로·제스처 끝 멈춤·맨 위/아래 = 표시 · 한 제스처 안 전환 1회 · K-pop 카드는 버튼 자리와 겹칠 때만 숨김
   // KB-871 QA AP: 겹침 대상(K-pop 카드 캐시 · 리뷰 0 본문 상자)이 있으면 측정 전까지 버튼을 애니메이션 없이 숨겨 둔다(진입 번쩍임 0)
   const idolExpected = !!useIdolPickVideo(id ?? '');
-  const emptyCtaExpected = !!food && food.isRegistered && FLAGS.reviewsEnabled && !isGuest && !food.reviewSummaryMissing && food.overall.count === 0;
+  const emptyCtaExpected = !!food && food.isRegistered && FLAGS.reviewsEnabled && !isGuest && !food.reviewSummaryMissing && food.overall.count === 0 && src !== 'scan'; // KB-981: Registered emptyCta와 같은 조건
   const pill = useScrollAwarePill({ card: idolExpected, emptyCta: emptyCtaExpected });
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setSolid(e.nativeEvent.contentOffset.y > HEADER_SOLID_Y);
@@ -202,6 +202,7 @@ export default function FoodDetailScreen() {
             {food.isRegistered ? (
               <Registered
                 guest={isGuest}
+                scanEntry={src === 'scan'}
                 setCoachOpen={setCoachOpen}
                 scanPrice={scanPrice}
                 food={food}
@@ -311,7 +312,7 @@ function RegisteredBottomBar({
   t: TFn;
   onWrite: () => void;
   onAsk?: () => void;
-  /** P-353 ②(KB-515): 스캔 진입 = Write 미렌더·Ask 단독(스캔한 음식이라 리뷰 유도 대신 문의 단독) */
+  /** P-353 ②(KB-515) → KB-981: 스캔 진입 = Write 미렌더(Ask 없으면 바 없음) */
   scanEntry?: boolean;
   /** 띠 실높이(알약 + 위 여백 + 안전 영역) 보고 — 스크롤 하단 여백 파생(큰 글씨·긴 번역 대응) */
   onHeight?: (h: number) => void;
@@ -324,7 +325,7 @@ function RegisteredBottomBar({
     opacity: !ready ? 0 : withTiming(shown ? 1 : 0, { duration: reduced ? 120 : PILL_FADE_MS, easing: Easing.out(Easing.cubic) }),
     transform: [{ translateY: reduced ? 0 : !ready ? hideY : withTiming(shown ? 0 : hideY, { duration: PILL_FADE_MS, easing: Easing.out(Easing.cubic) }) }],
   }));
-  const write = FLAGS.reviewsEnabled && !(scanEntry && onAsk);
+  const write = FLAGS.reviewsEnabled && !scanEntry; // KB-981: 스캔 진입 = Ask 유무와 무관하게 Write 0(빠져나가려는 흐름에 리뷰 유도 금지)
   if (!write && !onAsk) return null;
   return (
     <Animated.View
@@ -365,7 +366,10 @@ function Registered({
   setCoachOpen,
   onIdolLayout,
   onEmptyCtaLayout,
+  scanEntry = false,
 }: {
+  /** KB-981(예진 "숨겨줘"): 스캔 진입 = 리뷰 섹션 안 작성 상자도 0 */
+  scanEntry?: boolean;
   /** KB-871 QA ③: 리뷰 0 본문 "Write a review" 상자의 콘텐츠 y·높이(보이는 동안 하단 버튼 숨김) */
   onEmptyCtaLayout?: (y: number, h: number) => void;
   /** KB-851: K-pop 카드의 콘텐츠 y·높이 보고(리뷰 알약 숨김 판정) */
@@ -385,7 +389,7 @@ function Registered({
 }) {
   const isNew = useIsNewFood(food.publishedAt);
   // 리뷰 0 본문 상자 — 첫 리뷰를 쓰고 돌아오면 같은 화면에서 사라진다: 높이 0을 보고해 하단 버튼이 옛 자리 기준으로 숨어 있지 않게(Codex #337)
-  const emptyCta = FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0;
+  const emptyCta = FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0 && !scanEntry;
   useEffect(() => {
     if (!emptyCta) onEmptyCtaLayout?.(0, 0);
   }, [emptyCta, onEmptyCtaLayout]);
@@ -869,8 +873,8 @@ const styles = StyleSheet.create({
   pillPrimary: pillCta.pillPrimary,
   pillPrimaryText: pillCta.pillPrimaryText,
   pullSpin: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 5 }, // QA Q-388 ①: 당김 새로고침 스피너(iOS) — 플로팅 헤더 줄 바로 아래
-  pillOutline: { alignSelf: 'stretch', minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface },
-  pillOutlineText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink, textAlign: 'center' },
+  pillOutline: pillCta.pillOutline,
+  pillOutlineText: pillCta.pillOutlineText,
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },

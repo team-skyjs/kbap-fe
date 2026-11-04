@@ -1367,6 +1367,7 @@
     "reviewPhotos_one": "사진 {{count}}장 검토",
     "reviewPhotos_other": "사진 {{count}}장 검토",
     "done": "완료",
+    "scanAnother": "다른 상품 스캔하기",
     "resultAvoid": "피하는 재료와 일치해요: {{names}}.",
     "resultCaution": "같은 제조시설 표기에 있어요: {{names}}.",
     "resultMajorSet": "{{contains}}. 피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요.",

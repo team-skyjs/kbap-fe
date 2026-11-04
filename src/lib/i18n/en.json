@@ -1363,6 +1363,7 @@
     "reviewPhotos_one": "Review photo",
     "reviewPhotos_other": "Review {{count}} photos",
     "done": "Done",
+    "scanAnother": "Scan something else",
     "resultAvoid": "Matches your avoid list: {{names}}.",
     "resultCaution": "A shared-facility statement mentions: {{names}}.",
     "resultMajorSet": "{{contains}}. Set your avoid ingredients to see a personal result.",
