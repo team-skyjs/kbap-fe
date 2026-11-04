@@ -169,13 +169,21 @@ jest.mock('@/lib/data/useScan', () => ({
 
 import Scan from '../scan';
 
+// KB-982: 담기 카트가 모듈 스토어라 남은 Scan 트리도 같이 다시 그린다(전역 __prevent를 덮음) — 테스트마다 정리
+const mounted: ReactTestRenderer[] = [];
 function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
     tree = renderer.create(el);
   });
+  mounted.push(tree);
   return tree;
 }
+afterEach(() => {
+  for (const t of mounted.splice(0)) {
+    try { act(() => t.unmount()); } catch { /* 이미 정리됨 */ }
+  }
+});
 const texts = (tree: ReactTestRenderer, s: string) => tree.root.findAll((n) => n.props?.children === s).length;
 const galleryBtn = (tree: ReactTestRenderer) =>
   tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto' && typeof n.props?.onPress === 'function')[0];

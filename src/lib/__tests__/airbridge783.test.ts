@@ -257,7 +257,8 @@ describe('배선 잠금(소스) — 기존 Amplitude 지점 옆', () => {
     ['src/app/(tabs)/profile.tsx', ['airbridge.signOut()']],
     ['src/app/onboarding/index.tsx', ['airbridge.completeTutorial(']],
     ['src/app/(tabs)/_layout.tsx', ["if (active === 'home' && isEntryResolved()) airbridge.homeView()", 'useFocusEffect(', 'setDeeplinkReady(true)', 'return () => setDeeplinkReady(false)']],
-    ['src/app/scan.tsx', ['airbridge.scanSpend(quotaRef.current)', 'airbridge.scanResults(', 'airbridge.addToCart(']],
+    ['src/app/scan.tsx', ['airbridge.scanSpend(quotaRef.current)', 'airbridge.scanResults(', 'onAdd={addScanItem}']],
+    ['src/features/scan/scanCartStore.ts', ['airbridge.addToCart(']], // KB-982: 담기 = 카트 스토어 한 곳(리스트·상세)
     ['src/app/search.tsx', ['airbridge.searchResults({ keyword: kw.keyword']],
     ['src/app/food/[id]/index.tsx', ['airbridge.productView(']],
     // ⑨ 찜 = 공용 뮤테이션 성공 지점 한 곳(#278 Codex P1 — 상세·검색·FoodExplorer 전 표면, 실패 저장 미집계)

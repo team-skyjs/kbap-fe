@@ -100,7 +100,7 @@ export function ScanRichList({
   dishes: ResultDish[];
   currency: string;
   fx?: ServerFx; // P-242: v2 서버 실환율(undefined = v1 테이블)
-  cart: Map<number, number>;
+  cart: ReadonlyMap<number, number>;
   onAdd: (d: ResultDish) => void;
   onRemove: (d: ResultDish) => void;
   onOpen: (d: ResultDish) => void;

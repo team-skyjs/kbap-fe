@@ -975,3 +975,124 @@ it('Codex #327: 목록 카드에 extras 줄 없음 — 속도·서비스는 Feed
   expect(fs.readFileSync('src/app/food/[id]/reviews.tsx', 'utf8')).not.toMatch(/showExtras/);
   expect(fs.readFileSync('src/features/review/FeedCard.tsx', 'utf8')).not.toContain('ReviewExtrasLine');
 });
+
+describe('KB-982 메뉴판 스캔 진입 음식 상세 = 메뉴 담기(결과 리스트·OrderPill과 같은 카트)', () => {
+  /* eslint-disable @typescript-eslint/no-require-imports -- 이 블록만 쓰는 모듈(상단 목 순서 유지) */
+  const store = require('@/features/scan/scanCartStore') as typeof import('@/features/scan/scanCartStore');
+  const { ScanRichList, OrderPill } = require('@/features/scan/ScanRichList') as typeof import('@/features/scan/ScanRichList');
+  const analytics = require('@/lib/analytics') as typeof import('@/lib/analytics');
+  const { airbridge } = require('@/lib/airbridge') as typeof import('@/lib/airbridge');
+  /* eslint-enable @typescript-eslint/no-require-imports */
+  const BOX = { x: 0, y: 0, width: 0.1, height: 0.1 };
+  const DISH = { itemId: 3, rawMenuName: '비빔밥', box: BOX, priceKrw: 9000, latin: null, risk: 'safe' as const, matched: true, foodId: '7', displayName: 'Bibimbap', koreanName: '비빔밥' };
+  const tt = ((k: string, o?: { count?: number }) => (o?.count != null ? `${k}:${o.count}` : k)) as never;
+  /** scan.tsx 결과 화면과 같은 배선(useScanCart → 리스트 cart · OrderPill count, onAdd/onRemove = 스토어 함수) */
+  function ResultHarness() {
+    const cart = store.useScanCart();
+    const count = Array.from(cart.values()).reduce((a, b) => a + b, 0);
+    return (
+      <>
+        <ScanRichList dishes={[DISH]} currency="USD" fx={null} cart={cart} onAdd={store.addScanItem} onRemove={store.removeScanItem} onOpen={() => {}} onMarkPress={() => {}} t={tt} />
+        <OrderPill count={count} onPress={() => {}} t={tt} bottom={0} />
+      </>
+    );
+  }
+  const pillCount = (tree: ReactTestRenderer) => tree.root.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string' && n.props.children.startsWith('scan.orderCount:')).map((n) => n.props.children as string)[0] ?? null;
+  const press = (tree: ReactTestRenderer, id: string) => act(() => byId(tree, id).find((n) => typeof n.props.onPress === 'function')!.props.onPress());
+  let trackSpy: jest.SpyInstance;
+  let cartSpy: jest.SpyInstance;
+  beforeEach(() => {
+    act(() => store.resetScanCart());
+    trackSpy = jest.spyOn(analytics, 'track');
+    cartSpy = jest.spyOn(airbridge, 'addToCart').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    mockParams = { id: '7' };
+    trackSpy.mockRestore();
+    cartSpy.mockRestore();
+    act(() => store.resetScanCart());
+  });
+  const openFromScan = () => { act(() => store.rememberScanDish(DISH)); mockParams = { id: '7', src: 'scan', item: '3' }; };
+
+  it('상세 담기 = 결과 리스트 스테퍼·OrderPill +1 · 같은 이벤트(scan_item_add + airbridge.addToCart) · 담기 primary + Ask 테두리', () => {
+    openFromScan();
+    const result = render(<ResultHarness />);
+    const detail = render(<FoodDetailScreen />);
+    expect(byId(result, 'order-pill')).toHaveLength(0);
+    expect(byId(detail, 'bottom-write')).toHaveLength(0); // KB-981 유지
+    const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+    const st = (id: string) => StyleSheet.flatten(byId(detail, id).find((n) => typeof n.type === 'string')!.props.style) as Record<string, unknown>;
+    expect(st('bottom-add')).toMatchObject({ backgroundColor: '#FF7134' });
+    expect(st('bottom-ask')).toMatchObject({ backgroundColor: '#FFFFFF', borderWidth: 1 });
+    press(detail, 'bottom-add');
+    expect(byId(result, 'stepper-3').length).toBeGreaterThanOrEqual(1);
+    expect(pillCount(result)).toBe('scan.orderCount:1');
+    expect(trackSpy).toHaveBeenCalledWith(analytics.EVENTS.scan_item_add, { risk: 'safe' });
+    expect(cartSpy).toHaveBeenCalledWith({ id: '7', name: '비빔밥' });
+    // 담긴 뒤 = 수량 표시 + 빼기 · +는 리스트와 같은 카트에 +1
+    expect(byId(detail, 'bottom-cart-qty').find((n) => typeof n.type === 'string')!.props.children).toBe('scan.inOrder');
+    press(detail, 'bottom-cart-inc');
+    expect(pillCount(result)).toBe('scan.orderCount:2');
+    press(result, 'dec-3'); // 리스트에서 뺀 것도 상세에 반영
+    expect(pillCount(result)).toBe('scan.orderCount:1');
+    expect(byId(detail, 'bottom-cart').length).toBeGreaterThanOrEqual(1);
+    press(detail, 'bottom-cart-dec');
+    expect(trackSpy).toHaveBeenCalledWith(analytics.EVENTS.scan_item_remove, { risk: 'safe' });
+    expect(byId(result, 'order-pill')).toHaveLength(0);
+    expect(byId(result, 'add-3').length).toBeGreaterThanOrEqual(1);
+    expect(byId(detail, 'bottom-add').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('리스트에서 이미 담긴 메뉴로 들어오면 상세가 수량부터 보여 준다 · 상세에서 빼면 리스트 반영', () => {
+    act(() => store.addScanItem(DISH));
+    act(() => store.addScanItem(DISH));
+    openFromScan();
+    const result = render(<ResultHarness />);
+    const detail = render(<FoodDetailScreen />);
+    expect(byId(detail, 'bottom-add')).toHaveLength(0);
+    expect(byId(detail, 'bottom-cart').length).toBeGreaterThanOrEqual(1);
+    press(detail, 'bottom-cart-dec');
+    press(detail, 'bottom-cart-dec');
+    expect(byId(result, 'order-pill')).toHaveLength(0);
+    expect(byId(result, 'add-3').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('프레임 불변: 담기 전(버튼)과 담긴 뒤(스테퍼) 알약 틀 스타일이 같다 · 스테퍼 버튼 44 터치(음수 margin)', () => {
+    openFromScan();
+    const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+    const detail = render(<FoodDetailScreen />);
+    const before = StyleSheet.flatten(byId(detail, 'bottom-add').find((n) => typeof n.type === 'string')!.props.style);
+    press(detail, 'bottom-add');
+    const after = StyleSheet.flatten(byId(detail, 'bottom-cart').find((n) => typeof n.type === 'string')!.props.style);
+    expect(after).toEqual(before);
+    const step = StyleSheet.flatten(byId(detail, 'bottom-cart-dec').find((n) => typeof n.type === 'string')!.props.style) as Record<string, number>;
+    expect([step.width, step.height, step.marginVertical]).toEqual([44, 44, -10]);
+  });
+
+  it('스캔이 아닌 진입·item 없음·스캔 세션 끝(재촬영·닫힘 = 스토어 비움) = 담기 0', () => {
+    act(() => store.rememberScanDish(DISH));
+    for (const p of [{ id: '7', item: '3' }, { id: '7', src: 'search', item: '3' }, { id: '7', src: 'scan' }, { id: '7', src: 'scan', item: 'x' }]) {
+      mockParams = p;
+      const tree = render(<FoodDetailScreen />);
+      expect({ p, n: byId(tree, 'bottom-add').length + byId(tree, 'bottom-cart').length }).toEqual({ p, n: 0 });
+    }
+    act(() => store.addScanItem(DISH));
+    act(() => store.resetScanCart()); // 재촬영
+    mockParams = { id: '7', src: 'scan', item: '3' };
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'bottom-add')).toHaveLength(0);
+    expect(byId(tree, 'bottom-cart')).toHaveLength(0);
+  });
+
+  it('scan.tsx 배선 잠금: 카트 = 스토어 · 재촬영 = resetScanCart · 언마운트 = 초기화 · 상세 push에 itemId', () => {
+    const src = jest.requireActual<typeof import('fs')>('fs').readFileSync('src/app/scan.tsx', 'utf8');
+    expect(src).toContain('const cart = useScanCart();');
+    expect(src).not.toMatch(/useState<Map<number, number>>/);
+    expect(src).toContain('setDishes([]); setPhoto(null); resetScanCart();');
+    expect(src).toContain('useEffect(() => () => resetScanCart(), []);');
+    expect(src).toContain('onAdd={addScanItem}');
+    expect(src).toContain('onRemove={removeScanItem}');
+    expect(src).toContain('rememberScanDish(dish);');
+    expect(src).toContain('src=scan&item=${dish.itemId}');
+  });
+});

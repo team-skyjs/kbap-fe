@@ -26,6 +26,7 @@ import { ActivityIndicator, AppState, BackHandler, Platform, ScrollView, StyleSh
 import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
 import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { withPermissionPrompt } from '@/lib/permissionPrompt';
+import { addScanItem, rememberScanDish, removeScanItem, resetScanCart, useScanCart } from '@/features/scan/scanCartStore';
 import { Pressable } from '@/components/Pressable';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
@@ -206,21 +207,14 @@ export default function Scan() {
   const [safeOnly, setSafeOnly] = useState(false); // P-354(KB-516): ON = risk==='safe'만(불확실 포함 전부 숨김)
   // P-134: 첫 스캔 결과 1회 코치마크 — 재열람은 리스트 RiskMark 탭
   const [coachOpen, setCoachOpen] = useState(false);
-  // P-136(B-4 2단 확정): 담기 카트 — itemId→수량, 리스트·캡슐 뷰 공유
-  const [cart, setCart] = useState<Map<number, number>>(new Map());
+  // P-136(B-4 2단 확정) → KB-982: 담기 카트 = 모듈 스토어(itemId→수량) — 리스트·캡슐 뷰·스캔 진입 음식 상세 공유
+  const cart = useScanCart();
   const [currency, setCurrency] = useState('USD');
   useEffect(() => {
     void resolveCurrency(me?.nationality, me?.currency).then(setCurrency); // P-165: 서버 통화 정본
   }, [me?.nationality, me?.currency]);
   const cartCount = Array.from(cart.values()).reduce((a, b) => a + b, 0);
-  const bumpCart = (itemId: number, delta: number) =>
-    setCart((cur) => {
-      const next = new Map(cur);
-      const q = (next.get(itemId) ?? 0) + delta;
-      if (q <= 0) next.delete(itemId);
-      else next.set(itemId, q);
-      return next;
-    });
+  useEffect(() => () => resetScanCart(), []); // KB-982: 스캔 화면 닫힘 = 카트 세션 끝
   const coachChecked = useRef(false);
   const [facing, setFacing] = useState<CameraType>('back');
   // P-131: 줌 — 핀치+프리셋 상호 동기 (0~1 상대값, cameraZoom 순수 로직)
@@ -739,7 +733,8 @@ export default function Scan() {
     // 행·오버레이 마커·사진 전용 항목 전부 이 함수를 지나므로 첨부 지점은 여기 하나)
     {
       const priceQ = scanPriceParam(dish.priceKrw);
-      router.push(`/food/${dish.foodId}${priceQ}${priceQ ? '&' : '?'}src=scan` as Href);
+      rememberScanDish(dish);
+      router.push(`/food/${dish.foodId}${priceQ}${priceQ ? '&' : '?'}src=scan&item=${dish.itemId}` as Href); // KB-982: 상세 담기 = 같은 카트 항목
     }
   }
 
@@ -1152,8 +1147,8 @@ export default function Scan() {
               currency={currency}
               fx={fx}
               cart={cart}
-              onAdd={(d) => { track(EVENTS.scan_item_add, { risk: d.risk }); airbridge.addToCart({ id: d.foodId ?? `menu:${d.itemId}`, name: d.koreanName ?? d.rawMenuName }); bumpCart(d.itemId, 1); }}
-              onRemove={(d) => { track(EVENTS.scan_item_remove, { risk: d.risk }); bumpCart(d.itemId, -1); }}
+              onAdd={addScanItem}
+              onRemove={removeScanItem}
               onOpen={openDish}
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
               onClosestMatch={openClosestMatch} // KB-789
@@ -1221,7 +1216,7 @@ export default function Scan() {
                   onPress={() => {
                     if (!retakeConfirm) { leave.modal.onDiscard(); return; } // KB-769: 막았던 이동(back·스와이프)을 그대로 진행
                     setRetakeConfirm(false);
-                    setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setCart(new Map()); setSafeOnly(false); setSortMode('menu'); setPhase('camera'); // P-354: 컨트롤은 스캔 세션 한정
+                    setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); resetScanCart(); setSafeOnly(false); setSortMode('menu'); setPhase('camera'); // P-354: 컨트롤은 스캔 세션 한정
                   }}
                   testID={retakeConfirm ? 'retake-go' : 'scan-leave-go'}
                 >
