@@ -2,6 +2,11 @@
 
 - flags.ts packagedVisionScan: DEV_SERVER_CHANNEL → true(운영 서버 #542 배포 26.11.5, 11/4 03:47). ML Kit 가공식품 경로·탭은 코드에 남김(운영 확인 뒤 후속 PR).
 - 탭·메뉴판·ML Kit 흐름을 보는 스위트 8개는 OFF 고정(scanDesign 관례) · prodHide870에 기본값 true 잠금.
+## 2026-11-04 · P-599 #416 광고성 동의 시트 운영 채널 OFF 플래그
+
+- flags.ts marketingConsentPrompt = DEV_SERVER_CHANNEL(teamtest dev 타깃·development ON, production OFF) — 예진: 운영 OTA엔 시트 끔.
+- 게이트 = 진입점 두 곳: 홈 큐 스텝 첫 줄(즉시 false — 설정 GET·날짜 기록·대기·런타임 소모 0, 큐는 다음 스텝으로) · 알림함 InboxMarketingConsent 마운트(OFF = 마운트 0). #416 로직 무변.
+- OFF면 isMarketingConsentActive가 계속 false라 ScanExitPrompts·useReviewPrompt(blocked) 동작은 #416 전과 같다.
 
 ## 2026-11-04 · P-596 KB-982 메뉴판 스캔 음식 상세에 메뉴 담기
 

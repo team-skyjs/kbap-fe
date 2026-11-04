@@ -103,9 +103,10 @@ import {
 import { InboxMarketingConsent, MarketingConsentSheet } from '../MarketingConsentSheet';
 import { ScanExitPrompts, armScanExitPrompt, fireScanExitPrompt } from '@/features/scan/ScanExitPrompts';
 
-const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { pushEnabled: boolean } };
+const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { pushEnabled: boolean; marketingConsentPrompt: boolean } };
 const prevPush = FLAGS.pushEnabled;
-afterAll(() => { FLAGS.pushEnabled = prevPush; });
+const prevConsentFlag = FLAGS.marketingConsentPrompt;
+afterAll(() => { FLAGS.pushEnabled = prevPush; FLAGS.marketingConsentPrompt = prevConsentFlag; });
 
 const UNCONSENTED = { activity: false, news: { enabled: false, mealTime: false, privacyConsent: null, receiveConsent: null } };
 const CONSENTED = { activity: true, news: { enabled: true, mealTime: true, privacyConsent: { version: 2, grantedAt: '2026-11-04T09:00:00' }, receiveConsent: { version: 2, grantedAt: '2026-11-04T09:00:00' } } };
@@ -120,6 +121,7 @@ beforeEach(async () => {
   _resetOcclusionForTest();
   Object.defineProperty(AppState, 'currentState', { configurable: true, get: () => 'active' }); // 전경(가림 없음)
   FLAGS.pushEnabled = true;
+  FLAGS.marketingConsentPrompt = true; // P-599: 이 스위트 = 플래그 ON(teamtest·dev) 기존 동작 — OFF는 아래 describe
   mockSession = true;
   mockAdsSettled = true;
   mockAdsSubs.clear();
@@ -427,6 +429,58 @@ describe('알림함', () => {
     expect(src.indexOf('<InboxMarketingConsent />')).toBeGreaterThan(src.indexOf('if (isGuest) return <Redirect'));
     // InteractionManager 금지(RN 0.85 = 전환 대기 안 함)
     expect(fs.readFileSync('src/features/push/MarketingConsentSheet.tsx', 'utf8')).not.toMatch(/import \{[^}]*InteractionManager/);
+  });
+});
+
+describe('P-599 플래그 OFF(운영) — 노출·이벤트·큐 소모 0, 다른 시트는 그대로', () => {
+  beforeEach(() => { FLAGS.marketingConsentPrompt = false; });
+
+  it('홈 스텝 = 즉시 false · 설정 GET 0 · 날짜 기록 0 · 시트 0 · 런타임 소모 0(ON으로 돌아오면 같은 런타임에 판정)', async () => {
+    const a = step();
+    expect(await a.run()).toBe(false);
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(a.show).not.toHaveBeenCalled();
+    expect(await AsyncStorage.getItem(HOME_SHOWN_DATE_KEY)).toBeNull();
+    FLAGS.marketingConsentPrompt = true;
+    const b = step();
+    expect(await b.run()).toBe(true);
+  });
+
+  it('홈 큐: 코치마크 → 동의(OFF) → 다음 스텝 — 동의가 큐를 붙잡지 않고 다음 시트가 그대로 뜬다', async () => {
+    const q = createOneShotQueue();
+    let coachDone!: () => void;
+    q.add({ key: 'packagedCoach', present: (done) => { coachDone = done; return true; } });
+    const show = jest.fn();
+    q.add({ key: 'marketingConsent', present: (done, signal) => presentHomeMarketingConsent(show, done, signal) });
+    const next = jest.fn(() => true);
+    q.add({ key: 'next', present: next });
+    await flush();
+    coachDone();
+    await flush();
+    expect(show).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('동의 시트가 없으니 스캔 종료 리뷰 유도는 막히지 않는다(활성 플래그 false 유지)', async () => {
+    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation(((cb: () => void) => { cb(); return { then: () => {}, done: () => {}, cancel: () => {} }; }) as never);
+    mockRequest.mockResolvedValue(false);
+    mockDecide.mockResolvedValue(null);
+    await step().run();
+    expect(isMarketingConsentActive()).toBe(false);
+    act(() => { trees.push(renderer.create(<ScanExitPrompts />)); });
+    armScanExitPrompt({ isGuest: false, ready: Promise.resolve() });
+    act(() => fireScanExitPrompt());
+    await flush();
+    expect(mockRequest).toHaveBeenCalledWith('scan', expect.anything());
+    const blocked = (mockRequest.mock.calls[0][1] as { blocked: () => boolean }).blocked;
+    expect(blocked()).toBe(false);
+  });
+
+  it('진입점 게이트 소스 잠금: 홈 스텝 첫 줄 · 알림함 마운트 · 플래그 = DEV_SERVER_CHANNEL', () => {
+    expect(fs.readFileSync('src/features/push/marketingConsentPrompt.ts', 'utf8')).toContain('if (!FLAGS.pushEnabled || !FLAGS.marketingConsentPrompt || homeChecked) return false;');
+    expect(fs.readFileSync('src/app/notifications.tsx', 'utf8')).toContain('{FLAGS.marketingConsentPrompt && <InboxMarketingConsent />}');
+    expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toMatch(/\n  marketingConsentPrompt: DEV_SERVER_CHANNEL,\n/);
   });
 });
 
