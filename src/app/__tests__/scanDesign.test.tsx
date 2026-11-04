@@ -944,6 +944,14 @@ describe('KB-992 AI 추정 섹션', () => {
     expect(has(tree, 'ai--2') || has(tree, 'ai-pending--2')).toBe(false);
   });
 
+  it('S-959 칩 = 서버 겹침 정본(closure 기준) — 회원 원 코드(EGG)에 없는 하위 코드(OYSTER)도 칩 유지 · FE 재교집합 0', async () => {
+    mockScanExtra.v = { photoOnly, scanId: 's1' };
+    mockPending.items = [{ pendingId: 'p1', kind: 'dish', name: 'Oyster rice', koreanName: '굴밥', description: 'x', risk: 'caution', avoidCodes: ['OYSTER'], estimated: true }];
+    const tree = await toResult();
+    const row = (list(tree).props.aiRows as { ai: { avoidCodes: string[] } }[])[0];
+    expect(row.ai.avoidCodes).toEqual(['OYSTER']);
+  });
+
   it('AI 행 탭 = 미등록 안내 카드 재사용 + 위에 AI 설명·추정 재료 한 줄(상세 이동 0)', async () => {
     mockScanExtra.v = { photoOnly, scanId: 's1' };
     mockPending.items = [{ pendingId: 'p1', kind: 'dish', name: 'Kimchi pancake', koreanName: '김치전', description: 'Pan-fried kimchi pancake', risk: 'caution', avoidCodes: ['EGG'], estimated: true }];
