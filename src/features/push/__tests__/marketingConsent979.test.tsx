@@ -1,6 +1,6 @@
 /**
- * KB-979 → KB-987 — 홈·알림함 광고성 동의 시트.
- * 게이트 순수 함수(3시간) · 홈 큐 스텝(3시간·시계 되돌림·게스트·동의 캐시·실패·abort·코치마크 뒤·재가입) ·
+ * KB-979 → KB-987 → P-600 — 홈·알림함 광고성 동의 시트.
+ * 게이트 순수 함수(최초 1회) · 홈 큐 스텝(최초 1회·복귀·게스트·동의 캐시·실패·abort·코치마크 뒤·재가입) ·
  * 확인(공용 PATCH·권한 undetermined만 요청·실패 토스트) · 알림함(transitionEnd 뒤·포커스마다·덮개 대기) · ScanExitPrompts 상호 배제 · 계측 화이트리스트.
  */
 /* eslint-disable import/first, @typescript-eslint/no-require-imports -- jest.mock 뒤 · 호이스팅되는 목 팩토리 안은 require만 가능 */
@@ -96,7 +96,6 @@ import { pushOcclusion, _resetOcclusionForTest } from '@/lib/engagement/occlusio
 import { sanitize, EVENTS } from '@/lib/analytics';
 import { MARKETING_CONSENT_PATCH } from '@/lib/push/consent';
 import {
-  HOME_INTERVAL_MS,
   HOME_LAST_SHOWN_KEY,
   _resetMarketingConsentForTest,
   homeConsentDue,
@@ -155,12 +154,9 @@ let now = NOW;
 beforeEach(() => { now = NOW; jest.spyOn(Date, 'now').mockImplementation(() => now); });
 
 describe('게이트 순수 함수', () => {
-  it('homeConsentDue: 없음 = 통과 · 2:59:59 = skip · 3:00:00 이상 = 통과', () => {
-    expect(HOME_INTERVAL_MS).toBe(3 * H);
-    expect(homeConsentDue(null, NOW)).toBe(true);
-    expect(homeConsentDue(NOW - (3 * H - 1000), NOW)).toBe(false);
-    expect(homeConsentDue(NOW - 3 * H, NOW)).toBe(true);
-    expect(homeConsentDue(NOW - 30 * H, NOW)).toBe(true);
+  it('P-600 homeConsentDue: 노출 기록 없음 = 통과 · 기록 있음 = 시각과 무관하게 영구 skip(구 3시간 주기 폐기)', () => {
+    expect(homeConsentDue(null)).toBe(true);
+    for (const last of [NOW - H, NOW - 3 * H, NOW - 30 * 24 * H, NOW + H]) expect(homeConsentDue(last)).toBe(false);
   });
   it('isUnconsented: 둘 중 하나라도 null = 미동의', () => {
     expect(isUnconsented(UNCONSENTED)).toBe(true);
@@ -170,38 +166,28 @@ describe('게이트 순수 함수', () => {
 });
 
 describe('홈 큐 스텝', () => {
-  it('미동의 = 시트 1 + 노출 시각(epoch ms) 기록 · 3시간 안 두 번째 = GET 0·시트 0(런타임 리셋 없이도)', async () => {
+  it('P-600 최초 1회: 미동의 = 시트 1 + 노출 시각 기록 → 같은 실행 복귀·이후 실행(며칠 뒤 포함) 전부 GET 0·시트 0', async () => {
     const a = step();
     expect(await a.run()).toBe(true);
     expect(a.show).toHaveBeenCalledWith(a.done);
     expect(mockFetch).toHaveBeenCalledTimes(1);
     await flush();
     expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBe(String(NOW));
-    now = NOW + 3 * H - 1000;
-    const b = step();
-    expect(await b.run()).toBe(false);
+    for (const later of [NOW + 1000, NOW + 3 * H, NOW + 30 * 24 * H]) {
+      now = later;
+      _resetMarketingConsentForTest(); // 새 실행(콜드 스타트)도 같다 — 기록은 기기 저장소
+      const b = step();
+      expect(await b.run()).toBe(false);
+      expect(b.show).not.toHaveBeenCalled();
+    }
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(b.show).not.toHaveBeenCalled();
   });
 
-  it('1시간 전 = GET 0 · 3시간 경과 = 판정(콜드 스타트 리셋 없이) · 미래값 = 시트 0 + now로 보정 · 깨진 값 = 통과', async () => {
-    await AsyncStorage.setItem(HOME_LAST_SHOWN_KEY, String(NOW - H));
+  it('P-600: 기록 = 이미 노출(시계 되돌림·미래값도 노출로 본다, 보정 기록 0) · 깨진 값 = 기록 없음과 같이 판정', async () => {
+    await AsyncStorage.setItem(HOME_LAST_SHOWN_KEY, String(NOW + 5 * H));
     expect(await step().run()).toBe(false);
     expect(mockFetch).not.toHaveBeenCalled();
-    now = NOW + 2 * H; // 마지막 노출 후 3시간
-    expect(await step().run()).toBe(true);
-    await flush();
-    expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBe(String(NOW + 2 * H));
-    // 시계 되돌림 — 저장값이 미래
-    now = NOW;
-    const f = step();
-    expect(await f.run()).toBe(false);
-    expect(f.show).not.toHaveBeenCalled();
-    await flush();
-    expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBe(String(NOW)); // 기준점 재설정(안 하면 미래 시각까지 영영 막힘)
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    now = NOW + 3 * H;
-    expect(await step().run()).toBe(true); // 보정된 기준점에서 3시간
+    expect(await AsyncStorage.getItem(HOME_LAST_SHOWN_KEY)).toBe(String(NOW + 5 * H));
     await AsyncStorage.setItem(HOME_LAST_SHOWN_KEY, 'garbage');
     expect(await step().run()).toBe(true);
   });
@@ -236,10 +222,15 @@ describe('홈 큐 스텝', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
-  it('미동의로 캐시된 세션은 매 판정마다 서버 재확인(캐시 생략은 동의일 때만)', async () => {
-    expect(await step().run()).toBe(true);
-    now = NOW + 3 * H;
-    expect(await step().run()).toBe(true);
+  it('미동의로 캐시된 세션은 매 판정마다 서버 재확인(캐시 생략은 동의일 때만) — P-600: 띄우기 전 블러로 끝난 판정 뒤 다음 판정', async () => {
+    mockAdsSettled = false;
+    const ac = new AbortController();
+    const first = step(ac.signal).run();
+    await flush();
+    ac.abort(); // GET(미동의) 뒤 광고 대기 중 블러 = 기록 0
+    expect(await first).toBe(false);
+    mockAdsSettled = true;
+    expect(await step().run()).toBe(true); // 캐시가 미동의여도 서버 재확인
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
@@ -479,6 +470,33 @@ describe('알림함', () => {
   });
 });
 
+describe('P-600 동의 최초 1회 → 다음 실행부터 피드백(KB-986, 한 실행 하나)', () => {
+  it('실행1 피드백 0(첫 실행) · 실행2 동의 노출 → 피드백 밀림 · 실행3 동의 0 → 피드백 노출', async () => {
+    const fb = jest.requireActual<typeof import('@/features/feedback/feedbackPrompt')>('@/features/feedback/feedbackPrompt');
+    const slot = jest.requireActual<typeof import('@/lib/engagement/promptSlot')>('@/lib/engagement/promptSlot');
+    const newRun = () => { fb._resetFeedbackPromptForTest(); slot._resetPromptSlotForTest(); _resetMarketingConsentForTest(); queryClient.clear(); };
+    // 홈 큐 = 동의 → 피드백(실제 홈과 같은 순서). 동의 show = 실제 훅처럼 자리를 찍고 바로 닫힘
+    const runHome = async () => {
+      const q = createOneShotQueue();
+      const consent = jest.fn((done: () => void) => { slot.markPromptShown(); done(); });
+      const feedback = jest.fn((done: () => void) => done());
+      q.add({ key: 'marketingConsent', present: (done, signal) => presentHomeMarketingConsent(consent, done, signal) });
+      q.add({ key: 'feedbackPrompt', present: (done, signal) => fb.presentHomeFeedbackPrompt(feedback, done, signal) });
+      await flush();
+      await flush();
+      return { consent: consent.mock.calls.length, feedback: feedback.mock.calls.length };
+    };
+    newRun();
+    await AsyncStorage.setItem(HOME_LAST_SHOWN_KEY, String(NOW - H)); // 실행1: 동의는 이미 본 기기라고 치고 피드백 첫 실행 규칙만 본다
+    expect(await runHome()).toEqual({ consent: 0, feedback: 0 });
+    await AsyncStorage.removeItem(HOME_LAST_SHOWN_KEY);
+    newRun();
+    expect(await runHome()).toEqual({ consent: 1, feedback: 0 }); // 실행2: 동의 최초 노출 → 그 실행 자리 소진
+    newRun();
+    expect(await runHome()).toEqual({ consent: 0, feedback: 1 }); // 실행3: 동의 영구 미노출 → 피드백
+  });
+});
+
 describe('P-599 플래그 OFF(운영) — 노출·이벤트·큐 소모 0, 다른 시트는 그대로', () => {
   beforeEach(() => { FLAGS.marketingConsentPrompt = false; });
 
@@ -524,10 +542,10 @@ describe('P-599 플래그 OFF(운영) — 노출·이벤트·큐 소모 0, 다�
     expect(blocked()).toBe(false);
   });
 
-  it('진입점 게이트 소스 잠금: 홈 스텝 첫 줄 · 알림함 마운트 · 플래그 = DEV_SERVER_CHANNEL', () => {
+  it('진입점 게이트 소스 잠금: 홈 스텝 첫 줄 · 알림함 마운트 · 플래그 = true(P-600)', () => {
     expect(fs.readFileSync('src/features/push/marketingConsentPrompt.ts', 'utf8')).toContain('if (!FLAGS.pushEnabled || !FLAGS.marketingConsentPrompt) return false;');
     expect(fs.readFileSync('src/app/notifications.tsx', 'utf8')).toContain('{FLAGS.marketingConsentPrompt && <InboxMarketingConsent />}');
-    expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toMatch(/\n  marketingConsentPrompt: DEV_SERVER_CHANNEL,\n/);
+    expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toMatch(/\n  marketingConsentPrompt: true,\n/); // P-600: 전 채널 ON(게이트는 끌 스위치로 유지)
   });
 });
 
