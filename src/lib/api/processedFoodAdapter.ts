@@ -49,6 +49,8 @@ export type ProcessedReviewSummary = { overall: ProcessedAxis; taste: ProcessedA
 
 export type ProcessedFoodDetail = ProcessedFoodSummary & {
   capacity: string | null;
+  /** KB-989(S-957 초안): 포장 전체 kcal — null = 미표시(용량이 다른 묶음 등은 서버가 null, FE 판단 0) */
+  kcal: number | null;
   rawMaterials: string | null;
   /** 알레르기 표시란 원문 — DECLARED일 때만 의미가 있다('알수없음' 등은 null로) */
   allergens: string | null;
@@ -97,6 +99,8 @@ type SummaryWire = {
 export type SearchPageWire = { items: SummaryWire[]; hasNext: boolean; nextCursor?: string | null };
 export type DetailWire = SummaryWire & {
   capacity?: string | null;
+  kcal?: number | null; // KB-989 — 서버 배포 전 옵셔널
+
   rawMaterials?: string | null;
   allergens?: string | null;
   labelSource: string;
@@ -219,6 +223,7 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     ...adaptProcessedSummary(w),
     imageUrl: toHttps(w.image?.url ?? w.imageUrl),
     capacity: blankToNull(w.capacity),
+    kcal: typeof w.kcal === 'number' && Number.isFinite(w.kcal) && w.kcal >= 0 ? Math.round(w.kcal) : null,
     rawMaterials: blankToNull(w.rawMaterials),
     allergens,
     labelSource,
