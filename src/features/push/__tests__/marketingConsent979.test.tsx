@@ -3,7 +3,7 @@
  * 게이트 순수 함수(로컬 날짜·같은 날·어제·미래) · 홈 큐 스텝(런타임 1회·게스트·동의·실패·abort·코치마크 뒤·재가입) ·
  * 확인(공용 PATCH·권한 undetermined만 요청·실패 토스트) · 알림함(transitionEnd 뒤·포커스마다·덮개 대기) · ScanExitPrompts 상호 배제 · 계측 화이트리스트.
  */
-/* eslint-disable import/first -- jest.mock 뒤 */
+/* eslint-disable import/first, @typescript-eslint/no-require-imports -- jest.mock 뒤 · 호이스팅되는 목 팩토리 안은 require만 가능 */
 import * as React from 'react';
 import { AppState, InteractionManager } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';

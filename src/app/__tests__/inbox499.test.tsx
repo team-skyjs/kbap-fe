@@ -44,6 +44,7 @@ jest.mock('expo-router', () => {
   };
 });
 const mockT = jest.fn((k: string, o?: { count?: number }) => (o?.count != null ? `${k}:${o.count}` : k));
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- 호이스팅되는 목 팩토리 안
 jest.mock('@/features/push/MarketingConsentSheet', () => ({ ...jest.requireActual('@/features/push/MarketingConsentSheet'), InboxMarketingConsent: () => require('react').createElement('InboxMarketingConsent') })); // KB-979: 알림함 동의 시트(navigation 이벤트) — 동작은 marketingConsent979 담당, 여기선 마운트 여부만
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: mockT, i18n: { language: 'en' } }),
