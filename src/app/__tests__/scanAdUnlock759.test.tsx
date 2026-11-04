@@ -152,7 +152,10 @@ import * as adsModule from 'react-native-google-mobile-ads';
 import { _resetAdsSessionForTest, initAds } from '@/lib/ads/adsSession';
 import { _resetAdsSdkForTest } from '@/lib/ads/sdk';
 import { ApiError } from '@/lib/api/client';
+// KB-988: 스캔 카메라 = 늘 가공식품 흐름(비전) — 찍은 사진을 메뉴판 판별로 넘기는 목으로 메뉴 경로를 본다
+jest.mock('@/features/scan/PackagedScanFlow', () => jest.requireActual('@/__tests__/helpers/visionMenuFlowMock'));
 import Scan from '../scan';
+const { flowProps: mockFlow } = jest.requireActual('@/__tests__/helpers/visionMenuFlowMock') as typeof import('@/__tests__/helpers/visionMenuFlowMock');
 import { AppState, Modal, Platform } from 'react-native';
 import { observeUnlock, resetUnlockSession } from '@/features/scan/unlockCelebrationStore';
 import { currentGen } from '@/lib/auth/beTokens';
@@ -456,7 +459,7 @@ describe('Codex #291 R11: one scan presenter for every phase', () => {
     const src = fs.readFileSync('src/app/scan.tsx', 'utf8') as string;
     expect(src.match(/<UnlockCelebration\b/g)).toHaveLength(1);
     const body = src.slice(src.indexOf('// ---- result ----'), src.indexOf('function ScanSweepOverlay'));
-    expect(body.match(/return withPresenter\(/g)).toHaveLength(7); // result · scanning · error · KB-813 packaged · offline · system camera · camera
+    expect(body.match(/return withPresenter\(/g)).toHaveLength(5); // result · scanning · 카메라(가공식품 흐름) · error · offline — KB-988: 메뉴 카메라·시스템 카메라 분기 제거
   });
 });
 
@@ -485,35 +488,24 @@ it('Codex #291 R12 P2: a stale focus preflight returning SCAN-004 after the unlo
   expect(quotaShown(tree)).toBe(false); // the superseded focus result is ignored
 });
 
-it('Codex #339: 가공식품 확정 소진 덮개 → 나중에 → 메뉴로 전환 = 가공식품 잡기 해제 — 메뉴 카메라에서 프로필 소진이 오면 평소처럼 잠근다', async () => {
+it('Codex #339 → KB-988: 가공식품 확정 소진 덮개 → 나중에 = 카메라 · 그 뒤 프로필 소진이 오면 메뉴판 사진에서 평소처럼 잠근다', async () => {
   const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean; processedFoodEnabled: boolean } };
   const prev = { label: FLAGS.packagedLabelScan, pf: FLAGS.processedFoodEnabled };
   FLAGS.packagedLabelScan = true;
-  FLAGS.processedFoodEnabled = true; // 모드 탭
+  FLAGS.processedFoodEnabled = true;
   try {
     mockCamGranted.on = true;
     mockIssue.mockResolvedValue('t-ok');
     const live = { data: { restrictions: [{ code: 'SHRIMP' }], scanQuota: QUOTA(2), adRewards: { count: 0, forUnlock: 3, remaining: 3 } } };
     mockUseMe.mockReturnValue(live);
-    mockPost.mockImplementation((url: string) => {
-      if (url.endsWith('/scan/name')) return Promise.resolve({ analysisId: 'A1', state: 'CANDIDATES', candidates: [{ id: 11, reportNo: 'R1', productName: 'P11', imageUrl: null }] });
-      if (url.endsWith('/scan/confirm')) return Promise.reject(new ApiError('quota', 403, 'SCAN-004'));
-      return Promise.reject(new Error(`unexpected ${url}`));
-    });
     const tree = render();
     await flush();
     const press = async (id: string) => { await act(async () => { await tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); }); await flush(); };
-    await press('scan-mode-packaged');
-    act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
-    await press('pscan-ocr-debug-run');
-    await press('pscan-candidate-11'); // KB-914(R-138): 줄 탭 = 바로 확정
+    act(() => mockFlow.last!.onQuota!()); // 가공식품 확정이 한도(SCAN-004) — 흐름 위 덮개
     expect(tree.root.findAll((n) => n.props?.testID === 'pscan-quota-overlay').length).toBeGreaterThan(0);
     await press('scan-quota-later');
-    act(() => tree.root.findAll((n) => typeof n.props?.onBack === 'function')[0].props.onBack()); // 후보 → 앞면 카메라
-    await flush();
-    await press('scan-mode-menu');
     expect(quotaShown(tree)).toBe(false);
-    // 메뉴 카메라 중 프로필 재조회로 소진 도착(Codex #159 경로) → KB-963: 화면은 카메라 그대로, 메뉴 촬영 시도에서 잠금 — 가공식품 잡기가 남아 있으면 조용히 막혔다
+    // 카메라 중 프로필 재조회로 소진 도착(Codex #159 경로) → KB-963: 화면은 카메라 그대로, 메뉴판 사진에서 잠금(덮개 잡기가 남아도 소진 화면이 보인다)
     mockUseMe.mockReturnValue({ data: { ...live.data, scanQuota: QUOTA(0) } });
     act(() => { tree.update(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>); });
     await flush();
@@ -527,48 +519,16 @@ it('Codex #339: 가공식품 확정 소진 덮개 → 나중에 → 메뉴로 �
   }
 });
 
-it('KB-877 → KB-963: 소진 회원 가공식품 바로 진입(/scan?mode=packaged) + 프로필 남은 0 + 티켓 SCAN-004 = 가공식품 흐름 그대로(차감 없음) → 메뉴로 바꾸고 촬영하면 소진 안내', async () => {
-  const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean; processedFoodEnabled: boolean } };
-  const prev = { label: FLAGS.packagedLabelScan, pf: FLAGS.processedFoodEnabled };
-  FLAGS.packagedLabelScan = true;
-  FLAGS.processedFoodEnabled = true;
-  try {
-    mockCamGranted.on = true;
-    mockSearch.v = { mode: 'packaged' };
-    mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
-    mockUseMe.mockReturnValue(me(3)); // scanQuota 소진(remaining 0)
-    const tree = render();
-    await flush();
-    expect(quotaShown(tree)).toBe(false);
-    expect(tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input').length).toBeGreaterThan(0); // 가공식품 카메라(흐름) 그대로
-    // KB-963: 소진 회원도 가공식품 스캔 확정까지(서버 S-937 — charged false) — 쿼터 덮개 0 · 상세 이동
-    mockPost.mockImplementation((url: string) => {
-      if (url.endsWith('/scan/name')) return Promise.resolve({ analysisId: 'A9', state: 'CANDIDATES', candidates: [{ id: 11, reportNo: 'R1', productName: 'P11', imageUrl: null }] });
-      if (url.endsWith('/scan/confirm')) return Promise.resolve({ analysisId: 'A9', state: 'CONFIRMED', charged: false, freeUntil: null, product: { id: 11, reportNo: 'R1', productName: 'P11', maker: 'M', foodType: '과자', labelSource: 'DECLARED', allergens: '밀', detections: [], avoidance: [], source: { provider: 'HACCP', attributionKey: 'processedFood.source.haccp' }, image: null } });
-      return Promise.reject(new Error(`unexpected ${url}`));
-    });
-    const press = async (id: string) => { await act(async () => { await tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); }); await flush(); };
-    act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
-    await press('pscan-ocr-debug-run');
-    await press('pscan-candidate-11');
-    expect(tree.root.findAll((n) => n.props?.testID === 'pscan-quota-overlay')).toHaveLength(0);
-    expect(mockRouterPush).toHaveBeenCalledWith(expect.stringMatching(/^\/processed-foods\/11\?scan=1&charged=0$/));
-    mockPost.mockReset();
-    act(() => tree.root.findAll((n) => typeof n.props?.onBack === 'function')[0]?.props.onBack()); // 후보 → 앞면 카메라(모드 탭)
-    await flush();
-    await act(async () => { tree.root.findAll((n) => n.props?.testID === 'scan-mode-menu' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
-    await flush();
-    expect(quotaShown(tree)).toBe(false); // KB-963: 메뉴로 바꿔도 진입 잠금 0
-    await shootMenu(tree);
-    expect(quotaShown(tree)).toBe(true); // 메뉴 촬영 시도 = 소진 안내
-  } finally {
-    FLAGS.packagedLabelScan = prev.label;
-    FLAGS.processedFoodEnabled = prev.pf;
-  }
+it('KB-877 → KB-963: 소진 회원 가공식품 바로 진입(/scan?mode=packaged) + 프로필 남은 0 + 티켓 SCAN-004 = 진입 잠금 0(카메라) → 메뉴판 사진이면 소진 안내', async () => {
+  mockCamGranted.on = true;
+  mockSearch.v = { mode: 'packaged' };
+  mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
+  mockUseMe.mockReturnValue(me(3)); // scanQuota 소진(remaining 0)
+  const tree = render();
+  await flush();
+  expect(quotaShown(tree)).toBe(false);
+  expect(tree.root.findAll((n) => n.props?.testID === 'scan-shutter').length).toBeGreaterThan(0); // 카메라(가공식품 흐름) 그대로 — 가공식품 확정은 차감 없음(visionScan969)
+  await shootMenu(tree);
+  expect(quotaShown(tree)).toBe(true); // 메뉴판 판별 = 소진 안내
 });
 
-// P-598: packagedVisionScan 전 채널 ON — 이 스위트는 탭·메뉴판·ML Kit 흐름(아직 코드에 남은 OFF 경로)을 본다 → OFF 고정(scanDesign 관례)
-const visionFlags = (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS;
-const visionPrev = visionFlags.packagedVisionScan;
-beforeEach(() => { visionFlags.packagedVisionScan = false; });
-afterAll(() => { visionFlags.packagedVisionScan = visionPrev; });

@@ -152,7 +152,7 @@ it('unknown target은 teamtest 개발 기능을 열지 않고 production은 targ
   expect(flagsFor('teamtest', false, 'typo').isDevServerChannel()).toBe(false);
   const prod = flagsFor('production', false, 'dev');
   expect(prod.isDevServerChannel()).toBe(false);
-  expect(prod.FLAGS.packagedNameScanPhoto).toBe(false); // dev 서버 게이트 플래그는 운영에서 꺼짐
+  expect(prod.FLAGS.engagementDwell).toBe(false); // dev 서버 게이트 플래그는 운영에서 꺼짐
 });
 
 it('P-587·P-588(KB-807) — isProdChannel()에서도 가공식품 4종(리뷰 쓰기 포함) true', () => {
