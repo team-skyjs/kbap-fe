@@ -1323,7 +1323,13 @@
       "unreadableTitle": "No pudimos leer la etiqueta",
       "unreadableBody": "Vuelve a tomar la foto con la lista de ingredientes nítida.",
       "newAnalysisTitle": "Empieza un nuevo análisis",
-      "newAnalysisBody": "No puedes añadir más fotos a este análisis. Empieza uno nuevo."
+      "newAnalysisBody": "No puedes añadir más fotos a este análisis. Empieza uno nuevo.",
+      "visionLimitTitle": "Ya usaste los escaneos con foto de hoy",
+      "visionLimitBody": "Podrás escanear de nuevo mañana. Aún puedes buscar productos por nombre.",
+      "tooLargeTitle": "La foto es demasiado grande",
+      "tooLargeBody": "Vuelve a tomar la foto.",
+      "busyTitle": "El escaneo está saturado ahora",
+      "busyBody": "Inténtalo de nuevo en un momento."
     },
     "debugLabel": "Texto OCR (solo pruebas)",
     "debugPlaceholder": "Una línea del envase por fila",
@@ -1361,7 +1367,18 @@
     "done": "Listo",
     "resultAvoid": "Coincide con tu lista para evitar: {{names}}.",
     "resultCaution": "Una declaración de planta compartida menciona: {{names}}.",
-    "resultMajorSet": "{{contains}}. Elige ingredientes a evitar para ver un resultado personal."
+    "resultMajorSet": "{{contains}}. Elige ingredientes a evitar para ver un resultado personal.",
+    "vision": {
+      "retakeTitle": "Probemos otra vez",
+      "blurry": "La foto está borrosa. Mantén el teléfono quieto y toca la pantalla para enfocar.",
+      "tooDark": "Está demasiado oscuro. Busca un lugar con más luz.",
+      "glare": "El envase refleja la luz. Inclínalo un poco.",
+      "cropped": "Falta una parte. Encuadra todo el frente del envase o la etiqueta.",
+      "notFood": "No parece un menú ni un envase de comida. Toma una foto de un menú, del frente del envase o de la etiqueta de ingredientes.",
+      "unknown": "No pudimos leer esta foto. Toma una foto de un menú, del frente del envase o de la etiqueta de ingredientes.",
+      "reading": "Leyendo tu foto…",
+      "notLabel": "No parece una etiqueta de ingredientes. Fotografía el lado con la lista de ingredientes."
+    }
   },
   "scanCamera": {
     "title": "Escanear",
@@ -1378,7 +1395,8 @@
     "capturedPackage": "Tu foto del envase",
     "capturedLabel": "Tu foto de la etiqueta",
     "choosePhoto": "Elegir foto",
-    "switchCamera": "Cambiar cámara"
+    "switchCamera": "Cambiar cámara",
+    "capturedPhoto": "Tu foto"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

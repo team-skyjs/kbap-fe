@@ -331,3 +331,58 @@ export function adaptLabelScan(w: LabelScanWire): LabelScanResult {
     freeUntil: isoOrNull(w.freeUntil),
   };
 }
+
+// ── KB-969(P-592, 서버 #542): 사진 스캔 — POST /api/processed-foods/scan/vision. 서버 비전이 사진 종류를 판별하고 앞면·성분표를 읽는다 ──
+export type VisionKind = 'MENU' | 'PACKAGE_FRONT' | 'INGREDIENT_LABEL' | 'OTHER';
+export type VisionReason = 'BLURRY' | 'TOO_DARK' | 'GLARE' | 'CROPPED' | 'NOT_FOOD';
+/** 다음 단계 — candidates·none = 앞면(후보 / 후보 없음) · label = 성분표 결과 · menu = 같은 사진으로 메뉴판 스캔 · other = 다시 찍기 · confirmed = 이미 확정(같은 키 재전송) */
+export type VisionRoute = 'candidates' | 'none' | 'label' | 'menu' | 'other' | 'confirmed';
+export type VisionScanResult = {
+  analysisId: string;
+  kind: VisionKind;
+  confidence: number;
+  reason: VisionReason | null;
+  route: VisionRoute;
+  front: { productName: string | null; maker: string | null; reportNo: string | null; candidates: ScanCandidate[] } | null;
+  label: LabelScanResult | null;
+  warnings: string[];
+};
+export type VisionScanWire = {
+  analysisId: string;
+  kind?: string | null;
+  confidence?: number | null;
+  reason?: string | null;
+  state?: string | null;
+  front?: { productName?: string | null; maker?: string | null; reportNo?: string | null; candidates?: CandidateWire[] | null } | null;
+  label?: LabelScanWire | null;
+  warnings?: string[] | null;
+};
+const VISION_KINDS: readonly VisionKind[] = ['MENU', 'PACKAGE_FRONT', 'INGREDIENT_LABEL', 'OTHER'];
+const VISION_REASONS: readonly VisionReason[] = ['BLURRY', 'TOO_DARK', 'GLARE', 'CROPPED', 'NOT_FOOD'];
+/** 모르는 kind = OTHER(다시 찍기 — 판정을 지어내지 않는다) · 모르는 reason(UNKNOWN 포함 — #542 키 재시도 초과·만료) = null → 안내 unknown · 경로는 서버 state가 정본:
+ *  CANDIDATES인데 후보 0 = 후보 없음 · LABEL_RESULT인데 label 없음 = 다시 찍기(판정 없는 결과 화면 금지) */
+export function adaptVisionScan(w: VisionScanWire): VisionScanResult {
+  const kind = VISION_KINDS.find((k) => k === w.kind) ?? 'OTHER';
+  const reason = VISION_REASONS.find((r) => r === w.reason) ?? null;
+  const candidates = (w.front?.candidates ?? []).slice(0, 5).map((c) => ({ ...adaptProcessedSummary(c), reportNo: String(c.reportNo) }));
+  const label = w.label ? adaptLabelScan(w.label) : null;
+  // #542 공부 반영: 같은 키 재전송 = CONFIRMED·REJECTED·LABEL_RESULT가 올 수 있다 · 키 재시도 초과·만료 = state OTHER + reason UNKNOWN(비전 호출 0).
+  // kind와 state가 어긋나거나 모르는 state면 다시 찍기 — 앞면이라도 state가 후보·후보 없음·거절이 아니면 "후보 없음"으로 보내지 않는다
+  const route: VisionRoute =
+    w.state === 'CONFIRMED' ? 'confirmed'
+    : kind === 'PACKAGE_FRONT' ? (w.state === 'CANDIDATES' && candidates.length > 0 ? 'candidates' : w.state === 'CANDIDATES' || w.state === 'NO_CANDIDATE' || w.state === 'REJECTED' ? 'none' : 'other')
+    : kind === 'INGREDIENT_LABEL' ? (label && w.state === 'LABEL_RESULT' ? 'label' : 'other')
+    : kind === 'MENU' && w.state === 'NOT_PACKAGED' ? 'menu'
+    : 'other';
+  const conf = typeof w.confidence === 'number' && Number.isFinite(w.confidence) ? Math.min(1, Math.max(0, w.confidence)) : 0;
+  return {
+    analysisId: w.analysisId,
+    kind,
+    confidence: conf,
+    reason,
+    route,
+    front: w.front ? { productName: blankToNull(w.front.productName), maker: blankToNull(w.front.maker), reportNo: blankToNull(w.front.reportNo), candidates: route === 'candidates' ? candidates : [] } : null,
+    label,
+    warnings: (w.warnings ?? []).filter((x) => typeof x === 'string' && x.trim().length > 0),
+  };
+}

@@ -1323,7 +1323,13 @@
       "unreadableTitle": "没能读取配料表",
       "unreadableBody": "请让配料清晰可见后重新拍摄。",
       "newAnalysisTitle": "请重新分析",
-      "newAnalysisBody": "此分析无法再添加照片。请重新分析。"
+      "newAnalysisBody": "此分析无法再添加照片。请重新分析。",
+      "visionLimitTitle": "今天的照片扫描次数已用完",
+      "visionLimitBody": "明天可以再次扫描。仍可按名称搜索产品。",
+      "tooLargeTitle": "照片太大",
+      "tooLargeBody": "请重新拍摄。",
+      "busyTitle": "当前扫描繁忙",
+      "busyBody": "请稍后再试。"
     },
     "debugLabel": "OCR 文本(仅限测试)",
     "debugPlaceholder": "每行输入一行包装文字",
@@ -1361,7 +1367,18 @@
     "done": "完成",
     "resultAvoid": "与要避免的食材一致：{{names}}。",
     "resultCaution": "同工厂标示中提到：{{names}}。",
-    "resultMajorSet": "{{contains}}。设置要避免的食材后可查看个人结果。"
+    "resultMajorSet": "{{contains}}。设置要避免的食材后可查看个人结果。",
+    "vision": {
+      "retakeTitle": "再拍一次吧",
+      "blurry": "照片模糊。请拿稳，并点按屏幕对焦。",
+      "tooDark": "太暗了。请到明亮的地方拍摄。",
+      "glare": "包装上有反光。请稍微倾斜后拍摄。",
+      "cropped": "有部分被裁掉了。请让包装正面或配料表完整入框。",
+      "notFood": "这看起来不像菜单或食品包装。请拍摄菜单、包装正面或配料表。",
+      "unknown": "无法识别这张照片。请拍摄菜单、包装正面或配料表。",
+      "reading": "正在读取你的照片…",
+      "notLabel": "这似乎不是配料表。请拍摄印有配料表的那一面。"
+    }
   },
   "scanCamera": {
     "title": "扫描",
@@ -1378,7 +1395,8 @@
     "capturedPackage": "你拍的包装",
     "capturedLabel": "你拍的配料表",
     "choosePhoto": "选择照片",
-    "switchCamera": "切换相机"
+    "switchCamera": "切换相机",
+    "capturedPhoto": "你拍的照片"
   },
   "idolPicks": {
     "label": "K-POP & K-FOOD",

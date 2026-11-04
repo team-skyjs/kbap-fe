@@ -144,6 +144,7 @@ export const EVENTS = {
   // KB-973 가공식품 출시 계측 보강 — 촬영 시작(scan_start는 메뉴 시계열 그대로 두고 따로)·이름 검색/확정 실패·세그먼트·리뷰 탭 대상 필터
   food_packaged_scan_start: 'food_packaged_scan_start',
   food_packaged_scan_fail: 'food_packaged_scan_fail',
+  food_packaged_scan_vision: 'food_packaged_scan_vision', // KB-969 사진 스캔(서버 비전) 판별 결과
   food_segment_select: 'food_segment_select',
   review_feed_target_select: 'review_feed_target_select',
   food_packaged_label_scan: 'food_packaged_label_scan', // P-508 성분표 분석 결과(pages 1~4 · charged = 서버값 · result ok|unreadable|newAnalysis|expired|quota|network… — OCR 원문 금지)
@@ -215,8 +216,10 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   home_idol_pick_list_view: ['count'],
   food_idol_video_open: ['food_id', 'platform', 'video_position'],
   food_packaged_label_scan: ['pages', 'charged', 'result'],
-  food_packaged_scan_start: ['mode', 'source'], // mode packaged(앞면)|label(성분표) · source camera|gallery(scan_start와 같은 값)
-  food_packaged_scan_fail: ['stage', 'result'], // stage name(이름 인식)|confirm(확정) · result = scanFailureOf(network|quota|… — 성분표 food_packaged_label_scan result와 같은 값)
+  food_packaged_scan_start: ['mode', 'source'], // mode packaged(앞면)|label(성분표)|vision(KB-969 사진 스캔 — 종류는 서버 판별) · source camera|gallery(scan_start와 같은 값)
+  // KB-969: kind MENU|PACKAGE_FRONT|INGREDIENT_LABEL|OTHER · state = 다음 단계(candidates|none|label|menu|other|confirmed) · confidence low|mid|high(구간) · reason(OTHER 근거|none) · side first|add(성분표 한 면 더). 사진·경로·읽은 글자 0
+  food_packaged_scan_vision: ['kind', 'state', 'confidence', 'reason', 'side'],
+  food_packaged_scan_fail: ['stage', 'result'], // stage name(이름 인식)|confirm(확정)|vision(KB-969 사진 스캔) · result = scanFailureOf(network|quota|… — 성분표 food_packaged_label_scan result와 같은 값)
   food_segment_select: ['segment', 'source'], // segment dishes|packaged · source tap|coach|see_all
   review_feed_target_select: ['target'], // all|food|packaged
   food_packaged_type_select: ['type'],

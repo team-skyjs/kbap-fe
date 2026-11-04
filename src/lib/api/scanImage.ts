@@ -181,6 +181,22 @@ export async function uploadNameScanPhoto(photo: PhotoFile): Promise<string | nu
   }
 }
 
+/** KB-969: 사진 스캔(서버 비전) 사진 긴 변 상한 — 서버 권장 1600px(2MB 상한 400 PFOOD-014는 이 크기·JPEG 0.8이면 넘지 않는다) */
+export const VISION_SCAN_PHOTO_MAX = 1600;
+
+/**
+ * KB-969: 사진 스캔 → 축소(긴 변 1,600px·JPEG 0.8) → PACKAGED_SCAN 업로드 → 경로. 그림자 입력(위)과 달리 **스캔 자체**라 실패는 던진다(호출측 = 오류 화면).
+ * PUT 상한 없음(메뉴 스캔과 같은 KB-711 사유 — 약한 망에서 끊으면 "느림"이 "불가"가 된다).
+ */
+export async function uploadVisionScanPhoto(photo: PhotoFile): Promise<string> {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { manipulateAsync, SaveFormat } = require('expo-image-manipulator') as typeof import('expo-image-manipulator');
+  const size = fitLongSide(photo.width, photo.height, VISION_SCAN_PHOTO_MAX);
+  const out = await manipulateAsync(photo.uri, size ? [{ resize: size }] : [], { compress: 0.8, format: SaveFormat.JPEG });
+  console.log(`[scan] vision photo ${photo.width}x${photo.height} → ${out.width}x${out.height}`);
+  return (await uploadImage({ uri: out.uri, width: out.width, height: out.height }, 'PACKAGED_SCAN', { timeoutMs: null })).path;
+}
+
 /**
  * 촬영 사진 → 검증된 imagePath. 실패 시 null → 스캔 요청은 서버에서 400(빈 imagePath 거절) = 스캔 실패.
  * KB-711: 스캔 PUT은 **상한 없음**(timeoutMs null) — 카메라 원본(대개 2~4MB)이 약한 망에서 60초를 넘기 쉽고, 끊으면 "느림"이 "불가"가 된다.

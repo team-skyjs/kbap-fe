@@ -19,7 +19,7 @@ jest.mock('@/lib/data/useIngredientCatalog', () => ({
 }));
 jest.mock('@/lib/flags', () => ({
   get FLAGS() {
-    return { ...jest.requireActual('@/lib/flags').FLAGS, systemCamera: true };
+    return { ...jest.requireActual('@/lib/flags').FLAGS, systemCamera: true, packagedVisionScan: false }; // KB-969: 탭 있는 현행 흐름
   },
   get SYSTEM_CAMERA_AUTOLAUNCH() {
     return mockAuto;

@@ -1,3 +1,15 @@
+## 2026-11-03 · P-592 KB-969 가공식품 사진 스캔 = 서버 비전(서버 #542) — 카메라 하나·종류 자동 판별
+
+- 플래그 packagedVisionScan = DEV_SERVER_CHANNEL(커맨드 합의: 운영 서버 #542 배포 전 운영 무변 · OFF = 현행 탭 + ML Kit). 운영 배포 뒤 전 채널 ON + ML Kit 가공식품 경로·탭 삭제는 후속 PR.
+- ON: 스캔 화면 Menu/Packaged 탭 없음(카메라 하나 = 가공식품 흐름) · 셔터·갤러리 → 긴 변 1600px·JPEG 0.8 → PACKAGED_SCAN 업로드(실패 = 오류 화면) → POST /api/processed-foods/scan/vision {imagePath, clientRequestId(촬영 1회 UUID), lang}(3.2·120초).
+- 분기(경로 = 서버 state 정본, adaptVisionScan): PACKAGE_FRONT 후보 → 기존 후보·확정(같은 analysisId) / 후보 없음 → 기존 이름 찾기·성분표 / INGREDIENT_LABEL → 기존 성분표 결과(한 면 더 = 다시 비전 → 읽은 원문을 같은 분석에 /scan/label로 합침, 성분표가 아니면 다시 찍기) / MENU → 같은 사진·이미 올린 경로로 메뉴 v2(postScan uploadedPath — 재업로드 0, 티켓·소진 화면 그대로, scan_start source vision) / OTHER → reason별 안내 + 다시 찍기 / CONFIRMED → 멱등 확정으로 상세.
+- 오류: PFOOD-013 = 하루 상한(닫기만) · PFOOD-014 = 용량 · SCAN-006·008 = 혼잡(같은 키·같은 경로로 다시) · 전송 실패 = 같은 키 재시도 · PFOOD-006 = 다시 찍기. 매핑은 코드로만(상태 503·429로 넓히면 이름·성분표 기존 문구가 바뀐다).
+- 계측 신규 food_packaged_scan_vision(kind·state·confidence 구간·reason·side) · food_packaged_scan_start mode vision · food_packaged_scan_fail stage vision.
+- 시뮬 주입: 구 OCR 입력칸 자리 = VisionDebug(글자 → 실제 이름 스캔/성분표 분석으로 응답을 만들어 같은 분기, 다시 찍기 목).
+- #542 공부 반영(커맨드 11/03): reason UNKNOWN(키 재시도 초과·만료 — 비전 호출 0)·모르는 reason = 안내 unknown + 다시 찍기(새 키) · 재전송 REJECTED = 후보 없음 · kind와 어긋난·모르는 state = 다시 찍기(앞면이라도 "후보 없음"으로 보내지 않는다).
+- 신규 i18n 13키 × 10로케일: packagedScan.vision.{retakeTitle, blurry, tooDark, glare, cropped, notFood, unknown} · packagedScan.err.{visionLimit, tooLarge, busy}{Title, Body}.
+- Q-412 보정(11/04): 판정 전 로딩 = 중립 문구(packagedScan.vision.reading·scanCamera.capturedPhoto — 메뉴판도 처음엔 "포장" 문구였다) · 한 면 더에 성분표가 아닌 사진(앞면·메뉴·OTHER·성분표 못 읽음) = packagedScan.vision.notLabel(품질 reason이 있으면 그 안내 우선 — 전에는 reason null → unknown). 신규 3키 × 10로케일.
+- Codex P2 3건(11/04): 혼잡(SCAN-006·008) 화면에도 다시 시도(같은 키·경로) · 업로드 중 로딩을 닫으면 비전 호출 0(하루 상한 소모 금지) · 성분표 결과 → 사진 보기 → 다시 찍기 = 잘라낸 면 목록에 합쳐 마지막 면 교체(전에는 원본에 붙어 4면이면 새 면이 잘려 나갔다).
 ## 2026-11-04 · P-593 KB-978 OTA 즉시 적용 — 시작·복귀 때 확인 후 바로 다시 로드(예진 결정: P-316 변경)
 
 - 시작: OtaLaunchGate가 루트 트리(QueryClient·인증 부트스트랩) 마운트 **전**에 체크→fetch(상한 3초, 네이티브 스플래시 유지). 받으면 바로 reloadAsync(트리를 띄우지 않아 진행 중 요청 0 — P-347 창 없음). 없음·3초 초과·에러 = 현재 번들로 마운트. 3초 뒤 늦게 받으면 그 런타임에선 reload 0, 다음 복귀가 재체크 없이 적용.
