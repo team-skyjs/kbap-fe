@@ -162,7 +162,7 @@ function HomeBody() {
         <StickyHeader hidden={hidden} atTop={atTop} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
         <PackagedCoachOverlay {...homeCoach.props} />
       <MarketingConsentSheet {...consent.props} />
-      <FeedbackPromptSheet {...feedbackPrompt.props} />
+      <FeedbackPromptSheet key="feedback-prompt" {...feedbackPrompt.props} />{/* #421 Codex P2: 로딩·에러·정상 반환이 같은 루트 View — 고정 key로 분기가 바뀌어도 같은 인스턴스(입력·업로드 유지) */}
       </View>
     );
   }
@@ -290,7 +290,7 @@ function HomeBody() {
 
       <PackagedCoachOverlay {...homeCoach.props} />
       <MarketingConsentSheet {...consent.props} />
-      <FeedbackPromptSheet {...feedbackPrompt.props} />
+      <FeedbackPromptSheet key="feedback-prompt" {...feedbackPrompt.props} />{/* #421 Codex P2: 로딩·에러·정상 반환이 같은 루트 View — 고정 key로 분기가 바뀌어도 같은 인스턴스(입력·업로드 유지) */}
     </View>
   );
 }
