@@ -5,6 +5,10 @@
 import * as React from 'react';
 import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { AccessibilityInfo, FlatList } from 'react-native';
+import { useAutoSlide, AUTO_SLIDE_MS } from '../useAutoSlide';
+import { HeroGallery, QUIET_MS, SLIDE_MS } from '../HeroGallery';
+import { adaptFoodImages } from '@/lib/api/foodAdapter';
 
 // HeroGallery 의존 표면 목(호이스팅) — isolateModules로 따로 부르면 React가 두 벌 로드돼
 // 훅 디스패처가 null이 된다(실측). 정지 판단 자체는 실제 usePaused 경로를 탄다.
@@ -19,10 +23,6 @@ jest.mock('expo-router', () => ({
 jest.mock('expo-image', () => ({ Image: { prefetch: jest.fn(() => Promise.resolve(true)) } }));
 jest.mock('@/components', () => ({ CardPhoto: () => null }));
 
-import { AccessibilityInfo } from 'react-native';
-import { useAutoSlide, AUTO_SLIDE_MS } from '../useAutoSlide';
-import { HeroGallery, QUIET_MS, SLIDE_MS } from '../HeroGallery';
-import { adaptFoodImages } from '@/lib/api/foodAdapter';
 
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
@@ -488,9 +488,8 @@ describe('드래그 — 누르면 멈추고, 손 뗀 뒤 스크롤이 멈춘 자
 
   it('KB-965 느린 전환: SLIDE_MS(600 — 플랫폼 기본 ~300의 약 2배) 동안 중간 위치를 지나 도착 · 전환 중 닿으면 그 자리에서 멈춤', async () => {
     expect(SLIDE_MS).toBe(600);
-    const RN = require('react-native') as typeof import('react-native');
     const tree = await renderIt();
-    const inst = tree.root.findByType(RN.FlatList).instance as { scrollToOffset: (p: unknown) => void };
+    const inst = tree.root.findByType(FlatList).instance as { scrollToOffset: (p: unknown) => void };
     const spy = jest.spyOn(inst, 'scrollToOffset').mockImplementation(() => {});
     const last = () => (spy.mock.calls[spy.mock.calls.length - 1][0] as { offset: number }).offset;
     act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
