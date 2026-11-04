@@ -1,3 +1,20 @@
+## 2026-11-05 · P-605 #428 S-959 계약 확정 반영(dev 배포 전)
+
+- 서버 #565 `filled: boolean`(true = 마감 채움, false = LLM 추정)로 판별 교체 — 필드가 없는 배포 전 서버만 내용(UNKNOWN·설명 null·재료 0) 폴백.
+
+- 대기 항목 riskLevel = CAUTION|UNKNOWN만(UNKNOWN = unable 시각) — 기존 매핑 그대로 통과(SAFE·미지 = unable 유지).
+- avoidances = 회피 재료 코드 배열(IngredientCode[]) → AiPendingItem.avoidCodes, 칩·안내 카드 이름은 렌더 시점 restrictionLabel(언어 전환 즉시), 칩 = caution(재료별 위험도 없음 — safe 0). 초안 객체 모양도 방어 수용.
+- 15초 마감 서버 채움(DISH·UNKNOWN·설명 null·재료 0) = estimated false → 미도착과 같게(폴링 끝 = 현행 unable 행, AI 칩 0).
+- 404 SCAN-014(주인 아님·만료·모르는 scanId) = 기존 "실패 = 즉시 종료 → 현행 unable" 경로 그대로. existsNotReady·foodId·spiciness·confidence는 타입만(화면 미사용).
+
+## 2026-11-04 · P-603 KB-992 메뉴판 스캔 결과 'AI 추정' 섹션(Draft — 서버 S-959 dev 배포 전)
+
+- 계약 초안 기준(확정 시 dev Swagger 정본): 결과 항목 `pendingId`(미매칭·비대체만 — 어댑터가 매칭·대체분은 무시) · 응답 `scanId`(초안에 위치 미기재 → payload 최상위 옵셔널로 가정, 없으면 폴링 0 = 현행 그대로) · `GET /api/scans/{scanId}/pending?lang=`.
+- 리스트 2단: DB 판정(현행 정렬·Safe only·담기) 위, 'AI 추정' 섹션(서버 순서) 아래. 도착 전 = 이름 + 스켈레톤 · NOT_FOOD = 행 제거 · 폴링 종료(15초·done·실패) 뒤 미도착 = 현행 unable 행으로 위 목록에 남음(담기 가능). Safe only ON = 섹션 숨김.
+- 폴링 useScanPending: 1초 간격 · 스캔당 총 15초(가려지면 멈추고 돌아오면 남은 예산) · done/실패 즉시 종료 · scanId 키 상태(다시 찍기 리셋).
+- 배지: AI 항목은 caution|unable만 — SAFE·미지 = unable, DANGER = caution(어댑터 잠금, 타입도 두 값). AI 칩 = IconSparkles SVG. AI 행엔 담기 슬롯 없음.
+- 탭: 미등록 안내 카드(UnmatchedNotice) 재사용 + 위에 AI 설명·"들어 있을 수 있는 기피 재료" 한 줄. 판정 문구·unable 마크 무변, 상세 이동 0.
+- 계측 scan_ai_section_shown{count}(스캔당 1회) · scan_ai_item_filled{kind}. i18n 3키 × 10로케일(scan.aiSectionTitle·aiSectionNote·aiIngredientsLine).
 ## 2026-11-05 · P-609 KB-965 상세 사진 미리 받기(예진 11/5 실기 — 첫 장 뒤 장마다 ~2초 로딩)
 
 - HeroGallery(음식·가공식품 공통): urls가 들어오는 즉시 전 장(첫 장 포함)을 expo-image Image.prefetch(u, 'memory-disk')로 장마다 따로 — 장 단위 준비 시점을 안다. 실패도 준비로 친다(깨진 장 하나에 멈춤 방지 — 그 장은 CardPhoto 폴백).

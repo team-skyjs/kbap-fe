@@ -42,6 +42,8 @@ export interface ResultDish extends MenuDish {
   substituted?: boolean;
   /** KB-789 v3.0: 메뉴판 원문(substituted일 때). 부재 = null. */
   originalScannedName?: string | null;
+  /** KB-992: AI 추정 대기 키(미매칭·비대체만) — 있으면 결과 리스트 하단 'AI 추정' 섹션으로 간다. */
+  pendingId?: string | null;
 }
 
 /** KB-789: 주문 카드 `nameKo` = **메뉴판에 적힌 이름** — 식당 직원에게 보여주는 줄이라 대체 항목은

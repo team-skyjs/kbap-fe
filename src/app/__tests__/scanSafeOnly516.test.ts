@@ -19,8 +19,8 @@ it('① 새 스캔(다시찍기) = safeOnly OFF·정렬 menu 리셋', () => {
 
 it('③ 배너 — ON = resultsSubSafe(safe·total), OFF = 현행 resultsSub', () => {
   const s = scan();
-  expect(s).toContain("t('scan.resultsSubSafe', { safe: safeDishes.length, total: allDishes.length })");
-  expect(s).toContain("t('scan.resultsSub', { count: allDishes.length })");
+  expect(s).toContain("t('scan.resultsSubSafe', { safe: safeDishes.length, total: shownCount })"); // KB-992: total = 위 목록 + AI 섹션
+  expect(s).toContain("t('scan.resultsSub', { count: shownCount })");
 });
 
 it('④ 안전 0건 — 목록 자리 EmptyBlock만(컨트롤·배너 유지), 스캔 0건 분기와 구분', () => {

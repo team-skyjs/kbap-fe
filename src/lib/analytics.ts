@@ -87,6 +87,9 @@ export const EVENTS = {
   scan_quota_dialog_select: 'scan_quota_dialog_select',
   // KB-789: 유사 음식 대체 항목의 Closest match 칩 탭 → 설명 카드 열림(food_id = 대체 음식)
   scan_closest_match_open: 'scan_closest_match_open',
+  // KB-992: 'AI 추정' 섹션 노출(대기 항목 수) · 항목 도착(kind = dish|drink|notFood)
+  scan_ai_section_shown: 'scan_ai_section_shown',
+  scan_ai_item_filled: 'scan_ai_item_filled',
   error_state_view: 'error_state_view',
   review_helpful_toggle: 'review_helpful_toggle',
   review_translate_toggle: 'review_translate_toggle',
@@ -180,6 +183,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_quota_dialog_select: ['option'],
   scan_result_item_tap: ['risk'],
   scan_closest_match_open: ['food_id'], // KB-789: 카탈로그 id(PII 아님) — 메뉴 원문 금지
+  scan_ai_section_shown: ['count'], // KB-992: 메뉴 이름 등 원문 금지
+  scan_ai_item_filled: ['kind'],
   order_card_open: ['item_count', 'has_avoids'],
   // P-214 🔒: keyword = **카탈로그 매칭 시에만**(호출처 searchKeywordProps가 판정) —
   // 자유 텍스트는 matched:false + len_bucket만(알레르기·신념 추론 차단)

@@ -25,5 +25,5 @@ it('P-330 스윕 — 이동 4곳 중앙 래핑(소스 잠금), 이미 중앙 4�
   const scan = read('src/app/scan.tsx');
   expect(scan).toMatch(/<ScreenCenterFill>[\s\S]{0,200}scan-results-empty/);
   // A-SC-12 동승: 0건 = 인식 배너 숨김
-  expect(scan).toMatch(/allDishes\.length > 0 && \([\s\S]{0,120}recog-banner/);
+  expect(scan).toMatch(/shownCount > 0 && \([\s\S]{0,120}recog-banner/);
 });
