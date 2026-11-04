@@ -1085,7 +1085,7 @@ describe('KB-982 메뉴판 스캔 진입 음식 상세 = 메뉴 담기(결과 �
   });
 
   it('scan.tsx 배선 잠금: 카트 = 스토어 · 재촬영 = resetScanCart · 언마운트 = 초기화 · 상세 push에 itemId', () => {
-    const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
+    const src = jest.requireActual<typeof import('fs')>('fs').readFileSync('src/app/scan.tsx', 'utf8');
     expect(src).toContain('const cart = useScanCart();');
     expect(src).not.toMatch(/useState<Map<number, number>>/);
     expect(src).toContain('setDishes([]); setPhoto(null); resetScanCart();');
