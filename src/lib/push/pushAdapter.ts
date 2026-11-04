@@ -21,6 +21,7 @@ import i18n from '@/lib/i18n';
 import { api, apiLang } from '@/lib/api/client';
 import { hasBeSession } from '@/lib/auth/beAuth';
 import { patchNotificationSettings } from '@/lib/data/useNotificationSettings';
+import { withPermissionPrompt } from '@/lib/permissionPrompt';
 
 const PROMPTED_KEY = 'kbap.push.prompted.v1';
 const ACTIVITY_PENDING_KEY = 'kbap.push.activityDefaultPending.v1'; // KB-631: 로그인 팝업 허용 → 로그인 후 activity 기본값 1회 적용 대기
@@ -87,7 +88,7 @@ export async function requestPermission(): Promise<boolean> {
   const N = loadNotifications();
   if (!N) return false;
   try {
-    const { status } = await N.requestPermissionsAsync();
+    const { status } = await withPermissionPrompt(() => N.requestPermissionsAsync());
     trackEvent(EVENTS.push_permission, { state: status === 'granted' ? 'grant' : 'deny' }); // KB-630: 호출처 무관 1곳 — 예외(팝업 미표시)는 결과 아님
     return status === 'granted';
   } catch {

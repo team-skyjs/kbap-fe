@@ -87,6 +87,7 @@ import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
 import { openAppSettings } from '@/lib/openExternal';
+import { withPermissionPrompt } from '@/lib/permissionPrompt';
 
 type Photo = { uri: string; width: number; height: number } | null;
 type Phase = 'camera' | 'scanning' | 'result' | 'error';
@@ -246,7 +247,7 @@ export default function Scan() {
     if (autoPrompted.current || isGuest || permission == null || permission.granted || !permission.canAskAgain) return;
     autoPrompted.current = true;
     track(EVENTS.scan_permission, { state: 'auto_prompt' });
-    void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }));
+    void withPermissionPrompt(requestPermission).then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }));
   }, [isGuest, permission, requestPermission]);
   // P-255: 최선 노력 사전 확인 — 004만 즉시 잠금(fail() 미경유 = scan_complete 계측
   // 오염 0 — 스캔 시도가 아니다), 그 외 실패는 무시(최종 판정 = 스캔 단계 분기·시나리오 E).
@@ -696,7 +697,7 @@ export default function Scan() {
     setCapturing(true);
     setError(null);
     try {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      const perm = await withPermissionPrompt(() => ImagePicker.requestCameraPermissionsAsync());
       if (!perm.granted) {
         track(EVENTS.scan_permission, { state: 'deny' }); // P-214
         Alert.alert(t('scan.permissionTitle'), t('scan.permissionSettingsBody'), [
@@ -832,7 +833,7 @@ export default function Scan() {
               <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
               <View style={{ width: '100%', maxWidth: 280 }}>
                 {/* P-214: 권한 퍼널 — 요청 후 결과(grant|deny) 구분 */}
-                <Btn testID="scan-perm-grant" disabled={importing} onPress={() => { if (importingRef.current) return; void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' })); }}>
+                <Btn testID="scan-perm-grant" disabled={importing} onPress={() => { if (importingRef.current) return; void withPermissionPrompt(requestPermission).then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' })); }}>
                   {t('scan.grant')}
                 </Btn>
               </View>

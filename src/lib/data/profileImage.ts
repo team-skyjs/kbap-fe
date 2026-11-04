@@ -17,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '@/lib/api/scanImage';
 import { PROFILE_IMAGE_DEFAULT_PATH } from '@/lib/api/memberAdapter';
 import { openAppSettings } from '@/lib/openExternal';
+import { withPermissionPrompt } from '@/lib/permissionPrompt';
 
 /** BE 확정(7/16 저녁) — 백엔드가 이 값으로 개발. */
 export const PROFILE_IMAGE_PURPOSE = 'PROFILE_IMAGE';
@@ -101,7 +102,7 @@ export function choosePhotoSource(labels: PhotoSheetLabels): Promise<PhotoSource
 
 /** 시스템 카메라 촬영 (1:1 크롭 — 갤러리 경로와 동일 옵션). 권한 거부 = CAMERA_PERMISSION throw. */
 export async function captureProfileImage(): Promise<PickedImage | null> {
-  const perm = await ImagePicker.requestCameraPermissionsAsync();
+  const perm = await withPermissionPrompt(() => ImagePicker.requestCameraPermissionsAsync());
   if (!perm.granted) throw new Error('CAMERA_PERMISSION');
   const res = await launchCameraAsync({
     mediaTypes: ['images'],

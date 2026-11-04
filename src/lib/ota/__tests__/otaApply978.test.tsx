@@ -144,7 +144,7 @@ describe('복귀 — 3초 창 + 작업 화면·네트워크 정적 게이트', (
   }
   const foreground = async () => {
     await act(async () => {
-      appStateListeners.forEach((cb) => cb('active'));
+      appStateListeners.forEach((cb) => { cb('background'); cb('active'); }); // KB-980: 복귀 = background 경유
     });
   };
 
