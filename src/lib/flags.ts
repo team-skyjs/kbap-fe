@@ -222,6 +222,11 @@ export const FLAGS = {
    */
   packagedVisionScan: DEV_SERVER_CHANNEL,
   /**
+   * P-599(예진 11/04): KB-979(#416) 광고성 동의 시트(홈·알림함) — 운영 OTA에선 끈다. teamtest(dev 타깃)·development = ON, production = OFF.
+   * OFF = 노출·이벤트·설정 GET·홈 큐 소모 전부 0(진입점 두 곳에서 게이트: 홈 큐 스텝 · 알림함 마운트). 시트 로직은 무변.
+   */
+  marketingConsentPrompt: DEV_SERVER_CHANNEL,
+  /**
    * KB-870/P-528 OTA2 채널 게이트 의도: 사용자 검수·공개 승인으로 큐레이션·K-pop·회피6만 전 채널 공개.
    * 운영 큐레이션 게시/GET·idol GET·회피 catalog/profile PATCH 왕복 확인 뒤 develop 머지/발행한다.
    * PF3종과 리뷰 버전은 DEV_SERVER_CHANNEL에 유지한다. 공용 dev 게이트를 켜지 않는다.

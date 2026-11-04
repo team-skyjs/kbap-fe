@@ -198,10 +198,18 @@ it('⑬ 게스트 — 로그인 Redirect(returnTo=/notifications), 알림함 어
   expect(tree.root.findAll((n) => n.type === 'InboxMarketingConsent').length).toBe(0); // KB-979: 게스트 = 동의 판정(설정 GET) 0
 });
 
-it('⑭ KB-979 회원 = 알림함에 동의 시트 판정 마운트 1', () => {
+it('⑭ KB-979 회원 = 알림함에 동의 시트 판정 마운트 1 · P-599 플래그 OFF(운영) = 마운트 0', () => {
+  const F = (jest.requireActual('@/lib/flags') as { FLAGS: { marketingConsentPrompt: boolean } }).FLAGS;
+  const prev = F.marketingConsentPrompt;
   mockInbox.data = [];
-  const tree = render();
-  expect(tree.root.findAll((n) => n.type === 'InboxMarketingConsent').length).toBe(1);
+  try {
+    F.marketingConsentPrompt = true;
+    expect(render().root.findAll((n) => n.type === 'InboxMarketingConsent').length).toBe(1);
+    F.marketingConsentPrompt = false;
+    expect(render().root.findAll((n) => n.type === 'InboxMarketingConsent').length).toBe(0);
+  } finally {
+    F.marketingConsentPrompt = prev;
+  }
 });
 
 it('⑤ 소스 잠금 — 로컬 스토어·모두 읽음·구 상대 시각·게이트 시트 부재, timeAgo·routeForNotificationData·returnTo 존재', () => {
