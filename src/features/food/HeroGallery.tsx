@@ -24,7 +24,11 @@ export const QUIET_MS = 250;
 export function HeroGallery({ urls, overlay, renderPage }: { urls: string[]; /** 사진 위·도트 아래 레이어(그라데이션) */ overlay?: React.ReactNode; renderPage?: (url: string, index: number) => React.ReactNode }) {
   const { width } = useWindowDimensions();
   const paused = useMotionPaused();
-  const { index, onUserSwipe, pause } = useAutoSlide(urls.length, paused);
+  // KB-965(P-609, 예진 11/5 실기 — 첫 장 뒤 장마다 ~2초 로딩): 들어오는 즉시 **전부** 미리 받고(장마다 따로 — 준비 시점을 장 단위로 안다),
+  // 자동 넘김은 다음 장이 준비될 때까지 기다린다. 실패도 "준비"로 친다 — 깨진 장 하나에 캐러셀이 멈추지 않게(그 장은 CardPhoto 폴백).
+  const [ready, setReady] = React.useState<ReadonlySet<string>>(() => new Set());
+  const isReady = (i: number) => ready.has(urls[i]);
+  const { index, onUserSwipe, pause, notifyReady } = useAutoSlide(urls.length, paused, isReady);
   const listRef = React.useRef<FlatList<string>>(null);
   // 제스처 상태는 **손가락 기준 두 가지뿐**이다: 누르고 있나(touching), 뗐나(released).
   // Codex 2R~6R은 전부 "이 스크롤 이벤트가 사용자 것인가 타이머 것인가"를 분류하려다 난 경합이었다
@@ -39,10 +43,19 @@ export function HeroGallery({ urls, overlay, renderPage }: { urls: string[]; /**
     if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
   }, []);
 
-  // 2장째부터 미리 받아 둔다(첫 장은 CardPhoto 스켈레톤 규칙 그대로)
   React.useEffect(() => {
-    if (urls.length > 1) void Image.prefetch(urls.slice(1)).catch(() => {});
+    if (urls.length < 2) return;
+    let alive = true;
+    const done = (u: string) => alive && setReady((s) => (s.has(u) ? s : new Set(s).add(u)));
+    for (const u of urls) void Image.prefetch(u, 'memory-disk').then(() => done(u), () => done(u));
+    return () => {
+      alive = false;
+    };
   }, [urls]);
+  // 장이 준비될 때마다 — 기다리던 자동 넘김을 풀어 준다
+  React.useEffect(() => {
+    notifyReady();
+  }, [ready, notifyReady]);
 
   // 타이머가 넘긴 장으로 스크롤(사용자가 넘긴 경우엔 이미 그 위치라 사실상 무동작)
   // Codex P2(5R): 마지막 → 처음 순환을 애니메이션으로 스크롤하면 중간 장을 전부 **거꾸로**
