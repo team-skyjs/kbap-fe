@@ -5,7 +5,7 @@
 ## 진입과 준비
 
 - 경로: `kbap://ocr-collector` (메뉴에는 링크 없음).
-- 허용: `development` 또는 `teamtest`, 혹은 채널 없는 로컬 개발 번들 **및** `BE_BASE === https://dev.kbap.site`.
+- 허용: `development` 또는 `teamtest`, 혹은 채널 없는(null/undefined/빈 문자열) 로컬 개발 번들(`__DEV__=true`) **및** `BE_BASE === https://dev.kbap.site`.
 - production/preview/알 수 없는 채널, prod BE, 채널 없는 release는 딥링크로도 화면을 마운트하지 않는다.
 - 기존 네이티브 모듈만 사용한다. Expo Go는 사용할 수 없다. 사진·manifest·정답은 Metro asset import가 없으며 Git/운영 asset graph에 포함하지 않는다. 코드에는 manifest SHA256만 고정한다.
 

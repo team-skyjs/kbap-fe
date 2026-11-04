@@ -19,7 +19,7 @@ export function allowed(channel: string | null | undefined, dev: boolean, base: 
   if (context.be_env !== 'dev') return false;
   const url = new URL(base);
   return !url.username && !url.password && !url.port && !url.search && !url.hash && url.pathname === '/' &&
-    (channel === 'teamtest' || channel === 'development' || (channel == null && dev));
+    (channel === 'teamtest' || channel === 'development' || ((channel == null || channel === '') && dev));
 }
 
 /** Only a numeric private/loopback IPv4 and a fixed port. No path, token or DNS. */

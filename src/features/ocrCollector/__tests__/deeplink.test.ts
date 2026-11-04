@@ -7,6 +7,10 @@ it('opens the development tool through the real central handler and excludes pub
   expect(resolveDeeplink('kbap://ocr-collector')).toBe('/ocr-collector');
   expect(SUPPORTED_DEEPLINKS).not.toContain('kbap://ocr-collector');
 });
+it('accepts the empty channel returned by a local dev client', () => {
+  Object.defineProperty(Updates, 'channel', { value: '', configurable: true });
+  expect(resolveDeeplink('kbap://ocr-collector')).toBe('/ocr-collector');
+});
 it('blocks both production channel and production backend before routing', () => {
   Object.defineProperty(Updates, 'channel', { value: 'production', configurable: true });
   expect(resolveDeeplink('kbap://ocr-collector')).toBeNull();

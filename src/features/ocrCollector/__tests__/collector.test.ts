@@ -14,6 +14,9 @@ it('requires explicit dev backend and development/teamtest', () => {
   expect(allowed('development', false, 'https://dev.kbap.site')).toBe(true);
   expect(allowed(null, true, 'https://dev.kbap.site')).toBe(true);
   expect(allowed(null, false, 'https://dev.kbap.site')).toBe(false);
+  expect(allowed('', true, 'https://dev.kbap.site')).toBe(true);
+  expect(allowed('', false, 'https://dev.kbap.site')).toBe(false);
+  expect(allowed('', true, 'https://prod.kbap.site')).toBe(false);
   expect(allowed('teamtest', true, 'https://prod.kbap.site')).toBe(false);
 });
 it.each(['example.com', '8.8.8.8', '169.254.169.254', '127.0.0.1:80', 'user@127.0.0.1', '127.0.0.1/x', '127.00.0.1', '192.168.1.999'])('rejects host %s', host => {
