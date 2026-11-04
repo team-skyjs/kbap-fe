@@ -1287,7 +1287,8 @@
     "noAvoidMatchTitle": "Không khớp danh sách cần tránh",
     "safeBasis_one": "Chúng tôi đã đối chiếu nhãn với {{count}} nguyên liệu bạn cần tránh.",
     "safeBasis_other": "Chúng tôi đã đối chiếu nhãn với {{count}} nguyên liệu bạn cần tránh.",
-    "findMore": "Tìm thêm"
+    "findMore": "Tìm thêm",
+    "kcal": "{{value}} kcal"
   },
   "scanMode": {
     "menu": "Thực đơn",
