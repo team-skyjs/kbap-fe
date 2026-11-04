@@ -12,7 +12,7 @@
  *   when foodId is present — branch on `matched`, never foodId (Swagger 명시).
  */
 import type { RiskState } from '@/lib/theme';
-import type { AvoidanceOverlapWire, BeRiskLevel, BoundingBox, ScanResultWire } from './scanTypes';
+import type { AvoidanceOverlapWire, BeRiskLevel, BoundingBox, ScanPendingItemWire, ScanResultWire } from './scanTypes';
 
 const RISK_MAP: Record<BeRiskLevel, RiskState> = {
   SAFE: 'safe',
@@ -52,6 +52,8 @@ export interface ScanOverlayItem extends ScannedItem {
   substituted: boolean;
   /** KB-789 v3.0: 메뉴판에 적힌 원문 — substituted일 때 "Menu says …"·주문 카드 nameKo. 부재 = null. */
   originalScannedName: string | null;
+  /** KB-992: AI 추정 대기 키(미매칭·비대체만). null = 대기 없음. */
+  pendingId: string | null;
 }
 
 /**
@@ -103,6 +105,8 @@ function verdict(r: ScanResultWire) {
     // KB-789 v3.0: 대체 항목 — 엄격 true만(2.0 부재·이상값 = false). 원문은 비어 있으면 null.
     substituted: r.substituted === true,
     originalScannedName: typeof r.originalScannedName === 'string' && r.originalScannedName.trim() ? r.originalScannedName : null,
+    // KB-992: AI 추정 대기 키 — 매칭·대체 항목엔 서버가 실어 보내도 무시(DB 판정이 정본)
+    pendingId: !r.matched && r.substituted !== true && typeof r.pendingId === 'string' && r.pendingId.trim() ? r.pendingId : null,
   } as const;
 }
 
@@ -138,6 +142,8 @@ export interface PhotoOnlyItem {
   /** KB-789 v3.0 — ScanOverlayItem과 동일 규칙. */
   substituted: boolean;
   originalScannedName: string | null;
+  /** KB-992 — ScanOverlayItem과 동일 규칙. */
+  pendingId: string | null;
 }
 
 /**
@@ -149,4 +155,45 @@ export function photoOnlyResults(results: ScanResultWire[]): PhotoOnlyItem[] {
   return results
     .filter((r) => r.idx == null)
     .map((r) => ({ ...verdict(r), displayName: r.name ?? r.koreanName ?? '?' }));
+}
+
+/** KB-992 AI 추정 항목 — 리스트 하단 'AI 추정' 섹션의 한 줄. */
+export interface AiPendingItem {
+  pendingId: string;
+  kind: 'dish' | 'drink' | 'notFood';
+  name: string | null;
+  koreanName: string | null;
+  description: string | null;
+  /** caution | unable만 — AI 추정은 안전 판정을 내리지 않는다(헌법 III). */
+  risk: 'caution' | 'unable';
+  /** 들어 있을 수 있는 회피 재료 코드 — 표시 이름은 화면이 렌더 시점에(restrictionLabel — 언어 전환 즉시 반영) */
+  avoidCodes: string[];
+  /** false = 서버 15초 마감 채움(`filled: true`, #565) — 추정이 아니라 미도착과 같게 다룬다(현행 unable 행).
+   *  filled 필드가 없는 서버(배포 전)만 내용(UNKNOWN·설명 null·재료 0)으로 판별. */
+  estimated: boolean;
+}
+
+/**
+ * KB-992: AI 추정 결과 매핑. ⚠️ false-safe 0 — SAFE·미지 = unable, DANGER = caution
+ * (발주: 뱃지는 CAUTION/UNABLE 두 가지만, 경고는 내리지 않는 쪽). 미지 kind = 음식으로 취급(행 유지 — 숨김보다 안전).
+ */
+export function adaptPendingItem(w: ScanPendingItemWire): AiPendingItem {
+  const lv = w.riskLevel;
+  const text = (v: string | null | undefined) => (typeof v === 'string' && v.trim() ? v : null);
+  const risk: AiPendingItem['risk'] = lv === 'CAUTION' || lv === 'DANGER' ? 'caution' : 'unable'; // UNKNOWN·SAFE·미지 = unable
+  const description = text(w.description);
+  // 확정 계약 = 코드 문자열 배열. 초안의 객체 모양(overlapped)도 받는다 — 겹친 것만
+  const avoidCodes = [...new Set((w.avoidances ?? []).flatMap((a) =>
+    typeof a === 'string' ? (a.trim() ? [a.trim()] : []) : a && a.overlapped === true && a.code ? [a.code] : [],
+  ))];
+  return {
+    pendingId: w.pendingId,
+    kind: w.kind === 'NOT_FOOD' ? 'notFood' : w.kind === 'DRINK' ? 'drink' : 'dish',
+    name: text(w.name),
+    koreanName: text(w.koreanName),
+    description,
+    risk,
+    avoidCodes,
+    estimated: typeof w.filled === 'boolean' ? !w.filled : risk === 'caution' || description != null || avoidCodes.length > 0,
+  };
 }

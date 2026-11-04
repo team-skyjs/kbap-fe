@@ -23,6 +23,9 @@ import { Pressable } from '@/components/Pressable';
 import { openWebPage } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow, type RiskState, radius } from '@/lib/theme';
+import type { AiPendingItem } from '@/lib/api/scanAdapter';
+import { SkBar, SkImg } from '@/components/Skeleton';
+import { restrictionLabel } from '@/lib/onboarding/data';
 
 /** P-171 ① → P-223: 칩 폭 근사 — 통합 칩 메트릭(패딩 8×2·보더·RiskMark 11) 기반.
  *  CJK ≈ 폰트폭, 라틴/숫자 ≈ 절반. ponytail: 문자폭 근사 휴리스틱 — 오차는 이르게
@@ -54,6 +57,12 @@ import { BrandGoogleMark, D4Minus } from '@/components/design4Assets';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw, type ResultDish } from '@/lib/scan/segmentMenu';
+
+/** KB-992: 'AI 추정' 섹션 한 줄 — ai = null이면 도착 전(스켈레톤). */
+export interface AiRow {
+  dish: ResultDish;
+  ai: AiPendingItem | null;
+}
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
 
@@ -95,6 +104,8 @@ export function ScanRichList({
   onOpen,
   onMarkPress,
   onClosestMatch,
+  aiRows = [],
+  onOpenAi,
   t,
 }: {
   dishes: ResultDish[];
@@ -108,6 +119,9 @@ export function ScanRichList({
   onMarkPress?: () => void;
   /** KB-789: 대체 행(substituted) Closest match 칩 탭 → 설명 카드(행 탭 = 상세 그대로) */
   onClosestMatch?: (d: ResultDish) => void;
+  /** KB-992: DB 매칭 목록 아래 'AI 추정' 섹션(담기 없음 · 탭 = 미등록 안내 카드) */
+  aiRows?: AiRow[];
+  onOpenAi?: (r: AiRow) => void;
   t: TFn;
 }) {
   return (
@@ -116,6 +130,19 @@ export function ScanRichList({
       {dishes.map((d) => (
         <RichRow key={d.itemId} dish={d} currency={currency} fx={fx} qty={cart.get(d.itemId) ?? 0} onAdd={() => onAdd(d)} onRemove={() => onRemove(d)} onOpen={() => onOpen(d)} onMarkPress={onMarkPress} onClosestMatch={onClosestMatch ? () => onClosestMatch(d) : undefined} t={t} />
       ))}
+
+      {aiRows.length > 0 && (
+        <View testID="ai-section">
+          <View style={styles.aiHead}>
+            <View style={styles.aiHeadTitleRow}>
+              <IconSparkles size={16} color={C.primary} />
+              <Text style={styles.aiHeadTitle}>{t('scan.aiSectionTitle')}</Text>
+            </View>
+            <Text style={styles.aiHeadNote}>{t('scan.aiSectionNote')}</Text>
+          </View>
+          {aiRows.map((r) => (r.ai ? <AiFilledRow key={r.dish.itemId} row={r} ai={r.ai} onOpen={() => onOpenAi?.(r)} t={t} /> : <AiPendingRow key={r.dish.itemId} dish={r.dish} />))}
+        </View>
+      )}
 
       <Text style={styles.footNote}>{t('scan.listFootNote')}</Text>
     </View>
@@ -174,7 +201,9 @@ function RichRow({
           회색 박스가 되던 결함(9/10 실기). */}
       <View style={styles.thumbWrap}>
         <View style={styles.thumb}>
-          <CardPhoto uri={thumb} borderRadius={radius.md} />
+          {/* QA #428: 행 key = itemId(스캔마다 0부터 재사용) → 다시 찍으면 같은 인스턴스가 직전 스캔 사진을 ~0.5초 보여 줬다.
+              recyclingKey가 바뀌면 expo-image가 옛 사진을 즉시 비운다 — 매칭 = foodId(상세 로딩 중 thumb null→URL로 깜빡이지 않게), 미매칭 = thumb. */}
+          <CardPhoto uri={thumb} recyclingKey={dish.foodId ?? thumb ?? undefined} borderRadius={radius.md} />
         </View>
         <Pressable style={styles.thumbBadge} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
           <RiskBadge state={dish.risk} />
@@ -278,6 +307,51 @@ function RichRow({
   );
 }
 
+/** KB-992: 도착 전 — 메뉴판 이름은 이미 알고 있으니 보이고, 판정 자리(배지·설명·칩)만 스켈레톤. */
+function AiPendingRow({ dish }: { dish: ResultDish }) {
+  return (
+    <View style={styles.row} testID={`ai-pending-${dish.itemId}`}>
+      <SkImg w={118} h={118} r={radius.md} />
+      <View style={{ flex: 1, minWidth: 0, gap: 8 }}>
+        <Text style={styles.nameTitle} numberOfLines={1}>{dish.koreanName ?? dish.displayName ?? dish.rawMenuName}</Text>
+        <SkBar w={140} />
+        <SkBar w={90} />
+      </View>
+    </View>
+  );
+}
+
+/** KB-992: AI 추정 도착 — 배지는 caution|unable만(타입·어댑터 이중), 'AI 추정' SVG 칩, 담기 슬롯 없음. */
+function AiFilledRow({ row, ai, onOpen, t }: { row: AiRow; ai: AiPendingItem; onOpen: () => void; t: TFn }) {
+  const d = row.dish;
+  const ko = ai.koreanName ?? d.koreanName ?? d.rawMenuName;
+  const name = ai.name ?? d.displayName ?? ko;
+  // S-959: 회피 재료 = 코드만 온다(재료별 위험도 없음) → caution 칩(형태+색, safe 0), 이름은 렌더 시점 라벨
+  const warns = ai.avoidCodes.map((code) => ({ code, name: restrictionLabel(code), risk: 'caution' as const }));
+  return (
+    <Pressable style={styles.row} onPress={onOpen} testID={`ai-${d.itemId}`}>
+      <View style={styles.thumbWrap}>
+        <View style={styles.thumb}>
+          <CardPhoto uri={d.imageUrl ?? null} recyclingKey={d.imageUrl ?? undefined} borderRadius={radius.md} />
+        </View>
+        <View style={styles.thumbBadge} testID={`ai-badge-${d.itemId}`}>
+          <RiskBadge state={ai.risk} />
+        </View>
+      </View>
+      <View style={{ flex: 1, minWidth: 0, flexShrink: 1, gap: 3 }}>
+        {!!ko && ko !== name && <Text style={styles.nameSubKo} numberOfLines={1}>{ko}</Text>}
+        <Text style={styles.nameTitle} numberOfLines={1}>{name}</Text>
+        <View style={styles.closestChip} testID={`ai-chip-${d.itemId}`}>
+          <IconSparkles size={12} color={C.primary} />
+          <Text style={styles.closestChipText} numberOfLines={1}>{t('scan.aiSectionTitle')}</Text>
+        </View>
+        {!!ai.description && <Text style={styles.desc} numberOfLines={1}>{ai.description}</Text>}
+        <WarnChips warns={warns} testID={`ai-warn-${d.itemId}`} moreTestID={`ai-warn-more-${d.itemId}`} />
+      </View>
+    </Pressable>
+  );
+}
+
 /** 기피 경고 칩 1줄(KB-432 §1-1 · P-171 접기 · P-223 색+형태) — 메뉴판 결과 줄과 가공식품 후보 줄(KB-914 R-138)이 같이 쓴다.
  *  warns는 호출측이 danger 우선으로 정렬해 넘긴다. 칩 = 마크 16 + 이름 · 넘치면 "+n" */
 export function WarnChips({ warns, testID, moreTestID }: { warns: { code: string; name: string; risk: RiskState }[]; testID: string; moreTestID: string }) {
@@ -326,7 +400,12 @@ const styles = StyleSheet.create({
   // KB-789(14289:8235): Closest match 칩 — primary 12% 틴트 · pad 2/8 · pill · 11/600 primary. 보더 없음(상태 전환 없는 정적 칩).
   closestChip: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 8, borderRadius: radius.pill, backgroundColor: 'rgba(255,113,52,0.12)' },
   closestChipText: { fontSize: 12, fontWeight: '600', color: C.primary },
-  body: { paddingHorizontal: 20, paddingBottom: 120 }, // A-SC-05(KB-486)
+  body: { paddingHorizontal: 20, paddingBottom: 120 },
+  // KB-992: 'AI 추정' 섹션 머리 — 위 목록과 구분선 + sparkles 16 + 제목 + 안내 1~2줄
+  aiHead: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: 20, gap: 4 },
+  aiHeadTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  aiHeadTitle: { fontSize: 16, fontWeight: '700', color: '#2F3137' },
+  aiHeadNote: { fontSize: 13, lineHeight: 18, color: C.ink3 }, // A-SC-05(KB-486)
   // P-160 B안(.bnrB 전사): surface2 바탕 + 하단 보더 + 대문자 캡션 + 칩 스트립
   bar: { backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: C.line, paddingTop: 10, paddingBottom: 11, paddingHorizontal: 16 },
   barCap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
