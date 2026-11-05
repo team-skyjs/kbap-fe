@@ -7,13 +7,12 @@
  */
 import * as React from 'react';
 import * as fs from 'fs';
-import { TextInput } from 'react-native';
+import { AppState, TextInput } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // jest.mock은 babel-jest가 import 위로 올린다 — 목이 먼저 걸린다
 import ChatRoute, { CHAT_READ_RETRY_MS, chatErrorKey, chatRows, chatTime } from '@/app/chat';
 import { FLAGS } from '@/lib/flags';
-import { AppState } from 'react-native';
 import { ChatFab, chatFabBottom } from '@/features/chat/ChatFab';
 import { adaptChatMessage, adaptChatPage, adaptChatUnread } from '@/lib/api/chatAdapter';
 import { routeForNotificationData } from '@/lib/push/pushAdapter';
