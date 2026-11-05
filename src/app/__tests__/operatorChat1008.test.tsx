@@ -7,7 +7,7 @@
  */
 import * as React from 'react';
 import * as fs from 'fs';
-import { AppState, TextInput } from 'react-native';
+import { AppState, StyleSheet, TextInput } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // jest.mock은 babel-jest가 import 위로 올린다 — 목이 먼저 걸린다
@@ -17,6 +17,7 @@ import { ChatFab, chatFabBottom } from '@/features/chat/ChatFab';
 import { adaptChatMessage, adaptChatPage, adaptChatUnread, chatTimeIso } from '@/lib/api/chatAdapter';
 import { routeForNotificationData } from '@/lib/push/pushAdapter';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
+import { color as C } from '@/lib/theme';
 
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = jest.requireActual('react-native');
@@ -325,6 +326,34 @@ describe('② 채팅 화면', () => {
     const r = await mount(<ChatRoute />);
     expect(input(r).props.value).toBe('ads.reportPrefill');
     expect(mockPost.mock.calls.filter((c) => c[0] === '/api/chat/messages')).toHaveLength(0);
+  });
+});
+
+describe('④ 로고·플로팅 버튼 색 (11/5 예진 실기)', () => {
+  const MARK_VIEWBOX = '0 -1.528 18.551 21.528'; // AppBarMark = kbap-design/brand/appbar-mark.svg
+  const flat = (r: ReactTestRenderer, id: string) => StyleSheet.flatten(r.root.find((n) => n.props?.testID === id && typeof n.type === 'string' || (n.props?.testID === id && n.props?.style)).props.style);
+  it('팀 줄·운영진 아바타 = 흰 원 + 정본 마크(AppBarMark) · 폐기 BrandTile(주황 타일) 0', async () => {
+    routeGets(page([msg(5, 'OPERATOR', 'Hello from team')]));
+    const r = await mount(<ChatRoute />);
+    const avatars = r.root.findAll((n) => n.props?.testID === 'chat-team-avatar' && !!n.props?.style);
+    expect(avatars.length).toBeGreaterThanOrEqual(2); // 팀 줄 + 메시지
+    for (const a of avatars) {
+      expect(StyleSheet.flatten(a.props.style).backgroundColor).toBe(C.surface);
+      expect(a.findAll((n) => n.props?.viewBox === MARK_VIEWBOX).length).toBeGreaterThan(0);
+    }
+    expect(r.root.findAll((n) => n.props?.fill === C.primary && n.props?.rx !== undefined)).toHaveLength(0);
+    expect(fs.readFileSync('src/app/chat.tsx', 'utf8')).not.toMatch(/BrandTile|KbowlMark/);
+  });
+  it('FAB = 흰 바탕 + 주황 선 말풍선(채움 없음) + C.line 테두리 · 위험도 색·검정 아님 · 안읽음 점 흰 테두리 2.5', async () => {
+    routeGets(page([]), { unreadCount: 1, lastOperatorMessage: { content: 'hi', createdAt: 'x' } });
+    const r = await mount(<ChatFab activeRoute="index" />);
+    const fab = flat(r, 'chat-fab');
+    expect(fab).toMatchObject({ backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, shadowOpacity: 0.07 });
+    expect([C.riskSafe, C.riskCaution, C.riskDanger, C.riskUnable, C.primary, C.ink]).not.toContain(fab.backgroundColor);
+    const icon = r.root.find((n) => n.props?.testID === 'chat-fab').findAll((n) => n.props?.stroke !== undefined);
+    expect(icon.length).toBeGreaterThan(0);
+    expect(icon[0].props).toMatchObject({ stroke: C.primary, fill: 'none' }); // 선만 주황
+    expect(flat(r, 'chat-fab-dot')).toMatchObject({ borderWidth: 2.5, borderColor: C.surface });
   });
 });
 
