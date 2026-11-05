@@ -11,7 +11,9 @@ import { TextInput } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // jest.mock은 babel-jest가 import 위로 올린다 — 목이 먼저 걸린다
-import ChatScreen, { chatErrorKey, chatRows, chatTime } from '@/app/chat';
+import ChatRoute, { CHAT_READ_RETRY_MS, chatErrorKey, chatRows, chatTime } from '@/app/chat';
+import { FLAGS } from '@/lib/flags';
+import { AppState } from 'react-native';
 import { ChatFab, chatFabBottom } from '@/features/chat/ChatFab';
 import { adaptChatMessage, adaptChatPage, adaptChatUnread } from '@/lib/api/chatAdapter';
 import { routeForNotificationData } from '@/lib/push/pushAdapter';
@@ -48,11 +50,13 @@ jest.mock('react-i18next', () => ({
 }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 const mockPush = jest.fn();
+const mockRedirect = jest.fn();
 let mockQuery: Record<string, string> = {};
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => mockQuery,
   useSegments: () => ['chat'],
+  Redirect: ({ href }: { href: string }) => { mockRedirect(href); return null; },
   useFocusEffect: (cb: () => (() => void) | void) => {
     const R = jest.requireActual('react') as typeof import('react');
     R.useEffect(() => {
@@ -92,8 +96,9 @@ function routeGets(messages: unknown, unread: unknown = { unreadCount: 0, lastOp
 async function settle() {
   for (let i = 0; i < 4; i++) await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); // TanStack 알림 = setTimeout(0)
 }
+let lastQc: QueryClient;
 async function mount(el: React.ReactElement): Promise<ReactTestRenderer> {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } } });
+  const qc = (lastQc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } } }));
   let r!: ReactTestRenderer;
   await act(async () => { r = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); });
   await settle();
@@ -113,6 +118,8 @@ beforeEach(() => {
   mockQuery = {};
   mockGen = 1;
   mockSession = true;
+  // Codex #441 P1: 킬스위치 = DEV_SERVER_CHANNEL(이 스위트 jest 채널에선 false — 메모 jest-flag-default-varies-by-suite) → 채팅 켠 상태로 고정
+  (FLAGS as { operatorChatEnabled: boolean }).operatorChatEnabled = true;
   mockPost.mockResolvedValue(msg(10, 'USER', 'hi'));
 });
 
@@ -145,15 +152,25 @@ describe('① 어댑터·행·시간·딥링크', () => {
   it('에러 코드 → 문구 키(서버 message 노출 0) · 미지 = 일반 실패', () => {
     expect(['CHAT-001', 'FEEDBACK-001', 'FEEDBACK-002', 'COMMON-002', 'X', undefined].map(chatErrorKey)).toEqual(['chat.rateLimited', 'chat.tooLong', 'chat.photoInvalid', 'chat.invalid', 'chat.sendFailed', 'chat.sendFailed']);
   });
-  it('푸시 OPERATOR_CHAT → /chat', () => {
+  it('푸시 OPERATOR_CHAT → /chat · Codex #441 P2: 킬스위치 off = 기존 문의 화면', () => {
     expect(routeForNotificationData({ type: 'OPERATOR_CHAT', conversationId: 7 })).toBe('/chat');
+    const prev = FLAGS.operatorChatEnabled;
+    (FLAGS as { operatorChatEnabled: boolean }).operatorChatEnabled = false;
+    try {
+      expect(routeForNotificationData({ type: 'OPERATOR_CHAT', conversationId: 7 })).toBe('/profile/feedback');
+    } finally {
+      (FLAGS as { operatorChatEnabled: boolean }).operatorChatEnabled = prev;
+    }
+  });
+  it('Codex #441 P1: 킬스위치 = dev 서버 채널만(운영·프리뷰·teamtest-prod 404 방지) — 상수 true 금지', () => {
+    expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('operatorChatEnabled: DEV_SERVER_CHANNEL,');
   });
 });
 
 describe('② 채팅 화면', () => {
   it('빈 방 = 기본 인사 + 팀 줄 · 조회 = 버전 헤더 1.0 · limit 30', async () => {
     routeGets(page([]));
-    const r = await mount(<ChatScreen />);
+    const r = await mount(<ChatRoute />);
     expect(mockGet).toHaveBeenCalledWith('/api/chat/messages?limit=30', H);
     expect(has(r, 'chat-greeting')).toBe(true);
     expect(has(r, 'chat-team-bar')).toBe(true);
@@ -164,7 +181,7 @@ describe('② 채팅 화면', () => {
   });
   it('운영진 메시지가 있으면 인사 없음 · 맨 아래 보는 중 = 최신 id로 읽음 1회 · 지난 문의 구분선', async () => {
     routeGets(page([msg(5, 'OPERATOR', 'Hello from team'), msg(4, 'USER', 'q'), msg(3, 'USER', 'old', true)]));
-    const r = await mount(<ChatScreen />);
+    const r = await mount(<ChatRoute />);
     expect(has(r, 'chat-greeting')).toBe(false);
     expect(has(r, 'chat-op-5')).toBe(true);
     expect(has(r, 'chat-me-4')).toBe(true);
@@ -180,7 +197,7 @@ describe('② 채팅 화면', () => {
   });
   it('보내기 = 본문만(사진 0이면 imagePaths 없음) · 버전 헤더 · 성공 뒤 보내는 중 말풍선 사라짐', async () => {
     routeGets(page([]));
-    const r = await mount(<ChatScreen />);
+    const r = await mount(<ChatRoute />);
     await act(async () => { input(r).props.onChangeText('  hi there  '); });
     await press(r, 'chat-send');
     // S-971 확정: deviceInfo = 문의와 같은 수집 재사용 · 사진 0 = imagePaths 없음
@@ -191,7 +208,7 @@ describe('② 채팅 화면', () => {
   it('429 CHAT-001 = 전용 안내(서버 문구 0) + 실패 말풍선 → 탭 = 다시 보내기', async () => {
     routeGets(page([]));
     mockPost.mockRejectedValueOnce(Object.assign(new Error('server says no'), { code: 'CHAT-001' }));
-    const r = await mount(<ChatScreen />);
+    const r = await mount(<ChatRoute />);
     await act(async () => { input(r).props.onChangeText('hi'); });
     await press(r, 'chat-send');
     expect(mockToast).toHaveBeenCalledWith('chat.rateLimited', { error: true });
@@ -202,7 +219,7 @@ describe('② 채팅 화면', () => {
   });
   it('빈 본문 = 보내기 비활성(색만 — 크기 같음)', async () => {
     routeGets(page([]));
-    const r = await mount(<ChatScreen />);
+    const r = await mount(<ChatRoute />);
     const btn = () => r.root.findAll((n) => n.props?.testID === 'chat-send' && n.props.style !== undefined)[0];
     const off = JSON.stringify(btn().props.style);
     expect(btn().props.disabled).toBe(true);
@@ -213,7 +230,7 @@ describe('② 채팅 화면', () => {
   it('세션 경계: 응답 도착 전에 로그아웃·계정 전환(세대 bump)되면 옛 대화를 캐시에 올리지 않는다', async () => {
     let resolve!: (v: unknown) => void;
     mockGet.mockImplementation((path: string) => (path.startsWith('/api/chat/messages') ? new Promise((r) => { resolve = r; }) : Promise.resolve({ unreadCount: 0 })));
-    const r = await mount(<ChatScreen />);
+    const r = await mount(<ChatRoute />);
     mockGen = 2; // 요청 중 세션 바뀜
     await act(async () => { resolve(page([msg(5, 'OPERATOR', 'previous user secret')])); });
     await settle();
@@ -223,16 +240,77 @@ describe('② 채팅 화면', () => {
   it('S-971: 사진 첨부 = 로그인 사용자만 — 게스트·세션 미확정 = 버튼 없음, 회원 = 있음', async () => {
     routeGets(page([]));
     mockSession = false;
-    expect(has(await mount(<ChatScreen />), 'chat-photo-add')).toBe(false);
+    expect(has(await mount(<ChatRoute />), 'chat-photo-add')).toBe(false);
     mockSession = null;
-    expect(has(await mount(<ChatScreen />), 'chat-photo-add')).toBe(false);
+    expect(has(await mount(<ChatRoute />), 'chat-photo-add')).toBe(false);
     mockSession = true;
-    expect(has(await mount(<ChatScreen />), 'chat-photo-add')).toBe(true);
+    expect(has(await mount(<ChatRoute />), 'chat-photo-add')).toBe(true);
+  });
+  it('Codex #441 P2: 킬스위치 off면 /chat 진입 = 문의 화면으로 이동 · 채팅 API 호출 0', async () => {
+    const prev = FLAGS.operatorChatEnabled;
+    (FLAGS as { operatorChatEnabled: boolean }).operatorChatEnabled = false;
+    try {
+      routeGets(page([]));
+      await mount(<ChatRoute />);
+      expect(mockRedirect).toHaveBeenCalledWith('/profile/feedback');
+      expect(mockGet).not.toHaveBeenCalled();
+    } finally {
+      (FLAGS as { operatorChatEnabled: boolean }).operatorChatEnabled = prev;
+    }
+  });
+  it('Codex #441 P2: 앱이 백그라운드면 읽음 처리 0 → 전경 복귀 때 1회', async () => {
+    let onChange: (s: string) => void = () => {};
+    const orig = AppState.addEventListener;
+    (AppState as unknown as { addEventListener: unknown }).addEventListener = (_: string, cb: (s: string) => void) => { onChange = cb; return { remove: () => {} }; };
+    try {
+      routeGets(page([]));
+      await mount(<ChatRoute />);
+      await act(async () => { onChange('background'); });
+      routeGets(page([msg(9, 'OPERATOR', 'reply while away')]));
+      await act(async () => { await lastQc.invalidateQueries({ queryKey: ['chat', 'messages'] }); }); // 폴링 한 번 흉내
+      await settle();
+      expect(mockPost.mock.calls.filter((c) => c[0] === '/api/chat/read')).toHaveLength(0);
+      await act(async () => { onChange('active'); });
+      await settle();
+      expect(mockPost).toHaveBeenCalledWith('/api/chat/read', { lastMessageId: '9' }, H);
+    } finally {
+      (AppState as unknown as { addEventListener: unknown }).addEventListener = orig;
+    }
+  });
+  it('Codex #441 P2: 읽음 실패 = 10초 뒤 재시도(같은 최신 id여도)', async () => {
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick', 'queueMicrotask'] });
+    try {
+      routeGets(page([msg(5, 'OPERATOR', 'hi')]));
+      mockPost.mockImplementation((path: string) => (path === '/api/chat/read' ? Promise.reject(new Error('NETWORK')) : Promise.resolve(msg(10, 'USER', 'x'))));
+      const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+      await act(async () => { renderer.create(<QueryClientProvider client={qc}><ChatRoute /></QueryClientProvider>); });
+      for (let i = 0; i < 5; i++) await act(async () => { jest.advanceTimersByTime(1); await Promise.resolve(); });
+      const reads = () => mockPost.mock.calls.filter((c) => c[0] === '/api/chat/read').length;
+      expect(reads()).toBe(1);
+      mockPost.mockImplementation(() => Promise.resolve(undefined));
+      await act(async () => { jest.advanceTimersByTime(CHAT_READ_RETRY_MS); await Promise.resolve(); await Promise.resolve(); });
+      expect(reads()).toBe(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+  it('Codex #441 P2: 같은 틱 더블탭 = 말풍선 1개·요청 1개(보내는 중에 영영 남는 유령 말풍선 0)', async () => {
+    routeGets(page([]));
+    let resolve!: (v: unknown) => void;
+    mockPost.mockImplementation(() => new Promise((r) => { resolve = r; }));
+    const r = await mount(<ChatRoute />);
+    await act(async () => { input(r).props.onChangeText('hi'); });
+    const send = r.root.findAll((n) => n.props?.testID === 'chat-send' && typeof n.props.onPress === 'function')[0];
+    await act(async () => { send.props.onPress(); send.props.onPress(); });
+    expect(r.root.findAll((n) => n.props?.testID === 'chat-out-sending' && typeof n.type === 'string')).toHaveLength(1);
+    expect(mockPost.mock.calls.filter((c) => c[0] === '/api/chat/messages')).toHaveLength(1);
+    await act(async () => { resolve(msg(10, 'USER', 'hi')); });
+    await settle();
   });
   it('광고 신고(?prefill=ad) = 입력창만 채움 · 자동 전송 0', async () => {
     mockQuery = { prefill: 'ad' };
     routeGets(page([]));
-    const r = await mount(<ChatScreen />);
+    const r = await mount(<ChatRoute />);
     expect(input(r).props.value).toBe('ads.reportPrefill');
     expect(mockPost.mock.calls.filter((c) => c[0] === '/api/chat/messages')).toHaveLength(0);
   });

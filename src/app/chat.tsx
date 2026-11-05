@@ -10,7 +10,7 @@
  */
 import * as React from 'react';
 import { FlatList, Image, KeyboardAvoidingView, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,8 +28,13 @@ import { useUploadAbort } from '@/lib/useUploadAbort';
 import { isUploadAborted } from '@/lib/api/uploadAbort';
 import { pickLibraryPhotos } from '@/features/feedback/FeedbackForm';
 import { useSession } from '@/lib/auth/useSession';
+import { useAppActive } from '@/lib/useAppActive';
+import { FLAGS } from '@/lib/flags';
 import { CHAT_KEYS, CHAT_MAX_LEN, CHAT_MAX_PHOTOS, markChatRead, useChatMessages, useSendChat, type ChatMessage } from '@/lib/data/useChat';
 import { color as C, radius } from '@/lib/theme';
+
+/** Codex #441 P2: 읽음 실패 재시도 간격 */
+export const CHAT_READ_RETRY_MS = 10_000;
 
 /** 보낸 직후 서버 재조회 전까지 들고 있는 내 말풍선(실패면 탭해서 다시 보내기) */
 interface Outgoing {
@@ -71,7 +76,12 @@ export function chatRows(outgoing: Outgoing[], items: ChatMessage[]): Row[] {
   return rows;
 }
 
-export default function ChatScreen() {
+/** Codex #441 P2: 킬스위치가 꺼져 있으면 /chat 진입(알림 탭·딥링크 포함) = 기존 문의 화면으로 — 채팅 API는 부르지 않는다 */
+export default function ChatRoute() {
+  return FLAGS.operatorChatEnabled ? <ChatScreen /> : <Redirect href={'/profile/feedback' as Href} />;
+}
+
+export function ChatScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -98,21 +108,30 @@ export default function ChatScreen() {
   const canAttach = useSession() === true;
   // '오늘' 기준 시각 = 마운트 때 한 번(state) — 렌더 중 new Date()는 React Compiler 메모에 굳는다(KB-697 sweep)
   const [now] = React.useState(() => new Date());
+  // Codex #441 P2: 앱을 내려도 화면 포커스는 그대로 — 전경일 때만 읽음 처리(내려 둔 사이 온 답장은 안읽음으로 남는다)
+  const appActive = useAppActive();
+  // Codex #441 P2: 읽음 실패는 재시도 예약 — 같은 최신 id면 effect가 다시 안 돌아 영영 안읽음이 됐다
+  const [readRetry, setReadRetry] = React.useState(0);
 
   const items = q.data?.flat ?? [];
   const newestId = items[0]?.id ?? null;
   // 읽음 = 보이는 중 + 맨 아래 + 새 최신 id일 때 1회(조회로는 읽음 안 됨 — S-971)
   const lastRead = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (!focused || !atBottom || !newestId || lastRead.current === newestId) return;
+    if (!focused || !appActive || !atBottom || !newestId || lastRead.current === newestId) return;
     lastRead.current = newestId;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     void markChatRead(newestId)
       .then(() => qc.invalidateQueries({ queryKey: CHAT_KEYS.unread }))
-      .catch(() => { lastRead.current = null; }); // 실패 = 다음 기회에 다시
-  }, [focused, atBottom, newestId, qc]);
+      .catch(() => {
+        lastRead.current = null; // 실패 = 10초 뒤 다시(화면을 떠나면 effect 정리로 취소)
+        timer = setTimeout(() => setReadRetry((n) => n + 1), CHAT_READ_RETRY_MS);
+      });
+    return () => clearTimeout(timer);
+  }, [focused, appActive, atBottom, newestId, qc, readRetry]);
 
-  const deliver = (o: Outgoing) =>
-    void guard.run(async () => {
+  // 보내기 본체 — 제출 가드 안에서만 부른다(아래 onSend·재전송)
+  const deliverInner = async (o: Outgoing) => {
       setOutgoing((cur) => cur.map((x) => (x.localId === o.localId ? { ...x, failed: false } : x)));
       try {
         await send.mutateAsync({ content: o.content, photoUris: o.photos, signal: nextUploadSignal() }); // onSuccess 재조회까지 기다린다
@@ -122,17 +141,22 @@ export default function ChatScreen() {
         setOutgoing((cur) => cur.map((x) => (x.localId === o.localId ? { ...x, failed: true } : x)));
         showTopToast(t(chatErrorKey((e as { code?: string })?.code)), { error: true }); // 서버 message 노출 0
       }
-    });
+  };
+  const deliver = (o: Outgoing) => void guard.run(() => deliverInner(o));
 
   const canSend = body.trim().length > 0 && !guard.busy;
+  // Codex #441 P2: 보낼 말풍선 만들기·입력창 비우기도 같은 동기 가드 안 — 같은 틱 더블탭이면 두 번째는 말풍선조차 안 생긴다
+  // (밖에 두면 두 번째 말풍선이 요청 없이 '보내는 중'에 영영 남았다)
   const onSend = () => {
     if (!canSend) return;
-    // 로그인 중 고른 사진이 있어도 그새 게스트가 됐으면 싣지 않는다(서버 400 FEEDBACK-002 예방)
-    const o: Outgoing = { localId: `${Date.now()}-${Math.random()}`, content: body.trim().slice(0, CHAT_MAX_LEN), photos: canAttach ? photos : [], failed: false };
-    setOutgoing((cur) => [...cur, o]);
-    setBody('');
-    setPhotos([]);
-    deliver(o);
+    void guard.run(async () => {
+      // 로그인 중 고른 사진이 있어도 그새 게스트가 됐으면 싣지 않는다(서버 400 FEEDBACK-002 예방)
+      const o: Outgoing = { localId: `${Date.now()}-${Math.random()}`, content: body.trim().slice(0, CHAT_MAX_LEN), photos: canAttach ? photos : [], failed: false };
+      setOutgoing((cur) => [...cur, o]);
+      setBody('');
+      setPhotos([]);
+      await deliverInner(o);
+    });
   };
 
   const pickPhoto = async () => {
