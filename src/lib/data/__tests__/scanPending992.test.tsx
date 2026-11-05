@@ -18,6 +18,10 @@ const wire = (p: Partial<ScanResultWire>): ScanResultWire => ({ matched: false, 
 const item = (pendingId: string, extra: Record<string, unknown> = {}) => ({ pendingId, kind: 'DISH', name: pendingId, riskLevel: 'CAUTION', aiEstimated: true, ...extra });
 
 describe('어댑터', () => {
+  it('P-616(S-970): notMenu = 엄격 true만(부재·이상값 = 일반 판정 줄 — 숨김보다 남는 쪽)', () => {
+    const out = photoOnlyResults([wire({ notMenu: true }), wire({ notMenu: false }), wire({}), wire({ notMenu: 'yes' as never })]);
+    expect(out.map((o) => o.notMenu)).toEqual([true, false, false, false]);
+  });
   it('KB-1006: 맵기 ceil(s/2) → 고추 1~5 · 0·-1·결측 = 0 / 수량 옵션 2개 이상만(이상값 칸 버림) / 사진 상태', () => {
     expect([10, 9, 3, 1, 0, -1, null, undefined, 99].map(spiceRank)).toEqual([5, 5, 2, 1, 0, 0, 0, 0, 5]);
     expect(mapPriceOptions([{ label: '10개', priceKrw: 11000 }, { label: '20개', priceKrw: 22000 }])).toEqual([{ label: '10개', priceKrw: 11000 }, { label: '20개', priceKrw: 22000 }]);
@@ -179,6 +183,33 @@ describe('useScanPending', () => {
     await advance(10_000);
     expect(mockGet).toHaveBeenCalledTimes(2); // 한 번만 — 폴링 재개 0
     expect(mockTrack.mock.calls.filter((c) => c[0] === 'scan_ai_item_filled')).toHaveLength(1); // 사진 갱신은 새 도착이 아니다
+  });
+
+  it('S-975: 재진입 재조회에 늦은 추정 + 사진 GENERATING이 오면 새 60초 예산으로 폴링 재개 → READY 받고 끝', async () => {
+    mockGet.mockResolvedValueOnce({ items: [item('p1', { filled: true, riskLevel: 'UNKNOWN', name: null })], done: true, imagesDone: true });
+    mount('s1');
+    await flush();
+    expect(out.polling).toBe(false);
+    update('s1', false);
+    await advance(90_000); // 첫 예산(60초) 지난 뒤
+    mockGet
+      .mockResolvedValueOnce({ items: [item('p1', { filled: false, imageStatus: 'GENERATING' })], done: true, imagesDone: false })
+      .mockResolvedValueOnce({ items: [item('p1', { filled: false, imageStatus: 'GENERATING' })], done: true, imagesDone: false })
+      .mockResolvedValueOnce({ items: [item('p1', { filled: false, imageStatus: 'READY', imageUrl: 'https://cdn/r.webp' })], done: true, imagesDone: true });
+    update('s1', true);
+    await flush();
+    await flush();
+    expect(out.polling).toBe(true); // 재개
+    expect((out.items[0] as unknown as { estimated: boolean }).estimated).toBe(true); // 채움 → 추정
+    await advance(1000);
+    await flush();
+    await advance(1000);
+    await flush();
+    expect((out.items[0] as unknown as { imageUrl: string }).imageUrl).toBe('https://cdn/r.webp');
+    expect(out.polling).toBe(false);
+    const n = mockGet.mock.calls.length;
+    await advance(5000);
+    expect(mockGet).toHaveBeenCalledTimes(n);
   });
 
   it('P-617: 상태 TTL(10분)이 지났으면 재진입해도 재조회 0', async () => {

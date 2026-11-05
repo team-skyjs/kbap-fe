@@ -335,6 +335,8 @@
     "aiGeneratedPhoto": "AI生成",
     "aiPhotoGenerating": "写真を作成中",
     "aiDetailIngredients": "主な材料",
+    "addOnsTitle": "追加とオプション",
+    "addOnsNote": "追加の具材やオプションです。中身はスタッフに確認してください。",
     "searchOnGoogle": "Googleで検索",
     "resultsEmpty": "スキャン結果がありません",
     "viewOrderAction": "注文を見る",

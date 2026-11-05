@@ -347,6 +347,8 @@
     "aiGeneratedPhoto": "Фото ИИ",
     "aiPhotoGenerating": "Создаём фото",
     "aiDetailIngredients": "Основные ингредиенты",
+    "addOnsTitle": "Добавки и опции",
+    "addOnsNote": "Это дополнительные ингредиенты или опции. Уточните у персонала, что в них входит.",
     "searchOnGoogle": "Искать в Google",
     "resultsEmpty": "Нет результатов сканирования",
     "viewOrderAction": "Заказ",

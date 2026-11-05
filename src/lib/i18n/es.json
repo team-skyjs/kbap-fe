@@ -335,6 +335,8 @@
     "aiGeneratedPhoto": "Imagen IA",
     "aiPhotoGenerating": "Creando foto",
     "aiDetailIngredients": "Ingredientes principales",
+    "addOnsTitle": "Extras y opciones",
+    "addOnsNote": "Son ingredientes extra u opciones. Pregunta al personal qué llevan.",
     "searchOnGoogle": "Buscar en Google",
     "resultsEmpty": "Sin resultados de escaneo",
     "viewOrderAction": "Ver pedido",

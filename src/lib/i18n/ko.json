@@ -335,6 +335,8 @@
     "aiGeneratedPhoto": "AI 생성",
     "aiPhotoGenerating": "사진 만드는 중",
     "aiDetailIngredients": "주요 재료",
+    "addOnsTitle": "추가와 옵션",
+    "addOnsNote": "추가 재료나 옵션이에요. 들어가는 재료는 직원에게 확인해 주세요.",
     "searchOnGoogle": "구글에서 검색",
     "resultsEmpty": "스캔 결과가 없어요",
     "viewOrderAction": "주문 보기",

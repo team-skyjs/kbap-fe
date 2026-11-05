@@ -995,6 +995,20 @@ describe('KB-992 AI 추정 섹션', () => {
       expect(has(tree, 'chip-neutral-FLOUR')).toBe(true);
       expect(has(tree, 'chip-neutral-EGG')).toBe(false);
     });
+    it('S-975: 15초 마감 채움(위 목록 unable 줄)이 재조회로 늦은 추정이 되면 같은 줄이 AI 섹션으로 옮겨진다(담김 유지)', async () => {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.polling = false;
+      mockPending.items = [{ ...base, pendingId: 'p1', name: '김치전', koreanName: '김치전', description: null, risk: 'unable', avoidCodes: [], estimated: false }];
+      const tree = await toResult();
+      expect(names(tree)).toContain('김치전');
+      expect(has(tree, 'ai--1')).toBe(false);
+      press(tree, 'add--1'); // 미매칭 줄에서 담기
+      mockPending.items = [{ ...base, pendingId: 'p1', name: 'Kimchi pancake', koreanName: '김치전', estimated: true, image: 'generating' }];
+      act(() => tree.update(<Scan />));
+      expect(names(tree)).not.toContain('김치전');
+      expect(has(tree, 'ai--1')).toBe(true);
+      expect(has(tree, 'stepper--1')).toBe(true); // 같은 itemId 키 = 담김 그대로
+    });
     it('Codex #440 P2: 사진 생성 중 연 상세 시트 = 열린 채로 폴링이 READY로 바꾸면 사진도 바뀐다(스냅샷 아님)', async () => {
       mockScanExtra.v = { photoOnly, scanId: 's1' };
       mockPending.polling = true;
@@ -1080,6 +1094,40 @@ describe('KB-992 AI 추정 섹션', () => {
       expect(s1).toContain('9,000');
       expect(mockPush).not.toHaveBeenCalled();
     });
+  });
+
+  it('P-616(S-970): notMenu 줄 = 판정 목록·메뉴 수에서 빠지고 맨 아래 "추가와 옵션" 칩(원문·가격) + 직원 확인 1줄 · 배지·담기 없음 · Safe only = 숨김', async () => {
+    const addOn = { ...ai('', '라면사리'), pendingId: null, notMenu: true, price: 2000 };
+    mockScanExtra.v = { photoOnly: [...photoOnly, addOn], scanId: 's1' };
+    mockPending.polling = false;
+    const tree = await toResult();
+    expect(names(tree)).not.toContain('라면사리');
+    expect(list(tree).props.addOns.map((d: { koreanName: string }) => d.koreanName)).toEqual(['라면사리']);
+    const block = tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')[0];
+    const txt = block.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(txt).toEqual(expect.arrayContaining(['scan.addOnsTitle', '라면사리', '₩2,000', 'scan.addOnsNote']));
+    expect(block.findAll((n) => n.props?.state !== undefined)).toHaveLength(0); // 배지 0
+    expect(block.findAll((n) => /^add-|^rich-|^mark-/.test(String(n.props?.testID)))).toHaveLength(0); // 담기·탭·배지 자리 0
+    act(() => tree.root.findAll((n) => n.props?.testID === 'scan-safe-toggle' && typeof n.props.onPress === 'function')[0].props.onPress());
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons')).toHaveLength(0);
+  });
+
+  it('Codex #444 P2: 결과가 notMenu뿐이어도 빈 화면이 아니라 추가와 옵션 블록이 보인다(메뉴 수는 0 그대로)', async () => {
+    const onlyAddOn = { ...ai('', '공기밥'), pendingId: null, notMenu: true, price: 1000 };
+    mockScanExtra.v = { items: [], photoOnly: [onlyAddOn], scanId: null }; // 일반 메뉴 0 — 추가·옵션만
+    mockPending.polling = false;
+    const tree = await toResult();
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-results-empty')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')).toHaveLength(1);
+    // 2R P2: Safe only를 켜도 컨트롤(토글)은 남고 안전 0건 상태만 — 블록은 숨김, 다시 끄면 돌아온다(갇힘 0)
+    const toggle = () => tree.root.findAll((n) => n.props?.testID === 'scan-safe-toggle' && typeof n.props.onPress === 'function');
+    act(() => toggle()[0].props.onPress());
+    expect(toggle().length).toBeGreaterThanOrEqual(1); // 토글 남음
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-safe-empty')).not.toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-results-empty')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons')).toHaveLength(0);
+    act(() => toggle()[0].props.onPress());
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')).toHaveLength(1);
   });
 
   it('KB-1006: 일반(매칭) 줄도 맵기 — results[].spiciness ceil(s/2) · 0 = 표시 안 함', async () => {

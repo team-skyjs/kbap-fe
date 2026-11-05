@@ -335,6 +335,8 @@
     "aiGeneratedPhoto": "AI 生成",
     "aiPhotoGenerating": "正在生成图片",
     "aiDetailIngredients": "主要食材",
+    "addOnsTitle": "加料和选项",
+    "addOnsNote": "这些是加料或选项。里面有什么，请向店员确认。",
     "searchOnGoogle": "在Google搜索",
     "resultsEmpty": "没有扫描结果",
     "viewOrderAction": "查看订单",
