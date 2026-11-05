@@ -50,8 +50,14 @@ export function captureApi5xx(path: string, status: number, code?: string, reque
   const now = Date.now();
   if ((recent5xx.get(key) ?? 0) > now - 20_000) return;
   recent5xx.set(key, now);
-  Sentry.captureMessage('api_5xx', {
+  // KB-1001(P-612): captureMessage는 합성 스택을 붙여 컬프릿이 그 순간 돌던 함수(uploadImage·captureProfileImage 등)로
+  // 오귀속되고 그룹도 그 스택으로 갈렸다(REACT-NATIVE-S·X·V = 실은 /api/notifications·/foods 502). captureEvent = 합성 스택 0,
+  // 그룹 = ['api_5xx', path, status] 고정, 컬프릿 자리 = transaction(`502 /foods`).
+  Sentry.captureEvent({
+    message: 'api_5xx',
     level: 'warning',
+    fingerprint: ['api_5xx', cleanPath, String(status)],
+    transaction: `${status} ${cleanPath}`,
     tags: { path: cleanPath, status: String(status), request_id: requestId || 'none', ...(code ? { code } : {}) },
   });
 }
