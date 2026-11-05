@@ -1183,7 +1183,8 @@ export default function Scan() {
           </View>
         )}
 
-        {view === 'list' && shownCount === 0 ? (
+        {/* Codex #444 P2: 추가·옵션만 읽힌 스캔이면 메뉴 수는 0이어도 목록(맨 아래 칩 블록)은 그린다 — Safe only면 블록이 숨으니 빈 화면 그대로 */}
+        {view === 'list' && shownCount === 0 && (safeOnly || addOns.length === 0) ? (
           /* P-330(4003:7160): 결과 0개 = 화면 세로 중앙(배너·컨트롤 숨김 — A-SC-12) */
           <ScreenCenterFill>
             <EmptyBlock label={t('scan.resultsEmpty')} testID="scan-results-empty" />

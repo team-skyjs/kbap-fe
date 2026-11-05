@@ -1098,6 +1098,15 @@ describe('KB-992 AI 추정 섹션', () => {
     expect(tree.root.findAll((n) => n.props?.testID === 'addons')).toHaveLength(0);
   });
 
+  it('Codex #444 P2: 결과가 notMenu뿐이어도 빈 화면이 아니라 추가와 옵션 블록이 보인다(메뉴 수는 0 그대로)', async () => {
+    const onlyAddOn = { ...ai('', '공기밥'), pendingId: null, notMenu: true, price: 1000 };
+    mockScanExtra.v = { items: [], photoOnly: [onlyAddOn], scanId: null }; // 일반 메뉴 0 — 추가·옵션만
+    mockPending.polling = false;
+    const tree = await toResult();
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-results-empty')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')).toHaveLength(1);
+  });
+
   it('KB-1006: 일반(매칭) 줄도 맵기 — results[].spiciness ceil(s/2) · 0 = 표시 안 함', async () => {
     const { mergeResults } = jest.requireActual('@/lib/api/scanAdapter') as typeof import('@/lib/api/scanAdapter');
     const [hot, mild] = mergeResults(
