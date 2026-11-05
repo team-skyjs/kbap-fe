@@ -116,9 +116,9 @@ function BlurBand({ cover, band, cardH, cardW, itemId, testID }: { cover: string
           {cardW > 0 && (
             <RemoteImage
               uri={cover}
-              // QA 3차(이음새): cardW/k를 그대로 쓰면 픽셀 반올림·다운샘플로 확대 결과가 카드보다 작아 하단 ~12px·우측 ~4px에 선명 사진이 비쳤다 →
-              // 올림 + 1칸 넉넉히(확대 후 카드보다 k dp 이상 크다), 넘치는 쪽은 래퍼 overflow hidden이 자른다
-              style={{ position: 'absolute', left: 0, top: 0, width: lowresSide(cardW), height: lowresSide(cardH), transformOrigin: 'top left', transform: [{ scale: ANDROID_DOWNSCALE }] }}
+              // QA 3차(이음새) → 4차(이중상): 디코드 = 올림 크기, 확대 배율은 축마다 (카드 + 2) / 디코드 — 결과가 카드보다 딱 2dp만 크다.
+              // 고정 ×14면 올림만큼(~5.5%) 커져 왼쪽 위 기준으로 띠 하단에서 ~18dp 밀린 흐린 복제가 보였다. 넘치는 2dp는 래퍼 overflow hidden
+              style={{ position: 'absolute', left: 0, top: 0, width: lowresSide(cardW), height: lowresSide(cardH), transformOrigin: 'top left', transform: [{ scaleX: lowresScale(cardW) }, { scaleY: lowresScale(cardH) }] }}
               recyclingKey={`${itemId}-lowres`}
               placeholder="none"
               onLoad={settle}
@@ -193,8 +193,11 @@ export function blurBandOf(cardH: number, captionTop: number) {
 // ponytail: 보정 손잡이, Android QA 캡처로 맞출 값.
 export const CARD_BLUR_RADIUS = 45; // iOS expo-image blurRadius
 export const ANDROID_DOWNSCALE = 14; // Android 저해상 확대 배율(카드 / 14로 디코드 → ×14) — 클수록 더 흐림(QA 3차: 12는 develop보다 1.1~1.45배 약함)
-/** 저해상 한 변 = 올림 + 1 — 확대 후 카드 끝까지 덮는다(QA 3차 이음새) */
-export const lowresSide = (len: number): number => Math.ceil(len / ANDROID_DOWNSCALE) + 1;
+/** 저해상 한 변 = 카드 / 14 올림(디코드 크기) */
+export const lowresSide = (len: number): number => Math.ceil(len / ANDROID_DOWNSCALE);
+/** 확대 배율 = (카드 + 2dp) / 디코드 — 확대 결과가 카드보다 2dp만 커서 끝까지 덮되 밀림 0(QA 3·4차) */
+export const LOWRES_OVERSHOOT = 2;
+export const lowresScale = (len: number): number => (len + LOWRES_OVERSHOOT) / lowresSide(len);
 
 // v5 실측: 카드 335×300 · 캡션 하단 inset 16 · 이름 18 semibold 흰색 · 4 · 지역 13 흰색 · chevron 24(44 자리, 오른쪽 inset 16)
 const styles = StyleSheet.create({

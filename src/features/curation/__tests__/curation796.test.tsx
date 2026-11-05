@@ -533,11 +533,15 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       expect(ws.filter).toBeUndefined();
       const img = w[0].findAll((n) => n.props?.testID === 'img:https://cdn/i1.jpg' && typeof n.type === 'string');
       expect(img).toHaveLength(1);
-      // QA 3차 이음새: 한 변 = ceil(len/14) + 1 → 확대 후 카드보다 크다(336/14 = 24 → 25 ×14 = 350 ≥ 336 · 300/14 → 23 ×14 = 322 ≥ 300)
+      // QA 3차(이음새)·4차(이중상): 디코드 = ceil(len/14), 배율 = (len + 2) / 디코드 → 확대 결과 = 카드 + 2dp 정확히(덮되 밀림 0)
       const st = RNm.StyleSheet.flatten(img[0].props.style);
-      expect(st).toMatchObject({ width: 25, height: 23, transformOrigin: 'top left', transform: [{ scale: 14 }] });
-      expect(st.width * 14).toBeGreaterThanOrEqual(336 + 14);
-      expect(st.height * 14).toBeGreaterThanOrEqual(300 + 14);
+      expect(st).toMatchObject({ width: 24, height: 22, transformOrigin: 'top left' });
+      const [sx, sy] = (st.transform as { scaleX?: number; scaleY?: number }[]).map((tr) => tr.scaleX ?? tr.scaleY ?? 0);
+      expect(st.width * sx).toBeCloseTo(336 + 2, 6);
+      expect(st.height * sy).toBeCloseTo(300 + 2, 6);
+      // 폭 371·높이 332(QA 실측 카드)도 +2dp — 구 고정 ×14는 392·350(이중상)
+      const { lowresSide, lowresScale } = jest.requireActual('@/features/curation/BlurCaptionCard') as typeof import('@/features/curation/BlurCaptionCard');
+      for (const len of [371, 332, 335, 1]) expect(lowresSide(len) * lowresScale(len)).toBeCloseTo(len + 2, 6);
       expect(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-strip-1-0' && typeof n.type === 'string')).toHaveLength(1);
     } finally {
       RNm.Platform.OS = prevOS;
