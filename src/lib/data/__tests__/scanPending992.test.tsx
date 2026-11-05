@@ -3,7 +3,7 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { adaptPendingItem, photoOnlyResults } from '@/lib/api/scanAdapter';
+import { adaptPendingItem, mapPriceOptions, photoOnlyResults, spiceRank } from '@/lib/api/scanAdapter';
 import type { ScanResultWire } from '@/lib/api/scanTypes';
 import { PENDING_CAP_MS, useScanPending } from '../useScanPending';
 
@@ -17,6 +17,17 @@ const wire = (p: Partial<ScanResultWire>): ScanResultWire => ({ matched: false, 
 const item = (pendingId: string, extra: Record<string, unknown> = {}) => ({ pendingId, kind: 'DISH', name: pendingId, riskLevel: 'CAUTION', aiEstimated: true, ...extra });
 
 describe('어댑터', () => {
+  it('KB-1006: 맵기 ceil(s/2) → 고추 1~5 · 0·-1·결측 = 0 / 수량 옵션 2개 이상만(이상값 칸 버림) / 사진 상태', () => {
+    expect([10, 9, 3, 1, 0, -1, null, undefined, 99].map(spiceRank)).toEqual([5, 5, 2, 1, 0, 0, 0, 0, 5]);
+    expect(mapPriceOptions([{ label: '10개', priceKrw: 11000 }, { label: '20개', priceKrw: 22000 }])).toEqual([{ label: '10개', priceKrw: 11000 }, { label: '20개', priceKrw: 22000 }]);
+    expect(mapPriceOptions([{ label: '10개', priceKrw: 11000 }, { label: '', priceKrw: 22000 }])).toBeNull();
+    expect(mapPriceOptions(null)).toBeNull();
+    const a = adaptPendingItem(item('p1', { avoidances: ['EGG'], estimatedCodes: ['FLOUR', 'EGG'], spiciness: 6, priceKrw: 9000, imageStatus: 'READY', imageUrl: 'https://cdn/a.webp', aiGeneratedImage: true }) as never);
+    expect([a.spice, a.priceKrw, a.image, a.imageUrl, a.aiImage]).toEqual([3, 9000, 'ready', 'https://cdn/a.webp', true]);
+    expect(a.estimatedCodes).toEqual(['EGG', 'FLOUR']); // 겹친 코드는 전체 목록에서 빠지지 않는다
+    expect(adaptPendingItem(item('p2', { imageStatus: 'READY', imageUrl: null }) as never).image).toBe('none'); // URL 없는 READY = 기본 이미지
+    expect(adaptPendingItem(item('p3') as never).image).toBe('none'); // 구 서버
+  });
   it('pendingId = 미매칭·비대체만 통과 (매칭·대체·빈 문자열 = null)', () => {
     const out = photoOnlyResults([
       wire({ pendingId: 'p1' }),
@@ -110,19 +121,46 @@ describe('useScanPending', () => {
     expect(mockGet).toHaveBeenCalledTimes(3);
   });
 
-  it('done이 안 와도 15초에 종료', async () => {
+  it('done이 안 와도 상한(KB-1006 60초)에 종료', async () => {
+    expect(PENDING_CAP_MS).toBe(60_000);
     mockGet.mockResolvedValue({ items: [], done: false });
     mount('s1');
     await flush();
-    for (let i = 0; i < 14; i++) { await advance(1000); await flush(); }
+    for (let i = 0; i < 59; i++) { await advance(1000); await flush(); }
     expect(out.polling).toBe(true);
     await advance(1000);
     await flush();
     expect(out.polling).toBe(false);
     const n = mockGet.mock.calls.length;
-    expect(n).toBeLessThanOrEqual(16);
+    expect(n).toBeLessThanOrEqual(61);
     await advance(5000);
     expect(mockGet).toHaveBeenCalledTimes(n);
+  });
+
+  it('KB-1006: 같은 pendingId 재도착 = 내용 교체(사진 GENERATING → READY) · 순서 유지 · 계측은 첫 도착 1회 · done이어도 imagesDone=false면 계속', async () => {
+    mockGet
+      .mockResolvedValueOnce({ items: [item('p1', { imageStatus: 'GENERATING' }), item('p2', { imageStatus: 'GENERATING' })], done: true, imagesDone: false })
+      .mockResolvedValueOnce({ items: [item('p1', { imageStatus: 'READY', imageUrl: 'https://cdn/p1.webp', aiGeneratedImage: true })], done: true, imagesDone: false })
+      .mockResolvedValueOnce({ items: [item('p2', { imageStatus: 'NONE' })], done: true, imagesDone: true });
+    mount('s1');
+    await flush();
+    expect(out.items.map((i) => [i.pendingId, i.image])).toEqual([['p1', 'generating'], ['p2', 'generating']]);
+    expect(out.polling).toBe(true); // 추정은 끝났지만 사진이 남았다
+    await advance(1000);
+    await flush();
+    expect(out.items.map((i) => [i.pendingId, i.image, i.imageUrl, i.aiImage])).toEqual([['p1', 'ready', 'https://cdn/p1.webp', true], ['p2', 'generating', null, false]]);
+    await advance(1000);
+    await flush();
+    expect(out.items.map((i) => [i.pendingId, i.image])).toEqual([['p1', 'ready'], ['p2', 'none']]);
+    expect(out.polling).toBe(false);
+    expect(mockTrack.mock.calls.filter((c) => c[0] === 'scan_ai_item_filled')).toHaveLength(2);
+  });
+
+  it('KB-1006: imagesDone 부재(사진 없는 구 서버) = done만으로 종료', async () => {
+    mockGet.mockResolvedValueOnce({ items: [item('p1')], done: true });
+    mount('s1');
+    await flush();
+    expect(out.polling).toBe(false);
   });
 
   it('실패(success=false·네트워크) = 즉시 종료(재시도 0)', async () => {
@@ -152,7 +190,7 @@ describe('useScanPending', () => {
     expect(out.polling).toBe(true);
     await advance(1);
     await flush();
-    expect(out.polling).toBe(false); // 총 15초(떠나 있던 4초 포함) — 새 15초 아님
+    expect(out.polling).toBe(false); // 총 상한(떠나 있던 4초 포함) — 새 상한 아님
   });
 
   it('scanId 없음 = 폴링 0 · scanId가 바뀌면 이전 도착분·종료를 버리고 새로', async () => {
