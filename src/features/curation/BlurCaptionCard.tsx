@@ -175,10 +175,10 @@ export function blurBandOf(cardH: number, captionTop: number) {
 // - iOS: radius/2를 SDImageBlurTransformer에 — **원본 이미지 픽셀** 단위라 고해상도 사진엔 약하다(16 = 원본 8px)
 // - Android: (구) Glide BlurTransformation(min(radius, 25), sampling 4) = RenderScript → KB-1000부터 안 씀(아래 filter blur)
 // iOS 45 = QA 대조 2회: 16은 윤곽 남음(pr311 03-before-after-mock), 72는 시안보다 더 흐림(dev-6caa-blur 03-r16-r72-mock) — 시안은 기둥·문 윤곽이 남는 정도.
-// KB-1000: Android = RN filter blur(dp, 화면 기준 — 다운샘플 없음). 12 = 구 Glide 9×샘플링4가 335dp 카드에서 보이던 세기 근사 —
+// KB-1000: Android = RN filter blur(dp, 화면 기준 — 다운샘플 없음). 20 = 구 Glide 9×샘플링4 세기(QA 대조 캡처로 12에서 상향) —
 // ponytail: 보정 손잡이, Android QA 캡처로 맞출 값.
 export const CARD_BLUR_RADIUS = 45; // iOS expo-image blurRadius
-export const ANDROID_FILTER_BLUR = 12; // Android RN filter blur(dp)
+export const ANDROID_FILTER_BLUR = 20; // Android RN filter blur(dp) — QA 대조 11/5: 12는 Glide보다 ~1.6배 약함
 
 // v5 실측: 카드 335×300 · 캡션 하단 inset 16 · 이름 18 semibold 흰색 · 4 · 지역 13 흰색 · chevron 24(44 자리, 오른쪽 inset 16)
 const styles = StyleSheet.create({

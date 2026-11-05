@@ -528,7 +528,7 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       expect(band.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('blur:'))).toHaveLength(0); // blurRadius 0
       const f = band.findAll((n) => n.props?.testID === 'curation-item-blur-1-filter' && typeof n.type === 'string');
       expect(f).toHaveLength(1);
-      expect(RNm.StyleSheet.flatten(f[0].props.style)).toMatchObject({ top: -220, height: 300, filter: [{ blur: 12 }] });
+      expect(RNm.StyleSheet.flatten(f[0].props.style)).toMatchObject({ top: -220, height: 300, filter: [{ blur: 20 }] });
       expect(f[0].findAll((n) => n.props?.testID === 'img:https://cdn/i1.jpg' && typeof n.type === 'string')).toHaveLength(1);
       expect(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-strip-1-0' && typeof n.type === 'string')).toHaveLength(1);
     } finally {
