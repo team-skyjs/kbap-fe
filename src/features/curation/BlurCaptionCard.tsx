@@ -105,7 +105,16 @@ function BlurBand({ cover, band, cardH, itemId, testID }: { cover: string; band:
   const settle = () => setDone((n) => n + 1);
   return (
     <FadeInBand style={[styles.blurBand, { top: band.top }]} ready={done >= sharp.length + 1} testID={testID}>
-      <RemoteImage uri={cover} style={[styles.blurImg, { top: -band.top, height: cardH }]} recyclingKey={`${itemId}-blur`} blurRadius={CARD_BLUR_RADIUS} placeholder="none" onLoad={settle} onError={settle} />
+      {Platform.OS === 'android' ? (
+        // KB-1000(P-612 REACT-NATIVE-R): Android에서 expo-image blurRadius = Glide wasabeef BlurTransformation = RenderScript —
+        // 저사양 기기(vivo V2521·Android 15)에서 rsdScriptSetGlobalVar SIGSEGV(네이티브라 try/catch 불가). RN filter blur
+        // (Android 12+ RenderEffect, RenderScript 0)로 대체 — 11 이하는 filter가 무시돼 선명 + 스크림(blur=false 경로와 같은 모습, 크래시 0)
+        <View style={[styles.blurImg, { top: -band.top, height: cardH, filter: [{ blur: ANDROID_FILTER_BLUR }] }]} testID={`${testID}-filter`}>
+          <RemoteImage uri={cover} style={StyleSheet.absoluteFill} recyclingKey={`${itemId}-blur`} placeholder="none" onLoad={settle} onError={settle} />
+        </View>
+      ) : (
+        <RemoteImage uri={cover} style={[styles.blurImg, { top: -band.top, height: cardH }]} recyclingKey={`${itemId}-blur`} blurRadius={CARD_BLUR_RADIUS} placeholder="none" onLoad={settle} onError={settle} />
+      )}
       {sharp.map((s, i) => (
         <View key={i} style={[styles.blurStrip, { top: s.top - band.top, height: s.height, opacity: 1 - s.opacity }]} testID={`${testID.replace('-blur-', '-blur-strip-')}-${i}`}>
           <RemoteImage uri={cover} style={[styles.blurImg, { top: -s.top, height: cardH }]} recyclingKey={`${itemId}-sharp-${i}`} placeholder="none" onLoad={settle} onError={settle} />
@@ -164,10 +173,12 @@ export function blurBandOf(cardH: number, captionTop: number) {
 }
 // expo-image blurRadius는 플랫폼마다 다르다(node_modules/expo-image 실측):
 // - iOS: radius/2를 SDImageBlurTransformer에 — **원본 이미지 픽셀** 단위라 고해상도 사진엔 약하다(16 = 원본 8px)
-// - Android: Glide BlurTransformation(min(radius, 25), sampling 4) — 1/4로 줄인 뒤 흐리므로 같은 값이 iOS보다 훨씬 세다
+// - Android: (구) Glide BlurTransformation(min(radius, 25), sampling 4) = RenderScript → KB-1000부터 안 씀(아래 filter blur)
 // iOS 45 = QA 대조 2회: 16은 윤곽 남음(pr311 03-before-after-mock), 72는 시안보다 더 흐림(dev-6caa-blur 03-r16-r72-mock) — 시안은 기둥·문 윤곽이 남는 정도.
-// Android 9 = iOS와 같은 비율(72→45)로 내린 값 — Android 회귀 캡처로 확인 대상.
-export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 9 : 45;
+// KB-1000: Android = RN filter blur(dp, 화면 기준 — 다운샘플 없음). 12 = 구 Glide 9×샘플링4가 335dp 카드에서 보이던 세기 근사 —
+// ponytail: 보정 손잡이, Android QA 캡처로 맞출 값.
+export const CARD_BLUR_RADIUS = 45; // iOS expo-image blurRadius
+export const ANDROID_FILTER_BLUR = 12; // Android RN filter blur(dp)
 
 // v5 실측: 카드 335×300 · 캡션 하단 inset 16 · 이름 18 semibold 흰색 · 4 · 지역 13 흰색 · chevron 24(44 자리, 오른쪽 inset 16)
 const styles = StyleSheet.create({

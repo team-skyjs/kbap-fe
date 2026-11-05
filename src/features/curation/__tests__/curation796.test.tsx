@@ -363,7 +363,7 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     layoutOf('curation-item-1', { x: 0, y: 0, width: 335, height: 340 });
     layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 335, height: 104 });
     expect(RN.StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0].props.style).top).toBe(220);
-    expect(fs.readFileSync('src/features/curation/BlurCaptionCard.tsx', 'utf8') /* KB-861: 공용 모듈 */).toContain("export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 9 : 45;");
+    expect(fs.readFileSync('src/features/curation/BlurCaptionCard.tsx', 'utf8') /* KB-861: 공용 모듈 */).toContain('export const CARD_BLUR_RADIUS = 45; // iOS expo-image blurRadius');
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     expect(pkg.dependencies['expo-blur']).toBeUndefined();
   });
@@ -511,6 +511,28 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       expect(mockOpenMap).not.toHaveBeenCalled();
     } finally {
       sheet.mockRestore();
+    }
+  });
+  it('KB-1000 Android = expo-image blurRadius 0(RenderScript 네이티브 크래시 회피) · 밴드 블러 = RN filter blur 래퍼 1장 · 띠 구조 그대로', () => {
+    const RNm = jest.requireActual('react-native');
+    const prevOS = RNm.Platform.OS;
+    RNm.Platform.OS = 'android';
+    try {
+      mockDetail = q({ data: detail });
+      const t = render(<CurationDetailScreen />);
+      const layoutOf = (id: string, layout: object) => act(() => t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout } }));
+      layoutOf('curation-item-1', { x: 0, y: 0, width: 335, height: 300 });
+      layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 335, height: 64 });
+      loadPhotos(t);
+      const band = t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0];
+      expect(band.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('blur:'))).toHaveLength(0); // blurRadius 0
+      const f = band.findAll((n) => n.props?.testID === 'curation-item-blur-1-filter' && typeof n.type === 'string');
+      expect(f).toHaveLength(1);
+      expect(RNm.StyleSheet.flatten(f[0].props.style)).toMatchObject({ top: -220, height: 300, filter: [{ blur: 12 }] });
+      expect(f[0].findAll((n) => n.props?.testID === 'img:https://cdn/i1.jpg' && typeof n.type === 'string')).toHaveLength(1);
+      expect(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-strip-1-0' && typeof n.type === 'string')).toHaveLength(1);
+    } finally {
+      RNm.Platform.OS = prevOS;
     }
   });
   it('KB-863 Android = 앱 목록 대화상자: 제목 · 세 지도(검정) · Cancel(빨강) → NAVER 선택 = 범용 링크 · Cancel = 닫힘', () => {
