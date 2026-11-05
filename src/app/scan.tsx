@@ -27,7 +27,7 @@ import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
 import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { withPermissionPrompt } from '@/lib/permissionPrompt';
 import { markPromptShown } from '@/lib/engagement/promptSlot';
-import { addScanItem, rememberScanDish, removeScanItem, resetScanCart, scanCartKey, useScanCart } from '@/features/scan/scanCartStore';
+import { addScanItem, migrateScanCartKey, rememberScanDish, removeScanItem, resetScanCart, scanCartKey, useScanCart } from '@/features/scan/scanCartStore';
 import { Pressable } from '@/components/Pressable';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
@@ -383,7 +383,9 @@ export default function Scan() {
   const [camOrientation, setCamOrientation] = useState<CameraOrientation>('portrait');
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
   const [closestMatch, setClosestMatch] = useState<ResultDish | null>(null); // KB-789 대체 항목 설명 카드(열린 행)
-  const [unmatchedAi, setUnmatchedAi] = useState<AiRow | null>(null); // KB-992 → KB-1006: AI 줄 탭 = 같은 카드 위에 AI 상세(사진·설명·맵기·가격·재료)
+  // KB-992 → KB-1006: AI 줄 탭 = 같은 카드 위에 AI 상세(사진·설명·맵기·가격·재료). Codex #440 P2: 줄 스냅샷이 아니라 itemId만 —
+  // 열어 둔 사이 폴링이 사진을 READY로 바꾸면 렌더 때 최신 줄을 다시 찾는다
+  const [unmatchedAiId, setUnmatchedAiId] = useState<number | null>(null);
   // P-161: 다시찍기 확인 — 실수 탭 1회에 결과·담은 항목 통째 유실 방지(항상 노출)
   const [retakeConfirm, setRetakeConfirm] = useState(false);
   // KB-769: 담은 항목이 있는 결과에서 떠나는 모든 길(헤더 ‹·Android 하드웨어 back·iOS 스와이프)을 다시찍기와 같은 확인 창으로.
@@ -394,6 +396,14 @@ export default function Scan() {
   // KB-992: 미매칭·비대체 항목의 AI 추정 폴링 — 결과 화면이 보일 때만(떠나면 멈춤)
   const pendingCount = [...items, ...photoOnly].filter((i) => i.pendingId).length;
   const aiPending = useScanPending(scanId, isFocused && phase === 'result' && pendingCount > 0);
+  // KB-1006(Codex #440 P2): 응답 전에 담은 AI 줄에 수량 옵션이 오면 옵션 없는 수량을 첫 옵션 키로 옮긴다(price = 첫 옵션 값, S-969) —
+  // 안 옮기면 줄·주문 카드 어디서도 안 읽혀 필 숫자에만 남는다. 사진 전용 항목의 itemId = -1 - k(결과 조립과 같은 규칙)
+  useEffect(() => {
+    const optioned = new Set(aiPending.items.filter((a) => a.priceOptions && a.priceOptions.length >= 2).map((a) => a.pendingId));
+    if (!optioned.size) return;
+    const ids = [...items.filter((it) => it.pendingId && optioned.has(it.pendingId)).map((it) => it.itemId), ...photoOnly.flatMap((p, k) => (p.pendingId && optioned.has(p.pendingId) ? [-1 - k] : []))];
+    for (const id of ids) migrateScanCartKey(scanCartKey(id), scanCartKey(id, 0));
+  }, [aiPending.items, items, photoOnly, cart]);
   const aiShownFor = useRef<string | null>(null);
   const aiSectionVisible = phase === 'result' && view === 'list' && !safeOnly && !!scanId && pendingCount > 0;
   useEffect(() => {
@@ -747,14 +757,14 @@ export default function Scan() {
   function openDish(dish: ResultDish) {
     track(EVENTS.scan_result_item_tap, { risk: dish.risk }); // P-144
     if (!dish.matched || !dish.foodId) {
-      setUnmatchedAi(null);
+      setUnmatchedAiId(null);
       return setUnmatchedOpen(true);
     }
     // P-012(KB-179): 가격은 메뉴판 속성 — 스캔 진입에만 param으로 전달 (리스트
     // 행·오버레이 마커·사진 전용 항목 전부 이 함수를 지나므로 첨부 지점은 여기 하나)
     {
       const priceQ = scanPriceParam(dish.priceKrw);
-      rememberScanDish(dish);
+      rememberScanDish({ ...dish, opt: dish.priceOptions && dish.priceOptions.length >= 2 ? 0 : null }); // Codex #440 P2: 상세 = 첫 옵션 키
       router.push(`/food/${dish.foodId}${priceQ}${priceQ ? '&' : '?'}src=scan&item=${dish.itemId}` as Href); // KB-982: 상세 담기 = 같은 카트 항목
     }
   }
@@ -762,7 +772,7 @@ export default function Scan() {
   // KB-992: AI 추정 행 탭 = 같은 미등록 안내 카드 + 위에 AI 설명·추정 재료(새 화면 없음 · 상세 이동 없음)
   function openAi(row: AiRow) {
     track(EVENTS.scan_result_item_tap, { risk: row.ai?.risk ?? row.dish.risk });
-    setUnmatchedAi(row);
+    setUnmatchedAiId(row.dish.itemId);
     setUnmatchedOpen(true);
   }
 
@@ -1259,7 +1269,7 @@ export default function Scan() {
           onDismiss={Platform.OS === 'ios' ? () => settle(coachDoneRef) : undefined}
           t={t}
         />
-        <UnmatchedNotice open={unmatchedOpen} row={unmatchedAi} currency={currency} fx={fx} onClose={() => setUnmatchedOpen(false)} t={t} />
+        <UnmatchedNotice open={unmatchedOpen} row={unmatchedAiId == null ? null : aiRows.find((r) => r.dish.itemId === unmatchedAiId) ?? null} currency={currency} fx={fx} onClose={() => setUnmatchedOpen(false)} t={t} />
         <ClosestMatchNotice
           dish={closestMatch}
           onClose={() => setClosestMatch(null)}
