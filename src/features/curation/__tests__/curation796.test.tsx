@@ -535,13 +535,26 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       expect(img).toHaveLength(1);
       // QA 3차(이음새)·4차(이중상): 디코드 = ceil(len/14), 배율 = (len + 2) / 디코드 → 확대 결과 = 카드 + 2dp 정확히(덮되 밀림 0)
       const st = RNm.StyleSheet.flatten(img[0].props.style);
-      expect(st).toMatchObject({ width: 24, height: 22, transformOrigin: 'top left' });
+      expect(st).toMatchObject({ transformOrigin: 'top left' });
+      const pr = RNm.PixelRatio.get();
+      expect(Number.isInteger(Math.round(st.width * pr * 1e6) / 1e6)).toBe(true); // QA 5차: 디코드 한 변 = 기기 픽셀 정수(스냅 손실 0)
+      expect(Number.isInteger(Math.round(st.height * pr * 1e6) / 1e6)).toBe(true);
       const [sx, sy] = (st.transform as { scaleX?: number; scaleY?: number }[]).map((tr) => tr.scaleX ?? tr.scaleY ?? 0);
       expect(st.width * sx).toBeCloseTo(336 + 2, 6);
       expect(st.height * sy).toBeCloseTo(300 + 2, 6);
       // 폭 371·높이 332(QA 실측 카드)도 +2dp — 구 고정 ×14는 392·350(이중상)
       const { lowresSide, lowresScale } = jest.requireActual('@/features/curation/BlurCaptionCard') as typeof import('@/features/curation/BlurCaptionCard');
-      for (const len of [371, 332, 335, 1]) expect(lowresSide(len) * lowresScale(len)).toBeCloseTo(len + 2, 6);
+      // 소수 배율 기기(2.625 — QA 실기)에서: 구 ceil(len/14)dp는 27dp = 70.875px(비정수 → 스냅 손실), 지금은 픽셀 정수
+      const spy = jest.spyOn(RNm.PixelRatio, 'get').mockReturnValue(2.625);
+      try {
+        for (const len of [371, 332, 335, 1]) {
+          expect(lowresSide(len) * lowresScale(len)).toBeCloseTo(len + 2, 6);
+          expect(Number.isInteger(Math.round(lowresSide(len) * 2.625 * 1e6) / 1e6)).toBe(true);
+        }
+        expect(Number.isInteger(Math.ceil(371 / 14) * 2.625)).toBe(false); // 구 공식이 왜 모자랐는지
+      } finally {
+        spy.mockRestore();
+      }
       expect(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-strip-1-0' && typeof n.type === 'string')).toHaveLength(1);
     } finally {
       RNm.Platform.OS = prevOS;

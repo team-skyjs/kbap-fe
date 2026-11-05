@@ -193,8 +193,12 @@ export function blurBandOf(cardH: number, captionTop: number) {
 // ponytail: 보정 손잡이, Android QA 캡처로 맞출 값.
 export const CARD_BLUR_RADIUS = 45; // iOS expo-image blurRadius
 export const ANDROID_DOWNSCALE = 14; // Android 저해상 확대 배율(카드 / 14로 디코드 → ×14) — 클수록 더 흐림(QA 3차: 12는 develop보다 1.1~1.45배 약함)
-/** 저해상 한 변 = 카드 / 14 올림(디코드 크기) */
-export const lowresSide = (len: number): number => Math.ceil(len / ANDROID_DOWNSCALE);
+/** 저해상 한 변(dp) = 기기 픽셀 정수로 올린 카드 / 14 — dp 소수 크기는 레이아웃이 기기 픽셀로 내려 스냅해서(27dp = 70.875px → 70px)
+ *  확대 뒤 최대 ~12px 모자라 하단·우측에 선명 사진이 비쳤다(QA 5차). 픽셀 정수면 스냅 손실 0 */
+export const lowresSide = (len: number): number => {
+  const pr = PixelRatio.get();
+  return Math.ceil((len * pr) / ANDROID_DOWNSCALE) / pr;
+};
 /** 확대 배율 = (카드 + 2dp) / 디코드 — 확대 결과가 카드보다 2dp만 커서 끝까지 덮되 밀림 0(QA 3·4차) */
 export const LOWRES_OVERSHOOT = 2;
 export const lowresScale = (len: number): number => (len + LOWRES_OVERSHOOT) / lowresSide(len);
