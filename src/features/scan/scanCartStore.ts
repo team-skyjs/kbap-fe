@@ -1,5 +1,5 @@
 /**
- * KB-982 — 메뉴판 스캔 담기 카트(itemId → 수량). 구 scan.tsx 로컬 state(P-136)를 모듈 스토어로 올려
+ * KB-982 — 메뉴판 스캔 담기 카트(scanCartKey → 수량). KB-1006: 키 = itemId(+ 수량 옵션 index) — 옵션마다 따로 담긴다. 구 scan.tsx 로컬 state(P-136)를 모듈 스토어로 올려
  * 스캔 진입 음식 상세(`/food/[id]?src=scan&item=`)와 공유한다. 스캔 세션 한정 — 재촬영·스캔 화면 언마운트 = 초기화.
  * 담기·빼기 이벤트는 여기 한 곳(결과 리스트·상세가 같은 계측).
  */
@@ -10,7 +10,12 @@ import type { ResultDish } from '@/lib/scan/segmentMenu';
 
 export type CartDish = Pick<ResultDish, 'itemId' | 'risk' | 'foodId' | 'koreanName' | 'rawMenuName'>;
 
-let cart: ReadonlyMap<number, number> = new Map();
+/** KB-1006: 카트 키 — 옵션 없음 = "itemId", 옵션 = "itemId#index"(주문 카드에 옵션별 한 줄) */
+export function scanCartKey(itemId: number, opt?: number | null): string {
+  return opt == null ? String(itemId) : `${itemId}#${opt}`;
+}
+
+let cart: ReadonlyMap<string, number> = new Map();
 let dishes: ReadonlyMap<number, CartDish> = new Map();
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -19,24 +24,24 @@ const subscribe = (l: () => void) => {
   return () => { listeners.delete(l); };
 };
 
-export function bumpScanCart(itemId: number, delta: number): void {
+export function bumpScanCart(key: string, delta: number): void {
   const next = new Map(cart);
-  const q = (next.get(itemId) ?? 0) + delta;
-  if (q <= 0) next.delete(itemId);
-  else next.set(itemId, q);
+  const q = (next.get(key) ?? 0) + delta;
+  if (q <= 0) next.delete(key);
+  else next.set(key, q);
   cart = next;
   emit();
 }
 
-export function addScanItem(d: CartDish): void {
+export function addScanItem(d: CartDish, opt?: number | null): void {
   track(EVENTS.scan_item_add, { risk: d.risk });
   airbridge.addToCart({ id: d.foodId ?? `menu:${d.itemId}`, name: d.koreanName ?? d.rawMenuName });
-  bumpScanCart(d.itemId, 1);
+  bumpScanCart(scanCartKey(d.itemId, opt), 1);
 }
 
-export function removeScanItem(d: CartDish): void {
+export function removeScanItem(d: CartDish, opt?: number | null): void {
   track(EVENTS.scan_item_remove, { risk: d.risk });
-  bumpScanCart(d.itemId, -1);
+  bumpScanCart(scanCartKey(d.itemId, opt), -1);
 }
 
 /** 상세 열기 직전 — 상세가 itemId로 찾을 메뉴(담기 이벤트 속성용). 카트는 건드리지 않는다 */
@@ -55,7 +60,7 @@ export function resetScanCart(): void {
   emit();
 }
 
-export function useScanCart(): ReadonlyMap<number, number> {
+export function useScanCart(): ReadonlyMap<string, number> {
   return useSyncExternalStore(subscribe, () => cart, () => cart);
 }
 

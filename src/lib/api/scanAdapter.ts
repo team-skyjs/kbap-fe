@@ -12,7 +12,7 @@
  *   when foodId is present — branch on `matched`, never foodId (Swagger 명시).
  */
 import type { RiskState } from '@/lib/theme';
-import type { AvoidanceOverlapWire, BeRiskLevel, BoundingBox, ScanPendingItemWire, ScanResultWire } from './scanTypes';
+import type { AvoidanceOverlapWire, BeRiskLevel, BoundingBox, PriceOptionWire, ScanPendingItemWire, ScanResultWire } from './scanTypes';
 
 const RISK_MAP: Record<BeRiskLevel, RiskState> = {
   SAFE: 'safe',
@@ -54,6 +54,10 @@ export interface ScanOverlayItem extends ScannedItem {
   originalScannedName: string | null;
   /** KB-992: AI 추정 대기 키(미매칭·비대체만). null = 대기 없음. */
   pendingId: string | null;
+  /** KB-1006: 수량 옵션(2개 이상) · null = 없음 */
+  priceOptions: PriceOption[] | null;
+  /** KB-1006: 고추 수 0~5(0 = 표시 안 함) */
+  spice: number;
 }
 
 /**
@@ -84,6 +88,27 @@ function mapAvoidances(w: AvoidanceOverlapWire[] | null | undefined): AvoidanceH
     });
 }
 
+/** KB-1006: 수량 옵션 — 메뉴판 표기 label + 가격(KRW 정수). 이상값 칸은 버리고, 남은 게 2개 미만이면 옵션 없음(null) */
+export interface PriceOption {
+  label: string;
+  priceKrw: number;
+}
+export function mapPriceOptions(w: PriceOptionWire[] | null | undefined): PriceOption[] | null {
+  if (!Array.isArray(w)) return null;
+  const out = w.flatMap((o) =>
+    o && typeof o.label === 'string' && o.label.trim() && typeof o.priceKrw === 'number' && Number.isFinite(o.priceKrw)
+      ? [{ label: o.label.trim(), priceKrw: o.priceKrw }]
+      : [],
+  );
+  return out.length >= 2 ? out : null;
+}
+
+/** KB-1006(커맨드 확정 11/5): 서버 맵기 0~10 → 고추 ceil(s/2)개(1~5). 0·-1(모름)·결측 = 0 = 표시 안 함 */
+export function spiceRank(s: number | null | undefined): number {
+  if (typeof s !== 'number' || !Number.isFinite(s) || s <= 0) return 0;
+  return Math.min(5, Math.ceil(s / 2));
+}
+
 /** 공통 판정 매핑 — matched=false 는 wire 값 무관 unable (false-safe, 헌법 III). */
 function verdict(r: ScanResultWire) {
   return {
@@ -107,6 +132,9 @@ function verdict(r: ScanResultWire) {
     originalScannedName: typeof r.originalScannedName === 'string' && r.originalScannedName.trim() ? r.originalScannedName : null,
     // KB-992: AI 추정 대기 키 — 매칭·대체 항목엔 서버가 실어 보내도 무시(DB 판정이 정본)
     pendingId: !r.matched && r.substituted !== true && typeof r.pendingId === 'string' && r.pendingId.trim() ? r.pendingId : null,
+    // KB-1006(S-969 v0): 수량 옵션(2개 이상만)·맵기(고추 수)
+    priceOptions: mapPriceOptions(r.priceOptions),
+    spice: spiceRank(r.spiciness),
   } as const;
 }
 
@@ -144,6 +172,8 @@ export interface PhotoOnlyItem {
   originalScannedName: string | null;
   /** KB-992 — ScanOverlayItem과 동일 규칙. */
   pendingId: string | null;
+  priceOptions: PriceOption[] | null; // KB-1006
+  spice: number; // KB-1006
 }
 
 /**
@@ -171,6 +201,18 @@ export interface AiPendingItem {
   /** false = 서버 15초 마감 채움(`filled: true`, #565) — 추정이 아니라 미도착과 같게 다룬다(현행 unable 행).
    *  filled 필드가 없는 서버(배포 전)만 내용(UNKNOWN·설명 null·재료 0)으로 판별. */
   estimated: boolean;
+  /** KB-1006(S-969 v0): 메뉴판 가격·옵션 — 결과 줄과 같은 규칙 */
+  priceKrw: number | null;
+  priceOptions: PriceOption[] | null;
+  /** KB-1006: 고추 수 0~5(0 = 표시 안 함) */
+  spice: number;
+  /** KB-1006: 추정 재료 전체 코드(avoidCodes 포함 — 화면이 겹친 것만 경고 강조) */
+  estimatedCodes: string[];
+  /** KB-1006: 생성 사진 상태 — generating = 점 애니메이션 자리, ready = imageUrl, none = 기본 이미지 */
+  image: 'generating' | 'ready' | 'none';
+  imageUrl: string | null;
+  /** KB-1006: 서버가 생성한 사진 — 'AI 생성' 표시 */
+  aiImage: boolean;
 }
 
 /**
@@ -195,5 +237,19 @@ export function adaptPendingItem(w: ScanPendingItemWire): AiPendingItem {
     risk,
     avoidCodes,
     estimated: typeof w.filled === 'boolean' ? !w.filled : risk === 'caution' || description != null || avoidCodes.length > 0,
+    priceKrw: typeof w.priceKrw === 'number' && Number.isFinite(w.priceKrw) ? w.priceKrw : null,
+    priceOptions: mapPriceOptions(w.priceOptions),
+    spice: spiceRank(w.spiciness),
+    // 겹친 코드가 목록에 없더라도 칩에서 빠지지 않게 합친다(경고 표면 축소 0)
+    estimatedCodes: [...new Set([...avoidCodes, ...(w.estimatedCodes ?? []).filter((c): c is string => typeof c === 'string' && !!c.trim()).map((c) => c.trim())])],
+    ...pendingImage(w),
   };
+}
+
+/** KB-1006: 생성 사진 상태 — READY인데 URL이 없으면 none(기본 이미지), 미지·부재 = 구 서버(사진 없음) → none */
+function pendingImage(w: ScanPendingItemWire): Pick<AiPendingItem, 'image' | 'imageUrl' | 'aiImage'> {
+  const url = typeof w.imageUrl === 'string' && /^https?:\/\//.test(w.imageUrl) ? w.imageUrl : null;
+  if (w.imageStatus === 'GENERATING') return { image: 'generating', imageUrl: null, aiImage: false };
+  if (w.imageStatus === 'READY' && url) return { image: 'ready', imageUrl: url, aiImage: w.aiGeneratedImage === true };
+  return { image: 'none', imageUrl: null, aiImage: false };
 }

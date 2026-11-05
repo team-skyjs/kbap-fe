@@ -92,7 +92,7 @@ it('② 스캔 결과 크롬 — 인식 배너·언더라인 탭·컨트롤 행(
   expect(src).not.toContain('<ScanProfileBar');
   // 담기 UI = 현행 유지 정정(9/5) — 스테퍼 잔존
   const rich = require('fs').readFileSync('src/features/scan/ScanRichList.tsx', 'utf8') as string;
-  expect(rich).toContain('testID={`stepper-${dish.itemId}`}');
+  expect(rich).toContain('testID={`stepper-${tid}`}'); // KB-1006: AddSlot 공용(옵션 줄 포함)
 });
 
 it('③ 리뷰 작성 — 전체 별 48(stroke 3)·세부 별 32(stroke 2)·사진 슬롯 100·장소 필 소스 잠금', () => {

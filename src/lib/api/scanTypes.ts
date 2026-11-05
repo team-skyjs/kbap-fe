@@ -79,6 +79,16 @@ export interface ScanResultWire {
   /** KB-992(S-959 계약 초안 — 서버 확정 시 Swagger 정본): matched=false·대체 아님 항목만 값 —
    *  AI 추정 대기 키(`GET /api/scans/{scanId}/pending`). 부재·null = 대기 없음. */
   pendingId?: string | null;
+  /** KB-1006(S-969 v0): 수량 옵션 — 옵션 2개 이상일 때만, price는 첫 옵션값 유지. 부재·null = 옵션 없음 */
+  priceOptions?: PriceOptionWire[] | null;
+  /** KB-1006(S-969 v0): 맵기 0~10, -1 = 모름 — 매칭 = 음식 값, 미매칭 = null(pending에서) */
+  spiciness?: number | null;
+}
+
+/** KB-1006(S-969 v0) 수량 옵션 한 칸 — label = 메뉴판 표기("10개") */
+export interface PriceOptionWire {
+  label?: string | null;
+  priceKrw?: number | null;
 }
 
 /** KB-992 AI 추정 항목(S-959 확정 11/5 — dev 배포 전, 배포 뒤 Swagger 정본). riskLevel = CAUTION|UNKNOWN만(SAFE 없음) — 어댑터가 다시 거른다. */
@@ -91,18 +101,29 @@ export interface ScanPendingItemWire {
   riskLevel?: string | null;
   /** 확정: 회피 재료 코드 목록(IngredientCode[]). 초안 객체 모양도 받는다(방어). */
   avoidances?: (string | AvoidanceOverlapWire)[] | null;
-  spiciness?: number | null; // 0~10, -1 = 모름 — 아직 화면 미사용
+  spiciness?: number | null; // 0~10, -1 = 모름(KB-1006: 고추 ceil(s/2))
   confidence?: number | null;
   aiEstimated?: boolean;
   existsNotReady?: boolean; // 아직 화면 미사용
   /** 서버 #565: true = 15초 마감 채움(추정 아님), false = LLM 추정. 부재(배포 전 서버) = 어댑터가 내용으로 판별 */
   filled?: boolean;
-  foodId?: number | null; // 아직 화면 미사용
+  foodId?: number | null; // 미완성 음식 — /api/foods/{id}는 400 FOOD-018, 상세는 이 항목 데이터로(S-969)
+  /** KB-1006(S-969 v0) — 메뉴판 가격·옵션(결과 줄과 같은 모양) */
+  priceKrw?: number | null;
+  priceOptions?: PriceOptionWire[] | null;
+  /** KB-1006: 추정 재료 전체 코드(회원 겹침은 avoidances) */
+  estimatedCodes?: string[] | null;
+  /** KB-1006: 생성 사진 — 같은 pendingId가 GENERATING → READY | NONE으로 바뀐다 */
+  imageStatus?: string | null;
+  imageUrl?: string | null;
+  aiGeneratedImage?: boolean;
 }
 
 export interface ScanPendingPayload {
   items?: ScanPendingItemWire[] | null;
   done?: boolean;
+  /** KB-1006: 사진 생성까지 끝남 — 폴링 종료 = done && imagesDone(부재 = 사진 없는 구 서버 → done만) */
+  imagesDone?: boolean;
 }
 
 /** POST /images/upload-url — presigned 발급 (req/res, 2026-07-16 배포). */
