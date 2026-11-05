@@ -109,17 +109,17 @@ function Expanded({ d, showTranslation }: { d: ProcessedFoodDetail; showTranslat
 
 const PREVIEW_LINES = 3;
 
-/** KB-997(예진 11/5 실기 — 원재료가 버튼 뒤에 완전히 숨음): 접힌 상태 = "Ingredients" + 번역(없으면 한국어 원문) 3줄 + 아래 페이드 + See all.
- *  3줄을 넘는지는 제한 없는 투명 사본의 onTextLayout 줄 수로 판단(numberOfLines가 걸린 Text는 안드가 잘린 줄만 준다).
- *  3줄 이하·원재료 없음 = 접을 게 없다 → 전체 섹션(번역·원문·알레르기·출처)을 그대로 — 버튼이 없어도 출처 고지·원문에 닿는다.
- *  측정은 글 키로 보관(언어 전환으로 글이 바뀌면 다시 잰다 — 렌더 중 비교, effect 리셋 없음). */
+/** KB-997(예진 11/5 실기 — 원재료가 버튼 뒤에 완전히 숨음): 접힌 상태 = "Ingredients" + 번역(없으면 한국어 원문) 최대 3줄 + See all.
+ *  P-611(예진 11/5): "세 줄"은 섹션 전체(번역·원문·알레르기·출처) 기준 → 길이 측정 분기 없이 **항상 접힌 채 시작**, See all 항상
+ *  (짧은 번역이어도 펼치면 원문·출처가 더 있다). 3줄을 넘을 때만 아래 페이드(예진 원 요청 '세 줄 + 블러'). 원재료 없음 = 전체 섹션 그대로. */
 function IngredientsPreview({ d, showTranslation, onSeeAll }: { d: ProcessedFoodDetail; showTranslation: boolean; onSeeAll: () => void }) {
   const { t } = useTranslation();
   const text = (showTranslation ? d.ingredients.translated : null) ?? d.ingredients.original;
+  // 페이드 표시 판단 전용 측정(접힘/펼침 분기엔 안 씀) — 제한 없는 투명 사본의 줄 수(numberOfLines Text는 안드가 잘린 줄만 준다).
+  // 글 키로 보관: 언어 전환으로 글이 바뀌면 다시 잰다(렌더 중 비교, effect 리셋 없음). 측정 전·3줄 이하 = 페이드 없음
   const [measured, setMeasured] = React.useState<{ text: string; lines: number } | null>(null);
-  const lines = measured && measured.text === text ? measured.lines : null;
-  if (!text || (lines != null && lines <= PREVIEW_LINES)) return <Expanded d={d} showTranslation={showTranslation} />;
-  const long = lines != null;
+  const cut = measured != null && measured.text === text && measured.lines > PREVIEW_LINES;
+  if (!text) return <Expanded d={d} showTranslation={showTranslation} />;
   return (
     <View style={s.block} testID="pf-ingredients-peek">
       <Text style={s.h2}>{t('packaged.ingredientsHeading')}</Text>
@@ -137,13 +137,11 @@ function IngredientsPreview({ d, showTranslation, onSeeAll }: { d: ProcessedFood
         >
           {text}
         </Text>
-        {long && <LinearGradient colors={['rgba(255,255,255,0)', C.card]} style={s.fade} pointerEvents="none" testID="pf-preview-fade" />}
+        {cut && <LinearGradient colors={['rgba(255,255,255,0)', C.card]} style={s.fade} pointerEvents="none" testID="pf-preview-fade" />}
       </View>
-      {long && (
-        <Pressable style={s.seeLess} onPress={onSeeAll} accessibilityRole="button" testID="pf-see-all">
-          <Text style={s.seeLessText}>{t('packaged.ingredients.seeAll')}</Text>
-        </Pressable>
-      )}
+      <Pressable style={s.seeLess} onPress={onSeeAll} accessibilityRole="button" testID="pf-see-all">
+        <Text style={s.seeLessText}>{t('packaged.ingredients.seeAll')}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -411,7 +409,7 @@ const s = StyleSheet.create({
   preview: { fontFamily: font.body, fontSize: 16, lineHeight: 22, color: C.ink2 },
   expanded: { gap: 24 },
   disclaimer: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
-  measure: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0 }, // KB-997: 줄 수 측정용 투명 사본(같은 폭)
+  measure: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0 }, // KB-997: 줄 수 측정용 투명 사본(같은 폭) — 페이드 판단 전용
   fade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 40 }, // KB-997: 3줄 끝 페이드(바탕 → 투명)
   seeLess: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, justifyContent: 'center' },
   seeLessText: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
