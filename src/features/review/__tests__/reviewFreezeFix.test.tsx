@@ -72,7 +72,6 @@ jest.mock('@sentry/react-native', () => ({
 
 import { runAfterKeyboardHidden } from '../ReviewCellParts';
 import { captureApi5xx } from '@/lib/sentry';
-import * as fs from 'fs';
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -120,7 +119,7 @@ describe('(a) runAfterKeyboardHidden — 키보드 선해제 후 실행', () => 
 });
 
 describe('(d) captureApi5xx — 태그만·중복창 억제', () => {
-  it('KB-1001: 그룹 = [api_5xx, path, status] 고정 · 컬프릿 = transaction · 합성 스택 0(captureMessage 미사용)', () => {
+  it('KB-1001: 그룹 = [api_5xx, path, status] 고정 · 컬프릿 = transaction · 합성 스택 0(captureMessage 미사용 — 목에 없어 되돌리면 실패)', () => {
     captureApi5xx('/foods/77?lang=ko', 502);
     expect(mockEvent).toHaveBeenCalledTimes(1);
     const e = mockEvent.mock.calls[0][0];
@@ -128,8 +127,6 @@ describe('(d) captureApi5xx — 태그만·중복창 억제', () => {
     expect(e.transaction).toBe('502 /foods/:id');
     expect(e).not.toHaveProperty('stacktrace');
     expect(e).not.toHaveProperty('exception');
-    const src = fs.readFileSync('src/lib/sentry.ts', 'utf8');
-    expect(src).not.toMatch(/captureMessage\('api_5xx'/);
   });
   it('5xx 1회 캡처(경로 쿼리 제거·태그 구성) + 같은 status·path 20s 내 중복 억제', () => {
     captureApi5xx('/api/places/search?query=abc&lang=en', 502, 'PLACE-001');
