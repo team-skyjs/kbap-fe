@@ -1183,8 +1183,10 @@ export default function Scan() {
           </View>
         )}
 
-        {/* Codex #444 P2: 추가·옵션만 읽힌 스캔이면 메뉴 수는 0이어도 목록(맨 아래 칩 블록)은 그린다 — Safe only면 블록이 숨으니 빈 화면 그대로 */}
-        {view === 'list' && shownCount === 0 && (safeOnly || addOns.length === 0) ? (
+        {/* Codex #444 P2: 추가·옵션만 읽힌 스캔이면 메뉴 수는 0이어도 목록(맨 아래 칩 블록)은 그린다.
+            2R P2: Safe only를 켜도 이 전체 빈 화면으로 가면 컨트롤 줄(토글)까지 사라져 다시 끌 수 없었다 — 전체 빈 화면은
+            "메뉴도 추가·옵션도 0"일 때만. Safe only면 아래 기존 안전 0건 상태(컨트롤 유지·목록 자리만 빈 상태)로, 블록은 숨김 */}
+        {view === 'list' && shownCount === 0 && addOns.length === 0 ? (
           /* P-330(4003:7160): 결과 0개 = 화면 세로 중앙(배너·컨트롤 숨김 — A-SC-12) */
           <ScreenCenterFill>
             <EmptyBlock label={t('scan.resultsEmpty')} testID="scan-results-empty" />

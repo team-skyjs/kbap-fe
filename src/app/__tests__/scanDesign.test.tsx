@@ -1105,6 +1105,15 @@ describe('KB-992 AI 추정 섹션', () => {
     const tree = await toResult();
     expect(tree.root.findAll((n) => n.props?.testID === 'scan-results-empty')).toHaveLength(0);
     expect(tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')).toHaveLength(1);
+    // 2R P2: Safe only를 켜도 컨트롤(토글)은 남고 안전 0건 상태만 — 블록은 숨김, 다시 끄면 돌아온다(갇힘 0)
+    const toggle = () => tree.root.findAll((n) => n.props?.testID === 'scan-safe-toggle' && typeof n.props.onPress === 'function');
+    act(() => toggle()[0].props.onPress());
+    expect(toggle().length).toBeGreaterThanOrEqual(1); // 토글 남음
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-safe-empty')).not.toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-results-empty')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons')).toHaveLength(0);
+    act(() => toggle()[0].props.onPress());
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')).toHaveLength(1);
   });
 
   it('KB-1006: 일반(매칭) 줄도 맵기 — results[].spiciness ceil(s/2) · 0 = 표시 안 함', async () => {
