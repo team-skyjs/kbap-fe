@@ -2,7 +2,7 @@
  * 운영진 1:1 채팅 (KB-1008, P-614 — S-971 계약 v0). 레퍼런스 = 일반 CS 'Chat with us'.
  *
  * - 사용자당 대화방 1개(서버가 첫 메시지에 자동 생성). 지난 문의 이력은 같은 목록 위쪽(legacy)에 가볍게 구분.
- * - 운영진 'K-Bap 팀'(브랜드 타일) 말풍선 왼쪽 · 내 말풍선 오른쪽 primary · 시간. 운영진 메시지가 아직 없으면
+ * - 운영진 'K-Bap 팀'(정본 마크 아바타) 말풍선 왼쪽 · 내 말풍선 오른쪽 primary · 시간. 운영진 메시지가 아직 없으면
  *   맨 위에 기본 인사(저장 안 하는 화면 표시).
  * - 열려 있는 동안 5초 폴링, 읽음 = 화면이 보이고 맨 아래를 볼 때만(조회로는 읽음 안 됨).
  * - 보내기: 사진 ≤3(문의 업로드 재사용 — **로그인 사용자만**: 게스트는 업로드 경로가 없어 서버가 400, 버튼 자체를 숨긴다) · 공용 제출 가드 · 실패한 말풍선 = 탭해서 다시 보내기. 429 CHAT-001 = 전용 안내(서버 문구 노출 0).
@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SubHeader, QueryErrorBlock, IconClose, IconGallery, IconSend } from '@/components';
-import { BrandTile } from '@/components/Brand';
+import { AppBarMark } from '@/components/design4Assets';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { Input } from '@/components/KeyboardDismissBar';
@@ -180,7 +180,7 @@ export function ChatScreen() {
     <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} keyboardVerticalOffset={KAV_OFFSET} testID="chat-screen">
       <SubHeader title={t('chat.title')} onBack={() => router.back()} />
       <View style={styles.teamBar} testID="chat-team-bar">
-        <BrandTile size={32} />
+        <TeamAvatar size={32} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.teamName}>{t('chat.team')}</Text>
           <Text style={styles.teamNote}>{t('chat.repliesWithin')}</Text>
@@ -282,10 +282,20 @@ function ChatRow({ row, onRetry, now, t }: { row: Row; onRetry: (o: Outgoing) =>
   );
 }
 
+/** 운영진 아바타 — 정본 마크(kbap-design/brand/appbar-mark.svg = AppBarMark)를 흰 원 위에(앱 아이콘 icon-1024와 같은 "흰 바탕 + 주황 마크").
+ *  옛 주황 타일 + 흰 K 로고는 폐기(brand README) — 쓰지 않는다. 흰 화면 위라 C.line 테두리로 원 윤곽만 잡는다. */
+export function TeamAvatar({ size }: { size: number }) {
+  return (
+    <View style={[styles.avatar, { width: size, height: size }]} testID="chat-team-avatar">
+      <AppBarMark height={Math.round(size * 0.56)} />
+    </View>
+  );
+}
+
 function OperatorBubble({ text, images = [], time, t, testID }: { text: string; images?: string[]; time: string; t: (k: string) => string; testID: string }) {
   return (
     <View style={styles.opWrap} testID={testID}>
-      <BrandTile size={28} />
+      <TeamAvatar size={28} />
       <View style={{ flexShrink: 1, gap: 4 }}>
         <Text style={styles.opName}>{t('chat.team')}</Text>
         <View style={styles.op}>
@@ -300,6 +310,7 @@ function OperatorBubble({ text, images = [], time, t, testID }: { text: string; 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#fff' },
+  avatar: { borderRadius: radius.pill, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   teamBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line },
   teamName: { fontSize: 15, fontWeight: '700', color: C.ink },
   teamNote: { fontSize: 13, color: C.ink3 },

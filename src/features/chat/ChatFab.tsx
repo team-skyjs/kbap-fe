@@ -22,6 +22,7 @@ export const CHAT_FAB_GAP = 18;
 export const communityLift = (): number => (FLAGS.communityPostsEnabled ? 54 + 12 : 40 + 12);
 /** 안읽음 점 — 알림 관례의 빨강(위험도 색 토큰과 별개 — 헌법 III 고정 의미를 빌리지 않는다) */
 const UNREAD_RED = '#FF3B30';
+// 11/5 예진: 검정 FAB가 "너무 안 보임" → 흰 바탕 + 주황 선 말풍선(채움 없음) + C.line 1px 테두리·sh1 그림자로 흰 화면과 분리(주황 채움 = 스캔 버튼과 겹침, 청록 = 취소 — 최종 확정). 빨간 점은 흰 테두리 2.5.
 
 export function chatFabBottom(insetBottom: number, activeRoute: string): number {
   return TABBAR_CONTENT_H + Math.max(insetBottom, 10) + CHAT_FAB_GAP + (activeRoute === 'community' ? communityLift() : 0);
@@ -53,7 +54,7 @@ export function ChatFab({ activeRoute }: { activeRoute: string }) {
         </Pressable>
       )}
       <Pressable style={styles.fab} onPress={open} accessibilityRole="button" accessibilityLabel={t('chat.title')} testID="chat-fab">
-        <IconSpeech size={24} color="#fff" />
+        <IconSpeech size={24} color={C.primary} />
         {count > 0 && <View style={styles.dot} testID="chat-fab-dot" />}
       </Pressable>
     </View>
@@ -62,8 +63,8 @@ export function ChatFab({ activeRoute }: { activeRoute: string }) {
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', right: CHAT_FAB_GAP, flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
-  fab: { width: CHAT_FAB_SIZE, height: CHAT_FAB_SIZE, borderRadius: radius.pill, backgroundColor: '#1C1E21', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
-  dot: { position: 'absolute', top: 2, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: UNREAD_RED, borderWidth: 2, borderColor: '#fff' },
+  fab: { width: CHAT_FAB_SIZE, height: CHAT_FAB_SIZE, borderRadius: radius.pill, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
+  dot: { position: 'absolute', top: 2, right: 2, width: 13, height: 13, borderRadius: 6.5, backgroundColor: UNREAD_RED, borderWidth: 2.5, borderColor: C.surface },
   preview: { maxWidth: 220, backgroundColor: '#fff', borderRadius: radius.lg, borderBottomRightRadius: radius.xs, paddingHorizontal: 12, paddingVertical: 8, gap: 2, ...shadow.sh1 },
   previewName: { fontSize: 12, fontWeight: '600', color: C.ink3 },
   previewText: { fontSize: 14, lineHeight: 19, color: C.ink },
