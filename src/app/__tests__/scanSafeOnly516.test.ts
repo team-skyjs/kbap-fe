@@ -36,7 +36,7 @@ it('④ 안전 0건 — 목록 자리 EmptyBlock만(컨트롤·배너 유지), �
 
 it('⑤ 수량 보존 — 주문 합계는 필터 무관(listDishes 전체 기준), 장바구니 itemId 키 유지', () => {
   const s = scan();
-  expect(s).toContain('const items = listDishes'); // visibleDishes 아님 — 숨긴 담김분 포함
+  expect(s).toContain('const items = [...listDishes, ...aiRows.map((r) => r.dish)]'); // visibleDishes 아님 — 숨긴 담김분 포함 · KB-1006: AI 줄 담김분도
   expect(s).toMatch(/const cartCount = /); // 합계 상태는 cart 맵(뷰 필터와 무관)
 });
 

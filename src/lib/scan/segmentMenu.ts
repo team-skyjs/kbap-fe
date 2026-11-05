@@ -44,6 +44,10 @@ export interface ResultDish extends MenuDish {
   originalScannedName?: string | null;
   /** KB-992: AI 추정 대기 키(미매칭·비대체만) — 있으면 결과 리스트 하단 'AI 추정' 섹션으로 간다. */
   pendingId?: string | null;
+  /** KB-1006: 수량 옵션(2개 이상만) — 있으면 가격 줄 대신 옵션 줄마다 가격·담기. 옵셔널 = 픽스처 호환 관례 */
+  priceOptions?: import('@/lib/api/scanAdapter').PriceOption[] | null;
+  /** KB-1006: 고추 수 0~5(0·부재 = 표시 안 함) */
+  spice?: number;
 }
 
 /** KB-789: 주문 카드 `nameKo` = **메뉴판에 적힌 이름** — 식당 직원에게 보여주는 줄이라 대체 항목은

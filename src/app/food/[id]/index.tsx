@@ -51,7 +51,7 @@ import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { IconEdit, IconPlus } from '@/components/icons';
 import { D4Minus } from '@/components/design4Assets';
-import { addScanItem, removeScanItem, useScanCart, useScanCartDish } from '@/features/scan/scanCartStore';
+import { addScanItem, removeScanItem, scanCartKey, useScanCart, useScanCartDish } from '@/features/scan/scanCartStore';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -75,7 +75,8 @@ export default function FoodDetailScreen() {
   const { id, price, src, item } = useLocalSearchParams<{ id: string; price?: string; src?: string; item?: string }>();
   // KB-982: 메뉴판 스캔 진입 = 결과 화면과 같은 카트 항목(itemId). 스캔 세션이 끝났으면(스토어 비움) 담기 0
   const cartDish = useScanCartDish(src === 'scan' && typeof item === 'string' && /^-?\d+$/.test(item) ? Number(item) : null);
-  const cartQty = useScanCart().get(cartDish?.itemId ?? Number.NaN) ?? 0;
+  // KB-1006(Codex #440 P2): 수량 옵션 메뉴 = 첫 옵션 키(상세 가격 = 첫 옵션 값) — 옵션 없는 키로 담으면 주문 카드에서 빠진다
+  const cartQty = useScanCart().get(cartDish ? scanCartKey(cartDish.itemId, cartDish.opt) : '') ?? 0;
   // P-083: 상세 진입 계측 — 진입 경로 1회
   useEffect(() => {
     const source = src && ['scan', 'list', 'search', 'home', 'saved', 'my_reviews', 'feed', 'tag_sheet', 'idol_pick'].includes(src) ? src : 'other'; // KB-847: review_detail 제거(#288 되돌림) · idol_pick 유지(#313)
@@ -240,7 +241,7 @@ export default function FoodDetailScreen() {
           bottom={band.bottom}
           guest={isGuest}
           scanEntry={src === 'scan'}
-          cart={cartDish ? { qty: cartQty, onAdd: () => addScanItem(cartDish), onRemove: () => removeScanItem(cartDish) } : undefined}
+          cart={cartDish ? { qty: cartQty, onAdd: () => addScanItem(cartDish, cartDish.opt), onRemove: () => removeScanItem(cartDish, cartDish.opt) } : undefined}
           onHeight={(h) => { band.onHeight(h); pill.onBand(h + 8); }}
           t={t}
           onWrite={() => {
