@@ -58,15 +58,21 @@ jest.mock('@/components/RemoteImage', () => ({ RemoteImage: () => null }));
 jest.mock('@/lib/review/reviewExtras', () => ({ EMPTY_EXTRAS: {}, extrasFromReview: jest.fn(), hasAnyExtras: () => false }));
 jest.mock('@/lib/flags', () => ({ FLAGS: { reviewPlaceEnabled: true } }));
 const mockCapture = jest.fn();
+const mockEvent = jest.fn();
 jest.mock('@sentry/react-native', () => ({
   init: jest.fn(),
   setUser: jest.fn(),
   setTag: jest.fn(),
-  captureMessage: (...a: unknown[]) => mockCapture(...a),
+  // KB-1001: api_5xx = captureEvent — 기존 단언(메시지·level·tags)은 그대로 보이게 풀어서, 전체 이벤트는 mockEvent로
+  captureEvent: (e: { message: string; level: string; tags: object }) => {
+    mockEvent(e);
+    mockCapture(e.message, { level: e.level, tags: e.tags });
+  },
 }));
 
 import { runAfterKeyboardHidden } from '../ReviewCellParts';
 import { captureApi5xx } from '@/lib/sentry';
+import * as fs from 'fs';
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -74,6 +80,7 @@ beforeEach(() => {
   mockKb.listeners = [];
   mockKb.dismiss.mockClear();
   mockCapture.mockClear();
+  mockEvent.mockClear();
 });
 afterEach(() => jest.useRealTimers());
 
@@ -113,6 +120,17 @@ describe('(a) runAfterKeyboardHidden — 키보드 선해제 후 실행', () => 
 });
 
 describe('(d) captureApi5xx — 태그만·중복창 억제', () => {
+  it('KB-1001: 그룹 = [api_5xx, path, status] 고정 · 컬프릿 = transaction · 합성 스택 0(captureMessage 미사용)', () => {
+    captureApi5xx('/foods/77?lang=ko', 502);
+    expect(mockEvent).toHaveBeenCalledTimes(1);
+    const e = mockEvent.mock.calls[0][0];
+    expect(e.fingerprint).toEqual(['api_5xx', '/foods/:id', '502']);
+    expect(e.transaction).toBe('502 /foods/:id');
+    expect(e).not.toHaveProperty('stacktrace');
+    expect(e).not.toHaveProperty('exception');
+    const src = fs.readFileSync('src/lib/sentry.ts', 'utf8');
+    expect(src).not.toMatch(/captureMessage\('api_5xx'/);
+  });
   it('5xx 1회 캡처(경로 쿼리 제거·태그 구성) + 같은 status·path 20s 내 중복 억제', () => {
     captureApi5xx('/api/places/search?query=abc&lang=en', 502, 'PLACE-001');
     captureApi5xx('/api/places/search?query=def&lang=en', 502, 'PLACE-001'); // 쿼리만 다름 = 동일 키
