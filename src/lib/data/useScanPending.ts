@@ -81,7 +81,18 @@ export function useScanPending(scanId: string | null, active: boolean): { items:
       clearTimeout(timer);
       setSt((s) => ({ ...(s.scanId === scanId ? s : { scanId, items: [] }), ended: true }));
     };
-    const cap = setTimeout(finish, Math.max(0, r.startedAt + PENDING_CAP_MS - Date.now()));
+    // Codex #445 P2: 폴링 중 백그라운드·화면 이탈로 멈췄다가 60초 마감이 지난 뒤 돌아오면 — cap이 0ms로 바로 끝내며
+    // 진행 중 응답을 버리고(alive=false), live는 이미 true라 복귀 재조회도 안 탄다 → 늦게 READY 된 사진이 영영 안 들어왔다.
+    // 마감이 지났으면 한 번 받아 반영하고 끝낸다(실패도 끝 — 현행 unable 폴백). 남았으면 남은 예산으로 폴링 재개(아래)
+    const remaining = r.startedAt + PENDING_CAP_MS - Date.now();
+    if (remaining <= 0) {
+      fetchPending(scanId)
+        .then((p) => { if (alive) { const got = adaptAndCount(p, r); if (got.length) setSt(withItems(scanId, got)); } })
+        .catch(() => {})
+        .finally(() => { if (alive) finish(); });
+      return () => { alive = false; };
+    }
+    const cap = setTimeout(finish, remaining);
     const tick = async () => {
       try {
         const p = await fetchPending(scanId);

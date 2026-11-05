@@ -223,6 +223,36 @@ describe('useScanPending', () => {
     }
   });
 
+  it('Codex #445 P2: 폴링 중 백그라운드 → 60초 마감이 지난 뒤(TTL 안) 복귀 = pending 1회 받아 반영하고 끝(사진이 영영 빠지지 않는다)', async () => {
+    let onChange: (s: string) => void = () => {};
+    const orig = AppState.addEventListener;
+    (AppState as unknown as { addEventListener: unknown }).addEventListener = (_: string, cb: (s: string) => void) => { onChange = cb; return { remove: () => {} }; };
+    try {
+      mockGet.mockResolvedValueOnce({ items: [item('p1', { imageStatus: 'GENERATING' })], done: true, imagesDone: false });
+      mount('s1');
+      await flush();
+      expect(out.polling).toBe(true);
+      act(() => onChange('background'));
+      await advance(70_000); // 마감(60초) 경과
+      expect(mockGet).toHaveBeenCalledTimes(1);
+      // 실기 순서 재현: 응답(네트워크)보다 0ms 타이머가 먼저 돈다 — 응답을 붙잡아 둔 채 타이머부터 돌린다
+      let respond: (v: unknown) => void = () => {};
+      mockGet.mockImplementationOnce(() => new Promise((res) => { respond = res; }));
+      act(() => onChange('active'));
+      await advance(1);
+      await act(async () => { respond({ items: [item('p1', { imageStatus: 'READY', imageUrl: 'https://cdn/late.webp' })], done: true, imagesDone: true }); });
+      await flush();
+      expect(mockGet).toHaveBeenCalledTimes(2); // 복귀 = 1회
+      expect((out.items[0] as unknown as { imageUrl: string }).imageUrl).toBe('https://cdn/late.webp');
+      expect(out.polling).toBe(false);
+      await advance(10_000);
+      expect(mockGet).toHaveBeenCalledTimes(2); // 폴링 재개 0
+    } finally {
+      act(() => tree.unmount());
+      (AppState as unknown as { addEventListener: unknown }).addEventListener = orig;
+    }
+  });
+
   it('실패(success=false·네트워크) = 즉시 종료(재시도 0)', async () => {
     mockGet.mockRejectedValueOnce(new Error('SCAN-999'));
     mount('s1');
