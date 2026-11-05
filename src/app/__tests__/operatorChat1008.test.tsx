@@ -11,7 +11,7 @@ import { TextInput } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // jest.mock은 babel-jest가 import 위로 올린다 — 목이 먼저 걸린다
-import ChatScreen, { chatRows, chatTime } from '@/app/chat';
+import ChatScreen, { chatErrorKey, chatRows, chatTime } from '@/app/chat';
 import { ChatFab, chatFabBottom } from '@/features/chat/ChatFab';
 import { adaptChatMessage, adaptChatPage, adaptChatUnread } from '@/lib/api/chatAdapter';
 import { routeForNotificationData } from '@/lib/push/pushAdapter';
@@ -52,6 +52,7 @@ let mockQuery: Record<string, string> = {};
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => mockQuery,
+  useSegments: () => ['chat'],
   useFocusEffect: (cb: () => (() => void) | void) => {
     const R = jest.requireActual('react') as typeof import('react');
     R.useEffect(() => {
@@ -73,6 +74,9 @@ jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[])
 const mockGet = jest.fn();
 const mockPost = jest.fn();
 jest.mock('@/lib/api/client', () => ({ api: { get: (...a: unknown[]) => mockGet(...a), post: (...a: unknown[]) => mockPost(...a) } }));
+let mockGen = 1;
+jest.mock('@/lib/auth/beTokens', () => ({ currentGen: () => mockGen }));
+jest.mock('@/lib/deviceInfo', () => ({ collectDeviceInfo: () => ({ os: 'ios', lang: 'en' }) }));
 jest.mock('@/lib/api/scanImage', () => ({ uploadImage: jest.fn().mockResolvedValue({ path: 'feedback/a.jpg' }) }));
 
 
@@ -105,6 +109,7 @@ const input = (r: ReactTestRenderer) => r.root.findAllByType(TextInput).find((n)
 beforeEach(() => {
   jest.clearAllMocks();
   mockQuery = {};
+  mockGen = 1;
   mockPost.mockResolvedValue(msg(10, 'USER', 'hi'));
 });
 
@@ -133,6 +138,9 @@ describe('① 어댑터·행·시간·딥링크', () => {
     expect(chatTime(new Date(2026, 10, 5, 9, 7).toISOString(), now)).toBe('09:07');
     expect(chatTime(new Date(2026, 10, 3, 21, 30).toISOString(), now)).toBe('11/3 21:30');
     expect(chatTime('nope', now)).toBe('');
+  });
+  it('에러 코드 → 문구 키(서버 message 노출 0) · 미지 = 일반 실패', () => {
+    expect(['CHAT-001', 'FEEDBACK-001', 'FEEDBACK-002', 'COMMON-002', 'X', undefined].map(chatErrorKey)).toEqual(['chat.rateLimited', 'chat.tooLong', 'chat.photoInvalid', 'chat.invalid', 'chat.sendFailed', 'chat.sendFailed']);
   });
   it('푸시 OPERATOR_CHAT → /chat', () => {
     expect(routeForNotificationData({ type: 'OPERATOR_CHAT', conversationId: 7 })).toBe('/chat');
@@ -172,7 +180,8 @@ describe('② 채팅 화면', () => {
     const r = await mount(<ChatScreen />);
     await act(async () => { input(r).props.onChangeText('  hi there  '); });
     await press(r, 'chat-send');
-    expect(mockPost).toHaveBeenCalledWith('/api/chat/messages', { content: 'hi there' }, H);
+    // S-971 확정: deviceInfo = 문의와 같은 수집 재사용 · 사진 0 = imagePaths 없음
+    expect(mockPost).toHaveBeenCalledWith('/api/chat/messages', { content: 'hi there', deviceInfo: { os: 'ios', lang: 'en' } }, H);
     expect(has(r, 'chat-out-sending')).toBe(false);
     expect(input(r).props.value).toBe('');
   });
@@ -197,6 +206,16 @@ describe('② 채팅 화면', () => {
     await act(async () => { input(r).props.onChangeText('x'); });
     expect(btn().props.disabled).toBe(false);
     expect(JSON.stringify(btn().props.style).replace(/"backgroundColor":"[^"]+"/, '')).toBe(off.replace(/"backgroundColor":"[^"]+"/, ''));
+  });
+  it('세션 경계: 응답 도착 전에 로그아웃·계정 전환(세대 bump)되면 옛 대화를 캐시에 올리지 않는다', async () => {
+    let resolve!: (v: unknown) => void;
+    mockGet.mockImplementation((path: string) => (path.startsWith('/api/chat/messages') ? new Promise((r) => { resolve = r; }) : Promise.resolve({ unreadCount: 0 })));
+    const r = await mount(<ChatScreen />);
+    mockGen = 2; // 요청 중 세션 바뀜
+    await act(async () => { resolve(page([msg(5, 'OPERATOR', 'previous user secret')])); });
+    await settle();
+    expect(has(r, 'chat-op-5')).toBe(false);
+    expect(text(r)).not.toContain('previous user secret');
   });
   it('광고 신고(?prefill=ad) = 입력창만 채움 · 자동 전송 0', async () => {
     mockQuery = { prefill: 'ad' };
@@ -243,7 +262,7 @@ describe('④ 배선 잠금 · i18n', () => {
     expect(read('src/app/(tabs)/_layout.tsx')).toContain('<ChatFab activeRoute={activeRoute} />');
   });
   it('chat 키 10로케일 전부 · 가운데 점·이모지 0', () => {
-    const KEYS = ['title', 'team', 'repliesWithin', 'greeting', 'placeholder', 'send', 'sendFailed', 'rateLimited', 'failedTapRetry', 'earlierInquiries'];
+    const KEYS = ['title', 'team', 'repliesWithin', 'greeting', 'placeholder', 'send', 'sendFailed', 'rateLimited', 'failedTapRetry', 'earlierInquiries', 'tooLong', 'photoInvalid', 'invalid'];
     for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'ru', 'th', 'es', 'id']) {
       const chat = JSON.parse(read(`src/lib/i18n/${l}.json`)).chat as Record<string, string>;
       for (const k of KEYS) {

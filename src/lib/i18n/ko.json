@@ -1443,6 +1443,9 @@
     "sendFailed": "보내지 못했어요. 다시 시도해 주세요.",
     "rateLimited": "메시지를 많이 보냈어요. 잠시 후 다시 보내 주세요.",
     "failedTapRetry": "보내지 못했어요. 눌러서 다시 보내기",
-    "earlierInquiries": "이전 문의"
+    "earlierInquiries": "이전 문의",
+    "tooLong": "메시지가 너무 길어요. 조금 줄여 주세요.",
+    "photoInvalid": "보낼 수 없는 사진이 있어요. 다른 사진을 골라 주세요.",
+    "invalid": "이 메시지는 보낼 수 없어요. 확인 후 다시 보내 주세요."
   }
 }

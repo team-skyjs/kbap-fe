@@ -1443,6 +1443,9 @@
     "sendFailed": "No se pudo enviar. Inténtalo de nuevo.",
     "rateLimited": "Has enviado muchos mensajes. Inténtalo de nuevo más tarde.",
     "failedTapRetry": "No enviado. Toca para reintentar.",
-    "earlierInquiries": "Consultas anteriores"
+    "earlierInquiries": "Consultas anteriores",
+    "tooLong": "Tu mensaje es demasiado largo. Acórtalo, por favor.",
+    "photoInvalid": "No se pudo enviar una de las fotos. Elige otra foto.",
+    "invalid": "No se pudo enviar este mensaje. Revísalo e inténtalo de nuevo."
   }
 }

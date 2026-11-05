@@ -40,6 +40,17 @@ interface Outgoing {
 
 type Row = { kind: 'msg'; m: ChatMessage } | { kind: 'out'; o: Outgoing } | { kind: 'legacyDivider' };
 
+/** S-971 에러 코드 → 안내 문구 키(서버 message는 노출하지 않는다). 미지 = 일반 실패 */
+export function chatErrorKey(code: string | undefined): string {
+  switch (code) {
+    case 'CHAT-001': return 'chat.rateLimited'; // 429 기기당 24시간 100건
+    case 'FEEDBACK-001': return 'chat.tooLong'; // 본문 길이
+    case 'FEEDBACK-002': return 'chat.photoInvalid'; // 사진 검증
+    case 'COMMON-002': return 'chat.invalid'; // 400 요청 형식
+    default: return 'chat.sendFailed';
+  }
+}
+
 /** 같은 날 = HH:mm, 다른 날 = M/D HH:mm(기기 시간대). 파싱 실패 = 빈 문자열 */
 export function chatTime(iso: string, now: Date): string {
   const d = new Date(iso);
@@ -106,8 +117,7 @@ export default function ChatScreen() {
       } catch (e) {
         if (isUploadAborted(e)) return; // 떠나서 취소 — 다른 화면 위 실패 토스트 금지
         setOutgoing((cur) => cur.map((x) => (x.localId === o.localId ? { ...x, failed: true } : x)));
-        const code = (e as { code?: string })?.code;
-        showTopToast(t(code === 'CHAT-001' ? 'chat.rateLimited' : 'chat.sendFailed'), { error: true }); // 서버 message 노출 0
+        showTopToast(t(chatErrorKey((e as { code?: string })?.code)), { error: true }); // 서버 message 노출 0
       }
     });
 

@@ -1443,6 +1443,9 @@
     "sendFailed": "Không gửi được. Vui lòng thử lại.",
     "rateLimited": "Bạn đã gửi nhiều tin nhắn. Vui lòng thử lại sau ít phút.",
     "failedTapRetry": "Chưa gửi. Chạm để thử lại.",
-    "earlierInquiries": "Câu hỏi trước đây"
+    "earlierInquiries": "Câu hỏi trước đây",
+    "tooLong": "Tin nhắn quá dài. Vui lòng rút ngắn.",
+    "photoInvalid": "Có ảnh không gửi được. Vui lòng chọn ảnh khác.",
+    "invalid": "Không gửi được tin nhắn này. Vui lòng kiểm tra và thử lại."
   }
 }

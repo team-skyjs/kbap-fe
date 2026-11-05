@@ -10,6 +10,8 @@ import { api } from '@/lib/api/client';
 import { uploadImage } from '@/lib/api/scanImage';
 import { UploadAbortedError } from '@/lib/api/uploadAbort';
 import { adaptChatMessage, adaptChatPage, adaptChatUnread, type ChatMessage, type ChatMessageWire, type ChatPageWire, type ChatUnreadWire } from '@/lib/api/chatAdapter';
+import { currentGen } from '@/lib/auth/beTokens';
+import { collectDeviceInfo } from '@/lib/deviceInfo';
 import { FEEDBACK_IMAGE_PURPOSE, FEEDBACK_MAX_LEN, FEEDBACK_MAX_PHOTOS } from './useFeedback';
 
 export type { ChatMessage, ChatUnread } from '@/lib/api/chatAdapter';
@@ -24,13 +26,23 @@ export const CHAT_MAX_LEN = FEEDBACK_MAX_LEN; // 1~2000
 export const CHAT_MAX_PHOTOS = FEEDBACK_MAX_PHOTOS; // 3
 export const CHAT_KEYS = { messages: ['chat', 'messages'] as const, unread: ['chat', 'unread'] as const };
 
+/** 세션 경계(로그아웃·계정 전환 = 세대 bump) 뒤에 도착한 옛 응답은 버린다 — queryClient.clear()는 진행 중 요청을 취소하지 않아
+ *  이전 사람의 대화가 새 세션 캐시에 내려앉을 수 있다(useMe·useNotifications와 같은 currentGen 규칙) */
+export class ChatSessionChangedError extends Error {}
+async function sameSession<T>(req: () => Promise<T>): Promise<T> {
+  const gen = currentGen();
+  const out = await req();
+  if (currentGen() !== gen) throw new ChatSessionChangedError('session changed');
+  return out;
+}
+
 export function useChatMessages(active: boolean) {
   return useInfiniteQuery({
     queryKey: CHAT_KEYS.messages,
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
       const q = `?limit=${CHAT_PAGE_SIZE}${pageParam ? `&before=${encodeURIComponent(pageParam)}` : ''}`;
-      return adaptChatPage(await api.get<ChatPageWire>(`/api/chat/messages${q}`, H));
+      return adaptChatPage(await sameSession(() => api.get<ChatPageWire>(`/api/chat/messages${q}`, H)));
     },
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     // ponytail: 폴링은 불러온 페이지 전부를 다시 부른다(TanStack infinite 기본) — 지난 이력을 여러 장 넘긴 경우만 무거움, 문제 되면 첫 장만 재조회로
@@ -47,7 +59,8 @@ export async function sendChatMessage(input: { content: string; photoUris: strin
     paths.push(path);
   }
   if (input.signal?.aborted) throw new UploadAbortedError();
-  const w = await api.post<ChatMessageWire>('/api/chat/messages', { content: input.content, ...(paths.length ? { imagePaths: paths } : {}) }, H);
+  // deviceInfo = 문의와 같은 허용 키 수집 재사용(어드민 국가·언어 표시 — S-971 확정)
+  const w = await api.post<ChatMessageWire>('/api/chat/messages', { content: input.content, ...(paths.length ? { imagePaths: paths } : {}), deviceInfo: collectDeviceInfo() }, H);
   return adaptChatMessage(w);
 }
 
@@ -69,7 +82,7 @@ export function useChatUnread(enabled: boolean) {
   return useQuery({
     queryKey: CHAT_KEYS.unread,
     enabled,
-    queryFn: async () => adaptChatUnread(await api.get<ChatUnreadWire>('/api/chat/unread', H)),
+    queryFn: async () => adaptChatUnread(await sameSession(() => api.get<ChatUnreadWire>('/api/chat/unread', H))),
     refetchInterval: enabled ? CHAT_UNREAD_POLL_MS : false,
   });
 }

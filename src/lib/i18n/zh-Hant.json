@@ -1443,6 +1443,9 @@
     "sendFailed": "傳送失敗，請再試一次。",
     "rateLimited": "訊息傳送過多，請稍後再試。",
     "failedTapRetry": "未傳送，點按重試",
-    "earlierInquiries": "以往諮詢"
+    "earlierInquiries": "以往諮詢",
+    "tooLong": "訊息太長了，請縮短一些。",
+    "photoInvalid": "有照片無法傳送，請換一張。",
+    "invalid": "無法傳送此訊息，請檢查後再試一次。"
   }
 }
