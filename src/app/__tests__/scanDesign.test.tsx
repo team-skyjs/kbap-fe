@@ -1096,6 +1096,40 @@ describe('KB-992 AI 추정 섹션', () => {
     });
   });
 
+  it('P-616(S-970): notMenu 줄 = 판정 목록·메뉴 수에서 빠지고 맨 아래 "추가와 옵션" 칩(원문·가격) + 직원 확인 1줄 · 배지·담기 없음 · Safe only = 숨김', async () => {
+    const addOn = { ...ai('', '라면사리'), pendingId: null, notMenu: true, price: 2000 };
+    mockScanExtra.v = { photoOnly: [...photoOnly, addOn], scanId: 's1' };
+    mockPending.polling = false;
+    const tree = await toResult();
+    expect(names(tree)).not.toContain('라면사리');
+    expect(list(tree).props.addOns.map((d: { koreanName: string }) => d.koreanName)).toEqual(['라면사리']);
+    const block = tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')[0];
+    const txt = block.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(txt).toEqual(expect.arrayContaining(['scan.addOnsTitle', '라면사리', '₩2,000', 'scan.addOnsNote']));
+    expect(block.findAll((n) => n.props?.state !== undefined)).toHaveLength(0); // 배지 0
+    expect(block.findAll((n) => /^add-|^rich-|^mark-/.test(String(n.props?.testID)))).toHaveLength(0); // 담기·탭·배지 자리 0
+    act(() => tree.root.findAll((n) => n.props?.testID === 'scan-safe-toggle' && typeof n.props.onPress === 'function')[0].props.onPress());
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons')).toHaveLength(0);
+  });
+
+  it('Codex #444 P2: 결과가 notMenu뿐이어도 빈 화면이 아니라 추가와 옵션 블록이 보인다(메뉴 수는 0 그대로)', async () => {
+    const onlyAddOn = { ...ai('', '공기밥'), pendingId: null, notMenu: true, price: 1000 };
+    mockScanExtra.v = { items: [], photoOnly: [onlyAddOn], scanId: null }; // 일반 메뉴 0 — 추가·옵션만
+    mockPending.polling = false;
+    const tree = await toResult();
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-results-empty')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')).toHaveLength(1);
+    // 2R P2: Safe only를 켜도 컨트롤(토글)은 남고 안전 0건 상태만 — 블록은 숨김, 다시 끄면 돌아온다(갇힘 0)
+    const toggle = () => tree.root.findAll((n) => n.props?.testID === 'scan-safe-toggle' && typeof n.props.onPress === 'function');
+    act(() => toggle()[0].props.onPress());
+    expect(toggle().length).toBeGreaterThanOrEqual(1); // 토글 남음
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-safe-empty')).not.toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-results-empty')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons')).toHaveLength(0);
+    act(() => toggle()[0].props.onPress());
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')).toHaveLength(1);
+  });
+
   it('KB-1006: 일반(매칭) 줄도 맵기 — results[].spiciness ceil(s/2) · 0 = 표시 안 함', async () => {
     const { mergeResults } = jest.requireActual('@/lib/api/scanAdapter') as typeof import('@/lib/api/scanAdapter');
     const [hot, mild] = mergeResults(

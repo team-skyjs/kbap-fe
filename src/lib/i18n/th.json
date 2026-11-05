@@ -335,6 +335,8 @@
     "aiGeneratedPhoto": "ภาพจาก AI",
     "aiPhotoGenerating": "กำลังสร้างภาพ",
     "aiDetailIngredients": "วัตถุดิบหลัก",
+    "addOnsTitle": "ของเพิ่มและตัวเลือก",
+    "addOnsNote": "นี่คือวัตถุดิบเพิ่มหรือตัวเลือก โปรดสอบถามพนักงานว่ามีอะไรบ้าง",
     "searchOnGoogle": "ค้นหาใน Google",
     "resultsEmpty": "ไม่มีผลการสแกน",
     "viewOrderAction": "ดูออเดอร์",

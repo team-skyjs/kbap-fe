@@ -109,6 +109,7 @@ export function ScanRichList({
   onClosestMatch,
   aiRows = [],
   onOpenAi,
+  addOns = [],
   t,
 }: {
   dishes: ResultDish[];
@@ -126,6 +127,8 @@ export function ScanRichList({
   /** KB-992 → KB-1006: DB 매칭 목록 아래 'AI 추정' 섹션 — 일반 줄과 같은 RichRow(가격·담기·맵기), 탭 = AI 상세 시트 */
   aiRows?: AiRow[];
   onOpenAi?: (r: AiRow) => void;
+  /** P-616(S-970): 주문 옵션·단일 재료어(notMenu) — 맨 아래 칩 블록. 배지·사진·탭·담기 없음 */
+  addOns?: ResultDish[];
   t: TFn;
 }) {
   return (
@@ -150,6 +153,8 @@ export function ScanRichList({
           ))}
         </View>
       )}
+
+      {addOns.length > 0 && <AddOnBlock items={addOns} t={t} />}
 
       <Text style={styles.footNote}>{t('scan.listFootNote')}</Text>
     </View>
@@ -467,6 +472,25 @@ function GenDot({ i, p, still }: { i: number; p: SharedValue<number>; still: boo
   return <Animated.View style={[styles.genDot, a]} />;
 }
 
+/** P-616(S-970): "추가·옵션" — 판정 대상이 아닌 주문 옵션·단일 재료어(사리·추가·소스·곱빼기 …). 원문 이름 칩(가격 있으면 칩 안 ₩,
+ *  가운데 점 없이 간격) + "직원에게 확인" 1줄. 배지·Unknown·사진·탭·담기 없음 — 안전 단정 문구 금지(헌법 III: 회피 재료가 든 옵션이 있다) */
+function AddOnBlock({ items, t }: { items: ResultDish[]; t: TFn }) {
+  return (
+    <View style={styles.addOns} testID="addons">
+      <Text style={styles.addOnsTitle}>{t('scan.addOnsTitle')}</Text>
+      <View style={styles.addOnChips}>
+        {items.map((d) => (
+          <View key={d.itemId} style={styles.addOnChip} testID={`addon-${d.itemId}`}>
+            <Text style={styles.addOnName}>{d.koreanName ?? d.rawMenuName}</Text>
+            {d.priceKrw != null && <Text style={styles.addOnPrice}>{formatKrw(d.priceKrw)}</Text>}
+          </View>
+        ))}
+      </View>
+      <Text style={styles.addOnsNote}>{t('scan.addOnsNote')}</Text>
+    </View>
+  );
+}
+
 /** 기피 경고 칩 1줄(KB-432 §1-1 · P-171 접기 · P-223 색+형태) — 메뉴판 결과 줄과 가공식품 후보 줄(KB-914 R-138)이 같이 쓴다.
  *  warns는 호출측이 danger 우선으로 정렬해 넘긴다. 칩 = 마크 16 + 이름 · 넘치면 "+n" */
 export function WarnChips({ warns, testID, moreTestID }: { warns: { code: string; name: string; risk: RiskState | 'neutral' }[]; testID: string; moreTestID: string }) {
@@ -570,6 +594,14 @@ const styles = StyleSheet.create({
   addBtn: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 }, // P-285: add 36(4003:5796) · A-DS-02: 기본 보더 제거(흰+sh1)
   stepper: { width: 83, height: 31, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: radius.xs, paddingHorizontal: 6, ...shadow.sh1 }, // P-285: 스테퍼 83×31(2162:9658)
   qty: { fontSize: 16, fontWeight: '500', color: '#262C31', fontVariant: ['tabular-nums'], textAlign: 'center' },
+  // P-616: 추가·옵션 블록 — AI 섹션 머리와 같은 구분선 문법, 칩 = 회피 칩 프레임(보더 line·pill)
+  addOns: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: 20, marginTop: 8, gap: 10 },
+  addOnsTitle: { fontSize: 16, fontWeight: '700', color: '#2F3137' },
+  addOnChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  addOnChip: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32, borderWidth: 1, borderColor: C.line, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: '#FFFFFF' },
+  addOnName: { fontSize: 14, fontWeight: '500', color: '#2F3137' },
+  addOnPrice: { fontSize: 13, color: C.ink3, fontVariant: ['tabular-nums'] },
+  addOnsNote: { fontSize: 13, lineHeight: 18, color: C.ink3 },
   footNote: { fontFamily: font.body, fontSize: 12, lineHeight: 17, color: C.ink3, paddingVertical: 14 },
   pill: { position: 'absolute', left: 20, right: 20, backgroundColor: C.primary, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', shadowColor: C.primary, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
   pillText: { fontFamily: font.bodyBold, fontSize: 16, color: '#fff' },

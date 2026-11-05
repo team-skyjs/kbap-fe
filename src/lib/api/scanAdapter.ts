@@ -58,6 +58,8 @@ export interface ScanOverlayItem extends ScannedItem {
   priceOptions: PriceOption[] | null;
   /** KB-1006: 고추 수 0~5(0 = 표시 안 함) */
   spice: number;
+  /** P-616(S-970): 주문 옵션·단일 재료어 — 판정 줄이 아니라 "추가·옵션" 칩 블록 */
+  notMenu: boolean;
 }
 
 /**
@@ -135,6 +137,8 @@ function verdict(r: ScanResultWire) {
     // KB-1006(S-969 v0): 수량 옵션(2개 이상만)·맵기(고추 수)
     priceOptions: mapPriceOptions(r.priceOptions),
     spice: spiceRank(r.spiciness),
+    // P-616(S-970): 엄격 true만(부재·이상값 = 일반 줄 — 숨김보다 판정 줄로 남는 쪽이 안전)
+    notMenu: r.notMenu === true,
   } as const;
 }
 
@@ -174,6 +178,7 @@ export interface PhotoOnlyItem {
   pendingId: string | null;
   priceOptions: PriceOption[] | null; // KB-1006
   spice: number; // KB-1006
+  notMenu: boolean; // P-616
 }
 
 /**
