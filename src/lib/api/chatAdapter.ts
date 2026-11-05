@@ -46,13 +46,20 @@ export interface ChatUnread {
   last: { content: string; createdAt: string } | null;
 }
 
+/** QA #441(9시간 어긋남): 서버 채팅 시각이 오프셋 없는 ISO(UTC)로 와서 new Date()가 기기 로컬로 읽었다.
+ *  채팅 시각 필드에 한해 **오프셋 없는 날짜시각 = UTC**로 읽는다(Z를 붙인다). 오프셋·Z가 있으면 그대로 — 서버가 오프셋 포함으로 바뀌어도 맞다 */
+export function chatTimeIso(v: string | null | undefined): string {
+  if (typeof v !== 'string' || !v) return '';
+  return /T\d{2}:\d{2}/.test(v) && !/(Z|[+-]\d{2}:?\d{2})$/i.test(v) ? `${v}Z` : v;
+}
+
 export function adaptChatMessage(w: ChatMessageWire): ChatMessage {
   return {
     id: String(w.id),
     role: w.authorRole === 'USER' ? 'user' : 'operator',
     content: typeof w.content === 'string' ? w.content : '',
     imageUrls: Array.isArray(w.imageUrls) ? w.imageUrls.filter((u) => typeof u === 'string' && /^https?:\/\//.test(u)) : [],
-    createdAt: typeof w.createdAt === 'string' ? w.createdAt : '',
+    createdAt: chatTimeIso(w.createdAt),
     legacy: w.legacyFeedbackId != null,
   };
 }
@@ -70,5 +77,5 @@ export function adaptChatPage(w: ChatPageWire | null | undefined): ChatPage {
 export function adaptChatUnread(w: ChatUnreadWire | null | undefined): ChatUnread {
   const n = typeof w?.unreadCount === 'number' && Number.isFinite(w.unreadCount) ? Math.max(0, Math.floor(w.unreadCount)) : 0;
   const lm = w?.lastOperatorMessage;
-  return { count: n, last: lm && typeof lm.content === 'string' && lm.content ? { content: lm.content, createdAt: lm.createdAt ?? '' } : null };
+  return { count: n, last: lm && typeof lm.content === 'string' && lm.content ? { content: lm.content, createdAt: chatTimeIso(lm.createdAt) } : null };
 }

@@ -14,7 +14,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ChatRoute, { CHAT_READ_RETRY_MS, chatErrorKey, chatRows, chatTime } from '@/app/chat';
 import { FLAGS } from '@/lib/flags';
 import { ChatFab, chatFabBottom } from '@/features/chat/ChatFab';
-import { adaptChatMessage, adaptChatPage, adaptChatUnread } from '@/lib/api/chatAdapter';
+import { adaptChatMessage, adaptChatPage, adaptChatUnread, chatTimeIso } from '@/lib/api/chatAdapter';
 import { routeForNotificationData } from '@/lib/push/pushAdapter';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 
@@ -143,6 +143,17 @@ describe('① 어댑터·행·시간·딥링크', () => {
     // 전부 지난 문의여도 묶음 맨 위에 제목처럼 1개 · 지난 문의 없음 = 구분선 0
     expect(chatRows([], items.slice(2)).map((r) => (r.kind === 'msg' ? r.m.id : r.kind))).toEqual(['3', '2', 'legacyDivider']);
     expect(chatRows([], items.slice(0, 2)).some((r) => r.kind === 'legacyDivider')).toBe(false);
+  });
+  it('QA #441 ①: 채팅 시각 = 오프셋 없는 ISO는 UTC로(Z 부착) · 오프셋·Z 있으면 그대로 · 빈값 = 빈 문자열', () => {
+    expect(chatTimeIso('2026-11-05T03:00:00')).toBe('2026-11-05T03:00:00Z');
+    expect(chatTimeIso('2026-11-05T03:00:00.123456')).toBe('2026-11-05T03:00:00.123456Z');
+    expect(chatTimeIso('2026-11-05T03:00:00Z')).toBe('2026-11-05T03:00:00Z');
+    expect(chatTimeIso('2026-11-05T12:00:00+09:00')).toBe('2026-11-05T12:00:00+09:00');
+    expect(chatTimeIso('2026-11-05T12:00:00+0900')).toBe('2026-11-05T12:00:00+0900');
+    expect(chatTimeIso(null)).toBe('');
+    // 같은 순간: 오프셋 없는 UTC 03:00 = KST 12:00 표기와 같은 시각
+    expect(new Date(adaptChatMessage({ ...msg(1, 'USER', 'a'), createdAt: '2026-11-05T03:00:00' }).createdAt).getTime()).toBe(new Date('2026-11-05T12:00:00+09:00').getTime());
+    expect(adaptChatUnread({ unreadCount: 1, lastOperatorMessage: { content: 'x', createdAt: '2026-11-05T03:00:00' } }).last?.createdAt).toBe('2026-11-05T03:00:00Z');
   });
   it('시간: 같은 날 HH:mm · 다른 날 M/D HH:mm · 이상값 빈 문자열', () => {
     const now = new Date(2026, 10, 5, 15, 0);
