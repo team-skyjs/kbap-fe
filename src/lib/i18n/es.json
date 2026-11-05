@@ -1432,5 +1432,17 @@
     "homeTitle": "¡Escanea también comida de tiendas de conveniencia!",
     "homeBody": "Mira qué llevan los snacks, el ramyeon y las bebidas.",
     "foodBody": "Explora comida de tiendas de conveniencia, lo más popular primero."
+  },
+  "chat": {
+    "title": "Chatea con nosotros",
+    "team": "Equipo K-Bap",
+    "repliesWithin": "Normalmente responde en 5 minutos",
+    "greeting": "¿En qué podemos ayudarte?",
+    "placeholder": "Escribe un mensaje",
+    "send": "Enviar",
+    "sendFailed": "No se pudo enviar. Inténtalo de nuevo.",
+    "rateLimited": "Has enviado muchos mensajes. Inténtalo de nuevo más tarde.",
+    "failedTapRetry": "No enviado. Toca para reintentar.",
+    "earlierInquiries": "Consultas anteriores"
   }
 }

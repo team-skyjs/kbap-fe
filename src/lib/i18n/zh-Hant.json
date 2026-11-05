@@ -1432,5 +1432,17 @@
     "homeTitle": "便利商店食品也能掃描！",
     "homeBody": "看看零食、泡麵和飲料裡有什麼。",
     "foodBody": "依人氣瀏覽便利商店食品。"
+  },
+  "chat": {
+    "title": "聯絡我們",
+    "team": "K-Bap 團隊",
+    "repliesWithin": "通常 5 分鐘內回覆",
+    "greeting": "有什麼可以幫你的？",
+    "placeholder": "輸入訊息",
+    "send": "傳送",
+    "sendFailed": "傳送失敗，請再試一次。",
+    "rateLimited": "訊息傳送過多，請稍後再試。",
+    "failedTapRetry": "未傳送，點按重試",
+    "earlierInquiries": "以往諮詢"
   }
 }

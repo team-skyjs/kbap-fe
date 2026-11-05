@@ -1428,5 +1428,17 @@
     "homeTitle": "Scan convenience store food, too!",
     "homeBody": "Check what's in snacks, ramyeon and drinks.",
     "foodBody": "Browse convenience store food, most popular first."
+  },
+  "chat": {
+    "title": "Chat with us",
+    "team": "K-Bap team",
+    "repliesWithin": "Usually replies within 5 minutes",
+    "greeting": "How can we help you?",
+    "placeholder": "Type a message",
+    "send": "Send",
+    "sendFailed": "Couldn't send. Please try again.",
+    "rateLimited": "You've sent a lot of messages. Please try again a little later.",
+    "failedTapRetry": "Not sent. Tap to retry.",
+    "earlierInquiries": "Earlier inquiries"
   }
 }

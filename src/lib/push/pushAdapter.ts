@@ -257,7 +257,7 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
 
 /* ---- 푸시 유형 (KB-498 — 서버 enum과 동일, 정확 일치만) ---- */
 
-export const PUSH_TYPES = ['HELPFUL', 'SCAN_SUGGESTION', 'REVIEW_REMINDER', 'NEWS', 'MEAL_TIME', 'FOOD_DISCOVERY'] as const;
+export const PUSH_TYPES = ['HELPFUL', 'SCAN_SUGGESTION', 'REVIEW_REMINDER', 'NEWS', 'MEAL_TIME', 'FOOD_DISCOVERY', 'OPERATOR_CHAT'] as const;
 export type PushType = (typeof PUSH_TYPES)[number];
 
 export function isPushType(v: unknown): v is PushType {
@@ -287,6 +287,8 @@ export function routeForNotificationData(data: unknown): string | null {
       const s = d.foodId == null ? '' : String(d.foodId);
       return /^\d+$/.test(s) ? `/food/${s}` : null;
     }
+    case 'OPERATOR_CHAT':
+      return '/chat'; // KB-1008(S-971): 운영진 메시지 → 채팅방(사용자당 1개라 conversationId는 경로에 안 쓴다)
     case 'NEWS':
       return null; // 앱만 켜짐 — 이동 없음(알림함 열람·읽음 처리만)
     default:
