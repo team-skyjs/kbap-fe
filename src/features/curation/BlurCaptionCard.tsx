@@ -116,7 +116,9 @@ function BlurBand({ cover, band, cardH, cardW, itemId, testID }: { cover: string
           {cardW > 0 && (
             <RemoteImage
               uri={cover}
-              style={{ position: 'absolute', left: 0, top: 0, width: cardW / ANDROID_DOWNSCALE, height: cardH / ANDROID_DOWNSCALE, transformOrigin: 'top left', transform: [{ scale: ANDROID_DOWNSCALE }] }}
+              // QA 3차(이음새): cardW/k를 그대로 쓰면 픽셀 반올림·다운샘플로 확대 결과가 카드보다 작아 하단 ~12px·우측 ~4px에 선명 사진이 비쳤다 →
+              // 올림 + 1칸 넉넉히(확대 후 카드보다 k dp 이상 크다), 넘치는 쪽은 래퍼 overflow hidden이 자른다
+              style={{ position: 'absolute', left: 0, top: 0, width: lowresSide(cardW), height: lowresSide(cardH), transformOrigin: 'top left', transform: [{ scale: ANDROID_DOWNSCALE }] }}
               recyclingKey={`${itemId}-lowres`}
               placeholder="none"
               onLoad={settle}
@@ -187,10 +189,12 @@ export function blurBandOf(cardH: number, captionTop: number) {
 // - iOS: radius/2를 SDImageBlurTransformer에 — **원본 이미지 픽셀** 단위라 고해상도 사진엔 약하다(16 = 원본 8px)
 // - Android: (구) Glide BlurTransformation(min(radius, 25), sampling 4) = RenderScript → KB-1000부터 안 씀(아래 filter blur)
 // iOS 45 = QA 대조 2회: 16은 윤곽 남음(pr311 03-before-after-mock), 72는 시안보다 더 흐림(dev-6caa-blur 03-r16-r72-mock) — 시안은 기둥·문 윤곽이 남는 정도.
-// KB-1000: Android = 저해상 확대 배율 — 12 ≈ 구 Glide 9×샘플링4(1/4 축소 후 반경 9 ≈ 원본 36px) 세기 근사.
+// KB-1000: Android = 저해상 확대 배율 — 14 = QA 대조 3차로 develop(구 Glide 9×샘플링4) 세기에 맞춤.
 // ponytail: 보정 손잡이, Android QA 캡처로 맞출 값.
 export const CARD_BLUR_RADIUS = 45; // iOS expo-image blurRadius
-export const ANDROID_DOWNSCALE = 12; // Android 저해상 확대 배율(카드 폭 / 12로 디코드 → ×12) — 클수록 더 흐림
+export const ANDROID_DOWNSCALE = 14; // Android 저해상 확대 배율(카드 / 14로 디코드 → ×14) — 클수록 더 흐림(QA 3차: 12는 develop보다 1.1~1.45배 약함)
+/** 저해상 한 변 = 올림 + 1 — 확대 후 카드 끝까지 덮는다(QA 3차 이음새) */
+export const lowresSide = (len: number): number => Math.ceil(len / ANDROID_DOWNSCALE) + 1;
 
 // v5 실측: 카드 335×300 · 캡션 하단 inset 16 · 이름 18 semibold 흰색 · 4 · 지역 13 흰색 · chevron 24(44 자리, 오른쪽 inset 16)
 const styles = StyleSheet.create({

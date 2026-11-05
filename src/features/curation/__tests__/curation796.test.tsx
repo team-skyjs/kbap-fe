@@ -513,7 +513,7 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       sheet.mockRestore();
     }
   });
-  it('KB-1000 Android = expo-image blurRadius 0(RenderScript 네이티브 크래시 회피) · 밴드 블러 = 저해상 확대 1장(카드 1/12 디코드 ×12, filter 0) · 띠 구조 그대로', () => {
+  it('KB-1000 Android = expo-image blurRadius 0(RenderScript 네이티브 크래시 회피) · 밴드 블러 = 저해상 확대 1장(카드 1/14 + 1칸 디코드 ×14, filter 0 · 카드 끝까지 덮음) · 띠 구조 그대로', () => {
     const RNm = jest.requireActual('react-native');
     const prevOS = RNm.Platform.OS;
     RNm.Platform.OS = 'android';
@@ -533,7 +533,11 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       expect(ws.filter).toBeUndefined();
       const img = w[0].findAll((n) => n.props?.testID === 'img:https://cdn/i1.jpg' && typeof n.type === 'string');
       expect(img).toHaveLength(1);
-      expect(RNm.StyleSheet.flatten(img[0].props.style)).toMatchObject({ width: 28, height: 25, transformOrigin: 'top left', transform: [{ scale: 12 }] });
+      // QA 3차 이음새: 한 변 = ceil(len/14) + 1 → 확대 후 카드보다 크다(336/14 = 24 → 25 ×14 = 350 ≥ 336 · 300/14 → 23 ×14 = 322 ≥ 300)
+      const st = RNm.StyleSheet.flatten(img[0].props.style);
+      expect(st).toMatchObject({ width: 25, height: 23, transformOrigin: 'top left', transform: [{ scale: 14 }] });
+      expect(st.width * 14).toBeGreaterThanOrEqual(336 + 14);
+      expect(st.height * 14).toBeGreaterThanOrEqual(300 + 14);
       expect(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-strip-1-0' && typeof n.type === 'string')).toHaveLength(1);
     } finally {
       RNm.Platform.OS = prevOS;
