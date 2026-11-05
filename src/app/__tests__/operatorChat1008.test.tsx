@@ -374,12 +374,23 @@ describe('③ 플로팅 버튼', () => {
     expect(has(r, 'chat-fab-dot')).toBe(false);
     expect(has(r, 'chat-fab-preview')).toBe(false);
   });
-  it('위치: 탭바 위 18 · 커뮤니티 = Write review 알약(최대 40) + 12 더 위', () => {
-    const base = TABBAR_CONTENT_H + 10 + 18;
-    expect(chatFabBottom(0, 'index')).toBe(base);
-    expect(chatFabBottom(0, 'profile')).toBe(base);
-    expect(chatFabBottom(0, 'community')).toBe(base + 52);
-    expect(chatFabBottom(34, 'index')).toBe(TABBAR_CONTENT_H + 34 + 18);
+  it('위치: 탭바 위 18 (전 탭 동일)', () => {
+    expect(chatFabBottom(0)).toBe(TABBAR_CONTENT_H + 10 + 18);
+    expect(chatFabBottom(34)).toBe(TABBAR_CONTENT_H + 34 + 18);
+  });
+  it('11/6 예진: 리뷰 탭(community) = 버튼·미리보기 0 · 안읽음 조회 0 / 홈·푸드·프로필 = 있음', async () => {
+    routeGets(page([]), { unreadCount: 2, lastOperatorMessage: { content: 'hi', createdAt: 'x' } });
+    const rv = await mount(<ChatFab activeRoute="community" />);
+    expect(has(rv, 'chat-fab')).toBe(false);
+    expect(has(rv, 'chat-fab-preview')).toBe(false);
+    expect(mockGet).not.toHaveBeenCalledWith('/api/chat/unread', H);
+    for (const route of ['index', 'food', 'profile']) {
+      const r = await mount(<ChatFab activeRoute={route} />);
+      expect(has(r, 'chat-fab')).toBe(true);
+    }
+  });
+  it('탭 전환 반영 = 레이아웃 effect(페인트 전) — 일반 effect면 첫 프레임에 이전 탭 기준 버튼이 비친다', () => {
+    expect(fs.readFileSync('src/app/(tabs)/_layout.tsx', 'utf8')).toContain('React.useLayoutEffect(() => onActive?.(activeRoute), [activeRoute, onActive]);');
   });
 });
 
