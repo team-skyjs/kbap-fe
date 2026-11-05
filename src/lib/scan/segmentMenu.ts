@@ -48,6 +48,8 @@ export interface ResultDish extends MenuDish {
   priceOptions?: import('@/lib/api/scanAdapter').PriceOption[] | null;
   /** KB-1006: 고추 수 0~5(0·부재 = 표시 안 함) */
   spice?: number;
+  /** P-616(S-970): 주문 옵션·단일 재료어 — 판정 목록에서 빠지고 맨 아래 "추가·옵션" 칩으로만 */
+  notMenu?: boolean;
 }
 
 /** KB-789: 주문 카드 `nameKo` = **메뉴판에 적힌 이름** — 식당 직원에게 보여주는 줄이라 대체 항목은

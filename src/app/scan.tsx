@@ -1060,6 +1060,7 @@ export default function Scan() {
         pendingId: it.pendingId,
         priceOptions: it.priceOptions, // KB-1006
         spice: it.spice, // KB-1006: 매칭 줄도 맵기(results[].spiciness)
+        notMenu: it.notMenu, // P-616
       }];
     });
     // idx=null(사진에서만 추출) — 좌표 부재로 리스트 전용, 오버레이 마커 없음.
@@ -1082,12 +1083,15 @@ export default function Scan() {
       pendingId: p.pendingId,
       priceOptions: p.priceOptions, // KB-1006
       spice: p.spice, // KB-1006
+      notMenu: p.notMenu, // P-616
     }));
     // KB-992: 2단 — DB 판정(현행)은 위, pendingId 항목은 아래 'AI 추정' 섹션(서버 순서). 도착 전 = 스켈레톤,
     // NOT_FOOD = 행 제거, 폴링이 끝났는데 미도착(15초·실패·scanId 없음) = 현행 unable 행으로 위 목록에 남는다.
     const aiById = new Map(aiPending.items.map((a) => [a.pendingId, a]));
     const aiRows: AiRow[] = [];
-    const allDishes = [...resultDishes, ...photoDishes].filter((d) => {
+    // P-616(S-970): 주문 옵션·단일 재료어 = 판정 목록·메뉴 수·정렬에서 빼고 맨 아래 칩 블록으로만(Safe only면 블록째 숨김)
+    const addOns = [...resultDishes, ...photoDishes].filter((d) => d.notMenu);
+    const allDishes = [...resultDishes, ...photoDishes].filter((d) => !d.notMenu).filter((d) => {
       if (!d.pendingId || !scanId) return true;
       // S-959: 15초 마감 채움(estimated=false)은 추정이 아니다 → 미도착과 같게(폴링 끝 = 현행 unable 행)
       const got = aiById.get(d.pendingId);
@@ -1236,6 +1240,7 @@ export default function Scan() {
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
               onClosestMatch={openClosestMatch} // KB-789
               aiRows={safeOnly ? [] : aiRows} // KB-992: AI 추정은 safe가 없다 — Safe only면 섹션째 숨김
+              addOns={safeOnly ? [] : addOns} // P-616: 추가·옵션 칩 블록(판정 아님) — Safe only면 숨김
               onOpenAi={openAi}
               t={t}
             />

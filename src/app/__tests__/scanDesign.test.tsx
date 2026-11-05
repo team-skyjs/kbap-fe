@@ -1082,6 +1082,22 @@ describe('KB-992 AI 추정 섹션', () => {
     });
   });
 
+  it('P-616(S-970): notMenu 줄 = 판정 목록·메뉴 수에서 빠지고 맨 아래 "추가와 옵션" 칩(원문·가격) + 직원 확인 1줄 · 배지·담기 없음 · Safe only = 숨김', async () => {
+    const addOn = { ...ai('', '라면사리'), pendingId: null, notMenu: true, price: 2000 };
+    mockScanExtra.v = { photoOnly: [...photoOnly, addOn], scanId: 's1' };
+    mockPending.polling = false;
+    const tree = await toResult();
+    expect(names(tree)).not.toContain('라면사리');
+    expect(list(tree).props.addOns.map((d: { koreanName: string }) => d.koreanName)).toEqual(['라면사리']);
+    const block = tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')[0];
+    const txt = block.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(txt).toEqual(expect.arrayContaining(['scan.addOnsTitle', '라면사리', '₩2,000', 'scan.addOnsNote']));
+    expect(block.findAll((n) => n.props?.state !== undefined)).toHaveLength(0); // 배지 0
+    expect(block.findAll((n) => /^add-|^rich-|^mark-/.test(String(n.props?.testID)))).toHaveLength(0); // 담기·탭·배지 자리 0
+    act(() => tree.root.findAll((n) => n.props?.testID === 'scan-safe-toggle' && typeof n.props.onPress === 'function')[0].props.onPress());
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons')).toHaveLength(0);
+  });
+
   it('KB-1006: 일반(매칭) 줄도 맵기 — results[].spiciness ceil(s/2) · 0 = 표시 안 함', async () => {
     const { mergeResults } = jest.requireActual('@/lib/api/scanAdapter') as typeof import('@/lib/api/scanAdapter');
     const [hot, mild] = mergeResults(

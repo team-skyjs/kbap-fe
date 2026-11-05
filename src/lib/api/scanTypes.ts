@@ -83,6 +83,9 @@ export interface ScanResultWire {
   priceOptions?: PriceOptionWire[] | null;
   /** KB-1006(S-969 v0): 맵기 0~10, -1 = 모름 — 매칭 = 음식 값, 미매칭 = null(pending에서) */
   spiciness?: number | null;
+  /** P-616(S-970): "추가·사리·소스·토핑·곱빼기" 같은 주문 옵션·단일 재료어 — true면 matched=false·foodId·pendingId null·UNKNOWN.
+   *  판정 대상이 아니라 목록 맨 아래 "추가·옵션" 칩 블록으로만 보인다. 부재(구 서버) = false */
+  notMenu?: boolean | null;
 }
 
 /** KB-1006(S-969 v0) 수량 옵션 한 칸 — label = 메뉴판 표기("10개") */

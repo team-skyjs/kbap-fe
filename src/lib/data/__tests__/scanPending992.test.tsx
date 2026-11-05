@@ -17,6 +17,10 @@ const wire = (p: Partial<ScanResultWire>): ScanResultWire => ({ matched: false, 
 const item = (pendingId: string, extra: Record<string, unknown> = {}) => ({ pendingId, kind: 'DISH', name: pendingId, riskLevel: 'CAUTION', aiEstimated: true, ...extra });
 
 describe('어댑터', () => {
+  it('P-616(S-970): notMenu = 엄격 true만(부재·이상값 = 일반 판정 줄 — 숨김보다 남는 쪽)', () => {
+    const out = photoOnlyResults([wire({ notMenu: true }), wire({ notMenu: false }), wire({}), wire({ notMenu: 'yes' as never })]);
+    expect(out.map((o) => o.notMenu)).toEqual([true, false, false, false]);
+  });
   it('KB-1006: 맵기 ceil(s/2) → 고추 1~5 · 0·-1·결측 = 0 / 수량 옵션 2개 이상만(이상값 칸 버림) / 사진 상태', () => {
     expect([10, 9, 3, 1, 0, -1, null, undefined, 99].map(spiceRank)).toEqual([5, 5, 2, 1, 0, 0, 0, 0, 5]);
     expect(mapPriceOptions([{ label: '10개', priceKrw: 11000 }, { label: '20개', priceKrw: 22000 }])).toEqual([{ label: '10개', priceKrw: 11000 }, { label: '20개', priceKrw: 22000 }]);
