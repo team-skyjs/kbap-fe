@@ -1024,6 +1024,28 @@ describe('KB-992 AI 추정 섹션', () => {
       const items = JSON.parse(decodeURIComponent(url.split('items=')[1].split('&')[0]));
       expect(items).toEqual([{ nameKo: '경주빵 10개', name: 'Gyeongju bread 10개', qty: 1, priceKrw: 11000, foodId: null }]);
     });
+    it('Codex #440 2R P2: 응답 전에 담은 줄이 NOT_FOOD로 판정되면 담김도 지운다(필·주문 카드에 유령 수량 0) · 다른 줄 담김은 그대로', async () => {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.polling = true;
+      mockPending.items = [];
+      const tree = await toResult();
+      press(tree, 'add--2'); // 맛나식당(p2) — 도착 전
+      press(tree, 'add--1'); // 김치전(p1)
+      expect(has(tree, 'order-pill')).toBe(true);
+      mockPending.items = [{ ...base, pendingId: 'p2', kind: 'notFood' }, { ...base, pendingId: 'p1', name: 'Kimchi pancake', koreanName: '김치전' }];
+      act(() => tree.update(<Scan />));
+      await act(async () => { await Promise.resolve(); });
+      expect(has(tree, 'ai-pending--2') || has(tree, 'ai--2')).toBe(false);
+      press(tree, 'order-pill');
+      const url = mockPush.mock.calls[mockPush.mock.calls.length - 1][0] as string;
+      const items = JSON.parse(decodeURIComponent(url.split('items=')[1].split('&')[0]));
+      expect(items).toEqual([{ nameKo: '김치전', name: 'Kimchi pancake', qty: 1, priceKrw: null, foodId: null }]);
+      const store = jest.requireActual('@/features/scan/scanCartStore') as typeof import('@/features/scan/scanCartStore');
+      let snap: ReadonlyMap<string, number> = new Map();
+      const Probe = () => { snap = store.useScanCart(); return null; };
+      render(<Probe />);
+      expect([...snap.keys()]).toEqual(['-1']); // p2(-2) 키 없음 = 필 숫자도 1
+    });
     it('Codex #440 P2: 옵션 있는 매칭 메뉴 상세 = 첫 옵션 키로 읽고 담는다(옵션 없는 키 생성 0) · 스토어 이동 규칙', () => {
       const scan = fs.readFileSync('src/app/scan.tsx', 'utf8');
       expect(scan).toContain('rememberScanDish({ ...dish, opt: dish.priceOptions && dish.priceOptions.length >= 2 ? 0 : null })');
