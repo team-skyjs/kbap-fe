@@ -65,13 +65,14 @@ export function chatTime(iso: string, now: Date): string {
   return d.toDateString() === now.toDateString() ? hm : `${d.getMonth() + 1}/${d.getDate()} ${hm}`;
 }
 
-/** 목록 행(최신 → 과거, inverted가 그대로 그린다). 지난 문의(legacy)가 시작되는 경계에 구분선 1개 */
+/** 목록 행(최신 → 과거, inverted가 그대로 그린다). QA #441: "이전 문의" 구분선 = 지난 문의(legacy) 묶음의 **맨 위**(제목처럼) —
+ *  배열에선 묶음의 가장 오래된 메시지 바로 뒤(inverted라 화면상 그 위). 종전 = 옛 메시지와 새 메시지 사이 */
 export function chatRows(outgoing: Outgoing[], items: ChatMessage[]): Row[] {
   const rows: Row[] = [...outgoing].reverse().map((o) => ({ kind: 'out' as const, o }));
   items.forEach((m, i) => {
-    const newer = i > 0 ? items[i - 1] : null;
-    if (m.legacy && (!newer || !newer.legacy) && i > 0) rows.push({ kind: 'legacyDivider' });
     rows.push({ kind: 'msg', m });
+    const older = i + 1 < items.length ? items[i + 1] : null;
+    if (m.legacy && (!older || !older.legacy)) rows.push({ kind: 'legacyDivider' });
   });
   return rows;
 }

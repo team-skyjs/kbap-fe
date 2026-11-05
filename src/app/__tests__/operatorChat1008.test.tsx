@@ -136,11 +136,13 @@ describe('① 어댑터·행·시간·딥링크', () => {
     expect(adaptChatUnread({ unreadCount: -3 }).count).toBe(0);
     expect(adaptChatUnread({ unreadCount: 2, lastOperatorMessage: { content: 'Hi', createdAt: 'x' } })).toEqual({ count: 2, last: { content: 'Hi', createdAt: 'x' } });
   });
-  it('행 = 최신 → 과거(보내는 중 맨 아래) · 지난 문의가 시작되는 경계에 구분선 1개', () => {
+  it('행 = 최신 → 과거(보내는 중 맨 아래) · QA #441: "이전 문의" 구분선 = 지난 문의 묶음 맨 위(배열 = 가장 오래된 것 뒤)', () => {
     const items = [msg(5, 'OPERATOR', 'new'), msg(4, 'USER', 'q'), msg(3, 'OPERATOR', 'old reply', true), msg(2, 'USER', 'old q', true)].map(adaptChatMessage);
     const rows = chatRows([{ localId: 'L', content: 'sending', photos: [], failed: false }], items);
-    expect(rows.map((r) => (r.kind === 'msg' ? r.m.id : r.kind))).toEqual(['out', '5', '4', 'legacyDivider', '3', '2']);
-    expect(chatRows([], items.slice(2)).some((r) => r.kind === 'legacyDivider')).toBe(false); // 전부 지난 문의 = 구분선 없음
+    expect(rows.map((r) => (r.kind === 'msg' ? r.m.id : r.kind))).toEqual(['out', '5', '4', '3', '2', 'legacyDivider']);
+    // 전부 지난 문의여도 묶음 맨 위에 제목처럼 1개 · 지난 문의 없음 = 구분선 0
+    expect(chatRows([], items.slice(2)).map((r) => (r.kind === 'msg' ? r.m.id : r.kind))).toEqual(['3', '2', 'legacyDivider']);
+    expect(chatRows([], items.slice(0, 2)).some((r) => r.kind === 'legacyDivider')).toBe(false);
   });
   it('시간: 같은 날 HH:mm · 다른 날 M/D HH:mm · 이상값 빈 문자열', () => {
     const now = new Date(2026, 10, 5, 15, 0);
