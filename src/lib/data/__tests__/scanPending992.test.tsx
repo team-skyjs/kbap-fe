@@ -181,6 +181,33 @@ describe('useScanPending', () => {
     expect(mockTrack.mock.calls.filter((c) => c[0] === 'scan_ai_item_filled')).toHaveLength(1); // 사진 갱신은 새 도착이 아니다
   });
 
+  it('S-975: 재진입 재조회에 늦은 추정 + 사진 GENERATING이 오면 새 60초 예산으로 폴링 재개 → READY 받고 끝', async () => {
+    mockGet.mockResolvedValueOnce({ items: [item('p1', { filled: true, riskLevel: 'UNKNOWN', name: null })], done: true, imagesDone: true });
+    mount('s1');
+    await flush();
+    expect(out.polling).toBe(false);
+    update('s1', false);
+    await advance(90_000); // 첫 예산(60초) 지난 뒤
+    mockGet
+      .mockResolvedValueOnce({ items: [item('p1', { filled: false, imageStatus: 'GENERATING' })], done: true, imagesDone: false })
+      .mockResolvedValueOnce({ items: [item('p1', { filled: false, imageStatus: 'GENERATING' })], done: true, imagesDone: false })
+      .mockResolvedValueOnce({ items: [item('p1', { filled: false, imageStatus: 'READY', imageUrl: 'https://cdn/r.webp' })], done: true, imagesDone: true });
+    update('s1', true);
+    await flush();
+    await flush();
+    expect(out.polling).toBe(true); // 재개
+    expect((out.items[0] as unknown as { estimated: boolean }).estimated).toBe(true); // 채움 → 추정
+    await advance(1000);
+    await flush();
+    await advance(1000);
+    await flush();
+    expect((out.items[0] as unknown as { imageUrl: string }).imageUrl).toBe('https://cdn/r.webp');
+    expect(out.polling).toBe(false);
+    const n = mockGet.mock.calls.length;
+    await advance(5000);
+    expect(mockGet).toHaveBeenCalledTimes(n);
+  });
+
   it('P-617: 상태 TTL(10분)이 지났으면 재진입해도 재조회 0', async () => {
     mockGet.mockResolvedValueOnce({ items: [item('p1')], done: true, imagesDone: true });
     mount('s1');

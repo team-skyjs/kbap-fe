@@ -995,6 +995,20 @@ describe('KB-992 AI 추정 섹션', () => {
       expect(has(tree, 'chip-neutral-FLOUR')).toBe(true);
       expect(has(tree, 'chip-neutral-EGG')).toBe(false);
     });
+    it('S-975: 15초 마감 채움(위 목록 unable 줄)이 재조회로 늦은 추정이 되면 같은 줄이 AI 섹션으로 옮겨진다(담김 유지)', async () => {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.polling = false;
+      mockPending.items = [{ ...base, pendingId: 'p1', name: '김치전', koreanName: '김치전', description: null, risk: 'unable', avoidCodes: [], estimated: false }];
+      const tree = await toResult();
+      expect(names(tree)).toContain('김치전');
+      expect(has(tree, 'ai--1')).toBe(false);
+      press(tree, 'add--1'); // 미매칭 줄에서 담기
+      mockPending.items = [{ ...base, pendingId: 'p1', name: 'Kimchi pancake', koreanName: '김치전', estimated: true, image: 'generating' }];
+      act(() => tree.update(<Scan />));
+      expect(names(tree)).not.toContain('김치전');
+      expect(has(tree, 'ai--1')).toBe(true);
+      expect(has(tree, 'stepper--1')).toBe(true); // 같은 itemId 키 = 담김 그대로
+    });
     it('Codex #440 P2: 사진 생성 중 연 상세 시트 = 열린 채로 폴링이 READY로 바꾸면 사진도 바뀐다(스냅샷 아님)', async () => {
       mockScanExtra.v = { photoOnly, scanId: 's1' };
       mockPending.polling = true;

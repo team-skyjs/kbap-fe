@@ -128,7 +128,12 @@ export function useScanPending(scanId: string | null, active: boolean): { items:
       .then((p) => {
         if (!alive) return;
         const got = adaptAndCount(p, r);
-        if (got.length) setSt(withItems(scanId, got));
+        if (!got.length) return;
+        // S-975: 15초 마감 채움이 늦게 끝난 추정으로 바뀌며 사진 GENERATING이 붙어 올 수 있다 — 그대로 두면 점 애니메이션에 멈춘다.
+        // 그럴 때만 새 60초 예산으로 폴링을 다시 돌려 READY·NONE을 받는다(TTL 안 · 실패하면 종전처럼 끝)
+        const regen = got.some((i) => i.image === 'generating');
+        if (regen) r.startedAt = Date.now();
+        setSt((s) => ({ ...withItems(scanId, got)(s), ...(regen ? { ended: false } : {}) }));
       })
       .catch(() => {});
     return () => { alive = false; };
