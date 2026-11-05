@@ -332,6 +332,11 @@
     "aiSectionTitle": "AI推定",
     "aiSectionNote": "まだ登録されていないメニューのため、AIが推定した情報です。食べる前にお店の方に確認してください。",
     "aiIngredientsLine": "避けている食材が入っているかもしれません：{{names}}",
+    "aiGeneratedPhoto": "AI生成",
+    "aiPhotoGenerating": "写真を作成中",
+    "aiDetailIngredients": "主な材料",
+    "addOnsTitle": "追加とオプション",
+    "addOnsNote": "追加の具材やオプションです。中身はスタッフに確認してください。",
     "searchOnGoogle": "Googleで検索",
     "resultsEmpty": "スキャン結果がありません",
     "viewOrderAction": "注文を見る",
@@ -1432,5 +1437,20 @@
     "homeTitle": "コンビニの食品もスキャンできます！",
     "homeBody": "お菓子、ラーメン、飲み物の中身をチェックしましょう。",
     "foodBody": "コンビニの食品を人気順に見てみましょう。"
+  },
+  "chat": {
+    "title": "お問い合わせ",
+    "team": "K-Bapチーム",
+    "repliesWithin": "通常5分以内に返信します",
+    "greeting": "どのようなご用件ですか？",
+    "placeholder": "メッセージを入力",
+    "send": "送信",
+    "sendFailed": "送信できませんでした。もう一度お試しください。",
+    "rateLimited": "メッセージが多すぎます。しばらくしてからもう一度お試しください。",
+    "failedTapRetry": "送信できませんでした。タップして再送信",
+    "earlierInquiries": "以前のお問い合わせ",
+    "tooLong": "メッセージが長すぎます。短くしてください。",
+    "photoInvalid": "送信できない写真があります。別の写真を選んでください。",
+    "invalid": "このメッセージは送信できません。確認してもう一度お試しください。"
   }
 }

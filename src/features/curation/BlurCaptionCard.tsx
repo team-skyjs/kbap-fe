@@ -58,6 +58,7 @@ export function BlurCaptionCard({
 }) {
   const large = captionLargeText(useWindowDimensions().fontScale); // KB-846 QA: 큰 글씨 = 고정 줄 높이 없이(아래 잘림 0)
   const [cardH, setCardH] = React.useState<number | null>(null); // 블러 사본을 원본과 같은 높이로 정렬(큰 글씨면 카드가 자란다)
+  const [cardW, setCardW] = React.useState(0); // KB-1000: Android 저해상 확대 블러 = 카드 폭의 1/ANDROID_DOWNSCALE로 디코드
   const [captionTop, setCaptionTop] = React.useState<number | null>(null); // 캡션 블록 위(= 제목 위) — 블러 밴드 시작 = 여기서 16 위
   // KB-931: 본 사진이 그려진 뒤에만 띠를 붙인다 — 띠(블러 1·선명 8)가 같은 원본을 메모리 캐시에서 쓰게(동시 시작 = 각자 디코드였다). 실패 = 띠 없음(흐릴 사진이 없다)
   const [photoReady, setPhotoReady] = React.useState(false);
@@ -66,7 +67,7 @@ export function BlurCaptionCard({
   return (
     <Pressable
       style={[styles.card, { borderRadius: radius }]}
-      onLayout={(e: LayoutChangeEvent) => { const { y, height } = e.nativeEvent.layout; setCardH(height); onLayout?.(y, height); }}
+      onLayout={(e: LayoutChangeEvent) => { const { y, width, height } = e.nativeEvent.layout; setCardH(height); setCardW(width); onLayout?.(y, height); }}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
@@ -79,7 +80,7 @@ export function BlurCaptionCard({
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.noPhoto]} testID={`${testPrefix}-nophoto-${testKey}`} />
       )}
-      {photoUri && photoReady && band && blur && <BlurBand cover={photoUri} band={band} cardH={cardH as number} itemId={recyclingKey} testID={`${testPrefix}-blur-${testKey}`} />}
+      {photoUri && photoReady && band && blur && <BlurBand cover={photoUri} band={band} cardH={cardH as number} cardW={cardW} itemId={recyclingKey} testID={`${testPrefix}-blur-${testKey}`} />}
       {band && <LinearGradient colors={CARD_SCRIM} locations={CARD_SCRIM_LOC} style={[styles.shade, { top: Math.max(0, band.top - CARD_SCRIM_LEAD) }]} pointerEvents="none" testID={`${testPrefix}-scrim-${testKey}`} />}
       {overlay}
       <View style={{ height: CARD_SPACER }} />
@@ -99,13 +100,35 @@ export function BlurCaptionCard({
 
 /** 블러 띠 묶음(KB-931) — 블러 1장(밴드 전체) 위에 선명 띠(불투명도 = 1 − 블러 비중, 마지막 띠 = 0이라 생략).
  *  띠 사진이 전부 그려진 뒤(onLoad·실패도 끝으로 셈) 페이드 시작. 로딩 자리 = 투명(아래 원본이 보인다 — 회색 스켈레톤 0) */
-function BlurBand({ cover, band, cardH, itemId, testID }: { cover: string; band: ReturnType<typeof blurBandOf>; cardH: number; itemId: string; testID: string }) {
+function BlurBand({ cover, band, cardH, cardW, itemId, testID }: { cover: string; band: ReturnType<typeof blurBandOf>; cardH: number; cardW: number; itemId: string; testID: string }) {
   const sharp = band.strips.filter((s) => s.opacity < 1);
   const [done, setDone] = React.useState(0);
   const settle = () => setDone((n) => n + 1);
   return (
     <FadeInBand style={[styles.blurBand, { top: band.top }]} ready={done >= sharp.length + 1} testID={testID}>
-      <RemoteImage uri={cover} style={[styles.blurImg, { top: -band.top, height: cardH }]} recyclingKey={`${itemId}-blur`} blurRadius={CARD_BLUR_RADIUS} placeholder="none" onLoad={settle} onError={settle} />
+      {Platform.OS === 'android' ? (
+        // KB-1000(P-612 REACT-NATIVE-R): Android expo-image blurRadius = Glide wasabeef BlurTransformation = RenderScript —
+        // 저사양 기기(vivo V2521·Android 15)에서 rsdScriptSetGlobalVar SIGSEGV(네이티브라 try/catch 불가).
+        // 저해상 확대: 같은 사진을 카드의 1/ANDROID_DOWNSCALE 크기로 디코드(Glide가 보기 크기로 다운샘플)한 뒤 transform scale로
+        // 늘린다 — 비트맵 확대 보간이 흐림을 만든다. RenderScript·RenderEffect 둘 다 0, 기기·OS 무관.
+        // (구 RN filter blur는 expo-image 자식에 세기가 반영되지 않아(QA sobel 11/5) 폐기)
+        <View style={[styles.blurImg, { top: -band.top, height: cardH, overflow: 'hidden' }]} testID={`${testID}-lowres`}>
+          {cardW > 0 && (
+            <RemoteImage
+              uri={cover}
+              // QA 3차(이음새) → 4차(이중상): 디코드 = 올림 크기, 확대 배율은 축마다 (카드 + 2) / 디코드 — 결과가 카드보다 딱 2dp만 크다.
+              // 고정 ×14면 올림만큼(~5.5%) 커져 왼쪽 위 기준으로 띠 하단에서 ~18dp 밀린 흐린 복제가 보였다. 넘치는 2dp는 래퍼 overflow hidden
+              style={{ position: 'absolute', left: 0, top: 0, width: lowresSide(cardW), height: lowresSide(cardH), transformOrigin: 'top left', transform: [{ scaleX: lowresScale(cardW) }, { scaleY: lowresScale(cardH) }] }}
+              recyclingKey={`${itemId}-lowres`}
+              placeholder="none"
+              onLoad={settle}
+              onError={settle}
+            />
+          )}
+        </View>
+      ) : (
+        <RemoteImage uri={cover} style={[styles.blurImg, { top: -band.top, height: cardH }]} recyclingKey={`${itemId}-blur`} blurRadius={CARD_BLUR_RADIUS} placeholder="none" onLoad={settle} onError={settle} />
+      )}
       {sharp.map((s, i) => (
         <View key={i} style={[styles.blurStrip, { top: s.top - band.top, height: s.height, opacity: 1 - s.opacity }]} testID={`${testID.replace('-blur-', '-blur-strip-')}-${i}`}>
           <RemoteImage uri={cover} style={[styles.blurImg, { top: -s.top, height: cardH }]} recyclingKey={`${itemId}-sharp-${i}`} placeholder="none" onLoad={settle} onError={settle} />
@@ -164,10 +187,21 @@ export function blurBandOf(cardH: number, captionTop: number) {
 }
 // expo-image blurRadius는 플랫폼마다 다르다(node_modules/expo-image 실측):
 // - iOS: radius/2를 SDImageBlurTransformer에 — **원본 이미지 픽셀** 단위라 고해상도 사진엔 약하다(16 = 원본 8px)
-// - Android: Glide BlurTransformation(min(radius, 25), sampling 4) — 1/4로 줄인 뒤 흐리므로 같은 값이 iOS보다 훨씬 세다
+// - Android: (구) Glide BlurTransformation(min(radius, 25), sampling 4) = RenderScript → KB-1000부터 안 씀(아래 filter blur)
 // iOS 45 = QA 대조 2회: 16은 윤곽 남음(pr311 03-before-after-mock), 72는 시안보다 더 흐림(dev-6caa-blur 03-r16-r72-mock) — 시안은 기둥·문 윤곽이 남는 정도.
-// Android 9 = iOS와 같은 비율(72→45)로 내린 값 — Android 회귀 캡처로 확인 대상.
-export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 9 : 45;
+// KB-1000: Android = 저해상 확대 배율 — 14 = QA 대조 3차로 develop(구 Glide 9×샘플링4) 세기에 맞춤.
+// ponytail: 보정 손잡이, Android QA 캡처로 맞출 값.
+export const CARD_BLUR_RADIUS = 45; // iOS expo-image blurRadius
+export const ANDROID_DOWNSCALE = 14; // Android 저해상 확대 배율(카드 / 14로 디코드 → ×14) — 클수록 더 흐림(QA 3차: 12는 develop보다 1.1~1.45배 약함)
+/** 저해상 한 변(dp) = 기기 픽셀 정수로 올린 카드 / 14 — dp 소수 크기는 레이아웃이 기기 픽셀로 내려 스냅해서(27dp = 70.875px → 70px)
+ *  확대 뒤 최대 ~12px 모자라 하단·우측에 선명 사진이 비쳤다(QA 5차). 픽셀 정수면 스냅 손실 0 */
+export const lowresSide = (len: number): number => {
+  const pr = PixelRatio.get();
+  return Math.ceil((len * pr) / ANDROID_DOWNSCALE) / pr;
+};
+/** 확대 배율 = (카드 + 2dp) / 디코드 — 확대 결과가 카드보다 2dp만 커서 끝까지 덮되 밀림 0(QA 3·4차) */
+export const LOWRES_OVERSHOOT = 2;
+export const lowresScale = (len: number): number => (len + LOWRES_OVERSHOOT) / lowresSide(len);
 
 // v5 실측: 카드 335×300 · 캡션 하단 inset 16 · 이름 18 semibold 흰색 · 4 · 지역 13 흰색 · chevron 24(44 자리, 오른쪽 inset 16)
 const styles = StyleSheet.create({

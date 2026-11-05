@@ -174,7 +174,9 @@ const mockPending: { items: unknown[]; polling: boolean; calls: [string | null, 
 jest.mock('@/lib/data/useScanPending', () => ({
   useScanPending: (id: string | null, active: boolean) => {
     mockPending.calls.push([id, active]);
-    return { items: mockPending.items, polling: mockPending.polling };
+    // KB-1006 필드 기본값(구 픽스처 호환) — 사진 없음·옵션 없음·맵기 0·추정 재료 = 겹친 것만
+    const items = (mockPending.items as Record<string, unknown>[]).map((i) => ({ priceKrw: null, priceOptions: null, spice: 0, estimatedCodes: (i.avoidCodes as string[] | undefined) ?? [], image: 'none', imageUrl: null, aiImage: false, ...i }));
+    return { items, polling: mockPending.polling };
   },
 }));
 
@@ -917,7 +919,7 @@ describe('KB-992 AI 추정 섹션', () => {
     }
   });
 
-  it('도착분 채움 · NOT_FOOD = 행 제거 · AI 행엔 담기 없음 · 배지 = caution', async () => {
+  it('도착분 채움 · NOT_FOOD = 행 제거 · KB-1006: AI 행도 담기 있음 · 배지 = caution', async () => {
     mockScanExtra.v = { photoOnly, scanId: 's1' };
     mockPending.polling = true;
     mockPending.items = [
@@ -929,10 +931,212 @@ describe('KB-992 AI 추정 섹션', () => {
     expect(has(tree, 'ai-pending--1')).toBe(false);
     expect(has(tree, 'ai--2') || has(tree, 'ai-pending--2')).toBe(false);
     expect(names(tree)).not.toContain('맛나식당');
-    expect(has(tree, 'add--1')).toBe(false);
+    expect(has(tree, 'add--1')).toBe(true); // KB-1006: 일반 줄처럼 담기(구 KB-992 = 담기 없음)
     expect(has(tree, 'ai-chip--1')).toBe(true);
     const badge = tree.root.findAll((n) => n.props?.testID === 'ai-badge--1')[0];
     expect(badge.findAll((n) => n.props?.state !== undefined)[0].props.state).toBe('caution');
+  });
+
+  // KB-1006(S-969 v0): AI 줄 = 일반 결과 줄처럼 — 사진 생성 중 점 → 도착 즉시 교체('AI 생성' 칩), 가격·옵션·담기·맵기·재료 전체, 탭 = 상세 시트
+  describe('KB-1006 AI 줄 = 일반 결과 줄', () => {
+    const base = { kind: 'dish', name: 'Gyeongju bread', koreanName: '경주빵', description: 'Sweet red bean pastry', risk: 'caution', avoidCodes: ['EGG'], estimated: true };
+    const press = (tree: ReactTestRenderer, id: string) => act(() => tree.root.findAll((n) => n.props?.testID === id && typeof n.props.onPress === 'function')[0].props.onPress());
+    it('사진: 도착 전·생성 중 = 점(ai-gen) · READY = 생성 사진 + AI 생성 칩 · NONE = 기본 이미지(칩 0) — 담기는 처음부터', async () => {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.polling = true;
+      mockPending.items = [{ ...base, pendingId: 'p1', image: 'generating' }];
+      const tree = await toResult();
+      expect(has(tree, 'ai-gen--1')).toBe(true); // p1 생성 중
+      expect(has(tree, 'ai-gen--2')).toBe(true); // p2 도착 전
+      expect(has(tree, 'add--1')).toBe(true);
+      expect(has(tree, 'add--2')).toBe(true); // 도착 전에도 담기(레퍼런스)
+      mockPending.items = [{ ...base, pendingId: 'p1', image: 'ready', imageUrl: 'https://cdn/gen.webp', aiImage: true }, { ...base, pendingId: 'p2', image: 'none' }];
+      act(() => tree.update(<Scan />));
+      expect(has(tree, 'ai-gen--1')).toBe(false);
+      expect(tree.root.findAll((n) => n.props?.source === 'https://cdn/gen.webp').length).toBeGreaterThanOrEqual(1);
+      expect(has(tree, 'ai-photo-chip--1')).toBe(true);
+      expect(JSON.stringify(tree.toJSON())).toContain('scan.aiGeneratedPhoto');
+      expect(has(tree, 'ai-gen--2')).toBe(false);
+      expect(has(tree, 'ai-photo-chip--2')).toBe(false);
+    });
+    it('가격 = pending 값(메뉴판) · 수량 옵션 = 옵션마다 한 줄·따로 담기 → 주문 카드에 옵션별 줄(foodId null)', async () => {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.items = [
+        { ...base, pendingId: 'p1', priceKrw: 11000, priceOptions: [{ label: '10개', priceKrw: 11000 }, { label: '20개', priceKrw: 22000 }] },
+        { ...base, pendingId: 'p2', name: 'Kimchi', koreanName: '김치', priceKrw: 5000 },
+      ];
+      const tree = await toResult();
+      expect(has(tree, 'opt--1-0')).toBe(true);
+      expect(has(tree, 'opt--1-1')).toBe(true);
+      expect(has(tree, 'add--1')).toBe(false); // 옵션 줄이면 줄 전체 담기 대신 옵션별
+      const s0 = JSON.stringify(tree.toJSON());
+      expect(s0).toContain('10개');
+      expect(s0).toContain('22,000');
+      expect(s0).not.toContain('·');
+      press(tree, 'add--1-o1');
+      press(tree, 'inc--1-o1'); // 담긴 옵션 = 같은 자리 스테퍼(프레임 불변)
+      press(tree, 'add--2');
+      press(tree, 'order-pill');
+      const url = mockPush.mock.calls[mockPush.mock.calls.length - 1][0] as string;
+      const items = JSON.parse(decodeURIComponent(url.split('items=')[1].split('&')[0]));
+      expect(items).toEqual(expect.arrayContaining([
+        { nameKo: '경주빵 20개', name: 'Gyeongju bread 20개', qty: 2, priceKrw: 22000, foodId: null },
+        { nameKo: '김치', name: 'Kimchi', qty: 1, priceKrw: 5000, foodId: null },
+      ]));
+      expect(items).toHaveLength(2);
+    });
+    it('맵기 = 고추(AI 줄) · 재료 칩 = 추정 전체 — 회원 겹침 = caution(마크), 나머지 = 중립', async () => {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.items = [{ ...base, pendingId: 'p1', spice: 3, estimatedCodes: ['EGG', 'FLOUR'] }];
+      const tree = await toResult();
+      expect(has(tree, 'spice--1')).toBe(true);
+      expect(tree.root.findAll((n) => n.props?.testID === 'spice--1')[0].findAll((n) => typeof n.type === 'string' && /^pepper-\d-on$/.test(String(n.props?.testID))).length).toBe(3);
+      expect(has(tree, 'chip-caution-EGG')).toBe(true);
+      expect(has(tree, 'chip-neutral-FLOUR')).toBe(true);
+      expect(has(tree, 'chip-neutral-EGG')).toBe(false);
+    });
+    it('S-975: 15초 마감 채움(위 목록 unable 줄)이 재조회로 늦은 추정이 되면 같은 줄이 AI 섹션으로 옮겨진다(담김 유지)', async () => {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.polling = false;
+      mockPending.items = [{ ...base, pendingId: 'p1', name: '김치전', koreanName: '김치전', description: null, risk: 'unable', avoidCodes: [], estimated: false }];
+      const tree = await toResult();
+      expect(names(tree)).toContain('김치전');
+      expect(has(tree, 'ai--1')).toBe(false);
+      press(tree, 'add--1'); // 미매칭 줄에서 담기
+      mockPending.items = [{ ...base, pendingId: 'p1', name: 'Kimchi pancake', koreanName: '김치전', estimated: true, image: 'generating' }];
+      act(() => tree.update(<Scan />));
+      expect(names(tree)).not.toContain('김치전');
+      expect(has(tree, 'ai--1')).toBe(true);
+      expect(has(tree, 'stepper--1')).toBe(true); // 같은 itemId 키 = 담김 그대로
+    });
+    it('Codex #440 P2: 사진 생성 중 연 상세 시트 = 열린 채로 폴링이 READY로 바꾸면 사진도 바뀐다(스냅샷 아님)', async () => {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.polling = true;
+      mockPending.items = [{ ...base, pendingId: 'p1', image: 'generating' }];
+      const tree = await toResult();
+      press(tree, 'ai--1');
+      const card = () => tree.root.findAll((n) => n.props?.testID === 'unmatched-ai')[0];
+      expect(card().findAll((n) => n.props?.testID === 'ai-gen--1').length).toBeGreaterThanOrEqual(1);
+      mockPending.items = [{ ...base, pendingId: 'p1', image: 'ready', imageUrl: 'https://cdn/gen.webp', aiImage: true }];
+      act(() => tree.update(<Scan />));
+      expect(card().findAll((n) => n.props?.testID === 'ai-gen--1')).toHaveLength(0);
+      expect(card().findAll((n) => n.props?.source === 'https://cdn/gen.webp').length).toBeGreaterThanOrEqual(1);
+    });
+    it('Codex #440 P2: 응답 전에 담은 AI 줄에 수량 옵션이 오면 담긴 수량 = 첫 옵션으로 옮겨 줄·주문 카드에 남는다', async () => {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.polling = true;
+      mockPending.items = [];
+      const tree = await toResult();
+      press(tree, 'add--1'); // 도착 전(옵션 모름) = 옵션 없는 키
+      mockPending.items = [{ ...base, pendingId: 'p1', priceKrw: 11000, priceOptions: [{ label: '10개', priceKrw: 11000 }, { label: '20개', priceKrw: 22000 }] }];
+      act(() => tree.update(<Scan />));
+      await act(async () => { await Promise.resolve(); });
+      expect(has(tree, 'stepper--1-o0')).toBe(true);
+      expect(has(tree, 'add--1-o0')).toBe(false);
+      press(tree, 'order-pill');
+      const url = mockPush.mock.calls[mockPush.mock.calls.length - 1][0] as string;
+      const items = JSON.parse(decodeURIComponent(url.split('items=')[1].split('&')[0]));
+      expect(items).toEqual([{ nameKo: '경주빵 10개', name: 'Gyeongju bread 10개', qty: 1, priceKrw: 11000, foodId: null }]);
+    });
+    it('Codex #440 2R P2: 응답 전에 담은 줄이 NOT_FOOD로 판정되면 담김도 지운다(필·주문 카드에 유령 수량 0) · 다른 줄 담김은 그대로', async () => {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.polling = true;
+      mockPending.items = [];
+      const tree = await toResult();
+      press(tree, 'add--2'); // 맛나식당(p2) — 도착 전
+      press(tree, 'add--1'); // 김치전(p1)
+      expect(has(tree, 'order-pill')).toBe(true);
+      mockPending.items = [{ ...base, pendingId: 'p2', kind: 'notFood' }, { ...base, pendingId: 'p1', name: 'Kimchi pancake', koreanName: '김치전' }];
+      act(() => tree.update(<Scan />));
+      await act(async () => { await Promise.resolve(); });
+      expect(has(tree, 'ai-pending--2') || has(tree, 'ai--2')).toBe(false);
+      press(tree, 'order-pill');
+      const url = mockPush.mock.calls[mockPush.mock.calls.length - 1][0] as string;
+      const items = JSON.parse(decodeURIComponent(url.split('items=')[1].split('&')[0]));
+      expect(items).toEqual([{ nameKo: '김치전', name: 'Kimchi pancake', qty: 1, priceKrw: null, foodId: null }]);
+      const store = jest.requireActual('@/features/scan/scanCartStore') as typeof import('@/features/scan/scanCartStore');
+      let snap: ReadonlyMap<string, number> = new Map();
+      const Probe = () => { snap = store.useScanCart(); return null; };
+      render(<Probe />);
+      expect([...snap.keys()]).toEqual(['-1']); // p2(-2) 키 없음 = 필 숫자도 1
+    });
+    it('Codex #440 P2: 옵션 있는 매칭 메뉴 상세 = 첫 옵션 키로 읽고 담는다(옵션 없는 키 생성 0) · 스토어 이동 규칙', () => {
+      const scan = fs.readFileSync('src/app/scan.tsx', 'utf8');
+      expect(scan).toContain('rememberScanDish({ ...dish, opt: dish.priceOptions && dish.priceOptions.length >= 2 ? 0 : null })');
+      const detail = fs.readFileSync('src/app/food/[id]/index.tsx', 'utf8');
+      expect(detail).toContain('scanCartKey(cartDish.itemId, cartDish.opt)');
+      expect(detail).toContain('addScanItem(cartDish, cartDish.opt)');
+      expect(detail).toContain('removeScanItem(cartDish, cartDish.opt)');
+      const store = jest.requireActual('@/features/scan/scanCartStore') as typeof import('@/features/scan/scanCartStore');
+      store.resetScanCart();
+      store.bumpScanCart('7', 2);
+      store.bumpScanCart('7#0', 1);
+      store.migrateScanCartKey('7', '7#0');
+      let snap: ReadonlyMap<string, number> = new Map();
+      const Probe = () => { snap = store.useScanCart(); return null; };
+      render(<Probe />);
+      expect([...snap.entries()]).toEqual([['7#0', 3]]);
+      store.resetScanCart();
+    });
+    it('탭 = 상세 시트(사진·이름·맵기·설명·가격·주요 재료) — 상세 이동 0', async () => {
+      mockScanExtra.v = { photoOnly, scanId: 's1' };
+      mockPending.items = [{ ...base, pendingId: 'p1', spice: 4, priceKrw: 9000, estimatedCodes: ['EGG', 'FLOUR'], image: 'ready', imageUrl: 'https://cdn/gen.webp', aiImage: true }];
+      const tree = await toResult();
+      press(tree, 'ai--1');
+      const card = tree.root.findAll((n) => n.props?.testID === 'unmatched-ai')[0];
+      const s1 = JSON.stringify(tree.toJSON());
+      expect(card.findAll((n) => n.props?.source === 'https://cdn/gen.webp').length).toBeGreaterThanOrEqual(1);
+      expect(has(tree, 'unmatched-ai-name')).toBe(true);
+      expect(has(tree, 'unmatched-ai-spice')).toBe(true);
+      expect(has(tree, 'unmatched-ai-price')).toBe(true);
+      expect(has(tree, 'unmatched-ai-key')).toBe(true);
+      expect(s1).toContain('scan.aiDetailIngredients');
+      expect(s1).toContain('9,000');
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+  });
+
+  it('P-616(S-970): notMenu 줄 = 판정 목록·메뉴 수에서 빠지고 맨 아래 "추가와 옵션" 칩(원문·가격) + 직원 확인 1줄 · 배지·담기 없음 · Safe only = 숨김', async () => {
+    const addOn = { ...ai('', '라면사리'), pendingId: null, notMenu: true, price: 2000 };
+    mockScanExtra.v = { photoOnly: [...photoOnly, addOn], scanId: 's1' };
+    mockPending.polling = false;
+    const tree = await toResult();
+    expect(names(tree)).not.toContain('라면사리');
+    expect(list(tree).props.addOns.map((d: { koreanName: string }) => d.koreanName)).toEqual(['라면사리']);
+    const block = tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')[0];
+    const txt = block.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(txt).toEqual(expect.arrayContaining(['scan.addOnsTitle', '라면사리', '₩2,000', 'scan.addOnsNote']));
+    expect(block.findAll((n) => n.props?.state !== undefined)).toHaveLength(0); // 배지 0
+    expect(block.findAll((n) => /^add-|^rich-|^mark-/.test(String(n.props?.testID)))).toHaveLength(0); // 담기·탭·배지 자리 0
+    act(() => tree.root.findAll((n) => n.props?.testID === 'scan-safe-toggle' && typeof n.props.onPress === 'function')[0].props.onPress());
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons')).toHaveLength(0);
+  });
+
+  it('Codex #444 P2: 결과가 notMenu뿐이어도 빈 화면이 아니라 추가와 옵션 블록이 보인다(메뉴 수는 0 그대로)', async () => {
+    const onlyAddOn = { ...ai('', '공기밥'), pendingId: null, notMenu: true, price: 1000 };
+    mockScanExtra.v = { items: [], photoOnly: [onlyAddOn], scanId: null }; // 일반 메뉴 0 — 추가·옵션만
+    mockPending.polling = false;
+    const tree = await toResult();
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-results-empty')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')).toHaveLength(1);
+    // 2R P2: Safe only를 켜도 컨트롤(토글)은 남고 안전 0건 상태만 — 블록은 숨김, 다시 끄면 돌아온다(갇힘 0)
+    const toggle = () => tree.root.findAll((n) => n.props?.testID === 'scan-safe-toggle' && typeof n.props.onPress === 'function');
+    act(() => toggle()[0].props.onPress());
+    expect(toggle().length).toBeGreaterThanOrEqual(1); // 토글 남음
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-safe-empty')).not.toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'scan-results-empty')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons')).toHaveLength(0);
+    act(() => toggle()[0].props.onPress());
+    expect(tree.root.findAll((n) => n.props?.testID === 'addons' && typeof n.type === 'string')).toHaveLength(1);
+  });
+
+  it('KB-1006: 일반(매칭) 줄도 맵기 — results[].spiciness ceil(s/2) · 0 = 표시 안 함', async () => {
+    const { mergeResults } = jest.requireActual('@/lib/api/scanAdapter') as typeof import('@/lib/api/scanAdapter');
+    const [hot, mild] = mergeResults(
+      [{ itemId: 0, rawMenuName: 'a', box: { x: 0, y: 0, width: 0, height: 0 } }, { itemId: 1, rawMenuName: 'b', box: { x: 0, y: 0, width: 0, height: 0 } }],
+      [{ idx: 0, matched: true, foodId: 1, riskLevel: 'SAFE', spiciness: 7 }, { idx: 1, matched: true, foodId: 2, riskLevel: 'SAFE', spiciness: 0 }],
+    );
+    expect([hot.spice, mild.spice]).toEqual([4, 0]);
   });
 
   it('Codex #428 P2: NOT_FOOD는 estimated=false(filled 없는 폴백·설명 없음)여도 행 제거 — 폴링 끝에 unable 행으로 되살아나지 않는다', async () => {

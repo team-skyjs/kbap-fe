@@ -332,6 +332,11 @@
     "aiSectionTitle": "Estimación de IA",
     "aiSectionNote": "Estos platos aún no están registrados, así que esta información la estimó la IA. Consulta con el personal antes de comer.",
     "aiIngredientsLine": "Puede contener ingredientes que evitas: {{names}}",
+    "aiGeneratedPhoto": "Imagen IA",
+    "aiPhotoGenerating": "Creando foto",
+    "aiDetailIngredients": "Ingredientes principales",
+    "addOnsTitle": "Extras y opciones",
+    "addOnsNote": "Son ingredientes extra u opciones. Pregunta al personal qué llevan.",
     "searchOnGoogle": "Buscar en Google",
     "resultsEmpty": "Sin resultados de escaneo",
     "viewOrderAction": "Ver pedido",
@@ -1432,5 +1437,20 @@
     "homeTitle": "¡Escanea también comida de tiendas de conveniencia!",
     "homeBody": "Mira qué llevan los snacks, el ramyeon y las bebidas.",
     "foodBody": "Explora comida de tiendas de conveniencia, lo más popular primero."
+  },
+  "chat": {
+    "title": "Chatea con nosotros",
+    "team": "Equipo K-Bap",
+    "repliesWithin": "Normalmente responde en 5 minutos",
+    "greeting": "¿En qué podemos ayudarte?",
+    "placeholder": "Escribe un mensaje",
+    "send": "Enviar",
+    "sendFailed": "No se pudo enviar. Inténtalo de nuevo.",
+    "rateLimited": "Has enviado muchos mensajes. Inténtalo de nuevo más tarde.",
+    "failedTapRetry": "No enviado. Toca para reintentar.",
+    "earlierInquiries": "Consultas anteriores",
+    "tooLong": "Tu mensaje es demasiado largo. Acórtalo, por favor.",
+    "photoInvalid": "No se pudo enviar una de las fotos. Elige otra foto.",
+    "invalid": "No se pudo enviar este mensaje. Revísalo e inténtalo de nuevo."
   }
 }

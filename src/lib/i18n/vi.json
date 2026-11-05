@@ -332,6 +332,11 @@
     "aiSectionTitle": "AI ước tính",
     "aiSectionNote": "Các món này chưa được đăng ký nên thông tin do AI ước tính. Hãy hỏi nhân viên trước khi ăn.",
     "aiIngredientsLine": "Có thể chứa nguyên liệu bạn tránh: {{names}}",
+    "aiGeneratedPhoto": "Ảnh AI",
+    "aiPhotoGenerating": "Đang tạo ảnh",
+    "aiDetailIngredients": "Nguyên liệu chính",
+    "addOnsTitle": "Món thêm và tùy chọn",
+    "addOnsNote": "Đây là nguyên liệu thêm hoặc tùy chọn. Hãy hỏi nhân viên bên trong có gì.",
     "searchOnGoogle": "Tìm trên Google",
     "resultsEmpty": "Không có kết quả quét",
     "viewOrderAction": "Xem đơn",
@@ -1432,5 +1437,20 @@
     "homeTitle": "Quét cả đồ ăn cửa hàng tiện lợi nữa!",
     "homeBody": "Xem bánh kẹo, mì ramyeon và đồ uống có gì bên trong.",
     "foodBody": "Xem đồ ăn cửa hàng tiện lợi, phổ biến nhất trước."
+  },
+  "chat": {
+    "title": "Trò chuyện với chúng tôi",
+    "team": "Đội ngũ K-Bap",
+    "repliesWithin": "Thường trả lời trong 5 phút",
+    "greeting": "Chúng tôi có thể giúp gì cho bạn?",
+    "placeholder": "Nhập tin nhắn",
+    "send": "Gửi",
+    "sendFailed": "Không gửi được. Vui lòng thử lại.",
+    "rateLimited": "Bạn đã gửi nhiều tin nhắn. Vui lòng thử lại sau ít phút.",
+    "failedTapRetry": "Chưa gửi. Chạm để thử lại.",
+    "earlierInquiries": "Câu hỏi trước đây",
+    "tooLong": "Tin nhắn quá dài. Vui lòng rút ngắn.",
+    "photoInvalid": "Có ảnh không gửi được. Vui lòng chọn ảnh khác.",
+    "invalid": "Không gửi được tin nhắn này. Vui lòng kiểm tra và thử lại."
   }
 }

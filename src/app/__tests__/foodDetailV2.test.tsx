@@ -1092,7 +1092,7 @@ describe('KB-982 메뉴판 스캔 진입 음식 상세 = 메뉴 담기(결과 �
     expect(src).toContain('useEffect(() => () => resetScanCart(), []);');
     expect(src).toContain('onAdd={addScanItem}');
     expect(src).toContain('onRemove={removeScanItem}');
-    expect(src).toContain('rememberScanDish(dish);');
+    expect(src).toContain('rememberScanDish({ ...dish, opt: dish.priceOptions && dish.priceOptions.length >= 2 ? 0 : null })');
     expect(src).toContain('src=scan&item=${dish.itemId}');
   });
 });

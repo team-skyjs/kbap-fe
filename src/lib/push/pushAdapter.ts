@@ -102,7 +102,7 @@ let loginPromptInflight: Promise<void> | null = null;
 
 /**
  * 첫 설치 로그인 화면(`/login?entry=intro`) 마운트 시 1회 — 앱 프라이머 없이 OS 팝업만(카메라 권한과 같은 방식).
- * 서버 요청 0(게스트). 결과는 프라이머 기록에 남겨 스캔 결과 시트가 생략된다. OS가 이미 결정을 기억하면(재설치)
+ * KB-1007: 허용이면 게스트로 토큰 등록 1회(그 외 서버 요청 0). 결과는 프라이머 기록에 남겨 스캔 결과 시트가 생략된다. OS가 이미 결정을 기억하면(재설치)
  * 요청 없이 기록만. 예외·모듈 없음은 기록하지 않는다(다음 기회 = 스캔 시트·설정 배너).
  * 허용이면 대기 표식을 남겨 로그인 성공 직후 applyPendingActivityDefault가 activity 기본값을 1회 켠다(서버 기본 false).
  */
@@ -121,6 +121,7 @@ async function promptPermissionOnFirstLoginInner(): Promise<void> {
   if (status === 'granted') {
     await AsyncStorage.setItem(ACTIVITY_PENDING_KEY, '1').catch(() => {});
     await markPrimerResult('accepted');
+    void registerPushToken(); // KB-1007: 게스트도 바로 등록(운영진 채팅 답장 푸시) — 로그인하면 로그인 성공 시 재등록이 회원으로 잇는다
   } else if (status === 'denied') {
     await markPrimerResult('declined');
   }
@@ -154,8 +155,10 @@ async function sendTokenToServer(reg: PushTokenRegistration): Promise<void> {
   await api.put('/api/notifications/tokens', reg);
 }
 
-/** 앱 시작·로그인 성공·언어 변경 시 upsert — **회원 세션 없음·권한 없음이면 조용히 스킵**
- *  (KB-543: 토큰 API 회원 전용, 게스트 요청 0). 실패(401 포함)는 비치명.
+/** 앱 시작·로그인 성공·언어 변경 시 upsert — **권한 없음이면 조용히 스킵**. 실패(401 포함)는 비치명.
+ *  KB-1007(S-973): 게스트도 등록 — 서버가 JWT 없이 X-Installation-Id(공용 client가 항상 붙임)로 받는다(운영진 채팅 답장 푸시).
+ *  로그인 상태면 JWT가 실려 회원 연결(종전 그대로). 구 KB-543 '게스트 요청 0' 가드 폐기 — 서버 배포 전 게스트 401은 조용히 무시
+ *  (무토큰 401은 handleUnauthorized가 세션을 건드리지 않는다 — P-260).
  *  Codex #109 10R: track 경유 — 콜드 스타트 +8s OTA 창과 겹치는 연산(관문 5곳째). */
 export function registerPushToken(): Promise<void> {
   return track(registerPushTokenInner());
@@ -164,7 +167,6 @@ async function registerPushTokenInner(): Promise<void> {
   const N = loadNotifications();
   if (!N) return;
   try {
-    if (!(await hasBeSession())) return; // KB-543: 게스트 토큰 등록 폐기
     const { status } = await N.getPermissionsAsync();
     if (status !== 'granted') return;
     const projectId = getProjectId();
@@ -257,7 +259,7 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
 
 /* ---- 푸시 유형 (KB-498 — 서버 enum과 동일, 정확 일치만) ---- */
 
-export const PUSH_TYPES = ['HELPFUL', 'SCAN_SUGGESTION', 'REVIEW_REMINDER', 'NEWS', 'MEAL_TIME', 'FOOD_DISCOVERY'] as const;
+export const PUSH_TYPES = ['HELPFUL', 'SCAN_SUGGESTION', 'REVIEW_REMINDER', 'NEWS', 'MEAL_TIME', 'FOOD_DISCOVERY', 'OPERATOR_CHAT'] as const;
 export type PushType = (typeof PUSH_TYPES)[number];
 
 export function isPushType(v: unknown): v is PushType {
@@ -287,6 +289,10 @@ export function routeForNotificationData(data: unknown): string | null {
       const s = d.foodId == null ? '' : String(d.foodId);
       return /^\d+$/.test(s) ? `/food/${s}` : null;
     }
+    case 'OPERATOR_CHAT':
+      // KB-1008(S-971): 운영진 메시지 → 채팅방(사용자당 1개라 conversationId는 경로에 안 쓴다).
+      // Codex #441 P2: 킬스위치 off면 기존 문의 화면으로(프로필 진입점과 같은 규칙)
+      return FLAGS.operatorChatEnabled ? '/chat' : '/profile/feedback';
     case 'NEWS':
       return null; // 앱만 켜짐 — 이동 없음(알림함 열람·읽음 처리만)
     default:
