@@ -1,6 +1,6 @@
 /**
  * 운영진 채팅 플로팅 버튼 (KB-1008, P-614 배치 확정) — 탭 화면 공용 우하단(탭바 위 18). 스캔·카메라는 탭이 아니라 자동 제외.
- * 커뮤니티 탭에선 Write review 알약(최대 높이) 위로 고정 — 알약이 compact로 줄어도 버튼은 안 움직인다.
+ * 리뷰 탭(community)에선 렌더 0 · 안읽음 조회도 멈춤(11/6 예진 — 리뷰 탭 버튼과 겹침 방지).
  * 안읽음 = 빨간 점 + 마지막 운영진 메시지 미리보기 말풍선(탭 = 채팅). 플래그 off = 렌더 0.
  */
 import * as React from 'react';
@@ -18,14 +18,14 @@ import { color as C, radius, shadow } from '@/lib/theme';
 
 export const CHAT_FAB_SIZE = 52;
 export const CHAT_FAB_GAP = 18;
-/** 커뮤니티 탭 들어 올림 — ReviewFeed Write review 알약 최대 높이 ~40 + 간격 12 · 글 기능(posts) 켜지면 작성 FAB 54 + 12 */
-export const communityLift = (): number => (FLAGS.communityPostsEnabled ? 54 + 12 : 40 + 12);
+/** 11/6 예진: 리뷰 탭(community 라우트 = 리뷰 피드)에선 숨김 — Write review·작성 FAB와 겹침 방지. 탭 밖(상세·작성)은 루트 스택이 위를 덮는다. */
+export const CHAT_FAB_HIDDEN_ROUTES: readonly string[] = ['community'];
 /** 안읽음 점 — 알림 관례의 빨강(위험도 색 토큰과 별개 — 헌법 III 고정 의미를 빌리지 않는다) */
 const UNREAD_RED = '#FF3B30';
 // 11/5 예진: 검정 FAB가 "너무 안 보임" → 흰 바탕 + 주황 선 말풍선(채움 없음) + C.line 1px 테두리·sh1 그림자로 흰 화면과 분리(주황 채움 = 스캔 버튼과 겹침, 청록 = 취소 — 최종 확정). 빨간 점은 흰 테두리 2.5.
 
-export function chatFabBottom(insetBottom: number, activeRoute: string): number {
-  return TABBAR_CONTENT_H + Math.max(insetBottom, 10) + CHAT_FAB_GAP + (activeRoute === 'community' ? communityLift() : 0);
+export function chatFabBottom(insetBottom: number): number {
+  return TABBAR_CONTENT_H + Math.max(insetBottom, 10) + CHAT_FAB_GAP;
 }
 
 export function ChatFab({ activeRoute }: { activeRoute: string }) {
@@ -40,13 +40,14 @@ export function ChatFab({ activeRoute }: { activeRoute: string }) {
       return () => setFocused(false);
     }, []),
   );
-  const unread = useChatUnread(FLAGS.operatorChatEnabled && focused);
-  if (!FLAGS.operatorChatEnabled) return null;
+  const hidden = !FLAGS.operatorChatEnabled || CHAT_FAB_HIDDEN_ROUTES.includes(activeRoute);
+  const unread = useChatUnread(!hidden && focused);
+  if (hidden) return null;
   const count = unread.data?.count ?? 0;
   const preview = count > 0 ? unread.data?.last ?? null : null;
   const open = () => router.push('/chat' as Href);
   return (
-    <View pointerEvents="box-none" style={[styles.wrap, { bottom: chatFabBottom(insets.bottom, activeRoute) }]} testID="chat-fab-wrap">
+    <View pointerEvents="box-none" style={[styles.wrap, { bottom: chatFabBottom(insets.bottom) }]} testID="chat-fab-wrap">
       {!!preview && (
         <Pressable style={styles.preview} onPress={open} accessibilityRole="button" accessibilityLabel={t('chat.title')} testID="chat-fab-preview">
           <Text style={styles.previewName}>{t('chat.team')}</Text>

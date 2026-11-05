@@ -45,13 +45,14 @@ function AppTabBar({
 }: {
   activeRoute: string;
   navigate: (name: string) => void;
-  /** KB-1008: 활성 탭을 레이아웃에 알린다(채팅 버튼 커뮤니티 들어 올림) */
+  /** KB-1008: 활성 탭을 레이아웃에 알린다(리뷰 탭 = 채팅 버튼 숨김) */
   onActive?: (route: string) => void;
 }) {
   const router = useRouter();
   const { t } = useTranslation();
   const active = ROUTE_TO_KEY[activeRoute] ?? 'home';
-  React.useEffect(() => onActive?.(activeRoute), [activeRoute, onActive]);
+  // 레이아웃 effect = 페인트 전 반영 — 일반 effect면 탭 전환 첫 프레임에 이전 탭 기준 버튼이 한 번 비친다
+  React.useLayoutEffect(() => onActive?.(activeRoute), [activeRoute, onActive]);
 
   // P-213: app_tab_view(P-215 개명) — 활성 탭이 바뀔 때 1회(탭 탭·프로그램 전환·첫 진입 전부 포함,
   // 같은 탭 재탭은 무발화). 4탭 계측을 여기 한 곳으로 — 화면별 배선 금지.
@@ -102,7 +103,7 @@ function useInitAdsOnce() {
 
 export default function TabsLayout() {
   useInitAdsOnce();
-  const [activeRoute, setActiveRoute] = React.useState('index'); // KB-1008: 채팅 버튼 위치(커뮤니티 = Write review 위)
+  const [activeRoute, setActiveRoute] = React.useState('index'); // KB-1008: 채팅 버튼 노출(리뷰 탭 = 숨김)
   return (
     <>
       <Tabs
