@@ -75,6 +75,8 @@ const mockGet = jest.fn();
 const mockPost = jest.fn();
 jest.mock('@/lib/api/client', () => ({ api: { get: (...a: unknown[]) => mockGet(...a), post: (...a: unknown[]) => mockPost(...a) } }));
 let mockGen = 1;
+let mockSession: boolean | null = true;
+jest.mock('@/lib/auth/useSession', () => ({ useSession: () => mockSession }));
 jest.mock('@/lib/auth/beTokens', () => ({ currentGen: () => mockGen }));
 jest.mock('@/lib/deviceInfo', () => ({ collectDeviceInfo: () => ({ os: 'ios', lang: 'en' }) }));
 jest.mock('@/lib/api/scanImage', () => ({ uploadImage: jest.fn().mockResolvedValue({ path: 'feedback/a.jpg' }) }));
@@ -110,6 +112,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockQuery = {};
   mockGen = 1;
+  mockSession = true;
   mockPost.mockResolvedValue(msg(10, 'USER', 'hi'));
 });
 
@@ -216,6 +219,15 @@ describe('② 채팅 화면', () => {
     await settle();
     expect(has(r, 'chat-op-5')).toBe(false);
     expect(text(r)).not.toContain('previous user secret');
+  });
+  it('S-971: 사진 첨부 = 로그인 사용자만 — 게스트·세션 미확정 = 버튼 없음, 회원 = 있음', async () => {
+    routeGets(page([]));
+    mockSession = false;
+    expect(has(await mount(<ChatScreen />), 'chat-photo-add')).toBe(false);
+    mockSession = null;
+    expect(has(await mount(<ChatScreen />), 'chat-photo-add')).toBe(false);
+    mockSession = true;
+    expect(has(await mount(<ChatScreen />), 'chat-photo-add')).toBe(true);
   });
   it('광고 신고(?prefill=ad) = 입력창만 채움 · 자동 전송 0', async () => {
     mockQuery = { prefill: 'ad' };

@@ -5,7 +5,7 @@
  * - 운영진 'K-Bap 팀'(브랜드 타일) 말풍선 왼쪽 · 내 말풍선 오른쪽 primary · 시간. 운영진 메시지가 아직 없으면
  *   맨 위에 기본 인사(저장 안 하는 화면 표시).
  * - 열려 있는 동안 5초 폴링, 읽음 = 화면이 보이고 맨 아래를 볼 때만(조회로는 읽음 안 됨).
- * - 보내기: 사진 ≤3(문의 업로드 재사용) · 공용 제출 가드 · 실패한 말풍선 = 탭해서 다시 보내기. 429 CHAT-001 = 전용 안내(서버 문구 노출 0).
+ * - 보내기: 사진 ≤3(문의 업로드 재사용 — **로그인 사용자만**: 게스트는 업로드 경로가 없어 서버가 400, 버튼 자체를 숨긴다) · 공용 제출 가드 · 실패한 말풍선 = 탭해서 다시 보내기. 429 CHAT-001 = 전용 안내(서버 문구 노출 0).
  * - 진입: 탭 화면 플로팅 버튼 · 프로필 Contact us · 광고 신고(?prefill=ad — 입력창만 채움, 자동 전송 0) · 푸시 OPERATOR_CHAT.
  */
 import * as React from 'react';
@@ -27,6 +27,7 @@ import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useUploadAbort } from '@/lib/useUploadAbort';
 import { isUploadAborted } from '@/lib/api/uploadAbort';
 import { pickLibraryPhotos } from '@/features/feedback/FeedbackForm';
+import { useSession } from '@/lib/auth/useSession';
 import { CHAT_KEYS, CHAT_MAX_LEN, CHAT_MAX_PHOTOS, markChatRead, useChatMessages, useSendChat, type ChatMessage } from '@/lib/data/useChat';
 import { color as C, radius } from '@/lib/theme';
 
@@ -93,6 +94,8 @@ export default function ChatScreen() {
   const [importing, setImporting] = React.useState(false);
   const [outgoing, setOutgoing] = React.useState<Outgoing[]>([]);
   const [atBottom, setAtBottom] = React.useState(true);
+  // S-971 확정: 사진 = 로그인 사용자만. 세션 미확정(null)도 숨김 — 서버가 아는 사실(토큰 유무)이 정본, 회원으로 확정될 때만 보인다
+  const canAttach = useSession() === true;
   // '오늘' 기준 시각 = 마운트 때 한 번(state) — 렌더 중 new Date()는 React Compiler 메모에 굳는다(KB-697 sweep)
   const [now] = React.useState(() => new Date());
 
@@ -124,7 +127,8 @@ export default function ChatScreen() {
   const canSend = body.trim().length > 0 && !guard.busy;
   const onSend = () => {
     if (!canSend) return;
-    const o: Outgoing = { localId: `${Date.now()}-${Math.random()}`, content: body.trim().slice(0, CHAT_MAX_LEN), photos, failed: false };
+    // 로그인 중 고른 사진이 있어도 그새 게스트가 됐으면 싣지 않는다(서버 400 FEEDBACK-002 예방)
+    const o: Outgoing = { localId: `${Date.now()}-${Math.random()}`, content: body.trim().slice(0, CHAT_MAX_LEN), photos: canAttach ? photos : [], failed: false };
     setOutgoing((cur) => [...cur, o]);
     setBody('');
     setPhotos([]);
@@ -194,9 +198,11 @@ export default function ChatScreen() {
         </ScrollView>
       )}
       <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-        <Pressable accessibilityLabel={t('review.addPhoto')} style={styles.iconBtn} onPress={() => void pickPhoto()} disabled={photos.length >= CHAT_MAX_PHOTOS} testID="chat-photo-add">
-          <IconGallery size={22} color={photos.length >= CHAT_MAX_PHOTOS ? C.line : C.ink2} />
-        </Pressable>
+        {canAttach && (
+          <Pressable accessibilityLabel={t('review.addPhoto')} style={styles.iconBtn} onPress={() => void pickPhoto()} disabled={photos.length >= CHAT_MAX_PHOTOS} testID="chat-photo-add">
+            <IconGallery size={22} color={photos.length >= CHAT_MAX_PHOTOS ? C.line : C.ink2} />
+          </Pressable>
+        )}
         <Input
           value={body}
           onChangeText={(v) => setBody(v.slice(0, CHAT_MAX_LEN))}
