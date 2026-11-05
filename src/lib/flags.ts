@@ -127,6 +127,13 @@ export const FLAGS = {
    */
   communityPostsEnabled: false,
   /**
+   * 운영진 1:1 채팅 (KB-1008/P-614) — 탭 플로팅 버튼·프로필 Contact us·광고 신고·푸시 딥링크를 채팅으로.
+   * 켜면 재방문 피드백 시트(KB-986)는 뜨지 않는다(같은 목적 대체 — 기획 결정 13). false = 기존 문의 화면·시트 그대로.
+   * Codex #441 P1: 서버(S-971)가 있는 백엔드에서만 — 지금은 dev 서버 채널(development·teamtest dev 타깃)만 켠다.
+   * production·preview·teamtest-prod는 운영 서버에 채팅 API가 없어 404 → 기존 문의 그대로. S-971 운영 배포 뒤 true로 한 줄.
+   */
+  operatorChatEnabled: DEV_SERVER_CHANNEL,
+  /**
    * 알림함 (P-216/KB-39, 멘토링 8/15). 목록·배지 = 서버 `GET /api/notifications`
    * (KB-499, lib/data/useNotifications — 기기 단위·7일·미읽음 파생). 로컬 기록 없음.
    */

@@ -1437,5 +1437,20 @@
     "homeTitle": "便利店食品也能扫描！",
     "homeBody": "看看零食、拉面和饮料里有什么。",
     "foodBody": "按人气浏览便利店食品。"
+  },
+  "chat": {
+    "title": "联系我们",
+    "team": "K-Bap 团队",
+    "repliesWithin": "通常 5 分钟内回复",
+    "greeting": "有什么可以帮你的？",
+    "placeholder": "输入消息",
+    "send": "发送",
+    "sendFailed": "发送失败，请重试。",
+    "rateLimited": "消息发送过多，请稍后再试。",
+    "failedTapRetry": "未发送，点按重试",
+    "earlierInquiries": "以往咨询",
+    "tooLong": "消息太长了，请缩短一些。",
+    "photoInvalid": "有照片无法发送，请换一张。",
+    "invalid": "无法发送此消息，请检查后重试。"
   }
 }

@@ -1437,5 +1437,20 @@
     "homeTitle": "Pindai makanan minimarket juga!",
     "homeBody": "Cek isi camilan, ramyeon, dan minuman.",
     "foodBody": "Jelajahi makanan minimarket, yang terpopuler dulu."
+  },
+  "chat": {
+    "title": "Chat dengan kami",
+    "team": "Tim K-Bap",
+    "repliesWithin": "Biasanya membalas dalam 5 menit",
+    "greeting": "Ada yang bisa kami bantu?",
+    "placeholder": "Ketik pesan",
+    "send": "Kirim",
+    "sendFailed": "Gagal mengirim. Coba lagi.",
+    "rateLimited": "Kamu sudah mengirim banyak pesan. Coba lagi sebentar lagi.",
+    "failedTapRetry": "Tidak terkirim. Ketuk untuk mencoba lagi.",
+    "earlierInquiries": "Pertanyaan sebelumnya",
+    "tooLong": "Pesanmu terlalu panjang. Persingkat, ya.",
+    "photoInvalid": "Ada foto yang tidak bisa dikirim. Pilih foto lain.",
+    "invalid": "Pesan ini tidak bisa dikirim. Periksa lalu coba lagi."
   }
 }

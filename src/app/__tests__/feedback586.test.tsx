@@ -151,8 +151,8 @@ it('① 게스트도 진입 — 프로필 게스트 분기에 행이 있고, 문
   const profile = read('src/app/(tabs)/profile.tsx');
   // 게스트 분기 / 회원 분기 양쪽에 같은 행 — 한쪽만 있으면 게스트가 못 들어간다
   expect(profile.match(/t\('feedback\.title'\)/g)?.length).toBe(2);
-  // P-406: 두 진입점 모두 **목록**으로 간다(작성 직행 금지)
-  expect(profile.match(/router\.push\('\/profile\/feedback' as Href\)/g)?.length).toBe(2);
+  // P-406: 두 진입점 모두 **목록**으로 간다(작성 직행 금지) · KB-1008: 채팅 플래그 off일 때의 목적지
+  expect(profile.match(/FLAGS\.operatorChatEnabled \? '\/chat' : '\/profile\/feedback'/g)?.length).toBe(2);
   expect(profile).not.toContain("'/profile/feedback/new'");
   const compose = read('src/app/profile/feedback/new.tsx') + read('src/features/feedback/FeedbackForm.tsx'); // KB-986: 입력·제출은 공용 폼
   expect(compose).not.toMatch(/AuthGate|useIsGuest|requireLogin/);

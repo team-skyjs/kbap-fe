@@ -8,7 +8,7 @@ export const ENGAGEMENT_EVENTS = {
   screen_scroll_summary: 'screen_scroll_summary',
 } as const;
 export type EngagementEvent = keyof typeof ENGAGEMENT_EVENTS;
-export const SCREENS = ['root', '(tabs)/index', '(tabs)/food', '(tabs)/community', '(tabs)/profile', 'scan', 'scan-order', 'search', 'idol-picks', 'curations/[key]', 'food/[id]', 'food/[id]/reviews', 'food/[id]/review', 'food/[id]/owner', 'profile/saved', 'profile/my-foods', 'profile/order/[id]', 'profile/reviews', 'profile/edit', 'profile/restrictions', 'profile/diet', 'profile/notifications', 'profile/feedback', 'profile/feedback/new', 'profile/feedback/[id]', 'profile/ranking', 'profile/legal', 'notifications', 'login', 'onboarding', 'delete-account', 'processed-foods/[id]', 'processed-foods/[id]/review', 'community/blocked', 'community/post/[id]', 'community/compose', 'unknown'] as const;
+export const SCREENS = ['root', '(tabs)/index', '(tabs)/food', '(tabs)/community', '(tabs)/profile', 'scan', 'scan-order', 'search', 'idol-picks', 'curations/[key]', 'food/[id]', 'food/[id]/reviews', 'food/[id]/review', 'food/[id]/owner', 'profile/saved', 'profile/my-foods', 'profile/order/[id]', 'profile/reviews', 'profile/edit', 'profile/restrictions', 'profile/diet', 'profile/notifications', 'profile/feedback', 'profile/feedback/new', 'profile/feedback/[id]', 'profile/ranking', 'profile/legal', 'chat', 'notifications', 'login', 'onboarding', 'delete-account', 'processed-foods/[id]', 'processed-foods/[id]/review', 'community/blocked', 'community/post/[id]', 'community/compose', 'unknown'] as const;
 export type Screen = typeof SCREENS[number];
 export const SURFACES = ['screen', 'body', 'rail', 'photos', 'card', 'sheet', 'dialog'] as const;
 export type Surface = typeof SURFACES[number];

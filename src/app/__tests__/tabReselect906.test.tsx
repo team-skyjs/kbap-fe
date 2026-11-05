@@ -24,6 +24,7 @@ jest.mock('expo-router', () => {
 });
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
 jest.mock('@/lib/ads/adsSession', () => ({ initAds: jest.fn() }));
+jest.mock('@/features/chat/ChatFab', () => ({ ChatFab: () => null })); // KB-1008: 버튼은 operatorChat1008에서
 jest.mock('@/lib/bootGate', () => ({ whenSplashDone: () => new Promise(() => {}) }));
 jest.mock('@/lib/analytics', () => ({ EVENTS: { app_tab_view: 'app_tab_view' }, track: jest.fn() }));
 jest.mock('@/lib/airbridge', () => ({ airbridge: { homeView: jest.fn() } }));
