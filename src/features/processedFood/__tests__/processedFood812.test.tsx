@@ -104,11 +104,8 @@ afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); jest.c
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(el); }); trees.push(t); return t; };
 const q = (over: Partial<Q>): Q => ({ isPending: false, isError: false, refetch: jest.fn(), ...over });
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
-/** KB-997: 원재료 미리 보기 줄 수 보고(측정 사본의 onTextLayout) — jest는 레이아웃이 없어 직접 쏜다 */
-const layoutLines = (t: ReactTestRenderer, n: number) => act(() => t.root.findAll((x) => x.props?.testID === 'pf-preview-measure' && typeof x.props.onTextLayout === 'function')[0].props.onTextLayout({ nativeEvent: { lines: Array.from({ length: n }, () => ({})) } }));
 /** KB-997: 접힌 미리 보기 → See all(구 "Ingredients and source" 버튼 자리) */
 const seeAll = (t: ReactTestRenderer) => {
-  layoutLines(t, 5);
   act(() => t.root.findAll((x) => x.props?.testID === 'pf-see-all' && typeof x.props.onPress === 'function')[0].props.onPress());
 };
 // FlatList(2열)는 ListHeader/Empty 엘리먼트 prop이 트리에 실려 순환 참조 — 엘리먼트 prop은 버리고 렌더 트리만(prodFlagSurfaces436 문법)
@@ -455,28 +452,27 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(text(k)).not.toContain('Milk, water, sugar');
     expect(text(k)).toContain('원유,정제수,백설탕');
   });
-  // KB-997(예진 11/5 실기): 접힘 = Ingredients + 번역(없으면 원문) 3줄 + 페이드 + See all · 3줄 이하 = 전체 그대로(버튼·페이드 0)
+  // KB-997(예진 11/5 실기) + P-611: 접힘 = Ingredients + 번역(없으면 원문) 최대 3줄 + See all · 길이 무관 항상 접힘으로 시작
   describe('KB-997 원재료 3줄 미리 보기', () => {
     const ING = { ingredients: { translated: 'Water, sugar, salt, citric acid, sodium citrate, flavor', original: '정제수,설탕,정제소금,구연산,구연산삼나트륨,향료' } };
     const prev = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'pf-preview-text' && typeof n.type === 'string')[0];
-    it('3줄 초과 = 번역 3줄(numberOfLines 3) + 페이드 + See all · 측정 전엔 버튼·페이드 0(깜빡임 방지)', () => {
+    it('긴 원재료 = 번역 3줄(numberOfLines 3) + See all · 처음부터 접힘(측정 대기 0)', () => {
       const t = detail(ING);
       expect(ids(t)).toContain('pf-ingredients-peek');
       expect(prev(t).props.numberOfLines).toBe(3);
       expect(prev(t).props.children).toBe(ING.ingredients.translated);
-      expect(ids(t)).not.toContain('pf-see-all');
-      layoutLines(t, 6);
-      expect(ids(t)).toEqual(expect.arrayContaining(['pf-preview-fade', 'pf-see-all']));
+      expect(ids(t)).toContain('pf-see-all');
       expect(ids(t)).not.toContain('pf-expanded');
       expect(text(t)).toContain('packaged.ingredients.seeAll');
     });
-    it('3줄 이하 = 접을 게 없다 → 전체 섹션 그대로(번역·원문·출처) · 버튼·페이드 0', () => {
-      const t = detail(ING);
-      layoutLines(t, 3);
-      expect(ids(t)).toEqual(expect.arrayContaining(['pf-expanded', 'pf-raw', 'pf-source']));
-      expect(ids(t)).not.toContain('pf-see-all');
-      expect(ids(t)).not.toContain('pf-preview-fade');
-      expect(ids(t)).not.toContain('pf-see-less');
+    it('P-611: 짧은 원재료(1줄)도 See all이 보이고 원문·Source는 접힘 — 줄 수 측정 분기 0', () => {
+      const t = detail({ ingredients: { translated: 'Milk', original: '원유' } });
+      expect(prev(t).props.children).toBe('Milk');
+      expect(ids(t)).toContain('pf-see-all');
+      expect(ids(t)).not.toContain('pf-expanded');
+      expect(ids(t)).not.toContain('pf-raw');
+      expect(ids(t)).not.toContain('pf-source');
+      expect(ids(t)).not.toContain('pf-preview-measure');
     });
     it('번역 없음 = 한국어 원문 3줄', () => {
       const t = detail({ ingredients: { translated: null, original: ING.ingredients.original } });
