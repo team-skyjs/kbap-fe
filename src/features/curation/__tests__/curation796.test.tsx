@@ -363,7 +363,7 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     layoutOf('curation-item-1', { x: 0, y: 0, width: 335, height: 340 });
     layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 335, height: 104 });
     expect(RN.StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0].props.style).top).toBe(220);
-    expect(fs.readFileSync('src/features/curation/BlurCaptionCard.tsx', 'utf8') /* KB-861: 공용 모듈 */).toContain("export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 9 : 45;");
+    expect(fs.readFileSync('src/features/curation/BlurCaptionCard.tsx', 'utf8') /* KB-861: 공용 모듈 */).toContain('export const CARD_BLUR_RADIUS = 45; // iOS expo-image blurRadius');
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     expect(pkg.dependencies['expo-blur']).toBeUndefined();
   });
@@ -511,6 +511,53 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
       expect(mockOpenMap).not.toHaveBeenCalled();
     } finally {
       sheet.mockRestore();
+    }
+  });
+  it('KB-1000 Android = expo-image blurRadius 0(RenderScript 네이티브 크래시 회피) · 밴드 블러 = 저해상 확대 1장(카드 1/14 + 1칸 디코드 ×14, filter 0 · 카드 끝까지 덮음) · 띠 구조 그대로', () => {
+    const RNm = jest.requireActual('react-native');
+    const prevOS = RNm.Platform.OS;
+    RNm.Platform.OS = 'android';
+    try {
+      mockDetail = q({ data: detail });
+      const t = render(<CurationDetailScreen />);
+      const layoutOf = (id: string, layout: object) => act(() => t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout } }));
+      layoutOf('curation-item-1', { x: 0, y: 0, width: 336, height: 300 });
+      layoutOf('curation-item-caption-1', { x: 0, y: 236, width: 336, height: 64 });
+      loadPhotos(t);
+      const band = t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0];
+      expect(band.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('blur:'))).toHaveLength(0); // blurRadius 0
+      const w = band.findAll((n) => n.props?.testID === 'curation-item-blur-1-lowres' && typeof n.type === 'string');
+      expect(w).toHaveLength(1);
+      const ws = RNm.StyleSheet.flatten(w[0].props.style);
+      expect(ws).toMatchObject({ top: -220, height: 300, overflow: 'hidden' });
+      expect(ws.filter).toBeUndefined();
+      const img = w[0].findAll((n) => n.props?.testID === 'img:https://cdn/i1.jpg' && typeof n.type === 'string');
+      expect(img).toHaveLength(1);
+      // QA 3차(이음새)·4차(이중상): 디코드 = ceil(len/14), 배율 = (len + 2) / 디코드 → 확대 결과 = 카드 + 2dp 정확히(덮되 밀림 0)
+      const st = RNm.StyleSheet.flatten(img[0].props.style);
+      expect(st).toMatchObject({ transformOrigin: 'top left' });
+      const pr = RNm.PixelRatio.get();
+      expect(Number.isInteger(Math.round(st.width * pr * 1e6) / 1e6)).toBe(true); // QA 5차: 디코드 한 변 = 기기 픽셀 정수(스냅 손실 0)
+      expect(Number.isInteger(Math.round(st.height * pr * 1e6) / 1e6)).toBe(true);
+      const [sx, sy] = (st.transform as { scaleX?: number; scaleY?: number }[]).map((tr) => tr.scaleX ?? tr.scaleY ?? 0);
+      expect(st.width * sx).toBeCloseTo(336 + 2, 6);
+      expect(st.height * sy).toBeCloseTo(300 + 2, 6);
+      // 폭 371·높이 332(QA 실측 카드)도 +2dp — 구 고정 ×14는 392·350(이중상)
+      const { lowresSide, lowresScale } = jest.requireActual('@/features/curation/BlurCaptionCard') as typeof import('@/features/curation/BlurCaptionCard');
+      // 소수 배율 기기(2.625 — QA 실기)에서: 구 ceil(len/14)dp는 27dp = 70.875px(비정수 → 스냅 손실), 지금은 픽셀 정수
+      const spy = jest.spyOn(RNm.PixelRatio, 'get').mockReturnValue(2.625);
+      try {
+        for (const len of [371, 332, 335, 1]) {
+          expect(lowresSide(len) * lowresScale(len)).toBeCloseTo(len + 2, 6);
+          expect(Number.isInteger(Math.round(lowresSide(len) * 2.625 * 1e6) / 1e6)).toBe(true);
+        }
+        expect(Number.isInteger(Math.ceil(371 / 14) * 2.625)).toBe(false); // 구 공식이 왜 모자랐는지
+      } finally {
+        spy.mockRestore();
+      }
+      expect(t.root.findAll((n) => n.props?.testID === 'curation-item-blur-strip-1-0' && typeof n.type === 'string')).toHaveLength(1);
+    } finally {
+      RNm.Platform.OS = prevOS;
     }
   });
   it('KB-863 Android = 앱 목록 대화상자: 제목 · 세 지도(검정) · Cancel(빨강) → NAVER 선택 = 범용 링크 · Cancel = 닫힘', () => {
