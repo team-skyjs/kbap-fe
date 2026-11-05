@@ -3,9 +3,10 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { AppState } from 'react-native';
 import { adaptPendingItem, mapPriceOptions, photoOnlyResults, spiceRank } from '@/lib/api/scanAdapter';
 import type { ScanResultWire } from '@/lib/api/scanTypes';
-import { PENDING_CAP_MS, useScanPending } from '../useScanPending';
+import { PENDING_CAP_MS, PENDING_STATE_TTL_MS, useScanPending } from '../useScanPending';
 
 const mockGet = jest.fn();
 jest.mock('@/lib/api/client', () => ({ api: { get: (...a: unknown[]) => mockGet(...a) }, apiLang: () => 'en' }));
@@ -161,6 +162,95 @@ describe('useScanPending', () => {
     mount('s1');
     await flush();
     expect(out.polling).toBe(false);
+  });
+
+  it('P-617: 끝난 뒤 화면 재진입(active false → true) = 상태 TTL 안이면 한 번 재조회 → 60초 뒤 READY 된 사진 반영 · 폴링은 재개 안 함', async () => {
+    mockGet.mockResolvedValueOnce({ items: [item('p1', { imageStatus: 'NONE' })], done: true, imagesDone: true });
+    mount('s1');
+    await flush();
+    expect(out.polling).toBe(false);
+    update('s1', false); // 상세로 이동
+    mockGet.mockResolvedValueOnce({ items: [item('p1', { imageStatus: 'READY', imageUrl: 'https://cdn/late.webp' })], done: true, imagesDone: true });
+    await advance(120_000);
+    update('s1', true); // 돌아옴
+    await flush();
+    expect(mockGet).toHaveBeenCalledTimes(2);
+    expect((out.items[0] as unknown as { image: string; imageUrl: string }).imageUrl).toBe('https://cdn/late.webp');
+    await advance(10_000);
+    expect(mockGet).toHaveBeenCalledTimes(2); // 한 번만 — 폴링 재개 0
+    expect(mockTrack.mock.calls.filter((c) => c[0] === 'scan_ai_item_filled')).toHaveLength(1); // 사진 갱신은 새 도착이 아니다
+  });
+
+  it('P-617: 상태 TTL(10분)이 지났으면 재진입해도 재조회 0', async () => {
+    mockGet.mockResolvedValueOnce({ items: [item('p1')], done: true, imagesDone: true });
+    mount('s1');
+    await flush();
+    update('s1', false);
+    await advance(PENDING_STATE_TTL_MS + 1);
+    update('s1', true);
+    await flush();
+    expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('P-617: 앱 백그라운드 = 폴링 멈춤(남은 예산 유지) · 전경 복귀 = 이어서 · 끝난 뒤 복귀 = 한 번 재조회', async () => {
+    let onChange: (s: string) => void = () => {};
+    // spyOn+mockRestore는 RN jest 목(jest.fn)의 구현까지 지워 다음 테스트 구독이 undefined가 된다 — 속성을 직접 바꾸고 되돌린다
+    const orig = AppState.addEventListener;
+    (AppState as unknown as { addEventListener: unknown }).addEventListener = (_: string, cb: (s: string) => void) => { onChange = cb; return { remove: () => {} }; };
+    try {
+      mockGet.mockResolvedValue({ items: [], done: false });
+      mount('s1');
+      await flush();
+      expect(mockGet).toHaveBeenCalledTimes(1);
+      act(() => onChange('background'));
+      await advance(5000);
+      expect(mockGet).toHaveBeenCalledTimes(1); // 백그라운드 = 요청 0
+      act(() => onChange('active'));
+      await flush();
+      expect(mockGet).toHaveBeenCalledTimes(2); // 이어서 폴링
+      mockGet.mockResolvedValue({ items: [item('p1')], done: true, imagesDone: true });
+      await advance(1000);
+      await flush();
+      expect(out.polling).toBe(false);
+      const n = mockGet.mock.calls.length;
+      act(() => onChange('background'));
+      act(() => onChange('active'));
+      await flush();
+      expect(mockGet).toHaveBeenCalledTimes(n + 1); // 끝난 뒤 복귀 = 한 번 재조회
+    } finally {
+      act(() => tree.unmount()); // 바꾼 구독으로 마운트한 트리는 여기서 정리
+      (AppState as unknown as { addEventListener: unknown }).addEventListener = orig;
+    }
+  });
+
+  it('Codex #445 P2: 폴링 중 백그라운드 → 60초 마감이 지난 뒤(TTL 안) 복귀 = pending 1회 받아 반영하고 끝(사진이 영영 빠지지 않는다)', async () => {
+    let onChange: (s: string) => void = () => {};
+    const orig = AppState.addEventListener;
+    (AppState as unknown as { addEventListener: unknown }).addEventListener = (_: string, cb: (s: string) => void) => { onChange = cb; return { remove: () => {} }; };
+    try {
+      mockGet.mockResolvedValueOnce({ items: [item('p1', { imageStatus: 'GENERATING' })], done: true, imagesDone: false });
+      mount('s1');
+      await flush();
+      expect(out.polling).toBe(true);
+      act(() => onChange('background'));
+      await advance(70_000); // 마감(60초) 경과
+      expect(mockGet).toHaveBeenCalledTimes(1);
+      // 실기 순서 재현: 응답(네트워크)보다 0ms 타이머가 먼저 돈다 — 응답을 붙잡아 둔 채 타이머부터 돌린다
+      let respond: (v: unknown) => void = () => {};
+      mockGet.mockImplementationOnce(() => new Promise((res) => { respond = res; }));
+      act(() => onChange('active'));
+      await advance(1);
+      await act(async () => { respond({ items: [item('p1', { imageStatus: 'READY', imageUrl: 'https://cdn/late.webp' })], done: true, imagesDone: true }); });
+      await flush();
+      expect(mockGet).toHaveBeenCalledTimes(2); // 복귀 = 1회
+      expect((out.items[0] as unknown as { imageUrl: string }).imageUrl).toBe('https://cdn/late.webp');
+      expect(out.polling).toBe(false);
+      await advance(10_000);
+      expect(mockGet).toHaveBeenCalledTimes(2); // 폴링 재개 0
+    } finally {
+      act(() => tree.unmount());
+      (AppState as unknown as { addEventListener: unknown }).addEventListener = orig;
+    }
   });
 
   it('실패(success=false·네트워크) = 즉시 종료(재시도 0)', async () => {
