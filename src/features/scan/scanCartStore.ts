@@ -67,6 +67,17 @@ export function migrateScanCartKey(from: string, to: string): void {
   emit();
 }
 
+/** Codex #440 2R P2: 한 줄의 담김 전부(옵션 없는 키 + 옵션 키) 삭제 — NOT_FOOD로 판정돼 목록에서 빠진 줄 */
+export function dropScanCartItem(itemId: number): void {
+  const prefix = `${itemId}#`;
+  const keys = [...cart.keys()].filter((k) => k === String(itemId) || k.startsWith(prefix));
+  if (!keys.length) return;
+  const next = new Map(cart);
+  for (const k of keys) next.delete(k);
+  cart = next;
+  emit();
+}
+
 /** 재촬영·스캔 화면 닫힘 */
 export function resetScanCart(): void {
   if (cart.size === 0 && dishes.size === 0) return;

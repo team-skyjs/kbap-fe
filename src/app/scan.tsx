@@ -27,7 +27,7 @@ import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
 import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { withPermissionPrompt } from '@/lib/permissionPrompt';
 import { markPromptShown } from '@/lib/engagement/promptSlot';
-import { addScanItem, migrateScanCartKey, rememberScanDish, removeScanItem, resetScanCart, scanCartKey, useScanCart } from '@/features/scan/scanCartStore';
+import { addScanItem, dropScanCartItem, migrateScanCartKey, rememberScanDish, removeScanItem, resetScanCart, scanCartKey, useScanCart } from '@/features/scan/scanCartStore';
 import { Pressable } from '@/components/Pressable';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
@@ -398,11 +398,17 @@ export default function Scan() {
   const aiPending = useScanPending(scanId, isFocused && phase === 'result' && pendingCount > 0);
   // KB-1006(Codex #440 P2): 응답 전에 담은 AI 줄에 수량 옵션이 오면 옵션 없는 수량을 첫 옵션 키로 옮긴다(price = 첫 옵션 값, S-969) —
   // 안 옮기면 줄·주문 카드 어디서도 안 읽혀 필 숫자에만 남는다. 사진 전용 항목의 itemId = -1 - k(결과 조립과 같은 규칙)
+  // Codex #440 2R P2: 응답 전에 담은 줄이 NOT_FOOD로 판정되면 줄이 목록에서 빠진다 → 그 줄의 담김(옵션 키 포함)도 지운다
+  // (안 지우면 필 숫자에만 남고 주문 카드엔 없어, 그것만 담았으면 빈 주문이 열린다)
   useEffect(() => {
+    const idsOf = (pids: Set<string>) => [
+      ...items.filter((it) => it.pendingId && pids.has(it.pendingId)).map((it) => it.itemId),
+      ...photoOnly.flatMap((p, k) => (p.pendingId && pids.has(p.pendingId) ? [-1 - k] : [])),
+    ];
     const optioned = new Set(aiPending.items.filter((a) => a.priceOptions && a.priceOptions.length >= 2).map((a) => a.pendingId));
-    if (!optioned.size) return;
-    const ids = [...items.filter((it) => it.pendingId && optioned.has(it.pendingId)).map((it) => it.itemId), ...photoOnly.flatMap((p, k) => (p.pendingId && optioned.has(p.pendingId) ? [-1 - k] : []))];
-    for (const id of ids) migrateScanCartKey(scanCartKey(id), scanCartKey(id, 0));
+    const notFood = new Set(aiPending.items.filter((a) => a.kind === 'notFood').map((a) => a.pendingId));
+    for (const id of idsOf(notFood)) dropScanCartItem(id);
+    for (const id of idsOf(optioned)) migrateScanCartKey(scanCartKey(id), scanCartKey(id, 0));
   }, [aiPending.items, items, photoOnly, cart]);
   const aiShownFor = useRef<string | null>(null);
   const aiSectionVisible = phase === 'result' && view === 'list' && !safeOnly && !!scanId && pendingCount > 0;
