@@ -12,6 +12,7 @@
  *   when foodId is present — branch on `matched`, never foodId (Swagger 명시).
  */
 import type { RiskState } from '@/lib/theme';
+import { adaptLinkedProcessed, type LinkedProcessedFood } from './linkedProcessed';
 import type { AvoidanceOverlapWire, BeRiskLevel, BoundingBox, PriceOptionWire, ScanPendingItemWire, ScanResultWire } from './scanTypes';
 
 const RISK_MAP: Record<BeRiskLevel, RiskState> = {
@@ -60,6 +61,8 @@ export interface ScanOverlayItem extends ScannedItem {
   spice: number;
   /** P-616(S-970): 주문 옵션·단일 재료어 — 판정 줄이 아니라 "추가·옵션" 칩 블록 */
   notMenu: boolean;
+  /** KB-1014: 대표 편의점 음식(matched만) — 사진 우선, 판정 무관 */
+  linked: LinkedProcessedFood | null;
 }
 
 /**
@@ -139,6 +142,8 @@ function verdict(r: ScanResultWire) {
     spice: spiceRank(r.spiciness),
     // P-616(S-970): 엄격 true만(부재·이상값 = 일반 줄 — 숨김보다 판정 줄로 남는 쪽이 안전)
     notMenu: r.notMenu === true,
+    // KB-1014: 대표 편의점 음식 — matched만(미매칭은 판정 대상 음식이 없다). 사진 우선 표시 전용
+    linked: r.matched ? adaptLinkedProcessed(r.linkedProcessedFood) : null,
   } as const;
 }
 
@@ -179,6 +184,7 @@ export interface PhotoOnlyItem {
   priceOptions: PriceOption[] | null; // KB-1006
   spice: number; // KB-1006
   notMenu: boolean; // P-616
+  linked: LinkedProcessedFood | null; // KB-1014
 }
 
 /**

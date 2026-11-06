@@ -258,7 +258,7 @@ function RichRow({
         <View style={styles.thumb}>
           {/* QA #428: 행 key = itemId(스캔마다 0부터 재사용) → 다시 찍으면 같은 인스턴스가 직전 스캔 사진을 ~0.5초 보여 줬다.
               recyclingKey가 바뀌면 expo-image가 옛 사진을 즉시 비운다 — 매칭 = foodId(상세 로딩 중 thumb null→URL로 깜빡이지 않게), 미매칭 = thumb. */}
-          <CardPhoto uri={thumb} recyclingKey={dish.foodId ?? thumb ?? undefined} borderRadius={radius.md} />
+          <CardPhoto uri={thumb} cutoutUri={dish.linked?.imageUrl} cutoutInset={4} recyclingKey={dish.foodId ?? thumb ?? undefined} borderRadius={radius.md} /* KB-1014: 대표 편의점 음식 누끼 우선 */ />
         </View>
         <Pressable style={styles.thumbBadge} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
           <RiskBadge state={dish.risk} />
