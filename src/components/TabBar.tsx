@@ -17,7 +17,8 @@ import { color as C, radius } from '@/lib/theme';
 import { IconTabFood, IconTabHome, IconTabReviews, IconTabScan, type IconProps } from './icons';
 import { scanCoachAnchor } from '@/lib/coachTargets';
 import { RemoteImage } from './RemoteImage';
-import { useMyAvatarUrl } from '@/lib/data/useMyAvatarUrl';
+import { FlagEmoji } from './FlagEmoji';
+import { useMyAvatarFlag, useMyAvatarUrl } from '@/lib/data/useMyAvatarUrl';
 
 /** P-128→P-146: 바 콘텐츠 높이(세이프에어리어 제외) = 플랫폼 **공식** 규격 —
  *  iOS HIG 바 콘텐츠 49pt(하단 세이프에어리어는 배경만 연장) · 안드 Material 3
@@ -55,6 +56,7 @@ function AvatarIcon({ size = 24 }: IconProps) {
 function ProfileTabIcon({ size = 24, active }: IconProps & { active?: boolean }) {
   // P-313(KB-480): 소스 = useMyAvatarUrl 정본 한 함수(헤더 동일 — 기본 프사 URL 포함).
   const url = useMyAvatarUrl();
+  const flag = useMyAvatarFlag(); // KB-1013: 기본 아바타 = 국기(헤더와 같은 판정)
   const [failed, setFailed] = React.useState(false);
   // KB-603: 사진 변경·삭제 **전환마다** 리셋(재시도) — 렌더 중 전환 비교(React 공식 패턴). 값 키(failedUrl === url)면
   // A→null→A(재로그인 등)에서 옛 실패가 남아 영영 재시도하지 않는다(Codex #208 P2).
@@ -70,10 +72,12 @@ function ProfileTabIcon({ size = 24, active }: IconProps & { active?: boolean })
   return (
     <View
       style={[styles.avatarRing, { width: size, height: size, borderRadius: size / 2, borderColor: active ? C.primary : 'transparent' }]}
-      testID={showPhoto ? 'tab-avatar-photo' : 'tab-avatar-fb'}
+      testID={flag ? 'tab-avatar-flag' : showPhoto ? 'tab-avatar-photo' : 'tab-avatar-fb'}
     >
       <View style={[styles.avatarInner, !active && styles.avatarDim]}>
-        {showPhoto ? (
+        {flag ? (
+          <View style={styles.avatarFlag}><FlagEmoji code={flag} size={size - 6} /></View>
+        ) : showPhoto ? (
           <RemoteImage
             key={url}
             uri={url!}
@@ -177,6 +181,7 @@ const styles = StyleSheet.create({
   // P-305→313→315: 링 2px(활성 오렌지·비활성 투명 동일 폭 — P-151), 원형 이중 적용
   avatarRing: { borderWidth: 2, overflow: 'hidden' },
   avatarInner: { flex: 1 },
+  avatarFlag: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E8F6FF' }, // KB-1013 — 플레이스홀더와 같은 바탕
   avatarDim: { opacity: 0.6 }, // P-315: 비활성 = 흐림(색·불투명도만 — 프레임 불변)
   avatarImg: { width: '100%', height: '100%' },
   // 시안: 11/500 — i18n 가변 길이(독일어/러시아어)는 축소 허용(adjustsFontSizeToFit)

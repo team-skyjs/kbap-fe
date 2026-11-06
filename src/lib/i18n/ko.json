@@ -499,7 +499,7 @@
     "extrasSpeed": "음식 나오는 속도",
     "extrasService": "친절도",
     "extrasTaste": "맛",
-    "writeSoon": "가공식품 리뷰는 곧 열려요. 작성한 내용은 이 화면에 그대로 있어요.",
+    "writeSoon": "편의점 음식 리뷰는 곧 열려요. 작성한 내용은 이 화면에 그대로 있어요.",
     "spiciness": "맵기",
     "sweetness": "당도",
     "tasteOptional": "맵기와 당도는 선택이에요.",
@@ -1214,12 +1214,12 @@
   },
   "packaged": {
     "segmentDishes": "요리",
-    "segmentPackaged": "가공식품",
+    "segmentPackaged": "편의점 음식",
     "searchPlaceholder": "과자, 라면 검색…",
     "clearSearch": "검색어 지우기",
     "popularPicks": "인기 상품",
     "searchResults": "검색 결과",
-    "guideTitle": "가공식품 검색",
+    "guideTitle": "편의점 음식 검색",
     "guideBody": "제품 이름을 입력하면 원재료와 알레르기 표시를 볼 수 있어요.",
     "emptyTitle": "제품을 찾지 못했어요",
     "emptyBody": "다른 제품 이름으로 검색해 보세요.",
@@ -1305,12 +1305,12 @@
   "scanMode": {
     "menu": "메뉴판",
     "food": "음식 사진",
-    "packaged": "가공식품",
+    "packaged": "편의점 음식",
     "soon": "준비 중이에요"
   },
   "packagedScan": {
     "title": "스캔",
-    "chooseTitle": "제품 선택",
+    "chooseTitle": "스캔 결과",
     "reading": "포장을 읽고 있어요…",
     "whichTitle": "어떤 제품인가요?",
     "noneTitle": "맞는 제품이 없어요",
@@ -1367,7 +1367,7 @@
     "newAnalysisCta": "새로 분석하기",
     "debugLabelPlaceholder": "성분표 한 면의 글자",
     "debugAddPage": "한 면으로 추가",
-    "matchTitle": "이름과 맛이 맞는 제품을 골라 주세요",
+    "matchTitle": "내가 스캔한 식품을 찾아 선택해주세요",
     "personalNote": "피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요.",
     "confirmProduct": "이 제품으로 확인",
     "anotherTitle": "다른 방법으로 제품 찾기",
@@ -1407,6 +1407,7 @@
   },
   "scanCamera": {
     "title": "스캔",
+    "subtitle": "메뉴판이나 편의점 음식을 찍어보세요",
     "menuTitle": "메뉴판 전체가 들어오게 해 주세요",
     "menuHint": "두 손가락으로 확대할 수 있어요",
     "packageTitle": "포장 앞면을 보여 주세요",
@@ -1451,6 +1452,7 @@
     "earlierInquiries": "이전 문의",
     "tooLong": "메시지가 너무 길어요. 조금 줄여 주세요.",
     "photoInvalid": "보낼 수 없는 사진이 있어요. 다른 사진을 골라 주세요.",
-    "invalid": "이 메시지는 보낼 수 없어요. 확인 후 다시 보내 주세요."
+    "invalid": "이 메시지는 보낼 수 없어요. 확인 후 다시 보내 주세요.",
+    "fabCoach": "무제한 스캔 티켓을 드려요✨"
   }
 }
