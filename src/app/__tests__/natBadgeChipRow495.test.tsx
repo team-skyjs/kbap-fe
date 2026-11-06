@@ -100,6 +100,38 @@ it('1-B 국기 배지 — 국적 있으면 아바타 우하단 렌더(장식 —
   expect(noNat.root.findAll((n) => n.props?.testID === 'feed-flag-r1')).toHaveLength(0);
 });
 
+// KB-1013 후속(예진 11/6): 리뷰 탭만 작성자 프사 자리 = 국기(사진 종류 무관) · 작은 배지 제거 · 다른 표면 무변
+describe('KB-1013 후속 리뷰 탭 국기 아바타', () => {
+  const card = (r: Review, extra: Partial<React.ComponentProps<typeof FeedCard>> = {}) =>
+    render(<FeedCard review={r} t={t} mine={false} onOpenFood={() => {}} onMore={() => {}} {...extra} />);
+  const ids = (tr: ReactTestRenderer, id: string) => tr.root.findAll((n) => n.props?.testID === id);
+  it('flagAvatar = 아바타 자리 국기(🇺🇸, 장식 무음) + 작은 배지 0', () => {
+    const tr = card(REVIEW, { flagAvatar: true });
+    const av = ids(tr, 'feed-flag-avatar-r1');
+    expect(av.length).toBeGreaterThan(0);
+    expect(av[0].props.accessibilityElementsHidden).toBe(true);
+    expect(av[0].findAll((n) => n.props?.children === '🇺🇸').length).toBeGreaterThan(0);
+    expect(ids(tr, 'feed-flag-r1')).toHaveLength(0);
+  });
+  it('업로드 사진(내 리뷰)도 리뷰 탭에선 국기 · 국적 없음·코드 불량·익명 = 기존 아바타(+ 기존 배지 규칙)', () => {
+    const mineWithPhoto = { ...REVIEW, author: { ...(REVIEW as unknown as { author: object }).author, profileImageUrl: 'https://cdn/p/5.jpg' } } as unknown as Review;
+    expect(ids(card(mineWithPhoto, { flagAvatar: true, mine: true }), 'feed-flag-avatar-r1').length).toBeGreaterThan(0);
+    for (const r of [{ ...REVIEW, authorNationality: null }, { ...REVIEW, authorNationality: 'USA' }, { ...REVIEW, anonymized: true }] as unknown as Review[]) {
+      expect(ids(card(r, { flagAvatar: true }), 'feed-flag-avatar-r1')).toHaveLength(0);
+    }
+  });
+  it('flagAvatar 없음(음식 상세·내 리뷰·가공식품 리뷰 등) = 기존 그대로(배지 있음·국기 아바타 0) · 리뷰 탭만 켬', () => {
+    const tr = card(REVIEW);
+    expect(ids(tr, 'feed-flag-avatar-r1')).toHaveLength(0);
+    expect(ids(tr, 'feed-flag-r1').length).toBeGreaterThan(0);
+    const read = (f: string) => fs.readFileSync(f, 'utf8');
+    expect(read('src/features/community/ReviewFeed.tsx')).toMatch(/<FeedCard\s+flagAvatar/);
+    for (const f of ['src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx', 'src/app/profile/reviews.tsx', 'src/features/processedFood/PackagedReviews.tsx']) {
+      expect({ f, on: read(f).includes('flagAvatar') }).toEqual({ f, on: false });
+    }
+  });
+});
+
 it('1-B 소스 잠금 — FlagEmoji = 국기 한정 이모지 예외 주석 + 흰 링 배지 스타일', () => {
   const fc = (jest.requireActual('fs') as typeof import('fs')).readFileSync('src/features/review/FeedCard.tsx', 'utf8') as string;
   expect(fc).toContain('국기 한정 헌법 이모지 예외');

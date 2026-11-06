@@ -17,6 +17,7 @@ import { useReviewTime } from '@/lib/reviewTime';
 import { CardPhoto, RankMedal, Star, IconChevron, IconFood, IconMore } from '@/components';
 import { AvatarPlaceholder } from '@/components/design4Assets';
 import { FlagEmoji } from '@/components/FlagEmoji';
+import { flagEmoji } from '@/lib/flagEmoji';
 import { RemoteImage } from '@/components/RemoteImage';
 import { HelpfulButton, ReviewBody, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import type { Review } from '@/lib/api/types';
@@ -49,6 +50,7 @@ export function FeedCard({
   photoVariant = 'tiles',
   youAsName = false,
   autoTranslate = false,
+  flagAvatar = false,
 }: {
   review: Review;
   t: TFn;
@@ -66,11 +68,15 @@ export function FeedCard({
   youAsName?: boolean;
   /** KB-941: 리뷰 탭 첫 묶음 — 본문을 탭 없이 앱 언어로(ReviewBody auto) */
   autoTranslate?: boolean;
+  /** KB-1013 후속(예진 11/6): 리뷰 탭만 — 작성자 프사 자리에 국기(사진 종류 무관), 작은 국기 배지 제거. 국가 없음·익명 = 기존 아바타 */
+  flagAvatar?: boolean;
 }) {
   const fontScale = useWindowDimensions().fontScale; // KB-777: 글꼴 배율 전이 = 칩 재측정
   const anon = review.anonymized;
   const name = anon ? t('reviews.anonymous') : youAsName && mine ? t('reviews.you') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
   const when = useReviewTime(review.createdAt, t);
+  // KB-1013 후속: 리뷰 탭 국기 아바타 — 코드 불량(비2글자)은 기존 아바타(flagEmoji가 빈 문자열)
+  const flag = flagAvatar && !anon && flagEmoji(review.authorNationality) ? review.authorNationality : null;
   return (
     <View style={styles.card} testID={`feed-${review.id}`}>
       <View style={styles.cardTop}>
@@ -81,14 +87,22 @@ export function FeedCard({
           <View style={styles.avatarWrap}>
             <View style={styles.avatar}>
               {/* KB-905(T-069): 내 리뷰 = 내 프로필 사진(있으면) — 남의 리뷰는 시안대로 기본 아바타(9/5 Q3) · 실패 = 기본 아바타 */}
-              {mine && !anon && review.author?.profileImageUrl ? (
-                <MyAvatar uri={review.author.profileImageUrl} />
+              {flag ? (
+                <View testID={`feed-flag-avatar-${review.id}`} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                  <FlagEmoji code={flag} size={22} />
+                </View>
               ) : (
-                <AvatarPlaceholder height={24} />
+                <>
+                  {mine && !anon && review.author?.profileImageUrl ? (
+                    <MyAvatar uri={review.author.profileImageUrl} />
+                  ) : (
+                    <AvatarPlaceholder height={24} />
+                  )}
+                </>
               )}
             </View>
             {/* Codex #101 P2: 배지 = 순수 장식(스크린리더 무음) — 국가명 10로케일 도입 안 함, 닉네임만 읽힘 */}
-            {!anon && !!review.authorNationality && (
+            {!anon && !!review.authorNationality && !flag && (
               <View
                 style={styles.flagBadge}
                 testID={`feed-flag-${review.id}`}

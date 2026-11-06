@@ -5,7 +5,6 @@
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,8 +24,17 @@ export const CHAT_FAB_HIDDEN_ROUTES: readonly string[] = ['community'];
 const UNREAD_RED = '#FF3B30';
 // 11/5 예진: 검정 FAB가 "너무 안 보임" → 흰 바탕 + 주황 선 말풍선(채움 없음) + C.line 1px 테두리·sh1 그림자로 흰 화면과 분리(주황 채움 = 스캔 버튼과 겹침, 청록 = 취소 — 최종 확정). 빨간 점은 흰 테두리 2.5.
 
-/** KB-1013(예진 11/6): 채팅 버튼 첫 탭 전까지 FAB 위 코치마크 — 기기 1회(로컬 저장, 계정 무관 안내 문구) */
-export const CHAT_FAB_COACH_KEY = 'kbap.chatFabCoach.v1';
+/** KB-1013 후속(예진 11/6 "들어올 때마다 뜨고, 클릭하면 없어지게"): FAB 위 홍보 라벨 — 앱 실행마다 표시,
+ *  라벨·FAB·미리보기를 누르면 그 실행 동안 숨김. 메모리만(저장 0 — 옛 kbap.chatFabCoach.v1 값은 무시).
+ *  모듈 변수 = 실행 단위(백그라운드 복귀·탭 레이아웃 재마운트에도 유지, 콜드 스타트에 초기화). */
+let labelDismissed = false;
+function dismissLabelForRun(): void {
+  labelDismissed = true;
+}
+/** 테스트 전용 — 콜드 스타트 시뮬레이션 */
+export function __resetChatFabLabelForTest(): void {
+  labelDismissed = false;
+}
 
 export function chatFabBottom(insetBottom: number): number {
   return TABBAR_CONTENT_H + Math.max(insetBottom, 10) + CHAT_FAB_GAP;
@@ -44,33 +52,16 @@ export function ChatFab({ activeRoute }: { activeRoute: string }) {
       return () => setFocused(false);
     }, []),
   );
-  // 코치마크 = 저장값 확인 전(null)엔 숨김 — 읽기 실패도 숨김(안내로 흐름 방해 금지)
-  const [coachSeen, setCoachSeen] = React.useState<boolean | null>(null);
-  React.useEffect(() => {
-    let alive = true;
-    void (async () => {
-      let seen = true; // 읽기 실패(동기 throw 포함) = 본 것으로 — 안내로 흐름 방해 금지
-      try {
-        seen = (await AsyncStorage.getItem(CHAT_FAB_COACH_KEY)) != null;
-      } catch {
-        /* 비치명 */
-      }
-      if (alive) setCoachSeen((cur) => cur ?? seen); // 읽는 사이 이미 탭했으면(true) 늦게 온 '안 봄'이 덮지 않는다
-    })();
-    return () => { alive = false; };
-  }, []);
+  const [dismissed, setDismissed] = React.useState(() => labelDismissed);
   const hidden = !FLAGS.operatorChatEnabled || CHAT_FAB_HIDDEN_ROUTES.includes(activeRoute);
   const unread = useChatUnread(!hidden && focused);
   if (hidden) return null;
   const count = unread.data?.count ?? 0;
   const preview = count > 0 ? unread.data?.last ?? null : null;
-  const showCoach = coachSeen === false && !preview; // 미리보기 우선 — 같은 자리라 둘은 동시에 안 뜬다
+  const showCoach = !dismissed && !preview; // 미리보기 우선 — 같은 자리라 둘은 동시에 안 뜬다
   const open = (src: 'fab' | 'fab_preview' | 'coach') => {
-    // Codex #457 P2: 저장소 읽기 전(null) 첫 탭도 기록 — 아니면 읽기가 끝난 뒤 코치마크가 다시 뜬다
-    if (coachSeen !== true) {
-      setCoachSeen(true);
-      void AsyncStorage.setItem(CHAT_FAB_COACH_KEY, '1').catch(() => {});
-    }
+    dismissLabelForRun(); // 이 실행 동안 숨김(라벨·FAB·미리보기 어느 탭이든)
+    setDismissed(true);
     router.push(`/chat?src=${src}` as Href); // KB-1010 진입 출처
   };
   return (
@@ -84,7 +75,7 @@ export function ChatFab({ activeRoute }: { activeRoute: string }) {
       )}
       {showCoach && (
         <Pressable style={styles.preview} onPress={() => open('coach')} accessibilityRole="button" accessibilityLabel={t('chat.fabCoach')} testID="chat-fab-coach">
-          <Text style={styles.previewText} numberOfLines={2}>{t('chat.fabCoach')}</Text>
+          <Text style={styles.previewText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{t('chat.fabCoach')}</Text>
         </Pressable>
       )}
       <Pressable style={styles.fab} onPress={() => open('fab')} accessibilityRole="button" accessibilityLabel={t('chat.title')} testID="chat-fab">
