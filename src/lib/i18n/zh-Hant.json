@@ -1311,7 +1311,7 @@
   },
   "packagedScan": {
     "title": "掃描",
-    "chooseTitle": "選擇商品",
+    "chooseTitle": "掃描結果",
     "reading": "正在讀取包裝…",
     "whichTitle": "你的是哪一款？",
     "noneTitle": "沒有符合的商品",
@@ -1368,7 +1368,7 @@
     "newAnalysisCta": "重新分析",
     "debugLabelPlaceholder": "成分表一面的文字",
     "debugAddPage": "作為一面新增",
-    "matchTitle": "選擇名稱和口味相符的商品",
+    "matchTitle": "找出並選擇你掃描的食品",
     "personalNote": "設定要避免的食材後可查看個人結果。",
     "confirmProduct": "確認此商品",
     "anotherTitle": "換個方法找商品",
@@ -1408,6 +1408,7 @@
   },
   "scanCamera": {
     "title": "掃描",
+    "subtitle": "拍下菜單或便利商店食品",
     "menuTitle": "請把整張菜單拍進來",
     "menuHint": "雙指縮放",
     "packageTitle": "請對準包裝正面",
@@ -1452,6 +1453,7 @@
     "earlierInquiries": "以往諮詢",
     "tooLong": "訊息太長了，請縮短一些。",
     "photoInvalid": "有照片無法傳送，請換一張。",
-    "invalid": "無法傳送此訊息，請檢查後再試一次。"
+    "invalid": "無法傳送此訊息，請檢查後再試一次。",
+    "fabCoach": "送你無限掃描券✨"
   }
 }

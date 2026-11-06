@@ -33,7 +33,7 @@ import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type Engagem
  * |                              | entry (intro|gate_*|profile|other)         |
  * | auth_guest_enter              | (props 없음)                                |
  * | profile_feedback_submit      | has_photos, photo_count                    |
- * | chat_open                    | source (fab|fab_preview|profile|push|ad_report|other), has_unread |
+ * | chat_open                    | source (fab|fab_preview|coach|profile|push|ad_report|other), has_unread |
  * | chat_message_send            | result (ok|fail), has_photos, photo_count, is_retry |
  * | feedback_prompt_*            | KB-986 재방문 피드백 시트: shown · submitted(has_photos, photo_count) · dismissed(via) · never_again — 본문 금지 |
  * | app_tab_view                 | tab (home|food|reviews|community|profile), |
@@ -322,10 +322,10 @@ export function packagedDetailSource(src: string | undefined, scan: string | und
 }
 
 /** KB-1010: 채팅 진입 출처 — 앱 안 진입점은 ?src= 태그, 광고 신고는 기존 ?prefill=ad, 그 밖(태그 없음·미지 값·딥링크) = other */
-export const CHAT_OPEN_SOURCES = ['fab', 'fab_preview', 'profile', 'push', 'ad_report', 'other'] as const;
+export const CHAT_OPEN_SOURCES = ['fab', 'fab_preview', 'coach', 'profile', 'push', 'ad_report', 'other'] as const; // KB-1013 coach = FAB 위 코치마크
 export function chatOpenSource(src: string | undefined, prefill: string | undefined): (typeof CHAT_OPEN_SOURCES)[number] {
   if (prefill === 'ad') return 'ad_report';
-  return src === 'fab' || src === 'fab_preview' || src === 'profile' || src === 'push' ? src : 'other';
+  return src === 'fab' || src === 'fab_preview' || src === 'coach' || src === 'profile' || src === 'push' ? src : 'other';
 }
 
 export function track(event: EventName, props?: Record<string, unknown>): void {

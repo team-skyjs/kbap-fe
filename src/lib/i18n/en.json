@@ -1307,7 +1307,7 @@
   },
   "packagedScan": {
     "title": "Scan",
-    "chooseTitle": "Choose your product",
+    "chooseTitle": "Scan results",
     "reading": "Reading the package…",
     "whichTitle": "Which product is yours?",
     "noneTitle": "No matching products",
@@ -1364,7 +1364,7 @@
     "newAnalysisCta": "Start a new analysis",
     "debugLabelPlaceholder": "Text of one side of the label",
     "debugAddPage": "Add as one side",
-    "matchTitle": "Match the name and flavor",
+    "matchTitle": "Find and select the item you scanned",
     "personalNote": "Set avoid ingredients for a personal result.",
     "confirmProduct": "Confirm product",
     "anotherTitle": "Find your product another way",
@@ -1404,6 +1404,7 @@
   },
   "scanCamera": {
     "title": "Scan",
+    "subtitle": "Snap a menu or a convenience-store item",
     "menuTitle": "Fit the whole menu",
     "menuHint": "Pinch to zoom",
     "packageTitle": "Show the front of the package",
@@ -1448,6 +1449,7 @@
     "earlierInquiries": "Earlier inquiries",
     "tooLong": "Your message is too long. Please shorten it.",
     "photoInvalid": "One of the photos couldn't be sent. Please choose another photo.",
-    "invalid": "Couldn't send this message. Please check it and try again."
+    "invalid": "Couldn't send this message. Please check it and try again.",
+    "fabCoach": "Get unlimited scan tickets✨"
   }
 }
