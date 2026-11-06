@@ -223,11 +223,14 @@ describe('KB-707', () => {
   it('(3) 떠 있는 버튼 + 스크롤 목록 — 목록 끝 여백 ≥ 버튼 윗변 + 16(마지막 항목이 버튼 위로 올라온다)', () => {
     // 문의 목록: 알약 바닥 = 인셋 + 24, 높이 52 → 끝 여백이 인셋을 따라간다(옛 고정 96 < 34 + 24 + 52 = 110)
     for (const inset of [0, 21, 34]) expect(feedbackListBottomPad(inset)).toBeGreaterThanOrEqual(inset + FEEDBACK_FAB_GAP + FEEDBACK_FAB_H + 16);
-    // 리뷰 피드: 버튼 bottom 18 · 높이 8+20+8 = 36 → 윗변 54, 끝 여백 96
+    // 리뷰 피드(KB-1011): 버튼 bottom 18 · 높이 48 → 윗변 66, 끝 여백 = FEED_BOTTOM_PAD(108)
     const rf = fs.readFileSync('src/features/community/ReviewFeed.tsx', 'utf8');
-    expect(rf).toMatch(/paddingBottom: 96, flexGrow: 1/);
-    expect(rf).toMatch(/fab: \{\s*position: 'absolute',\s*right: 14,\s*bottom: 18,[\s\S]*?paddingVertical: 8,/);
-    expect(96).toBeGreaterThanOrEqual(18 + 8 * 2 + 20 + 16);
+    const { FEED_BOTTOM_PAD, FAB_H } = jest.requireActual('@/features/community/ReviewFeed') as { FEED_BOTTOM_PAD: number; FAB_H: number };
+    expect(rf).toMatch(/paddingBottom: FEED_BOTTOM_PAD, flexGrow: 1/);
+    expect(rf).toMatch(/const FAB_BOTTOM = 18;/);
+    expect(rf).toMatch(/fab: \{\s*position: 'absolute',\s*right: 14,\s*bottom: 18,[\s\S]*?minHeight: FAB_H,/);
+    expect(FAB_H).toBe(48);
+    expect(FEED_BOTTOM_PAD).toBeGreaterThanOrEqual(18 + FAB_H + 16);
     // 커뮤니티: 버튼 bottom 18 · 높이 54 → 윗변 72, 끝 여백 96
     const cm = fs.readFileSync('src/app/(tabs)/community.tsx', 'utf8');
     expect(cm).toMatch(/fab: \{ position: 'absolute', right: 18, bottom: 18, width: 54, height: 54/);

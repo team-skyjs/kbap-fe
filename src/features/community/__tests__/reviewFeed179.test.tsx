@@ -523,36 +523,40 @@ it('KB-777 B3-7: 작은 화면 판정(폭<360 또는 높이<700) · 기본 화�
   const sfab = small.root.findAll((n) => n.props?.testID === 'feed-write-fab' && typeof n.type === 'string')[0];
   expect(small.root.findAll((n) => n.props?.testID === 'feed-write-fab-label')).toHaveLength(0);
   const st = RN.StyleSheet.flatten(sfab.props.style);
-  expect({ w: st.width, h: st.height, r: st.borderRadius }).toEqual({ w: 36, h: 36, r: 999 });
-  // Codex #306 P2: 터치 = 36 + hitSlop 4×2 = 44, hitSlop은 부모(화면) 안 — right 14·bottom 18 ≥ 4
-  const slop = sfab.props.hitSlop;
-  expect(36 + slop * 2).toBeGreaterThanOrEqual(44);
-  expect(st.right >= slop && st.bottom >= slop).toBe(true);
-  expect(fab().props.hitSlop).toBeUndefined(); // 일반 화면 필은 그대로
+  // KB-1011: 원형 44 = 터치 44 자체 충족 → hitSlop 제거(Codex #306 P2의 36+4×2 대체)
+  expect({ w: st.width, h: st.height, r: st.borderRadius }).toEqual({ w: 44, h: 44, r: 999 });
+  expect(sfab.props.hitSlop).toBeUndefined();
+  expect(fab().props.hitSlop).toBeUndefined();
+  // KB-1011 필 = 높이 48 · 패딩 12/18 · gap 6 · 라벨 17 semibold · 아이콘 22 · 위치·색 그대로
+  const pst = RN.StyleSheet.flatten(fab().props.style);
+  expect({ minH: pst.minHeight, pv: pst.paddingVertical, ph: pst.paddingHorizontal, gap: pst.gap, right: pst.right, bottom: pst.bottom, bg: pst.backgroundColor })
+    .toEqual({ minH: 48, pv: 12, ph: 18, gap: 6, right: 14, bottom: 18, bg: '#1C1E21' });
+  const lst = RN.StyleSheet.flatten(big.root.findAll((n) => n.props?.testID === 'feed-write-fab-label' && n.props?.style)[0].props.style);
+  expect({ fs: lst.fontSize, fw: lst.fontWeight }).toEqual({ fs: 17, fw: '600' });
+  expect(fab().findAll((n) => n.props?.size === 22).length).toBeGreaterThan(0);
   expect(sfab.props.accessibilityLabel).toBe('reviews.writeReview');
   spy.mockRestore();
 });
 
-// KB-903(T-022): 필이 스크롤 중·큰 글자에서 리뷰 본문을 덮었다 — 원형으로 줄이고, 멈추고 300ms 뒤 필
-it('KB-903 T-022: 큰 글자(1.3배↑) = 처음부터 원형 · 스크롤 시작 = 원형 → 멈춘 뒤 300ms = 필', () => {
+// KB-903(T-022) 큰 글자 원형은 유지 · KB-1011(예진 11/6): 스크롤 중 접힘 제거 — 스크롤 중·후 항상 라벨 필
+it('KB-1011: 스크롤과 무관하게 필 유지 · 큰 글자(1.3배↑)·작은 화면 = 원형', () => {
   jest.useFakeTimers();
   const RN = jest.requireActual('react-native');
-  const { fabCompactFor, FAB_IDLE_MS } = jest.requireActual('../ReviewFeed') as { fabCompactFor: (w: number, h: number, f: number, s: boolean) => boolean; FAB_IDLE_MS: number };
-  expect([fabCompactFor(390, 844, 1, false), fabCompactFor(390, 844, 1.3, false), fabCompactFor(390, 844, 1, true)]).toEqual([false, true, true]);
+  const { fabCompactFor } = jest.requireActual('../ReviewFeed') as { fabCompactFor: (w: number, h: number, f: number) => boolean };
+  expect(fabCompactFor.length).toBe(3); // 스크롤 인자 없음
+  expect([fabCompactFor(390, 844, 1), fabCompactFor(390, 844, 1.3), fabCompactFor(360, 640, 1)]).toEqual([false, true, true]);
   const label = (t: ReturnType<typeof render>) => t.root.findAll((n) => n.props?.testID === 'feed-write-fab-label').length;
   const spy = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1 });
   const tree = render();
   expect(label(tree)).toBeGreaterThan(0);
-  const list = tree.root.findAll((n) => typeof n.props?.onScrollBeginDrag === 'function' && typeof n.props?.onMomentumScrollEnd === 'function')[0];
-  act(() => { list.props.onScrollBeginDrag(); });
-  expect(label(tree)).toBe(0);
-  act(() => { list.props.onScrollEndDrag(); list.props.onMomentumScrollBegin(); }); // 관성이 이어지면 원형 유지
-  act(() => { jest.advanceTimersByTime(FAB_IDLE_MS + 50); });
-  expect(label(tree)).toBe(0);
-  act(() => { list.props.onMomentumScrollEnd(); });
-  act(() => { jest.advanceTimersByTime(FAB_IDLE_MS - 50); });
-  expect(label(tree)).toBe(0);
-  act(() => { jest.advanceTimersByTime(100); });
+  const list = tree.root.findAll((n) => typeof n.props?.onScroll === 'function' && n.props?.contentContainerStyle)[0];
+  // 접힘용 스크롤 핸들러 제거 — 끌기·관성 콜백이 있어도 모양을 바꾸지 않는다
+  for (const k of ['onScrollBeginDrag', 'onMomentumScrollBegin', 'onScrollEndDrag', 'onMomentumScrollEnd']) {
+    act(() => { list.props[k]?.({ nativeEvent: { contentOffset: { y: 400 } } }); });
+    expect(label(tree)).toBeGreaterThan(0);
+  }
+  act(() => { list.props.onScroll({ nativeEvent: { contentOffset: { y: 400 }, contentSize: { height: 3000 }, layoutMeasurement: { height: 800 } } }); });
+  act(() => { jest.advanceTimersByTime(1000); });
   expect(label(tree)).toBeGreaterThan(0);
   spy.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1.3 });
   const bigText = render();
