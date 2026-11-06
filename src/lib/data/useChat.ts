@@ -11,6 +11,8 @@ import { uploadImage } from '@/lib/api/scanImage';
 import { UploadAbortedError } from '@/lib/api/uploadAbort';
 import { adaptChatMessage, adaptChatPage, adaptChatUnread, type ChatMessage, type ChatMessageWire, type ChatPageWire, type ChatUnreadWire } from '@/lib/api/chatAdapter';
 import { currentGen } from '@/lib/auth/beTokens';
+import { queryClient as sharedQueryClient } from '@/lib/queryClient';
+import { useAppActive } from '@/lib/useAppActive';
 import { collectDeviceInfo } from '@/lib/deviceInfo';
 import { FEEDBACK_IMAGE_PURPOSE, FEEDBACK_MAX_LEN, FEEDBACK_MAX_PHOTOS } from './useFeedback';
 
@@ -25,6 +27,12 @@ export const CHAT_PAGE_SIZE = 30;
 export const CHAT_MAX_LEN = FEEDBACK_MAX_LEN; // 1~2000
 export const CHAT_MAX_PHOTOS = FEEDBACK_MAX_PHOTOS; // 3
 export const CHAT_KEYS = { messages: ['chat', 'messages'] as const, unread: ['chat', 'unread'] as const };
+
+/** 11/6 운영 실기: 앱이 켜진 채 운영진 채팅 푸시가 오면 FAB 미리보기가 옛 메시지에 머묾(30초 폴링뿐) → 푸시 수신 즉시 안읽음·메시지 재조회.
+ *  접두 ['chat'] = unread + messages(채팅 화면이 열려 있으면 새 말풍선이 바로 붙는다). 관찰자 없는 키는 표시만 stale. */
+export function invalidateChat(qc = sharedQueryClient): void {
+  void qc.invalidateQueries({ queryKey: ['chat'] });
+}
 
 /** 세션 경계(로그아웃·계정 전환 = 세대 bump) 뒤에 도착한 옛 응답은 버린다 — queryClient.clear()는 진행 중 요청을 취소하지 않아
  *  이전 사람의 대화가 새 세션 캐시에 내려앉을 수 있다(useMe·useNotifications와 같은 currentGen 규칙) */
@@ -79,10 +87,15 @@ export async function markChatRead(lastMessageId: string): Promise<void> {
 }
 
 export function useChatUnread(enabled: boolean) {
+  // 백그라운드 = 조회·폴링 멈춤(RN엔 창 포커스가 없어 refetchInterval이 백그라운드에서도 돈다) → 전경 복귀(enabled false→true) 때
+  // staleTime 0이라 1회 재조회. 탭 포커스 복귀도 같은 경로.
+  const appActive = useAppActive(); // 조건부 호출 금지 — 항상 먼저
+  const on = enabled && appActive;
   return useQuery({
     queryKey: CHAT_KEYS.unread,
-    enabled,
+    enabled: on,
+    staleTime: 0,
     queryFn: async () => adaptChatUnread(await sameSession(() => api.get<ChatUnreadWire>('/api/chat/unread', H))),
-    refetchInterval: enabled ? CHAT_UNREAD_POLL_MS : false,
+    refetchInterval: on ? CHAT_UNREAD_POLL_MS : false,
   });
 }
