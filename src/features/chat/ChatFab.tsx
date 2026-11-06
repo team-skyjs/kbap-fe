@@ -55,7 +55,7 @@ export function ChatFab({ activeRoute }: { activeRoute: string }) {
       } catch {
         /* 비치명 */
       }
-      if (alive) setCoachSeen(seen);
+      if (alive) setCoachSeen((cur) => cur ?? seen); // 읽는 사이 이미 탭했으면(true) 늦게 온 '안 봄'이 덮지 않는다
     })();
     return () => { alive = false; };
   }, []);
@@ -66,7 +66,8 @@ export function ChatFab({ activeRoute }: { activeRoute: string }) {
   const preview = count > 0 ? unread.data?.last ?? null : null;
   const showCoach = coachSeen === false && !preview; // 미리보기 우선 — 같은 자리라 둘은 동시에 안 뜬다
   const open = (src: 'fab' | 'fab_preview' | 'coach') => {
-    if (coachSeen === false) {
+    // Codex #457 P2: 저장소 읽기 전(null) 첫 탭도 기록 — 아니면 읽기가 끝난 뒤 코치마크가 다시 뜬다
+    if (coachSeen !== true) {
       setCoachSeen(true);
       void AsyncStorage.setItem(CHAT_FAB_COACH_KEY, '1').catch(() => {});
     }

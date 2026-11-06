@@ -596,6 +596,18 @@ describe('⑥ KB-1013 FAB 말풍선 위로 · 코치마크 1회', () => {
     expect(has(r, 'chat-fab-coach')).toBe(false);
     expect(await AS.getItem(coachKey)).toBe('1');
   });
+  it('Codex #457 P2: 저장소 읽기 전 첫 탭 = 기록 · 늦게 온 읽기 결과가 코치마크를 다시 띄우지 않음', async () => {
+    let release!: (v: string | null) => void;
+    (AS.getItem as jest.Mock).mockImplementationOnce(() => new Promise((r) => { release = r; }));
+    routeGets(page([]));
+    const r = await mount(<ChatFab activeRoute="index" />);
+    expect(has(r, 'chat-fab-coach')).toBe(false); // 읽기 전 = 숨김
+    await press(r, 'chat-fab');
+    expect(await AS.getItem(coachKey)).toBe('1');
+    await act(async () => { release(null); }); // 탭 전에 읽었던 '안 봄'이 뒤늦게 도착
+    await settle();
+    expect(has(r, 'chat-fab-coach')).toBe(false);
+  });
   it('미리보기 우선 — 안읽음 말풍선이 있으면 코치마크 0(겹침 0) · 미리보기 탭도 코치마크 종료', async () => {
     routeGets(page([]), { unreadCount: 1, lastOperatorMessage: { content: 'Reply', createdAt: 'x' } });
     const r = await mount(<ChatFab activeRoute="index" />);
