@@ -32,6 +32,17 @@ import { useAppActive } from '@/lib/useAppActive';
 import { FLAGS } from '@/lib/flags';
 import { CHAT_KEYS, CHAT_MAX_LEN, CHAT_MAX_PHOTOS, markChatRead, useChatMessages, useSendChat, type ChatMessage } from '@/lib/data/useChat';
 import { color as C, radius } from '@/lib/theme';
+import { EVENTS, chatOpenSource, track, type EventName } from '@/lib/analytics';
+import type { ChatUnread } from '@/lib/api/chatAdapter';
+
+/** KB-1010: 계측이 화면을 막지 않는다 — 전송 성공 분기 안에서 throw하면 실패 말풍선으로 뒤집히므로 삼킨다 */
+function safeTrack(event: EventName, props: Record<string, unknown>): void {
+  try {
+    track(event, props);
+  } catch {
+    /* 비치명 */
+  }
+}
 
 /** Codex #441 P2: 읽음 실패 재시도 간격 */
 export const CHAT_READ_RETRY_MS = 10_000;
@@ -87,7 +98,7 @@ export function ChatScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const { prefill } = useLocalSearchParams<{ prefill?: string }>();
+  const { prefill, src } = useLocalSearchParams<{ prefill?: string; src?: string }>();
   const [focused, setFocused] = React.useState(true);
   useFocusEffect(
     React.useCallback(() => {
@@ -113,6 +124,17 @@ export function ChatScreen() {
   const appActive = useAppActive();
   // Codex #441 P2: 읽음 실패는 재시도 예약 — 같은 최신 id면 effect가 다시 안 돌아 영영 안읽음이 됐다
   const [readRetry, setReadRetry] = React.useState(0);
+  // KB-1010: 진입 1회 — 출처·진입 시점 미읽음은 마운트 때 굳힌다(같은 화면 재사용 navigate·리렌더·전경 복귀로 재발화 0)
+  const [openProps] = React.useState(() => ({
+    source: chatOpenSource(src, prefill),
+    has_unread: (qc.getQueryData<ChatUnread>(CHAT_KEYS.unread)?.count ?? 0) > 0,
+  }));
+  const opened = React.useRef(false);
+  React.useEffect(() => {
+    if (opened.current) return;
+    opened.current = true;
+    safeTrack(EVENTS.chat_open, openProps);
+  }, [openProps]);
 
   const items = q.data?.flat ?? [];
   const newestId = items[0]?.id ?? null;
@@ -132,18 +154,21 @@ export function ChatScreen() {
   }, [focused, appActive, atBottom, newestId, qc, readRetry]);
 
   // 보내기 본체 — 제출 가드 안에서만 부른다(아래 onSend·재전송)
-  const deliverInner = async (o: Outgoing) => {
+  const deliverInner = async (o: Outgoing, isRetry: boolean) => {
+    const sent = { has_photos: o.photos.length > 0, photo_count: o.photos.length, is_retry: isRetry }; // KB-1010 개수·유무만
       setOutgoing((cur) => cur.map((x) => (x.localId === o.localId ? { ...x, failed: false } : x)));
       try {
         await send.mutateAsync({ content: o.content, photoUris: o.photos, signal: nextUploadSignal() }); // onSuccess 재조회까지 기다린다
         setOutgoing((cur) => cur.filter((x) => x.localId !== o.localId));
+        safeTrack(EVENTS.chat_message_send, { result: 'ok', ...sent });
       } catch (e) {
-        if (isUploadAborted(e)) return; // 떠나서 취소 — 다른 화면 위 실패 토스트 금지
+        if (isUploadAborted(e)) return; // 떠나서 취소 — 다른 화면 위 실패 토스트 금지(서버 응답 아님 — 전송 결과 계측도 0)
+        safeTrack(EVENTS.chat_message_send, { result: 'fail', ...sent });
         setOutgoing((cur) => cur.map((x) => (x.localId === o.localId ? { ...x, failed: true } : x)));
         showTopToast(t(chatErrorKey((e as { code?: string })?.code)), { error: true }); // 서버 message 노출 0
       }
   };
-  const deliver = (o: Outgoing) => void guard.run(() => deliverInner(o));
+  const deliver = (o: Outgoing) => void guard.run(() => deliverInner(o, true)); // 실패 말풍선 탭 = 재전송
 
   const canSend = body.trim().length > 0 && !guard.busy;
   // Codex #441 P2: 보낼 말풍선 만들기·입력창 비우기도 같은 동기 가드 안 — 같은 틱 더블탭이면 두 번째는 말풍선조차 안 생긴다
@@ -156,7 +181,7 @@ export function ChatScreen() {
       setOutgoing((cur) => [...cur, o]);
       setBody('');
       setPhotos([]);
-      await deliverInner(o);
+      await deliverInner(o, false);
     });
   };
 

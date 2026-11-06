@@ -885,6 +885,10 @@ export default function Scan() {
         {/* 헤더: 닫기 X + "Scan"(가운데). 가공식품 흐름 안의 한 면 더 찍기 등은 o.onClose = 직전 단계로 */}
         <View style={[styles.camTitleWrap, { top: insets.top + 16 }]} pointerEvents="none">
           <Text style={styles.camTitle}>{t('scanCamera.title')}</Text>
+          {/* KB-1013(예진 11/6): 첫 카메라 화면만 부제 — 모드 탭이 있으면(top + 60) 자리가 겹쳐 생략, 흐름 안 단계(o.onClose)는 그 단계 안내가 따로 있다 */}
+          {!o.onClose && !(FLAGS.processedFoodEnabled && !FLAGS.packagedVisionScan) && (
+            <Text style={styles.camSubtitle} numberOfLines={2} testID="scan-cam-subtitle">{t('scanCamera.subtitle')}</Text>
+          )}
         </View>
         {o.onClose ? (
           <Pressable style={[styles.close, { top: insets.top + 16 }]} onPress={() => { if (!importingRef.current) o.onClose?.(); }} disabled={importing} hitSlop={10} accessibilityLabel={t('common.close')} testID="scan-close-step">
@@ -1061,6 +1065,7 @@ export default function Scan() {
         priceOptions: it.priceOptions, // KB-1006
         spice: it.spice, // KB-1006: 매칭 줄도 맵기(results[].spiciness)
         notMenu: it.notMenu, // P-616
+        linked: it.linked, // KB-1014
       }];
     });
     // idx=null(사진에서만 추출) — 좌표 부재로 리스트 전용, 오버레이 마커 없음.
@@ -1084,6 +1089,7 @@ export default function Scan() {
       priceOptions: p.priceOptions, // KB-1006
       spice: p.spice, // KB-1006
       notMenu: p.notMenu, // P-616
+      linked: p.linked, // KB-1014
     }));
     // KB-992: 2단 — DB 판정(현행)은 위, pendingId 항목은 아래 'AI 추정' 섹션(서버 순서). 도착 전 = 스켈레톤,
     // NOT_FOOD = 행 제거, 폴링이 끝났는데 미도착(15초·실패·scanId 없음) = 현행 unable 행으로 위 목록에 남는다.
@@ -1665,6 +1671,7 @@ const styles = StyleSheet.create({
   launcherHint: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.ink2, textAlign: 'center' },
   launcherGallery: { fontFamily: font.bodyBold, fontSize: 16, color: C.primaryText, paddingVertical: 8 },
   camTitle: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 24, color: C.surface }, // title3-sbold gray-00
+  camSubtitle: { marginTop: 4, paddingHorizontal: 56, fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.75)', textAlign: 'center' }, // KB-1013 — 닫기 X(좌우 끝)와 겹치지 않게 가로 56
   camRoot: { flex: 1 }, // 바탕 = camHost(gray-1000) — 프리뷰 자리는 비워 cameraLayer가 비친다
   camHost: { flex: 1, backgroundColor: C.ink }, // 헤더 띠 0~100·홈 인디케이터 줄 = gray-1000
   camPreviewHole: { backgroundColor: 'transparent' },

@@ -24,6 +24,21 @@ export const CHAT_FAB_HIDDEN_ROUTES: readonly string[] = ['community'];
 const UNREAD_RED = '#FF3B30';
 // 11/5 예진: 검정 FAB가 "너무 안 보임" → 흰 바탕 + 주황 선 말풍선(채움 없음) + C.line 1px 테두리·sh1 그림자로 흰 화면과 분리(주황 채움 = 스캔 버튼과 겹침, 청록 = 취소 — 최종 확정). 빨간 점은 흰 테두리 2.5.
 
+/** KB-1013 후속(예진 11/6 "들어올 때마다 뜨고, 클릭하면 없어지게"): FAB 위 홍보 라벨 — 앱 실행마다 표시,
+ *  라벨·FAB·미리보기를 누르면 그 실행 동안 숨김. 메모리만(저장 0 — 옛 kbap.chatFabCoach.v1 값은 무시).
+ *  모듈 변수 = 실행 단위(백그라운드 복귀·탭 레이아웃 재마운트에도 유지, 콜드 스타트에 초기화). */
+let labelDismissed = false;
+function dismissLabelForRun(): void {
+  labelDismissed = true;
+}
+/** 테스트 전용 — 콜드 스타트 시뮬레이션 */
+export function __resetChatFabLabelForTest(): void {
+  labelDismissed = false;
+}
+
+/** Q-458(커맨드 11/6): 홍보 라벨을 띄우는 탭 — 홈만(FAB·미리보기 말풍선은 기존 노출 탭 그대로) */
+export const CHAT_FAB_LABEL_ROUTE = 'index';
+
 export function chatFabBottom(insetBottom: number): number {
   return TABBAR_CONTENT_H + Math.max(insetBottom, 10) + CHAT_FAB_GAP;
 }
@@ -40,21 +55,34 @@ export function ChatFab({ activeRoute }: { activeRoute: string }) {
       return () => setFocused(false);
     }, []),
   );
+  const [dismissed, setDismissed] = React.useState(() => labelDismissed);
   const hidden = !FLAGS.operatorChatEnabled || CHAT_FAB_HIDDEN_ROUTES.includes(activeRoute);
   const unread = useChatUnread(!hidden && focused);
   if (hidden) return null;
   const count = unread.data?.count ?? 0;
   const preview = count > 0 ? unread.data?.last ?? null : null;
-  const open = () => router.push('/chat' as Href);
+  // 미리보기 우선 — 같은 자리라 둘은 동시에 안 뜬다 · Q-458: 라벨은 홈 탭만(프로필 '내 리뷰 3 >' 등 탭 콘텐츠 가림). 탭 이동은 숨김 사유 아님(누른 경우만)
+  const showCoach = !dismissed && !preview && activeRoute === CHAT_FAB_LABEL_ROUTE;
+  const open = (src: 'fab' | 'fab_preview' | 'coach') => {
+    dismissLabelForRun(); // 이 실행 동안 숨김(라벨·FAB·미리보기 어느 탭이든)
+    setDismissed(true);
+    router.push(`/chat?src=${src}` as Href); // KB-1010 진입 출처
+  };
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom: chatFabBottom(insets.bottom) }]} testID="chat-fab-wrap">
+      {/* KB-1013: 말풍선 = FAB 위(오른쪽 끝 정렬) · 꼬리(오른쪽 아래 모서리) = 아래 FAB 쪽 */}
       {!!preview && (
-        <Pressable style={styles.preview} onPress={open} accessibilityRole="button" accessibilityLabel={t('chat.title')} testID="chat-fab-preview">
+        <Pressable style={styles.preview} onPress={() => open('fab_preview')} accessibilityRole="button" accessibilityLabel={t('chat.title')} testID="chat-fab-preview">
           <Text style={styles.previewName}>{t('chat.team')}</Text>
           <Text style={styles.previewText} numberOfLines={2}>{preview.content}</Text>
         </Pressable>
       )}
-      <Pressable style={styles.fab} onPress={open} accessibilityRole="button" accessibilityLabel={t('chat.title')} testID="chat-fab">
+      {showCoach && (
+        <Pressable style={styles.preview} onPress={() => open('coach')} accessibilityRole="button" accessibilityLabel={t('chat.fabCoach')} testID="chat-fab-coach">
+          <Text style={styles.previewText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{t('chat.fabCoach')}</Text>
+        </Pressable>
+      )}
+      <Pressable style={styles.fab} onPress={() => open('fab')} accessibilityRole="button" accessibilityLabel={t('chat.title')} testID="chat-fab">
         <IconSpeech size={24} color={C.primary} />
         {count > 0 && <View style={styles.dot} testID="chat-fab-dot" />}
       </Pressable>
@@ -63,7 +91,7 @@ export function ChatFab({ activeRoute }: { activeRoute: string }) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { position: 'absolute', right: CHAT_FAB_GAP, flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  wrap: { position: 'absolute', right: CHAT_FAB_GAP, flexDirection: 'column', alignItems: 'flex-end', gap: 8 }, // KB-1013 세로(말풍선 위 · FAB 아래)
   fab: { width: CHAT_FAB_SIZE, height: CHAT_FAB_SIZE, borderRadius: radius.pill, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
   dot: { position: 'absolute', top: 2, right: 2, width: 13, height: 13, borderRadius: 6.5, backgroundColor: UNREAD_RED, borderWidth: 2.5, borderColor: C.surface },
   preview: { maxWidth: 220, backgroundColor: '#fff', borderRadius: radius.lg, borderBottomRightRadius: radius.xs, paddingHorizontal: 12, paddingVertical: 8, gap: 2, ...shadow.sh1 },

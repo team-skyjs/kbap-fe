@@ -611,6 +611,7 @@
     "writeReview": "Tulis ulasan",
     "spiceAboveYou": "lebih pedas dari selera Anda",
     "addProfileHint": "Tambahkan pantangan Anda untuk melihat penilaian yang dipersonalisasi.",
+    "linkedProcessedTitle": "Lihat produknya",
     "scannedPrice": "berdasarkan menu yang Anda pindai",
     "translatedPill": "Diterjemahkan untuk Anda",
     "verdictContains": "Mengandung {{list}} — ada di daftar hindaran Anda",
@@ -1310,7 +1311,7 @@
   },
   "packagedScan": {
     "title": "Pindai",
-    "chooseTitle": "Pilih produkmu",
+    "chooseTitle": "Hasil pindai",
     "reading": "Membaca kemasan…",
     "whichTitle": "Produk mana yang kamu punya?",
     "noneTitle": "Tidak ada produk yang cocok",
@@ -1367,7 +1368,7 @@
     "newAnalysisCta": "Mulai analisis baru",
     "debugLabelPlaceholder": "Teks satu sisi label",
     "debugAddPage": "Tambahkan sebagai satu sisi",
-    "matchTitle": "Pilih produk dengan nama dan rasa yang sama",
+    "matchTitle": "Cari dan pilih produk yang kamu pindai",
     "personalNote": "Atur bahan yang dihindari untuk hasil pribadi.",
     "confirmProduct": "Konfirmasi produk",
     "anotherTitle": "Temukan produk dengan cara lain",
@@ -1407,6 +1408,7 @@
   },
   "scanCamera": {
     "title": "Pindai",
+    "subtitle": "Foto menu atau makanan minimarket",
     "menuTitle": "Muat seluruh menu",
     "menuHint": "Cubit untuk memperbesar",
     "packageTitle": "Tunjukkan bagian depan kemasan",
@@ -1451,6 +1453,7 @@
     "earlierInquiries": "Pertanyaan sebelumnya",
     "tooLong": "Pesanmu terlalu panjang. Persingkat, ya.",
     "photoInvalid": "Ada foto yang tidak bisa dikirim. Pilih foto lain.",
-    "invalid": "Pesan ini tidak bisa dikirim. Periksa lalu coba lagi."
+    "invalid": "Pesan ini tidak bisa dikirim. Periksa lalu coba lagi.",
+    "fabCoach": "Pindai tanpa batas gratis✨"
   }
 }

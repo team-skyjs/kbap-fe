@@ -611,6 +611,7 @@
     "writeReview": "レビューを書く",
     "spiceAboveYou": "あなたの好みより辛い",
     "addProfileHint": "食事制限を追加すると、あなた専用の判定が表示されます。",
+    "linkedProcessedTitle": "この商品を見る",
     "scannedPrice": "スキャンしたメニュー基準",
     "translatedPill": "翻訳された名前です",
     "verdictContains": "{{list}}を含む — あなたの回避リストにあります",
@@ -1310,7 +1311,7 @@
   },
   "packagedScan": {
     "title": "スキャン",
-    "chooseTitle": "商品を選択",
+    "chooseTitle": "スキャン結果",
     "reading": "パッケージを読み取っています…",
     "whichTitle": "どの商品ですか？",
     "noneTitle": "一致する商品がありません",
@@ -1367,7 +1368,7 @@
     "newAnalysisCta": "新しく分析する",
     "debugLabelPlaceholder": "成分表示1面分の文字",
     "debugAddPage": "1面として追加",
-    "matchTitle": "名前と味が合う商品を選んでください",
+    "matchTitle": "スキャンした食品を探して選んでください",
     "personalNote": "避けたい食材を設定すると、自分向けの結果を見られます。",
     "confirmProduct": "この商品で確定",
     "anotherTitle": "別の方法で商品を見つける",
@@ -1407,6 +1408,7 @@
   },
   "scanCamera": {
     "title": "スキャン",
+    "subtitle": "メニューやコンビニ食品を撮ってみましょう",
     "menuTitle": "メニュー全体が入るようにしてください",
     "menuHint": "ピンチで拡大できます",
     "packageTitle": "パッケージの表面を写してください",
@@ -1451,6 +1453,7 @@
     "earlierInquiries": "以前のお問い合わせ",
     "tooLong": "メッセージが長すぎます。短くしてください。",
     "photoInvalid": "送信できない写真があります。別の写真を選んでください。",
-    "invalid": "このメッセージは送信できません。確認してもう一度お試しください。"
+    "invalid": "このメッセージは送信できません。確認してもう一度お試しください。",
+    "fabCoach": "無制限スキャンを無料で✨"
   }
 }

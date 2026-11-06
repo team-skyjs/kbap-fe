@@ -611,6 +611,7 @@
     "writeReview": "撰写点评",
     "spiceAboveYou": "比你能接受的更辣",
     "addProfileHint": "添加你的禁忌以查看个性化评估。",
+    "linkedProcessedTitle": "查看这个商品",
     "scannedPrice": "以您扫描的菜单为准",
     "translatedPill": "已为您翻译",
     "verdictContains": "含{{list}} — 在您的回避清单中",
@@ -1310,7 +1311,7 @@
   },
   "packagedScan": {
     "title": "扫描",
-    "chooseTitle": "选择商品",
+    "chooseTitle": "扫描结果",
     "reading": "正在读取包装…",
     "whichTitle": "你的是哪一款？",
     "noneTitle": "没有匹配的商品",
@@ -1367,7 +1368,7 @@
     "newAnalysisCta": "重新分析",
     "debugLabelPlaceholder": "配料表一面的文字",
     "debugAddPage": "作为一面添加",
-    "matchTitle": "选择名称和口味一致的商品",
+    "matchTitle": "找出并选择你扫描的食品",
     "personalNote": "设置要避免的食材后可查看个人结果。",
     "confirmProduct": "确认此商品",
     "anotherTitle": "换个方法找商品",
@@ -1407,6 +1408,7 @@
   },
   "scanCamera": {
     "title": "扫描",
+    "subtitle": "拍下菜单或便利店食品",
     "menuTitle": "请把整张菜单拍进来",
     "menuHint": "双指缩放",
     "packageTitle": "请对准包装正面",
@@ -1451,6 +1453,7 @@
     "earlierInquiries": "以往咨询",
     "tooLong": "消息太长了，请缩短一些。",
     "photoInvalid": "有照片无法发送，请换一张。",
-    "invalid": "无法发送此消息，请检查后重试。"
+    "invalid": "无法发送此消息，请检查后重试。",
+    "fabCoach": "免费无限次扫描✨"
   }
 }

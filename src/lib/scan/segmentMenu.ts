@@ -50,6 +50,8 @@ export interface ResultDish extends MenuDish {
   spice?: number;
   /** P-616(S-970): 주문 옵션·단일 재료어 — 판정 목록에서 빠지고 맨 아래 "추가·옵션" 칩으로만 */
   notMenu?: boolean;
+  /** KB-1014: 대표 편의점 음식(matched만) — 행 사진을 누끼로 우선, 판정 무관 */
+  linked?: import('@/lib/api/linkedProcessed').LinkedProcessedFood | null;
 }
 
 /** KB-789: 주문 카드 `nameKo` = **메뉴판에 적힌 이름** — 식당 직원에게 보여주는 줄이라 대체 항목은

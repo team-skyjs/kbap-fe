@@ -100,6 +100,38 @@ it('1-B 국기 배지 — 국적 있으면 아바타 우하단 렌더(장식 —
   expect(noNat.root.findAll((n) => n.props?.testID === 'feed-flag-r1')).toHaveLength(0);
 });
 
+// KB-1013 후속(예진 11/6): 리뷰 탭만 작성자 프사 자리 = 국기(사진 종류 무관) · 작은 배지 제거 · 다른 표면 무변
+describe('KB-1013 후속 리뷰 탭 국기 아바타', () => {
+  const card = (r: Review, extra: Partial<React.ComponentProps<typeof FeedCard>> = {}) =>
+    render(<FeedCard review={r} t={t} mine={false} onOpenFood={() => {}} onMore={() => {}} {...extra} />);
+  const ids = (tr: ReactTestRenderer, id: string) => tr.root.findAll((n) => n.props?.testID === id);
+  it('flagAvatar = 아바타 자리 국기(🇺🇸, 장식 무음) + 작은 배지 0', () => {
+    const tr = card(REVIEW, { flagAvatar: true });
+    const av = ids(tr, 'feed-flag-avatar-r1');
+    expect(av.length).toBeGreaterThan(0);
+    expect(av[0].props.accessibilityElementsHidden).toBe(true);
+    expect(av[0].findAll((n) => n.props?.children === '🇺🇸').length).toBeGreaterThan(0);
+    expect(ids(tr, 'feed-flag-r1')).toHaveLength(0);
+  });
+  it('업로드 사진(내 리뷰)도 리뷰 탭에선 국기 · 국적 없음·코드 불량·익명 = 기존 아바타(+ 기존 배지 규칙)', () => {
+    const mineWithPhoto = { ...REVIEW, author: { ...(REVIEW as unknown as { author: object }).author, profileImageUrl: 'https://cdn/p/5.jpg' } } as unknown as Review;
+    expect(ids(card(mineWithPhoto, { flagAvatar: true, mine: true }), 'feed-flag-avatar-r1').length).toBeGreaterThan(0);
+    for (const r of [{ ...REVIEW, authorNationality: null }, { ...REVIEW, authorNationality: 'USA' }, { ...REVIEW, anonymized: true }] as unknown as Review[]) {
+      expect(ids(card(r, { flagAvatar: true }), 'feed-flag-avatar-r1')).toHaveLength(0);
+    }
+  });
+  it('flagAvatar 없음(음식 상세·내 리뷰·가공식품 리뷰 등) = 기존 그대로(배지 있음·국기 아바타 0) · 리뷰 탭만 켬', () => {
+    const tr = card(REVIEW);
+    expect(ids(tr, 'feed-flag-avatar-r1')).toHaveLength(0);
+    expect(ids(tr, 'feed-flag-r1').length).toBeGreaterThan(0);
+    const read = (f: string) => fs.readFileSync(f, 'utf8');
+    expect(read('src/features/community/ReviewFeed.tsx')).toMatch(/<FeedCard\s+flagAvatar/);
+    for (const f of ['src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx', 'src/app/profile/reviews.tsx', 'src/features/processedFood/PackagedReviews.tsx']) {
+      expect({ f, on: read(f).includes('flagAvatar') }).toEqual({ f, on: false });
+    }
+  });
+});
+
 it('1-B 소스 잠금 — FlagEmoji = 국기 한정 이모지 예외 주석 + 흰 링 배지 스타일', () => {
   const fc = (jest.requireActual('fs') as typeof import('fs')).readFileSync('src/features/review/FeedCard.tsx', 'utf8') as string;
   expect(fc).toContain('국기 한정 헌법 이모지 예외');
@@ -223,11 +255,14 @@ describe('KB-707', () => {
   it('(3) 떠 있는 버튼 + 스크롤 목록 — 목록 끝 여백 ≥ 버튼 윗변 + 16(마지막 항목이 버튼 위로 올라온다)', () => {
     // 문의 목록: 알약 바닥 = 인셋 + 24, 높이 52 → 끝 여백이 인셋을 따라간다(옛 고정 96 < 34 + 24 + 52 = 110)
     for (const inset of [0, 21, 34]) expect(feedbackListBottomPad(inset)).toBeGreaterThanOrEqual(inset + FEEDBACK_FAB_GAP + FEEDBACK_FAB_H + 16);
-    // 리뷰 피드: 버튼 bottom 18 · 높이 8+20+8 = 36 → 윗변 54, 끝 여백 96
+    // 리뷰 피드(KB-1011): 버튼 bottom 18 · 높이 48 → 윗변 66, 끝 여백 = FEED_BOTTOM_PAD(108)
     const rf = fs.readFileSync('src/features/community/ReviewFeed.tsx', 'utf8');
-    expect(rf).toMatch(/paddingBottom: 96, flexGrow: 1/);
-    expect(rf).toMatch(/fab: \{\s*position: 'absolute',\s*right: 14,\s*bottom: 18,[\s\S]*?paddingVertical: 8,/);
-    expect(96).toBeGreaterThanOrEqual(18 + 8 * 2 + 20 + 16);
+    const { FEED_BOTTOM_PAD, FAB_H } = jest.requireActual('@/features/community/ReviewFeed') as { FEED_BOTTOM_PAD: number; FAB_H: number };
+    expect(rf).toMatch(/paddingBottom: FEED_BOTTOM_PAD, flexGrow: 1/);
+    expect(rf).toMatch(/const FAB_BOTTOM = 18;/);
+    expect(rf).toMatch(/fab: \{\s*position: 'absolute',\s*right: 14,\s*bottom: 18,[\s\S]*?minHeight: FAB_H,/);
+    expect(FAB_H).toBe(48);
+    expect(FEED_BOTTOM_PAD).toBeGreaterThanOrEqual(18 + FAB_H + 16);
     // 커뮤니티: 버튼 bottom 18 · 높이 54 → 윗변 72, 끝 여백 96
     const cm = fs.readFileSync('src/app/(tabs)/community.tsx', 'utf8');
     expect(cm).toMatch(/fab: \{ position: 'absolute', right: 18, bottom: 18, width: 54, height: 54/);

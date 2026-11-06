@@ -307,7 +307,7 @@ export function routeForNotificationData(data: unknown): string | null {
     case 'OPERATOR_CHAT':
       // KB-1008(S-971): 운영진 메시지 → 채팅방(사용자당 1개라 conversationId는 경로에 안 쓴다).
       // Codex #441 P2: 킬스위치 off면 기존 문의 화면으로(프로필 진입점과 같은 규칙)
-      return FLAGS.operatorChatEnabled ? '/chat' : '/profile/feedback';
+      return FLAGS.operatorChatEnabled ? '/chat?src=push' : '/profile/feedback'; // KB-1010 ?src = 진입 출처 계측(enum만)
     case 'NEWS':
       return null; // 앱만 켜짐 — 이동 없음(알림함 열람·읽음 처리만)
     default:

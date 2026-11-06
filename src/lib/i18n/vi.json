@@ -611,6 +611,7 @@
     "writeReview": "Viết đánh giá",
     "spiceAboveYou": "cay hơn khẩu vị của bạn",
     "addProfileHint": "Thêm hạn chế của bạn để xem đánh giá cá nhân hóa.",
+    "linkedProcessedTitle": "Xem sản phẩm",
     "scannedPrice": "theo thực đơn bạn đã quét",
     "translatedPill": "Đã dịch cho bạn",
     "verdictContains": "Chứa {{list}} — có trong danh sách tránh của bạn",
@@ -1310,7 +1311,7 @@
   },
   "packagedScan": {
     "title": "Quét",
-    "chooseTitle": "Chọn sản phẩm của bạn",
+    "chooseTitle": "Kết quả quét",
     "reading": "Đang đọc bao bì…",
     "whichTitle": "Sản phẩm của bạn là cái nào?",
     "noneTitle": "Không có sản phẩm khớp",
@@ -1367,7 +1368,7 @@
     "newAnalysisCta": "Phân tích mới",
     "debugLabelPlaceholder": "Chữ của một mặt nhãn",
     "debugAddPage": "Thêm làm một mặt",
-    "matchTitle": "Chọn sản phẩm đúng tên và vị",
+    "matchTitle": "Tìm và chọn sản phẩm bạn đã quét",
     "personalNote": "Đặt nguyên liệu cần tránh để xem kết quả riêng.",
     "confirmProduct": "Xác nhận sản phẩm",
     "anotherTitle": "Tìm sản phẩm theo cách khác",
@@ -1407,6 +1408,7 @@
   },
   "scanCamera": {
     "title": "Quét",
+    "subtitle": "Chụp thực đơn hoặc món ở cửa hàng tiện lợi",
     "menuTitle": "Hãy chụp trọn cả thực đơn",
     "menuHint": "Chụm hai ngón để thu phóng",
     "packageTitle": "Hãy chụp mặt trước bao bì",
@@ -1451,6 +1453,7 @@
     "earlierInquiries": "Câu hỏi trước đây",
     "tooLong": "Tin nhắn quá dài. Vui lòng rút ngắn.",
     "photoInvalid": "Có ảnh không gửi được. Vui lòng chọn ảnh khác.",
-    "invalid": "Không gửi được tin nhắn này. Vui lòng kiểm tra và thử lại."
+    "invalid": "Không gửi được tin nhắn này. Vui lòng kiểm tra và thử lại.",
+    "fabCoach": "Quét không giới hạn miễn phí✨"
   }
 }
