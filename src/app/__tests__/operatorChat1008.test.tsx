@@ -85,6 +85,9 @@ jest.mock('@/lib/auth/useSession', () => ({ useSession: () => mockSession }));
 jest.mock('@/lib/auth/beTokens', () => ({ currentGen: () => mockGen }));
 jest.mock('@/lib/deviceInfo', () => ({ collectDeviceInfo: () => ({ os: 'ios', lang: 'en' }) }));
 jest.mock('@/lib/api/scanImage', () => ({ uploadImage: jest.fn().mockResolvedValue({ path: 'feedback/a.jpg' }) }));
+const mockTrack = jest.fn();
+// KB-1010: 실제 EVENTS·chatOpenSource는 그대로, 전송만 가로챈다
+jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 
 
 const H = { headers: { 'X-API-Version': '1.0' } };
@@ -167,7 +170,7 @@ describe('① 어댑터·행·시간·딥링크', () => {
     expect(['CHAT-001', 'FEEDBACK-001', 'FEEDBACK-002', 'COMMON-002', 'X', undefined].map(chatErrorKey)).toEqual(['chat.rateLimited', 'chat.tooLong', 'chat.photoInvalid', 'chat.invalid', 'chat.sendFailed', 'chat.sendFailed']);
   });
   it('푸시 OPERATOR_CHAT → /chat · Codex #441 P2: 킬스위치 off = 기존 문의 화면', () => {
-    expect(routeForNotificationData({ type: 'OPERATOR_CHAT', conversationId: 7 })).toBe('/chat');
+    expect(routeForNotificationData({ type: 'OPERATOR_CHAT', conversationId: 7 })).toBe('/chat?src=push');
     const prev = FLAGS.operatorChatEnabled;
     (FLAGS as { operatorChatEnabled: boolean }).operatorChatEnabled = false;
     try {
@@ -366,7 +369,7 @@ describe('③ 플로팅 버튼', () => {
     expect(has(r, 'chat-fab-dot')).toBe(true);
     expect(text(r)).toContain('We replied to you');
     await press(r, 'chat-fab-preview');
-    expect(mockPush).toHaveBeenCalledWith('/chat');
+    expect(mockPush).toHaveBeenCalledWith('/chat?src=fab_preview');
   });
   it('안읽음 0 = 점·미리보기 없음', async () => {
     routeGets(page([]));
@@ -429,7 +432,7 @@ describe('④ 배선 잠금 · i18n', () => {
   const read = (p: string) => fs.readFileSync(p, 'utf8');
   it('프로필 Contact us·광고 신고 → 채팅(플래그) · 홈 KB-986 생략 · 탭 레이아웃에 버튼', () => {
     const profile = read('src/app/(tabs)/profile.tsx');
-    expect(profile.match(/FLAGS\.operatorChatEnabled \? '\/chat' : '\/profile\/feedback'/g)).toHaveLength(2);
+    expect(profile.match(/FLAGS\.operatorChatEnabled \? '\/chat\?src=profile' : '\/profile\/feedback'/g)).toHaveLength(2);
     expect(profile.match(/FLAGS\.operatorChatEnabled \? '\/chat\?prefill=ad'/g)).toHaveLength(2);
     expect(read('src/app/(tabs)/index.tsx')).toContain("if (!FLAGS.operatorChatEnabled) modalQueue.add({ key: 'feedbackPrompt'");
     expect(read('src/app/(tabs)/_layout.tsx')).toContain('<ChatFab activeRoute={activeRoute} />');
@@ -443,5 +446,116 @@ describe('④ 배선 잠금 · i18n', () => {
         expect(chat[k]).not.toMatch(/·|\p{Extended_Pictographic}/u);
       }
     }
+  });
+});
+
+describe('⑤ KB-1010 계측 — 진입 경로·전송 결과', () => {
+  const calls = (ev: string) => mockTrack.mock.calls.filter((c) => c[0] === ev).map((c) => c[1] as Record<string, unknown>);
+  it.each([
+    [{ src: 'fab' }, 'fab'],
+    [{ src: 'fab_preview' }, 'fab_preview'],
+    [{ src: 'profile' }, 'profile'],
+    [{ src: 'push' }, 'push'],
+    [{ prefill: 'ad' }, 'ad_report'],
+    [{}, 'other'],
+    [{ src: 'https://evil/x?id=1' }, 'other'], // 미지 값 = other(자유 텍스트 전송 0)
+  ])('chat_open 진입 %j = source %s · 1회', async (query, source) => {
+    mockQuery = query as Record<string, string>;
+    routeGets(page([]));
+    await mount(<ChatRoute />);
+    expect(calls('chat_open')).toEqual([{ source, has_unread: false }]);
+  });
+  it('진입 경로 태그 = FAB·미리보기·프로필·푸시 각각 · 광고 신고는 기존 prefill 그대로', async () => {
+    routeGets(page([]), { unreadCount: 1, lastOperatorMessage: { content: 'x', createdAt: 'x' } });
+    const r = await mount(<ChatFab activeRoute="index" />);
+    await press(r, 'chat-fab');
+    await press(r, 'chat-fab-preview');
+    expect(mockPush.mock.calls.map((c) => c[0])).toEqual(['/chat?src=fab', '/chat?src=fab_preview']);
+    expect(routeForNotificationData({ type: 'OPERATOR_CHAT' })).toBe('/chat?src=push');
+    const profile = fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8');
+    expect(profile.match(/'\/chat\?src=profile'/g)).toHaveLength(2);
+    expect(profile.match(/'\/chat\?prefill=ad'/g)).toHaveLength(2);
+  });
+  it('has_unread = 진입 시점 미읽음 · 리렌더·포그라운드 복귀로 재발화 0', async () => {
+    routeGets(page([msg(5, 'OPERATOR', 'hey')]), { unreadCount: 2, lastOperatorMessage: { content: 'hey', createdAt: 'x' } });
+    const r = await mount(<ChatFab activeRoute="index" />); // 탭 화면이 안읽음을 캐시에 올려 둔 상태
+    const qc = lastQc;
+    expect(qc.getQueryData(['chat', 'unread'])).toBeTruthy();
+    mockQuery = { src: 'fab' };
+    const subs: ((st: string) => void)[] = [];
+    const orig = AppState.addEventListener;
+    (AppState as unknown as { addEventListener: unknown }).addEventListener = (_: string, cb: (st: string) => void) => { subs.push(cb); return { remove: () => {} }; };
+    let chat!: ReactTestRenderer;
+    try {
+      await act(async () => { chat = renderer.create(<QueryClientProvider client={qc}><ChatRoute /></QueryClientProvider>); });
+      await settle();
+      await act(async () => { chat.update(<QueryClientProvider client={qc}><ChatRoute /></QueryClientProvider>); });
+      expect(subs.length).toBeGreaterThan(0);
+      await act(async () => { subs.forEach((f) => f('background')); });
+      await act(async () => { subs.forEach((f) => f('active')); });
+      await settle();
+    } finally {
+      (AppState as unknown as { addEventListener: unknown }).addEventListener = orig;
+    }
+    expect(calls('chat_open')).toEqual([{ source: 'fab', has_unread: true }]);
+    r.unmount();
+    chat.unmount();
+  });
+  it('chat_message_send = 서버 응답 뒤 1회 · ok / fail / 재전송 is_retry', async () => {
+    routeGets(page([]));
+    mockPost.mockRejectedValueOnce(Object.assign(new Error('boom'), { code: 'CHAT-001' }));
+    const r = await mount(<ChatRoute />);
+    await act(async () => { input(r).props.onChangeText('secret body text'); });
+    await press(r, 'chat-send');
+    expect(calls('chat_message_send')).toEqual([{ result: 'fail', has_photos: false, photo_count: 0, is_retry: false }]);
+    await press(r, 'chat-out-failed');
+    expect(calls('chat_message_send')).toEqual([
+      { result: 'fail', has_photos: false, photo_count: 0, is_retry: false },
+      { result: 'ok', has_photos: false, photo_count: 0, is_retry: true },
+    ]);
+    await act(async () => { input(r).props.onChangeText('again'); });
+    await press(r, 'chat-send');
+    expect(calls('chat_message_send')[2]).toEqual({ result: 'ok', has_photos: false, photo_count: 0, is_retry: false });
+  });
+  it('사진 = 유무·개수만', async () => {
+    (jest.requireMock('expo-image-picker') as { launchImageLibraryAsync: jest.Mock }).launchImageLibraryAsync
+      .mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///a.jpg' }, { uri: 'file:///b.jpg' }] });
+    routeGets(page([]));
+    const r = await mount(<ChatRoute />);
+    await press(r, 'chat-photo-add');
+    await act(async () => { input(r).props.onChangeText('pic'); });
+    await press(r, 'chat-send');
+    expect(calls('chat_message_send')).toEqual([{ result: 'ok', has_photos: true, photo_count: 2, is_retry: false }]);
+  });
+  it('props = enum·boolean·개수만 — 본문·URL·메시지 id·자유 텍스트 0 (허용 목록이 드롭)', async () => {
+    const { sanitize, EVENTS } = jest.requireActual('@/lib/analytics') as typeof import('@/lib/analytics');
+    expect(sanitize(EVENTS.chat_open, { source: 'fab', has_unread: true, content: 'x', href: '/chat?src=fab' })).toEqual({ source: 'fab', has_unread: true });
+    expect(sanitize(EVENTS.chat_message_send, { result: 'ok', has_photos: true, photo_count: 1, is_retry: false, content: 'x', imageUrls: ['u'], id: 9, messageId: 9 }))
+      .toEqual({ result: 'ok', has_photos: true, photo_count: 1, is_retry: false });
+    // 실제 발화 값 전수: 문자열 값은 enum만
+    routeGets(page([]));
+    mockQuery = { src: 'push' };
+    const r = await mount(<ChatRoute />);
+    await act(async () => { input(r).props.onChangeText('my private message https://x.y'); });
+    await press(r, 'chat-send');
+    const ENUMS = new Set(['fab', 'fab_preview', 'profile', 'push', 'ad_report', 'other', 'ok', 'fail']);
+    for (const [ev, props] of mockTrack.mock.calls.filter((c) => String(c[0]).startsWith('chat_'))) {
+      for (const v of Object.values(props as Record<string, unknown>)) {
+        if (typeof v === 'string') expect(ENUMS.has(v)).toBe(true);
+        else expect(['boolean', 'number']).toContain(typeof v);
+      }
+      expect(JSON.stringify(props)).not.toMatch(/private|https|chat\?|\b10\b/); // 본문·URL·서버 메시지 id(10) 0
+      expect(ev).toMatch(/^chat_(open|message_send)$/);
+    }
+  });
+  it('계측이 throw해도 전송 성공은 성공 그대로(실패 말풍선 0)', async () => {
+    mockTrack.mockImplementation(() => { throw new Error('amp down'); });
+    routeGets(page([]));
+    const r = await mount(<ChatRoute />);
+    await act(async () => { input(r).props.onChangeText('hi'); });
+    await press(r, 'chat-send');
+    expect(has(r, 'chat-out-failed')).toBe(false);
+    expect(has(r, 'chat-out-sending')).toBe(false);
+    mockTrack.mockReset();
   });
 });

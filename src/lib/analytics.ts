@@ -10,6 +10,7 @@ import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type Engagem
  *   app · auth · onboarding · scan · order · owner · food · search ·
  *   review · community · profile · push · error · ad(KB-739 AdMob — ad_impression/ad_click/ad_reward_earned/ad_consent_result)
  *   · screen(KB-784 screen_view — 라우트 패턴) · ui(KB-784 ui_click — 공용 Pressable 자동) · home(KB-784 홈 섹션·카드 노출/클릭)
+ *   · chat(KB-1010 운영진 채팅 진입·전송 결과)
  * user property = `user_info_` 접두 (예: user_info_country).
  * 신규 추가 시 이 규칙을 먼저 적용할 것 — CSV 대조 유닛이 구 이름을 막는다.
  *
@@ -32,6 +33,8 @@ import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type Engagem
  * |                              | entry (intro|gate_*|profile|other)         |
  * | auth_guest_enter              | (props 없음)                                |
  * | profile_feedback_submit      | has_photos, photo_count                    |
+ * | chat_open                    | source (fab|fab_preview|profile|push|ad_report|other), has_unread |
+ * | chat_message_send            | result (ok|fail), has_photos, photo_count, is_retry |
  * | feedback_prompt_*            | KB-986 재방문 피드백 시트: shown · submitted(has_photos, photo_count) · dismissed(via) · never_again — 본문 금지 |
  * | app_tab_view                 | tab (home|food|reviews|community|profile), |
  * |                              | user_type (guest|registered)               |
@@ -157,6 +160,9 @@ export const EVENTS = {
   food_segment_select: 'food_segment_select',
   review_feed_target_select: 'review_feed_target_select',
   food_packaged_label_scan: 'food_packaged_label_scan', // P-508 성분표 분석 결과(pages 1~4 · charged = 서버값 · result ok|unreadable|newAnalysis|expired|quota|network… — OCR 원문 금지)
+  // KB-1010 운영진 채팅 — 진입 경로(source enum)·전송 결과(서버 응답 뒤 1회). 본문·사진 URL·메시지 id 금지
+  chat_open: 'chat_open',
+  chat_message_send: 'chat_message_send',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -268,6 +274,9 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   order_share_story: ['result', 'item_count', 'has_place'], // result: tap|success|not_installed|error
   // P-394 🔒: 본문·기기정보·사진 URI 금지 — 사진 유무·개수만(발주 고정).
   profile_feedback_submit: ['has_photos', 'photo_count'],
+  // KB-1010 🔒: 값은 enum·boolean·개수만 — 본문·사진 URL·메시지 id·자유 텍스트 금지
+  chat_open: ['source', 'has_unread'], // source: CHAT_OPEN_SOURCES
+  chat_message_send: ['result', 'has_photos', 'photo_count', 'is_retry'], // result: ok|fail
 };
 
 /** P-144 user property 허용 키 — CSV와 1:1. country는 alpha-2 코드(멘토 확정
@@ -310,6 +319,13 @@ export const PACKAGED_DETAIL_SOURCES = ['search', 'home_cvs', 'list', 'scan', 'r
 export function packagedDetailSource(src: string | undefined, scan: string | undefined): (typeof PACKAGED_DETAIL_SOURCES)[number] {
   if (src === 'search' || src === 'home_cvs' || src === 'list' || src === 'review') return src;
   return scan === '1' ? 'scan' : 'deeplink';
+}
+
+/** KB-1010: 채팅 진입 출처 — 앱 안 진입점은 ?src= 태그, 광고 신고는 기존 ?prefill=ad, 그 밖(태그 없음·미지 값·딥링크) = other */
+export const CHAT_OPEN_SOURCES = ['fab', 'fab_preview', 'profile', 'push', 'ad_report', 'other'] as const;
+export function chatOpenSource(src: string | undefined, prefill: string | undefined): (typeof CHAT_OPEN_SOURCES)[number] {
+  if (prefill === 'ad') return 'ad_report';
+  return src === 'fab' || src === 'fab_preview' || src === 'profile' || src === 'push' ? src : 'other';
 }
 
 export function track(event: EventName, props?: Record<string, unknown>): void {

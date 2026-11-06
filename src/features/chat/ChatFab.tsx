@@ -45,16 +45,16 @@ export function ChatFab({ activeRoute }: { activeRoute: string }) {
   if (hidden) return null;
   const count = unread.data?.count ?? 0;
   const preview = count > 0 ? unread.data?.last ?? null : null;
-  const open = () => router.push('/chat' as Href);
+  const open = (src: 'fab' | 'fab_preview') => router.push(`/chat?src=${src}` as Href); // KB-1010 진입 출처
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom: chatFabBottom(insets.bottom) }]} testID="chat-fab-wrap">
       {!!preview && (
-        <Pressable style={styles.preview} onPress={open} accessibilityRole="button" accessibilityLabel={t('chat.title')} testID="chat-fab-preview">
+        <Pressable style={styles.preview} onPress={() => open('fab_preview')} accessibilityRole="button" accessibilityLabel={t('chat.title')} testID="chat-fab-preview">
           <Text style={styles.previewName}>{t('chat.team')}</Text>
           <Text style={styles.previewText} numberOfLines={2}>{preview.content}</Text>
         </Pressable>
       )}
-      <Pressable style={styles.fab} onPress={open} accessibilityRole="button" accessibilityLabel={t('chat.title')} testID="chat-fab">
+      <Pressable style={styles.fab} onPress={() => open('fab')} accessibilityRole="button" accessibilityLabel={t('chat.title')} testID="chat-fab">
         <IconSpeech size={24} color={C.primary} />
         {count > 0 && <View style={styles.dot} testID="chat-fab-dot" />}
       </Pressable>
