@@ -584,16 +584,33 @@ describe('⑥ KB-1013 FAB 말풍선 위로 · 홍보 라벨(실행마다 표시,
     expect(mockPush).toHaveBeenCalledWith('/chat?src=coach');
     expect(has(r, 'chat-fab-coach')).toBe(false);
     r.unmount();
-    const same = await mount(<ChatFab activeRoute="food" />); // 같은 실행(탭 레이아웃 재마운트·백그라운드 복귀)
+    const same = await mount(<ChatFab activeRoute="index" />); // 같은 실행(탭 레이아웃 재마운트·백그라운드 복귀)
     expect(has(same, 'chat-fab-coach')).toBe(false);
     same.unmount();
     __resetChatFabLabelForTest(); // 콜드 스타트
     const next = await mount(<ChatFab activeRoute="index" />);
     expect(has(next, 'chat-fab-coach')).toBe(true);
   });
+  it('Q-458: 라벨 = 홈 탭만 — 프로필·푸드 탭 = 라벨 0·FAB 있음 · 누르지 않고 다른 탭 갔다 오면 홈에서 다시 보임', async () => {
+    routeGets(page([]));
+    for (const route of ['profile', 'food']) {
+      const r = await mount(<ChatFab activeRoute={route} />);
+      expect({ route, label: has(r, 'chat-fab-coach'), fab: has(r, 'chat-fab') }).toEqual({ route, label: false, fab: true });
+      r.unmount();
+    }
+    let tr!: ReactTestRenderer;
+    await act(async () => { tr = renderer.create(<QueryClientProvider client={lastQc}><ChatFab activeRoute="index" /></QueryClientProvider>); });
+    await settle();
+    expect(has(tr, 'chat-fab-coach')).toBe(true);
+    await act(async () => { tr.update(<QueryClientProvider client={lastQc}><ChatFab activeRoute="profile" /></QueryClientProvider>); });
+    expect(has(tr, 'chat-fab-coach')).toBe(false);
+    await act(async () => { tr.update(<QueryClientProvider client={lastQc}><ChatFab activeRoute="index" /></QueryClientProvider>); });
+    expect(has(tr, 'chat-fab-coach')).toBe(true); // 탭 이동은 숨김 사유 아님
+    tr.unmount();
+  });
   it('FAB·미리보기 탭도 그 실행 동안 숨김', async () => {
     routeGets(page([]));
-    const r = await mount(<ChatFab activeRoute="food" />);
+    const r = await mount(<ChatFab activeRoute="index" />);
     await press(r, 'chat-fab');
     expect(mockPush).toHaveBeenCalledWith('/chat?src=fab');
     expect(has(r, 'chat-fab-coach')).toBe(false);

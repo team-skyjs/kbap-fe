@@ -36,6 +36,9 @@ export function __resetChatFabLabelForTest(): void {
   labelDismissed = false;
 }
 
+/** Q-458(커맨드 11/6): 홍보 라벨을 띄우는 탭 — 홈만(FAB·미리보기 말풍선은 기존 노출 탭 그대로) */
+export const CHAT_FAB_LABEL_ROUTE = 'index';
+
 export function chatFabBottom(insetBottom: number): number {
   return TABBAR_CONTENT_H + Math.max(insetBottom, 10) + CHAT_FAB_GAP;
 }
@@ -58,7 +61,8 @@ export function ChatFab({ activeRoute }: { activeRoute: string }) {
   if (hidden) return null;
   const count = unread.data?.count ?? 0;
   const preview = count > 0 ? unread.data?.last ?? null : null;
-  const showCoach = !dismissed && !preview; // 미리보기 우선 — 같은 자리라 둘은 동시에 안 뜬다
+  // 미리보기 우선 — 같은 자리라 둘은 동시에 안 뜬다 · Q-458: 라벨은 홈 탭만(프로필 '내 리뷰 3 >' 등 탭 콘텐츠 가림). 탭 이동은 숨김 사유 아님(누른 경우만)
+  const showCoach = !dismissed && !preview && activeRoute === CHAT_FAB_LABEL_ROUTE;
   const open = (src: 'fab' | 'fab_preview' | 'coach') => {
     dismissLabelForRun(); // 이 실행 동안 숨김(라벨·FAB·미리보기 어느 탭이든)
     setDismissed(true);
