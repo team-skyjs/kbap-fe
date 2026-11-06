@@ -559,3 +559,79 @@ describe('⑤ KB-1010 계측 — 진입 경로·전송 결과', () => {
     mockTrack.mockReset();
   });
 });
+
+describe('⑥ KB-1013 FAB 말풍선 위로 · 코치마크 1회', () => {
+  const AS = jest.requireMock('@react-native-async-storage/async-storage') as { getItem: (k: string) => Promise<string | null>; setItem: (k: string, v: string) => Promise<void>; clear: () => Promise<void> };
+  const coachKey = 'kbap.chatFabCoach.v1';
+  beforeEach(async () => { await AS.clear(); });
+  it('세로 배치(말풍선 위 · FAB 아래 · 오른쪽 끝 정렬) · 꼬리 = 오른쪽 아래', async () => {
+    routeGets(page([]), { unreadCount: 1, lastOperatorMessage: { content: 'Hi', createdAt: 'x' } });
+    const r = await mount(<ChatFab activeRoute="index" />);
+    const wrap = StyleSheet.flatten(r.root.find((n) => n.props?.testID === 'chat-fab-wrap' && typeof n.type === 'string').props.style);
+    expect({ dir: wrap.flexDirection, align: wrap.alignItems }).toEqual({ dir: 'column', align: 'flex-end' });
+    const kids = r.root.find((n) => n.props?.testID === 'chat-fab-wrap' && typeof n.type === 'string').children as ReactTestRenderer['root'][];
+    const ids = kids.map((k) => k.props?.testID);
+    expect(ids.indexOf('chat-fab-preview')).toBeLessThan(ids.indexOf('chat-fab'));
+    const pv = StyleSheet.flatten(r.root.find((n) => n.props?.testID === 'chat-fab-preview' && typeof n.type === 'string').props.style);
+    expect(pv.borderBottomRightRadius).toBeLessThan(pv.borderRadius);
+  });
+  it('코치마크: 처음 = FAB 위 표시 · 문구 키 · 탭 = 채팅(src=coach) + 저장 → 다시 안 뜸', async () => {
+    routeGets(page([]));
+    const r = await mount(<ChatFab activeRoute="index" />);
+    expect(has(r, 'chat-fab-coach')).toBe(true);
+    expect(text(r)).toContain('chat.fabCoach');
+    await press(r, 'chat-fab-coach');
+    expect(mockPush).toHaveBeenCalledWith('/chat?src=coach');
+    expect(has(r, 'chat-fab-coach')).toBe(false);
+    expect(await AS.getItem(coachKey)).toBe('1');
+    r.unmount();
+    const again = await mount(<ChatFab activeRoute="index" />);
+    expect(has(again, 'chat-fab-coach')).toBe(false);
+  });
+  it('FAB 첫 탭도 코치마크 종료(1회) · 저장값 있으면 처음부터 0', async () => {
+    routeGets(page([]));
+    const r = await mount(<ChatFab activeRoute="food" />);
+    await press(r, 'chat-fab');
+    expect(mockPush).toHaveBeenCalledWith('/chat?src=fab');
+    expect(has(r, 'chat-fab-coach')).toBe(false);
+    expect(await AS.getItem(coachKey)).toBe('1');
+  });
+  it('미리보기 우선 — 안읽음 말풍선이 있으면 코치마크 0(겹침 0) · 미리보기 탭도 코치마크 종료', async () => {
+    routeGets(page([]), { unreadCount: 1, lastOperatorMessage: { content: 'Reply', createdAt: 'x' } });
+    const r = await mount(<ChatFab activeRoute="index" />);
+    expect(has(r, 'chat-fab-preview')).toBe(true);
+    expect(has(r, 'chat-fab-coach')).toBe(false);
+    await press(r, 'chat-fab-preview');
+    expect(await AS.getItem(coachKey)).toBe('1');
+  });
+  it('저장소 읽기 전·읽기 실패 = 코치마크 0 · 리뷰 탭 = 버튼째 0', async () => {
+    (AS.getItem as jest.Mock).mockImplementationOnce(() => { throw new Error('io'); }); // 동기 throw
+    routeGets(page([]));
+    const r = await mount(<ChatFab activeRoute="index" />);
+    expect(has(r, 'chat-fab-coach')).toBe(false);
+    (AS.getItem as jest.Mock).mockRejectedValueOnce(new Error('io')); // 비동기 거부
+    const r2 = await mount(<ChatFab activeRoute="index" />);
+    expect(has(r2, 'chat-fab-coach')).toBe(false);
+    expect(has(r2, 'chat-fab')).toBe(true);
+    const rv = await mount(<ChatFab activeRoute="community" />);
+    expect(has(rv, 'chat-fab-coach')).toBe(false);
+    expect(has(rv, 'chat-fab')).toBe(false);
+  });
+  it('chat_open source = coach(enum) · 코치 문구 10로케일 · ✨는 이 키 한 곳만 예외', async () => {
+    const { chatOpenSource, CHAT_OPEN_SOURCES } = jest.requireActual('@/lib/analytics') as typeof import('@/lib/analytics');
+    expect(chatOpenSource('coach', undefined)).toBe('coach');
+    expect(CHAT_OPEN_SOURCES).toContain('coach');
+    mockQuery = { src: 'coach' };
+    routeGets(page([]));
+    await mount(<ChatRoute />);
+    expect(mockTrack.mock.calls.filter((c) => c[0] === 'chat_open').map((c) => c[1])).toEqual([{ source: 'coach', has_unread: false }]);
+    const LOCALES = ['ko', 'en', 'es', 'ja', 'ru', 'id', 'vi', 'zh-Hant', 'zh-Hans', 'th'];
+    for (const l of LOCALES) {
+      const chat = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).chat as Record<string, string>;
+      expect(chat.fabCoach).toMatch(/✨$/);
+      expect(chat.fabCoach.replace('✨', '')).not.toMatch(/\p{Extended_Pictographic}|·/u);
+    }
+    const ko = JSON.parse(fs.readFileSync('src/lib/i18n/ko.json', 'utf8'));
+    expect(ko.chat.fabCoach).toBe('무제한 스캔 티켓을 드려요✨');
+  });
+});

@@ -118,3 +118,42 @@ it('로드 실패(onError) = 플레이스홀더 폴백 · URL 변경 = 재시도
   expect(photo(t).length).toBeGreaterThanOrEqual(1);
   expect(mockRemote.mock.calls.at(-1)![0].uri).toBe('https://cdn.kbap.site/p/9-v2.jpg');
 });
+
+/* ---- KB-1013(예진 11/6): 기본 아바타 = 국적 국기(헤더·탭바 같은 판정) ---- */
+describe('KB-1013 기본 아바타 → 국기', () => {
+  const DEF = 'https://cdn.kbap.site/images/webp/default_profile/avatar3.webp';
+  const flag = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'tab-avatar-flag');
+  it('판정: 기본 URL(두 경로) + 유효 국적 = 코드 · 직접 올린 사진·국적 없음·코드 불량·null URL = null', () => {
+    const { avatarFlagCode } = jest.requireActual('@/lib/data/useMyAvatarUrl') as typeof import('@/lib/data/useMyAvatarUrl');
+    expect(avatarFlagCode(DEF, 'US')).toBe('US');
+    expect(avatarFlagCode('https://x/images/default/profile/profile-default-512.png', 'KR')).toBe('KR');
+    expect(avatarFlagCode('https://cdn.kbap.site/p/9.jpg', 'US')).toBeNull();
+    expect(avatarFlagCode(DEF, null)).toBeNull();
+    expect(avatarFlagCode(DEF, 'USA')).toBeNull();
+    expect(avatarFlagCode(null, 'US')).toBeNull();
+  });
+  it('탭바: 기본 아바타 + 국적 = 국기(사진 0) · 직접 올린 사진 = 사진 그대로 · 국적 없음 = 기본 아바타 사진 그대로', () => {
+    setMe({ data: { profileImageUrl: DEF, nationality: 'US' } as MockMe['data'] });
+    let t = render();
+    expect(flag(t).length).toBeGreaterThan(0);
+    expect(photo(t)).toHaveLength(0);
+    expect(mockRemote).not.toHaveBeenCalled();
+    expect(t.root.findAll((n) => n.props?.children === '🇺🇸').length).toBeGreaterThan(0);
+    setMe({ data: { profileImageUrl: 'https://cdn.kbap.site/p/9.jpg', nationality: 'US' } as MockMe['data'] });
+    t = render();
+    expect(flag(t)).toHaveLength(0);
+    expect(photo(t).length).toBeGreaterThan(0);
+    setMe({ data: { profileImageUrl: DEF, nationality: null } as MockMe['data'] });
+    t = render();
+    expect(flag(t)).toHaveLength(0);
+    expect(photo(t).length).toBeGreaterThan(0);
+  });
+  it('게스트 = 국기 0(플레이스홀더) · 헤더도 같은 훅(정본 공유 소스 잠금)', () => {
+    setMe({ data: { profileImageUrl: DEF, nationality: 'US' } as MockMe['data'] });
+    mockIsGuest.mockReturnValue(true);
+    expect(flag(render())).toHaveLength(0);
+    const fs = require('fs');
+    expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toMatch(/const avatarFlag = useMyAvatarFlag\(\);[\s\S]*\{avatarFlag \? \([\s\S]*<FlagEmoji code=\{avatarFlag\}[\s\S]*\) : avatarUrl \? \(/);
+    expect(fs.readFileSync('src/components/TabBar.tsx', 'utf8')).toContain('const flag = useMyAvatarFlag();');
+  });
+});
