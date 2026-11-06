@@ -2,11 +2,11 @@
  * KB-1013(예진 11/6) 문구: '가공식품' → '편의점 음식'(ko 전수) · 스캔 부제 신설 · chooseTitle·matchTitle 개정 — 10로케일 키 일치.
  */
 import * as fs from 'fs';
+import { execFileSync } from 'child_process';
 
 const LOCALES = ['ko', 'en', 'es', 'ja', 'ru', 'id', 'vi', 'zh-Hant', 'zh-Hans', 'th'];
 const load = (l: string) => JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8'));
-const runtimeSrc: string[] = require('child_process')
-  .execFileSync('git', ['ls-files', 'src'], { encoding: 'utf8' })
+const runtimeSrc: string[] = execFileSync('git', ['ls-files', 'src'], { encoding: 'utf8' })
   .split('\n')
   .filter((f: string) => /\.tsx?$/.test(f) && !f.includes('__tests__'));
 
