@@ -209,6 +209,15 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
       /* 비치명 */
     }
   };
+  // KB-1008(11/6 운영 실기): 운영진 채팅 푸시 = 채팅 안읽음·메시지 재조회(FAB 미리보기·열린 채팅 화면 즉시 갱신). 다른 유형은 무시.
+  const chatBump = (data: unknown) => {
+    if ((data as { type?: unknown } | null | undefined)?.type !== 'OPERATOR_CHAT') return;
+    try {
+      (require('@/lib/data/useChat') as typeof import('@/lib/data/useChat')).invalidateChat();
+    } catch {
+      /* 비치명 */
+    }
+  };
   try {
     // KB-498: Android 채널 2종 — activity(MAX: HELPFUL·REVIEW_REMINDER) · news(HIGH: 광고성 4종, 기기 설정에서 따로 끌 수 있게 분리).
     // 채널 중요도는 생성 후 변경 불가라 'default'는 만들지 않는다(서버가 default로 보내면 expo 폴백 채널 = 지금과 동일).
@@ -237,11 +246,15 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
       }
       const data = resp?.notification.request.content.data as { notificationId?: number | string; type?: unknown } | undefined;
       if (!resp) return;
+      chatBump(data);
       onRoute(routeForNotificationData(data), data?.notificationId, isPushType(data?.type) ? data.type : undefined); // 경로 null이어도 호출 — id 보존(Codex #149)
     };
     const sub = N.addNotificationResponseReceivedListener(emit);
     // 포그라운드 발화 즉시 재조회
-    const recv = N.addNotificationReceivedListener?.(() => bump());
+    const recv = N.addNotificationReceivedListener?.((n: { request?: { content?: { data?: unknown } } } | null) => {
+      bump();
+      chatBump(n?.request?.content?.data);
+    });
     // 백그라운드 발화분(알림 센터에 떠 있는 것) 부팅 시 재조회
     // #109 11R 잔여(P-348 동승): 부팅 알림 조회 2건도 track — OTA 정적 창 포함
     void track(N.getPresentedNotificationsAsync?.()

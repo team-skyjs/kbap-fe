@@ -31,6 +31,8 @@ const mockAnalytics = { track: jest.fn() };
 jest.mock('@/lib/analytics', () => ({ EVENTS: { push_permission: 'push_permission' }, get track() { return mockAnalytics.track; } })); // KB-630: 권한 결과 이벤트 목
 const mockInbox = { invalidateNotifications: jest.fn() };
 jest.mock('@/lib/data/useNotifications', () => ({ get invalidateNotifications() { return mockInbox.invalidateNotifications; } })); // KB-499: 재조회 트리거 목
+const mockChat = { invalidateChat: jest.fn() };
+jest.mock('@/lib/data/useChat', () => ({ get invalidateChat() { return mockChat.invalidateChat; } })); // KB-1008: 채팅 푸시 재조회 목
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -318,4 +320,25 @@ it('KB-629 push_open: 탭 콜백 3번째 인자 = 푸시 유형(PUSH_TYPES 정�
   const layout = jest.requireActual<typeof import('fs')>('fs').readFileSync('src/app/_layout.tsx', 'utf8');
   expect(layout).toMatch(/addNotificationTapListener\(\(href, notificationId, type\) => \{\n\s+track\(EVENTS\.push_open, type \? \{ type \} : \{\}\);/);
   expect(layout.match(/EVENTS\.push_open/g)).toHaveLength(1);
+});
+
+it('KB-1008(11/6 운영 실기): 포그라운드 수신·탭 — OPERATOR_CHAT만 채팅 재조회(invalidateChat), 다른 유형 무시', () => {
+  const N = mockNotifications as unknown as Record<string, jest.Mock>;
+  N.addNotificationReceivedListener = jest.fn(() => ({ remove: jest.fn() }));
+  mockChat.invalidateChat.mockClear();
+  try {
+    addNotificationTapListener(() => {});
+    const recv = N.addNotificationReceivedListener.mock.calls[0][0] as (n: unknown) => void;
+    recv({ request: { identifier: 'c0', content: { data: { type: 'HELPFUL' } } } });
+    recv({ request: { identifier: 'c1', content: { data: { type: 'NEWS' } } } });
+    recv({ request: { identifier: 'c2', content: {} } });
+    expect(mockChat.invalidateChat).not.toHaveBeenCalled();
+    recv({ request: { identifier: 'c3', content: { data: { type: 'OPERATOR_CHAT', conversationId: 7 } } } });
+    expect(mockChat.invalidateChat).toHaveBeenCalledTimes(1);
+    const tap = mockNotifications.addNotificationResponseReceivedListener.mock.calls.at(-1)![0] as (r: unknown) => void;
+    tap({ notification: { request: { identifier: 'c4', content: { data: { type: 'OPERATOR_CHAT' } } } } });
+    expect(mockChat.invalidateChat).toHaveBeenCalledTimes(2);
+  } finally {
+    delete N.addNotificationReceivedListener;
+  }
 });
