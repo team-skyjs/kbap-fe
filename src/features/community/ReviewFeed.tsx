@@ -51,12 +51,15 @@ const SORT_OPTIONS: FeedSort[] = ['latest', 'rating_high', 'rating_low', 'food_r
 export const isCompactFabScreen = (w: number, h: number): boolean => w < 360 || h < 700;
 /** KB-903(T-022): 글자 크기 1.3배 이상이면 첫 화면부터 필이 둘째 리뷰 본문을 덮었다(AX5) — 아이콘 원형으로 */
 export const FAB_COMPACT_FONT_SCALE = 1.3;
-/** 원형(아이콘만) 조건 — 작은 화면 · 큰 글자 · 스크롤 중 */
-export const fabCompactFor = (w: number, h: number, fontScale: number, scrolling: boolean): boolean =>
-  isCompactFabScreen(w, h) || fontScale >= FAB_COMPACT_FONT_SCALE || scrolling;
-/** 스크롤이 멈춘 뒤 필로 돌아오기까지(음식 상세 알약 멈춤 규칙과 같은 300ms) */
-export const FAB_IDLE_MS = 300;
-const FAB_COMPACT_SLOP = 4; // 36 + 4×2 = 44
+/** 원형(아이콘만) 조건 — 작은 화면 · 큰 글자. KB-1011(예진 11/6): 스크롤 중 접힘은 제거(스크롤과 무관하게 항상 같은 모양) */
+export const fabCompactFor = (w: number, h: number, fontScale: number): boolean =>
+  isCompactFabScreen(w, h) || fontScale >= FAB_COMPACT_FONT_SCALE;
+/** KB-1011: 필 높이 48 · 원형 44(터치 44 그대로라 hitSlop 불필요) · 위치 right 14 · bottom 18 */
+export const FAB_H = 48;
+export const FAB_COMPACT = 44;
+const FAB_BOTTOM = 18;
+/** 리스트 하단 여백 = 버튼 위 끝 + 42(종전 96 = 18 + 36 + 42와 같은 숨 공간) — 마지막 카드·footer 가림 0 */
+export const FEED_BOTTOM_PAD = FAB_BOTTOM + FAB_H + 42;
 
 export function ReviewFeed() {
   const router = useRouter();
@@ -95,13 +98,7 @@ export function ReviewFeed() {
   const [mod, setMod] = React.useState<ModTarget | null>(null);
   const win = useWindowDimensions();
   const { onScroll, hidden, atTop } = useStickyScroll();
-  // KB-903(T-022): 스크롤 중 필이 본문 문장을 덮었다 — 끌기·관성 동안은 원형, 멈추고 300ms 뒤 다시 필(워클릿 없이 JS 스크롤 이벤트로)
-  const [scrolling, setScrolling] = React.useState(false);
-  const idle = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollStart = () => { if (idle.current) clearTimeout(idle.current); setScrolling(true); };
-  const scrollStop = () => { if (idle.current) clearTimeout(idle.current); idle.current = setTimeout(() => setScrolling(false), FAB_IDLE_MS); };
-  React.useEffect(() => () => { if (idle.current) clearTimeout(idle.current); }, []);
-  const fabCompact = fabCompactFor(win.width, win.height, win.fontScale, scrolling);
+  const fabCompact = fabCompactFor(win.width, win.height, win.fontScale);
   const headerH = useHeaderHeight();
 
   // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증이라 보조(확인되면 제거)
@@ -221,13 +218,9 @@ export function ReviewFeed() {
         }
         data={rows}
         keyExtractor={(row) => row.key}
-        contentContainerStyle={[styles.list, { paddingTop: headerH + 4, paddingBottom: 96, flexGrow: 1 }]}
+        contentContainerStyle={[styles.list, { paddingTop: headerH + 4, paddingBottom: FEED_BOTTOM_PAD, flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
-        onScrollBeginDrag={scrollStart}
-        onMomentumScrollBegin={scrollStart}
-        onScrollEndDrag={scrollStop}
-        onMomentumScrollEnd={scrollStop}
         scrollEventThrottle={16}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
@@ -305,17 +298,15 @@ export function ReviewFeed() {
       ) : null}
 
       {/* KB-430 §2-5: 플로팅 "Write a review" 필(4150:17079) — 진입점 = 음식 픽커(현행) */}
-      {/* KB-777 B3-7: 작은 화면(폭 < 360 또는 높이 < 700) = 아이콘만 36 원형 — 필이 본문을 넓게 가렸다. 라벨은 스크린리더 이름으로 유지 */}
+      {/* KB-777 B3-7: 작은 화면(폭 < 360 또는 높이 < 700) = 아이콘만 원형(KB-1011 44) — 필이 본문을 넓게 가렸다. 라벨은 스크린리더 이름으로 유지 */}
       <Pressable
         style={[styles.fab, fabCompact && styles.fabCompact]}
-        // Codex #306 P2: 원형 36 → 터치 44(시각 36 유지). 부모 = 화면 전체이고 right 14·bottom 18 여유라 hitSlop이 부모 안이다
-        hitSlop={fabCompact ? FAB_COMPACT_SLOP : undefined}
         testID="feed-write-fab"
         accessibilityRole="button"
         accessibilityLabel={t('reviews.writeReview')}
         onPress={() => (isGuest ? setGateOpen('writeReview') : setPickerOpen(true))}
       >
-        <IconEdit size={20} color="#fff" />
+        <IconEdit size={22} color="#fff" />
         {/* KB-818: 큰 글씨에서 iOS가 라벨을 실제보다 좁게 재서 "Write a revi"로 잘렸다 — 한 줄 + 들어가게 축소(탭 라벨과 같은 규칙) */}
         {!fabCompact && <Text style={styles.fabLabel} numberOfLines={1} adjustsFontSizeToFit testID="feed-write-fab-label">{t('reviews.writeReview')}</Text>}
       </Pressable>
@@ -400,21 +391,22 @@ const styles = StyleSheet.create({
   nudgeBody: { fontSize: 16, fontWeight: '400', color: '#4B4F58' },
 
   // KB-430 §2-5: 플로팅 필(4150:17079)
-  // A-RT-03(KB-486): gap 4 · right 14 · bottom 18
+  // A-RT-03(KB-486): right 14 · bottom 18 · KB-1011(예진 11/6): 높이 48 · 패딩 12/18 · gap 6
   fab: {
     position: 'absolute',
     right: 14,
-    bottom: 18,
+    bottom: FAB_BOTTOM,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     backgroundColor: '#1C1E21',
     borderRadius: radius.pill,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    minHeight: FAB_H,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
   },
-  fabLabel: { fontSize: 16, fontWeight: '600', color: '#fff' },
-  fabCompact: { width: 36, height: 36, borderRadius: radius.pill, paddingVertical: 0, paddingHorizontal: 0, justifyContent: 'center' }, // KB-777 B3-7
+  fabLabel: { fontSize: 17, fontWeight: '600', color: '#fff' },
+  fabCompact: { width: FAB_COMPACT, height: FAB_COMPACT, minHeight: FAB_COMPACT, borderRadius: radius.pill, paddingVertical: 0, paddingHorizontal: 0, justifyContent: 'center' }, // KB-777 B3-7
 });
 
 export default ReviewFeed;
