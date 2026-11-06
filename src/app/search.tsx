@@ -314,7 +314,7 @@ export default function Search() {
                 {popular.map((f) => (
                   <Pressable key={f.foodId} style={styles.popCard} onPress={() => openFood(f.foodId)} testID={`pop-${f.foodId}`}>
                     <View style={styles.popThumb}>
-                      {f.photoUrl ? <CardPhoto uri={f.photoUrl} recyclingKey={f.foodId} borderRadius={radius.md} /> : <IconFood size={22} color={C.ink3} />}
+                      {f.photoUrl || f.linked?.imageUrl ? <CardPhoto uri={f.photoUrl} cutoutUri={f.linked?.imageUrl} recyclingKey={f.foodId} borderRadius={radius.md} /> : <IconFood size={22} color={C.ink3} />}
                     </View>
                     {/* KB-903(T-057): 한 줄 자르기("Seasoned Co…") → 두 줄 + 넘치면 줄이기(홈 카드와 같은 규칙) */}
                     <Text style={styles.popCardName} {...CARD_TITLE}>{f.name}</Text>

@@ -219,6 +219,7 @@ export function adaptMenuSummary(wire: MenuSummaryWire): FoodCard {
         ? { average: wire.review.averageRating, count: rvCount }
         : NO_RATING,
     bookmarked: wire.bookmarked === true, // KB-779: 계약 비회원 false·부재 false — 홈 별의 정본
+    linked: adaptLinkedProcessed(wire.linkedProcessedFood), // KB-1014: 카드 사진만 누끼 우선 — 이름·위험도·평점 무변
   };
 }
 
