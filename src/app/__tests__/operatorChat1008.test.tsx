@@ -560,22 +560,22 @@ describe('⑤ KB-1010 계측 — 진입 경로·전송 결과', () => {
   });
 });
 
-describe('⑥ KB-1013 FAB 말풍선 위로 · 코치마크 1회', () => {
-  const AS = jest.requireMock('@react-native-async-storage/async-storage') as { getItem: (k: string) => Promise<string | null>; setItem: (k: string, v: string) => Promise<void>; clear: () => Promise<void> };
-  const coachKey = 'kbap.chatFabCoach.v1';
-  beforeEach(async () => { await AS.clear(); });
+describe('⑥ KB-1013 FAB 말풍선 위로 · 홍보 라벨(실행마다 표시, 탭하면 그 실행 동안 숨김)', () => {
+  const { __resetChatFabLabelForTest } = jest.requireActual('@/features/chat/ChatFab') as typeof import('@/features/chat/ChatFab');
+  const AS = jest.requireMock('@react-native-async-storage/async-storage') as { getItem: jest.Mock; setItem: jest.Mock; clear: () => Promise<void> };
+  beforeEach(async () => { __resetChatFabLabelForTest(); await AS.clear(); });
   it('세로 배치(말풍선 위 · FAB 아래 · 오른쪽 끝 정렬) · 꼬리 = 오른쪽 아래', async () => {
     routeGets(page([]), { unreadCount: 1, lastOperatorMessage: { content: 'Hi', createdAt: 'x' } });
     const r = await mount(<ChatFab activeRoute="index" />);
-    const wrap = StyleSheet.flatten(r.root.find((n) => n.props?.testID === 'chat-fab-wrap' && typeof n.type === 'string').props.style);
+    const wrapNode = r.root.find((n) => n.props?.testID === 'chat-fab-wrap' && typeof n.type === 'string');
+    const wrap = StyleSheet.flatten(wrapNode.props.style);
     expect({ dir: wrap.flexDirection, align: wrap.alignItems }).toEqual({ dir: 'column', align: 'flex-end' });
-    const kids = r.root.find((n) => n.props?.testID === 'chat-fab-wrap' && typeof n.type === 'string').children as ReactTestRenderer['root'][];
-    const ids = kids.map((k) => k.props?.testID);
+    const ids = (wrapNode.children as ReactTestRenderer['root'][]).map((k) => k.props?.testID);
     expect(ids.indexOf('chat-fab-preview')).toBeLessThan(ids.indexOf('chat-fab'));
     const pv = StyleSheet.flatten(r.root.find((n) => n.props?.testID === 'chat-fab-preview' && typeof n.type === 'string').props.style);
     expect(pv.borderBottomRightRadius).toBeLessThan(pv.borderRadius);
   });
-  it('코치마크: 처음 = FAB 위 표시 · 문구 키 · 탭 = 채팅(src=coach) + 저장 → 다시 안 뜸', async () => {
+  it('실행마다 표시 · 라벨 탭 = 채팅(src=coach) + 그 실행 동안 숨김(재마운트에도) · 다음 실행(초기화) = 다시 표시', async () => {
     routeGets(page([]));
     const r = await mount(<ChatFab activeRoute="index" />);
     expect(has(r, 'chat-fab-coach')).toBe(true);
@@ -583,67 +583,83 @@ describe('⑥ KB-1013 FAB 말풍선 위로 · 코치마크 1회', () => {
     await press(r, 'chat-fab-coach');
     expect(mockPush).toHaveBeenCalledWith('/chat?src=coach');
     expect(has(r, 'chat-fab-coach')).toBe(false);
-    expect(await AS.getItem(coachKey)).toBe('1');
     r.unmount();
-    const again = await mount(<ChatFab activeRoute="index" />);
-    expect(has(again, 'chat-fab-coach')).toBe(false);
+    const same = await mount(<ChatFab activeRoute="index" />); // 같은 실행(탭 레이아웃 재마운트·백그라운드 복귀)
+    expect(has(same, 'chat-fab-coach')).toBe(false);
+    same.unmount();
+    __resetChatFabLabelForTest(); // 콜드 스타트
+    const next = await mount(<ChatFab activeRoute="index" />);
+    expect(has(next, 'chat-fab-coach')).toBe(true);
   });
-  it('FAB 첫 탭도 코치마크 종료(1회) · 저장값 있으면 처음부터 0', async () => {
+  it('Q-458: 라벨 = 홈 탭만 — 프로필·푸드 탭 = 라벨 0·FAB 있음 · 누르지 않고 다른 탭 갔다 오면 홈에서 다시 보임', async () => {
     routeGets(page([]));
-    const r = await mount(<ChatFab activeRoute="food" />);
+    for (const route of ['profile', 'food']) {
+      const r = await mount(<ChatFab activeRoute={route} />);
+      expect({ route, label: has(r, 'chat-fab-coach'), fab: has(r, 'chat-fab') }).toEqual({ route, label: false, fab: true });
+      r.unmount();
+    }
+    let tr!: ReactTestRenderer;
+    await act(async () => { tr = renderer.create(<QueryClientProvider client={lastQc}><ChatFab activeRoute="index" /></QueryClientProvider>); });
+    await settle();
+    expect(has(tr, 'chat-fab-coach')).toBe(true);
+    await act(async () => { tr.update(<QueryClientProvider client={lastQc}><ChatFab activeRoute="profile" /></QueryClientProvider>); });
+    expect(has(tr, 'chat-fab-coach')).toBe(false);
+    await act(async () => { tr.update(<QueryClientProvider client={lastQc}><ChatFab activeRoute="index" /></QueryClientProvider>); });
+    expect(has(tr, 'chat-fab-coach')).toBe(true); // 탭 이동은 숨김 사유 아님
+    tr.unmount();
+  });
+  it('FAB·미리보기 탭도 그 실행 동안 숨김', async () => {
+    routeGets(page([]));
+    const r = await mount(<ChatFab activeRoute="index" />);
     await press(r, 'chat-fab');
     expect(mockPush).toHaveBeenCalledWith('/chat?src=fab');
     expect(has(r, 'chat-fab-coach')).toBe(false);
-    expect(await AS.getItem(coachKey)).toBe('1');
-  });
-  it('Codex #457 P2: 저장소 읽기 전 첫 탭 = 기록 · 늦게 온 읽기 결과가 코치마크를 다시 띄우지 않음', async () => {
-    let release!: (v: string | null) => void;
-    (AS.getItem as jest.Mock).mockImplementationOnce(() => new Promise((r) => { release = r; }));
+    __resetChatFabLabelForTest();
+    routeGets(page([]), { unreadCount: 1, lastOperatorMessage: { content: 'Reply', createdAt: 'x' } });
+    const p = await mount(<ChatFab activeRoute="index" />);
+    await press(p, 'chat-fab-preview');
     routeGets(page([]));
-    const r = await mount(<ChatFab activeRoute="index" />);
-    expect(has(r, 'chat-fab-coach')).toBe(false); // 읽기 전 = 숨김
-    await press(r, 'chat-fab');
-    expect(await AS.getItem(coachKey)).toBe('1');
-    await act(async () => { release(null); }); // 탭 전에 읽었던 '안 봄'이 뒤늦게 도착
-    await settle();
-    expect(has(r, 'chat-fab-coach')).toBe(false);
+    const after = await mount(<ChatFab activeRoute="index" />);
+    expect(has(after, 'chat-fab-coach')).toBe(false);
   });
-  it('미리보기 우선 — 안읽음 말풍선이 있으면 코치마크 0(겹침 0) · 미리보기 탭도 코치마크 종료', async () => {
+  it('미리보기 우선 — 안읽음 말풍선이 있으면 라벨 0(겹침 0) · 리뷰 탭 = 버튼째 0', async () => {
     routeGets(page([]), { unreadCount: 1, lastOperatorMessage: { content: 'Reply', createdAt: 'x' } });
     const r = await mount(<ChatFab activeRoute="index" />);
     expect(has(r, 'chat-fab-preview')).toBe(true);
     expect(has(r, 'chat-fab-coach')).toBe(false);
-    await press(r, 'chat-fab-preview');
-    expect(await AS.getItem(coachKey)).toBe('1');
-  });
-  it('저장소 읽기 전·읽기 실패 = 코치마크 0 · 리뷰 탭 = 버튼째 0', async () => {
-    (AS.getItem as jest.Mock).mockImplementationOnce(() => { throw new Error('io'); }); // 동기 throw
-    routeGets(page([]));
-    const r = await mount(<ChatFab activeRoute="index" />);
-    expect(has(r, 'chat-fab-coach')).toBe(false);
-    (AS.getItem as jest.Mock).mockRejectedValueOnce(new Error('io')); // 비동기 거부
-    const r2 = await mount(<ChatFab activeRoute="index" />);
-    expect(has(r2, 'chat-fab-coach')).toBe(false);
-    expect(has(r2, 'chat-fab')).toBe(true);
     const rv = await mount(<ChatFab activeRoute="community" />);
     expect(has(rv, 'chat-fab-coach')).toBe(false);
     expect(has(rv, 'chat-fab')).toBe(false);
   });
-  it('chat_open source = coach(enum) · 코치 문구 10로케일 · ✨는 이 키 한 곳만 예외', async () => {
-    const { chatOpenSource, CHAT_OPEN_SOURCES } = jest.requireActual('@/lib/analytics') as typeof import('@/lib/analytics');
-    expect(chatOpenSource('coach', undefined)).toBe('coach');
-    expect(CHAT_OPEN_SOURCES).toContain('coach');
-    mockQuery = { src: 'coach' };
+  it('저장소 무관 — 옛 seen 값이 있어도 표시 · 탭해도 저장 0', async () => {
+    await AS.setItem('kbap.chatFabCoach.v1', '1');
+    AS.setItem.mockClear?.();
     routeGets(page([]));
+    const r = await mount(<ChatFab activeRoute="index" />);
+    expect(has(r, 'chat-fab-coach')).toBe(true);
+    const before = await AS.getItem('kbap.chatFabCoach.v1');
+    await press(r, 'chat-fab-coach');
+    expect(await AS.getItem('kbap.chatFabCoach.v1')).toBe(before);
+    expect(fs.readFileSync('src/features/chat/ChatFab.tsx', 'utf8')).not.toMatch(/AsyncStorage/);
+  });
+  it('라벨 = 한 줄(작은 화면은 글자 축소) · chat_open source = coach · 문구 10로케일 · ✨는 이 키만', async () => {
+    routeGets(page([]));
+    const r = await mount(<ChatFab activeRoute="index" />);
+    const label = r.root.findAll((n) => n.props?.children === 'chat.fabCoach' && n.props?.numberOfLines != null)[0];
+    expect({ lines: label.props.numberOfLines, fit: label.props.adjustsFontSizeToFit }).toEqual({ lines: 1, fit: true });
+    const { chatOpenSource } = jest.requireActual('@/lib/analytics') as typeof import('@/lib/analytics');
+    expect(chatOpenSource('coach', undefined)).toBe('coach');
+    mockQuery = { src: 'coach' };
     await mount(<ChatRoute />);
     expect(mockTrack.mock.calls.filter((c) => c[0] === 'chat_open').map((c) => c[1])).toEqual([{ source: 'coach', has_unread: false }]);
-    const LOCALES = ['ko', 'en', 'es', 'ja', 'ru', 'id', 'vi', 'zh-Hant', 'zh-Hans', 'th'];
-    for (const l of LOCALES) {
-      const chat = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).chat as Record<string, string>;
-      expect(chat.fabCoach).toMatch(/✨$/);
-      expect(chat.fabCoach.replace('✨', '')).not.toMatch(/\p{Extended_Pictographic}|·/u);
+    for (const l of ['ko', 'en', 'es', 'ja', 'ru', 'id', 'vi', 'zh-Hant', 'zh-Hans', 'th']) {
+      const v = (JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).chat as Record<string, string>).fabCoach;
+      expect(v).toMatch(/✨$/);
+      expect(v.replace('✨', '')).not.toMatch(/\p{Extended_Pictographic}|·/u);
+      expect(v.length).toBeLessThanOrEqual(30); // 한 줄 예산(maxWidth 220 · 14pt)
     }
-    const ko = JSON.parse(fs.readFileSync('src/lib/i18n/ko.json', 'utf8'));
-    expect(ko.chat.fabCoach).toBe('무제한 스캔 티켓을 드려요✨');
+    const ko = JSON.parse(fs.readFileSync('src/lib/i18n/ko.json', 'utf8')).chat.fabCoach;
+    const en = JSON.parse(fs.readFileSync('src/lib/i18n/en.json', 'utf8')).chat.fabCoach;
+    expect([ko, en]).toEqual(['무제한 스캔 무료로 받기✨', 'Get Free Unlimited Scans✨']);
   });
 });

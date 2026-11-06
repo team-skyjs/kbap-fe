@@ -37,7 +37,7 @@ it('③ 탭 아바타 — 원형 이중(내부 radius)·비활성 opacity 0.6·�
   expect(tab).toContain('borderRadius: (size - 4) / 2'); // RemoteImage 자체 라운딩(이중)
   expect(tab).toContain("avatarDim: { opacity: 0.6 }");
   expect(tab).toContain("!active && styles.avatarDim"); // 비활성 흐림(사진·플레이스홀더 공통)
-  expect(tab).toContain("testID={flag ? 'tab-avatar-flag' : showPhoto ? 'tab-avatar-photo' : 'tab-avatar-fb'}"); // 동일 링 래퍼
+  expect(tab).toContain("testID={showPhoto ? 'tab-avatar-photo' : 'tab-avatar-fb'}"); // 동일 링 래퍼
 });
 
 it('①-b Codex #77 P2 → P-353 ③: photoUrl null/실패 = CardPhoto 내부 기본 음식 이미지(아이콘 박스 소멸)', () => {

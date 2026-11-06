@@ -229,6 +229,7 @@ export function ReviewFeed() {
           <FeedAd testID={`ad-feed-${row.slot}`} /> /* KB-739 ④-④ → KB-816: 글 5개마다 네이티브 광고(③과 같은 컴포넌트) */
         ) : (
           <FeedCard
+            flagAvatar // KB-1013 후속(예진 11/6): 리뷰 탭만 작성자 자리 국기
             review={row.item}
             t={t}
             photoVariant="peek" // KB-817: 리뷰 탭만
