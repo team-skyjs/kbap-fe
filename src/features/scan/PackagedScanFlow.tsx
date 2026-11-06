@@ -203,12 +203,9 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     return text;
   };
 
-  /** KB-1015: 이 흐름의 첫 앞면 촬영인지 — 첫 장만 메뉴판 바로가기 신호(재촬영·한 면 더 = 신호 없음) */
-  const frontShotTaken = React.useRef(false);
   const onFrontShot = async (photo: ScanPhoto) => {
-    const first = !frontShotTaken.current;
-    frontShotTaken.current = true;
-    if (FLAGS.packagedVisionScan) return runVision(photo, { kind: 'capture' }, undefined, undefined, null, first);
+    // KB-1015: 첫 사진 단계(다시 찍기 포함) = 메뉴판 바로가기 신호 · 성분표 한 면 더(onLabelShot) = 신호 없음
+    if (FLAGS.packagedVisionScan) return runVision(photo, { kind: 'capture' }, undefined, undefined, null, true);
     // KB-892: 앞면 사진 업로드는 OCR과 병렬로 시작만 — 이름 요청은 기다리지 않는다(스캔 체감 시간 무변)
     const photoPath = FLAGS.packagedNameScanPhoto ? settledOrNull(uploadNameScanPhoto(photo)) : undefined;
     const text = await readText(photo, false, { kind: 'capture' });
@@ -273,7 +270,7 @@ export function PackagedScanFlow({ onClose, startLabel = false, renderCamera, fo
     }
   };
   /** 사진 한 장 = 비전 1회. key = 촬영 1회당 멱등 키 · uploaded = 이미 올린 경로 — 재시도는 같은 키·같은 경로(비전 재호출·상한 차감 0, 재업로드 0)
-   *  fast = KB-1015 첫 촬영 신호 — 재시도도 같은 신호 */
+   *  fast = KB-1015 첫 사진 단계 신호 — 재시도도 같은 신호 */
   const runVision = async (photo: ScanPhoto, back: Step, addTo?: LabelResultStep, key: string = Crypto.randomUUID(), uploaded: string | null = null, fast = false): Promise<void> => {
     goStep({ kind: 'reading', label: !!addTo, back, photoUri: photo.uri, vision: true }); // Q-412 ①: 판정 전 = 중립 문구(메뉴판일 수도)
     const my = reqSeq.current;

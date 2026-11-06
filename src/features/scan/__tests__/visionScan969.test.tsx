@@ -364,14 +364,15 @@ describe('KB-1015 첫 사진 메뉴판 바로가기 신호(menuFastPathEligible)
     await press(t, 'cam-shutter');
     expect(fastOf()).toEqual([true, 'absent']);
   });
-  it('다시 찍기(재촬영) = 신호 없음 · 새 키', async () => {
+  it('다시 찍기(OTHER·UNKNOWN 뒤) = 같은 첫 사진 단계 → 신호 true · 새 키', async () => {
     mockPost.mockResolvedValueOnce(V({ kind: 'OTHER', state: 'OTHER', reason: 'UNKNOWN' }));
     const t = flow();
     await press(t, 'cam-shutter');
     await press(t, 'pscan-retake');
     mockPost.mockResolvedValueOnce(V({ analysisId: 'uuid-2', kind: 'MENU', state: 'NOT_PACKAGED' }));
     await press(t, 'cam-shutter');
-    expect(fastOf()).toEqual([true, 'absent']);
+    expect(fastOf()).toEqual([true, true]);
+    expect(visionCalls().map((c) => (c[1] as { clientRequestId: string }).clientRequestId)).toEqual(['uuid-1', 'uuid-2']);
   });
   it('전송 실패 → 다시 시도 = 같은 키·같은 경로·같은 신호', async () => {
     mockPost.mockRejectedValueOnce(new Error('NETWORK: x'));
@@ -385,7 +386,7 @@ describe('KB-1015 첫 사진 메뉴판 바로가기 신호(menuFastPathEligible)
     ]);
     expect(mockVisionUpload).toHaveBeenCalledTimes(1);
   });
-  it('재촬영 뒤 실패 → 다시 시도도 신호 없음 그대로', async () => {
+  it('다시 찍기 뒤 실패 → 다시 시도도 같은 키·같은 신호(true)', async () => {
     mockPost.mockResolvedValueOnce(V({ kind: 'OTHER', state: 'OTHER', reason: 'UNKNOWN' }));
     const t = flow();
     await press(t, 'cam-shutter');
@@ -394,6 +395,7 @@ describe('KB-1015 첫 사진 메뉴판 바로가기 신호(menuFastPathEligible)
     await press(t, 'cam-shutter');
     mockPost.mockResolvedValueOnce(V({ kind: 'MENU', state: 'NOT_PACKAGED' }));
     await press(t, 'pscan-retry');
-    expect(fastOf()).toEqual([true, 'absent', 'absent']);
+    expect(fastOf()).toEqual([true, true, true]);
+    expect(visionCalls().map((c) => (c[1] as { clientRequestId: string }).clientRequestId)).toEqual(['uuid-1', 'uuid-2', 'uuid-2']);
   });
 });
