@@ -152,7 +152,7 @@ describe('KB-1013 기본 아바타 → 국기', () => {
     setMe({ data: { profileImageUrl: DEF, nationality: 'US' } as MockMe['data'] });
     mockIsGuest.mockReturnValue(true);
     expect(flag(render())).toHaveLength(0);
-    const fs = require('fs');
+    const fs = jest.requireActual('fs') as typeof import('fs');
     expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toMatch(/const avatarFlag = useMyAvatarFlag\(\);[\s\S]*\{avatarFlag \? \([\s\S]*<FlagEmoji code=\{avatarFlag\}[\s\S]*\) : avatarUrl \? \(/);
     expect(fs.readFileSync('src/components/TabBar.tsx', 'utf8')).toContain('const flag = useMyAvatarFlag();');
   });
