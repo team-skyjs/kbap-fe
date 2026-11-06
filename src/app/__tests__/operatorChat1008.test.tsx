@@ -175,8 +175,8 @@ describe('① 어댑터·행·시간·딥링크', () => {
       (FLAGS as { operatorChatEnabled: boolean }).operatorChatEnabled = prev;
     }
   });
-  it('Codex #441 P1: 킬스위치 = dev 서버 채널만(운영·프리뷰·teamtest-prod 404 방지) — 상수 true 금지', () => {
-    expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('operatorChatEnabled: DEV_SERVER_CHANNEL,');
+  it('KB-1008 운영 켜기(2026-11-06): 운영 채팅 API 배포 뒤 전 채널 on — Codex #441 P1의 dev 한정은 해제', () => {
+    expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('operatorChatEnabled: true,');
   });
 });
 
