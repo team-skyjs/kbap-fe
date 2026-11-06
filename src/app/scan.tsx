@@ -1065,6 +1065,7 @@ export default function Scan() {
         priceOptions: it.priceOptions, // KB-1006
         spice: it.spice, // KB-1006: 매칭 줄도 맵기(results[].spiciness)
         notMenu: it.notMenu, // P-616
+        linked: it.linked, // KB-1014
       }];
     });
     // idx=null(사진에서만 추출) — 좌표 부재로 리스트 전용, 오버레이 마커 없음.
@@ -1088,6 +1089,7 @@ export default function Scan() {
       priceOptions: p.priceOptions, // KB-1006
       spice: p.spice, // KB-1006
       notMenu: p.notMenu, // P-616
+      linked: p.linked, // KB-1014
     }));
     // KB-992: 2단 — DB 판정(현행)은 위, pendingId 항목은 아래 'AI 추정' 섹션(서버 순서). 도착 전 = 스켈레톤,
     // NOT_FOOD = 행 제거, 폴링이 끝났는데 미도착(15초·실패·scanId 없음) = 현행 unable 행으로 위 목록에 남는다.

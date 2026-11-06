@@ -44,7 +44,7 @@ it('#116 2R — ready(드레인 완료) 전 토글 무시(POST 오발 방지) + 
   // KB-959: 카드 토글 소멸 — 드레인 전 토글 가드는 상세(useToggleBookmark 경로)만 남음
   const rich = read('src/features/scan/ScanRichList.tsx');
   // 깨진 URL = 기본 이미지 폴백 + QA #428: 행 key(itemId)가 스캔마다 재사용 → recyclingKey로 직전 스캔 사진 즉시 비움
-  expect(rich).toContain('<CardPhoto uri={thumb} recyclingKey={dish.foodId ?? thumb ?? undefined} borderRadius={radius.md} />');
+  expect(rich).toContain('<CardPhoto uri={thumb} cutoutUri={dish.linked?.imageUrl} cutoutInset={4} recyclingKey={dish.foodId ?? thumb ?? undefined} borderRadius={radius.md}' /* KB-1014: 누끼 우선 — 같은 CardPhoto 경유 */);
 });
 
 it('P-362(KB-525): 스캔 썸네일 래퍼 = 고정 118(퍼센트 높이 금지 — 행 160만px 폭주 회귀 잠금)', () => {

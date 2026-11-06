@@ -170,6 +170,8 @@ export interface FoodDetail {
   isRegistered: boolean; // false ⇒ treat as unable (FR-033)
   /** 조회 회원의 저장(북마크) 여부 (KB-142). 옵셔널 = mock/미등록 경로 — 미설정은 false 취급. */
   bookmarked?: boolean;
+  /** KB-1014: 대표 편의점 음식(사진 우선·진입점) — 판정과 무관. 부재 = 연결 없음 */
+  linkedProcessed?: import('./linkedProcessed').LinkedProcessedFood | null;
 }
 
 export interface ScanResultItem {

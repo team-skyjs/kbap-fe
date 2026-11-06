@@ -225,7 +225,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   home_card_click: ['section', 'position', 'food_id', 'collection_key', 'product_id'], // KB-796: section=curation이면 collection_key(서버 모음 키) · KB-955: section=cvs면 product_id
   home_curation_link_click: ['collection_key', 'position'],
   food_packaged_search: ['query_length', 'result_count'],
-  food_packaged_detail_view: ['product_id', 'label_source', 'source'], // KB-973 source: search|home_cvs|list|scan|review|deeplink
+  food_packaged_detail_view: ['product_id', 'label_source', 'source'], // KB-973 source: search|home_cvs|list|scan|review|deeplink · KB-1014 menu_link
   home_curation_gallery_open: ['collection_key', 'entry_id'],
   home_curation_gallery_swipe: ['collection_key', 'entry_id', 'index'],
   home_curation_map_open: ['collection_key', 'entry_id'],
@@ -315,9 +315,9 @@ export function sanitize(event: EventName, props?: Record<string, unknown>): Rec
 }
 
 /** KB-973: 가공식품 상세 진입 출처 — 앱 안 진입점은 ?src= 태그, 스캔 확정은 ?scan=1, 그 밖(태그 없음) = deeplink(푸시·외부 링크) */
-export const PACKAGED_DETAIL_SOURCES = ['search', 'home_cvs', 'list', 'scan', 'review', 'deeplink'] as const;
+export const PACKAGED_DETAIL_SOURCES = ['search', 'home_cvs', 'list', 'scan', 'review', 'menu_link', 'deeplink'] as const; // KB-1014 menu_link = 메뉴 음식 상세의 대표 편의점 음식 행
 export function packagedDetailSource(src: string | undefined, scan: string | undefined): (typeof PACKAGED_DETAIL_SOURCES)[number] {
-  if (src === 'search' || src === 'home_cvs' || src === 'list' || src === 'review') return src;
+  if (src === 'search' || src === 'home_cvs' || src === 'list' || src === 'review' || src === 'menu_link') return src;
   return scan === '1' ? 'scan' : 'deeplink';
 }
 
