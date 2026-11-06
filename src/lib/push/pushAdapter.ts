@@ -213,6 +213,8 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
   const chatBump = (data: unknown) => {
     if ((data as { type?: unknown } | null | undefined)?.type !== 'OPERATOR_CHAT') return;
     try {
+      // 지연 require — 푸시 어댑터가 채팅 데이터 모듈(업로드·쿼리 클라이언트)을 부팅 경로로 끌어오지 않게(bump와 같은 이유)
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       (require('@/lib/data/useChat') as typeof import('@/lib/data/useChat')).invalidateChat();
     } catch {
       /* 비치명 */
