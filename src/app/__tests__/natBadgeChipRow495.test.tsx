@@ -228,7 +228,7 @@ describe('KB-707', () => {
     const { FEED_BOTTOM_PAD, FAB_H } = jest.requireActual('@/features/community/ReviewFeed') as { FEED_BOTTOM_PAD: number; FAB_H: number };
     expect(rf).toMatch(/paddingBottom: FEED_BOTTOM_PAD, flexGrow: 1/);
     expect(rf).toMatch(/const FAB_BOTTOM = 18;/);
-    expect(rf).toMatch(/fab: \{\s*position: 'absolute',\s*right: 14,\s*bottom: FAB_BOTTOM,[\s\S]*?minHeight: FAB_H,/);
+    expect(rf).toMatch(/fab: \{\s*position: 'absolute',\s*right: 14,\s*bottom: 18,[\s\S]*?minHeight: FAB_H,/);
     expect(FAB_H).toBe(48);
     expect(FEED_BOTTOM_PAD).toBeGreaterThanOrEqual(18 + FAB_H + 16);
     // 커뮤니티: 버튼 bottom 18 · 높이 54 → 윗변 72, 끝 여백 96

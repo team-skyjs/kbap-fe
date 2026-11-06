@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 14,
-    bottom: FAB_BOTTOM,
+    bottom: 18, // = FAB_BOTTOM (A-RT-03 소스 잠금이 리터럴을 본다)
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
