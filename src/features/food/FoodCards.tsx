@@ -59,7 +59,7 @@ export function FoodGridCard({
     <Pressable ref={ref} style={[styles.gcard, style]} onPress={onPress} testID={`home-food-${food.foodId}`}>
       <View style={styles.gphoto}>
         {/* P-353 ③(KB-515): 사진 없음/실패 = CardPhoto 내부 기본 이미지(구 IconFood 박스 폐기) */}
-        <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={radius.md} />
+        <CardPhoto uri={food.photoUrl} cutoutUri={food.linked?.imageUrl} recyclingKey={food.foodId} borderRadius={radius.md} />
         {/* 게스트에겐 개인화 뱃지 미렌더 (guest-access-policy §1) */}
         {!guest && (
           <View style={styles.gbadge}>
@@ -120,7 +120,7 @@ export function RecentRow({
   return (
     <Pressable ref={ref} style={styles.rrow} onPress={onPress} testID={`home-recent-${food.foodId}`}>
       <View style={styles.rthumb}>
-        <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={radius.md} />
+        <CardPhoto uri={food.photoUrl} cutoutUri={food.linked?.imageUrl} recyclingKey={food.foodId} borderRadius={radius.md} />
         <View style={styles.rbadge}>
           <RiskBadge state={risk} />
         </View>
@@ -176,7 +176,7 @@ export function TopRatedRow({
       testID={`home-top-rated-${food.foodId}`}
     >
       <View style={styles.rthumb}>
-        <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={radius.md} />
+        <CardPhoto uri={food.photoUrl} cutoutUri={food.linked?.imageUrl} recyclingKey={food.foodId} borderRadius={radius.md} />
         <View style={styles.rbadge}>
           <RiskBadge state={risk} />
         </View>
