@@ -15,6 +15,7 @@ import ChatRoute, { CHAT_READ_RETRY_MS, chatErrorKey, chatRows, chatTime } from 
 import { FLAGS } from '@/lib/flags';
 import { ChatFab, chatFabBottom } from '@/features/chat/ChatFab';
 import { adaptChatMessage, adaptChatPage, adaptChatUnread, chatTimeIso } from '@/lib/api/chatAdapter';
+import { invalidateChat } from '@/lib/data/useChat';
 import { routeForNotificationData } from '@/lib/push/pushAdapter';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { color as C } from '@/lib/theme';
@@ -373,6 +374,36 @@ describe('③ 플로팅 버튼', () => {
     expect(has(r, 'chat-fab')).toBe(true);
     expect(has(r, 'chat-fab-dot')).toBe(false);
     expect(has(r, 'chat-fab-preview')).toBe(false);
+  });
+  it('11/6 운영 실기: 채팅 푸시 수신(invalidateChat) = 미리보기 즉시 새 메시지로', async () => {
+    routeGets(page([]), { unreadCount: 1, lastOperatorMessage: { content: 'old one', createdAt: 'x' } });
+    const r = await mount(<ChatFab activeRoute="index" />);
+    expect(text(r)).toContain('old one');
+    routeGets(page([]), { unreadCount: 2, lastOperatorMessage: { content: 'second message', createdAt: 'x' } });
+    await act(async () => { invalidateChat(lastQc); });
+    await settle();
+    expect(text(r)).toContain('second message');
+  });
+  it('11/6: 백그라운드 = 안읽음 조회 멈춤 → 전경 복귀 때 1회 재조회', async () => {
+    let onChange: (s: string) => void = () => {};
+    const orig = AppState.addEventListener;
+    (AppState as unknown as { addEventListener: unknown }).addEventListener = (_: string, cb: (s: string) => void) => { onChange = cb; return { remove: () => {} }; };
+    try {
+      routeGets(page([]), { unreadCount: 1, lastOperatorMessage: { content: 'before bg', createdAt: 'x' } });
+      const r = await mount(<ChatFab activeRoute="index" />);
+      lastQc.setDefaultOptions({ queries: { retry: false, gcTime: Infinity, staleTime: 60_000 } }); // 앱 queryClient 기본값 — 훅 staleTime 0이 이겨야 복귀 재조회
+      const unreadCalls = () => mockGet.mock.calls.filter((c) => c[0] === '/api/chat/unread').length;
+      const n0 = unreadCalls();
+      await act(async () => { onChange('background'); });
+      await settle();
+      routeGets(page([]), { unreadCount: 2, lastOperatorMessage: { content: 'after fg', createdAt: 'x' } });
+      await act(async () => { onChange('active'); });
+      await settle();
+      expect(unreadCalls()).toBe(n0 + 1);
+      expect(text(r)).toContain('after fg');
+    } finally {
+      (AppState as unknown as { addEventListener: unknown }).addEventListener = orig;
+    }
   });
   it('위치: 탭바 위 18 (전 탭 동일)', () => {
     expect(chatFabBottom(0)).toBe(TABBAR_CONTENT_H + 10 + 18);
