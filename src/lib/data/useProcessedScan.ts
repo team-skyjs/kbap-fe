@@ -39,8 +39,11 @@ export async function scanProcessedLabel(analysisId: string | null, pages: strin
 
 /** KB-969(서버 #542): 사진 한 장 → 서버 비전(종류 판별 + 앞면·성분표 판독). clientRequestId = 촬영 1회당 UUID(= analysisId) —
  *  재시도는 같은 키(같은 사진이면 비전 재호출·상한 차감 없음). 비전은 메뉴판처럼 길다 — 메뉴 v2와 같은 120초. */
-export async function scanProcessedVision(imagePath: string, clientRequestId: string, lang: string): Promise<VisionScanResult> {
-  return adaptVisionScan(await api.post<VisionScanWire>('/api/processed-foods/scan/vision', { imagePath, clientRequestId, lang }, { ...headers, timeoutMs: 120_000 }));
+/** KB-1015(서버 #604): menuFastPathEligible = 첫 사진 단계 신호(다시 찍기 포함 — 서버가 dev 플래그·실험 대상일 때만 메뉴판 바로가기 시도, 그 밖은 무시).
+ *  false = 키 자체를 안 보낸다(한 면 더 body가 현행과 바이트 동일). */
+export async function scanProcessedVision(imagePath: string, clientRequestId: string, lang: string, menuFastPathEligible = false): Promise<VisionScanResult> {
+  const body = menuFastPathEligible ? { imagePath, clientRequestId, lang, menuFastPathEligible: true } : { imagePath, clientRequestId, lang };
+  return adaptVisionScan(await api.post<VisionScanWire>('/api/processed-foods/scan/vision', body, { ...headers, timeoutMs: 120_000 }));
 }
 
 /** 오류 분류 — 어느 것도 차감 0(서버가 차감은 성공 응답의 charged로만 알린다).
