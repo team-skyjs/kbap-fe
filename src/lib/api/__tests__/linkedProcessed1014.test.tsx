@@ -5,12 +5,6 @@
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
 
-const mockImage = jest.fn();
-jest.mock('expo-image', () => ({
-  Image: (p: Record<string, unknown>) => { mockImage(p); return null; },
-}));
-jest.mock('@/components/Skeleton', () => ({ Shimmer: () => null }));
-
 import { adaptLinkedProcessed } from '../linkedProcessed';
 import { mergeResults, photoOnlyResults } from '../scanAdapter';
 import { adaptFoodDetail, DEFAULT_FOOD_IMAGE } from '../foodAdapter';
@@ -18,6 +12,13 @@ import { CardPhoto } from '@/components/CardPhoto';
 import { packagedDetailSource, PACKAGED_DETAIL_SOURCES } from '@/lib/analytics';
 import type { ScanResultWire } from '../scanTypes';
 import type { FoodDetailWire } from '../foodDetailTypes';
+
+// jest.mock은 babel-jest가 import 위로 올린다 — 목이 먼저 걸린다(목 함수는 렌더 때만 읽혀 TDZ 없음)
+const mockImage = jest.fn();
+jest.mock('expo-image', () => ({
+  Image: (p: Record<string, unknown>) => { mockImage(p); return null; },
+}));
+jest.mock('@/components/Skeleton', () => ({ Shimmer: () => null }));
 
 const LINK = { id: 501, name: 'Coca-Cola', nameKo: '코카-콜라', imageUrl: 'https://cdn.kbap.site/pf/501-cut.webp' };
 
