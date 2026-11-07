@@ -1,5 +1,5 @@
 const mockTrack = jest.fn();
-jest.mock('@amplitude/analytics-react-native', () => ({ init: jest.fn(), track: mockTrack }));
+jest.mock('@amplitude/analytics-react-native', () => ({ init: jest.fn(), track: mockTrack, add: jest.fn() }));
 
 test('invalid area events never reach the SDK, valid areas and legacy calls still do', () => {
   const oldKey = process.env.EXPO_PUBLIC_AMPLITUDE_API_KEY;
