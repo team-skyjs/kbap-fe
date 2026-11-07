@@ -18,7 +18,7 @@ class MockIdentify {
 const mockSetUserId = jest.fn();
 const mockReset = jest.fn();
 const mockGetUserId = jest.fn<string | undefined, []>(() => undefined);
-jest.mock('@amplitude/analytics-react-native', () => ({ init: mockInit, track: mockTrack, identify: mockIdentify, Identify: MockIdentify, setUserId: mockSetUserId, reset: mockReset, getUserId: mockGetUserId }));
+jest.mock('@amplitude/analytics-react-native', () => ({ init: mockInit, track: mockTrack, identify: mockIdentify, Identify: MockIdentify, setUserId: mockSetUserId, reset: mockReset, getUserId: mockGetUserId, add: jest.fn() }));
 
 const KEY_NAME = 'EXPO_PUBLIC_AMPLITUDE_API_KEY';
 
@@ -216,7 +216,7 @@ it('어댑터 격리 — analytics.ts가 쓰는 SDK API는 허용 목록뿐 · S
   const fs = jest.requireActual<typeof import('fs')>('fs');
   const src = fs.readFileSync('src/lib/analytics.ts', 'utf8');
   const used = new Set([...src.matchAll(/\bamp\.(\w+)\(/g)].map((m) => m[1]));
-  expect([...used].sort()).toEqual(['Identify', 'getUserId', 'identify', 'init', 'reset', 'setUserId', 'track']);
+  expect([...used].sort()).toEqual(['Identify', 'add', 'getUserId', 'identify', 'init', 'reset', 'setUserId', 'track']);
   const { execSync } = jest.requireActual<typeof import('child_process')>('child_process');
   const importers = execSync("git grep -l \"@amplitude/analytics-react-native\" -- 'src/**/*.ts' 'src/**/*.tsx' ':!src/**/__tests__/**'", { encoding: 'utf8' }).trim().split('\n');
   expect(importers).toEqual(['src/lib/analytics.ts']);

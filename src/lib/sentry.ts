@@ -13,6 +13,7 @@
 import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
 import { isDiagnosticChannel, isProdChannel } from '@/lib/flags';
+import { isTestLabContexts } from '@/lib/testLab';
 
 const DSN = 'https://c6471e5cf050aaa65dd9067d4a119de6@o4511895920574464.ingest.us.sentry.io/4511895936761856';
 
@@ -35,21 +36,11 @@ export function initSentry(): void {
 }
 
 /** P-626: Play 사전 출시 로봇(Firebase Test Lab 가상 기기)의 JS 이벤트를 버린다 — 셀룰러 504 api_5xx가
- *  실사용자 아닌 로봇에서 줄줄이 생겼다(서버 미도달). 공식 판별(Settings.System "firebase.test.lab")은
- *  네이티브 읽기라 지문 회전 → 여기선 DeviceContext 통합이 beforeSend 전에 합쳐 준 네이티브 contexts로 판별.
- *  조건 = Android + 구글 사내 빌드 커널 + 제조사·브랜드 비-Google(실기 Pixel 커널도 android-build@…google.com).
- *  timezone·locale·simulator(false)는 로봇마다 달라 안 씀.
+ *  실사용자 아닌 로봇에서 줄줄이 생겼다(서버 미도달). DeviceContext 통합이 beforeSend 전에 합쳐 준 네이티브 contexts로
+ *  판별(조건 = testLab.ts, KB-1016에서 Amplitude와 공용화).
  *  ponytail: JS 이벤트만 — 네이티브 크래시(Java/NDK)는 JS beforeSend를 안 거친다. 1.0.6 빌드 때 공식 판별로 보강. */
-type DeviceCtx = { os?: { name?: unknown; kernel_version?: unknown }; device?: { manufacturer?: unknown; brand?: unknown } };
 export function isTestLabEvent(event: { contexts?: unknown }): boolean {
-  const c = (event.contexts ?? {}) as DeviceCtx;
-  const low = (v: unknown) => (typeof v === 'string' ? v.toLowerCase() : '');
-  return (
-    low(c.os?.name) === 'android' &&
-    /android-build@[^ )]*\.google\.com/.test(String(c.os?.kernel_version ?? '')) &&
-    low(c.device?.manufacturer) !== 'google' &&
-    low(c.device?.brand) !== 'google'
-  );
+  return isTestLabContexts(event.contexts);
 }
 
 /** 9/5 예진 승인: 5xx 관측 — 경로(쿼리 제거)·status·code 태그만(본문·헤더·PII 0),
