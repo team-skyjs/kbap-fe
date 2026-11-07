@@ -1,4 +1,5 @@
 import { resumeEngagementIdentity, suspendEngagementIdentity } from './engagement/visitRuntime';
+import { detectTestLab } from './testLab';
 import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type EngagementEvent } from './engagement/schema';
 
 /**
@@ -301,6 +302,9 @@ function ensureInit(): boolean {
     // minIdLength 1: Amplitude 서버 기본 최소 id 길이 5 — 회원 번호는 1부터라 1~4자리 회원의 이벤트가 전부 400으로
     // 버려진다(SDK는 재시도 없이 드롭). 옵션을 주면 SDK가 min_id_length를 실어 보낸다. 접두어 방식은 Sentry·서버 로그 대조가 깨져 안 씀.
     amp.init(KEY, undefined, { minIdLength: 1 });
+    // KB-1016: Play 사전 출시 로봇이면 모든 이벤트 드롭(enrichment가 null = 타임라인에서 버림). init은 그대로 동기 —
+    // 판별을 기다리느라 init을 미루면 clearStaleAnalyticsIdentity의 getUserId 잔존 정리가 깨진다. 판별 1회 캐시라 첫 이벤트만 잠깐 대기.
+    amp.add({ name: 'kbap-test-lab-filter', type: 'enrichment', execute: async (e) => ((await detectTestLab()) ? null : e) });
     initialized = true;
   }
   return true;
