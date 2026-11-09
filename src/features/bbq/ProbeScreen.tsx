@@ -18,7 +18,7 @@ import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { SkBar } from '@/components/Skeleton';
 import { color as C } from '@/lib/theme';
-import { LABELS, coverMap, fromXyxy, resizeDims, squareCropToUpright, type Det as BbqDet } from './bbqModel';
+import { LABELS, coverMap, fromXyxy, resizeDims, squareCropToUpright } from './bbqModel';
 import { BBQ_MODELS, createBbqDetector } from './bbqDetector';
 import { runFrame, type BbqTick } from './useBbqDetection';
 import { createGrillGate, createTracker, type Shown } from './bbqTracker';

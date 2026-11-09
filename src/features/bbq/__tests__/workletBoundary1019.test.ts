@@ -15,7 +15,6 @@ function workletsOf(file: string): { name: string; code: string }[] {
     babelrc: false,
     configFile: false,
     presets: ['@babel/preset-typescript'],
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     plugins: [require.resolve('react-native-worklets/plugin')],
   })!.code!;
   return [...out.matchAll(/code: "((?:[^"\\]|\\.)*)"/g)].map((m) => {
@@ -41,7 +40,6 @@ it('워크릿 매개변수 기본값이 클로저 이름을 참조하지 않는�
 
 it('변환된 postprocess를 클로저만 주고 따로 실행 = 결과가 나온다(워크릿 런타임 흉내)', () => {
   const w = workletsOf('src/features/bbq/bbqModel.ts').find((x) => x.name.startsWith('postprocess'))!;
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
   const fn = new Function(`return ${w.code}`)() as (...a: unknown[]) => model.Det[];
   const out = new Float32Array(8400 * 14);
   out.set([150, 0, 250, 100, 0.9]);
