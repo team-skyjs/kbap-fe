@@ -1451,5 +1451,14 @@
     "photoInvalid": "One of the photos couldn't be sent. Please choose another photo.",
     "invalid": "Couldn't send this message. Please check it and try again.",
     "fabCoach": "Get Free Unlimited Scans✨"
+  },
+  "bbqProbe": {
+    "needCamera": "Camera access is needed to try the table guide.",
+    "allowCamera": "Allow camera",
+    "loadingModel": "Loading the model {{pct}}%",
+    "flip": "Flip camera",
+    "backend": "Switch backend",
+    "rotate": "Rotate boxes",
+    "mirror": "Mirror boxes"
   }
 }

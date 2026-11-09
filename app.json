@@ -219,7 +219,8 @@
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "static"
+            "useFrameworks": "static",
+            "deploymentTarget": "17.0"
           },
           "android": {
             "enableProguardInReleaseBuilds": true,
@@ -336,7 +337,9 @@
         {
           "appName": "kbap"
         }
-      ]
+      ],
+      "react-native-blob-util",
+      "@kesha-antonov/react-native-background-downloader"
     ],
     "experiments": {
       "typedRoutes": true,

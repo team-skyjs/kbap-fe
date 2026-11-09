@@ -64,6 +64,16 @@
       "android": {
         "buildType": "apk"
       }
+    },
+    "demo": {
+      "extends": "development",
+      "channel": "demo",
+      "env": {
+        "EXPO_PUBLIC_BE_BASE": "https://dev.kbap.site"
+      },
+      "ios": {
+        "buildConfiguration": "Release"
+      }
     }
   },
   "submit": {
