@@ -136,3 +136,34 @@ export function coverMap(b: Box, srcW: number, srcH: number, viewW: number, view
 export function resizeDims(uw: number, uh: number, long = TUNING.input) {
   return uh >= uw ? { w: Math.round((long * uw) / uh), h: long } : { w: long, h: Math.round((long * uh) / uw) };
 }
+
+/**
+ * P-636 버그 1: expo-asset localUri는 인코딩된 file URL(`Application%20Support`) — 그대로 넘기면 AccessFailed.
+ * file:// 제거 + 퍼센트 디코딩한 파일 경로.
+ */
+export function fileUriToPath(uri: string): string {
+  return decodeURIComponent(uri.replace(/^file:\/\//, ''));
+}
+
+/**
+ * P-636 버그 2: executorch 내장 탐지기 박스는 { xmin, ymin, xmax, ymax }(xyxy) — x1~y2로 읽으면 NaN(사각형 0·라벨 (0,0) 겹침).
+ * 숫자가 아니면 버린다(null).
+ */
+export function fromXyxy(b: { xmin?: unknown; ymin?: unknown; xmax?: unknown; ymax?: unknown }): Box | null {
+  const v = [b.xmin, b.ymin, b.xmax, b.ymax];
+  if (!v.every((n) => typeof n === 'number' && Number.isFinite(n))) return null;
+  const [x1, y1, x2, y2] = v as number[];
+  return { x1: x1!, y1: y1!, x2: x2!, y2: y2! };
+}
+
+/**
+ * COCO 측정 경로: 리사이저가 회전·거울까지 적용한 똑바로 선 프레임(uw×uh)을 가운데 정사각형으로 cover 자른 size×size 입력 →
+ * 똑바로 선 원본 좌표. 이후 coverMap으로 화면에(회전 추가 없음).
+ */
+export function squareCropToUpright(b: Box, size: number, uw: number, uh: number): Box {
+  const s = Math.min(uw, uh);
+  const k = s / size;
+  const ox = (uw - s) / 2;
+  const oy = (uh - s) / 2;
+  return { x1: ox + b.x1 * k, y1: oy + b.y1 * k, x2: ox + b.x2 * k, y2: oy + b.y2 * k };
+}

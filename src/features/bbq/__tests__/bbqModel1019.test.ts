@@ -1,4 +1,4 @@
-import { LABELS, TUNING, coverMap, decodeO2O, letterbox, nmsSameClass, postprocess, resizeDims, unletterbox, type Det } from '../bbqModel';
+import { LABELS, TUNING, coverMap, decodeO2O, fileUriToPath, fromXyxy, letterbox, nmsSameClass, postprocess, resizeDims, squareCropToUpright, unletterbox, type Det } from '../bbqModel';
 
 const COLS = 14;
 function row(box: [number, number, number, number], cls: number, score: number): number[] {
@@ -99,4 +99,42 @@ describe('KB-1019 화면 연결', () => {
     expect(en.bbqProbe.label.leaf).toBe('Leafy wrap');
     expect(Object.values(en.bbqProbe.label).join(' ')).not.toMatch(/pork|beef|samgyeopsal|·/i);
   });
+});
+
+describe('P-636 실기 버그 회귀', () => {
+  it('버그 1: 인코딩된 file URL → 디코딩된 파일 경로(14 Pro 실제 문자열)', () => {
+    const uri = 'file:///var/mobile/Containers/Data/Application/8FB7A98E-EFA6-44AE-81C6-509E649B6F4A/Library/Application%20Support/.expo-internal/7c5f47f4046bb844d1981f2b825430fd.pte';
+    expect(fileUriToPath(uri)).toBe('/var/mobile/Containers/Data/Application/8FB7A98E-EFA6-44AE-81C6-509E649B6F4A/Library/Application Support/.expo-internal/7c5f47f4046bb844d1981f2b825430fd.pte');
+    expect(fileUriToPath('/already/plain path.pte')).toBe('/already/plain path.pte');
+  });
+
+  it('버그 2: executorch 박스는 xmin~ymax — 읽으면 숫자, 옛 x1~y2 모양·NaN은 null', () => {
+    expect(fromXyxy({ xmin: 10, ymin: 20, xmax: 110, ymax: 220 })).toEqual({ x1: 10, y1: 20, x2: 110, y2: 220 });
+    expect(fromXyxy({ x1: 10, y1: 20, x2: 110, y2: 220 } as never)).toBeNull();
+    expect(fromXyxy({ xmin: NaN, ymin: 0, xmax: 1, ymax: 1 })).toBeNull();
+  });
+
+  it('버그 2: 14 Pro 후면(버퍼 1920x1080 left → 똑바로 1080x1920) 정사각형 384 입력 → 화면 393x852 안쪽', () => {
+    const full = squareCropToUpright({ x1: 0, y1: 0, x2: 384, y2: 384 }, 384, 1080, 1920);
+    expect(full).toEqual({ x1: 0, y1: 420, x2: 1080, y2: 1500 });
+    const r = coverMap(full, 1080, 1920, 393, 852, false);
+    const s = 852 / 1920;
+    expect(r.x).toBeCloseTo((393 - 1080 * s) / 2);
+    expect(r.y).toBeCloseTo(420 * s);
+    expect(r.w).toBeCloseTo(1080 * s);
+    expect(r.h).toBeCloseTo(1080 * s);
+    // 가운데 작은 물체는 화면 가운데 근처
+    const c = coverMap(squareCropToUpright({ x1: 182, y1: 182, x2: 202, y2: 202 }, 384, 1080, 1920), 1080, 1920, 393, 852, false);
+    expect(c.x + c.w / 2).toBeCloseTo(393 / 2, 0);
+    expect(c.y + c.h / 2).toBeCloseTo(852 / 2, 0);
+  });
+});
+
+it('P-636 소스 잠금: 로더는 fileUriToPath, 측정 화면은 fromXyxy 경유', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { readFileSync } = require('fs') as typeof import('fs');
+  expect(readFileSync('src/features/bbq/bbqDetector.ts', 'utf8')).toContain('loadModel)(fileUriToPath(uri))');
+  const probe = readFileSync('src/features/bbq/ProbeScreen.tsx', 'utf8');
+  expect(probe).toContain('fromXyxy(d.box)');
+  expect(probe).not.toMatch(/box\.x1|as unknown as \{ x1/);
 });

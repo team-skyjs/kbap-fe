@@ -1,7 +1,7 @@
 /**
  * KB-1019 1일 차 관문: 후면·전면 카메라 + executorch 기본 탐지 모델(YOLO26 nano 384, COCO) + Skia 박스.
  * 화면에 FPS·프레임당 추론 ms를 띄워 실기 측정값을 읽는다. 장면 구현 아님.
- * 회전·거울은 실기 보정 토글(boxMap 참고).
+ * 박스: 리사이저가 회전·거울을 적용한 똑바로 선 정사각형(cover) 좌표 → squareCropToUpright → coverMap(P-636). 거울 토글만 보정 노브.
  * P-630: 모델 토글로 자체 모델 v1(bbq) 선택 — 이름표 유지·고기 다수결·불판 조건(bbqTracker), 추론·후처리 ms 따로 표시.
  */
 import { useEffect, useRef, useState } from 'react';
@@ -18,8 +18,7 @@ import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { SkBar } from '@/components/Skeleton';
 import { color as C } from '@/lib/theme';
-import { addTurns, mapBox, type Orientation } from './boxMap';
-import { LABELS, coverMap, resizeDims, type Det as BbqDet } from './bbqModel';
+import { LABELS, coverMap, fromXyxy, resizeDims, squareCropToUpright, type Det as BbqDet } from './bbqModel';
 import { BBQ_MODEL, createBbqDetector } from './bbqDetector';
 import { createGrillGate, createTracker, type Shown } from './bbqTracker';
 
@@ -32,7 +31,9 @@ const VARIANTS = {
 } as const;
 type VariantKey = keyof typeof VARIANTS;
 
-type Det = { label: string; confidence: number; box: { x1: number; y1: number; x2: number; y2: number } };
+type Orientation = 'up' | 'right' | 'down' | 'left';
+/** executorch 내장 탐지기 출력 — box는 xyxy({ xmin, ymin, xmax, ymax }), SIZE 정사각형 입력 좌표 */
+type Det = { label: string; confidence: number; box: { xmin?: number; ymin?: number; xmax?: number; ymax?: number } };
 type Tick = { dets: Det[]; ms: number; w: number; h: number; o: Orientation; at: number };
 type BbqTick = { dets: BbqDet[]; inferMs: number; postMs: number; at: number; uw: number; uh: number };
 
@@ -42,7 +43,6 @@ export function ProbeScreen() {
   const { hasPermission, requestPermission } = useCameraPermission();
   const [position, setPosition] = useState<'back' | 'front'>('back');
   const [variant, setVariant] = useState<VariantKey>('coreml');
-  const [turns, setTurns] = useState(0);
   const [mirrorFix, setMirrorFix] = useState(false);
   const [view, setView] = useState({ w: 0, h: 0 });
   const [tick, setTick] = useState<Tick | null>(null);
@@ -150,12 +150,28 @@ export function ProbeScreen() {
   // 서버 문구 아님 — 로컬 네이티브(모델 로드·카메라) 오류 원문. development·demo 채널 전용 진단 화면이라 노출(관문 보고용)
   const modelError = model === 'bbq' ? bbq.error : detector.error;
   const errText = modelError ? String(modelError) : camError;
-  const orientation = tick ? addTurns(tick.o, turns) : 'up';
-  const mirror = (position === 'front') !== mirrorFix;
+  // 버퍼 크기(tick.w×h)는 회전 전 — 리사이저 출력은 똑바로 선 쪽(옆으로 누운 방향이면 가로세로 교환)
+  const sideways = tick != null && (tick.o === 'right' || tick.o === 'left');
+  const uw = tick ? (sideways ? tick.h : tick.w) : 0;
+  const uh = tick ? (sideways ? tick.w : tick.h) : 0;
   const rects =
     tick && view.w > 0
-      ? tick.dets.map((d) => ({ d, r: mapBox({ box: d.box, inputSize: SIZE, frameW: tick.w, frameH: tick.h, orientation, viewW: view.w, viewH: view.h, mirror }) }))
+      ? tick.dets.flatMap((d) => {
+          const b = fromXyxy(d.box);
+          if (!b) return [];
+          return [{ d, b, r: coverMap(squareCropToUpright(b, SIZE, uw, uh), uw, uh, view.w, view.h, mirrorFix) }];
+        })
       : [];
+  // P-636 진단 줄: 첫 박스의 원본(입력) 좌표 → 화면 좌표. 스크린샷 한 장으로 매핑 확인
+  const f = (n: number) => Math.round(n);
+  const firstBbq = model === 'bbq' ? shown[0] : undefined;
+  const diag =
+    model === 'coco'
+      ? rects[0] && `box0 in ${f(rects[0].b.x1)},${f(rects[0].b.y1)},${f(rects[0].b.x2)},${f(rects[0].b.y2)} /${SIZE} -> view ${f(rects[0].r.x)},${f(rects[0].r.y)} ${f(rects[0].r.w)}x${f(rects[0].r.h)} of ${f(view.w)}x${f(view.h)}`
+      : firstBbq && (() => {
+          const r = coverMap(firstBbq, rd.w, rd.h, view.w, view.h, mirrorFix);
+          return `box0 ${LABELS[firstBbq.cls]} in ${f(firstBbq.x1)},${f(firstBbq.y1)},${f(firstBbq.x2)},${f(firstBbq.y2)} /${rd.w}x${rd.h} -> view ${f(r.x)},${f(r.y)} ${f(r.w)}x${f(r.h)}`;
+        })();
 
   return (
     <View style={styles.root} onLayout={(e) => setView({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
@@ -215,6 +231,7 @@ export function ProbeScreen() {
             <Text style={styles.hud}>{t('bbqProbe.loadingModel', { pct: Math.round(detector.downloadProgress * 100) })}</Text>
           </View>
         )}
+        {diag ? <Text style={styles.hud} testID="bbq-probe-diag">{diag}</Text> : null}
         {errText && <Text style={styles.err}>{errText}</Text>}
       </View>
 
@@ -222,7 +239,6 @@ export function ProbeScreen() {
         <Btn testID="bbq-flip" variant="ghost" onPress={() => setPosition((p) => (p === 'back' ? 'front' : 'back'))}>{t('bbqProbe.flip')}</Btn>
         <Btn testID="bbq-model" variant="ghost" onPress={() => setModel((m) => (m === 'coco' ? 'bbq' : 'coco'))}>{t('bbqProbe.model')}</Btn>
         <Btn testID="bbq-backend" variant="ghost" onPress={() => setVariant((v) => (v === 'coreml' ? 'xnnpack' : 'coreml'))}>{t('bbqProbe.backend')}</Btn>
-        <Btn testID="bbq-rotate" variant="ghost" onPress={() => setTurns((n) => (n + 1) % 4)}>{t('bbqProbe.rotate')}</Btn>
         <Btn testID="bbq-mirror" variant="ghost" onPress={() => setMirrorFix((m) => !m)}>{t('bbqProbe.mirror')}</Btn>
       </View>
     </View>

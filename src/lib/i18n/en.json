@@ -1458,7 +1458,6 @@
     "loadingModel": "Loading the model {{pct}}%",
     "flip": "Flip camera",
     "backend": "Switch backend",
-    "rotate": "Rotate boxes",
     "mirror": "Mirror boxes",
     "model": "Switch model",
     "loadingBbq": "Loading the table model",

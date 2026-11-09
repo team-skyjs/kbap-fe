@@ -6,7 +6,7 @@
 import { Asset } from 'expo-asset';
 import { loadModel, tensor, wrapAsync } from 'react-native-executorch';
 import { createImagePreprocessor, type ImageBuffer } from 'react-native-executorch/cv';
-import { TUNING, postprocess, type Det } from './bbqModel';
+import { TUNING, fileUriToPath, postprocess, type Det } from './bbqModel';
 
 // 자산 모듈 id는 require로만 얻는다(Metro 자산)
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -22,7 +22,7 @@ export async function createBbqDetector(cfg: { module: number; attempt?: number 
   const t0 = Date.now();
   const [asset] = await Asset.loadAsync(cfg.module);
   const uri = asset?.localUri ?? asset?.uri ?? '';
-  const model = await wrapAsync(loadModel)(uri.replace(/^file:\/\//, ''));
+  const model = await wrapAsync(loadModel)(fileUriToPath(uri)); // P-636: 인코딩된 file URL 그대로면 AccessFailed
   const out = tensor('float32', [1, ROWS, COLS]);
   const pre = createImagePreprocessor(
     { resizeMode: 'letterbox', interpolation: 'linear', normalizeOpts: { alpha: 1 / 255, beta: 0 }, padValue: TUNING.padValue },
