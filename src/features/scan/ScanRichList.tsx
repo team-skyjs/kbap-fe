@@ -23,6 +23,12 @@ import { Pressable } from '@/components/Pressable';
 import { openWebPage } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow, type RiskState, radius } from '@/lib/theme';
+import type { AiPendingItem } from '@/lib/api/scanAdapter';
+import { SkBar } from '@/components/Skeleton';
+import { SpicePeppers } from '@/components/SpicePeppers';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming, Easing, type SharedValue } from 'react-native-reanimated';
+import { scanCartKey } from './scanCartStore';
+import { restrictionLabel } from '@/lib/onboarding/data';
 
 /** P-171 ① → P-223: 칩 폭 근사 — 통합 칩 메트릭(패딩 8×2·보더·RiskMark 11) 기반.
  *  CJK ≈ 폰트폭, 라틴/숫자 ≈ 절반. ponytail: 문자폭 근사 휴리스틱 — 오차는 이르게
@@ -54,6 +60,12 @@ import { BrandGoogleMark, D4Minus } from '@/components/design4Assets';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw, type ResultDish } from '@/lib/scan/segmentMenu';
+
+/** KB-992: 'AI 추정' 섹션 한 줄 — ai = null이면 도착 전(스켈레톤). */
+export interface AiRow {
+  dish: ResultDish;
+  ai: AiPendingItem | null;
+}
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
 
@@ -95,27 +107,54 @@ export function ScanRichList({
   onOpen,
   onMarkPress,
   onClosestMatch,
+  aiRows = [],
+  onOpenAi,
+  addOns = [],
   t,
 }: {
   dishes: ResultDish[];
   currency: string;
   fx?: ServerFx; // P-242: v2 서버 실환율(undefined = v1 테이블)
-  cart: ReadonlyMap<number, number>;
-  onAdd: (d: ResultDish) => void;
-  onRemove: (d: ResultDish) => void;
+  cart: ReadonlyMap<string, number>;
+  /** KB-1006: opt = 수량 옵션 index(옵션 없는 줄 = 생략) — 카트 키 scanCartKey(itemId, opt) */
+  onAdd: (d: ResultDish, opt?: number) => void;
+  onRemove: (d: ResultDish, opt?: number) => void;
   onOpen: (d: ResultDish) => void;
   /** P-149: 행 RiskMark 탭 = 코치마크 재열람(P-134 표면 — 캡슐 철거 후 리스트가 담당) */
   onMarkPress?: () => void;
   /** KB-789: 대체 행(substituted) Closest match 칩 탭 → 설명 카드(행 탭 = 상세 그대로) */
   onClosestMatch?: (d: ResultDish) => void;
+  /** KB-992 → KB-1006: DB 매칭 목록 아래 'AI 추정' 섹션 — 일반 줄과 같은 RichRow(가격·담기·맵기), 탭 = AI 상세 시트 */
+  aiRows?: AiRow[];
+  onOpenAi?: (r: AiRow) => void;
+  /** P-616(S-970): 주문 옵션·단일 재료어(notMenu) — 맨 아래 칩 블록. 배지·사진·탭·담기 없음 */
+  addOns?: ResultDish[];
   t: TFn;
 }) {
   return (
     <View style={styles.body}>
       {/* P-138 ④: 카테고리 헤더 없음 — 스캔 API에 카테고리 부재 → 플랫 리스트 */}
       {dishes.map((d) => (
-        <RichRow key={d.itemId} dish={d} currency={currency} fx={fx} qty={cart.get(d.itemId) ?? 0} onAdd={() => onAdd(d)} onRemove={() => onRemove(d)} onOpen={() => onOpen(d)} onMarkPress={onMarkPress} onClosestMatch={onClosestMatch ? () => onClosestMatch(d) : undefined} t={t} />
+        <RichRow key={d.itemId} dish={d} currency={currency} fx={fx} cart={cart} onAdd={(o) => onAdd(d, o)} onRemove={(o) => onRemove(d, o)} onOpen={() => onOpen(d)} onMarkPress={onMarkPress} onClosestMatch={onClosestMatch ? () => onClosestMatch(d) : undefined} t={t} />
       ))}
+
+      {aiRows.length > 0 && (
+        <View testID="ai-section">
+          <View style={styles.aiHead}>
+            <View style={styles.aiHeadTitleRow}>
+              <IconSparkles size={16} color={C.primary} />
+              <Text style={styles.aiHeadTitle}>{t('scan.aiSectionTitle')}</Text>
+            </View>
+            <Text style={styles.aiHeadNote}>{t('scan.aiSectionNote')}</Text>
+          </View>
+          {/* KB-1006: 도착 전(ai null)도 같은 줄 — 이름·가격·담기는 바로, 사진 자리만 생성 중 점·판정 자리만 스켈레톤(레퍼런스 emo) */}
+          {aiRows.map((r) => (
+            <RichRow key={r.dish.itemId} dish={r.dish} ai={r.ai} currency={currency} fx={fx} cart={cart} onAdd={(o) => onAdd(r.dish, o)} onRemove={(o) => onRemove(r.dish, o)} onOpen={r.ai ? () => onOpenAi?.(r) : undefined} t={t} />
+          ))}
+        </View>
+      )}
+
+      {addOns.length > 0 && <AddOnBlock items={addOns} t={t} />}
 
       <Text style={styles.footNote}>{t('scan.listFootNote')}</Text>
     </View>
@@ -124,9 +163,10 @@ export function ScanRichList({
 
 function RichRow({
   dish,
+  ai,
   currency,
   fx,
-  qty,
+  cart,
   onAdd,
   onRemove,
   onOpen,
@@ -135,16 +175,19 @@ function RichRow({
   t,
 }: {
   dish: ResultDish;
+  /** KB-1006: undefined = 일반 줄 · null = AI 추정 도착 전 · 값 = AI 추정 줄(배지 caution|unable만 — safe 0) */
+  ai?: AiPendingItem | null;
   currency: string;
   fx?: ServerFx;
-  qty: number;
-  onAdd: () => void;
-  onRemove: () => void;
-  onOpen: () => void;
+  cart: ReadonlyMap<string, number>;
+  onAdd: (opt?: number) => void;
+  onRemove: (opt?: number) => void;
+  onOpen?: () => void;
   onMarkPress?: () => void;
   onClosestMatch?: () => void;
   t: TFn;
 }) {
+  const isAi = ai !== undefined;
   // 매칭 항목만 상세 프리페치 — 설명·사진·기피 재료(개인화 ingredients)
   const detail = useFoodDetail(dish.matched && dish.foodId ? dish.foodId : '');
   const food = dish.matched ? detail.data : undefined;
@@ -161,11 +204,50 @@ function RichRow({
     : (food?.ingredients ?? [])
         .filter((i) => i.risk === 'danger' || i.risk === 'caution')
         .map((i) => ({ code: i.code, name: i.name, risk: i.risk }));
-  const warns = [...warnSource].sort((a, b) => (a.risk === b.risk ? 0 : a.risk === 'danger' ? -1 : 1));
-  const converted = dish.priceKrw != null ? convertKrw(dish.priceKrw, currency, fx) : null; // P-242: v2 = 실환율
-  const added = qty > 0;
+  const warns: WarnItem[] = isAi
+    ? aiWarns(ai)
+    : [...warnSource].sort((a, b) => (a.risk === b.risk ? 0 : a.risk === 'danger' ? -1 : 1));
+  const spice = isAi ? ai?.spice ?? 0 : dish.spice ?? 0; // KB-1006: 일반 줄도(예진 승인) — 0 = 표시 안 함
+  const id = dish.itemId;
 
   const thumb = dish.imageUrl ?? (dish.matched ? food?.photoUrl ?? null : null);
+  if (isAi) {
+    const ko = ai?.koreanName ?? dish.koreanName ?? dish.rawMenuName;
+    const name = ai?.name ?? dish.displayName ?? ko;
+    return (
+      <Pressable style={styles.row} onPress={onOpen} disabled={!onOpen} testID={ai ? `ai-${id}` : `ai-pending-${id}`}>
+        <View style={styles.thumbWrap}>
+          <AiThumb ai={ai} itemId={id} t={t} />
+          {!!ai && (
+            <View style={styles.thumbBadge} testID={`ai-badge-${id}`}>
+              <RiskBadge state={ai.risk} />
+            </View>
+          )}
+        </View>
+        <View style={styles.textCol}>
+          {!!ko && ko !== name && <Text style={styles.nameSubKo} numberOfLines={1}>{ko}</Text>}
+          <Text style={styles.nameTitle} numberOfLines={1}>{name}</Text>
+          {ai ? (
+            <>
+              <View style={styles.closestChip} testID={`ai-chip-${id}`}>
+                <IconSparkles size={12} color={C.primary} />
+                <Text style={styles.closestChipText} numberOfLines={1}>{t('scan.aiSectionTitle')}</Text>
+              </View>
+              {!!ai.description && <Text style={styles.desc} numberOfLines={1}>{ai.description}</Text>}
+            </>
+          ) : (
+            <View style={{ gap: 8, marginTop: 4 }} testID={`ai-sk-${id}`}>
+              <SkBar w={140} />
+              <SkBar w={90} />
+            </View>
+          )}
+          {spice > 0 && <View testID={`spice-${id}`}><SpicePeppers rank={spice} size={14} /></View>}
+          <WarnChips warns={warns} testID={`ai-warn-${id}`} moreTestID={`ai-warn-more-${id}`} />
+          <PriceAndAdd dish={dish} currency={currency} fx={fx} cart={cart} onAdd={onAdd} onRemove={onRemove} />
+        </View>
+      </Pressable>
+    );
+  }
   return (
     <Pressable style={styles.row} onPress={onOpen} testID={`rich-${dish.itemId}`}>
       {/* KB-432 §1-1(4150:16254): 좌측 썸네일 100 r4 + RiskBadge(@3,0) — 배지 탭 = 코치 재열람.
@@ -174,7 +256,9 @@ function RichRow({
           회색 박스가 되던 결함(9/10 실기). */}
       <View style={styles.thumbWrap}>
         <View style={styles.thumb}>
-          <CardPhoto uri={thumb} borderRadius={radius.md} />
+          {/* QA #428: 행 key = itemId(스캔마다 0부터 재사용) → 다시 찍으면 같은 인스턴스가 직전 스캔 사진을 ~0.5초 보여 줬다.
+              recyclingKey가 바뀌면 expo-image가 옛 사진을 즉시 비운다 — 매칭 = foodId(상세 로딩 중 thumb null→URL로 깜빡이지 않게), 미매칭 = thumb. */}
+          <CardPhoto uri={thumb} cutoutUri={dish.linked?.imageUrl} cutoutInset={4} recyclingKey={dish.foodId ?? thumb ?? undefined} borderRadius={radius.md} /* KB-1014: 대표 편의점 음식 누끼 우선 */ />
         </View>
         <Pressable style={styles.thumbBadge} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
           <RiskBadge state={dish.risk} />
@@ -221,6 +305,8 @@ function RichRow({
         {dish.matched && !!food?.description && (
           <Text style={styles.desc} numberOfLines={1} testID={`desc-${dish.itemId}`}>{food.description}</Text>
         )}
+        {/* KB-1006: 맵기(고추 ceil(s/2)개) — 일반 줄도 results[].spiciness(예진 승인) */}
+        {spice > 0 && <View testID={`spice-${id}`}><SpicePeppers rank={spice} size={14} /></View>}
         {/* 기피 경고 — 칩 1줄(들어가는 만큼 + "+n") · KB-914: 공용 WarnChips(가공식품 후보 줄과 같은 부품) */}
         <WarnChips warns={warns} testID={`warn-${dish.itemId}`} moreTestID={`warn-more-${dish.itemId}`} />
         {/* P-226 ⑤: 미등록 행 — 등록 예정 안내 + 외부 검색 딥링크(구글/네이버, 한글 키워드) */}
@@ -243,53 +329,181 @@ function RichRow({
             </View>
           </View>
         )}
-        {/* P-366 ②(KB-529): rightCol 폐기 — 텍스트 열 전폭 + 하단 행(좌 가격/우 담기,
-            **항상 렌더** — 가격 없어도 담기 가능). 스테퍼/add 스타일·동작·cart 무변. */}
-        <View style={styles.bottomRow}>
-          {dish.priceKrw != null ? (
-            <Text style={[styles.price, { flexShrink: 1, flexWrap: 'wrap' }]}>
-              {/* 시안(16254): 환산가 선행 — convertKrw의 '= ' 접두(P-249, 후행 표기용)는 표시에서 제거 */}
-              {converted ? <Text style={styles.priceConv}>{converted.replace(/^= /, '')} </Text> : null}
-              {formatKrw(dish.priceKrw)}
-            </Text>
-          ) : (
-            <View />
-          )}
-          <View style={styles.addSlot} testID={`slot-${dish.itemId}`}>
-            {added ? (
-              <View style={styles.stepper} testID={`stepper-${dish.itemId}`}>
-                <Pressable hitSlop={10} onPress={onRemove} testID={`dec-${dish.itemId}`}>
-                  <D4Minus size={16} color={C.ink} />
-                </Pressable>
-                <Text style={styles.qty}>{qty}</Text>
-                <Pressable hitSlop={10} onPress={onAdd} testID={`inc-${dish.itemId}`}>
-                  <IconPlus size={16} color={C.ink} />
-                </Pressable>
-              </View>
-            ) : (
-              <Pressable style={styles.addBtn} hitSlop={12} onPress={onAdd} testID={`add-${dish.itemId}`}>
-                <IconPlus size={24} color={C.ink} />
-              </Pressable>
-            )}
-          </View>
-        </View>
+        {/* P-366 ②(KB-529): rightCol 폐기 — 텍스트 열 전폭 + 하단 행(좌 가격/우 담기, **항상 렌더** — 가격 없어도 담기 가능).
+            KB-1006: AI 줄과 공용(PriceAndAdd) — 수량 옵션이면 옵션마다 가격·담기 한 줄 */}
+        <PriceAndAdd dish={dish} currency={currency} fx={fx} cart={cart} onAdd={onAdd} onRemove={onRemove} />
       </View>
     </Pressable>
   );
 }
 
+/** KB-1006: 가격 줄 + 담기 — 옵션 없음 = 좌 가격(환산 선행)/우 담기 1줄(P-366 ②), 옵션 = 옵션마다 "라벨 가격 · 담기" 한 줄씩
+ *  (가운데 점 금지 — 줄로 나눈다). 담기 키 = scanCartKey(itemId, 옵션 index). 슬롯 프레임 불변(P-103) */
+function PriceAndAdd({ dish, currency, fx, cart, onAdd, onRemove }: { dish: ResultDish; currency: string; fx?: ServerFx; cart: ReadonlyMap<string, number>; onAdd: (opt?: number) => void; onRemove: (opt?: number) => void }) {
+  const id = dish.itemId;
+  const opts = dish.priceOptions;
+  if (opts && opts.length >= 2) {
+    return (
+      <View style={styles.optList} testID={`opts-${id}`}>
+        {opts.map((o, i) => (
+          <View key={i} style={styles.bottomRowOpt} testID={`opt-${id}-${i}`}>
+            <Text style={[styles.price, { flexShrink: 1, flexWrap: 'wrap' }]}>
+              <Text style={styles.optLabel}>{o.label} </Text>
+              <PriceText krw={o.priceKrw} currency={currency} fx={fx} />
+            </Text>
+            <AddSlot qty={cart.get(scanCartKey(id, i)) ?? 0} onAdd={() => onAdd(i)} onRemove={() => onRemove(i)} tid={`${id}-o${i}`} />
+          </View>
+        ))}
+      </View>
+    );
+  }
+  return (
+    <View style={styles.bottomRow}>
+      {dish.priceKrw != null ? (
+        <Text style={[styles.price, { flexShrink: 1, flexWrap: 'wrap' }]}>
+          <PriceText krw={dish.priceKrw} currency={currency} fx={fx} />
+        </Text>
+      ) : (
+        <View />
+      )}
+      <AddSlot qty={cart.get(scanCartKey(id)) ?? 0} onAdd={() => onAdd()} onRemove={() => onRemove()} tid={String(id)} />
+    </View>
+  );
+}
+
+/** KB-1006: 가격 한 줄 텍스트(환산 선행 + ₩) — AI 상세 시트용(줄 안 스타일 분리가 필요 없는 곳) */
+export function priceLineText(krw: number, currency: string, fx?: ServerFx): string {
+  const c = convertKrw(krw, currency, fx);
+  return `${c ? `${c.replace(/^= /, '')} ` : ''}${formatKrw(krw)}`;
+}
+
+/** 시안(16254): 환산가 선행 — convertKrw의 '= ' 접두(P-249, 후행 표기용)는 표시에서 제거. P-242: v2 = 실환율 */
+function PriceText({ krw, currency, fx }: { krw: number; currency: string; fx?: ServerFx }) {
+  const converted = convertKrw(krw, currency, fx);
+  return (
+    <>
+      {converted ? <Text style={styles.priceConv}>{converted.replace(/^= /, '')} </Text> : null}
+      {formatKrw(krw)}
+    </>
+  );
+}
+
+/** 담기 슬롯 — [+]와 스테퍼가 같은 풋프린트(RIGHT_COL_W × ADD_SLOT_H). testID 접미 tid = itemId(옵션이면 itemId-o{i}) */
+function AddSlot({ qty, onAdd, onRemove, tid }: { qty: number; onAdd: () => void; onRemove: () => void; tid: string }) {
+  return (
+    <View style={styles.addSlot} testID={`slot-${tid}`}>
+      {qty > 0 ? (
+        <View style={styles.stepper} testID={`stepper-${tid}`}>
+          <Pressable hitSlop={10} onPress={onRemove} testID={`dec-${tid}`}>
+            <D4Minus size={16} color={C.ink} />
+          </Pressable>
+          <Text style={styles.qty}>{qty}</Text>
+          <Pressable hitSlop={10} onPress={onAdd} testID={`inc-${tid}`}>
+            <IconPlus size={16} color={C.ink} />
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable style={styles.addBtn} hitSlop={12} onPress={onAdd} testID={`add-${tid}`}>
+          <IconPlus size={24} color={C.ink} />
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+type WarnItem = { code: string; name: string; risk: RiskState | 'neutral' };
+
+/** KB-1006: AI 칩 = 추정 재료 전체 — 회원 겹침(avoidCodes)은 caution(형태+색, 앞), 나머지는 중립 칩(마크 없음). 도착 전 = 없음 */
+function aiWarns(ai: AiPendingItem | null | undefined): WarnItem[] {
+  if (!ai) return [];
+  const hit = new Set(ai.avoidCodes);
+  return [
+    ...ai.avoidCodes.map((code) => ({ code, name: restrictionLabel(code), risk: 'caution' as const })),
+    ...ai.estimatedCodes.filter((c) => !hit.has(c)).map((code) => ({ code, name: restrictionLabel(code), risk: 'neutral' as const })),
+  ];
+}
+
+/** KB-1006: AI 줄 사진 자리 — 생성 중·도착 전 = 연한 틴트 + 점 3개(레퍼런스 emo), ready = 생성 사진(+ 'AI 생성' 칩), none = 기본 이미지 */
+export function AiThumb({ ai, itemId, t, size = 118 }: { ai: AiPendingItem | null | undefined; itemId: number; t: TFn; size?: number | '100%' }) {
+  const box = { width: size, height: typeof size === 'number' ? size : 180 } as const;
+  if (!ai || ai.image === 'generating') {
+    return <GeneratingPhoto style={box} label={t('scan.aiPhotoGenerating')} testID={`ai-gen-${itemId}`} />;
+  }
+  return (
+    <View style={[styles.thumb, box]}>
+      <CardPhoto uri={ai.image === 'ready' ? ai.imageUrl : null} recyclingKey={ai.pendingId} borderRadius={radius.md} />
+      {ai.image === 'ready' && ai.aiImage && (
+        <View style={styles.aiPhotoChip} testID={`ai-photo-chip-${itemId}`}>
+          <Text style={styles.aiPhotoChipText} numberOfLines={1}>{t('scan.aiGeneratedPhoto')}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+/** KB-1006: 사진 생성 중 — 점 3개가 차례로 밝아진다(1.2초 주기). 모션 줄이기 = 정적 점. 네트워크 로딩(CardPhoto shimmer)과 다른 상태 */
+const DOT_MS = 1200;
+function GeneratingPhoto({ style, label, testID }: { style: object; label: string; testID: string }) {
+  const reduced = useReducedMotion();
+  const p = useSharedValue(0);
+  React.useEffect(() => {
+    if (reduced) return;
+    p.set(withRepeat(withTiming(1, { duration: DOT_MS, easing: Easing.linear }), -1, false));
+  }, [reduced, p]);
+  return (
+    <View style={[styles.genBox, style]} accessible accessibilityLabel={label} testID={testID}>
+      <View style={styles.genDots}>
+        {[0, 1, 2].map((i) => (
+          <GenDot key={i} i={i} p={p} still={reduced} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function GenDot({ i, p, still }: { i: number; p: SharedValue<number>; still: boolean }) {
+  const a = useAnimatedStyle(() => {
+    if (still) return { opacity: 0.6 };
+    // 점 i는 주기의 i/3 지점에서 가장 밝다 — 원형 거리 0 → 1, 1/3 이상 → 0.25
+    const x = (p.get() - i / 3 + 1) % 1;
+    const near = Math.min(x, 1 - x);
+    return { opacity: Math.max(0.25, 1 - near * 3) };
+  });
+  return <Animated.View style={[styles.genDot, a]} />;
+}
+
+/** P-616(S-970): "추가·옵션" — 판정 대상이 아닌 주문 옵션·단일 재료어(사리·추가·소스·곱빼기 …). 원문 이름 칩(가격 있으면 칩 안 ₩,
+ *  가운데 점 없이 간격) + "직원에게 확인" 1줄. 배지·Unknown·사진·탭·담기 없음 — 안전 단정 문구 금지(헌법 III: 회피 재료가 든 옵션이 있다) */
+function AddOnBlock({ items, t }: { items: ResultDish[]; t: TFn }) {
+  return (
+    <View style={styles.addOns} testID="addons">
+      <Text style={styles.addOnsTitle}>{t('scan.addOnsTitle')}</Text>
+      <View style={styles.addOnChips}>
+        {items.map((d) => (
+          <View key={d.itemId} style={styles.addOnChip} testID={`addon-${d.itemId}`}>
+            <Text style={styles.addOnName}>{d.koreanName ?? d.rawMenuName}</Text>
+            {d.priceKrw != null && <Text style={styles.addOnPrice}>{formatKrw(d.priceKrw)}</Text>}
+          </View>
+        ))}
+      </View>
+      <Text style={styles.addOnsNote}>{t('scan.addOnsNote')}</Text>
+    </View>
+  );
+}
+
 /** 기피 경고 칩 1줄(KB-432 §1-1 · P-171 접기 · P-223 색+형태) — 메뉴판 결과 줄과 가공식품 후보 줄(KB-914 R-138)이 같이 쓴다.
  *  warns는 호출측이 danger 우선으로 정렬해 넘긴다. 칩 = 마크 16 + 이름 · 넘치면 "+n" */
-export function WarnChips({ warns, testID, moreTestID }: { warns: { code: string; name: string; risk: RiskState }[]; testID: string; moreTestID: string }) {
+export function WarnChips({ warns, testID, moreTestID }: { warns: { code: string; name: string; risk: RiskState | 'neutral' }[]; testID: string; moreTestID: string }) {
   const [warnW, setWarnW] = React.useState(0);
   const { shown, rest } = fitAvoidChips(warns, warnW);
   if (warns.length === 0) return null;
   return (
     <View style={styles.warnWrap} testID={testID} onLayout={(e) => setWarnW(e.nativeEvent.layout.width)}>
       {shown.map((w) => (
-        <View key={w.code} style={styles.warnChip}>
-          <RiskMark state={w.risk} size={16} />
-          <Text style={styles.warnChipText} numberOfLines={1}>{w.name}</Text>
+        // KB-1006: 중립 = 회원 회피와 무관한 추정 재료 — 마크 없이 회색 글자(경고와 형태로 구분)
+        <View key={w.code} style={[styles.warnChip, w.risk === 'neutral' && styles.warnChipNeutral]} testID={`chip-${w.risk}-${w.code}`}>
+          {w.risk !== 'neutral' && <RiskMark state={w.risk} size={16} />}
+          <Text style={w.risk === 'neutral' ? styles.warnChipTextNeutral : styles.warnChipText} numberOfLines={1}>{w.name}</Text>
         </View>
       ))}
       {rest > 0 && (
@@ -326,7 +540,12 @@ const styles = StyleSheet.create({
   // KB-789(14289:8235): Closest match 칩 — primary 12% 틴트 · pad 2/8 · pill · 11/600 primary. 보더 없음(상태 전환 없는 정적 칩).
   closestChip: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 8, borderRadius: radius.pill, backgroundColor: 'rgba(255,113,52,0.12)' },
   closestChipText: { fontSize: 12, fontWeight: '600', color: C.primary },
-  body: { paddingHorizontal: 20, paddingBottom: 120 }, // A-SC-05(KB-486)
+  body: { paddingHorizontal: 20, paddingBottom: 120 },
+  // KB-992: 'AI 추정' 섹션 머리 — 위 목록과 구분선 + sparkles 16 + 제목 + 안내 1~2줄
+  aiHead: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: 20, gap: 4 },
+  aiHeadTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  aiHeadTitle: { fontSize: 16, fontWeight: '700', color: '#2F3137' },
+  aiHeadNote: { fontSize: 13, lineHeight: 18, color: C.ink3 }, // A-SC-05(KB-486)
   // P-160 B안(.bnrB 전사): surface2 바탕 + 하단 보더 + 대문자 캡션 + 칩 스트립
   bar: { backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: C.line, paddingTop: 10, paddingBottom: 11, paddingHorizontal: 16 },
   barCap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -351,6 +570,20 @@ const styles = StyleSheet.create({
   // P-223: 통합 칩(색+형태) — 구 avoidRow 섹션 스타일 대체
   warnChip: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 26, borderWidth: 1, borderColor: C.line, borderRadius: radius.pill, paddingVertical: 4, paddingLeft: 3, paddingRight: 6, backgroundColor: '#FFFFFF' }, // A-SC-07
   warnChipText: { fontSize: 13, fontWeight: '700', color: '#2F3137' },
+  warnChipNeutral: { paddingLeft: 8, paddingRight: 8 }, // KB-1006: 마크 자리 없음 → 좌우 같은 여백
+  warnChipTextNeutral: { fontSize: 13, fontWeight: '500', color: C.ink2 },
+  textCol: { flex: 1, minWidth: 0, flexShrink: 1, gap: 3, minHeight: 118 }, // KB-1006: AI 줄 = 일반 줄과 같은 텍스트 열(가격·담기 밑변 정렬)
+  // KB-1006: 수량 옵션 — 옵션마다 한 줄(라벨 + 가격 · 담기 슬롯), 묶음은 썸 밑변 정렬
+  optList: { marginTop: 'auto', gap: 2 },
+  bottomRowOpt: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  optLabel: { fontSize: 14, fontWeight: '600', color: '#2F3137' },
+  // KB-1006: 'AI 생성' 사진 칩 — 사진 좌하단, 어두운 반투명 바탕 흰 글자(사진 위 대비)
+  aiPhotoChip: { position: 'absolute', left: 6, bottom: 6, paddingVertical: 2, paddingHorizontal: 6, borderRadius: radius.pill, backgroundColor: 'rgba(0,0,0,0.55)', maxWidth: '90%' },
+  aiPhotoChipText: { fontSize: 11, fontWeight: '600', color: '#FFFFFF' },
+  // KB-1006: 사진 생성 중 자리 — primary 연한 틴트 + 점 3개(8, gap 8)
+  genBox: { borderRadius: radius.md, backgroundColor: 'rgba(255,113,52,0.08)', alignItems: 'center', justifyContent: 'center' },
+  genDots: { flexDirection: 'row', gap: 8 },
+  genDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.primary },
   price: { fontSize: 14, fontWeight: '500', color: C.inkInfo, marginTop: 2, fontVariant: ['tabular-nums'] }, // P-284
   priceConv: { fontSize: 16, fontWeight: '600', color: '#6B95FF' },
   // P-366 ②: 하단 행 — 좌 가격 / 우 담기 슬롯(텍스트 열 전폭)
@@ -361,6 +594,14 @@ const styles = StyleSheet.create({
   addBtn: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 }, // P-285: add 36(4003:5796) · A-DS-02: 기본 보더 제거(흰+sh1)
   stepper: { width: 83, height: 31, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: radius.xs, paddingHorizontal: 6, ...shadow.sh1 }, // P-285: 스테퍼 83×31(2162:9658)
   qty: { fontSize: 16, fontWeight: '500', color: '#262C31', fontVariant: ['tabular-nums'], textAlign: 'center' },
+  // P-616: 추가·옵션 블록 — AI 섹션 머리와 같은 구분선 문법, 칩 = 회피 칩 프레임(보더 line·pill)
+  addOns: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: 20, marginTop: 8, gap: 10 },
+  addOnsTitle: { fontSize: 16, fontWeight: '700', color: '#2F3137' },
+  addOnChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  addOnChip: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32, borderWidth: 1, borderColor: C.line, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: '#FFFFFF' },
+  addOnName: { fontSize: 14, fontWeight: '500', color: '#2F3137' },
+  addOnPrice: { fontSize: 13, color: C.ink3, fontVariant: ['tabular-nums'] },
+  addOnsNote: { fontSize: 13, lineHeight: 18, color: C.ink3 },
   footNote: { fontFamily: font.body, fontSize: 12, lineHeight: 17, color: C.ink3, paddingVertical: 14 },
   pill: { position: 'absolute', left: 20, right: 20, backgroundColor: C.primary, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', shadowColor: C.primary, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
   pillText: { fontFamily: font.bodyBold, fontSize: 16, color: '#fff' },

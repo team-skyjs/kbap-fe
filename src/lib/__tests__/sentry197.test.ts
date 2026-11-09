@@ -29,7 +29,7 @@ it('KB-884 앱 행 임계 4초(초 단위) · init 옵션 키 집합 불변', ()
   expect(arg.appHangTimeoutInterval).toBe(4);
   expect(arg.enableAppHangTrackingV2).toBe(true);
   expect(Object.keys(arg).sort()).toEqual(
-    ['appHangTimeoutInterval', 'dsn', 'enableAppHangTrackingV2', 'enabled', 'environment', 'sendDefaultPii'],
+    ['appHangTimeoutInterval', 'beforeSend', 'dsn', 'enableAppHangTrackingV2', 'enabled', 'environment', 'sendDefaultPii'],
   );
 });
 

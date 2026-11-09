@@ -82,4 +82,6 @@ export interface FoodDetailWire {
   recentReviews?: import('./reviewAdapter').ReviewWire[] | null;
   /** P-239 신스키마: 회원 회피 겹침(비회원 null) — 재료 마크 클라 조인용. */
   avoidedIngredients?: AvoidedIngredientWire[] | null;
+  /** KB-1014(서버 KB-1012 #600): 대표 편의점 음식 — 연결 없으면 필드 없음. { id, name(요청 lang), nameKo, imageUrl(승인 누끼) } */
+  linkedProcessedFood?: unknown;
 }

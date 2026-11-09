@@ -31,6 +31,7 @@ import { TopToastHost } from '@/components/TopToast';
 import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { HeroGallery } from '@/features/food/HeroGallery';
+import { ProductName } from '@/features/processedFood/ProductName';
 import { PILL_FADE_MS, useScrollAwarePill } from '@/features/food/scrollAwarePill';
 import { PILL_MAX_SCALE, pillCta, useBottomBand } from '@/features/food/pillCta';
 import { IDOL_CARD_BOTTOM_PAD, IdolVideoCard } from '@/features/food/IdolVideoCard';
@@ -51,7 +52,7 @@ import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { IconEdit, IconPlus } from '@/components/icons';
 import { D4Minus } from '@/components/design4Assets';
-import { addScanItem, removeScanItem, useScanCart, useScanCartDish } from '@/features/scan/scanCartStore';
+import { addScanItem, removeScanItem, scanCartKey, useScanCart, useScanCartDish } from '@/features/scan/scanCartStore';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -75,7 +76,8 @@ export default function FoodDetailScreen() {
   const { id, price, src, item } = useLocalSearchParams<{ id: string; price?: string; src?: string; item?: string }>();
   // KB-982: 메뉴판 스캔 진입 = 결과 화면과 같은 카트 항목(itemId). 스캔 세션이 끝났으면(스토어 비움) 담기 0
   const cartDish = useScanCartDish(src === 'scan' && typeof item === 'string' && /^-?\d+$/.test(item) ? Number(item) : null);
-  const cartQty = useScanCart().get(cartDish?.itemId ?? Number.NaN) ?? 0;
+  // KB-1006(Codex #440 P2): 수량 옵션 메뉴 = 첫 옵션 키(상세 가격 = 첫 옵션 값) — 옵션 없는 키로 담으면 주문 카드에서 빠진다
+  const cartQty = useScanCart().get(cartDish ? scanCartKey(cartDish.itemId, cartDish.opt) : '') ?? 0;
   // P-083: 상세 진입 계측 — 진입 경로 1회
   useEffect(() => {
     const source = src && ['scan', 'list', 'search', 'home', 'saved', 'my_reviews', 'feed', 'tag_sheet', 'idol_pick'].includes(src) ? src : 'other'; // KB-847: review_detail 제거(#288 되돌림) · idol_pick 유지(#313)
@@ -187,7 +189,12 @@ export default function FoodDetailScreen() {
           <>
             {/* §1-1: 히어로 정방(375×375) + 하단 어두운 선형 그라데이션(4150:16892)
                 P-383(KB-566): 이미지 2장 이상 = 캐러셀(2초 자동·도트), 0·1장·부재 = 현행 정적 */}
-            {(food.images?.length ?? 0) >= 2 ? (
+            {/* KB-1014(예진 11/6): 대표 편의점 음식 누끼가 있으면 히어로 = 누끼 우선(실패 = 음식 사진 → 기본 이미지) — 판정은 이 음식 그대로 */}
+            {food.linkedProcessed?.imageUrl ? (
+              <View style={styles.hero} testID="detail-hero">
+                <CardPhoto uri={food.photoUrl} cutoutUri={food.linkedProcessed.imageUrl} cutoutInset={32} transition={200} borderRadius={0} />
+              </View>
+            ) : (food.images?.length ?? 0) >= 2 ? (
               <View style={styles.hero} testID="detail-hero">
                 {/* 그라데이션은 사진 위·도트 아래에 깔려야 해서 overlay로 넘긴다 */}
                 <HeroGallery
@@ -240,7 +247,7 @@ export default function FoodDetailScreen() {
           bottom={band.bottom}
           guest={isGuest}
           scanEntry={src === 'scan'}
-          cart={cartDish ? { qty: cartQty, onAdd: () => addScanItem(cartDish), onRemove: () => removeScanItem(cartDish) } : undefined}
+          cart={cartDish ? { qty: cartQty, onAdd: () => addScanItem(cartDish, cartDish.opt), onRemove: () => removeScanItem(cartDish, cartDish.opt) } : undefined}
           onHeight={(h) => { band.onHeight(h); pill.onBand(h + 8); }}
           t={t}
           onWrite={() => {
@@ -537,6 +544,26 @@ function Registered({
 
       {!guest && !hasRestrictions && <Text style={styles.profileHint}>{t('detail.addProfileHint')}</Text>}
 
+      {/* KB-1014: 대표 편의점 음식 진입점(행 1개) → 편의점 음식 상세. 위험도·재료는 이 음식 값 그대로(연결 상품 판정 표시 0) */}
+      {FLAGS.processedFoodEnabled && !!food.linkedProcessed && (
+        <View style={styles.linkedSec}>
+          <Text style={styles.linkedTitle}>{t('detail.linkedProcessedTitle')}</Text>
+          <Pressable
+            style={styles.linkedRow}
+            onPress={() => router.push(`/processed-foods/${food.linkedProcessed!.id}?src=menu_link` as Href)}
+            accessibilityRole="button"
+            accessibilityLabel={[t('detail.linkedProcessedTitle'), food.linkedProcessed.name, food.linkedProcessed.nameKo].filter(Boolean).join(', ')}
+            testID="detail-linked-processed"
+          >
+            <View style={styles.linkedThumb}>
+              <CardPhoto uri={null} cutoutUri={food.linkedProcessed.imageUrl} cutoutInset={4} recyclingKey={`lp-${food.linkedProcessed.id}`} borderRadius={radius.md} />
+            </View>
+            <ProductName name={food.linkedProcessed.name} nameKo={food.linkedProcessed.nameKo} style={{ flex: 1, minWidth: 0 }} testID="detail-linked-name" />
+            <IconChevron size={16} color={C.ink3} />
+          </Pressable>
+        </View>
+      )}
+
       {/* KB-836 V1: 대표 아이돌 영상 티저 — 목록 캐시에 이 음식이 있을 때만(없으면 래퍼·여백 0). 위험 요약·헤더 아래(안전 정보 위계 유지) */}
       {idolVideo && (
         /* KB-851: 카드 위치(스크롤 콘텐츠 기준) — 카드가 보이는 동안 리뷰 알약을 숨긴다. 래퍼는 스타일 없음(배치 무변) */
@@ -822,6 +849,11 @@ const styles = StyleSheet.create({
   hero: { width: '100%', aspectRatio: 1, backgroundColor: C.surface2 },
   heroGrad: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 96 },
   heroFallback: { width: '100%', backgroundColor: C.surface2 },
+  // KB-1014 대표 편의점 음식 행
+  linkedSec: { paddingHorizontal: 20, paddingTop: 12, gap: 8 },
+  linkedTitle: { fontSize: 14, fontWeight: '600', color: C.ink3 },
+  linkedRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: radius.lg, borderWidth: 1, borderColor: C.line, backgroundColor: C.surface },
+  linkedThumb: { width: 56, height: 56, borderRadius: radius.md, overflow: 'hidden' },
 
   // 플로팅 헤더(P-139 유지)
   fhead: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 8 },

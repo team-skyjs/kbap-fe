@@ -160,7 +160,7 @@ describe('KB-969 흐름(packagedVisionScan on)', () => {
     expect(lastCam?.link ?? null).toBeNull();
     await press(t, 'cam-shutter');
     expect(mockVisionUpload).toHaveBeenCalledWith(mockShot);
-    expect(visionCalls()[0][1]).toEqual({ imagePath: 'images/packaged-scans/v1.jpg', clientRequestId: 'uuid-1', lang: 'en' });
+    expect(visionCalls()[0][1]).toEqual({ imagePath: 'images/packaged-scans/v1.jpg', clientRequestId: 'uuid-1', lang: 'en', menuFastPathEligible: true }); // KB-1015: 첫 촬영 신호
     expect(mockOcr).not.toHaveBeenCalled();
     expect(ids(t)).toContain('pscan-candidates');
     expect(mockTrack).toHaveBeenCalledWith('food_packaged_scan_vision', { kind: 'PACKAGE_FRONT', state: 'candidates', confidence: 'high', reason: 'none', side: 'first' });
@@ -340,5 +340,62 @@ describe('KB-969 흐름(packagedVisionScan on)', () => {
     await press(t, 'cam-shutter');
     expect(mockOcr).toHaveBeenCalled();
     expect(visionCalls()).toHaveLength(0);
+  });
+});
+
+describe('KB-1015 첫 사진 메뉴판 바로가기 신호(menuFastPathEligible)', () => {
+  const fastOf = () => visionCalls().map((c) => (c[1] as { menuFastPathEligible?: boolean }).menuFastPathEligible ?? 'absent');
+  it('어댑터: true = 키 실음 · 기본(false) = 키 자체 없음(현행 body와 같음)', async () => {
+    mockPost.mockResolvedValue(V({ kind: 'MENU', state: 'NOT_PACKAGED' }));
+    await scanProcessedVision('images/p.jpg', 'k-1', 'ko', true);
+    await scanProcessedVision('images/p.jpg', 'k-2', 'ko');
+    expect(visionCalls().map((c) => c[1])).toEqual([
+      { imagePath: 'images/p.jpg', clientRequestId: 'k-1', lang: 'ko', menuFastPathEligible: true },
+      { imagePath: 'images/p.jpg', clientRequestId: 'k-2', lang: 'ko' },
+    ]);
+  });
+  it('첫 촬영 = true · 성분표 한 면 더 = 신호 없음', async () => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'INGREDIENT_LABEL', state: 'LABEL_RESULT', label: { ...LABEL, analysisId: 'uuid-1' } }));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    await press(t, 'pscan-label-more');
+    mockPost.mockResolvedValueOnce(V({ analysisId: 'uuid-2', kind: 'INGREDIENT_LABEL', state: 'LABEL_RESULT', label: { ...LABEL, analysisId: 'uuid-2', rawText: '알레르기: 우유 함유' } }));
+    mockPost.mockResolvedValueOnce({ ...LABEL, analysisId: 'uuid-1' });
+    await press(t, 'cam-shutter');
+    expect(fastOf()).toEqual([true, 'absent']);
+  });
+  it('다시 찍기(OTHER·UNKNOWN 뒤) = 같은 첫 사진 단계 → 신호 true · 새 키', async () => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'OTHER', state: 'OTHER', reason: 'UNKNOWN' }));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    await press(t, 'pscan-retake');
+    mockPost.mockResolvedValueOnce(V({ analysisId: 'uuid-2', kind: 'MENU', state: 'NOT_PACKAGED' }));
+    await press(t, 'cam-shutter');
+    expect(fastOf()).toEqual([true, true]);
+    expect(visionCalls().map((c) => (c[1] as { clientRequestId: string }).clientRequestId)).toEqual(['uuid-1', 'uuid-2']);
+  });
+  it('전송 실패 → 다시 시도 = 같은 키·같은 경로·같은 신호', async () => {
+    mockPost.mockRejectedValueOnce(new Error('NETWORK: x'));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    mockPost.mockResolvedValueOnce(V({ kind: 'MENU', state: 'NOT_PACKAGED' }));
+    await press(t, 'pscan-retry');
+    expect(visionCalls().map((c) => c[1])).toEqual([
+      { imagePath: 'images/packaged-scans/v1.jpg', clientRequestId: 'uuid-1', lang: 'en', menuFastPathEligible: true },
+      { imagePath: 'images/packaged-scans/v1.jpg', clientRequestId: 'uuid-1', lang: 'en', menuFastPathEligible: true },
+    ]);
+    expect(mockVisionUpload).toHaveBeenCalledTimes(1);
+  });
+  it('다시 찍기 뒤 실패 → 다시 시도도 같은 키·같은 신호(true)', async () => {
+    mockPost.mockResolvedValueOnce(V({ kind: 'OTHER', state: 'OTHER', reason: 'UNKNOWN' }));
+    const t = flow();
+    await press(t, 'cam-shutter');
+    await press(t, 'pscan-retake');
+    mockPost.mockRejectedValueOnce(new Error('NETWORK: x'));
+    await press(t, 'cam-shutter');
+    mockPost.mockResolvedValueOnce(V({ kind: 'MENU', state: 'NOT_PACKAGED' }));
+    await press(t, 'pscan-retry');
+    expect(fastOf()).toEqual([true, true, true]);
+    expect(visionCalls().map((c) => (c[1] as { clientRequestId: string }).clientRequestId)).toEqual(['uuid-1', 'uuid-2', 'uuid-2']);
   });
 });

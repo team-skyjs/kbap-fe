@@ -23,6 +23,7 @@ import type { FoodDetailWire, ReviewRatingWire } from './foodDetailTypes';
 import type { MenuSummaryWire, TopRatedFoodWire } from './foodListTypes';
 import { mapRisk } from './scanAdapter';
 import { adaptReview } from './reviewAdapter';
+import { adaptLinkedProcessed } from './linkedProcessed';
 
 const NO_RATING: RatingAggregate = { average: null, count: 0 };
 
@@ -154,6 +155,8 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
     // P-251(BE #185): 리뷰 자격 서버 정본 — boolean만 통과(부재 = undefined = 게이트 없음,
     // prod 구응답·강제 미배포 호환). 클라 이력 추정 금지.
     reviewEligible: typeof wire.reviewEligible === 'boolean' ? wire.reviewEligible : undefined,
+    // KB-1014: 대표 편의점 음식(표시·진입점 전용) — 부재·이상값 = null
+    linkedProcessed: adaptLinkedProcessed(wire.linkedProcessedFood),
   };
 }
 
@@ -216,6 +219,7 @@ export function adaptMenuSummary(wire: MenuSummaryWire): FoodCard {
         ? { average: wire.review.averageRating, count: rvCount }
         : NO_RATING,
     bookmarked: wire.bookmarked === true, // KB-779: 계약 비회원 false·부재 false — 홈 별의 정본
+    linked: adaptLinkedProcessed(wire.linkedProcessedFood), // KB-1014: 카드 사진만 누끼 우선 — 이름·위험도·평점 무변
   };
 }
 

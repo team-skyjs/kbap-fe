@@ -51,6 +51,8 @@ export interface ScanOutcome {
   /** P-252: 이 스캔의 검증된 이미지 경로 — 주문 이력(POST /api/orders) 식별자 재사용.
    *  '' = 업로드 실패(텍스트-only) — 이력에선 생략 처리. */
   imagePath?: string;
+  /** KB-992: AI 추정 폴링 키(서버 초안 S-959) — null = 폴링 안 함. */
+  scanId?: string | null;
 }
 
 /** P-153: 스캔 v2(서버 비전 OCR) — P-155: FLAGS.scanV2 킬스위치 경유(되돌리면
@@ -145,7 +147,8 @@ export async function postScan({ items, photo, currency, ticket: preTicket, uplo
     '| photoOnly =', photoOnly.length,
   );
   // P-242: v2 = 서버 환율 관통(null = 실패 규약 — 배지 생략), v1 = undefined(테이블)
-  return { degraded: payload.degraded, items: merged, photoOnly, imagePath: imagePath ?? '', ...(v2 ? { fx: payload.currency ?? null } : {}) };
+  const scanId = payload.scanId != null && String(payload.scanId).trim() ? String(payload.scanId) : null;
+  return { degraded: payload.degraded, items: merged, photoOnly, imagePath: imagePath ?? '', scanId, ...(v2 ? { fx: payload.currency ?? null } : {}) };
 }
 
 export function useScan() {

@@ -76,6 +76,59 @@ export interface ScanResultWire {
   substituted?: boolean;
   /** KB-789 v3.0: 대체 전 메뉴판 원문(substituted=true일 때만 의미). 2.0 = 부재. */
   originalScannedName?: string | null;
+  /** KB-992(S-959 계약 초안 — 서버 확정 시 Swagger 정본): matched=false·대체 아님 항목만 값 —
+   *  AI 추정 대기 키(`GET /api/scans/{scanId}/pending`). 부재·null = 대기 없음. */
+  pendingId?: string | null;
+  /** KB-1006(S-969 v0): 수량 옵션 — 옵션 2개 이상일 때만, price는 첫 옵션값 유지. 부재·null = 옵션 없음 */
+  priceOptions?: PriceOptionWire[] | null;
+  /** KB-1006(S-969 v0): 맵기 0~10, -1 = 모름 — 매칭 = 음식 값, 미매칭 = null(pending에서) */
+  spiciness?: number | null;
+  /** P-616(S-970): "추가·사리·소스·토핑·곱빼기" 같은 주문 옵션·단일 재료어 — true면 matched=false·foodId·pendingId null·UNKNOWN.
+   *  판정 대상이 아니라 목록 맨 아래 "추가·옵션" 칩 블록으로만 보인다. 부재(구 서버) = false */
+  notMenu?: boolean | null;
+  /** KB-1014(서버 KB-1012 #600): matched 음식의 대표 편의점 음식 — 연결 없으면 필드 없음 */
+  linkedProcessedFood?: unknown;
+}
+
+/** KB-1006(S-969 v0) 수량 옵션 한 칸 — label = 메뉴판 표기("10개") */
+export interface PriceOptionWire {
+  label?: string | null;
+  priceKrw?: number | null;
+}
+
+/** KB-992 AI 추정 항목(S-959 확정 11/5 — dev 배포 전, 배포 뒤 Swagger 정본). riskLevel = CAUTION|UNKNOWN만(SAFE 없음) — 어댑터가 다시 거른다. */
+export interface ScanPendingItemWire {
+  pendingId: string;
+  kind: string; // 'DISH' | 'DRINK' | 'NOT_FOOD'
+  name?: string | null;
+  koreanName?: string | null;
+  description?: string | null;
+  riskLevel?: string | null;
+  /** 확정: 회피 재료 코드 목록(IngredientCode[]). 초안 객체 모양도 받는다(방어). */
+  avoidances?: (string | AvoidanceOverlapWire)[] | null;
+  spiciness?: number | null; // 0~10, -1 = 모름(KB-1006: 고추 ceil(s/2))
+  confidence?: number | null;
+  aiEstimated?: boolean;
+  existsNotReady?: boolean; // 아직 화면 미사용
+  /** 서버 #565: true = 15초 마감 채움(추정 아님), false = LLM 추정. 부재(배포 전 서버) = 어댑터가 내용으로 판별 */
+  filled?: boolean;
+  foodId?: number | null; // 미완성 음식 — /api/foods/{id}는 400 FOOD-018, 상세는 이 항목 데이터로(S-969)
+  /** KB-1006(S-969 v0) — 메뉴판 가격·옵션(결과 줄과 같은 모양) */
+  priceKrw?: number | null;
+  priceOptions?: PriceOptionWire[] | null;
+  /** KB-1006: 추정 재료 전체 코드(회원 겹침은 avoidances) */
+  estimatedCodes?: string[] | null;
+  /** KB-1006: 생성 사진 — 같은 pendingId가 GENERATING → READY | NONE으로 바뀐다 */
+  imageStatus?: string | null;
+  imageUrl?: string | null;
+  aiGeneratedImage?: boolean;
+}
+
+export interface ScanPendingPayload {
+  items?: ScanPendingItemWire[] | null;
+  done?: boolean;
+  /** KB-1006: 사진 생성까지 끝남 — 폴링 종료 = done && imagesDone(부재 = 사진 없는 구 서버 → done만) */
+  imagesDone?: boolean;
 }
 
 /** POST /images/upload-url — presigned 발급 (req/res, 2026-07-16 배포). */
@@ -111,4 +164,6 @@ export interface ScanPayload {
   /** P-219 → P-242 채택: v2 서버 실환율(frankfurter/ECB) — null = 조회 실패
    *  (스캔 정상·배지 생략 규약, BE #182). 환산 = price ÷ krwPerUnit. */
   currency?: { code: string; krwPerUnit: number } | null;
+  /** KB-992(초안): AI 추정 폴링 키 — 부재 = 폴링 안 함(전부 현행 unable). */
+  scanId?: string | number | null;
 }

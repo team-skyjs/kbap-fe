@@ -1092,7 +1092,48 @@ describe('KB-982 메뉴판 스캔 진입 음식 상세 = 메뉴 담기(결과 �
     expect(src).toContain('useEffect(() => () => resetScanCart(), []);');
     expect(src).toContain('onAdd={addScanItem}');
     expect(src).toContain('onRemove={removeScanItem}');
-    expect(src).toContain('rememberScanDish(dish);');
+    expect(src).toContain('rememberScanDish({ ...dish, opt: dish.priceOptions && dish.priceOptions.length >= 2 ? 0 : null })');
     expect(src).toContain('src=scan&item=${dish.itemId}');
+  });
+});
+
+/* ---- KB-1014: 대표 편의점 음식(linkedProcessed) — 히어로 누끼 우선 + 진입점 행, 판정은 음식 값 그대로 ---- */
+describe('KB-1014 대표 편의점 음식', () => {
+  const LINKED = { id: '501', name: 'Coca-Cola', nameKo: '코카-콜라', imageUrl: 'https://cdn/pf/501-cut.webp' };
+  const set = (over: Partial<FoodDetail>, risk: RiskState = 'danger') =>
+    mockUseFoodDetail.mockReturnValue({ data: FOOD(risk, over), isLoading: false, error: null, refetch: jest.fn() });
+  const heroPhoto = (t: ReactTestRenderer) => byId(t, 'detail-hero')[0].findAll((n) => typeof n.props?.cutoutUri !== 'undefined' || typeof n.props?.uri !== 'undefined')[0]?.props;
+  it('연결 있음 = 히어로 누끼 우선(음식 사진 = 폴백) · 진입점 행 1개 → /processed-foods/501?src=menu_link', () => {
+    set({ linkedProcessed: LINKED, images: ['https://cdn/a.jpg', 'https://cdn/b.jpg'] });
+    const t = render(<FoodDetailScreen />);
+    expect(heroPhoto(t)).toMatchObject({ cutoutUri: LINKED.imageUrl, uri: 'https://cdn/food.jpg' }); // 갤러리보다 누끼 우선
+    expect(byId(t, 'detail-linked-processed').filter((n) => typeof n.type === 'string')).toHaveLength(1); // 행 1개(호스트 기준)
+    const row = byId(t, 'detail-linked-processed').filter((n) => typeof n.props.onPress === 'function');
+    expect(flat(t)).toContain('Coca-Cola');
+    expect(flat(t)).toContain('detail.linkedProcessedTitle');
+    mockPush.mockClear();
+    act(() => { row[0].props.onPress(); });
+    expect(mockPush).toHaveBeenCalledWith('/processed-foods/501?src=menu_link');
+  });
+  it('연결 없음 = 행 0 · 히어로 현행(사진 그대로)', () => {
+    set({ linkedProcessed: null });
+    const t = render(<FoodDetailScreen />);
+    expect(byId(t, 'detail-linked-processed')).toHaveLength(0);
+    expect(heroPhoto(t)).toMatchObject({ uri: 'https://cdn/food.jpg' });
+    expect(heroPhoto(t).cutoutUri).toBeUndefined();
+  });
+  it('누끼 이미지 없는 연결 = 히어로 현행 · 행은 있음(이름만, 사진 = 기본)', () => {
+    set({ linkedProcessed: { ...LINKED, imageUrl: null } });
+    const t = render(<FoodDetailScreen />);
+    expect(heroPhoto(t).cutoutUri).toBeUndefined();
+    expect(byId(t, 'detail-linked-processed').length).toBeGreaterThan(0);
+  });
+  it('판정 = 메뉴 음식 값 그대로 — 연결이 있어도 위험도 띠·재료 마크 무변(false-safe 0)', () => {
+    set({ linkedProcessed: null });
+    const base = byId(render(<FoodDetailScreen />), 'detail-verdict')[0].props.state;
+    set({ linkedProcessed: LINKED });
+    const t = render(<FoodDetailScreen />);
+    expect(byId(t, 'detail-verdict')[0].props.state).toBe(base);
+    expect(base).toBe('danger');
   });
 });

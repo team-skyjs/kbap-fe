@@ -325,6 +325,14 @@
     "closestMatchSheetTitle": "We matched this to a similar dish",
     "closestMatchSheetBody": "The menu lists “{{scanned}}”. We’re showing {{food}} ({{foodKo}}), the closest match in our catalog, so the ingredients and your risk level are based on {{food}}.",
     "closestMatchSeeDetails": "See {{food}} details",
+    "aiSectionTitle": "AI estimate",
+    "aiSectionNote": "These dishes aren't registered yet, so this info is estimated by AI. Please check with the staff before eating.",
+    "aiIngredientsLine": "May contain ingredients you avoid: {{names}}",
+    "aiGeneratedPhoto": "AI image",
+    "aiPhotoGenerating": "Creating photo",
+    "aiDetailIngredients": "Key ingredients",
+    "addOnsTitle": "Add-ons & options",
+    "addOnsNote": "These are extra ingredients or options. Please check with the staff what goes into them.",
     "searchOnGoogle": "Search on Google",
     "resultsEmpty": "No scan results",
     "viewOrderAction": "View order",
@@ -761,6 +769,7 @@
     "writeReview": "Write a review",
     "spiceAboveYou": "hotter than your taste",
     "addProfileHint": "Add your restrictions to see a personalized verdict.",
+    "linkedProcessedTitle": "See the product",
     "scannedPrice": "on the menu you scanned",
     "translatedPill": "Translated",
     "verdictContains": "Contains {{list}} from your avoid list",
@@ -1300,6 +1309,11 @@
       "minSec": "{{min}} min {{sec}} s",
       "atWatt": "{{time}} at {{watt}} W",
       "source": "From the package label. If anything differs, follow the package."
+    },
+    "kcal": "{{value}} kcal",
+    "ingredients": {
+      "seeAll": "See all",
+      "showLess": "Show less"
     }
   },
   "scanMode": {
@@ -1310,7 +1324,7 @@
   },
   "packagedScan": {
     "title": "Scan",
-    "chooseTitle": "Choose your product",
+    "chooseTitle": "Scan results",
     "reading": "Reading the package…",
     "whichTitle": "Which product is yours?",
     "noneTitle": "No matching products",
@@ -1367,7 +1381,7 @@
     "newAnalysisCta": "Start a new analysis",
     "debugLabelPlaceholder": "Text of one side of the label",
     "debugAddPage": "Add as one side",
-    "matchTitle": "Match the name and flavor",
+    "matchTitle": "Find and select the item you scanned",
     "personalNote": "Set avoid ingredients for a personal result.",
     "confirmProduct": "Confirm product",
     "anotherTitle": "Find your product another way",
@@ -1407,6 +1421,7 @@
   },
   "scanCamera": {
     "title": "Scan",
+    "subtitle": "Snap a menu or a convenience-store item",
     "menuTitle": "Fit the whole menu",
     "menuHint": "Pinch to zoom",
     "packageTitle": "Show the front of the package",
@@ -1437,5 +1452,21 @@
     "homeTitle": "Scan convenience store food, too!",
     "homeBody": "Check what's in snacks, ramyeon and drinks.",
     "foodBody": "Browse convenience store food, most popular first."
+  },
+  "chat": {
+    "title": "Chat with us",
+    "team": "K-Bap team",
+    "repliesWithin": "Usually replies within 5 minutes",
+    "greeting": "How can we help you?",
+    "placeholder": "Type a message",
+    "send": "Send",
+    "sendFailed": "Couldn't send. Please try again.",
+    "rateLimited": "You've sent a lot of messages. Please try again a little later.",
+    "failedTapRetry": "Not sent. Tap to retry.",
+    "earlierInquiries": "Earlier inquiries",
+    "tooLong": "Your message is too long. Please shorten it.",
+    "photoInvalid": "One of the photos couldn't be sent. Please choose another photo.",
+    "invalid": "Couldn't send this message. Please check it and try again.",
+    "fabCoach": "Get Free Unlimited Scans✨"
   }
 }

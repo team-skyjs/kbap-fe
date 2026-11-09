@@ -52,6 +52,8 @@ export type ProcessedFoodDetail = ProcessedFoodSummary & {
   capacity: string | null;
   /** KB-990(S-961 초안): 조리법 — null = 섹션 숨김 */
   recipe: Recipe | null;
+  /** KB-989(S-957 초안): 포장 전체 kcal — null = 미표시(용량이 다른 묶음 등은 서버가 null, FE 판단 0) */
+  kcal: number | null;
   rawMaterials: string | null;
   /** 알레르기 표시란 원문 — DECLARED일 때만 의미가 있다('알수없음' 등은 null로) */
   allergens: string | null;
@@ -106,6 +108,8 @@ export type DetailWire = SummaryWire & {
   images?: { url?: string | null; kind?: string | null }[] | null; // S-953: Swagger는 url·kind 필수 — 운영 서버 배포 전·이상값 방어로 옵셔널 유지
   capacity?: string | null;
   recipe?: RecipeWire | null; // KB-990 — 서버 배포 전 옵셔널
+  kcal?: number | null; // KB-989(S-957 #562) — dev Swagger integer·nullable 대조 11/5. 운영 배포 전 방어로 옵셔널 유지
+
   rawMaterials?: string | null;
   allergens?: string | null;
   labelSource: string;
@@ -235,6 +239,7 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     imageUrl: toHttps(w.image?.url ?? w.imageUrl),
     capacity: blankToNull(w.capacity),
     recipe: adaptRecipe(w.recipe),
+    kcal: typeof w.kcal === 'number' && Number.isFinite(w.kcal) && w.kcal >= 0 ? Math.round(w.kcal) : null,
     rawMaterials: blankToNull(w.rawMaterials),
     allergens,
     labelSource,

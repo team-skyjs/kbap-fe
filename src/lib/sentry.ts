@@ -13,6 +13,7 @@
 import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
 import { isDiagnosticChannel, isProdChannel } from '@/lib/flags';
+import { isTestLabContexts } from '@/lib/testLab';
 
 const DSN = 'https://c6471e5cf050aaa65dd9067d4a119de6@o4511895920574464.ingest.us.sentry.io/4511895936761856';
 
@@ -30,7 +31,16 @@ export function initSentry(): void {
     ...({ enableAppHangTrackingV2: true } as object),
     // KB-884(10/27 예진): 기본 2초 → 4초 — iOS 키보드 표시 중 2.4~3.2초 행(REACT-NATIVE-D 9건/4명). RN 7.11 타입 노출 키, 같은 initNativeSdk 관통 → JS-only, 재빌드 불요·OTA 가능
     appHangTimeoutInterval: 4,
+    beforeSend: (event) => (isTestLabEvent(event) ? null : event),
   });
+}
+
+/** P-626: Play 사전 출시 로봇(Firebase Test Lab 가상 기기)의 JS 이벤트를 버린다 — 셀룰러 504 api_5xx가
+ *  실사용자 아닌 로봇에서 줄줄이 생겼다(서버 미도달). DeviceContext 통합이 beforeSend 전에 합쳐 준 네이티브 contexts로
+ *  판별(조건 = testLab.ts, KB-1016에서 Amplitude와 공용화).
+ *  ponytail: JS 이벤트만 — 네이티브 크래시(Java/NDK)는 JS beforeSend를 안 거친다. 1.0.6 빌드 때 공식 판별로 보강. */
+export function isTestLabEvent(event: { contexts?: unknown }): boolean {
+  return isTestLabContexts(event.contexts);
 }
 
 /** 9/5 예진 승인: 5xx 관측 — 경로(쿼리 제거)·status·code 태그만(본문·헤더·PII 0),
@@ -50,8 +60,14 @@ export function captureApi5xx(path: string, status: number, code?: string, reque
   const now = Date.now();
   if ((recent5xx.get(key) ?? 0) > now - 20_000) return;
   recent5xx.set(key, now);
-  Sentry.captureMessage('api_5xx', {
+  // KB-1001(P-612): captureMessage는 합성 스택을 붙여 컬프릿이 그 순간 돌던 함수(uploadImage·captureProfileImage 등)로
+  // 오귀속되고 그룹도 그 스택으로 갈렸다(REACT-NATIVE-S·X·V = 실은 /api/notifications·/foods 502). captureEvent = 합성 스택 0,
+  // 그룹 = ['api_5xx', path, status] 고정, 컬프릿 자리 = transaction(`502 /foods`).
+  Sentry.captureEvent({
+    message: 'api_5xx',
     level: 'warning',
+    fingerprint: ['api_5xx', cleanPath, String(status)],
+    transaction: `${status} ${cleanPath}`,
     tags: { path: cleanPath, status: String(status), request_id: requestId || 'none', ...(code ? { code } : {}) },
   });
 }

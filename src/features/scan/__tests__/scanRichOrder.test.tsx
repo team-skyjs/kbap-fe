@@ -62,10 +62,12 @@ const flat = (tree: ReactTestRenderer) => JSON.stringify(tree.toJSON()).replace(
 const byId = (tree: ReactTestRenderer, id: string) =>
   tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function');
 
+/** KB-1006: 카트 키 = scanCartKey(itemId, 옵션)와 같은 모양(리스트가 그 키로 수량을 읽는다) */
+const key = (id: number, o?: number) => (o == null ? String(id) : `${id}#${o}`);
 /** scan.tsx의 카트 배선 축약 재현 — 리스트·필이 한 상태 공유(카운트 동기) */
 function Harness({ dishes }: { dishes: ResultDish[] }) {
-  const [cart, setCart] = React.useState<Map<number, number>>(new Map());
-  const bump = (id: number, d: number) =>
+  const [cart, setCart] = React.useState<Map<string, number>>(new Map()); // KB-1006: 키 = scanCartKey(itemId, 옵션)
+  const bump = (id: string, d: number) =>
     setCart((prev) => {
       const m = new Map(prev);
       const q = Math.max(0, (m.get(id) ?? 0) + d);
@@ -81,8 +83,8 @@ function Harness({ dishes }: { dishes: ResultDish[] }) {
         currency="USD"
         fx={{ code: 'USD', krwPerUnit: 1390 }} // KB-418: 환산 = 서버 실환율만(v1 테이블 소멸)
         cart={cart}
-        onAdd={(d) => bump(d.itemId, 1)}
-        onRemove={(d) => bump(d.itemId, -1)}
+        onAdd={(d, o) => bump(key(d.itemId, o), 1)}
+        onRemove={(d, o) => bump(key(d.itemId, o), -1)}
         onOpen={() => {}}
         t={t}
       />
