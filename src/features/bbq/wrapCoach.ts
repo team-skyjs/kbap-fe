@@ -4,6 +4,7 @@
  * - 자동 전환 = 해당 신호가 "그 단계에 들어온 뒤" HOLD_MS 이상 계속 켜져 있을 때(한 틱에 여러 단계 연쇄 없음).
  * - manualNext = 현재 단계를 즉시 넘김(표시는 체크만, 칭찬 없음). "Nice wrap"은 S5가 자동으로 끝났을 때만.
  * - S3: 테이블에서 쌈장을 못 봤으면 건너뜀, 대두·밀 회피(또는 회피 목록 미확인)면 권하지 않고 주의 표시·누락 안내 없음.
+ * - 실수 안내 2종(고기 없이 쌈 · 쌈장 없이 쌈). "너무 큰 쌈" 판정은 없다(P-635 예진 11/9) — 크기 당부는 S4 문구에.
  */
 
 export const HOLD_MS = 500;
@@ -12,7 +13,7 @@ export const STEPS = ['leaf', 'meat', 'ssamjang', 'wrap', 'eat'] as const;
 export type StepId = (typeof STEPS)[number];
 /** todo 대기 · auto 자동 인식 · manual 수동 넘김 · skipped 쌈장 미발견 · avoid 회피라 권하지 않음 · missed 쌈장 없이 쌈 */
 export type Mark = 'todo' | 'auto' | 'manual' | 'skipped' | 'avoid' | 'missed';
-export type Tip = 'noMeat' | 'noSsamjang' | 'tooBig';
+export type Tip = 'noMeat' | 'noSsamjang';
 
 export type Signals = {
   leafOnHand: boolean;
@@ -20,11 +21,10 @@ export type Signals = {
   ssamjangOnLeaf: boolean;
   wrapped: boolean;
   gone: boolean;
-  tooBig: boolean;
   manualNext: boolean;
 };
 type HeldKey = Exclude<keyof Signals, 'manualNext'>;
-export const NO_SIGNALS: Signals = { leafOnHand: false, toppedLeaf: false, ssamjangOnLeaf: false, wrapped: false, gone: false, tooBig: false, manualNext: false };
+export const NO_SIGNALS: Signals = { leafOnHand: false, toppedLeaf: false, ssamjangOnLeaf: false, wrapped: false, gone: false, manualNext: false };
 
 export type CoachState = {
   /** 0~4 = STEPS 위치, 5 = 완료 */
@@ -73,7 +73,7 @@ export function step(prev: CoachState, sig: Signals, now: number, holdMs = HOLD_
   if (isDone(prev)) return prev;
   const since = { ...prev.since };
   for (const k of Object.keys(since) as HeldKey[]) if (!sig[k]) delete since[k];
-  for (const k of ['leafOnHand', 'toppedLeaf', 'ssamjangOnLeaf', 'wrapped', 'gone', 'tooBig'] as HeldKey[]) if (sig[k]) since[k] ??= now;
+  for (const k of ['leafOnHand', 'toppedLeaf', 'ssamjangOnLeaf', 'wrapped', 'gone'] as HeldKey[]) if (sig[k]) since[k] ??= now;
   const s = { ...prev, since };
   const held = (k: HeldKey) => since[k] != null && now - Math.max(since[k]!, s.enteredAt) >= holdMs;
 
@@ -89,7 +89,6 @@ export function step(prev: CoachState, sig: Signals, now: number, holdMs = HOLD_
     const missed = advance(s, 'missed', now); // → wrap
     return { ...advance(missed, 'auto', now), tip, ssamjangTipUsed: true }; // wrap 인식 = auto → eat
   }
-  if ((cur === 'wrap' || cur === 'eat') && held('tooBig')) return { ...s, tip: 'tooBig' };
   return s;
 }
 

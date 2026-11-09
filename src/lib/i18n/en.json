@@ -1518,7 +1518,7 @@
       "leaf": "Lay a leaf on your palm",
       "meat": "Add a piece of meat",
       "ssamjang": "Add a little ssamjang",
-      "wrap": "Fold it into a bundle",
+      "wrap": "Fold it into a bundle you can eat in one bite",
       "eat": "Eat it in one bite. Do not bite it in half."
     },
     "short": {
@@ -1530,8 +1530,7 @@
     },
     "tip": {
       "noMeat": "Add meat before you wrap",
-      "noSsamjang": "Try a little ssamjang next time",
-      "tooBig": "Too big for one bite. Make it smaller."
+      "noSsamjang": "Try a little ssamjang next time"
     },
     "niceWrap": "Nice wrap",
     "allDone": "All steps done.",

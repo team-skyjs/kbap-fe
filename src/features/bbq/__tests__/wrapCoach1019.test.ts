@@ -89,11 +89,9 @@ describe('KB-1019 쌈 코칭 상태 머신', () => {
     expect(currentStep(s)).toBe('eat');
   });
 
-  it('너무 큼 = S4·S5에서만 안내', () => {
-    expect(run(base(), S({ tooBig: true }), 0, 6).tip).toBeNull();
-    let s = base({ sawSsamjang: false });
-    s = step(step(s, S({ manualNext: true }), 0), S({ manualNext: true }), 10);
-    expect(run(s, S({ tooBig: true }), 100, 6).tip).toBe('tooBig');
+  it('P-635: 너무 큰 쌈 판정 없음 — 신호 자리도 없음, S4 문구에 크기 당부', () => {
+    expect(Object.keys(NO_SIGNALS)).not.toContain('tooBig');
+    expect(Object.keys(NO_SIGNALS).sort()).toEqual(['gone', 'leafOnHand', 'manualNext', 'ssamjangOnLeaf', 'toppedLeaf', 'wrapped']);
   });
 
   it('모델 v1 신호: 7 leaf_on_hand, 8 topped_leaf, 9 wrapped_ssam만, 빈 자리는 false', () => {
@@ -106,9 +104,8 @@ describe('KB-1019 쌈 코칭 상태 머신', () => {
     expect(en.tip).toEqual({
       noMeat: 'Add meat before you wrap',
       noSsamjang: 'Try a little ssamjang next time',
-      tooBig: 'Too big for one bite. Make it smaller.',
     });
-    expect(en.step).toMatchObject({ leaf: 'Lay a leaf on your palm', eat: 'Eat it in one bite. Do not bite it in half.' });
+    expect(en.step).toMatchObject({ leaf: 'Lay a leaf on your palm', wrap: 'Fold it into a bundle you can eat in one bite', eat: 'Eat it in one bite. Do not bite it in half.' });
     expect(en.niceWrap).toBe('Nice wrap');
     expect(en.prop).toBe('Prop your phone and face the camera');
     expect(JSON.stringify(en)).not.toContain('·');
