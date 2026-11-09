@@ -132,9 +132,9 @@ export function GuideScreen() {
             <Text style={styles.statusText}>{t('bbqGuide.camFail')}</Text>
             <Btn testID="bbq-guide-cam-retry" sm onPress={() => { setCamError(false); setCamKey((k) => k + 1); }}>{t('bbqGuide.retry')}</Btn>
           </View>
-        ) : det.error ? (
-          <View style={styles.status}>
-            <Text style={styles.statusText}>{t('bbqGuide.loadFail')}</Text>
+        ) : det.error || det.stuck ? (
+          <View style={styles.status} testID="bbq-guide-model-fail">
+            <Text style={styles.statusText}>{t(det.stuck ? 'bbqGuide.stuck' : 'bbqGuide.loadFail')}</Text>
             <Btn testID="bbq-guide-model-retry" sm onPress={det.retry}>{t('bbqGuide.retry')}</Btn>
           </View>
         ) : !det.ready ? (

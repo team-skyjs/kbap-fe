@@ -1,4 +1,4 @@
-import { LABELS, TUNING, coverMap, decodeO2O, fileUriToPath, fromXyxy, letterbox, nmsSameClass, postprocess, resizeDims, squareCropToUpright, unletterbox, type Det } from '../bbqModel';
+import { LABELS, OUTPUT_SHAPE, TUNING, coverMap, decodeE2E, decodeO2O, fileUriToPath, topScore, fromXyxy, letterbox, nmsSameClass, postprocess, resizeDims, squareCropToUpright, unletterbox, type Det } from '../bbqModel';
 
 const COLS = 14;
 function row(box: [number, number, number, number], cls: number, score: number): number[] {
@@ -67,8 +67,9 @@ describe('KB-1019 bbqModel 후처리', () => {
   });
 
   it('postprocess = 해석 → 중복 제거 → 원본 좌표', () => {
-    const out = pack([row([150, 0, 250, 100], 0, 0.9), row([152, 0, 252, 100], 0, 0.8), row([0, 0, 1, 1], 5, 0.1)]);
-    const d = postprocess(out, 3, COLS, 1080, 1920);
+    const out = new Float32Array(8400 * COLS); // 실제 모양 (1, 8400, 14) — 나머지 행 점수 0
+    out.set(pack([row([150, 0, 250, 100], 0, 0.9), row([152, 0, 252, 100], 0, 0.8), row([0, 0, 1, 1], 5, 0.1)]));
+    const d = postprocess('o2o', out, 1080, 1920);
     expect(d).toHaveLength(1);
     expect(d[0]!.x1).toBeCloseTo(30);
     expect(d[0]!.x2).toBeCloseTo(330);
@@ -137,4 +138,40 @@ it('P-636 소스 잠금: 로더는 fileUriToPath, 측정 화면은 fromXyxy 경�
   const probe = readFileSync('src/features/bbq/ProbeScreen.tsx', 'utf8');
   expect(probe).toContain('fromXyxy(d.box)');
   expect(probe).not.toMatch(/box\.x1|as unknown as \{ x1/);
+});
+
+describe('P-637 XNNPACK e2e (1, 300, 6)', () => {
+  const e2e = (rows: number[][]) => {
+    const out = new Float32Array(300 * 6); // 늘 300행 — 나머지는 0점
+    out.set(rows.flat());
+    return out;
+  };
+
+  it('열 = x1,y1,x2,y2,점수,클래스 · 클래스 임계값 미만·범위 밖 번호는 버림(경계값은 남김)', () => {
+    const out = e2e([
+      [10, 20, 30, 40, 0.25, 5], // tongs 0.25 = 임계값 → 남김
+      [0, 0, 1, 1, 0.6, 8], // topped 0.6 < 0.65 → 버림
+      [0, 0, 1, 1, 0.9, 12], // 번호 범위 밖 → 버림
+      [5, 6, 7, 8, 0.4, 2], // cooked 0.4 ≥ 0.15
+    ]);
+    expect(decodeE2E(out, 300, TUNING.thresholds)).toEqual([
+      { cls: 5, score: 0.25, x1: 10, y1: 20, x2: 30, y2: 40 },
+      { cls: 2, score: expect.closeTo(0.4), x1: 5, y1: 6, x2: 7, y2: 8 },
+    ]);
+  });
+
+  it('postprocess(e2e) = 해석 → 같은 클래스 중복 제거 → 원본 좌표 · 출력 모양 상수', () => {
+    const out = e2e([[150, 0, 250, 100, 0.9, 0], [152, 0, 252, 100, 0.8, 0]]);
+    const d = postprocess('e2e', out, 1080, 1920);
+    expect(d).toHaveLength(1);
+    expect(d[0]!.x1).toBeCloseTo(30);
+    expect(OUTPUT_SHAPE).toEqual({ o2o: [1, 8400, 14], e2e: [1, 300, 6] });
+  });
+
+  it('진단 topScore: 임계값과 무관한 최고 점수·클래스(두 모양)', () => {
+    expect(topScore('e2e', e2e([[0, 0, 1, 1, 0.12, 3], [0, 0, 1, 1, 0.31, 7]]))).toEqual({ score: expect.closeTo(0.31), cls: 7 });
+    const o = new Float32Array(8400 * 14);
+    o[5000 * 14 + 4 + 9] = 0.07;
+    expect(topScore('o2o', o)).toEqual({ score: expect.closeTo(0.07), cls: 9 });
+  });
 });

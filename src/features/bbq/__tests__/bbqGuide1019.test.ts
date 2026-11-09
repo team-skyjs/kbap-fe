@@ -13,6 +13,7 @@ jest.mock('react-native-executorch/cv', () => ({}));
 jest.mock('react-native-worklets', () => ({}));
 jest.mock('expo-asset', () => ({}));
 jest.mock('../../../../assets/models/bbq_v1_coreml_o2o.pte', () => 1, { virtual: true });
+jest.mock('../../../../assets/models/bbq_v1_xnnpack_e2e.pte', () => 2, { virtual: true });
 
 const known = (...codes: string[]): AvoidState => ({ kind: 'known', codes: new Set(codes) });
 const me = (...codes: string[]) => ({ restrictions: codes.map((code) => ({ code })) });
@@ -127,6 +128,16 @@ describe('KB-1019 장면 1 대상·문구', () => {
     const src = readFileSync('src/features/bbq/GuideScreen.tsx', 'utf8');
     expect(src).not.toMatch(/['"]safe['"]/);
     expect(src).toContain('tagRisk(');
+  });
+
+  it('P-637: 모델이 로드됐는데 추론이 안 나오면(stuck) 실패 문구 + 다시 시도', () => {
+    const src = readFileSync('src/features/bbq/GuideScreen.tsx', 'utf8');
+    expect(src).toContain("det.error || det.stuck ?");
+    expect(src).toContain("t(det.stuck ? 'bbqGuide.stuck' : 'bbqGuide.loadFail')");
+    const hook = readFileSync('src/features/bbq/useBbqDetection.ts', 'utf8');
+    expect(hook).toContain('stuck: loaded && ticks === 0 && (stalled || lastError != null)');
+    expect(hook).toContain("return { error: String(e) };");
+    expect(g.stuck).toBe('The table guide stopped responding.');
   });
 
   it('P-634: 가이드 화면에 측정 화면(/dev/bbq-probe) 진입 링크', () => {

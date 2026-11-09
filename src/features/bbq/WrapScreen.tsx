@@ -127,9 +127,9 @@ export function WrapScreen() {
             <Text style={styles.cardText}>{t('bbqGuide.camFail')}</Text>
             <Btn testID="bbq-wrap-cam-retry" sm onPress={() => { setCamError(false); setCamKey((k) => k + 1); }}>{t('bbqGuide.retry')}</Btn>
           </View>
-        ) : det.error ? (
+        ) : det.error || det.stuck ? (
           <View style={styles.card}>
-            <Text style={styles.cardText}>{t('bbqGuide.loadFail')}</Text>
+            <Text style={styles.cardText}>{t(det.stuck ? 'bbqGuide.stuck' : 'bbqGuide.loadFail')}</Text>
             <Btn testID="bbq-wrap-model-retry" sm onPress={det.retry}>{t('bbqGuide.retry')}</Btn>
           </View>
         ) : !det.ready ? (

@@ -1507,7 +1507,8 @@
     },
     "resultDone": "Got it",
     "wrapEntry": "Learn to wrap",
-    "measure": "Measure"
+    "measure": "Measure",
+    "stuck": "The table guide stopped responding."
   },
   "bbqWrap": {
     "prop": "Prop your phone and face the camera",

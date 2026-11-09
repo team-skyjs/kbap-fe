@@ -114,11 +114,55 @@ export function unletterbox(d: Det, lb: Letterbox, srcW: number, srcH: number): 
   };
 }
 
-/** 전달 문서 4절 처리 순서 1~4를 한 번에. srcW·srcH = 레터박스 전 이미지 크기. */
-export function postprocess(out: ArrayLike<number>, rows: number, cols: number, srcW: number, srcH: number, t = TUNING): Det[] {
+/**
+ * (1, rows, 6) e2e 출력 해석(et_xnnpack_e2e — 전달 문서 4절): 열 x1,y1,x2,y2,점수,클래스 번호. 300행이 늘 채워져 온다 — 클래스 임계값 미만·
+ * 번호가 범위 밖인 행은 버린다.
+ */
+export function decodeE2E(out: ArrayLike<number>, rows: number, thresholds: readonly number[]): Det[] {
   'worklet';
-  const lb = letterbox(srcW, srcH, t.input);
-  return nmsSameClass(decodeO2O(out, rows, cols, t.thresholds), t.nmsIou).map((d) => unletterbox(d, lb, srcW, srcH));
+  const res: Det[] = [];
+  for (let i = 0; i < rows; i++) {
+    const o = i * 6;
+    const s = out[o + 4]!;
+    const cls = Math.round(out[o + 5]!);
+    if (!(cls >= 0 && cls < thresholds.length) || !(s >= thresholds[cls]!)) continue;
+    res.push({ cls, score: s, x1: out[o]!, y1: out[o + 1]!, x2: out[o + 2]!, y2: out[o + 3]! });
+  }
+  return res;
+}
+
+export type ModelKind = 'o2o' | 'e2e';
+/** 모델별 출력 모양: Core ML o2o = (1, 8400, 14), XNNPACK e2e = (1, 300, 6) */
+export const OUTPUT_SHAPE: Record<ModelKind, readonly [number, number, number]> = { o2o: [1, 8400, 14], e2e: [1, 300, 6] };
+
+/** 해석 결과(중복 제거 전) — 진단용 통계까지 */
+export function decode(kind: ModelKind, out: ArrayLike<number>, thresholds: readonly number[]): Det[] {
+  'worklet';
+  return kind === 'o2o' ? decodeO2O(out, 8400, 14, thresholds) : decodeE2E(out, 300, thresholds);
+}
+
+/**
+ * 전달 문서 4절 처리 순서 1~4를 한 번에. srcW·srcH = 레터박스 전 이미지 크기.
+ * P-637: 워크릿에서 기본 인자로 모듈 상수를 쓰면 안 된다 — 기본 인자는 클로저를 풀기 전(매개변수 스코프)에 평가돼
+ * 워크릿 런타임에선 ReferenceError(실기 추론 0의 원인). 튜닝은 본문에서 읽는다.
+ */
+export function postprocess(kind: ModelKind, out: ArrayLike<number>, srcW: number, srcH: number): Det[] {
+  'worklet';
+  const lb = letterbox(srcW, srcH, TUNING.input);
+  return nmsSameClass(decode(kind, out, TUNING.thresholds), TUNING.nmsIou).map((d) => unletterbox(d, lb, srcW, srcH));
+}
+
+/** 진단 줄: 전체 행의 최고 점수·클래스(임계값 무관) */
+export function topScore(kind: ModelKind, out: ArrayLike<number>): { score: number; cls: number } {
+  'worklet';
+  let score = -1;
+  let cls = -1;
+  if (kind === 'e2e') {
+    for (let i = 0; i < 300; i++) if (out[i * 6 + 4]! > score) { score = out[i * 6 + 4]!; cls = Math.round(out[i * 6 + 5]!); }
+    return { score, cls };
+  }
+  for (let i = 0; i < 8400; i++) for (let c = 4; c < 14; c++) if (out[i * 14 + c]! > score) { score = out[i * 14 + c]!; cls = c - 4; }
+  return { score, cls };
 }
 
 /** 똑바로 선 원본 좌표 → 화면(프리뷰 cover) 좌표. 리사이저가 회전·거울을 이미 적용하므로 mirror는 보정 토글용. */

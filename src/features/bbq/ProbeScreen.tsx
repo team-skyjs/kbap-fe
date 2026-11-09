@@ -19,7 +19,8 @@ import { Btn } from '@/components/Btn';
 import { SkBar } from '@/components/Skeleton';
 import { color as C } from '@/lib/theme';
 import { LABELS, coverMap, fromXyxy, resizeDims, squareCropToUpright, type Det as BbqDet } from './bbqModel';
-import { BBQ_MODEL, createBbqDetector } from './bbqDetector';
+import { BBQ_MODELS, createBbqDetector } from './bbqDetector';
+import { runFrame, type BbqTick } from './useBbqDetection';
 import { createGrillGate, createTracker, type Shown } from './bbqTracker';
 
 setTelemetryEnabled(false); // 모델 다운로드 익명 이벤트 끔(외부 송신 0)
@@ -35,7 +36,6 @@ type Orientation = 'up' | 'right' | 'down' | 'left';
 /** executorch 내장 탐지기 출력 — box는 xyxy({ xmin, ymin, xmax, ymax }), SIZE 정사각형 입력 좌표 */
 type Det = { label: string; confidence: number; box: { xmin?: number; ymin?: number; xmax?: number; ymax?: number } };
 type Tick = { dets: Det[]; ms: number; w: number; h: number; o: Orientation; at: number };
-type BbqTick = { dets: BbqDet[]; inferMs: number; postMs: number; at: number; uw: number; uh: number };
 
 export function ProbeScreen() {
   const { t } = useTranslation();
@@ -64,7 +64,10 @@ export function ProbeScreen() {
   const { resizer } = useResizer({ width: SIZE, height: SIZE, channelOrder: 'rgb', dataType: 'uint8', scaleMode: 'cover', pixelLayout: 'interleaved' });
   const rd = resizeDims(upright.w, upright.h);
   const { resizer: bbqResizer } = useResizer({ width: rd.w, height: rd.h, channelOrder: 'rgb', dataType: 'uint8', scaleMode: 'contain', pixelLayout: 'interleaved' });
-  const bbq = useModel(createBbqDetector, model === 'bbq' ? { module: BBQ_MODEL } : undefined);
+  // P-637: 자체 모델도 Switch backend 토글로 coreml(o2o) ↔ xnnpack(e2e)
+  const bbq = useModel(createBbqDetector, model === 'bbq' ? BBQ_MODELS[variant] : undefined);
+  const [bbqCalls, setBbqCalls] = useState({ ok: 0, err: 0 });
+  const [bbqErr, setBbqErr] = useState<string | null>(null);
   const bbqRun = bbq.model?.run;
 
   useEffect(() => {
@@ -80,7 +83,17 @@ export function ProbeScreen() {
     setTick(next);
   };
 
+  const resetBbqDiag = () => {
+    setBbqCalls({ ok: 0, err: 0 });
+    setBbqErr(null);
+    setBbqTick(null);
+  };
+  const onBbqErr = (msg: string) => {
+    setBbqCalls((c) => ({ ...c, err: c.err + 1 }));
+    setBbqErr(msg);
+  };
   const onBbqTick = (next: BbqTick) => {
+    setBbqCalls((c) => ({ ...c, ok: c.ok + 1 }));
     const now = next.at;
     const s = bbqStamps.current.filter((x) => now - x < 1000);
     s.push(now);
@@ -98,22 +111,10 @@ export function ProbeScreen() {
     onFrame(frame: Frame) {
       'worklet';
       if (model === 'bbq') {
-        if (!bbqResizer || !bbqRun) {
-          frame.dispose();
-          return;
-        }
-        let r: GPUFrame | undefined;
-        try {
-          const sideways = frame.orientation === 'right' || frame.orientation === 'left';
-          r = bbqResizer.resize(frame);
-          const res = bbqRun({ data: new Uint8Array(r.getPixelBuffer()), width: rd.w, height: rd.h, format: 'rgb', layout: 'hwc' });
-          scheduleOnRN(onBbqTick, { ...res, uw: sideways ? frame.height : frame.width, uh: sideways ? frame.width : frame.height });
-        } catch {
-          // 언마운트·프레임 닫힘 중 예외는 버린다
-        } finally {
-          r?.dispose();
-          frame.dispose();
-        }
+        // P-637: 가이드와 같은 runFrame — 예외를 삼키지 않고 HUD로
+        const res = runFrame(frame, bbqResizer, bbqRun, rd);
+        if (res && 'error' in res) scheduleOnRN(onBbqErr, res.error);
+        else if (res) scheduleOnRN(onBbqTick, res);
         return;
       }
       if (!resizer || !detectObjectsWorklet) {
@@ -149,7 +150,8 @@ export function ProbeScreen() {
 
   // 서버 문구 아님 — 로컬 네이티브(모델 로드·카메라) 오류 원문. development·demo 채널 전용 진단 화면이라 노출(관문 보고용)
   const modelError = model === 'bbq' ? bbq.error : detector.error;
-  const errText = modelError ? String(modelError) : camError;
+  // bbq: 마지막 워크릿 예외 원문(P-637) — 로드 오류가 없을 때
+  const errText = modelError ? String(modelError) : model === 'bbq' && bbqErr ? `worklet: ${bbqErr}` : camError;
   // 버퍼 크기(tick.w×h)는 회전 전 — 리사이저 출력은 똑바로 선 쪽(옆으로 누운 방향이면 가로세로 교환)
   const sideways = tick != null && (tick.o === 'right' || tick.o === 'left');
   const uw = tick ? (sideways ? tick.h : tick.w) : 0;
@@ -168,10 +170,18 @@ export function ProbeScreen() {
   const diag =
     model === 'coco'
       ? rects[0] && `box0 in ${f(rects[0].b.x1)},${f(rects[0].b.y1)},${f(rects[0].b.x2)},${f(rects[0].b.y2)} /${SIZE} -> view ${f(rects[0].r.x)},${f(rects[0].r.y)} ${f(rects[0].r.w)}x${f(rects[0].r.h)} of ${f(view.w)}x${f(view.h)}`
-      : firstBbq && (() => {
-          const r = coverMap(firstBbq, rd.w, rd.h, view.w, view.h, mirrorFix);
-          return `box0 ${LABELS[firstBbq.cls]} in ${f(firstBbq.x1)},${f(firstBbq.y1)},${f(firstBbq.x2)},${f(firstBbq.y2)} /${rd.w}x${rd.h} -> view ${f(r.x)},${f(r.y)} ${f(r.w)}x${f(r.h)}`;
-        })();
+      : [
+          // P-637 자가 진단: 호출 수(성공/예외) · 입력→텐서 모양 · 출력 모양 · 최고 점수(클래스) · 임계값 통과 수 · 첫 박스
+          `calls ${bbqCalls.ok}/${bbqCalls.err}err`,
+          bbqTick && `in ${bbqTick.diag.inShape} out ${bbqTick.diag.outShape} top ${LABELS[bbqTick.diag.topCls] ?? bbqTick.diag.topCls}:${bbqTick.diag.top.toFixed(3)} pass ${bbqTick.diag.pass}`,
+          firstBbq &&
+            (() => {
+              const r = coverMap(firstBbq, rd.w, rd.h, view.w, view.h, mirrorFix);
+              return `box0 ${LABELS[firstBbq.cls]} in ${f(firstBbq.x1)},${f(firstBbq.y1)},${f(firstBbq.x2)},${f(firstBbq.y2)} /${rd.w}x${rd.h} -> view ${f(r.x)},${f(r.y)} ${f(r.w)}x${f(r.h)}`;
+            })(),
+        ]
+          .filter(Boolean)
+          .join('\n');
 
   return (
     <View style={styles.root} onLayout={(e) => setView({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
@@ -211,7 +221,7 @@ export function ProbeScreen() {
         {model === 'bbq' ? (
           bbq.model ? (
             <Text style={styles.hud}>
-              {`bbq ${position}  ${fps} fps  infer ${bbqTick ? bbqTick.inferMs.toFixed(1) : '-'} ms  post ${bbqTick ? bbqTick.postMs.toFixed(1) : '-'} ms  ${rd.w}x${rd.h}  load ${bbq.model.loadMs} ms  grill ${grillOn ? 'on' : 'off'}`}
+              {`bbq ${variant} ${position}  ${fps} fps  infer ${bbqTick ? bbqTick.inferMs.toFixed(1) : '-'} ms  post ${bbqTick ? bbqTick.postMs.toFixed(1) : '-'} ms  ${rd.w}x${rd.h}  load ${bbq.model.loadMs} ms  grill ${grillOn ? 'on' : 'off'}`}
             </Text>
           ) : (
             !bbq.error && (
@@ -237,8 +247,8 @@ export function ProbeScreen() {
 
       <View style={[styles.bar, { bottom: insets.bottom + 12 }]}>
         <Btn testID="bbq-flip" variant="ghost" onPress={() => setPosition((p) => (p === 'back' ? 'front' : 'back'))}>{t('bbqProbe.flip')}</Btn>
-        <Btn testID="bbq-model" variant="ghost" onPress={() => setModel((m) => (m === 'coco' ? 'bbq' : 'coco'))}>{t('bbqProbe.model')}</Btn>
-        <Btn testID="bbq-backend" variant="ghost" onPress={() => setVariant((v) => (v === 'coreml' ? 'xnnpack' : 'coreml'))}>{t('bbqProbe.backend')}</Btn>
+        <Btn testID="bbq-model" variant="ghost" onPress={() => { resetBbqDiag(); setModel((m) => (m === 'coco' ? 'bbq' : 'coco')); }}>{t('bbqProbe.model')}</Btn>
+        <Btn testID="bbq-backend" variant="ghost" onPress={() => { resetBbqDiag(); setVariant((v) => (v === 'coreml' ? 'xnnpack' : 'coreml')); }}>{t('bbqProbe.backend')}</Btn>
         <Btn testID="bbq-mirror" variant="ghost" onPress={() => setMirrorFix((m) => !m)}>{t('bbqProbe.mirror')}</Btn>
       </View>
     </View>
