@@ -99,6 +99,8 @@ export function ProbeScreen() {
     );
   }
 
+  // 서버 문구 아님 — 로컬 네이티브(모델 로드·카메라) 오류 원문. development·demo 채널 전용 진단 화면이라 노출(관문 보고용)
+  const errText = detector.error ? String(detector.error) : camError;
   const orientation = tick ? addTurns(tick.o, turns) : 'up';
   const mirror = (position === 'front') !== mirrorFix;
   const rects =
@@ -141,7 +143,7 @@ export function ProbeScreen() {
             <Text style={styles.hud}>{t('bbqProbe.loadingModel', { pct: Math.round(detector.downloadProgress * 100) })}</Text>
           </View>
         )}
-        {(detector.error || camError) && <Text style={styles.err}>{String(detector.error?.message ?? camError)}</Text>}
+        {errText && <Text style={styles.err}>{errText}</Text>}
       </View>
 
       <View style={[styles.bar, { bottom: insets.bottom + 12 }]}>
