@@ -1,5 +1,6 @@
 /**
- * recipeAdapter — KB-990 가공식품 상세 조리법(서버 S-961 계약 초안 — 확정 시 dev Swagger 정본).
+ * recipeAdapter — KB-990 가공식품 상세 조리법. 계약 = dev Swagger ProcessedFoodRecipeResponse(11/9 P-633 대조):
+ * steps·cautions = 문자열 배열(요청 lang 번역, 실패·대기 = 한국어 원문), recipe 없으면 필드 자체가 없다.
  *
  * 상세 응답 `recipe?: { source, methods: [...] }` → 표시용 Recipe | null.
  * - 방식은 MICROWAVE·BOILING_WATER만, 전자레인지 먼저(시트 기본 칩).
@@ -15,7 +16,7 @@ export type RecipeMethodWire = {
   power?: { watt?: number | null; seconds?: number | null }[] | null;
   waitSeconds?: number | null;
   drainKeepMl?: number | null;
-  steps?: { text?: string | null }[] | null;
+  steps?: (string | null)[] | null; // P-633: 초안의 { text } 객체가 아니라 문자열(Swagger)
   cautions?: (string | null)[] | null;
 };
 export type RecipeWire = { source?: string | null; methods?: RecipeMethodWire[] | null };
@@ -54,7 +55,7 @@ function adaptMethod(w: RecipeMethodWire): RecipeMethod | null {
     power,
     waitSeconds: nonNeg(w.waitSeconds),
     drainKeepMl: nonNeg(w.drainKeepMl),
-    steps: (w.steps ?? []).map((s) => text(s?.text)).filter((s): s is string => s != null),
+    steps: (w.steps ?? []).map(text).filter((s): s is string => s != null),
     cautions: (w.cautions ?? []).map(text).filter((c): c is string => c != null),
   };
   const shows = m.waterMl != null || m.waterLine != null || m.power.length > 0 || m.waitSeconds != null || m.steps.length > 0;
