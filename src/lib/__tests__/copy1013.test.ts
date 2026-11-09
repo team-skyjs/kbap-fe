@@ -14,7 +14,7 @@ it('ko: 가공식품 0 → 편의점 음식 (값 전수) · 런타임 한글 리
   const raw = fs.readFileSync('src/lib/i18n/ko.json', 'utf8');
   expect(raw).not.toContain('가공식품');
   const ko = load('ko');
-  expect([ko.packaged.segmentPackaged, ko.packaged.guideTitle, ko.scanMode.packaged]).toEqual(['편의점 음식', '편의점 음식 검색', '편의점 음식']);
+  expect([ko.packaged.segmentPackaged, ko.packaged.guideTitle]).toEqual(['편의점 음식', '편의점 음식 검색']); // KB-988: 스캔 모드 탭(scanMode) 제거로 그 키 단언 삭제
   const hits: string[] = [];
   for (const f of runtimeSrc) {
     fs.readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
@@ -49,5 +49,5 @@ it('10로케일 키 일치 · 빈 값 0 · 가운데 점·이모지 0', () => {
 
 it('스캔 부제 = 카메라 첫 화면 타이틀 바로 아래 · 모드 탭이 있거나 흐름 안 단계면 생략', () => {
   const src = fs.readFileSync('src/app/scan.tsx', 'utf8');
-  expect(src).toMatch(/\{t\('scanCamera\.title'\)\}<\/Text>\s*\{\/\*[^]*?\*\/\}\s*\{!o\.onClose && !\(FLAGS\.processedFoodEnabled && !FLAGS\.packagedVisionScan\) && \(\s*<Text style=\{styles\.camSubtitle\}[^>]*testID="scan-cam-subtitle">\{t\('scanCamera\.subtitle'\)\}/);
+  expect(src).toMatch(/\{t\('scanCamera\.title'\)\}<\/Text>\s*\{\/\*[^]*?\*\/\}\s*\{!o\.onClose && \(\s*<Text style=\{styles\.camSubtitle\}[^>]*testID="scan-cam-subtitle">\{t\('scanCamera\.subtitle'\)\}/);
 });

@@ -1,7 +1,7 @@
 /**
  * KB-969(P-592) 가공식품 사진 스캔(서버 비전) — 어댑터(경로 = 서버 state 정본) · 오류 코드 · 요청 ·
  * 흐름: 카메라 하나 → 업로드 → /scan/vision → 앞면 후보(기존 확정) / 후보 없음 / 성분표 결과(한 면 더 = 같은 분석) / 메뉴판(같은 경로로 메뉴 v2) / 그 밖(reason 안내) ·
- * 재시도 = 같은 키·같은 경로 · 하루 상한 = 닫기만 · 플래그 off = 현행 OCR 흐름.
+ * 재시도 = 같은 키·같은 경로 · 하루 상한 = 닫기만 · KB-988: 플래그·온디바이스 OCR 경로 제거(ML Kit 호출 0).
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
@@ -77,9 +77,8 @@ const DETAIL = { id: 11, reportNo: 'R1', productName: '바나나맛우유', make
 
 const trees: ReactTestRenderer[] = [];
 let qc: QueryClient;
-const prevVision = FLAGS.packagedVisionScan;
-beforeEach(() => { FLAGS.packagedVisionScan = true; FLAGS.packagedLabelScan = true; mockUuid = 0; qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } }); mockParams = {}; mockRestrictions = [{ code: 'MILK' }]; });
-afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); qc.clear(); jest.clearAllMocks(); FLAGS.packagedVisionScan = prevVision; });
+beforeEach(() => { FLAGS.packagedLabelScan = true; mockUuid = 0; qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } }); mockParams = {}; mockRestrictions = [{ code: 'MILK' }]; });
+afterEach(() => { act(() => trees.splice(0).forEach((t) => t.unmount())); qc.clear(); jest.clearAllMocks(); });
 const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() => { t = renderer.create(<QueryClientProvider client={qc}>{el}</QueryClientProvider>); }); trees.push(t); return t; };
 const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
 const press = async (t: ReactTestRenderer, id: string) => { await act(async () => { await t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); }); await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); };
@@ -90,7 +89,7 @@ function mockCamera(o: ScanCamOpts) {
   lastCam = o;
   const { View, Pressable } = jest.requireActual('react-native');
   return (
-    <View testID={`cam-${o.kind}`}>
+    <View testID="cam-vision">
       <Pressable testID="cam-shutter" onPress={() => o.onShot(mockShot)} />
       {o.link && <Pressable testID={o.link.testID} onPress={o.link.onPress} />}
       {o.onClose && <Pressable testID="cam-close" onPress={o.onClose} />}
@@ -152,7 +151,7 @@ describe('KB-969 어댑터·요청·오류', () => {
   });
 });
 
-describe('KB-969 흐름(packagedVisionScan on)', () => {
+describe('KB-969 흐름(사진 스캔 — KB-988부터 유일 경로)', () => {
   it('카메라 하나 — kind vision · "성분표로" 링크 없음 · 셔터 = 업로드 → /scan/vision(촬영 1회 키) · 온디바이스 OCR 0', async () => {
     mockPost.mockResolvedValueOnce(V({ kind: 'PACKAGE_FRONT', state: 'CANDIDATES', front: { productName: '바나나맛우유', maker: '빙그레', candidates: [cand(11, 'R1'), cand(12, 'R2')] } }));
     const t = flow();
@@ -331,16 +330,7 @@ describe('KB-969 흐름(packagedVisionScan on)', () => {
     const labels = mockPost.mock.calls.filter(([p]) => p === '/api/processed-foods/scan/label');
     expect(labels.at(-1)![1]).toMatchObject({ analysisId: 'uuid-1', pages: ['A면', 'B면', 'C면', 'E면'].map((ocrText) => ({ ocrText })) });
   });
-  it('플래그 off = 현행(앞면 카메라 kind package · 성분표 링크 · 온디바이스 OCR)', async () => {
-    FLAGS.packagedVisionScan = false;
-    mockOcr.mockResolvedValueOnce([{ text: '바나나맛우유' }]);
-    mockPost.mockResolvedValueOnce({ analysisId: 'a', state: 'NO_CANDIDATE', candidates: [] });
-    const t = flow();
-    expect(ids(t)).toEqual(expect.arrayContaining(['cam-package', 'pscan-label-instead']));
-    await press(t, 'cam-shutter');
-    expect(mockOcr).toHaveBeenCalled();
-    expect(visionCalls()).toHaveLength(0);
-  });
+
 });
 
 describe('KB-1015 첫 사진 메뉴판 바로가기 신호(menuFastPathEligible)', () => {

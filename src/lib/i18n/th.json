@@ -259,7 +259,6 @@
       "processing": "กำลังประมวลผล"
     },
     "retake": "ถ่ายใหม่",
-    "gallery": "นำเข้าจากคลังรูป",
     "flip": "สลับกล้อง",
     "showOriginal": "ต้นฉบับ",
     "showResult": "ความเสี่ยง",
@@ -283,8 +282,6 @@
     "cameraTitle": "สแกนเมนู",
     "cameraHintPortrait": "บีบเพื่อซูม ให้เห็นเมนูทั้งแผ่น",
     "cameraHintLandscape": "เมนูแนวกว้างถ่ายแนวนอนพอดีกว่า",
-    "landscapeBadge": "แนวนอน",
-    "launcherHint": "ถ่ายเมนู แล้วเราจะตรวจทุกจานกับโปรไฟล์ของคุณ",
     "retakeTitle": "สแกนใหม่ไหม?",
     "retakeBody": "ผลปัจจุบันจะถูกลบ",
     "retakeConfirm": "สแกนใหม่",
@@ -1303,16 +1300,9 @@
       "showLess": "แสดงน้อยลง"
     }
   },
-  "scanMode": {
-    "menu": "เมนู",
-    "food": "รูปอาหาร",
-    "packaged": "อาหารแปรรูป",
-    "soon": "เร็ว ๆ นี้"
-  },
   "packagedScan": {
     "title": "สแกน",
     "chooseTitle": "ผลการสแกน",
-    "reading": "กำลังอ่านบรรจุภัณฑ์…",
     "whichTitle": "สินค้าของคุณคือชิ้นไหน",
     "noneTitle": "ไม่พบสินค้าที่ตรงกัน",
     "noneBody": "ถ่ายฉลากส่วนผสมด้านหลังเพื่อดำเนินการต่อ",
@@ -1328,7 +1318,6 @@
     "captureHeadline": "ถ่ายด้านหน้าบรรจุภัณฑ์",
     "captureBody": "ถ่ายให้เห็นชื่อสินค้าและรสชาติ",
     "captureBox": "ด้านหน้าบรรจุภัณฑ์",
-    "labelInstead": "ตรวจด้วยฉลากส่วนผสมแทน",
     "takePhoto": "ถ่ายรูป",
     "retake": "ถ่ายใหม่",
     "resultTitle": "ผลการสแกน",
@@ -1366,7 +1355,6 @@
     "labelAnalyze": "วิเคราะห์ฉลาก",
     "labelRawTitle": "ข้อความที่อ่านได้",
     "newAnalysisCta": "เริ่มวิเคราะห์ใหม่",
-    "debugLabelPlaceholder": "ข้อความของฉลากหนึ่งด้าน",
     "debugAddPage": "เพิ่มเป็นหนึ่งด้าน",
     "matchTitle": "ค้นหาและเลือกสินค้าที่คุณสแกน",
     "personalNote": "ตั้งค่าส่วนผสมที่หลีกเลี่ยงเพื่อดูผลของคุณ",
@@ -1375,9 +1363,6 @@
     "anotherBody": "ใช้ชื่อที่อ่านได้ หรือถ่ายฉลากด้านหลัง",
     "anotherBodyNameOnly": "ใช้ชื่อที่อ่านได้",
     "findByName": "หาจากชื่อ",
-    "frontUnreadableTitle": "อ่านข้อความไม่ได้",
-    "frontUnreadableBody": "ถ่ายด้านหน้าให้ชัดขึ้น หรือสแกนฉลากส่วนผสม",
-    "frontUnreadableBodyNoLabel": "ถ่ายด้านหน้าให้ชัดขึ้น",
     "retakePhoto": "ถ่ายใหม่",
     "findTitle": "หาสินค้าของคุณ",
     "findSubtitle": "ค้นหาด้วยชื่อที่อ่านจากรูป",
@@ -1419,7 +1404,6 @@
     "menuLink": "เลือกรูปจากคลังภาพ",
     "frontLink": "สแกนด้านหน้าบรรจุภัณฑ์แทน",
     "capturedMenu": "เมนูที่คุณถ่าย",
-    "capturedPackage": "บรรจุภัณฑ์ที่คุณถ่าย",
     "capturedLabel": "ฉลากที่คุณถ่าย",
     "choosePhoto": "เลือกรูปภาพ",
     "switchCamera": "สลับกล้อง",

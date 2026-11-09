@@ -259,7 +259,6 @@
       "processing": "Diproses"
     },
     "retake": "Ambil ulang",
-    "gallery": "Impor dari galeri",
     "flip": "Balik kamera",
     "showOriginal": "Asli",
     "showResult": "Risiko",
@@ -283,8 +282,6 @@
     "cameraTitle": "Pindai menu",
     "cameraHintPortrait": "Cubit untuk zoom, muat seluruh menu",
     "cameraHintLandscape": "Menu lebar lebih pas dalam mode lanskap",
-    "landscapeBadge": "Lanskap",
-    "launcherHint": "Foto menunya — kami cocokkan setiap hidangan dengan profil Anda.",
     "retakeTitle": "Pindai ulang?",
     "retakeBody": "Hasil saat ini akan dihapus.",
     "retakeConfirm": "Pindai ulang",
@@ -1303,16 +1300,9 @@
       "showLess": "Tampilkan lebih sedikit"
     }
   },
-  "scanMode": {
-    "menu": "Menu",
-    "food": "Foto makanan",
-    "packaged": "Makanan kemasan",
-    "soon": "Segera hadir"
-  },
   "packagedScan": {
     "title": "Pindai",
     "chooseTitle": "Hasil pindai",
-    "reading": "Membaca kemasan…",
     "whichTitle": "Produk mana yang kamu punya?",
     "noneTitle": "Tidak ada produk yang cocok",
     "noneBody": "Foto label bahan di bagian belakang untuk melanjutkan.",
@@ -1328,7 +1318,6 @@
     "captureHeadline": "Foto bagian depan kemasan",
     "captureBody": "Pastikan nama produk dan rasanya terlihat.",
     "captureBox": "Depan kemasan",
-    "labelInstead": "Pakai label bahan saja",
     "takePhoto": "Ambil foto",
     "retake": "Foto ulang",
     "resultTitle": "Hasil pindaian",
@@ -1366,7 +1355,6 @@
     "labelAnalyze": "Analisis label",
     "labelRawTitle": "Teks yang terbaca",
     "newAnalysisCta": "Mulai analisis baru",
-    "debugLabelPlaceholder": "Teks satu sisi label",
     "debugAddPage": "Tambahkan sebagai satu sisi",
     "matchTitle": "Cari dan pilih produk yang kamu pindai",
     "personalNote": "Atur bahan yang dihindari untuk hasil pribadi.",
@@ -1375,9 +1363,6 @@
     "anotherBody": "Pakai nama yang terbaca, atau foto label di bagian belakang.",
     "anotherBodyNameOnly": "Pakai nama yang terbaca.",
     "findByName": "Lewat nama",
-    "frontUnreadableTitle": "Kami tidak bisa membaca teksnya",
-    "frontUnreadableBody": "Foto bagian depan lebih jelas atau pindai label bahan.",
-    "frontUnreadableBodyNoLabel": "Foto bagian depan lebih jelas.",
     "retakePhoto": "Foto ulang",
     "findTitle": "Temukan produkmu",
     "findSubtitle": "Cari dengan nama yang terbaca dari fotomu",
@@ -1419,7 +1404,6 @@
     "menuLink": "Pilih foto dari galeri",
     "frontLink": "Pindai bagian depan kemasan saja",
     "capturedMenu": "Menu yang Anda foto",
-    "capturedPackage": "Kemasan yang Anda foto",
     "capturedLabel": "Label yang Anda foto",
     "choosePhoto": "Pilih foto",
     "switchCamera": "Ganti kamera",

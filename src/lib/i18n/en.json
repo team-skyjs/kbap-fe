@@ -255,7 +255,6 @@
       "processing": "Processing"
     },
     "retake": "Retake",
-    "gallery": "Import from gallery",
     "flip": "Flip camera",
     "showOriginal": "Original",
     "showResult": "Risk",
@@ -279,8 +278,6 @@
     "cameraTitle": "Scan menu",
     "cameraHintPortrait": "Pinch to zoom, fit the whole menu",
     "cameraHintLandscape": "Wide menus fit better in landscape",
-    "landscapeBadge": "Landscape",
-    "launcherHint": "Snap the menu. We'll check each dish against your profile.",
     "retakeTitle": "Scan again?",
     "retakeBody": "Your current results will be discarded.",
     "retakeConfirm": "Rescan",
@@ -1299,16 +1296,9 @@
       "showLess": "Show less"
     }
   },
-  "scanMode": {
-    "menu": "Menu",
-    "food": "Food photo",
-    "packaged": "Packaged food",
-    "soon": "Coming soon"
-  },
   "packagedScan": {
     "title": "Scan",
     "chooseTitle": "Scan results",
-    "reading": "Reading the package…",
     "whichTitle": "Which product is yours?",
     "noneTitle": "No matching products",
     "noneBody": "Photograph the ingredient label on the back to continue.",
@@ -1324,7 +1314,6 @@
     "captureHeadline": "Photograph the front of the package",
     "captureBody": "Keep the product name and flavor visible.",
     "captureBox": "Front of package",
-    "labelInstead": "Scan the ingredient label instead",
     "takePhoto": "Take photo",
     "retake": "Take the photo again",
     "resultTitle": "Scan result",
@@ -1362,7 +1351,6 @@
     "labelAnalyze": "Analyze label",
     "labelRawTitle": "Label text",
     "newAnalysisCta": "Start a new analysis",
-    "debugLabelPlaceholder": "Text of one side of the label",
     "debugAddPage": "Add as one side",
     "matchTitle": "Find and select the item you scanned",
     "personalNote": "Set avoid ingredients for a personal result.",
@@ -1371,9 +1359,6 @@
     "anotherBody": "Look it up by the name we read, or photograph the label on the back.",
     "anotherBodyNameOnly": "Look it up by the name we read.",
     "findByName": "Find by name",
-    "frontUnreadableTitle": "We could not read the text",
-    "frontUnreadableBody": "Try a clearer photo of the front or scan the ingredient label.",
-    "frontUnreadableBodyNoLabel": "Try a clearer photo of the front.",
     "retakePhoto": "Retake photo",
     "findTitle": "Find your product",
     "findSubtitle": "Search the name read from your photo",
@@ -1415,7 +1400,6 @@
     "menuLink": "Choose a photo from your library",
     "frontLink": "Scan package front instead",
     "capturedMenu": "Your captured menu",
-    "capturedPackage": "Your captured package",
     "capturedLabel": "Your captured label",
     "choosePhoto": "Choose photo",
     "switchCamera": "Switch camera",

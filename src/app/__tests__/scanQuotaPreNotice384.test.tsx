@@ -116,13 +116,14 @@ jest.mock('@/lib/data/useMe', () => ({
   useMyReviews: () => ({ data: [] }),
 }));
 const mockIssue = jest.fn();
+const mockMenuScan = jest.fn(); // KB-988: 메뉴 스캔 요청(비전이 메뉴판 판별 뒤) — 사진 고르기는 소진이어도 열린다
 jest.mock('@/lib/data/useScan', () => ({
   scanV2Enabled: () => true,
   issueScanTicket: () => mockIssue(),
   useScan: () => ({
     isPending: false,
-    mutate: (_v: unknown, { onSuccess }: { onSuccess: (r: unknown) => void }) =>
-      onSuccess({
+    mutate: (v: unknown, { onSuccess }: { onSuccess: (r: unknown) => void }) =>
+      mockMenuScan(v) ?? onSuccess({
         degraded: false,
         items: [{ itemId: 0, rawMenuName: '된장찌개', box: { x: 0, y: 0, width: 0.1, height: 0.1 }, risk: 'safe', matched: true, foodId: '1', displayName: 'Doenjang Jjigae', koreanName: '된장찌개', price: 8000 }],
         photoOnly: [],
@@ -130,6 +131,8 @@ jest.mock('@/lib/data/useScan', () => ({
   }),
 }));
 
+// KB-988: 스캔 카메라 = 늘 가공식품 흐름(비전) — 찍은 사진을 메뉴판 판별로 넘기는 목으로 메뉴 경로를 본다
+jest.mock('@/features/scan/PackagedScanFlow', () => jest.requireActual('@/__tests__/helpers/visionMenuFlowMock'));
 import Scan from '../scan';
 
 const QUOTA = (remaining: number | 'unlimited', unlocked = false) => ({ count: 3, limit: 3, unlocked, remaining });
@@ -149,14 +152,15 @@ beforeEach(() => {
   mockIsGuest.mockReturnValue(false);
 });
 
-// KB-963(예진 11/2): 진입 잠금 0 — 소진이어도 카메라(가공식품은 그대로 사용), 메뉴 촬영 시도(갤러리·셔터·시스템 카메라)에서만 쿼터 안내
+// KB-963(예진 11/2): 진입 잠금 0 — 소진이어도 카메라(가공식품은 그대로 사용), 메뉴 촬영 시도에서만 쿼터 안내.
+// KB-988: 카메라 하나(비전) — 사진은 고른 뒤 비전이 메뉴판으로 판별했을 때 안내(scanMenuFromVision · 메뉴 스캔 요청 0)
 const { launchImageLibraryAsync: mockPick } = jest.requireMock('expo-image-picker') as { launchImageLibraryAsync: jest.Mock };
 async function shootMenu(tree: ReactTestRenderer) {
   const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scanCamera.choosePhoto' && typeof n.props?.onPress === 'function');
   await act(async () => { await gallery[0].props.onPress(); });
 }
 
-it('KB-963: 소진·미해금 = 진입 시 쿼터 안내 0(카메라) · 메뉴 촬영 시도 = 쿼터 안내 + 사진 고르기 0 · 티켓 요청은 계속', async () => {
+it('KB-963: 소진·미해금 = 진입 시 쿼터 안내 0(카메라) · 메뉴판 사진 = 쿼터 안내 + 메뉴 스캔 요청 0 · 티켓 요청은 계속', async () => {
   mockIssue.mockReturnValue(deferred().promise);
   mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0) } });
   let tree!: ReactTestRenderer;
@@ -165,7 +169,8 @@ it('KB-963: 소진·미해금 = 진입 시 쿼터 안내 0(카메라) · 메뉴 
   expect(quotaShown(tree)).toBe(false);
   await shootMenu(tree);
   expect(quotaShown(tree)).toBe(true);
-  expect(mockPick).not.toHaveBeenCalled();
+  expect(mockPick).toHaveBeenCalledTimes(1); // KB-988: 사진 고르기 = 비전(판별 전) — 소진 판정은 메뉴판으로 판별된 뒤
+  expect(mockMenuScan).not.toHaveBeenCalled();
 });
 
 it('KB-963: 쿼터 안내 → 나중에 = 카메라로 복귀(스캔 화면 유지 — 모드 탭에서 가공식품 사용)', async () => {
@@ -261,7 +266,7 @@ it('Codex #395: 선발급 SCAN-004로 진입 → 카메라 중 해금 프로필 
     }
     await shootMenu(tree);
     expect({ arrive, quota: quotaShown(tree) }).toEqual({ arrive, quota: !arrive });
-    expect({ arrive, picked: mockPick.mock.calls.length > 0 }).toEqual({ arrive, picked: arrive });
+    expect({ arrive, scanned: mockMenuScan.mock.calls.length > 0 }).toEqual({ arrive, scanned: arrive }); // KB-988: 사진 고르기는 늘 — 메뉴 스캔 요청이 갈림
     act(() => tree.unmount());
   }
 });
@@ -338,8 +343,3 @@ describe('KB-670 선발급 MEMBER-003 = 에러 화면 없음 · 게스트 전환
   });
 });
 
-// P-598: packagedVisionScan 전 채널 ON — 이 스위트는 탭·메뉴판·ML Kit 흐름(아직 코드에 남은 OFF 경로)을 본다 → OFF 고정(scanDesign 관례)
-const visionFlags = (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS;
-const visionPrev = visionFlags.packagedVisionScan;
-beforeEach(() => { visionFlags.packagedVisionScan = false; });
-afterAll(() => { visionFlags.packagedVisionScan = visionPrev; });

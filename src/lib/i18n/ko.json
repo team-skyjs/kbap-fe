@@ -259,7 +259,6 @@
       "processing": "처리 중"
     },
     "retake": "다시 찍기",
-    "gallery": "갤러리에서 가져오기",
     "flip": "카메라 전환",
     "showOriginal": "원본",
     "showResult": "위험도",
@@ -283,8 +282,6 @@
     "cameraTitle": "메뉴판 스캔",
     "cameraHintPortrait": "두 손가락으로 확대, 메뉴판 전체가 보이게 촬영",
     "cameraHintLandscape": "옆으로 긴 메뉴판은 가로가 잘 맞아요",
-    "landscapeBadge": "가로 모드",
-    "launcherHint": "메뉴판을 찍으면 모든 메뉴를 내 프로필과 대조해요.",
     "retakeTitle": "다시 스캔할까요?",
     "retakeBody": "지금 결과가 사라져요.",
     "retakeConfirm": "다시 스캔",
@@ -1303,16 +1300,9 @@
       "showLess": "접기"
     }
   },
-  "scanMode": {
-    "menu": "메뉴판",
-    "food": "음식 사진",
-    "packaged": "편의점 음식",
-    "soon": "준비 중이에요"
-  },
   "packagedScan": {
     "title": "스캔",
     "chooseTitle": "스캔 결과",
-    "reading": "포장을 읽고 있어요…",
     "whichTitle": "어떤 제품인가요?",
     "noneTitle": "맞는 제품이 없어요",
     "noneBody": "뒷면 성분표를 찍어 이어가세요.",
@@ -1328,7 +1318,6 @@
     "captureHeadline": "포장 앞면을 찍어 주세요",
     "captureBody": "제품 이름과 맛이 보이게 찍어 주세요.",
     "captureBox": "포장 앞면",
-    "labelInstead": "성분표로 확인하기",
     "takePhoto": "사진 찍기",
     "retake": "다시 찍기",
     "resultTitle": "스캔 결과",
@@ -1366,7 +1355,6 @@
     "labelAnalyze": "성분표 분석하기",
     "labelRawTitle": "읽은 성분표 글자",
     "newAnalysisCta": "새로 분석하기",
-    "debugLabelPlaceholder": "성분표 한 면의 글자",
     "debugAddPage": "한 면으로 추가",
     "matchTitle": "내가 스캔한 식품을 찾아 선택해주세요",
     "personalNote": "피하는 재료를 설정하면 내 기준 결과를 볼 수 있어요.",
@@ -1375,9 +1363,6 @@
     "anotherBody": "읽은 이름으로 찾거나 뒷면 성분표를 찍어 보세요.",
     "anotherBodyNameOnly": "읽은 이름으로 찾아보세요.",
     "findByName": "이름으로 찾기",
-    "frontUnreadableTitle": "글자를 읽지 못했어요",
-    "frontUnreadableBody": "앞면을 더 선명하게 찍거나 성분표를 찍어 보세요.",
-    "frontUnreadableBodyNoLabel": "앞면을 더 선명하게 찍어 보세요.",
     "retakePhoto": "다시 찍기",
     "findTitle": "제품 찾기",
     "findSubtitle": "사진에서 읽은 이름으로 찾아요",
@@ -1419,7 +1404,6 @@
     "menuLink": "앨범에서 사진 고르기",
     "frontLink": "포장 앞면으로 확인하기",
     "capturedMenu": "찍은 메뉴판",
-    "capturedPackage": "찍은 포장",
     "capturedLabel": "찍은 성분표",
     "choosePhoto": "사진 선택",
     "switchCamera": "카메라 전환",

@@ -259,7 +259,6 @@
       "processing": "處理中"
     },
     "retake": "重拍",
-    "gallery": "從相簿匯入",
     "flip": "翻轉相機",
     "showOriginal": "原圖",
     "showResult": "風險",
@@ -283,8 +282,6 @@
     "cameraTitle": "掃描菜單",
     "cameraHintPortrait": "捏合縮放，拍下整份菜單",
     "cameraHintLandscape": "寬幅菜單橫屏更合適",
-    "landscapeBadge": "橫屏",
-    "launcherHint": "拍下菜單,我們會將每道菜與您的檔案比對。",
     "retakeTitle": "重新掃描?",
     "retakeBody": "當前結果將被清除。",
     "retakeConfirm": "重新掃描",
@@ -1303,16 +1300,9 @@
       "showLess": "收合"
     }
   },
-  "scanMode": {
-    "menu": "菜單",
-    "food": "菜色照片",
-    "packaged": "包裝食品",
-    "soon": "即將推出"
-  },
   "packagedScan": {
     "title": "掃描",
     "chooseTitle": "掃描結果",
-    "reading": "正在讀取包裝…",
     "whichTitle": "你的是哪一款？",
     "noneTitle": "沒有符合的商品",
     "noneBody": "請拍攝背面的原料表繼續。",
@@ -1328,7 +1318,6 @@
     "captureHeadline": "請拍攝包裝正面",
     "captureBody": "請讓商品名稱和口味清楚可見。",
     "captureBox": "包裝正面",
-    "labelInstead": "改用原料表確認",
     "takePhoto": "拍照",
     "retake": "重新拍攝",
     "resultTitle": "掃描結果",
@@ -1366,7 +1355,6 @@
     "labelAnalyze": "分析成分表",
     "labelRawTitle": "辨識出的文字",
     "newAnalysisCta": "重新分析",
-    "debugLabelPlaceholder": "成分表一面的文字",
     "debugAddPage": "作為一面新增",
     "matchTitle": "找出並選擇你掃描的食品",
     "personalNote": "設定要避免的食材後可查看個人結果。",
@@ -1375,9 +1363,6 @@
     "anotherBody": "用辨識出的名稱查找，或拍攝背面的成分表。",
     "anotherBodyNameOnly": "用辨識出的名稱查找。",
     "findByName": "依名稱查找",
-    "frontUnreadableTitle": "無法辨識文字",
-    "frontUnreadableBody": "請拍得更清楚，或拍攝成分表。",
-    "frontUnreadableBodyNoLabel": "請把正面拍得更清楚。",
     "retakePhoto": "重新拍攝",
     "findTitle": "查找商品",
     "findSubtitle": "用照片中辨識出的名稱查找",
@@ -1419,7 +1404,6 @@
     "menuLink": "從相簿選擇照片",
     "frontLink": "改為掃描包裝正面",
     "capturedMenu": "你拍的菜單",
-    "capturedPackage": "你拍的包裝",
     "capturedLabel": "你拍的成分表",
     "choosePhoto": "選擇照片",
     "switchCamera": "切換相機",

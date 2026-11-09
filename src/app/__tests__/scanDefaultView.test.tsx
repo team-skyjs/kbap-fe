@@ -133,6 +133,8 @@ jest.mock('@/lib/data/useScan', () => ({
   }),
 }));
 
+// KB-988: 스캔 카메라 = 늘 가공식품 흐름(비전) — 찍은 사진을 메뉴판 판별로 넘기는 목으로 메뉴 경로를 본다
+jest.mock('@/features/scan/PackagedScanFlow', () => jest.requireActual('@/__tests__/helpers/visionMenuFlowMock'));
 import Scan from '../scan';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 
@@ -171,8 +173,3 @@ it('P-138⑤(예진 8/6, P-071 대체): 스캔 완료 기본 = List — Photo는
   expect(overlays[0].props.photo).toBeTruthy();
 });
 
-// P-598: packagedVisionScan 전 채널 ON — 이 스위트는 탭·메뉴판·ML Kit 흐름(아직 코드에 남은 OFF 경로)을 본다 → OFF 고정(scanDesign 관례)
-const visionFlags = (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS;
-const visionPrev = visionFlags.packagedVisionScan;
-beforeEach(() => { visionFlags.packagedVisionScan = false; });
-afterAll(() => { visionFlags.packagedVisionScan = visionPrev; });

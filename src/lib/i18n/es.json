@@ -259,7 +259,6 @@
       "processing": "Procesando"
     },
     "retake": "Repetir",
-    "gallery": "Importar de la galería",
     "flip": "Girar cámara",
     "showOriginal": "Original",
     "showResult": "Riesgo",
@@ -283,8 +282,6 @@
     "cameraTitle": "Escanear menú",
     "cameraHintPortrait": "Pellizca para zoom, encuadra todo el menú",
     "cameraHintLandscape": "Los menús anchos caben mejor en horizontal",
-    "landscapeBadge": "Horizontal",
-    "launcherHint": "Fotografía el menú y compararemos cada plato con tu perfil.",
     "retakeTitle": "¿Escanear de nuevo?",
     "retakeBody": "Se descartarán los resultados actuales.",
     "retakeConfirm": "Reescanear",
@@ -1303,16 +1300,9 @@
       "showLess": "Ver menos"
     }
   },
-  "scanMode": {
-    "menu": "Menú",
-    "food": "Foto de plato",
-    "packaged": "Envasados",
-    "soon": "Próximamente"
-  },
   "packagedScan": {
     "title": "Escanear",
     "chooseTitle": "Resultados del escaneo",
-    "reading": "Leyendo el envase…",
     "whichTitle": "¿Cuál es tu producto?",
     "noneTitle": "No hay productos que coincidan",
     "noneBody": "Fotografía la etiqueta de ingredientes del reverso para continuar.",
@@ -1328,7 +1318,6 @@
     "captureHeadline": "Fotografía el frente del envase",
     "captureBody": "Que se vean el nombre del producto y el sabor.",
     "captureBox": "Frente del envase",
-    "labelInstead": "Usar la etiqueta de ingredientes",
     "takePhoto": "Tomar foto",
     "retake": "Volver a tomar la foto",
     "resultTitle": "Resultado del escaneo",
@@ -1366,7 +1355,6 @@
     "labelAnalyze": "Analizar etiqueta",
     "labelRawTitle": "Texto leído",
     "newAnalysisCta": "Nuevo análisis",
-    "debugLabelPlaceholder": "Texto de un lado de la etiqueta",
     "debugAddPage": "Añadir como un lado",
     "matchTitle": "Busca y selecciona el producto que escaneaste",
     "personalNote": "Elige ingredientes a evitar para ver un resultado personal.",
@@ -1375,9 +1363,6 @@
     "anotherBody": "Usa el nombre que leímos o fotografía la etiqueta trasera.",
     "anotherBodyNameOnly": "Usa el nombre que leímos.",
     "findByName": "Por nombre",
-    "frontUnreadableTitle": "No pudimos leer el texto",
-    "frontUnreadableBody": "Toma una foto más nítida del frente o escanea la etiqueta de ingredientes.",
-    "frontUnreadableBodyNoLabel": "Toma una foto más nítida del frente.",
     "retakePhoto": "Repetir foto",
     "findTitle": "Encuentra tu producto",
     "findSubtitle": "Busca con el nombre leído en tu foto",
@@ -1419,7 +1404,6 @@
     "menuLink": "Elegir una foto de tu galería",
     "frontLink": "Escanear el frente del envase",
     "capturedMenu": "Tu foto del menú",
-    "capturedPackage": "Tu foto del envase",
     "capturedLabel": "Tu foto de la etiqueta",
     "choosePhoto": "Elegir foto",
     "switchCamera": "Cambiar cámara",
