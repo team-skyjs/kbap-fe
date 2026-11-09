@@ -4,7 +4,7 @@
  * - 불판 띠 → 종업원 한국어 카드(사장님 카드 레이아웃 재사용) → 영어 결과. 서버 호출·저장 없음.
  */
 import { useEffect, useState } from 'react';
-import { Linking, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import { PressScale, RISK, RiskMark, RiskPill } from '@/components';
 import { color as C, font, radius } from '@/lib/theme';
 import { useSession } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
+import { openAppSettings } from '@/lib/openExternal';
 import { isLongQuestion, ownerCardStyles as O } from '@/app/food/[id]/owner';
 import { LABELS, coverMap } from './bbqModel';
 import { avoidFrom, tagRisk } from './bbqAvoid';
@@ -63,7 +64,7 @@ export function GuideScreen() {
         {canRequestPermission ? (
           <Btn testID="bbq-guide-allow-camera" onPress={() => void requestPermission()}>{t('bbqGuide.allowCamera')}</Btn>
         ) : (
-          <Btn testID="bbq-guide-open-settings" onPress={() => void Linking.openSettings()}>{t('bbqGuide.openSettings')}</Btn>
+          <Btn testID="bbq-guide-open-settings" onPress={() => void openAppSettings()}>{t('bbqGuide.openSettings')}</Btn>
         )}
       </View>
     );
