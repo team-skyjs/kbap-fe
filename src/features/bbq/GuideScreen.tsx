@@ -121,6 +121,10 @@ export function GuideScreen() {
       )}
 
       {close}
+      {/* P-634: 1일 차 관문 측정 화면 진입(시연 채널 게이트 안, 눈에 덜 띄게) */}
+      <Pressable testID="bbq-guide-measure" onPress={() => router.push('/dev/bbq-probe' as Href)} hitSlop={10} style={[styles.measure, { top: insets.top + 18 }]}>
+        <Text style={styles.measureText}>{t('bbqGuide.measure')}</Text>
+      </Pressable>
 
       <View style={[styles.top, { top: insets.top + 64 }]} pointerEvents="box-none">
         {camError ? (
@@ -216,6 +220,8 @@ const styles = StyleSheet.create({
   band: { backgroundColor: C.ink, borderRadius: radius.lg, paddingVertical: 16, paddingHorizontal: 18 },
   bandText: { fontFamily: font.bodyBold, fontSize: 15, color: '#fff', textAlign: 'center' },
   answers: { gap: 10 },
+  measure: { position: 'absolute', right: 18, zIndex: 5, paddingHorizontal: 8, paddingVertical: 4 },
+  measureText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, textDecorationLine: 'underline' },
   wrapEntry: { alignSelf: 'flex-end', backgroundColor: '#fff' },
   koAnswer: { fontFamily: font.koBold },
 });

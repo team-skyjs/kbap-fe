@@ -1507,7 +1507,8 @@
       "staff": "The staff will grill it for you. Wait until they tell you it's ready."
     },
     "resultDone": "Got it",
-    "wrapEntry": "Learn to wrap"
+    "wrapEntry": "Learn to wrap",
+    "measure": "Measure"
   },
   "bbqWrap": {
     "prop": "Prop your phone and face the camera",

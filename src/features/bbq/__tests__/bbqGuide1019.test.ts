@@ -128,4 +128,10 @@ describe('KB-1019 장면 1 대상·문구', () => {
     expect(src).not.toMatch(/['"]safe['"]/);
     expect(src).toContain('tagRisk(');
   });
+
+  it('P-634: 가이드 화면에 측정 화면(/dev/bbq-probe) 진입 링크', () => {
+    const src = readFileSync('src/features/bbq/GuideScreen.tsx', 'utf8');
+    expect(src).toMatch(/testID="bbq-guide-measure" onPress=\{\(\) => router\.push\('\/dev\/bbq-probe' as Href\)\}/);
+    expect(g.measure).toBe('Measure');
+  });
 });
