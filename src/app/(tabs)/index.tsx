@@ -177,7 +177,7 @@ function HomeBody() {
     <View>
       {/* KB-1019 시연 전용(머지 금지 브랜치): 홈 최상단 가로 진입 — 장면 1 전까지 임시로 프로브 화면 */}
       {bbqEntry && (
-        <Pressable onPress={() => router.push('/dev/bbq-probe' as Href)} style={styles.bbqEntry} accessibilityRole="button" testID="home-bbq-entry">
+        <Pressable onPress={() => router.push('/bbq/guide' as Href)} style={styles.bbqEntry} accessibilityRole="button" testID="home-bbq-entry">
           {({ pressed }) => (
             <>
               <View style={styles.bbqTexts}>

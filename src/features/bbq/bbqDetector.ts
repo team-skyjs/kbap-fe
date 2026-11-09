@@ -18,7 +18,7 @@ const COLS = 14;
 export type BbqRun = { dets: Det[]; inferMs: number; postMs: number; at: number };
 export type BbqDetector = { dispose: () => void; loadMs: number; run: (input: ImageBuffer) => BbqRun };
 
-export async function createBbqDetector(cfg: { module: number }): Promise<BbqDetector> {
+export async function createBbqDetector(cfg: { module: number; attempt?: number }): Promise<BbqDetector> {
   const t0 = Date.now();
   const [asset] = await Asset.loadAsync(cfg.module);
   const uri = asset?.localUri ?? asset?.uri ?? '';
