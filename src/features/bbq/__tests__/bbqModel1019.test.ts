@@ -94,7 +94,6 @@ describe('KB-1019 화면 연결', () => {
   });
 
   it('라벨 10개 전부 en 이름표, leaf = Leafy wrap, 고기 종류 이름 없음', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const en = require('../../../lib/i18n/en.json') as { bbqProbe: { label: Record<string, string> } };
     expect(Object.keys(en.bbqProbe.label)).toEqual([...LABELS]);
     expect(en.bbqProbe.label.leaf).toBe('Leafy wrap');

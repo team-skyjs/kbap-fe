@@ -34,7 +34,7 @@ type VariantKey = keyof typeof VARIANTS;
 
 type Det = { label: string; confidence: number; box: { x1: number; y1: number; x2: number; y2: number } };
 type Tick = { dets: Det[]; ms: number; w: number; h: number; o: Orientation };
-type BbqTick = { dets: BbqDet[]; inferMs: number; postMs: number; uw: number; uh: number };
+type BbqTick = { dets: BbqDet[]; inferMs: number; postMs: number; uw: number; uh: number; at: number };
 
 export function ProbeScreen() {
   const { t } = useTranslation();
@@ -80,7 +80,7 @@ export function ProbeScreen() {
   };
 
   const onBbqTick = (next: BbqTick) => {
-    const now = Date.now();
+    const now = next.at;
     onTick({ dets: [], ms: next.inferMs + next.postMs, w: next.uw, h: next.uh, o: 'up' });
     if (next.uw !== upright.w || next.uh !== upright.h) setUpright({ w: next.uw, h: next.uh });
     setBbqTick(next);
@@ -103,7 +103,7 @@ export function ProbeScreen() {
           const sideways = frame.orientation === 'right' || frame.orientation === 'left';
           r = bbqResizer.resize(frame);
           const res = bbqRun({ data: new Uint8Array(r.getPixelBuffer()), width: rd.w, height: rd.h, format: 'rgb', layout: 'hwc' });
-          scheduleOnRN(onBbqTick, { ...res, uw: sideways ? frame.height : frame.width, uh: sideways ? frame.width : frame.height });
+          scheduleOnRN(onBbqTick, { ...res, at: Date.now(), uw: sideways ? frame.height : frame.width, uh: sideways ? frame.width : frame.height });
         } catch {
           // 언마운트·프레임 닫힘 중 예외는 버린다
         } finally {

@@ -8,6 +8,8 @@ import { loadModel, tensor, wrapAsync } from 'react-native-executorch';
 import { createImagePreprocessor, type ImageBuffer } from 'react-native-executorch/cv';
 import { TUNING, postprocess, type Det } from './bbqModel';
 
+// 자산 모듈 id는 require로만 얻는다(Metro 자산)
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 export const BBQ_MODEL = require('../../../assets/models/bbq_v1_coreml_o2o.pte') as number;
 const ROWS = 8400;
 const COLS = 14;

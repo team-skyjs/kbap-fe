@@ -15,7 +15,10 @@ const groupOf = (c: number) => (isMeat(c) ? RAW_MEAT : c);
 function majority(votes: { t: number; cls: number }[]): number {
   let raw = 0;
   let cooked = 0;
-  for (const v of votes) v.cls === RAW_MEAT ? raw++ : cooked++;
+  for (const v of votes) {
+    if (v.cls === RAW_MEAT) raw++;
+    else cooked++;
+  }
   if (raw === cooked) return votes[votes.length - 1]!.cls; // 동률 = 가장 최근
   return raw > cooked ? RAW_MEAT : COOKED_MEAT;
 }
