@@ -22,6 +22,19 @@ describe('KB-1019 쌈 코칭 상태 머신', () => {
     expect(s.marks.leaf).toBe('auto');
   });
 
+  it('P-640 현행 동작 잠금: 9만 계속 = 단계마다 0.5초씩 S1→S2→(쌈장 누락 안내)→S5, 고기 누락 안내는 모델 신호로 안 나옴', () => {
+    const nine = signalsFromClasses(new Set([9]));
+    let s = run(base(), nine, 0, 6); // 500
+    expect(currentStep(s)).toBe('meat');
+    expect(s.tip).toBeNull();
+    s = run(s, nine, 600, 5); // 1000
+    expect(currentStep(s)).toBe('ssamjang');
+    s = run(s, nine, 1100, 5); // 1500
+    expect(currentStep(s)).toBe('eat');
+    expect(s.tip).toBe('noSsamjang');
+    expect(s.marks).toMatchObject({ leaf: 'auto', meat: 'auto', ssamjang: 'missed', wrap: 'auto' });
+  });
+
   it('S1 = leaf_on_hand 또는 topped_leaf, 한 틱에 연쇄 없음(S2는 진입 뒤 다시 0.5초)', () => {
     let s = run(base(), S({ toppedLeaf: true }), 0, 6); // 500에 S1 완료
     expect(currentStep(s)).toBe('meat');
@@ -94,9 +107,19 @@ describe('KB-1019 쌈 코칭 상태 머신', () => {
     expect(Object.keys(NO_SIGNALS).sort()).toEqual(['gone', 'leafOnHand', 'manualNext', 'ssamjangOnLeaf', 'toppedLeaf', 'wrapped']);
   });
 
-  it('모델 v1 신호: 7 leaf_on_hand, 8 topped_leaf, 9 wrapped_ssam만, 빈 자리는 false', () => {
+  it('P-640 신호 매핑: 잎 = 7·8·9 아무거나, 고기 = 8 또는 9, 싸기 = 9 단독, 빈 자리는 false', () => {
     expect(signalsFromClasses(new Set([0, 4, 7, 8, 9]))).toEqual(S({ leafOnHand: true, toppedLeaf: true, wrapped: true }));
+    expect(signalsFromClasses(new Set([7]))).toEqual(S({ leafOnHand: true })); // 7만 = S2로 넘기지 않음
+    expect(signalsFromClasses(new Set([8]))).toEqual(S({ leafOnHand: true, toppedLeaf: true }));
+    expect(signalsFromClasses(new Set([9]))).toEqual(S({ leafOnHand: true, toppedLeaf: true, wrapped: true }));
     expect(signalsFromClasses(new Set([4]))).toEqual(S());
+    expect(signalsFromClasses(new Set([0, 1, 2, 3, 4, 5, 6]))).toEqual(S()); // 테이블 7종은 신호 없음
+  });
+
+  it('P-640: 7만 계속 잡히면 S1만 넘고 S2에서 멈춤', () => {
+    const s = run(base(), signalsFromClasses(new Set([7])), 0, 20);
+    expect(currentStep(s)).toBe('meat');
+    expect(s.marks.leaf).toBe('auto');
   });
 
   it('기획안 문구 그대로(en)', () => {

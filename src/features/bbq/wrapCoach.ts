@@ -92,7 +92,11 @@ export function step(prev: CoachState, sig: Signals, now: number, holdMs = HOLD_
   return s;
 }
 
-/** 모델 v1 클래스 → 신호(전달 문서 5절). 7 leaf_on_hand, 8 topped_leaf, 9 wrapped_ssam. 나머지 신호는 신호원 없음 = false. */
+/**
+ * 모델 v1 클래스 → 신호. 7 leaf_on_hand, 8 topped_leaf, 9 wrapped_ssam. 나머지 신호는 신호원 없음 = false.
+ * P-640: 임계값 0.20에서 단계 구분이 47%라 묶어 쓴다 — 잎 = 7·8·9 중 아무거나, 고기 = 8 또는 9(7만은 아님), 싸기 = 9 단독.
+ */
 export function signalsFromClasses(classes: ReadonlySet<number>): Signals {
-  return { ...NO_SIGNALS, leafOnHand: classes.has(7), toppedLeaf: classes.has(8), wrapped: classes.has(9) };
+  const topped = classes.has(8) || classes.has(9);
+  return { ...NO_SIGNALS, leafOnHand: classes.has(7) || topped, toppedLeaf: topped, wrapped: classes.has(9) };
 }

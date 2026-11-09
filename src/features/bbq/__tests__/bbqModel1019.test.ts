@@ -12,7 +12,7 @@ describe('KB-1019 bbqModel 후처리', () => {
   it('라벨 순서 0 grill ~ 9 wrapped_ssam 고정', () => {
     expect(LABELS).toEqual(['grill', 'raw_meat', 'cooked_meat', 'leaf', 'ssamjang', 'tongs', 'scissors', 'leaf_on_hand', 'topped_leaf', 'wrapped_ssam']);
     // P-639: leaf·cooked_meat 0.15 → 0.30
-    expect(TUNING.thresholds).toEqual([0.3, 0.2, 0.3, 0.3, 0.3, 0.25, 0.5, 0.35, 0.65, 0.5]);
+    expect(TUNING.thresholds).toEqual([0.3, 0.2, 0.3, 0.3, 0.3, 0.25, 0.5, 0.2, 0.2, 0.2]);
   });
 
   it('레터박스: 세로 360x640 → r=1·padX=140, 1080x1920 → r=1/3', () => {
@@ -44,7 +44,7 @@ describe('KB-1019 bbqModel 후처리', () => {
       row([0, 0, 10, 10], 3, 0.29), // leaf 0.29 < 0.30 → 버림(P-639)
       row([0, 0, 10, 10], 5, 0.25), // tongs 0.25 = 임계값(float32로 정확히 표현) → 남김
       row([0, 0, 10, 10], 0, 0.29), // grill 0.29 < 0.30 → 버림
-      row([0, 0, 10, 10], 8, 0.6), // topped 0.6 < 0.65 → 버림
+      row([0, 0, 10, 10], 8, 0.19), // topped 0.19 < 0.20 → 버림(P-640)
       [1, 2, 3, 4, 0.1, 0.4, 0, 0, 0, 0, 0, 0, 0, 0], // 최고 = raw 0.4 ≥ 0.2
       new Array(14).fill(0), // 점수 0 → 버림
     ]);
@@ -152,7 +152,7 @@ describe('P-637 XNNPACK e2e (1, 300, 6)', () => {
   it('열 = x1,y1,x2,y2,점수,클래스 · 클래스 임계값 미만·범위 밖 번호는 버림(경계값은 남김)', () => {
     const out = e2e([
       [10, 20, 30, 40, 0.25, 5], // tongs 0.25 = 임계값 → 남김
-      [0, 0, 1, 1, 0.6, 8], // topped 0.6 < 0.65 → 버림
+      [0, 0, 1, 1, 0.19, 8], // topped 0.19 < 0.20 → 버림(P-640)
       [0, 0, 1, 1, 0.9, 12], // 번호 범위 밖 → 버림
       [5, 6, 7, 8, 0.4, 2], // cooked 0.4 ≥ 0.30
     ]);
