@@ -1,4 +1,4 @@
-import { LABELS, OUTPUT_SHAPE, TUNING, coverMap, decodeE2E, decodeO2O, fileUriToPath, topScore, fromXyxy, letterbox, nmsSameClass, postprocess, resizeDims, squareCropToUpright, unletterbox, type Det } from '../bbqModel';
+import { LABELS, OUTPUT_SHAPE, TUNING, coverMap, decodeE2E, decodeO2O, fileUriToPath, topScore, fromXyxy, letterbox, nmsByGroup, postprocess, resizeDims, squareCropToUpright, unletterbox, type Det } from '../bbqModel';
 
 const COLS = 14;
 function row(box: [number, number, number, number], cls: number, score: number): number[] {
@@ -12,7 +12,7 @@ describe('KB-1019 bbqModel 후처리', () => {
   it('라벨 순서 0 grill ~ 9 wrapped_ssam 고정', () => {
     expect(LABELS).toEqual(['grill', 'raw_meat', 'cooked_meat', 'leaf', 'ssamjang', 'tongs', 'scissors', 'leaf_on_hand', 'topped_leaf', 'wrapped_ssam']);
     // P-639: leaf·cooked_meat 0.15 → 0.30
-    expect(TUNING.thresholds).toEqual([0.3, 0.2, 0.3, 0.3, 0.3, 0.25, 0.5, 0.2, 0.2, 0.2]);
+    expect(TUNING.thresholds).toEqual([0.25, 0.15, 0.3, 0.3, 0.3, 0.25, 0.4, 0.2, 0.2, 0.2]);
   });
 
   it('레터박스: 세로 360x640 → r=1·padX=140, 1080x1920 → r=1/3', () => {
@@ -43,7 +43,7 @@ describe('KB-1019 bbqModel 후처리', () => {
       row([0, 0, 10, 10], 2, 0.31), // cooked 0.31 ≥ 0.30 → 남김
       row([0, 0, 10, 10], 3, 0.29), // leaf 0.29 < 0.30 → 버림(P-639)
       row([0, 0, 10, 10], 5, 0.25), // tongs 0.25 = 임계값(float32로 정확히 표현) → 남김
-      row([0, 0, 10, 10], 0, 0.29), // grill 0.29 < 0.30 → 버림
+      row([0, 0, 10, 10], 0, 0.24), // grill 0.24 < 0.25 → 버림(P-642)
       row([0, 0, 10, 10], 8, 0.19), // topped 0.19 < 0.20 → 버림(P-640)
       [1, 2, 3, 4, 0.1, 0.4, 0, 0, 0, 0, 0, 0, 0, 0], // 최고 = raw 0.4 ≥ 0.2
       new Array(14).fill(0), // 점수 0 → 버림
@@ -63,9 +63,16 @@ describe('KB-1019 bbqModel 후처리', () => {
     const c: Det = { cls: 1, score: 0.4, x1: 0, y1: 0, x2: 100, y2: 100 };
     const far: Det = { cls: 2, score: 0.3, x1: 0, y1: 0, x2: 100, y2: 160 }; // IoU 0.625 > 0.6 → 제거
     const keep: Det = { cls: 2, score: 0.3, x1: 0, y1: 0, x2: 100, y2: 170 }; // IoU ≈ 0.588 → 유지
-    expect(nmsSameClass([b, a, c], 0.6)).toEqual([a, c]);
-    expect(nmsSameClass([a, far], 0.6)).toEqual([a]);
-    expect(nmsSameClass([a, keep], 0.6)).toEqual([a, keep]);
+    expect(nmsByGroup([b, a, c], 0.6)).toEqual([a, c]);
+    expect(nmsByGroup([a, far], 0.6)).toEqual([a]);
+    expect(nmsByGroup([a, keep], 0.6)).toEqual([a, keep]);
+  });
+
+  it('P-642: 손 위 3종(7·8·9)은 서로 다른 클래스라도 IoU 0.6 초과면 점수 높은 하나만', () => {
+    const h = (cls: number, score: number, y2 = 100): Det => ({ cls, score, x1: 0, y1: 0, x2: 100, y2 });
+    expect(nmsByGroup([h(7, 0.3), h(8, 0.5), h(9, 0.4)], 0.6)).toEqual([h(8, 0.5)]);
+    expect(nmsByGroup([h(7, 0.3), h(9, 0.5, 170)], 0.6)).toEqual([h(9, 0.5, 170), h(7, 0.3)]); // IoU ≈ 0.588 → 둘 다
+    expect(nmsByGroup([h(3, 0.9), h(7, 0.5), h(6, 0.4)], 0.6)).toEqual([h(3, 0.9), h(7, 0.5), h(6, 0.4)]); // 테이블 잎·가위와는 안 묶음
   });
 
   it('postprocess = 해석 → 중복 제거 → 원본 좌표', () => {

@@ -43,7 +43,7 @@ it('변환된 postprocess를 클로저만 주고 따로 실행 = 결과가 나�
   const fn = new Function(`return ${w.code}`)() as (...a: unknown[]) => model.Det[];
   const out = new Float32Array(8400 * 14);
   out.set([150, 0, 250, 100, 0.9]);
-  const ctx = { __closure: { TUNING: model.TUNING, letterbox: model.letterbox, nmsSameClass: model.nmsSameClass, decode: model.decode, unletterbox: model.unletterbox } };
+  const ctx = { __closure: { TUNING: model.TUNING, letterbox: model.letterbox, nmsByGroup: model.nmsByGroup, decode: model.decode, unletterbox: model.unletterbox } };
   const d = fn.call(ctx, 'o2o', out, 1080, 1920);
   expect(d).toHaveLength(1);
   expect(d[0]!.x1).toBeCloseTo(30);

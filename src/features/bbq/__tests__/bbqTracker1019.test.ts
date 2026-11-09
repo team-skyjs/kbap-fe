@@ -23,6 +23,25 @@ describe('KB-1019 이름표 유지', () => {
   });
 });
 
+describe('P-642 손 위 3종 1초 다수결', () => {
+  it('7·8·9를 한 물체로 이어 붙이고 최근 1초 다수, 동률 = 가장 최근', () => {
+    const up = createTracker();
+    up([det(7)], 0);
+    up([det(8)], 100);
+    up([det(8)], 200);
+    const s = up([det(9)], 300);
+    expect(s).toHaveLength(1);
+    expect(s[0]!.cls).toBe(8); // 7:1 8:2 9:1
+    expect(up([det(9)], 400)[0]!.cls).toBe(9); // 8:2 9:2 동률 → 최근 9
+  });
+
+  it('손 위 묶음과 테이블 잎(3)·고기는 서로 잇지 않음', () => {
+    const up = createTracker();
+    up([det(3), det(1)], 0);
+    expect(up([det(3), det(1), det(7)], 30).map((x) => x.cls).sort()).toEqual([1, 3, 7]);
+  });
+});
+
 describe('KB-1019 날고기·익은 고기 1초 다수결', () => {
   it('한 덩어리로 이어 붙이고 최근 1초 다수로 이름을 정함', () => {
     const up = createTracker();

@@ -1,26 +1,24 @@
 /**
- * KB-1019 장면 1: 프레임 사이 상태(JS 스레드). 이름표 유지·고기 다수결·불판 띠 조건.
+ * KB-1019 장면 1: 프레임 사이 상태(JS 스레드). 이름표 유지·고기와 손 위 3종 다수결·불판 띠 조건.
  * 시간은 인자로 받는다(jest에서 결정적).
  */
-import { COOKED_MEAT, GRILL, RAW_MEAT, TUNING, iou, type Box, type Det, type GrillGateConfig } from './bbqModel';
+import { COOKED_MEAT, GRILL, HAND_FIRST, RAW_MEAT, TUNING, iou, type Box, type Det, type GrillGateConfig } from './bbqModel';
 
 export type Shown = Box & { id: number; cls: number; score: number; held: boolean };
 
 type Track = { id: number; group: number; box: Box; score: number; cls: number; lastSeen: number; votes: { t: number; cls: number }[] };
 
 const isMeat = (c: number) => c === RAW_MEAT || c === COOKED_MEAT;
-/** 날고기·익은 고기는 한 물체로 이어 붙이고 이름은 다수결로 정한다. */
-const groupOf = (c: number) => (isMeat(c) ? RAW_MEAT : c);
+/** 날고기·익은 고기, 손 위 3종(P-642)은 각각 한 물체로 이어 붙이고 이름은 다수결로 정한다. */
+const groupOf = (c: number) => (isMeat(c) ? RAW_MEAT : c >= HAND_FIRST ? HAND_FIRST : c);
+const isVoted = (g: number) => g === RAW_MEAT || g === HAND_FIRST;
 
 function majority(votes: { t: number; cls: number }[]): number {
-  let raw = 0;
-  let cooked = 0;
-  for (const v of votes) {
-    if (v.cls === RAW_MEAT) raw++;
-    else cooked++;
-  }
-  if (raw === cooked) return votes[votes.length - 1]!.cls; // 동률 = 가장 최근
-  return raw > cooked ? RAW_MEAT : COOKED_MEAT;
+  const n = new Map<number, number>();
+  for (const v of votes) n.set(v.cls, (n.get(v.cls) ?? 0) + 1);
+  const top = Math.max(...n.values());
+  for (let i = votes.length - 1; i >= 0; i--) if (n.get(votes[i]!.cls) === top) return votes[i]!.cls; // 동률 = 가장 최근
+  return votes[votes.length - 1]!.cls;
 }
 
 export function createTracker(t = TUNING) {
@@ -51,11 +49,11 @@ export function createTracker(t = TUNING) {
       hit.box = { x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2 };
       hit.score = d.score;
       hit.lastSeen = now;
-      if (isMeat(d.cls)) hit.votes.push({ t: now, cls: d.cls });
+      if (isVoted(g)) hit.votes.push({ t: now, cls: d.cls });
     }
     return tracks.map((tr) => {
-      tr.votes = tr.votes.filter((v) => now - v.t <= t.meatVoteMs);
-      const cls = isMeat(tr.group) && tr.votes.length > 0 ? majority(tr.votes) : tr.cls;
+      tr.votes = tr.votes.filter((v) => now - v.t <= t.voteMs);
+      const cls = isVoted(tr.group) && tr.votes.length > 0 ? majority(tr.votes) : tr.cls;
       return { ...tr.box, id: tr.id, cls, score: tr.score, held: tr.lastSeen !== now };
     });
   };

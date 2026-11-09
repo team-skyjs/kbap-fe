@@ -1,6 +1,6 @@
 /**
- * KB-1019 장면 1: 자체 탐지 모델 v1(KB-1020, et_coreml_o2o.pte) 후처리.
- * 정본 = kbap-bbq-vision-lab/docs/handoff-to-app.md 2~5절. 워크릿·jest 양쪽에서 도는 순수 함수.
+ * KB-1019 장면 1: 자체 탐지 모델(KB-1020, et_coreml_o2o.pte) 후처리. P-642부터 2차(nano).
+ * 정본 = kbap-bbq-vision-lab/docs/handoff-to-app.md 2~5절 + handoff-to-app-v2.md(달라진 것만). 워크릿·jest 양쪽에서 도는 순수 함수.
  * 실기에서 다시 맞출 수치는 전부 TUNING 한곳에 둔다.
  */
 
@@ -21,6 +21,8 @@ export type BbqLabel = (typeof LABELS)[number];
 export const RAW_MEAT = 1;
 export const COOKED_MEAT = 2;
 export const GRILL = 0;
+/** 손 위 3종(7 leaf_on_hand · 8 topped_leaf · 9 wrapped_ssam)의 첫 번호. 셋을 한 물체 묶음으로 본다(P-642) */
+export const HAND_FIRST = 7;
 
 export type GrillGateConfig =
   | { mode: 'window'; window: number; need: number }
@@ -32,15 +34,16 @@ export const TUNING = {
   /** 클래스별 임계값(LABELS 순서, 검증 F1 최댓값). 실기 재조정 대상 */
   // P-639: leaf·cooked_meat 0.15 → 0.30(접시·그릇 오탐, 전달 문서 2절 권고). 2차 모델에서 다시 맞춘다
   // P-640: 손 위 3종(7·8·9) 0.35·0.65·0.50 → 공통 0.20(손 위 쌈 재현 39% → 64%, 단계 구분은 47%라 신호에서 묶어 씀)
-  thresholds: [0.3, 0.2, 0.3, 0.3, 0.3, 0.25, 0.5, 0.2, 0.2, 0.2] as readonly number[],
-  /** 같은 클래스 중복 박스 제거 겹침 */
+  // P-642(2차 모델): grill 0.25 · raw 0.15 · scissors 0.40. cooked·leaf 0.30과 tongs 0.25(2차 권장 0.15는 오탐 많음)는 앱 값 유지
+  thresholds: [0.25, 0.15, 0.3, 0.3, 0.3, 0.25, 0.4, 0.2, 0.2, 0.2] as readonly number[],
+  /** 같은 묶음 중복 박스 제거 겹침(클래스별, 손 위 3종은 셋을 한 묶음으로) */
   nmsIou: 0.6,
   /** 이름표 유지(0.3~0.5초) */
   holdMs: 400,
   /** 프레임 사이 같은 물체로 잇는 겹침 */
   linkIou: 0.3,
-  /** 날고기·익은 고기 다수결 창 */
-  meatVoteMs: 1000,
+  /** 날고기·익은 고기, 손 위 3종 클래스 다수결 창 */
+  voteMs: 1000,
   /** 불판 띠: 기본 최근 10프레임 중 7, 대안 { mode: 'consecutive', ms: 2000 } */
   grill: { mode: 'window', window: 10, need: 7 } as GrillGateConfig,
 };
@@ -93,12 +96,13 @@ export function iou(a: Box, b: Box): number {
 }
 
 /** 같은 클래스끼리만, 겹침이 thr를 넘으면 점수 낮은 쪽을 버린다. */
-export function nmsSameClass(dets: Det[], thr: number): Det[] {
+export function nmsByGroup(dets: Det[], thr: number): Det[] {
   'worklet';
+  const g = (c: number) => (c >= HAND_FIRST ? HAND_FIRST : c);
   const sorted = dets.slice().sort((a, b) => b.score - a.score);
   const keep: Det[] = [];
   for (const d of sorted) {
-    if (!keep.some((k) => k.cls === d.cls && iou(k, d) > thr)) keep.push(d);
+    if (!keep.some((k) => g(k.cls) === g(d.cls) && iou(k, d) > thr)) keep.push(d);
   }
   return keep;
 }
@@ -151,7 +155,7 @@ export function decode(kind: ModelKind, out: ArrayLike<number>, thresholds: read
 export function postprocess(kind: ModelKind, out: ArrayLike<number>, srcW: number, srcH: number): Det[] {
   'worklet';
   const lb = letterbox(srcW, srcH, TUNING.input);
-  return nmsSameClass(decode(kind, out, TUNING.thresholds), TUNING.nmsIou).map((d) => unletterbox(d, lb, srcW, srcH));
+  return nmsByGroup(decode(kind, out, TUNING.thresholds), TUNING.nmsIou).map((d) => unletterbox(d, lb, srcW, srcH));
 }
 
 /** 진단 줄: 전체 행의 최고 점수·클래스(임계값 무관) */
