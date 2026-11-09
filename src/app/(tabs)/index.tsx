@@ -13,7 +13,9 @@ import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useFocusEffect, useRouter, useScrollToTop, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, radius } from '@/lib/theme';
+import { color as C, font, primaryTintSolid, radius } from '@/lib/theme';
+import { IconChevron } from '@/components/icons';
+import { isBbqProbeChannel } from '@/features/bbq/probeGate';
 import { UpdateNudgeBanner } from '@/components/VersionGate';
 import {
   StickyHeader,
@@ -77,6 +79,7 @@ export default function Home() {
 
 function HomeBody() {
   const { t } = useTranslation();
+  const [bbqEntry] = useState(isBbqProbeChannel); // KB-1019 시연 브랜치 전용 진입 — development·demo 채널만(빌드 상수, 마운트 1회 읽기)
   const listRef = useRef<FlatList>(null);
   useScrollToTop(listRef); // KB-906(T-127): Home 탭 재탭 = 맨 위(헤더 접힘도 스크롤 값을 따라 함께 풀린다)
   const router = useRouter();
@@ -172,6 +175,21 @@ function HomeBody() {
     <SkeletonHome />
   ) : (
     <View>
+      {/* KB-1019 시연 전용(머지 금지 브랜치): 홈 최상단 가로 진입 — 장면 1 전까지 임시로 프로브 화면 */}
+      {bbqEntry && (
+        <Pressable onPress={() => router.push('/dev/bbq-probe' as Href)} style={styles.bbqEntry} accessibilityRole="button" testID="home-bbq-entry">
+          {({ pressed }) => (
+            <>
+              <View style={styles.bbqTexts}>
+                <Text style={styles.bbqTitle}>{t('bbqGuide.entryTitle')}</Text>
+                <Text style={styles.bbqSub}>{t('bbqGuide.entrySub')}</Text>
+              </View>
+              <IconChevron size={18} color={C.primaryText} />
+              <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.bbqPress, { opacity: pressed ? 1 : 0 }]} />
+            </>
+          )}
+        </Pressable>
+      )}
       <UpdateNudgeBanner />
 
       {/* KB-430 후속 → P-317: 검색·세그먼트·칩 + 가로 레일 = FoodExplorer embedded */}
@@ -302,6 +320,11 @@ export { FoodGridCard, RecentRow } from '@/features/food/FoodCards';
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
+  bbqEntry: { marginHorizontal: 20, marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderRadius: radius.lg, backgroundColor: primaryTintSolid, overflow: 'hidden' },
+  bbqTexts: { flex: 1, gap: 2 },
+  bbqTitle: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
+  bbqSub: { fontSize: 13, color: C.ink2 },
+  bbqPress: { backgroundColor: 'rgba(0,0,0,0.04)' },
 
   // 언더라인 탭 (§1-3)
   tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 20, gap: 4 },

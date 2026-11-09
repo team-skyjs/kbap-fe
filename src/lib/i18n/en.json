@@ -1460,5 +1460,9 @@
     "backend": "Switch backend",
     "rotate": "Rotate boxes",
     "mirror": "Mirror boxes"
+  },
+  "bbqGuide": {
+    "entryTitle": "Having Korean BBQ?",
+    "entrySub": "Follow along with the guide."
   }
 }
