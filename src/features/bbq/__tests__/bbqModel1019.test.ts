@@ -11,7 +11,8 @@ const pack = (rows: number[][]) => Float32Array.from(rows.flat());
 describe('KB-1019 bbqModel 후처리', () => {
   it('라벨 순서 0 grill ~ 9 wrapped_ssam 고정', () => {
     expect(LABELS).toEqual(['grill', 'raw_meat', 'cooked_meat', 'leaf', 'ssamjang', 'tongs', 'scissors', 'leaf_on_hand', 'topped_leaf', 'wrapped_ssam']);
-    expect(TUNING.thresholds).toEqual([0.3, 0.2, 0.15, 0.15, 0.3, 0.25, 0.5, 0.35, 0.65, 0.5]);
+    // P-639: leaf·cooked_meat 0.15 → 0.30
+    expect(TUNING.thresholds).toEqual([0.3, 0.2, 0.3, 0.3, 0.3, 0.25, 0.5, 0.35, 0.65, 0.5]);
   });
 
   it('레터박스: 세로 360x640 → r=1·padX=140, 1080x1920 → r=1/3', () => {
@@ -39,7 +40,8 @@ describe('KB-1019 bbqModel 후처리', () => {
 
   it('행마다 최고 점수 클래스, 그 클래스 임계값 미만은 버림(경계값은 남김)', () => {
     const out = pack([
-      row([0, 0, 10, 10], 2, 0.15), // cooked 0.15 → 남김
+      row([0, 0, 10, 10], 2, 0.31), // cooked 0.31 ≥ 0.30 → 남김
+      row([0, 0, 10, 10], 3, 0.29), // leaf 0.29 < 0.30 → 버림(P-639)
       row([0, 0, 10, 10], 5, 0.25), // tongs 0.25 = 임계값(float32로 정확히 표현) → 남김
       row([0, 0, 10, 10], 0, 0.29), // grill 0.29 < 0.30 → 버림
       row([0, 0, 10, 10], 8, 0.6), // topped 0.6 < 0.65 → 버림
@@ -48,7 +50,7 @@ describe('KB-1019 bbqModel 후처리', () => {
     ]);
     const d = decodeO2O(out, 6, COLS, TUNING.thresholds);
     expect(d.map((x) => [x.cls, x.score])).toEqual([
-      [2, expect.closeTo(0.15)],
+      [2, expect.closeTo(0.31)],
       [5, 0.25],
       [1, expect.closeTo(0.4)],
     ]);
@@ -152,7 +154,7 @@ describe('P-637 XNNPACK e2e (1, 300, 6)', () => {
       [10, 20, 30, 40, 0.25, 5], // tongs 0.25 = 임계값 → 남김
       [0, 0, 1, 1, 0.6, 8], // topped 0.6 < 0.65 → 버림
       [0, 0, 1, 1, 0.9, 12], // 번호 범위 밖 → 버림
-      [5, 6, 7, 8, 0.4, 2], // cooked 0.4 ≥ 0.15
+      [5, 6, 7, 8, 0.4, 2], // cooked 0.4 ≥ 0.30
     ]);
     expect(decodeE2E(out, 300, TUNING.thresholds)).toEqual([
       { cls: 5, score: 0.25, x1: 10, y1: 20, x2: 30, y2: 40 },

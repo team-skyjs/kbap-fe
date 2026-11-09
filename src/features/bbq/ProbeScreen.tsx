@@ -18,7 +18,7 @@ import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { SkBar } from '@/components/Skeleton';
 import { color as C } from '@/lib/theme';
-import { LABELS, coverMap, fromXyxy, resizeDims, squareCropToUpright } from './bbqModel';
+import { LABELS, coverMap, fromXyxy, resizeDims, squareCropToUpright, uprightBgr } from './bbqModel';
 import { BBQ_MODELS, createBbqDetector } from './bbqDetector';
 import { runFrame, type BbqTick } from './useBbqDetection';
 import { createGrillGate, createTracker, type Shown } from './bbqTracker';
@@ -126,7 +126,8 @@ export function ProbeScreen() {
         const now = () => globalThis.performance?.now?.() ?? Date.now();
         const t0 = now();
         resized = resizer.resize(frame);
-        const input: ImageBuffer = { data: new Uint8Array(resized.getPixelBuffer()), width: SIZE, height: SIZE, format: 'rgb', layout: 'hwc' };
+        // P-639: 리사이저 출력 180° 뒤집힘 보정 — 자체 모델과 같은 uprightBgr(COCO도 같은 리사이저)
+        const input: ImageBuffer = { data: uprightBgr(resized.getPixelBuffer()), width: SIZE, height: SIZE, format: 'bgr', layout: 'hwc' };
         const dets = detectObjectsWorklet(input) as unknown as Det[];
         const at = now();
         scheduleOnRN(onTick, { dets, ms: at - t0, w: frame.width, h: frame.height, o: frame.orientation, at });

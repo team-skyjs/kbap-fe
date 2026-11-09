@@ -30,7 +30,8 @@ export const TUNING = {
   input: 640,
   padValue: 114,
   /** 클래스별 임계값(LABELS 순서, 검증 F1 최댓값). 실기 재조정 대상 */
-  thresholds: [0.3, 0.2, 0.15, 0.15, 0.3, 0.25, 0.5, 0.35, 0.65, 0.5] as readonly number[],
+  // P-639: leaf·cooked_meat 0.15 → 0.30(접시·그릇 오탐, 전달 문서 2절 권고). 2차 모델에서 다시 맞춘다
+  thresholds: [0.3, 0.2, 0.3, 0.3, 0.3, 0.25, 0.5, 0.35, 0.65, 0.5] as readonly number[],
   /** 같은 클래스 중복 박스 제거 겹침 */
   nmsIou: 0.6,
   /** 이름표 유지(0.3~0.5초) */
@@ -210,4 +211,16 @@ export function squareCropToUpright(b: Box, size: number, uw: number, uh: number
   const ox = (uw - s) / 2;
   const oy = (uh - s) / 2;
   return { x1: ox + b.x1 * k, y1: oy + b.y1 * k, x2: ox + b.x2 * k, y2: oy + b.y2 * k };
+}
+
+/**
+ * P-639: vision-camera-resizer 5.2.4의 Metal 커널은 frame.orientation(left·right)을 반대 방향으로 돌려 출력이 180° 뒤집혀 있다
+ * (VisionCamera FrameCoordinateSystemConverter와 커널 샘플링 공식 대조 — 후면 left·전면 right 모두 x·y 둘 다 반전).
+ * RGB 바이트 배열을 통째로 역순(네이티브 TypedArray.reverse, 360x640 ≈ 0.3ms)이면 픽셀 순서는 180° 되돌아가고
+ * 채널은 RGB → BGR이 된다 → 전처리에 format 'bgr'로 넘기면 executorch가 C++에서 RGB로 바꾼다.
+ * 원본 GPU 버퍼는 건드리지 않게 복사본을 뒤집는다.
+ */
+export function uprightBgr(resizedRgb: ArrayBuffer): Uint8Array {
+  'worklet';
+  return new Uint8Array(resizedRgb).slice().reverse();
 }

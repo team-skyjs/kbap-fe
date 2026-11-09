@@ -136,7 +136,8 @@ describe('KB-1019 장면 1 대상·문구', () => {
     expect(src).toContain("t(det.stuck ? 'bbqGuide.stuck' : 'bbqGuide.loadFail')");
     const hook = readFileSync('src/features/bbq/useBbqDetection.ts', 'utf8');
     expect(hook).toContain('stuck: loaded && ticks === 0 && (stalled || lastError != null)');
-    expect(hook).toContain("return { error: String(e) };");
+    expect(hook).toContain("return { error: msg };");
+    expect(hook).toContain("if (msg.includes('has been disposed')) return null;"); // P-639: 전환 경합만 버림
     expect(g.stuck).toBe('The table guide stopped responding.');
   });
 

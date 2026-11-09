@@ -8,7 +8,7 @@ import { useFrameOutput, type Frame } from 'react-native-vision-camera';
 import { type GPUFrame, type Resizer, useResizer } from 'react-native-vision-camera-resizer';
 import { useModel } from 'react-native-executorch';
 import { scheduleOnRN } from 'react-native-worklets';
-import { resizeDims, type Det } from './bbqModel';
+import { resizeDims, uprightBgr, type Det } from './bbqModel';
 import { BBQ_MODELS, createBbqDetector, type BbqBackend, type BbqDetector, type BbqRun } from './bbqDetector';
 import { createGrillGate, createTracker, type Shown } from './bbqTracker';
 
@@ -33,10 +33,14 @@ export function runFrame(frame: Frame, resizer: Resizer | undefined, run: BbqDet
   try {
     const sideways = frame.orientation === 'right' || frame.orientation === 'left';
     r = resizer.resize(frame);
-    const res = run({ data: new Uint8Array(r.getPixelBuffer()), width: rd.w, height: rd.h, format: 'rgb', layout: 'hwc' });
+    // P-639: 리사이저 출력 180° 뒤집힘 보정(역순 → BGR)
+    const res = run({ data: uprightBgr(r.getPixelBuffer()), width: rd.w, height: rd.h, format: 'bgr', layout: 'hwc' });
     return { ...res, uw: sideways ? frame.height : frame.width, uh: sideways ? frame.width : frame.height };
   } catch (e) {
-    return { error: String(e) };
+    const msg = String(e);
+    // P-639: 백엔드·모델 전환 순간 옛 탐지기 텐서가 먼저 해제된 프레임 — 이 프레임만 버린다(전환 뒤 정상)
+    if (msg.includes('has been disposed')) return null;
+    return { error: msg };
   } finally {
     r?.dispose();
     frame.dispose();
