@@ -1459,7 +1459,21 @@
     "flip": "Flip camera",
     "backend": "Switch backend",
     "rotate": "Rotate boxes",
-    "mirror": "Mirror boxes"
+    "mirror": "Mirror boxes",
+    "model": "Switch model",
+    "loadingBbq": "Loading the table model",
+    "label": {
+      "grill": "Grill",
+      "raw_meat": "Raw meat",
+      "cooked_meat": "Cooked meat",
+      "leaf": "Leafy wrap",
+      "ssamjang": "Ssamjang",
+      "tongs": "Tongs",
+      "scissors": "Scissors",
+      "leaf_on_hand": "Leaf in hand",
+      "topped_leaf": "Topped leaf",
+      "wrapped_ssam": "Wrapped ssam"
+    }
   },
   "bbqGuide": {
     "entryTitle": "Having Korean BBQ?",
