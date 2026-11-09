@@ -14,7 +14,8 @@ export const BBQ_MODEL = require('../../../assets/models/bbq_v1_coreml_o2o.pte')
 const ROWS = 8400;
 const COLS = 14;
 
-export type BbqRun = { dets: Det[]; inferMs: number; postMs: number };
+/** at = 워크릿 런타임 단조 시각(ms) — 이름표 유지·다수결·불판 조건·FPS의 시계 */
+export type BbqRun = { dets: Det[]; inferMs: number; postMs: number; at: number };
 export type BbqDetector = { dispose: () => void; loadMs: number; run: (input: ImageBuffer) => BbqRun };
 
 export async function createBbqDetector(cfg: { module: number }): Promise<BbqDetector> {
@@ -36,7 +37,8 @@ export async function createBbqDetector(cfg: { module: number }): Promise<BbqDet
     model.execute('forward', [pre.process(input)], [out]);
     const b = now();
     const dets = postprocess(out.getData(new Float32Array(ROWS * COLS)), ROWS, COLS, input.width, input.height);
-    return { dets, inferMs: b - a, postMs: now() - b };
+    const at = now();
+    return { dets, inferMs: b - a, postMs: at - b, at };
   };
 
   const dispose = () => {

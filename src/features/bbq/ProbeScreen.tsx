@@ -34,7 +34,7 @@ type VariantKey = keyof typeof VARIANTS;
 
 type Det = { label: string; confidence: number; box: { x1: number; y1: number; x2: number; y2: number } };
 type Tick = { dets: Det[]; ms: number; w: number; h: number; o: Orientation };
-type BbqTick = { dets: BbqDet[]; inferMs: number; postMs: number; uw: number; uh: number; at: number };
+type BbqTick = { dets: BbqDet[]; inferMs: number; postMs: number; at: number; uw: number; uh: number };
 
 export function ProbeScreen() {
   const { t } = useTranslation();
@@ -49,6 +49,7 @@ export function ProbeScreen() {
   const [fps, setFps] = useState(0);
   const [camError, setCamError] = useState<string | null>(null);
   const stamps = useRef<number[]>([]);
+  const bbqStamps = useRef<number[]>([]);
   const [model, setModel] = useState<'coco' | 'bbq'>('coco');
   const [upright, setUpright] = useState({ w: 1080, h: 1920 });
   const [bbqTick, setBbqTick] = useState<BbqTick | null>(null);
@@ -81,7 +82,10 @@ export function ProbeScreen() {
 
   const onBbqTick = (next: BbqTick) => {
     const now = next.at;
-    onTick({ dets: [], ms: next.inferMs + next.postMs, w: next.uw, h: next.uh, o: 'up' });
+    const s = bbqStamps.current.filter((x) => now - x < 1000);
+    s.push(now);
+    bbqStamps.current = s;
+    setFps(s.length);
     if (next.uw !== upright.w || next.uh !== upright.h) setUpright({ w: next.uw, h: next.uh });
     setBbqTick(next);
     setShown(track(next.dets, now));
@@ -103,7 +107,7 @@ export function ProbeScreen() {
           const sideways = frame.orientation === 'right' || frame.orientation === 'left';
           r = bbqResizer.resize(frame);
           const res = bbqRun({ data: new Uint8Array(r.getPixelBuffer()), width: rd.w, height: rd.h, format: 'rgb', layout: 'hwc' });
-          scheduleOnRN(onBbqTick, { ...res, at: Date.now(), uw: sideways ? frame.height : frame.width, uh: sideways ? frame.width : frame.height });
+          scheduleOnRN(onBbqTick, { ...res, uw: sideways ? frame.height : frame.width, uh: sideways ? frame.width : frame.height });
         } catch {
           // 언마운트·프레임 닫힘 중 예외는 버린다
         } finally {
