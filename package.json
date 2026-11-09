@@ -86,7 +86,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "postinstall": "patch-package",
-    "lint:changed": "node ./scripts/lint-changed.mjs"
+    "lint:changed": "node ./scripts/lint-changed.mjs",
+    "eas-build-pre-install": "node scripts/eas-prefetch-executorch.cjs"
   },
   "private": true,
   "overrides": {
