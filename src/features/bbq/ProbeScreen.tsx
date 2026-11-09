@@ -33,7 +33,7 @@ const VARIANTS = {
 type VariantKey = keyof typeof VARIANTS;
 
 type Det = { label: string; confidence: number; box: { x1: number; y1: number; x2: number; y2: number } };
-type Tick = { dets: Det[]; ms: number; w: number; h: number; o: Orientation };
+type Tick = { dets: Det[]; ms: number; w: number; h: number; o: Orientation; at: number };
 type BbqTick = { dets: BbqDet[]; inferMs: number; postMs: number; at: number; uw: number; uh: number };
 
 export function ProbeScreen() {
@@ -72,7 +72,7 @@ export function ProbeScreen() {
   }, [hasPermission, requestPermission]);
 
   const onTick = (next: Tick) => {
-    const now = Date.now();
+    const now = next.at;
     const s = stamps.current.filter((x) => now - x < 1000);
     s.push(now);
     stamps.current = s;
@@ -127,8 +127,8 @@ export function ProbeScreen() {
         resized = resizer.resize(frame);
         const input: ImageBuffer = { data: new Uint8Array(resized.getPixelBuffer()), width: SIZE, height: SIZE, format: 'rgb', layout: 'hwc' };
         const dets = detectObjectsWorklet(input) as unknown as Det[];
-        const ms = now() - t0;
-        scheduleOnRN(onTick, { dets, ms, w: frame.width, h: frame.height, o: frame.orientation });
+        const at = now();
+        scheduleOnRN(onTick, { dets, ms: at - t0, w: frame.width, h: frame.height, o: frame.orientation, at });
       } catch {
         // 언마운트·프레임 닫힘 중 예외는 버린다(#4219 확인 대상)
       } finally {
