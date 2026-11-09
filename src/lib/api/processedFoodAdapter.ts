@@ -49,6 +49,8 @@ export type ProcessedReviewSummary = { overall: ProcessedAxis; taste: ProcessedA
 
 export type ProcessedFoodDetail = ProcessedFoodSummary & {
   capacity: string | null;
+  /** KB-989(S-957 초안): 포장 전체 kcal — null = 미표시(용량이 다른 묶음 등은 서버가 null, FE 판단 0) */
+  kcal: number | null;
   rawMaterials: string | null;
   /** 알레르기 표시란 원문 — DECLARED일 때만 의미가 있다('알수없음' 등은 null로) */
   allergens: string | null;
@@ -73,6 +75,9 @@ export type ProcessedFoodDetail = ProcessedFoodSummary & {
   sourceProvider: string;
   sourceAttributionKey: string;
   image: { url: string; attributionKey: string } | null;
+  /** KB-965(S-953 #556, dev Swagger ProcessedFoodGalleryImageResponse 11/4 대조): 히어로 사진들 — 서버 순서(맨 앞 = image.url과 같은 대표, CUTOUT 또는 FRONT) · 2장 이상 = 캐러셀.
+   *  images 없음(운영 서버 배포 전)·비어 있음 = imageUrl 한 장(없으면 []). kind(CUTOUT·FRONT·TOP·LABEL·OTHER)는 아직 화면에서 안 쓴다. */
+  images: string[];
   /** 리뷰 요약 — 구서버(필드 없음) = null → 화면은 숨김 */
   reviewSummary: ProcessedReviewSummary | null;
 };
@@ -96,7 +101,11 @@ type SummaryWire = {
 };
 export type SearchPageWire = { items: SummaryWire[]; hasNext: boolean; nextCursor?: string | null };
 export type DetailWire = SummaryWire & {
+  /** KB-965(S-953, 가산·옵셔널): kind = 누끼·실사진 구분 — 화면은 모든 장을 같은 바탕·contain으로 그려 아직 쓰지 않는다 */
+  images?: { url?: string | null; kind?: string | null }[] | null; // S-953: Swagger는 url·kind 필수 — 운영 서버 배포 전·이상값 방어로 옵셔널 유지
   capacity?: string | null;
+  kcal?: number | null; // KB-989(S-957 #562) — dev Swagger integer·nullable 대조 11/5. 운영 배포 전 방어로 옵셔널 유지
+
   rawMaterials?: string | null;
   allergens?: string | null;
   labelSource: string;
@@ -212,6 +221,12 @@ const ingredientsOf = (w: { translated?: string | null; original?: string | null
   return { translated: realTranslation(w?.translated, original), original };
 };
 
+/** KB-965: 히어로 사진 — 빈 url 버림·https·중복 제거(서버 순서 유지) · 하나도 없으면 대표 한 장 */
+function heroImagesOf(images: DetailWire['images'], fallback: string | null): string[] {
+  const urls = [...new Set((images ?? []).map((i) => toHttps(blankToNull(i?.url))).filter((u): u is string => !!u))];
+  return urls.length ? urls : fallback ? [fallback] : [];
+}
+
 export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
   const labelSource = labelSourceOf(w.labelSource);
   const allergens = labelSource === 'DECLARED' ? blankToNull(w.allergenStatement?.original) ?? blankToNull(w.allergens) : null;
@@ -219,6 +234,7 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     ...adaptProcessedSummary(w),
     imageUrl: toHttps(w.image?.url ?? w.imageUrl),
     capacity: blankToNull(w.capacity),
+    kcal: typeof w.kcal === 'number' && Number.isFinite(w.kcal) && w.kcal >= 0 ? Math.round(w.kcal) : null,
     rawMaterials: blankToNull(w.rawMaterials),
     allergens,
     labelSource,
@@ -236,6 +252,7 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     sourceProvider: w.source.provider,
     sourceAttributionKey: w.source.attributionKey,
     image: w.image?.url ? { url: toHttps(w.image.url) as string, attributionKey: w.image.attributionKey } : null,
+    images: heroImagesOf(w.images, toHttps(w.image?.url ?? w.imageUrl)),
     reviewSummary: reviewSummaryOf(w.reviewSummary),
   };
 }

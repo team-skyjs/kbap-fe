@@ -326,6 +326,14 @@
     "closestMatchSheetTitle": "Kami cocokkan dengan hidangan serupa",
     "closestMatchSheetBody": "Di menu tertulis “{{scanned}}”. Kami menampilkan {{food}} ({{foodKo}}), yang paling mirip di katalog kami, jadi bahan dan tingkat risiko Anda mengacu pada {{food}}.",
     "closestMatchSeeDetails": "Lihat detail {{food}}",
+    "aiSectionTitle": "Perkiraan AI",
+    "aiSectionNote": "Hidangan ini belum terdaftar, jadi info ini diperkirakan oleh AI. Tanyakan ke staf sebelum makan.",
+    "aiIngredientsLine": "Mungkin mengandung bahan yang kamu hindari: {{names}}",
+    "aiGeneratedPhoto": "Gambar AI",
+    "aiPhotoGenerating": "Membuat foto",
+    "aiDetailIngredients": "Bahan utama",
+    "addOnsTitle": "Tambahan & opsi",
+    "addOnsNote": "Ini bahan tambahan atau opsi. Tanyakan ke staf apa isinya.",
     "searchOnGoogle": "Cari di Google",
     "resultsEmpty": "Tidak ada hasil pemindaian",
     "viewOrderAction": "Lihat pesanan",
@@ -600,6 +608,7 @@
     "writeReview": "Tulis ulasan",
     "spiceAboveYou": "lebih pedas dari selera Anda",
     "addProfileHint": "Tambahkan pantangan Anda untuk melihat penilaian yang dipersonalisasi.",
+    "linkedProcessedTitle": "Lihat produknya",
     "scannedPrice": "berdasarkan menu yang Anda pindai",
     "translatedPill": "Diterjemahkan untuk Anda",
     "verdictContains": "Mengandung {{list}} — ada di daftar hindaran Anda",
@@ -1284,11 +1293,16 @@
     "noAvoidMatchTitle": "Tidak cocok dengan daftar hindari",
     "safeBasis_one": "Kami sudah mencocokkan label dengan {{count}} bahan yang kamu hindari.",
     "safeBasis_other": "Kami sudah mencocokkan label dengan {{count}} bahan yang kamu hindari.",
-    "findMore": "Cari lagi"
+    "findMore": "Cari lagi",
+    "kcal": "{{value}} kkal",
+    "ingredients": {
+      "seeAll": "Lihat semua",
+      "showLess": "Tampilkan lebih sedikit"
+    }
   },
   "packagedScan": {
     "title": "Pindai",
-    "chooseTitle": "Pilih produkmu",
+    "chooseTitle": "Hasil pindai",
     "whichTitle": "Produk mana yang kamu punya?",
     "noneTitle": "Tidak ada produk yang cocok",
     "noneBody": "Foto label bahan di bagian belakang untuk melanjutkan.",
@@ -1342,7 +1356,7 @@
     "labelRawTitle": "Teks yang terbaca",
     "newAnalysisCta": "Mulai analisis baru",
     "debugAddPage": "Tambahkan sebagai satu sisi",
-    "matchTitle": "Pilih produk dengan nama dan rasa yang sama",
+    "matchTitle": "Cari dan pilih produk yang kamu pindai",
     "personalNote": "Atur bahan yang dihindari untuk hasil pribadi.",
     "confirmProduct": "Konfirmasi produk",
     "anotherTitle": "Temukan produk dengan cara lain",
@@ -1379,6 +1393,7 @@
   },
   "scanCamera": {
     "title": "Pindai",
+    "subtitle": "Foto menu atau makanan minimarket",
     "menuTitle": "Muat seluruh menu",
     "menuHint": "Cubit untuk memperbesar",
     "packageTitle": "Tunjukkan bagian depan kemasan",
@@ -1408,5 +1423,21 @@
     "homeTitle": "Pindai makanan minimarket juga!",
     "homeBody": "Cek isi camilan, ramyeon, dan minuman.",
     "foodBody": "Jelajahi makanan minimarket, yang terpopuler dulu."
+  },
+  "chat": {
+    "title": "Chat dengan kami",
+    "team": "Tim K-Bap",
+    "repliesWithin": "Biasanya membalas dalam 5 menit",
+    "greeting": "Ada yang bisa kami bantu?",
+    "placeholder": "Ketik pesan",
+    "send": "Kirim",
+    "sendFailed": "Gagal mengirim. Coba lagi.",
+    "rateLimited": "Kamu sudah mengirim banyak pesan. Coba lagi sebentar lagi.",
+    "failedTapRetry": "Tidak terkirim. Ketuk untuk mencoba lagi.",
+    "earlierInquiries": "Pertanyaan sebelumnya",
+    "tooLong": "Pesanmu terlalu panjang. Persingkat, ya.",
+    "photoInvalid": "Ada foto yang tidak bisa dikirim. Pilih foto lain.",
+    "invalid": "Pesan ini tidak bisa dikirim. Periksa lalu coba lagi.",
+    "fabCoach": "Pindai tanpa batas gratis✨"
   }
 }

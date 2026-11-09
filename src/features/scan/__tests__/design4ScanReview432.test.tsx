@@ -80,7 +80,7 @@ it('① 메뉴 행 — 매칭 = RiskBadge + 시안 칩(#2F3137 12/700) / 미등�
 it('② 스캔 결과 크롬 — 인식 배너·언더라인 탭·컨트롤 행(무동작 토글+정렬 시트) 소스 잠금', () => {
   const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
   expect(src).toContain('testID="recog-banner"');
-  expect(src).toContain("t('scan.resultsSub', { count: allDishes.length })");
+  expect(src).toContain("t('scan.resultsSub', { count: shownCount })");
   expect(src).toContain('testID={`seg-${v}`}'); // Photo|List 언더라인 탭(세그 매핑 유지)
   expect(src).toContain('testID="scan-safe-toggle"'); // P-354: 무동작 프로필 토글 → Safe only(실동작)
   expect(src).toContain('testID="scan-sort"');
@@ -92,7 +92,7 @@ it('② 스캔 결과 크롬 — 인식 배너·언더라인 탭·컨트롤 행(
   expect(src).not.toContain('<ScanProfileBar');
   // 담기 UI = 현행 유지 정정(9/5) — 스테퍼 잔존
   const rich = require('fs').readFileSync('src/features/scan/ScanRichList.tsx', 'utf8') as string;
-  expect(rich).toContain('testID={`stepper-${dish.itemId}`}');
+  expect(rich).toContain('testID={`stepper-${tid}`}'); // KB-1006: AddSlot 공용(옵션 줄 포함)
 });
 
 it('③ 리뷰 작성 — 전체 별 48(stroke 3)·세부 별 32(stroke 2)·사진 슬롯 100·장소 필 소스 잠금', () => {

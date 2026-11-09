@@ -32,9 +32,10 @@ import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { IconArrowLeft, IconEdit } from '@/components/icons';
 import { PILL_MAX_SCALE, pillCta, useBottomBand } from '@/features/food/pillCta';
 import { Txt as Text } from '@/components/Txt';
-import { Btn } from '@/components/Btn';
 import { Pressable } from '@/components/Pressable';
 import { RemoteImage } from '@/components/RemoteImage';
+import { LinearGradient } from 'expo-linear-gradient';
+import { HeroGallery } from '@/features/food/HeroGallery';
 import { Shimmer } from '@/components/Skeleton';
 import { Chip } from '@/components/Chip';
 import { color as C, font, radius } from '@/lib/theme';
@@ -102,6 +103,45 @@ function Expanded({ d, showTranslation }: { d: ProcessedFoodDetail; showTranslat
         </View>
         <Text style={s.disclaimer} testID="pf-source-disclaimer">{t('packaged.disclaimer')}</Text>
       </View>
+    </View>
+  );
+}
+
+const PREVIEW_LINES = 3;
+
+/** KB-997(예진 11/5 실기 — 원재료가 버튼 뒤에 완전히 숨음): 접힌 상태 = "Ingredients" + 번역(없으면 한국어 원문) 최대 3줄 + See all.
+ *  P-611(예진 11/5): "세 줄"은 섹션 전체(번역·원문·알레르기·출처) 기준 → 길이 측정 분기 없이 **항상 접힌 채 시작**, See all 항상
+ *  (짧은 번역이어도 펼치면 원문·출처가 더 있다). 3줄을 넘을 때만 아래 페이드(예진 원 요청 '세 줄 + 블러'). 원재료 없음 = 전체 섹션 그대로. */
+function IngredientsPreview({ d, showTranslation, onSeeAll }: { d: ProcessedFoodDetail; showTranslation: boolean; onSeeAll: () => void }) {
+  const { t } = useTranslation();
+  const text = (showTranslation ? d.ingredients.translated : null) ?? d.ingredients.original;
+  // 페이드 표시 판단 전용 측정(접힘/펼침 분기엔 안 씀) — 제한 없는 투명 사본의 줄 수(numberOfLines Text는 안드가 잘린 줄만 준다).
+  // 글 키로 보관: 언어 전환으로 글이 바뀌면 다시 잰다(렌더 중 비교, effect 리셋 없음). 측정 전·3줄 이하 = 페이드 없음
+  const [measured, setMeasured] = React.useState<{ text: string; lines: number } | null>(null);
+  const cut = measured != null && measured.text === text && measured.lines > PREVIEW_LINES;
+  if (!text) return <Expanded d={d} showTranslation={showTranslation} />;
+  return (
+    <View style={s.block} testID="pf-ingredients-peek">
+      <Text style={s.h2}>{t('packaged.ingredientsHeading')}</Text>
+      <View>
+        <Text style={s.body} numberOfLines={PREVIEW_LINES} testID="pf-preview-text">{text}</Text>
+        <Text
+          style={[s.body, s.measure]}
+          onTextLayout={(e) => {
+            const n = e.nativeEvent.lines.length;
+            if (!measured || measured.text !== text || measured.lines !== n) setMeasured({ text, lines: n });
+          }}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          testID="pf-preview-measure"
+        >
+          {text}
+        </Text>
+        {cut && <LinearGradient colors={['rgba(255,255,255,0)', C.card]} style={s.fade} pointerEvents="none" testID="pf-preview-fade" />}
+      </View>
+      <Pressable style={s.seeLess} onPress={onSeeAll} accessibilityRole="button" testID="pf-see-all">
+        <Text style={s.seeLessText}>{t('packaged.ingredients.seeAll')}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -217,7 +257,13 @@ export function ProcessedFoodDetailScreen() {
         {/* KB-865 ③(시안 20): 스캔 확정 결과 = 일반 상세와 같은 화면 — "스캔 결과" 띠·불꽃·차감 문구 없음(README) */}
         {/* 시안 08: 사진 335×223 r16 #F7F8FA(상품 8 안쪽 contain) */}
         <View style={[s.photo, { height: heroH }]}>
-          {d.imageUrl ? (
+          {d.images.length >= 2 ? (
+            // KB-965: 2장 이상 = 음식 상세 캐러셀(HeroGallery — 2초 자동·도트) · 장마다 같은 바탕(surface2)·contain·같은 안쪽 여백 = 누끼·실사진이 섞여도 배경이 어긋나지 않는다
+            <HeroGallery
+              urls={d.images}
+              renderPage={(u, i) => <RemoteImage uri={u} style={[s.photoImage, { top: insets.top + 48 }]} contentFit="contain" recyclingKey={`pf-detail-${d.id}-${i}`} hideUntilLoaded />}
+            />
+          ) : d.imageUrl ? (
             // QA #338: 다른 제품 사진이 잠깐 비치던 것 — 상세 전용 recyclingKey + 이번 사진이 뜰 때까지 투명(판정 화면에 엉뚱한 사진 0)
             <RemoteImage key={d.imageUrl} uri={d.imageUrl} style={[s.photoImage, { top: insets.top + 48 }]} contentFit="contain" recyclingKey={`pf-detail-${d.id}`} hideUntilLoaded />
           ) : (
@@ -255,9 +301,11 @@ export function ProcessedFoodDetailScreen() {
           {!!d.maker && <Text style={s.maker}>{d.maker}</Text>}
           {/* KB-914(R-140): 이름 = 공용 ProductName(영어 굵게 + 한국어 작게 — 어느 경로로 와도 같은 표기) · 유형은 그 아래 */}
           <ProductName name={d.name} nameKo={d.nameKo} size="title" lines={4} header testID="pf-name" />
-          {(!!d.type || !!d.foodType) && (
+          {(!!d.type || !!d.foodType || d.kcal != null) && (
             <View style={s.metaRow} testID="pf-meta">
-              <Text style={s.meta}>{d.type ? t(packagedTypeKey(d.type)) : d.foodType}</Text>
+              {(!!d.type || !!d.foodType) && <Text style={s.meta}>{d.type ? t(packagedTypeKey(d.type)) : d.foodType}</Text>}
+              {/* KB-989: 포장 전체 kcal — 값만, 구분은 columnGap(가운데 점 0) · 영양성분 비표시 */}
+              {d.kcal != null && <Text style={s.meta} testID="pf-kcal">{t('packaged.kcal', { value: d.kcal })}</Text>}
             </View>
           )}
         </View>
@@ -280,16 +328,16 @@ export function ProcessedFoodDetailScreen() {
           </>
         )}
 
-        {/* KB-945: 원재료 원문·알레르기 표시·출처 = 접힌 상태로만(처음 접힘) */}
+        {/* KB-945 → KB-997: 접힘 = 원재료 3줄 미리 보기(See all) · 펼침 = 전체 섹션 제자리 + Show less. 계측 action은 기존 값 유지(퍼널 연속) */}
         {expanded ? (
           <>
             <Expanded d={d} showTranslation={showTranslation} />
             <Pressable style={s.seeLess} onPress={() => toggle(false, 'see_less')} accessibilityRole="button" testID="pf-see-less">
-              <Text style={s.seeLessText}>{t('packaged.seeLess')}</Text>
+              <Text style={s.seeLessText}>{t('packaged.ingredients.showLess')}</Text>
             </Pressable>
           </>
         ) : (
-          <Btn variant="ghost" onPress={() => toggle(true, 'ingredients_source')} testID="pf-ingredients-source">{t('packaged.ingredientsAndSource')}</Btn>
+          <IngredientsPreview d={d} showTranslation={showTranslation} onSeeAll={() => toggle(true, 'ingredients_source')} />
         )}
 
         {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <View style={s.thickDivider} />}
@@ -361,6 +409,8 @@ const s = StyleSheet.create({
   preview: { fontFamily: font.body, fontSize: 16, lineHeight: 22, color: C.ink2 },
   expanded: { gap: 24 },
   disclaimer: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: C.ink2 },
+  measure: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0 }, // KB-997: 줄 수 측정용 투명 사본(같은 폭) — 페이드 판단 전용
+  fade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 40 }, // KB-997: 3줄 끝 페이드(바탕 → 투명)
   seeLess: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, justifyContent: 'center' },
   seeLessText: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
   thickDivider: { height: 8, backgroundColor: '#F5F5F5', marginHorizontal: -GUTTER }, // 음식 상세 thickDivider와 같은 값 — 화면 폭

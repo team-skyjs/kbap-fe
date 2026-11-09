@@ -1,3 +1,50 @@
+## 2026-11-05 · P-605 #428 S-959 계약 확정 반영(dev 배포 전)
+
+- 서버 #565 `filled: boolean`(true = 마감 채움, false = LLM 추정)로 판별 교체 — 필드가 없는 배포 전 서버만 내용(UNKNOWN·설명 null·재료 0) 폴백.
+
+- 대기 항목 riskLevel = CAUTION|UNKNOWN만(UNKNOWN = unable 시각) — 기존 매핑 그대로 통과(SAFE·미지 = unable 유지).
+- avoidances = 회피 재료 코드 배열(IngredientCode[]) → AiPendingItem.avoidCodes, 칩·안내 카드 이름은 렌더 시점 restrictionLabel(언어 전환 즉시), 칩 = caution(재료별 위험도 없음 — safe 0). 초안 객체 모양도 방어 수용.
+- 15초 마감 서버 채움(DISH·UNKNOWN·설명 null·재료 0) = estimated false → 미도착과 같게(폴링 끝 = 현행 unable 행, AI 칩 0).
+- 404 SCAN-014(주인 아님·만료·모르는 scanId) = 기존 "실패 = 즉시 종료 → 현행 unable" 경로 그대로. existsNotReady·foodId·spiciness·confidence는 타입만(화면 미사용).
+
+## 2026-11-04 · P-603 KB-992 메뉴판 스캔 결과 'AI 추정' 섹션(Draft — 서버 S-959 dev 배포 전)
+
+- 계약 초안 기준(확정 시 dev Swagger 정본): 결과 항목 `pendingId`(미매칭·비대체만 — 어댑터가 매칭·대체분은 무시) · 응답 `scanId`(초안에 위치 미기재 → payload 최상위 옵셔널로 가정, 없으면 폴링 0 = 현행 그대로) · `GET /api/scans/{scanId}/pending?lang=`.
+- 리스트 2단: DB 판정(현행 정렬·Safe only·담기) 위, 'AI 추정' 섹션(서버 순서) 아래. 도착 전 = 이름 + 스켈레톤 · NOT_FOOD = 행 제거 · 폴링 종료(15초·done·실패) 뒤 미도착 = 현행 unable 행으로 위 목록에 남음(담기 가능). Safe only ON = 섹션 숨김.
+- 폴링 useScanPending: 1초 간격 · 스캔당 총 15초(가려지면 멈추고 돌아오면 남은 예산) · done/실패 즉시 종료 · scanId 키 상태(다시 찍기 리셋).
+- 배지: AI 항목은 caution|unable만 — SAFE·미지 = unable, DANGER = caution(어댑터 잠금, 타입도 두 값). AI 칩 = IconSparkles SVG. AI 행엔 담기 슬롯 없음.
+- 탭: 미등록 안내 카드(UnmatchedNotice) 재사용 + 위에 AI 설명·"들어 있을 수 있는 기피 재료" 한 줄. 판정 문구·unable 마크 무변, 상세 이동 0.
+- 계측 scan_ai_section_shown{count}(스캔당 1회) · scan_ai_item_filled{kind}. i18n 3키 × 10로케일(scan.aiSectionTitle·aiSectionNote·aiIngredientsLine).
+## 2026-11-05 · P-609 KB-965 상세 사진 미리 받기(예진 11/5 실기 — 첫 장 뒤 장마다 ~2초 로딩)
+
+- HeroGallery(음식·가공식품 공통): urls가 들어오는 즉시 전 장(첫 장 포함)을 expo-image Image.prefetch(u, 'memory-disk')로 장마다 따로 — 장 단위 준비 시점을 안다. 실패도 준비로 친다(깨진 장 하나에 멈춤 방지 — 그 장은 CardPhoto 폴백).
+- useAutoSlide(isReady): 다음 장이 준비 전이면 틱을 넘기지 않고 기다림 → notifyReady(준비될 때마다)가 즉시 넘기고 간격을 새로 센다. 정지·제스처 중이면 무동작. 사용자 스와이프는 기다리지 않음(준비 전이면 기존 스켈레톤).
+- 비범위: 목록·검색 카드 탭 시점 선행 프리페치(상세 응답이 와야 URL을 앎 — 갤러리 마운트와 같은 시점이라 이득 작음).
+
+## 2026-11-05 · P-608 KB-965 히어로 캐러셀 5초·느린 전환(예진 11/5 실기)
+
+- HeroGallery(음식·가공식품 공통): 자동 넘김 AUTO_SLIDE_MS 2000 → 5000. 스와이프 뒤 재시작 규칙 무변.
+- 전환: 플랫폼 animated 스크롤(~300ms)은 시간 인자가 없어 SLIDE_MS 600 동안 requestAnimationFrame으로 직접 그린다(Easing.inOut(ease) — 가속 후 감속, 기본 페이지 스크롤과 같은 계열). 순환(마지막 → 처음)은 기존대로 즉시. 전환 중 닿으면 그 프레임에서 멈추고 손가락에 넘긴다.
+- ponytail: JS 프레임 구동 — 실기에서 끊기면 reanimated scrollTo(UI 스레드)로. 제스처 영역이라 실기 확인 뒤 발행.
+## 2026-11-05 · P-607 KB-997 가공식품 원재료 3줄 미리 보기(예진 11/5 실기)
+
+- 접힘 = "Ingredients" + 번역(없으면 한국어 원문) 3줄(numberOfLines 3) + 아래 페이드(expo-linear-gradient, 바탕 → 투명, 40) + See all. "Ingredients and source" 알약 대체.
+- 3줄 초과 판정 = 제한 없는 투명 사본의 onTextLayout 줄 수(안드는 numberOfLines가 걸린 Text의 잘린 줄만 준다), 측정은 글 키로 보관(언어 전환 = 재측정). 측정 전엔 버튼·페이드 0.
+- 3줄 이하·원재료 없음 = 접을 게 없어 전체 섹션(번역·원문·알레르기·출처)을 그대로 — 미리 보기만 남기면 출처 고지·한국어 원문에 닿을 길이 없어진다.
+- See all = 기존 펼침 제자리 + Show less(새 키). 계측 food_packaged_detail_expand action은 기존 값 유지(ingredients_source·see_less — 퍼널 연속).
+- i18n packaged.ingredients.{seeAll, showLess} × 10로케일. 새 의존성 0(linear-gradient 기존 설치).
+
+## 2026-11-04 · P-604 KB-989 가공식품 상세 칼로리(Draft — 서버 S-957 전)
+
+- 어댑터: 상세 `kcal`(포장 전체, 옵셔널 — S-957 초안) → 유한·0 이상이면 반올림 정수, 그 밖·null·부재 = null(미표시). 묶음 상품 규칙은 서버 소유.
+- 상세 메타 줄(유형 옆)에 `packaged.kcal`("{{value}} kcal") — 구분은 기존 columnGap(가운데 점 0), 유형이 없어도 kcal만으로 줄이 선다. 영양성분·목록·후보 카드 비표시.
+- i18n 1키 × 10로케일(ru ккал·id kkal·zh 千卡/大卡·th กิโลแคลอรี).
+## 2026-11-04 · P-602 KB-965 가공식품 상세 사진 여러 장(캐러셀)
+
+- 어댑터: 상세 응답 images[{url, kind}](S-953, 서버 dev 배포 전 — 옵셔널) → images: string[](서버 순서·https·빈 url·중복 버림) · 없음·빈 배열 = 대표(imageUrl) 한 장.
+- 히어로: 2장 이상 = 음식 상세 HeroGallery 재사용(2초 자동·도트) · 1장 = 현행 정적 히어로 그대로. HeroGallery에 renderPage(옵션) — 가공식품은 장마다 단일 히어로와 같은 바탕(surface2)·contain·안쪽 여백(누끼·실사진 혼재 배경 일치) · 음식 상세는 기본 CardPhoto 무변.
+- kind는 아직 화면에서 쓰지 않음(모든 장 같은 처리). 스크린샷·실기 = 서버 dev 배포 뒤 QA 세션.
+
 ## 2026-11-04 · P-601 KB-988 가공식품 옛 ML Kit 스캔 경로 제거
 
 - PackagedScanFlow: 이름 스캔 OCR(runName·readText·앞면 OCR 주입)·성분표 OCR(addLabelText·면 OCR 주입)·앞면 못 읽음 단계·이름 스캔 앞면 사진 그림자 업로드(KB-892) 제거 — 촬영은 앞면·성분표 모두 비전(runVision). ML Kit import 0.

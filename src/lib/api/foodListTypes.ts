@@ -28,6 +28,8 @@ export interface MenuSummaryWire {
   bookmarked?: boolean;
   /** P-165(#146): 리뷰 요약 신설 — 구응답 방어 옵셔널. */
   review?: ReviewInfoWire | null;
+  /** KB-1014(서버 #601·#602): 대표 편의점 음식 — 연결 없으면 필드 생략. 검색·둘러보기·스캔 목록·홈 4섹션만. */
+  linkedProcessedFood?: unknown;
 }
 
 /** KB-800: 홈 1.3 `topRatedFoods` 항목 — 요약 + 세부 평균(소수 1자리). 속도·친절도는 입력 0건이면 null.

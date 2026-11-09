@@ -177,10 +177,10 @@ export default function Profile() {
               )}
               {/* KB-497: 알림은 회원 전용 — 게스트 분기에 알림 설정 진입점 없음(라우트는 AuthGateSheet 이중 방어) */}
               {/* P-394(KB-586): 문의는 게스트도 가능(설치 ID 식별) — 로그인 게이트 없음 */}
-              <MenuRow testID="profile-menu-feedback" label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
+              <MenuRow testID="profile-menu-feedback" label={t('feedback.title')} chevron onPress={() => router.push((FLAGS.operatorChatEnabled ? '/chat?src=profile' : '/profile/feedback') as Href)} /* KB-1008: Contact us = 운영진 채팅 */ />
               {/* KB-739: 광고 신고(Apple 2.5.18) — 게스트도 광고를 보므로 같은 행(/review 9) */}
               {FLAGS.ads.enabled && (
-                <MenuRow testID="profile-menu-ad-report" label={t('ads.report')} chevron onPress={() => router.push('/profile/feedback/new?prefill=ad' as Href)} />
+                <MenuRow testID="profile-menu-ad-report" label={t('ads.report')} chevron onPress={() => router.push((FLAGS.operatorChatEnabled ? '/chat?prefill=ad' : '/profile/feedback/new?prefill=ad') as Href)} /* KB-1008: 채팅 입력창 프리필(자동 전송 0) */ />
               )}
               <MenuRow testID="profile-menu-safety" label={t('profile.safetyNotice')} chevron onPress={() => router.push('/profile/legal?doc=safety' as Href)} /* KB-910: 앱 안 화면(구 인앱 브라우저) */ />
               {/* KB-776(QA B2-4): 가입 뒤에도 약관·개인정보처리방침 다시 보기 — 온보딩 동의 시트와 같은 본문(LegalDocBody) */}
@@ -354,13 +354,13 @@ export default function Profile() {
                 <MenuRow testID="profile-menu-notifications" label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
               )}
               {/* P-394(KB-586): 문의 — 게스트 분기에도 같은 행이 있다 */}
-              <MenuRow testID="profile-menu-feedback" label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
+              <MenuRow testID="profile-menu-feedback" label={t('feedback.title')} chevron onPress={() => router.push((FLAGS.operatorChatEnabled ? '/chat?src=profile' : '/profile/feedback') as Href)} /* KB-1008: Contact us = 운영진 채팅 */ />
               {/* KB-739: UMP 개인정보 옵션(EEA 등 REQUIRED일 때만) · 광고 신고(Apple 2.5.18) = 문의 작성 프리필 */}
               {privacyOptions && (
                 <MenuRow testID="profile-menu-ad-privacy" label={t('ads.privacyOptions')} chevron onPress={() => void showPrivacyOptions()} />
               )}
               {FLAGS.ads.enabled && (
-                <MenuRow testID="profile-menu-ad-report" label={t('ads.report')} chevron onPress={() => router.push('/profile/feedback/new?prefill=ad' as Href)} />
+                <MenuRow testID="profile-menu-ad-report" label={t('ads.report')} chevron onPress={() => router.push((FLAGS.operatorChatEnabled ? '/chat?prefill=ad' : '/profile/feedback/new?prefill=ad') as Href)} /* KB-1008: 채팅 입력창 프리필(자동 전송 0) */ />
               )}
               {/* P-061③: 안전 고지 페이지(EN/KO) */}
               <MenuRow testID="profile-menu-safety" label={t('profile.safetyNotice')} chevron onPress={() => router.push('/profile/legal?doc=safety' as Href)} /* KB-910: 앱 안 화면(구 인앱 브라우저) */ />

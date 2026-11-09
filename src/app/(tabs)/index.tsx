@@ -113,7 +113,8 @@ function HomeBody() {
       const addConsent = () => modalQueue.add({ key: 'marketingConsent', present: (done, signal) => presentHomeMarketingConsent(showConsent, done, signal) });
       addConsent();
       // KB-986: 피드백 = 포커스 때 큐 마지막(실행당 하나 — promptSlot·실행 수 판정이 복귀 재판정을 거른다)
-      modalQueue.add({ key: 'feedbackPrompt', present: (done, signal) => presentHomeFeedbackPrompt(showFeedback, done, signal) });
+      // KB-1008: 운영진 채팅이 켜지면 재방문 피드백 시트는 생략(기획 결정 13 — 예진이 직접 말 걸기로 대체)
+      if (!FLAGS.operatorChatEnabled) modalQueue.add({ key: 'feedbackPrompt', present: (done, signal) => presentHomeFeedbackPrompt(showFeedback, done, signal) });
       // KB-987: 백그라운드 복귀는 focus를 다시 쏘지 않는다 — 홈이 포커스인 동안만 전경 전환마다 같은 판정(P-600 최초 1회 기록이 중복을 거른다)
       const sub = AppState.addEventListener('change', (st) => { if (st === 'active') addConsent(); });
       // 블러 = 대기 스텝 폐기 + 떠 있는 코치마크·동의 시트·피드백 시트도 닫기(#398 Codex — 목적지 탭 위에 남지 않게)

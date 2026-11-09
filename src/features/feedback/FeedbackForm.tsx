@@ -24,6 +24,25 @@ import { withPermissionPrompt } from '@/lib/permissionPrompt';
 
 export type FeedbackSent = { photoCount: number };
 
+/** 사진 라이브러리에서 최대 remaining장 — 권한 거부 = 설정 안내 후 빈 배열. KB-1008: 운영진 채팅과 공유 */
+export async function pickLibraryPhotos(remaining: number, t: (k: string) => string): Promise<string[]> {
+  if (remaining <= 0) return [];
+  // KB-600(P-408): Android는 시스템 Photo Picker — READ_MEDIA 권한을 제거했으므로 요청하면 즉시 denied. iOS만 요청.
+  if (needsPhotoLibraryPermission()) {
+    const perm = await withPermissionPrompt(() => ImagePicker.requestMediaLibraryPermissionsAsync());
+    if (!perm.granted) {
+      // 사진 라이브러리 권한 문구(카메라 문구 금지 — Codex #170)
+      Alert.alert(t('photo.libraryPermTitle'), t('photo.libraryPermBody'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('photo.openSettings'), onPress: () => void openAppSettings() },
+      ]);
+      return [];
+    }
+  }
+  const res = await launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, allowsMultipleSelection: true, selectionLimit: remaining });
+  return !res.canceled && res.assets?.length ? res.assets.map((a) => a.uri) : [];
+}
+
 export function useFeedbackForm(initialBody = '') {
   const { t } = useTranslation();
   const [body, setBody] = React.useState(initialBody);
@@ -38,23 +57,9 @@ export function useFeedbackForm(initialBody = '') {
     if (remaining <= 0 || importing) return;
     setImporting(true);
     try {
-      // KB-600(P-408): Android는 시스템 Photo Picker — READ_MEDIA 권한을 제거했으므로 요청하면 즉시 denied. iOS만 요청.
-      if (needsPhotoLibraryPermission()) {
-        const perm = await withPermissionPrompt(() => ImagePicker.requestMediaLibraryPermissionsAsync());
-        if (!perm.granted) {
-          // 사진 라이브러리 권한 문구(카메라 문구 금지 — Codex #170)
-          Alert.alert(t('photo.libraryPermTitle'), t('photo.libraryPermBody'), [
-            { text: t('common.cancel'), style: 'cancel' },
-            { text: t('photo.openSettings'), onPress: () => void openAppSettings() },
-          ]);
-          return;
-        }
-      }
-      const res = await launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, allowsMultipleSelection: true, selectionLimit: remaining });
-      if (!res.canceled && res.assets?.length) {
-        // Codex #196: 같은 사진 중복 선택 = Set으로 제거
-        setPhotos((cur) => [...new Set([...cur, ...res.assets.map((a) => a.uri)])].slice(0, FEEDBACK_MAX_PHOTOS));
-      }
+      const uris = await pickLibraryPhotos(remaining, t);
+      // Codex #196: 같은 사진 중복 선택 = Set으로 제거
+      if (uris.length) setPhotos((cur) => [...new Set([...cur, ...uris])].slice(0, FEEDBACK_MAX_PHOTOS));
     } finally {
       setImporting(false);
     }

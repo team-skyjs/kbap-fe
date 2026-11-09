@@ -326,6 +326,14 @@
     "closestMatchSheetTitle": "我們為您配對了相似料理",
     "closestMatchSheetBody": "菜單上寫的是「{{scanned}}」。我們顯示的是最接近的{{food}}（{{foodKo}}），因此食材與風險等級以{{food}}為準。",
     "closestMatchSeeDetails": "查看{{food}}詳情",
+    "aiSectionTitle": "AI 推測",
+    "aiSectionNote": "這些菜色尚未收錄，以下資訊由 AI 推測。用餐前請向店員確認。",
+    "aiIngredientsLine": "可能含有你忌口的食材：{{names}}",
+    "aiGeneratedPhoto": "AI 生成",
+    "aiPhotoGenerating": "正在生成圖片",
+    "aiDetailIngredients": "主要食材",
+    "addOnsTitle": "加料和選項",
+    "addOnsNote": "這些是加料或選項。裡面有什麼，請向店員確認。",
     "searchOnGoogle": "在Google搜尋",
     "resultsEmpty": "沒有掃描結果",
     "viewOrderAction": "查看訂單",
@@ -600,6 +608,7 @@
     "writeReview": "撰寫評論",
     "spiceAboveYou": "比你能接受的更辣",
     "addProfileHint": "新增你的飲食限制以查看個人化評估。",
+    "linkedProcessedTitle": "查看這個商品",
     "scannedPrice": "以您掃描的菜單為準",
     "translatedPill": "已為您翻譯",
     "verdictContains": "含{{list}} — 在您的迴避清單中",
@@ -1284,11 +1293,16 @@
     "noAvoidMatchTitle": "與避免清單無相符",
     "safeBasis_one": "已將標示與你要避免的 {{count}} 種食材進行比對。",
     "safeBasis_other": "已將標示與你要避免的 {{count}} 種食材進行比對。",
-    "findMore": "繼續查找"
+    "findMore": "繼續查找",
+    "kcal": "{{value}} 大卡",
+    "ingredients": {
+      "seeAll": "查看全部",
+      "showLess": "收合"
+    }
   },
   "packagedScan": {
     "title": "掃描",
-    "chooseTitle": "選擇商品",
+    "chooseTitle": "掃描結果",
     "whichTitle": "你的是哪一款？",
     "noneTitle": "沒有符合的商品",
     "noneBody": "請拍攝背面的原料表繼續。",
@@ -1342,7 +1356,7 @@
     "labelRawTitle": "辨識出的文字",
     "newAnalysisCta": "重新分析",
     "debugAddPage": "作為一面新增",
-    "matchTitle": "選擇名稱和口味相符的商品",
+    "matchTitle": "找出並選擇你掃描的食品",
     "personalNote": "設定要避免的食材後可查看個人結果。",
     "confirmProduct": "確認此商品",
     "anotherTitle": "換個方法找商品",
@@ -1379,6 +1393,7 @@
   },
   "scanCamera": {
     "title": "掃描",
+    "subtitle": "拍下菜單或便利商店食品",
     "menuTitle": "請把整張菜單拍進來",
     "menuHint": "雙指縮放",
     "packageTitle": "請對準包裝正面",
@@ -1408,5 +1423,21 @@
     "homeTitle": "便利商店食品也能掃描！",
     "homeBody": "看看零食、泡麵和飲料裡有什麼。",
     "foodBody": "依人氣瀏覽便利商店食品。"
+  },
+  "chat": {
+    "title": "聯絡我們",
+    "team": "K-Bap 團隊",
+    "repliesWithin": "通常 5 分鐘內回覆",
+    "greeting": "有什麼可以幫你的？",
+    "placeholder": "輸入訊息",
+    "send": "傳送",
+    "sendFailed": "傳送失敗，請再試一次。",
+    "rateLimited": "訊息傳送過多，請稍後再試。",
+    "failedTapRetry": "未傳送，點按重試",
+    "earlierInquiries": "以往諮詢",
+    "tooLong": "訊息太長了，請縮短一些。",
+    "photoInvalid": "有照片無法傳送，請換一張。",
+    "invalid": "無法傳送此訊息，請檢查後再試一次。",
+    "fabCoach": "免費無限次掃描✨"
   }
 }

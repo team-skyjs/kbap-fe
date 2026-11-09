@@ -79,7 +79,7 @@ describe('P-242 ①②: v2 서버 실환율(krwPerUnit) 채택', () => {
 
   it('배선 소스 잠금 — 스캔 행·주문 카드 fx 관통 + outcome 관통', () => {
     const fs = require('fs');
-    expect(fs.readFileSync('src/features/scan/ScanRichList.tsx', 'utf8')).toContain('convertKrw(dish.priceKrw, currency, fx)');
+    expect(fs.readFileSync('src/features/scan/ScanRichList.tsx', 'utf8')).toContain('convertKrw(krw, currency, fx)'); // KB-1006: 가격 텍스트 공용(PriceText — 줄·옵션·AI 시트 같은 fx)
     expect(fs.readFileSync('src/features/order/FlippedOrderCard.tsx', 'utf8')).toContain('convertKrw(totalKrw, currency, fx)');
     expect(fs.readFileSync('src/lib/data/useScan.ts', 'utf8')).toContain('fx: payload.currency ?? null');
   });

@@ -123,6 +123,8 @@ export interface FoodCard {
   /** KB-779: 서버 FoodSummaryResponse.bookmarked(비회원 항상 false). 홈 카드 별·토글 방향의 정본 —
    *  /bookmarks 전 페이지 드레인 대체. 옵셔널 = mock·스냅샷 호환(부재 = 미저장). */
   bookmarked?: boolean;
+  /** KB-1014: 대표 편의점 음식(카드 사진 = imageUrl 누끼 우선). 옵셔널 = mock 호환(부재 = 연결 없음). */
+  linked?: import('./linkedProcessed').LinkedProcessedFood | null;
 }
 
 export interface IngredientRisk {
@@ -170,6 +172,8 @@ export interface FoodDetail {
   isRegistered: boolean; // false ⇒ treat as unable (FR-033)
   /** 조회 회원의 저장(북마크) 여부 (KB-142). 옵셔널 = mock/미등록 경로 — 미설정은 false 취급. */
   bookmarked?: boolean;
+  /** KB-1014: 대표 편의점 음식(사진 우선·진입점) — 판정과 무관. 부재 = 연결 없음 */
+  linkedProcessed?: import('./linkedProcessed').LinkedProcessedFood | null;
 }
 
 export interface ScanResultItem {

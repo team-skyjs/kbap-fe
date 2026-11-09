@@ -326,6 +326,14 @@
     "closestMatchSheetTitle": "Lo asociamos a un plato parecido",
     "closestMatchSheetBody": "El menú dice “{{scanned}}”. Te mostramos {{food}} ({{foodKo}}), el plato más parecido de nuestro catálogo, así que los ingredientes y tu nivel de riesgo se basan en {{food}}.",
     "closestMatchSeeDetails": "Ver detalles de {{food}}",
+    "aiSectionTitle": "Estimación de IA",
+    "aiSectionNote": "Estos platos aún no están registrados, así que esta información la estimó la IA. Consulta con el personal antes de comer.",
+    "aiIngredientsLine": "Puede contener ingredientes que evitas: {{names}}",
+    "aiGeneratedPhoto": "Imagen IA",
+    "aiPhotoGenerating": "Creando foto",
+    "aiDetailIngredients": "Ingredientes principales",
+    "addOnsTitle": "Extras y opciones",
+    "addOnsNote": "Son ingredientes extra u opciones. Pregunta al personal qué llevan.",
     "searchOnGoogle": "Buscar en Google",
     "resultsEmpty": "Sin resultados de escaneo",
     "viewOrderAction": "Ver pedido",
@@ -600,6 +608,7 @@
     "writeReview": "Escribir una reseña",
     "spiceAboveYou": "más picante de lo que toleras",
     "addProfileHint": "Agrega tus restricciones para ver un veredicto personalizado.",
+    "linkedProcessedTitle": "Ver el producto",
     "scannedPrice": "según el menú que escaneaste",
     "translatedPill": "Traducido para ti",
     "verdictContains": "Contiene {{list}} — en tu lista a evitar",
@@ -1284,11 +1293,16 @@
     "noAvoidMatchTitle": "Sin coincidencias con tu lista",
     "safeBasis_one": "Comparamos la etiqueta con {{count}} ingrediente que evitas.",
     "safeBasis_other": "Comparamos la etiqueta con {{count}} ingredientes que evitas.",
-    "findMore": "Buscar más"
+    "findMore": "Buscar más",
+    "kcal": "{{value}} kcal",
+    "ingredients": {
+      "seeAll": "Ver todo",
+      "showLess": "Ver menos"
+    }
   },
   "packagedScan": {
     "title": "Escanear",
-    "chooseTitle": "Elige tu producto",
+    "chooseTitle": "Resultados del escaneo",
     "whichTitle": "¿Cuál es tu producto?",
     "noneTitle": "No hay productos que coincidan",
     "noneBody": "Fotografía la etiqueta de ingredientes del reverso para continuar.",
@@ -1342,7 +1356,7 @@
     "labelRawTitle": "Texto leído",
     "newAnalysisCta": "Nuevo análisis",
     "debugAddPage": "Añadir como un lado",
-    "matchTitle": "Elige el producto con el mismo nombre y sabor",
+    "matchTitle": "Busca y selecciona el producto que escaneaste",
     "personalNote": "Elige ingredientes a evitar para ver un resultado personal.",
     "confirmProduct": "Confirmar producto",
     "anotherTitle": "Encuentra tu producto de otra forma",
@@ -1379,6 +1393,7 @@
   },
   "scanCamera": {
     "title": "Escanear",
+    "subtitle": "Fotografía un menú o un producto de tienda de conveniencia",
     "menuTitle": "Encuadra todo el menú",
     "menuHint": "Pellizca para hacer zoom",
     "packageTitle": "Muestra el frente del envase",
@@ -1408,5 +1423,21 @@
     "homeTitle": "¡Escanea también comida de tiendas de conveniencia!",
     "homeBody": "Mira qué llevan los snacks, el ramyeon y las bebidas.",
     "foodBody": "Explora comida de tiendas de conveniencia, lo más popular primero."
+  },
+  "chat": {
+    "title": "Chatea con nosotros",
+    "team": "Equipo K-Bap",
+    "repliesWithin": "Normalmente responde en 5 minutos",
+    "greeting": "¿En qué podemos ayudarte?",
+    "placeholder": "Escribe un mensaje",
+    "send": "Enviar",
+    "sendFailed": "No se pudo enviar. Inténtalo de nuevo.",
+    "rateLimited": "Has enviado muchos mensajes. Inténtalo de nuevo más tarde.",
+    "failedTapRetry": "No enviado. Toca para reintentar.",
+    "earlierInquiries": "Consultas anteriores",
+    "tooLong": "Tu mensaje es demasiado largo. Acórtalo, por favor.",
+    "photoInvalid": "No se pudo enviar una de las fotos. Elige otra foto.",
+    "invalid": "No se pudo enviar este mensaje. Revísalo e inténtalo de nuevo.",
+    "fabCoach": "Escaneos ilimitados gratis✨"
   }
 }

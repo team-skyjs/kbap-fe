@@ -1,4 +1,5 @@
 import { resumeEngagementIdentity, suspendEngagementIdentity } from './engagement/visitRuntime';
+import { detectTestLab } from './testLab';
 import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type EngagementEvent } from './engagement/schema';
 
 /**
@@ -10,6 +11,7 @@ import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type Engagem
  *   app · auth · onboarding · scan · order · owner · food · search ·
  *   review · community · profile · push · error · ad(KB-739 AdMob — ad_impression/ad_click/ad_reward_earned/ad_consent_result)
  *   · screen(KB-784 screen_view — 라우트 패턴) · ui(KB-784 ui_click — 공용 Pressable 자동) · home(KB-784 홈 섹션·카드 노출/클릭)
+ *   · chat(KB-1010 운영진 채팅 진입·전송 결과)
  * user property = `user_info_` 접두 (예: user_info_country).
  * 신규 추가 시 이 규칙을 먼저 적용할 것 — CSV 대조 유닛이 구 이름을 막는다.
  *
@@ -32,6 +34,8 @@ import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type Engagem
  * |                              | entry (intro|gate_*|profile|other)         |
  * | auth_guest_enter              | (props 없음)                                |
  * | profile_feedback_submit      | has_photos, photo_count                    |
+ * | chat_open                    | source (fab|fab_preview|coach|profile|push|ad_report|other), has_unread |
+ * | chat_message_send            | result (ok|fail), has_photos, photo_count, is_retry |
  * | feedback_prompt_*            | KB-986 재방문 피드백 시트: shown · submitted(has_photos, photo_count) · dismissed(via) · never_again — 본문 금지 |
  * | app_tab_view                 | tab (home|food|reviews|community|profile), |
  * |                              | user_type (guest|registered)               |
@@ -87,6 +91,9 @@ export const EVENTS = {
   scan_quota_dialog_select: 'scan_quota_dialog_select',
   // KB-789: 유사 음식 대체 항목의 Closest match 칩 탭 → 설명 카드 열림(food_id = 대체 음식)
   scan_closest_match_open: 'scan_closest_match_open',
+  // KB-992: 'AI 추정' 섹션 노출(대기 항목 수) · 항목 도착(kind = dish|drink|notFood)
+  scan_ai_section_shown: 'scan_ai_section_shown',
+  scan_ai_item_filled: 'scan_ai_item_filled',
   error_state_view: 'error_state_view',
   review_helpful_toggle: 'review_helpful_toggle',
   review_translate_toggle: 'review_translate_toggle',
@@ -152,6 +159,9 @@ export const EVENTS = {
   food_segment_select: 'food_segment_select',
   review_feed_target_select: 'review_feed_target_select',
   food_packaged_label_scan: 'food_packaged_label_scan', // P-508 성분표 분석 결과(pages 1~4 · charged = 서버값 · result ok|unreadable|newAnalysis|expired|quota|network… — OCR 원문 금지)
+  // KB-1010 운영진 채팅 — 진입 경로(source enum)·전송 결과(서버 응답 뒤 1회). 본문·사진 URL·메시지 id 금지
+  chat_open: 'chat_open',
+  chat_message_send: 'chat_message_send',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -178,6 +188,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_quota_dialog_select: ['option'],
   scan_result_item_tap: ['risk'],
   scan_closest_match_open: ['food_id'], // KB-789: 카탈로그 id(PII 아님) — 메뉴 원문 금지
+  scan_ai_section_shown: ['count'], // KB-992: 메뉴 이름 등 원문 금지
+  scan_ai_item_filled: ['kind'],
   order_card_open: ['item_count', 'has_avoids'],
   // P-214 🔒: keyword = **카탈로그 매칭 시에만**(호출처 searchKeywordProps가 판정) —
   // 자유 텍스트는 matched:false + len_bucket만(알레르기·신념 추론 차단)
@@ -212,7 +224,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   home_card_click: ['section', 'position', 'food_id', 'collection_key', 'product_id'], // KB-796: section=curation이면 collection_key(서버 모음 키) · KB-955: section=cvs면 product_id
   home_curation_link_click: ['collection_key', 'position'],
   food_packaged_search: ['query_length', 'result_count'],
-  food_packaged_detail_view: ['product_id', 'label_source', 'source'], // KB-973 source: search|home_cvs|list|scan|review|deeplink
+  food_packaged_detail_view: ['product_id', 'label_source', 'source'], // KB-973 source: search|home_cvs|list|scan|review|deeplink · KB-1014 menu_link
   home_curation_gallery_open: ['collection_key', 'entry_id'],
   home_curation_gallery_swipe: ['collection_key', 'entry_id', 'index'],
   home_curation_map_open: ['collection_key', 'entry_id'],
@@ -259,6 +271,9 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   order_share_story: ['result', 'item_count', 'has_place'], // result: tap|success|not_installed|error
   // P-394 🔒: 본문·기기정보·사진 URI 금지 — 사진 유무·개수만(발주 고정).
   profile_feedback_submit: ['has_photos', 'photo_count'],
+  // KB-1010 🔒: 값은 enum·boolean·개수만 — 본문·사진 URL·메시지 id·자유 텍스트 금지
+  chat_open: ['source', 'has_unread'], // source: CHAT_OPEN_SOURCES
+  chat_message_send: ['result', 'has_photos', 'photo_count', 'is_retry'], // result: ok|fail
 };
 
 /** P-144 user property 허용 키 — CSV와 1:1. country는 alpha-2 코드(멘토 확정
@@ -283,6 +298,9 @@ function ensureInit(): boolean {
     // minIdLength 1: Amplitude 서버 기본 최소 id 길이 5 — 회원 번호는 1부터라 1~4자리 회원의 이벤트가 전부 400으로
     // 버려진다(SDK는 재시도 없이 드롭). 옵션을 주면 SDK가 min_id_length를 실어 보낸다. 접두어 방식은 Sentry·서버 로그 대조가 깨져 안 씀.
     amp.init(KEY, undefined, { minIdLength: 1 });
+    // KB-1016: Play 사전 출시 로봇이면 모든 이벤트 드롭(enrichment가 null = 타임라인에서 버림). init은 그대로 동기 —
+    // 판별을 기다리느라 init을 미루면 clearStaleAnalyticsIdentity의 getUserId 잔존 정리가 깨진다. 판별 1회 캐시라 첫 이벤트만 잠깐 대기.
+    amp.add({ name: 'kbap-test-lab-filter', type: 'enrichment', execute: async (e) => ((await detectTestLab()) ? null : e) });
     initialized = true;
   }
   return true;
@@ -297,10 +315,17 @@ export function sanitize(event: EventName, props?: Record<string, unknown>): Rec
 }
 
 /** KB-973: 가공식품 상세 진입 출처 — 앱 안 진입점은 ?src= 태그, 스캔 확정은 ?scan=1, 그 밖(태그 없음) = deeplink(푸시·외부 링크) */
-export const PACKAGED_DETAIL_SOURCES = ['search', 'home_cvs', 'list', 'scan', 'review', 'deeplink'] as const;
+export const PACKAGED_DETAIL_SOURCES = ['search', 'home_cvs', 'list', 'scan', 'review', 'menu_link', 'deeplink'] as const; // KB-1014 menu_link = 메뉴 음식 상세의 대표 편의점 음식 행
 export function packagedDetailSource(src: string | undefined, scan: string | undefined): (typeof PACKAGED_DETAIL_SOURCES)[number] {
-  if (src === 'search' || src === 'home_cvs' || src === 'list' || src === 'review') return src;
+  if (src === 'search' || src === 'home_cvs' || src === 'list' || src === 'review' || src === 'menu_link') return src;
   return scan === '1' ? 'scan' : 'deeplink';
+}
+
+/** KB-1010: 채팅 진입 출처 — 앱 안 진입점은 ?src= 태그, 광고 신고는 기존 ?prefill=ad, 그 밖(태그 없음·미지 값·딥링크) = other */
+export const CHAT_OPEN_SOURCES = ['fab', 'fab_preview', 'coach', 'profile', 'push', 'ad_report', 'other'] as const; // KB-1013 coach = FAB 위 코치마크
+export function chatOpenSource(src: string | undefined, prefill: string | undefined): (typeof CHAT_OPEN_SOURCES)[number] {
+  if (prefill === 'ad') return 'ad_report';
+  return src === 'fab' || src === 'fab_preview' || src === 'coach' || src === 'profile' || src === 'push' ? src : 'other';
 }
 
 export function track(event: EventName, props?: Record<string, unknown>): void {

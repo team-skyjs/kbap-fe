@@ -42,6 +42,16 @@ export interface ResultDish extends MenuDish {
   substituted?: boolean;
   /** KB-789 v3.0: 메뉴판 원문(substituted일 때). 부재 = null. */
   originalScannedName?: string | null;
+  /** KB-992: AI 추정 대기 키(미매칭·비대체만) — 있으면 결과 리스트 하단 'AI 추정' 섹션으로 간다. */
+  pendingId?: string | null;
+  /** KB-1006: 수량 옵션(2개 이상만) — 있으면 가격 줄 대신 옵션 줄마다 가격·담기. 옵셔널 = 픽스처 호환 관례 */
+  priceOptions?: import('@/lib/api/scanAdapter').PriceOption[] | null;
+  /** KB-1006: 고추 수 0~5(0·부재 = 표시 안 함) */
+  spice?: number;
+  /** P-616(S-970): 주문 옵션·단일 재료어 — 판정 목록에서 빠지고 맨 아래 "추가·옵션" 칩으로만 */
+  notMenu?: boolean;
+  /** KB-1014: 대표 편의점 음식(matched만) — 행 사진을 누끼로 우선, 판정 무관 */
+  linked?: import('@/lib/api/linkedProcessed').LinkedProcessedFood | null;
 }
 
 /** KB-789: 주문 카드 `nameKo` = **메뉴판에 적힌 이름** — 식당 직원에게 보여주는 줄이라 대체 항목은

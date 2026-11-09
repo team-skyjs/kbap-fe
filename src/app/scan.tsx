@@ -26,7 +26,7 @@ import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { withPermissionPrompt } from '@/lib/permissionPrompt';
 import { markPromptShown } from '@/lib/engagement/promptSlot';
-import { addScanItem, rememberScanDish, removeScanItem, resetScanCart, useScanCart } from '@/features/scan/scanCartStore';
+import { addScanItem, dropScanCartItem, migrateScanCartKey, rememberScanDish, removeScanItem, resetScanCart, scanCartKey, useScanCart } from '@/features/scan/scanCartStore';
 import { Pressable } from '@/components/Pressable';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
@@ -54,6 +54,10 @@ import { useLeaveConfirm } from '@/components/LeaveConfirmModal';
 import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
+import { useScanPending } from '@/lib/data/useScanPending';
+import { restrictionLabel } from '@/lib/onboarding/data';
+import { AiThumb, OrderPill, ScanRichList, priceLineText, type AiRow } from '@/features/scan/ScanRichList';
+import { SpicePeppers } from '@/components/SpicePeppers';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, formatKrw, orderNameKo, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 // P-219→P-220: 실패 분류·계측 사유 매핑은 순수 모듈 한 곳(전수 유닛 대상)
@@ -80,7 +84,6 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
-import { OrderPill, ScanRichList } from '@/features/scan/ScanRichList';
 import { D4CameraRestart } from '@/components/design4Assets';
 import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { TagPickerSheet } from '@/app/community/compose';
@@ -170,6 +173,7 @@ export default function Scan() {
   const [dishes, setDishes] = useState<MenuDish[]>([]);
   const [items, setItems] = useState<ScanOverlayItem[]>([]);
   const [photoOnly, setPhotoOnly] = useState<PhotoOnlyItem[]>([]); // idx=null — 리스트 전용
+  const [scanId, setScanId] = useState<string | null>(null); // KB-992: AI 추정 폴링 키(null = 폴링 안 함)
 
   const [degraded, setDegraded] = useState(false); // 정제 실패/부재 (KB-72 신계약)
   // P-242: v2 서버 실환율(null = 조회 실패 — 배지 생략 규약·undefined = v1 테이블)
@@ -356,6 +360,9 @@ export default function Scan() {
   const [camOrientation, setCamOrientation] = useState<CameraOrientation>('portrait');
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
   const [closestMatch, setClosestMatch] = useState<ResultDish | null>(null); // KB-789 대체 항목 설명 카드(열린 행)
+  // KB-992 → KB-1006: AI 줄 탭 = 같은 카드 위에 AI 상세(사진·설명·맵기·가격·재료). Codex #440 P2: 줄 스냅샷이 아니라 itemId만 —
+  // 열어 둔 사이 폴링이 사진을 READY로 바꾸면 렌더 때 최신 줄을 다시 찾는다
+  const [unmatchedAiId, setUnmatchedAiId] = useState<number | null>(null);
   // P-161: 다시찍기 확인 — 실수 탭 1회에 결과·담은 항목 통째 유실 방지(항상 노출)
   const [retakeConfirm, setRetakeConfirm] = useState(false);
   // KB-769: 담은 항목이 있는 결과에서 떠나는 모든 길(헤더 ‹·Android 하드웨어 back·iOS 스와이프)을 다시찍기와 같은 확인 창으로.
@@ -363,6 +370,30 @@ export default function Scan() {
   const isFocused = useIsFocused();
   const unlockPending = useSyncExternalStore(subscribeUnlock, hasUnlockPending, hasUnlockPending);
   const leave = useLeaveConfirm(isFocused && phase === 'result' && cartCount > 0);
+  // KB-992: 미매칭·비대체 항목의 AI 추정 폴링 — 결과 화면이 보일 때만(떠나면 멈춤)
+  const pendingCount = [...items, ...photoOnly].filter((i) => i.pendingId).length;
+  const aiPending = useScanPending(scanId, isFocused && phase === 'result' && pendingCount > 0);
+  // KB-1006(Codex #440 P2): 응답 전에 담은 AI 줄에 수량 옵션이 오면 옵션 없는 수량을 첫 옵션 키로 옮긴다(price = 첫 옵션 값, S-969) —
+  // 안 옮기면 줄·주문 카드 어디서도 안 읽혀 필 숫자에만 남는다. 사진 전용 항목의 itemId = -1 - k(결과 조립과 같은 규칙)
+  // Codex #440 2R P2: 응답 전에 담은 줄이 NOT_FOOD로 판정되면 줄이 목록에서 빠진다 → 그 줄의 담김(옵션 키 포함)도 지운다
+  // (안 지우면 필 숫자에만 남고 주문 카드엔 없어, 그것만 담았으면 빈 주문이 열린다)
+  useEffect(() => {
+    const idsOf = (pids: Set<string>) => [
+      ...items.filter((it) => it.pendingId && pids.has(it.pendingId)).map((it) => it.itemId),
+      ...photoOnly.flatMap((p, k) => (p.pendingId && pids.has(p.pendingId) ? [-1 - k] : [])),
+    ];
+    const optioned = new Set(aiPending.items.filter((a) => a.priceOptions && a.priceOptions.length >= 2).map((a) => a.pendingId));
+    const notFood = new Set(aiPending.items.filter((a) => a.kind === 'notFood').map((a) => a.pendingId));
+    for (const id of idsOf(notFood)) dropScanCartItem(id);
+    for (const id of idsOf(optioned)) migrateScanCartKey(scanCartKey(id), scanCartKey(id, 0));
+  }, [aiPending.items, items, photoOnly, cart]);
+  const aiShownFor = useRef<string | null>(null);
+  const aiSectionVisible = phase === 'result' && view === 'list' && !safeOnly && !!scanId && pendingCount > 0;
+  useEffect(() => {
+    if (!aiSectionVisible || aiShownFor.current === scanId) return;
+    aiShownFor.current = scanId;
+    track(EVENTS.scan_ai_section_shown, { count: pendingCount });
+  }, [aiSectionVisible, scanId, pendingCount]);
   // KB-769: 미등록 안내는 Modal이 아닌 오버레이라 하드웨어 back이 화면째 닫았다 — 열려 있으면 back = 안내만 닫기
   // KB-789: 대체 항목 설명 카드도 같은 오버레이 문법 — back = 카드만 닫기
   const noticeOpen = unmatchedOpen || closestMatch !== null;
@@ -476,6 +507,7 @@ export default function Scan() {
         airbridge.scanResults(res.items.length + res.photoOnly.length);
         setItems(res.items);
         setPhotoOnly(res.photoOnly);
+        setScanId(res.scanId ?? null);
         setDegraded(res.degraded);
         setFx(res.fx); // P-242: v2 실환율 관통(스캔 1회 = 환율 1스냅샷)
         setScanPath(res.imagePath ?? ''); // P-252: 주문 이력 식별자
@@ -654,14 +686,24 @@ export default function Scan() {
   // KB-140: unmatched 탭 = 무반응 대신 "아직 등록 안 된 음식" 안내 (중립 톤, 상세 이동은 계속 불가).
   function openDish(dish: ResultDish) {
     track(EVENTS.scan_result_item_tap, { risk: dish.risk }); // P-144
-    if (!dish.matched || !dish.foodId) return setUnmatchedOpen(true);
+    if (!dish.matched || !dish.foodId) {
+      setUnmatchedAiId(null);
+      return setUnmatchedOpen(true);
+    }
     // P-012(KB-179): 가격은 메뉴판 속성 — 스캔 진입에만 param으로 전달 (리스트
     // 행·오버레이 마커·사진 전용 항목 전부 이 함수를 지나므로 첨부 지점은 여기 하나)
     {
       const priceQ = scanPriceParam(dish.priceKrw);
-      rememberScanDish(dish);
+      rememberScanDish({ ...dish, opt: dish.priceOptions && dish.priceOptions.length >= 2 ? 0 : null }); // Codex #440 P2: 상세 = 첫 옵션 키
       router.push(`/food/${dish.foodId}${priceQ}${priceQ ? '&' : '?'}src=scan&item=${dish.itemId}` as Href); // KB-982: 상세 담기 = 같은 카트 항목
     }
+  }
+
+  // KB-992: AI 추정 행 탭 = 같은 미등록 안내 카드 + 위에 AI 설명·추정 재료(새 화면 없음 · 상세 이동 없음)
+  function openAi(row: AiRow) {
+    track(EVENTS.scan_result_item_tap, { risk: row.ai?.risk ?? row.dish.risk });
+    setUnmatchedAiId(row.dish.itemId);
+    setUnmatchedOpen(true);
   }
 
   // KB-789: Closest match 칩 탭 = 설명 카드(긍정 프레임). 상세 버튼은 openDish 재사용(가격 param·src=scan 동일).
@@ -766,6 +808,10 @@ export default function Scan() {
         {/* 헤더: 닫기 X + "Scan"(가운데). 가공식품 흐름 안의 한 면 더 찍기 등은 o.onClose = 직전 단계로 */}
         <View style={[styles.camTitleWrap, { top: insets.top + 16 }]} pointerEvents="none">
           <Text style={styles.camTitle}>{t('scanCamera.title')}</Text>
+          {/* KB-1013(예진 11/6): 첫 카메라 화면만 부제 — 흐름 안 단계(o.onClose)는 그 단계 안내가 따로 있다. KB-988: 모드 탭 제거로 탭 겹침 조건 소멸 */}
+          {!o.onClose && (
+            <Text style={styles.camSubtitle} numberOfLines={2} testID="scan-cam-subtitle">{t('scanCamera.subtitle')}</Text>
+          )}
         </View>
         {o.onClose ? (
           <Pressable style={[styles.close, { top: insets.top + 16 }]} onPress={() => { if (!importingRef.current) o.onClose?.(); }} disabled={importing} hitSlop={10} accessibilityLabel={t('common.close')} testID="scan-close-step">
@@ -926,6 +972,11 @@ export default function Scan() {
         avoidances: it.avoidances, // P-219 v2: 메뉴별 회피 겹침
         substituted: it.substituted, // KB-789 v3.0
         originalScannedName: it.originalScannedName,
+        pendingId: it.pendingId,
+        priceOptions: it.priceOptions, // KB-1006
+        spice: it.spice, // KB-1006: 매칭 줄도 맵기(results[].spiciness)
+        notMenu: it.notMenu, // P-616
+        linked: it.linked, // KB-1014
       }];
     });
     // idx=null(사진에서만 추출) — 좌표 부재로 리스트 전용, 오버레이 마커 없음.
@@ -945,8 +996,33 @@ export default function Scan() {
       avoidances: p.avoidances, // P-219 v2
       substituted: p.substituted, // KB-789 v3.0
       originalScannedName: p.originalScannedName,
+      pendingId: p.pendingId,
+      priceOptions: p.priceOptions, // KB-1006
+      spice: p.spice, // KB-1006
+      notMenu: p.notMenu, // P-616
+      linked: p.linked, // KB-1014
     }));
-    const allDishes = [...resultDishes, ...photoDishes];
+    // KB-992: 2단 — DB 판정(현행)은 위, pendingId 항목은 아래 'AI 추정' 섹션(서버 순서). 도착 전 = 스켈레톤,
+    // NOT_FOOD = 행 제거, 폴링이 끝났는데 미도착(15초·실패·scanId 없음) = 현행 unable 행으로 위 목록에 남는다.
+    const aiById = new Map(aiPending.items.map((a) => [a.pendingId, a]));
+    const aiRows: AiRow[] = [];
+    // P-616(S-970): 주문 옵션·단일 재료어 = 판정 목록·메뉴 수·정렬에서 빼고 맨 아래 칩 블록으로만(Safe only면 블록째 숨김)
+    const addOns = [...resultDishes, ...photoDishes].filter((d) => d.notMenu);
+    const allDishes = [...resultDishes, ...photoDishes].filter((d) => !d.notMenu).filter((d) => {
+      if (!d.pendingId || !scanId) return true;
+      // S-959: 15초 마감 채움(estimated=false)은 추정이 아니다 → 미도착과 같게(폴링 끝 = 현행 unable 행)
+      const got = aiById.get(d.pendingId);
+      // Codex #428 P2: NOT_FOOD 판정은 estimated와 무관하게 행 제거 — filled 없는 폴백에선 설명 없는 NOT_FOOD가 estimated=false라 먼저 버려졌다
+      if (got?.kind === 'notFood') return false;
+      const ai = got?.estimated === false ? undefined : got;
+      if (ai || aiPending.polling) {
+        // KB-1006(S-969): AI 줄 가격·옵션 = pending 항목 값 우선(메뉴판 값) — 담기·주문 카드가 같은 dish를 쓴다
+        aiRows.push({ dish: ai ? { ...d, priceKrw: ai.priceKrw ?? d.priceKrw, priceOptions: ai.priceOptions ?? d.priceOptions ?? null } : d, ai: ai ?? null });
+        return false;
+      }
+      return true;
+    });
+    const shownCount = allDishes.length + aiRows.length;
     // unable은 숨기지 않는다(§14-5). 정렬 = resultSort — 기본 메뉴판 순(KB-908: unable도 제자리, 행의 Unable 라벨·회색 리본이 표시), 가격순은 null 맨 아래
     const listDishes = sortResultDishes(allDishes, sortMode);
     // P-354(KB-516): Safe only — 표시만 필터(장바구니 수량은 itemId 키로 보존,
@@ -962,10 +1038,25 @@ export default function Scan() {
 
     // P-136: 주문 카드 진입 — 담기분을 param으로 (2단 확정: 카트 화면 없음)
     const goOrder = () => {
-      const items = listDishes
-        .filter((d) => (cart.get(d.itemId) ?? 0) > 0)
+      // KB-1006: AI 줄도 담긴다 — 표시명 = AI 추정 이름, foodId = null(미완성 음식은 /foods/{id} 400 — 주문 이력 링크 금지).
+      // 수량 옵션 = 옵션마다 한 줄(메뉴판 표기 + 옵션 라벨, 옵션 가격)
+      const aiById2 = new Map(aiRows.map((r) => [r.dish.itemId, r.ai]));
+      const items = [...listDishes, ...aiRows.map((r) => r.dish)].flatMap((d) => {
+        const ai = aiById2.get(d.itemId);
+        const isAi = aiById2.has(d.itemId);
         // KB-789: nameKo = 메뉴판 표기(대체 항목은 원문) — 직원에게 보여주는 줄. name·foodId는 대체 음식.
-        .map((d) => ({ nameKo: orderNameKo(d), name: d.displayName, qty: cart.get(d.itemId)!, priceKrw: d.priceKrw, foodId: d.foodId ?? null }));
+        const nameKo = isAi ? ai?.koreanName ?? orderNameKo(d) : orderNameKo(d);
+        const name = isAi ? ai?.name ?? d.displayName : d.displayName;
+        const foodId = isAi ? null : d.foodId ?? null;
+        if (d.priceOptions && d.priceOptions.length >= 2) {
+          return d.priceOptions.flatMap((o, i) => {
+            const qty = cart.get(scanCartKey(d.itemId, i)) ?? 0;
+            return qty > 0 ? [{ nameKo: `${nameKo} ${o.label}`, name: `${name} ${o.label}`, qty, priceKrw: o.priceKrw, foodId }] : [];
+          });
+        }
+        const qty = cart.get(scanCartKey(d.itemId)) ?? 0;
+        return qty > 0 ? [{ nameKo, name, qty, priceKrw: d.priceKrw, foodId }] : [];
+      });
       // P-242: 스캔 세션의 서버 환율을 주문 카드에도 동승(fx 생략 = v1 테이블)
       const fxParam = fx !== undefined ? `&fx=${encodeURIComponent(JSON.stringify(fx))}` : '';
       // P-252: 스캔 경로 동승 — 주문 완료 시 이력 저장(POST /api/orders) 식별자
@@ -998,18 +1089,21 @@ export default function Scan() {
           ))}
         </View>
         {/* §1-1: 인식 배너 — h48 primaryTint. A-SC-12(P-330 동승): 0건 = 배너·컨트롤 숨김 */}
-        {allDishes.length > 0 && (
+        {shownCount > 0 && (
           <View style={styles.recogBanner} testID="recog-banner">
             <IconTabScan size={24} color={C.primary} />
             <Text style={styles.recogBannerText}>
               {safeOnly
-                ? t('scan.resultsSubSafe', { safe: safeDishes.length, total: allDishes.length })
-                : t('scan.resultsSub', { count: allDishes.length })}
+                ? t('scan.resultsSubSafe', { safe: safeDishes.length, total: shownCount })
+                : t('scan.resultsSub', { count: shownCount })}
             </Text>
           </View>
         )}
 
-        {view === 'list' && allDishes.length === 0 ? (
+        {/* Codex #444 P2: 추가·옵션만 읽힌 스캔이면 메뉴 수는 0이어도 목록(맨 아래 칩 블록)은 그린다.
+            2R P2: Safe only를 켜도 이 전체 빈 화면으로 가면 컨트롤 줄(토글)까지 사라져 다시 끌 수 없었다 — 전체 빈 화면은
+            "메뉴도 추가·옵션도 0"일 때만. Safe only면 아래 기존 안전 0건 상태(컨트롤 유지·목록 자리만 빈 상태)로, 블록은 숨김 */}
+        {view === 'list' && shownCount === 0 && addOns.length === 0 ? (
           /* P-330(4003:7160): 결과 0개 = 화면 세로 중앙(배너·컨트롤 숨김 — A-SC-12) */
           <ScreenCenterFill>
             <EmptyBlock label={t('scan.resultsEmpty')} testID="scan-results-empty" />
@@ -1065,6 +1159,9 @@ export default function Scan() {
               onOpen={openDish}
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
               onClosestMatch={openClosestMatch} // KB-789
+              aiRows={safeOnly ? [] : aiRows} // KB-992: AI 추정은 safe가 없다 — Safe only면 섹션째 숨김
+              addOns={safeOnly ? [] : addOns} // P-616: 추가·옵션 칩 블록(판정 아님) — Safe only면 숨김
+              onOpenAi={openAi}
               t={t}
             />
             )}
@@ -1103,7 +1200,7 @@ export default function Scan() {
           onDismiss={Platform.OS === 'ios' ? () => settle(coachDoneRef) : undefined}
           t={t}
         />
-        <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
+        <UnmatchedNotice open={unmatchedOpen} row={unmatchedAiId == null ? null : aiRows.find((r) => r.dish.itemId === unmatchedAiId) ?? null} currency={currency} fx={fx} onClose={() => setUnmatchedOpen(false)} t={t} />
         <ClosestMatchNotice
           dish={closestMatch}
           onClose={() => setClosestMatch(null)}
@@ -1129,7 +1226,7 @@ export default function Scan() {
                   onPress={() => {
                     if (!retakeConfirm) { leave.modal.onDiscard(); return; } // KB-769: 막았던 이동(back·스와이프)을 그대로 진행
                     setRetakeConfirm(false);
-                    setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); resetScanCart(); setSafeOnly(false); setSortMode('menu'); setPhase('camera'); // P-354: 컨트롤은 스캔 세션 한정
+                    setItems([]); setPhotoOnly([]); setScanId(null); setDishes([]); setPhoto(null); resetScanCart(); setSafeOnly(false); setSortMode('menu'); setPhase('camera'); // P-354: 컨트롤은 스캔 세션 한정
                   }}
                   testID={retakeConfirm ? 'retake-go' : 'scan-leave-go'}
                 >
@@ -1257,17 +1354,73 @@ export default function Scan() {
 
 
 /** KB-140 unmatched 안내 — 중립 톤(unable 마크·ink 텍스트), 안전 인상 금지. */
-function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => void; t: (k: string) => string }) {
+function UnmatchedNotice({
+  open,
+  row,
+  currency,
+  fx,
+  onClose,
+  t,
+}: {
+  open: boolean;
+  row?: AiRow | null;
+  currency: string;
+  fx?: import('@/lib/exchange').ServerFx;
+  onClose: () => void;
+  t: (k: string, o?: Record<string, unknown>) => string;
+}) {
   if (!open) return null;
+  const ai = row?.ai ?? null;
+  const dish = row?.dish;
+  const ko = ai?.koreanName ?? dish?.koreanName ?? dish?.rawMenuName ?? null;
+  const name = ai?.name ?? dish?.displayName ?? ko;
+  // KB-1006: 가격 = 메뉴판 값(옵션이면 옵션마다 한 줄 — 가운데 점 금지) · 환산 선행
+  const priceLine = (krw: number) => priceLineText(krw, currency, fx);
+  const opts = dish?.priceOptions && dish.priceOptions.length >= 2 ? dish.priceOptions : null;
   return (
     <Pressable testID="unmatched-backdrop" style={styles.noticeBackdrop} onPress={onClose}>
-      <Pressable testID="unmatched-card" style={styles.noticeCard} noTrack onPress={() => {}}>
+      <Pressable testID="unmatched-card" style={[styles.noticeCard, !!ai && styles.noticeCardAi]} noTrack onPress={() => {}}>
+        <ScrollView style={{ alignSelf: 'stretch' }} contentContainerStyle={styles.noticeScroll} showsVerticalScrollIndicator={false}>
+        {/* KB-992 → KB-1006: AI 줄 탭 = 상세(미완성 음식은 /foods/{id} 400 — pending 항목 데이터로): 사진·이름·설명·맵기·가격·주요 재료.
+            판정 문구·unable 마크·"사장님께 확인"은 아래 그대로(안전 단정 0) */}
+        {!!ai && (
+          <View style={styles.noticeAi} testID="unmatched-ai">
+            <AiThumb ai={ai} itemId={dish?.itemId ?? 0} t={t} size="100%" />
+            {!!ko && ko !== name && <Text style={styles.noticeAiKo}>{ko}</Text>}
+            {!!name && <Text style={styles.noticeTitle} testID="unmatched-ai-name">{name}</Text>}
+            <View style={styles.noticeAiChip}>
+              <IconSparkles size={12} color={C.primary} />
+              <Text style={styles.noticeAiChipText}>{t('scan.aiSectionTitle')}</Text>
+            </View>
+            {ai.spice > 0 && <View testID="unmatched-ai-spice"><SpicePeppers rank={ai.spice} size={16} /></View>}
+            {!!ai.description && <Text style={styles.noticeBody}>{ai.description}</Text>}
+            {opts ? (
+              <View testID="unmatched-ai-price">
+                {opts.map((o, i) => <Text key={i} style={styles.noticePrice}>{`${o.label} ${priceLine(o.priceKrw)}`}</Text>)}
+              </View>
+            ) : dish?.priceKrw != null ? (
+              <Text style={styles.noticePrice} testID="unmatched-ai-price">{priceLine(dish.priceKrw)}</Text>
+            ) : null}
+            {ai.estimatedCodes.length > 0 && (
+              <View style={{ alignSelf: 'stretch', gap: 2 }} testID="unmatched-ai-key">
+                <Text style={styles.noticeAiHead}>{t('scan.aiDetailIngredients')}</Text>
+                <Text style={styles.noticeBody}>{ai.estimatedCodes.map(restrictionLabel).join(', ')}</Text>
+              </View>
+            )}
+            {ai.avoidCodes.length > 0 && (
+              <Text style={styles.noticeBody} testID="unmatched-ai-ingredients">
+                {t('scan.aiIngredientsLine', { names: ai.avoidCodes.map(restrictionLabel).join(', ') })}
+              </Text>
+            )}
+          </View>
+        )}
         <RiskMark state="unable" size={30} />
         <Text style={styles.noticeTitle}>{t('scan.unmatchedSheetTitle')}</Text>
         <Text style={styles.noticeBody}>{t('scan.unmatchedSheetBody')}</Text>
         <View style={{ alignSelf: 'stretch' }}>
           <Btn testID="unmatched-gotit" variant="ghost" onPress={onClose}>{t('common.gotIt')}</Btn>
         </View>
+        </ScrollView>
       </Pressable>
     </Pressable>
   );
@@ -1384,6 +1537,7 @@ const styles = StyleSheet.create({
   launcherHint: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.ink2, textAlign: 'center' },
   launcherGallery: { fontFamily: font.bodyBold, fontSize: 16, color: C.primaryText, paddingVertical: 8 },
   camTitle: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 24, color: C.surface }, // title3-sbold gray-00
+  camSubtitle: { marginTop: 4, paddingHorizontal: 56, fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.75)', textAlign: 'center' }, // KB-1013 — 닫기 X(좌우 끝)와 겹치지 않게 가로 56
   camRoot: { flex: 1 }, // 바탕 = camHost(gray-1000) — 프리뷰 자리는 비워 cameraLayer가 비친다
   camHost: { flex: 1, backgroundColor: C.ink }, // 헤더 띠 0~100·홈 인디케이터 줄 = gray-1000
   camPreviewHole: { backgroundColor: 'transparent' },
@@ -1421,6 +1575,15 @@ const styles = StyleSheet.create({
   noticeCard: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 22, alignItems: 'center', gap: 10, maxWidth: 340, alignSelf: 'stretch' },
   noticeTitle: { fontFamily: font.display, fontSize: 17, color: C.ink, textAlign: 'center' },
   noticeBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, textAlign: 'center', lineHeight: 21 },
+  noticeAi: { alignItems: 'center', gap: 6, alignSelf: 'stretch', paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.line },
+  noticeAiChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 8, borderRadius: radius.pill, backgroundColor: 'rgba(255,113,52,0.12)' },
+  noticeAiChipText: { fontSize: 12, fontWeight: '600', color: C.primary },
+  // KB-1006: AI 상세 — 카드가 길어질 수 있어 스크롤(화면 85%), 사진 전폭 180
+  noticeCardAi: { maxHeight: '85%', paddingHorizontal: 18 },
+  noticeScroll: { alignItems: 'center', gap: 10 },
+  noticeAiKo: { fontFamily: font.body, fontSize: 14, color: C.ink2, textAlign: 'center' },
+  noticeAiHead: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink, textAlign: 'center' },
+  noticePrice: { fontSize: 15, fontWeight: '600', color: C.ink, textAlign: 'center', fontVariant: ['tabular-nums'] },
   shutterInner: { width: 60, height: 60, borderRadius: radius.pill, backgroundColor: C.surface }, // KB-854: 셔터 60 @ (137,12)
   shutterSpacer: { width: 72, height: 72 },
   // P-222: 주 문구를 밀어내지 않는 보조 톤(작게·흐리게)

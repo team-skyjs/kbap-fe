@@ -21,6 +21,7 @@ import { airbridge } from '@/lib/airbridge';
 import { isEntryResolved, setDeeplinkReady } from '@/lib/deeplink';
 import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
 import { ResumeOnboardingBanner } from '@/components/ResumeOnboardingBanner';
+import { ChatFab } from '@/features/chat/ChatFab';
 
 // route name (file) ↔ TabBar key
 const ROUTE_TO_KEY: Record<string, TabKey> = {
@@ -40,13 +41,18 @@ const KEY_TO_ROUTE: Record<TabKey, string> = {
 function AppTabBar({
   activeRoute,
   navigate,
+  onActive,
 }: {
   activeRoute: string;
   navigate: (name: string) => void;
+  /** KB-1008: 활성 탭을 레이아웃에 알린다(리뷰 탭 = 채팅 버튼 숨김) */
+  onActive?: (route: string) => void;
 }) {
   const router = useRouter();
   const { t } = useTranslation();
   const active = ROUTE_TO_KEY[activeRoute] ?? 'home';
+  // 레이아웃 effect = 페인트 전 반영 — 일반 effect면 탭 전환 첫 프레임에 이전 탭 기준 버튼이 한 번 비친다
+  React.useLayoutEffect(() => onActive?.(activeRoute), [activeRoute, onActive]);
 
   // P-213: app_tab_view(P-215 개명) — 활성 탭이 바뀔 때 1회(탭 탭·프로그램 전환·첫 진입 전부 포함,
   // 같은 탭 재탭은 무발화). 4탭 계측을 여기 한 곳으로 — 화면별 배선 금지.
@@ -97,6 +103,7 @@ function useInitAdsOnce() {
 
 export default function TabsLayout() {
   useInitAdsOnce();
+  const [activeRoute, setActiveRoute] = React.useState('index'); // KB-1008: 채팅 버튼 노출(리뷰 탭 = 숨김)
   return (
     <>
       <Tabs
@@ -104,6 +111,7 @@ export default function TabsLayout() {
         tabBar={(props) => (
           <AppTabBar
             activeRoute={props.state.routes[props.state.index]?.name ?? 'index'}
+            onActive={setActiveRoute}
             navigate={(name) => {
               // KB-906(T-127): 기본 탭 바처럼 tabPress를 먼저 낸다 — 같은 탭 재탭 = 화면의 useScrollToTop이 맨 위로(직접 navigate만 하면 이벤트 0)
               const target = props.state.routes.find((r) => r.name === name);
@@ -120,6 +128,8 @@ export default function TabsLayout() {
         <Tabs.Screen name="community" />
         <Tabs.Screen name="profile" />
       </Tabs>
+      {/* KB-1008: 운영진 채팅 플로팅 버튼 — 탭 화면 공용(스캔·카메라는 탭 밖) */}
+      <ChatFab activeRoute={activeRoute} />
       {/* KB-110: resume nudge when an onboarding draft exists */}
       <ResumeOnboardingBanner />
     </>
