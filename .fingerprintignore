@@ -4,3 +4,7 @@
 # ⚠️ If a build profile ever sets env vars that config plugins read
 # (native-affecting), REMOVE this and rebuild.
 eas.json
+# KB-1019(시연 브랜치 전용): executorch가 postinstall로 패키지 안 third-party/에 받는 프리빌트 바이너리.
+# 버전(0.11.0)과 package.json의 react-native-executorch 블록이 내용을 정한다 — 받은 대상(RNET_TARGET)·캐시 상태로
+# 로컬/EAS 지문이 갈려 빌드 8c1ba067이 runtime mismatch로 실패했다.
+node_modules/react-native-executorch/third-party/**
