@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
@@ -35,7 +35,11 @@ export function GuideScreen() {
   const router = useRouter();
   const { hasPermission, canRequestPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back');
-  const det = useBbqDetection();
+  const [sawSsamjang, setSawSsamjang] = useState(false);
+  // 장면 2의 S3 건너뜀 판단: 이 스캔에서 쌈장을 한 번이라도 잡았는지(틱 콜백 — 렌더 중 아님)
+  const det = useBbqDetection('table', (shown) => {
+    if (shown.some((s) => s.cls === 4)) setSawSsamjang(true);
+  });
   const session = useSession();
   const me = useMe();
   const avoid = avoidFrom(session, me.data, me.error);
@@ -140,6 +144,9 @@ export function GuideScreen() {
       </View>
 
       <View style={[styles.bottom, { bottom: insets.bottom + 16 }]} pointerEvents="box-none">
+        <Btn testID="bbq-guide-wrap" sm variant="ghost" style={styles.wrapEntry} onPress={() => router.push(`/bbq/wrap?ssamjang=${sawSsamjang ? 1 : 0}` as Href)}>
+          {t('bbqGuide.wrapEntry')}
+        </Btn>
         {picked != null && (
           <Pressable style={styles.card} onPress={() => setPicked(null)} testID="bbq-guide-desc">
             <Text style={styles.cardText}>{t(`bbqGuide.desc.${LABELS[picked]}`)}</Text>
@@ -209,5 +216,6 @@ const styles = StyleSheet.create({
   band: { backgroundColor: C.ink, borderRadius: radius.lg, paddingVertical: 16, paddingHorizontal: 18 },
   bandText: { fontFamily: font.bodyBold, fontSize: 15, color: '#fff', textAlign: 'center' },
   answers: { gap: 10 },
+  wrapEntry: { alignSelf: 'flex-end', backgroundColor: '#fff' },
   koAnswer: { fontFamily: font.koBold },
 });

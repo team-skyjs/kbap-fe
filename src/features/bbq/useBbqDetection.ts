@@ -39,7 +39,11 @@ function runFrame(frame: Frame, resizer: Resizer | undefined, run: BbqDetector['
   }
 }
 
-export function useBbqDetection() {
+/**
+ * @param scene table = 장면 1(0~6만), hand = 장면 2(전 클래스 — 디버그 박스·신호는 화면이 고른다)
+ * @param onShown 틱마다 트래커 결과와 워크릿 시각을 넘긴다(상태 머신 입력). 렌더 중이 아니라 틱 콜백에서 불린다.
+ */
+export function useBbqDetection(scene: 'table' | 'hand' = 'table', onShown?: (shown: Shown[], at: number) => void) {
   const [attempt, setAttempt] = useState(0);
   const [upright, setUpright] = useState({ w: 1080, h: 1920 });
   const [shown, setShown] = useState<Shown[]>([]);
@@ -54,9 +58,11 @@ export function useBbqDetection() {
 
   const onTick = (next: Tick) => {
     if (next.uw !== upright.w || next.uh !== upright.h) setUpright({ w: next.uw, h: next.uh });
-    const dets = scene1Only(next.dets);
-    setShown(track(dets, next.at));
+    const dets = scene === 'table' ? scene1Only(next.dets) : next.dets;
+    const tracked = track(dets, next.at);
+    setShown(tracked);
     setGrillOn(grillGate(dets, next.at));
+    onShown?.(tracked, next.at);
   };
 
   const frameOutput = useFrameOutput({

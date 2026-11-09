@@ -1506,6 +1506,36 @@
       "self": "You grill it yourself. Lay the meat on the grill with the tongs, then cut it with the scissors.",
       "staff": "The staff will grill it for you. Wait until they tell you it's ready."
     },
-    "resultDone": "Got it"
+    "resultDone": "Got it",
+    "wrapEntry": "Learn to wrap"
+  },
+  "bbqWrap": {
+    "prop": "Prop your phone and face the camera",
+    "propSub": "Hold the leaf where the camera can see your hand.",
+    "start": "Start",
+    "step": {
+      "leaf": "Lay a leaf on your palm",
+      "meat": "Add a piece of meat",
+      "ssamjang": "Add a little ssamjang",
+      "wrap": "Fold it into a bundle",
+      "eat": "Eat it in one bite. Do not bite it in half."
+    },
+    "short": {
+      "leaf": "Leaf",
+      "meat": "Meat",
+      "ssamjang": "Ssamjang",
+      "wrap": "Wrap",
+      "eat": "Eat"
+    },
+    "tip": {
+      "noMeat": "Add meat before you wrap",
+      "noSsamjang": "Try a little ssamjang next time",
+      "tooBig": "Too big for one bite. Make it smaller."
+    },
+    "niceWrap": "Nice wrap",
+    "allDone": "All steps done.",
+    "again": "Start over",
+    "next": "Next",
+    "boxes": "Show boxes"
   }
 }
