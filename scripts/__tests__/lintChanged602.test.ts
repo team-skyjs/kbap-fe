@@ -416,7 +416,8 @@ it('네이티브 생명주기 스크립트 불변식 — postinstall = "patch-pa
   //  dependencies(npm 8+ — node_modules가 바뀌면 돈다) · build 계열 · eas-build-*
   const LIFECYCLE = /^(pre|post)?(install|prepare|prepublish|dependencies|build)$|^eas-build-/;
   const found = Object.fromEntries(Object.entries(pkg.scripts).filter(([k]) => LIFECYCLE.test(k)));
-  expect(found).toEqual({ postinstall: 'patch-package' });
+  // KB-1019 시연 브랜치 전용(머지 금지): executorch 라이브러리 GitHub 504 대비 캐시 선채움 훅 — demo 네이티브 빌드와 함께 추가.
+  expect(found).toEqual({ postinstall: 'patch-package', 'eas-build-pre-install': 'node scripts/eas-prefetch-executorch.cjs' });
 });
 
 it('패치 내용은 지문 소스에 남는다 — .fingerprintignore가 patches/를 빼지 않는다', () => {

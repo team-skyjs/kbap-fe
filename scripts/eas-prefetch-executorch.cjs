@@ -8,6 +8,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const { Buffer } = require('buffer');
 
 const VER = '0.11.0';
 const REPO = 'software-mansion/react-native-executorch';
