@@ -4,10 +4,14 @@
  * 워크릿 런타임에선 ReferenceError → catch가 삼켜 실기 추론 0(업데이트 5a917acf).
  */
 import { transformSync } from '@babel/core';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import * as model from '../bbqModel';
 
-const FILES = ['src/features/bbq/bbqModel.ts', 'src/features/bbq/bbqDetector.ts', 'src/features/bbq/useBbqDetection.ts'];
+// P-643: 목록 고정 대신 bbq 폴더에서 'worklet' 지시자가 있는 파일 전부(새 파일이 검사에서 빠지지 않게)
+const FILES = readdirSync('src/features/bbq')
+  .filter((f) => /\.tsx?$/.test(f))
+  .map((f) => `src/features/bbq/${f}`)
+  .filter((f) => readFileSync(f, 'utf8').includes("'worklet'"));
 
 function workletsOf(file: string): { name: string; code: string }[] {
   const out = transformSync(readFileSync(file, 'utf8'), {
@@ -23,7 +27,7 @@ function workletsOf(file: string): { name: string; code: string }[] {
   });
 }
 
-it('워크릿 매개변수 기본값이 클로저 이름을 참조하지 않는다(세 파일 전수)', () => {
+it('워크릿 매개변수 기본값이 클로저 이름을 참조하지 않는다(bbq 폴더 워크릿 파일 전수)', () => {
   const bad: string[] = [];
   let n = 0;
   for (const f of FILES) {

@@ -63,6 +63,7 @@
     "react-native-svg": "15.15.4",
     "react-native-view-shot": "5.1.0",
     "react-native-vision-camera": "5.2.4",
+    "react-native-vision-camera-hands": "file:modules/vision-camera-hands",
     "react-native-vision-camera-resizer": "5.2.4",
     "react-native-vision-camera-worklets": "5.2.4",
     "react-native-web": "~0.21.0",

@@ -87,6 +87,6 @@ it('사용처 잠금: 가이드·쌈 코칭(runFrame)과 측정 화면 COCO 경�
   expect(hook).toContain("run({ data: uprightBgr(r.getPixelBuffer()), width: rd.w, height: rd.h, format: 'bgr', layout: 'hwc' })");
   const probe = readFileSync('src/features/bbq/ProbeScreen.tsx', 'utf8');
   expect(probe).toContain("{ data: uprightBgr(resized.getPixelBuffer()), width: SIZE, height: SIZE, format: 'bgr', layout: 'hwc' }");
-  expect(probe).toContain('runFrame(frame, bbqResizer, bbqRun, rd)'); // 측정 화면 자체 모델도 같은 runFrame
+  expect(probe).toContain('runFrame(frame, bbqResizer, bbqRun, rd, '); // 측정 화면 자체 모델도 같은 runFrame
   expect(`${hook}\n${probe}`).not.toMatch(/new Uint8Array\((r|resized)\.getPixelBuffer\(\)\)/);
 });

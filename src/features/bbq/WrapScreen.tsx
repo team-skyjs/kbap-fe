@@ -1,6 +1,7 @@
 /**
  * KB-1019 장면 2 쌈 코칭(P-632 뼈대). 거치대 + 전면 카메라(거울).
- * 신호원: 모델 v1(leaf_on_hand·topped_leaf·wrapped_ssam) + 수동 Next(바닥 동작). 나머지 신호는 신호원 없음 = 안 옴.
+ * 신호원: 모델(leaf_on_hand·topped_leaf·wrapped_ssam) + 손 인식(P-643, handPose.createHandSignals) + 수동 Next(바닥 동작).
+ * 손이 안 잡히면 모델만으로 P-641 매핑. 쌈장 신호원은 없음.
  * 수동으로 넘긴 단계는 체크만, "Nice wrap"은 S5 자동 인식 뒤에만(wrapCoach.finishedByAuto).
  */
 import { useEffect, useRef, useState } from 'react';
@@ -9,7 +10,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
-import { Canvas, Rect } from '@shopify/react-native-skia';
+import { Canvas, Circle, Rect } from '@shopify/react-native-skia';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { SkBar } from '@/components/Skeleton';
@@ -22,7 +23,8 @@ import { openAppSettings } from '@/lib/openExternal';
 import { coverMap } from './bbqModel';
 import { avoidFrom, tagRisk } from './bbqAvoid';
 import type { Shown } from './bbqTracker';
-import { NO_SIGNALS, STEPS, createCoach, currentStep, finishedByAuto, isDone, signalsFromClasses, step, type CoachState, type Mark } from './wrapCoach';
+import { NO_SIGNALS, STEPS, createCoach, currentStep, finishedByAuto, isDone, step, type CoachState, type Mark } from './wrapCoach';
+import { HAND_TUNING, createHandSignals, type Hand } from './handPose';
 import { useBbqDetection } from './useBbqDetection';
 
 const SSAMJANG = 4;
@@ -48,9 +50,11 @@ export function WrapScreen() {
   const fresh = () => createCoach({ sawSsamjang: ssamjang === '1', avoidSsamjang: avoidRisk != null }, lastAt.current);
   const [coach, setCoach] = useState<CoachState>(() => createCoach({ sawSsamjang: ssamjang === '1', avoidSsamjang: avoidRisk != null }, 0));
 
-  const onShown = (shown: Shown[], at: number) => {
+  const [handSignals] = useState(createHandSignals);
+  const onShown = (shown: Shown[], at: number, hands: Hand[], frameH: number) => {
     lastAt.current = at;
-    setCoach((c) => step(c, signalsFromClasses(new Set(shown.map((s) => s.cls))), at));
+    const sig = handSignals(shown, hands, frameH);
+    setCoach((c) => step(c, sig, at));
   };
   const det = useBbqDetection('hand', onShown);
 
@@ -97,6 +101,13 @@ export function WrapScreen() {
               const r = coverMap(s, det.rd.w, det.rd.h, view.w, view.h, false);
               return <Rect key={s.id} x={r.x} y={r.y} width={r.w} height={r.h} color={C.primary} style="stroke" strokeWidth={3} />;
             })}
+            {det.hands.hands.flatMap((h, hi) =>
+              h.joints.flatMap((j, ji) => {
+                if (j.c < HAND_TUNING.minConf) return [];
+                const p = coverMap({ x1: j.x, y1: j.y, x2: j.x, y2: j.y }, det.rd.w, det.rd.h, view.w, view.h, false);
+                return [<Circle key={`${hi}-${ji}`} cx={p.x} cy={p.y} r={4} color={C.accent} />];
+              }),
+            )}
           </Canvas>
           {det.shown.map((s) => {
             const r = coverMap(s, det.rd.w, det.rd.h, view.w, view.h, false);

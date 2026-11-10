@@ -18,9 +18,10 @@ import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { SkBar } from '@/components/Skeleton';
 import { color as C } from '@/lib/theme';
-import { LABELS, coverMap, fromXyxy, resizeDims, squareCropToUpright, uprightBgr } from './bbqModel';
+import { HAND_FIRST, LABELS, coverMap, fromXyxy, resizeDims, squareCropToUpright, uprightBgr } from './bbqModel';
 import { BBQ_MODELS, createBbqDetector } from './bbqDetector';
-import { runFrame, type BbqTick } from './useBbqDetection';
+import { runFrame, tryCreateHandPose, type BbqTick } from './useBbqDetection';
+import { HAND_TUNING, parseHands, pickHand, tipSpread, type Hand } from './handPose';
 import { createGrillGate, createTracker, type Shown } from './bbqTracker';
 
 setTelemetryEnabled(false); // 모델 다운로드 익명 이벤트 끔(외부 송신 0)
@@ -57,6 +58,9 @@ export function ProbeScreen() {
   const [grillOn, setGrillOn] = useState(false);
   const [track] = useState(createTracker);
   const [grillGate] = useState(createGrillGate);
+  // P-643: 자체 모델일 때 손 인식도(HUD 한 줄). 네이티브 모듈 없는 빌드면 undefined
+  const [pose] = useState(tryCreateHandPose);
+  const [hand, setHand] = useState<{ hands: Hand[]; ms: number; err: string | null } | null>(null);
 
   const device = useCameraDevice(position);
   const detector = useObjectDetector(VARIANTS[variant]);
@@ -101,6 +105,7 @@ export function ProbeScreen() {
     setFps(s.length);
     if (next.uw !== upright.w || next.uh !== upright.h) setUpright({ w: next.uw, h: next.uh });
     setBbqTick(next);
+    if (next.hands || next.handErr) setHand({ hands: next.hands ? parseHands(next.hands, rd.w, rd.h) : [], ms: next.handMs ?? 0, err: next.handErr ?? null });
     setShown(track(next.dets, now));
     setGrillOn(grillGate(next.dets, now));
   };
@@ -112,7 +117,7 @@ export function ProbeScreen() {
       'worklet';
       if (model === 'bbq') {
         // P-637: 가이드와 같은 runFrame — 예외를 삼키지 않고 HUD로
-        const res = runFrame(frame, bbqResizer, bbqRun, rd);
+        const res = runFrame(frame, bbqResizer, bbqRun, rd, pose ? { pose, everyN: HAND_TUNING.everyN } : undefined);
         if (res && 'error' in res) scheduleOnRN(onBbqErr, res.error);
         else if (res) scheduleOnRN(onBbqTick, res);
         return;
@@ -175,6 +180,16 @@ export function ProbeScreen() {
           // P-637 자가 진단: 호출 수(성공/예외) · 입력→텐서 모양 · 출력 모양 · 최고 점수(클래스) · 임계값 통과 수 · 첫 박스
           `calls ${bbqCalls.ok}/${bbqCalls.err}err`,
           bbqTick && `in ${bbqTick.diag.inShape} out ${bbqTick.diag.outShape} top ${LABELS[bbqTick.diag.topCls] ?? bbqTick.diag.topCls}:${bbqTick.diag.top.toFixed(3)} pass ${bbqTick.diag.pass}`,
+          // P-643 손: 개수 · 손 인식 ms · 주 손(손 위 박스와 겹친 손, 없으면 첫 손)의 손목 · 손끝 모임 값
+          (() => {
+            if (!pose) return 'hands n/a';
+            if (!hand) return 'hands -';
+            if (hand.err) return `hands err ${hand.err}`;
+            const main = pickHand(hand.hands, shown.filter((s) => s.cls >= HAND_FIRST))?.hand ?? hand.hands[0];
+            const w = main?.joints[0];
+            const sp = main ? tipSpread(main) : null;
+            return `hands ${hand.hands.length} ${f(hand.ms)}ms wrist ${w ? `${f(w.x)},${f(w.y)}` : '-'} spread ${sp == null ? '-' : sp.toFixed(2)}`;
+          })(),
           firstBbq &&
             (() => {
               const r = coverMap(firstBbq, rd.w, rd.h, view.w, view.h, mirrorFix);

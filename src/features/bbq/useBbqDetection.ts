@@ -3,27 +3,31 @@
  * ProbeScreen(측정용)은 COCO 경로와 한 워크릿에 묶여 있어 그대로 두고, 같은 부품(bbqDetector·bbqTracker)만 공유한다.
  * 시각은 탐지기 워크릿 단조 시계(at) — 렌더 경로 Date.now 0(P-630).
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFrameOutput, type Frame } from 'react-native-vision-camera';
 import { type GPUFrame, type Resizer, useResizer } from 'react-native-vision-camera-resizer';
 import { useModel } from 'react-native-executorch';
 import { scheduleOnRN } from 'react-native-worklets';
+import { createHandPose, type HandPose } from 'react-native-vision-camera-hands';
 import { resizeDims, uprightBgr, type Det } from './bbqModel';
 import { BBQ_MODELS, createBbqDetector, type BbqBackend, type BbqDetector, type BbqRun } from './bbqDetector';
 import { createGrillGate, createTracker, type Shown } from './bbqTracker';
+import { HAND_TUNING, parseHands, vnOrientation, type Hand } from './handPose';
 
 /** 장면 1 이름표 대상 = 0 grill ~ 6 scissors. 손 관련 7~9는 이 화면에서 버린다(트래커·불판 조건 모두). */
 export const SCENE1_MAX_CLS = 6;
 export const scene1Only = (dets: Det[]) => dets.filter((d) => d.cls <= SCENE1_MAX_CLS);
 
-export type BbqTick = BbqRun & { uw: number; uh: number };
+/** hands = 이번 프레임에 손 인식을 돌렸을 때만(네이티브 원값). handErr = 손 인식만 실패(모델 결과는 살림) */
+export type BbqTick = BbqRun & { uw: number; uh: number; hands?: number[]; handMs?: number; handErr?: string };
+export type HandRun = { pose: HandPose; everyN: number };
 /** 워크릿 예외도 결과로 돌려준다(P-637: catch가 삼켜 실기 추론 0의 원인이 화면에 안 보였다) */
 export type FrameResult = BbqTick | { error: string } | null;
 /** 로드 뒤 이 시간 안에 틱이 한 번도 안 오면 "멈춤"으로 본다 */
 export const STALL_MS = 5000;
 
 /** 프레임 1장 처리 — 훅 밖(모듈 수준 워크릿): try/finally가 훅 안에 있으면 React Compiler가 훅 전체를 건너뛴다. 프레임은 항상 닫는다. */
-export function runFrame(frame: Frame, resizer: Resizer | undefined, run: BbqDetector['run'] | undefined, rd: { w: number; h: number }): FrameResult {
+export function runFrame(frame: Frame, resizer: Resizer | undefined, run: BbqDetector['run'] | undefined, rd: { w: number; h: number }, hand?: HandRun): FrameResult {
   'worklet';
   if (!resizer || !run) {
     frame.dispose();
@@ -35,7 +39,23 @@ export function runFrame(frame: Frame, resizer: Resizer | undefined, run: BbqDet
     r = resizer.resize(frame);
     // P-639: 리사이저 출력 180° 뒤집힘 보정(역순 → BGR)
     const res = run({ data: uprightBgr(r.getPixelBuffer()), width: rd.w, height: rd.h, format: 'bgr', layout: 'hwc' });
-    return { ...res, uw: sideways ? frame.height : frame.width, uh: sideways ? frame.width : frame.height };
+    const out: BbqTick = { ...res, uw: sideways ? frame.height : frame.width, uh: sideways ? frame.width : frame.height };
+    if (hand) {
+      // P-643: N프레임에 한 번. 카운터는 프레임 런타임 전역(워크릿 클로저는 프레임마다 복사라 못 쓴다)
+      const g = globalThis as { __kbHandN?: number };
+      const n = (g.__kbHandN ?? 0) + 1;
+      g.__kbHandN = n;
+      if (n % hand.everyN === 0) {
+        const t0 = globalThis.performance?.now?.() ?? Date.now();
+        try {
+          out.hands = hand.pose.detect(frame, vnOrientation(frame.orientation, frame.isMirrored));
+        } catch (e) {
+          out.handErr = String(e);
+        }
+        out.handMs = (globalThis.performance?.now?.() ?? Date.now()) - t0;
+      }
+    }
+    return out;
   } catch (e) {
     const msg = String(e);
     // P-639: 백엔드·모델 전환 순간 옛 탐지기 텐서가 먼저 해제된 프레임 — 이 프레임만 버린다(전환 뒤 정상)
@@ -47,17 +67,31 @@ export function runFrame(frame: Frame, resizer: Resizer | undefined, run: BbqDet
   }
 }
 
+/** 손 인식 객체. 네이티브 모듈이 없는 빌드(빌드 4 이하)면 undefined — 손 없이 P-641 바닥 동작 */
+export function tryCreateHandPose(): HandPose | undefined {
+  try {
+    return createHandPose();
+  } catch {
+    return undefined;
+  }
+}
+
 /**
- * @param scene table = 장면 1(0~6만), hand = 장면 2(전 클래스 — 디버그 박스·신호는 화면이 고른다)
- * @param onShown 틱마다 트래커 결과와 워크릿 시각을 넘긴다(상태 머신 입력). 렌더 중이 아니라 틱 콜백에서 불린다.
+ * @param scene table = 장면 1(0~6만), hand = 장면 2(전 클래스 + 손 인식 — 디버그 박스·신호는 화면이 고른다)
+ * @param onShown 틱마다 트래커 결과·손(staleMs 안의 최근 값)·워크릿 시각을 넘긴다(상태 머신 입력). 렌더 중이 아니라 틱 콜백에서 불린다.
  */
-export function useBbqDetection(scene: 'table' | 'hand' = 'table', onShown?: (shown: Shown[], at: number) => void, backend: BbqBackend = 'coreml') {
+export function useBbqDetection(scene: 'table' | 'hand' = 'table', onShown?: (shown: Shown[], at: number, hands: Hand[], frameH: number) => void, backend: BbqBackend = 'coreml') {
   const [attempt, setAttempt] = useState(0);
   const [upright, setUpright] = useState({ w: 1080, h: 1920 });
   const [shown, setShown] = useState<Shown[]>([]);
   const [grillOn, setGrillOn] = useState(false);
   const [track] = useState(createTracker);
   const [grillGate] = useState(createGrillGate);
+  const [pose] = useState(() => (scene === 'hand' ? tryCreateHandPose() : undefined));
+  type HandState = { hands: Hand[]; at: number; ms: number; err: string | null };
+  const [hands, setHands] = useState<HandState>({ hands: [], at: -Infinity, ms: 0, err: null });
+  /** 틱 콜백 전용(렌더 중 읽지 않음) — 손은 everyN 프레임에 한 번이라 사이 프레임은 직전 값을 쓴다 */
+  const lastHands = useRef<HandState>({ hands: [], at: -Infinity, ms: 0, err: null });
 
   const rd = resizeDims(upright.w, upright.h);
   const { resizer } = useResizer({ width: rd.w, height: rd.h, channelOrder: 'rgb', dataType: 'uint8', scaleMode: 'contain', pixelLayout: 'interleaved' });
@@ -82,7 +116,12 @@ export function useBbqDetection(scene: 'table' | 'hand' = 'table', onShown?: (sh
     const tracked = track(dets, next.at);
     setShown(tracked);
     setGrillOn(grillGate(dets, next.at));
-    onShown?.(tracked, next.at);
+    if (next.hands || next.handErr) {
+      lastHands.current = { hands: next.hands ? parseHands(next.hands, rd.w, rd.h) : [], at: next.at, ms: next.handMs ?? 0, err: next.handErr ?? null };
+      setHands(lastHands.current);
+    }
+    const h = lastHands.current;
+    onShown?.(tracked, next.at, next.at - h.at <= HAND_TUNING.staleMs ? h.hands : [], rd.h);
   };
 
   const frameOutput = useFrameOutput({
@@ -90,7 +129,7 @@ export function useBbqDetection(scene: 'table' | 'hand' = 'table', onShown?: (sh
     dropFramesWhileBusy: true,
     onFrame(frame: Frame) {
       'worklet';
-      const res = runFrame(frame, resizer, run, rd);
+      const res = runFrame(frame, resizer, run, rd, pose ? { pose, everyN: HAND_TUNING.everyN } : undefined);
       if (res && 'error' in res) scheduleOnRN(onError, res.error);
       else if (res) scheduleOnRN(onTick, res);
     },
@@ -101,6 +140,8 @@ export function useBbqDetection(scene: 'table' | 'hand' = 'table', onShown?: (sh
     shown,
     grillOn,
     rd,
+    /** 손 인식(장면 2만): 최근 결과·프레임당 ms·오류, available = 네이티브 모듈 있음 */
+    hands: { ...hands, available: pose != null },
     ready: bbq.model != null,
     error: bbq.error,
     retry: () => {

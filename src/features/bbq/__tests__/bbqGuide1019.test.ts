@@ -8,6 +8,7 @@ import { scene1Only } from '../useBbqDetection';
 
 jest.mock('react-native-vision-camera', () => ({}));
 jest.mock('react-native-vision-camera-resizer', () => ({}));
+jest.mock('react-native-vision-camera-hands', () => ({}));
 jest.mock('react-native-executorch', () => ({}));
 jest.mock('react-native-executorch/cv', () => ({}));
 jest.mock('react-native-worklets', () => ({}));
