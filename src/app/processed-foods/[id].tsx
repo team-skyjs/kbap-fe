@@ -423,7 +423,7 @@ const s = StyleSheet.create({
   fade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 40 }, // KB-997: 3줄 끝 페이드(바탕 → 투명)
   seeLess: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, justifyContent: 'center' },
   seeLessText: { fontFamily: font.bodySemi, fontSize: 16, lineHeight: 22, color: C.ink },
-  recipeWrap: { marginHorizontal: -GUTTER, marginBottom: -20 }, // KB-990: 페이지 gutter·gap 상쇄 — 섹션 자체 패딩(16·24)이 시안 값
+  recipeWrap: { marginHorizontal: -GUTTER, marginBottom: -20 }, // KB-990: 페이지 gutter·gap 상쇄(8 띠 = 화면 폭) — 섹션 자체 좌우 패딩은 GUTTER와 같은 20(P-645, 이웃 섹션과 한 줄)
   band8: { height: 8, backgroundColor: '#F5F5F5' }, // gray-100 — thickDivider와 같은 값
   thickDivider: { height: 8, backgroundColor: '#F5F5F5', marginHorizontal: -GUTTER }, // 음식 상세 thickDivider와 같은 값 — 화면 폭
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 }, // 음식 상세 ingChipRow(좌우 여백은 페이지가)

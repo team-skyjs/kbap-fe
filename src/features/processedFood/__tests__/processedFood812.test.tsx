@@ -79,7 +79,7 @@ jest.mock('@/features/processedFood/PackagedReviews', () => {
 import { ApiError } from '@/lib/api/client';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { formatDuration } from '@/features/processedFood/RecipeSection';
+import { formatDuration, methodTiles } from '@/features/processedFood/RecipeSection';
 import { adaptProcessedDetail, adaptProcessedSummary, packagedTypeOf, toHttps, VERDICT_RISK, type DetailWire } from '@/lib/api/processedFoodAdapter';
 import { fetchProcessedDetail, fetchProcessedSearch } from '@/lib/data/useProcessedFoods';
 import { ProcessedFoodDetailScreen as Detail } from '@/app/processed-foods/[id]'; // KB-870: 기본 내보내기 = 채널 게이트 — 화면 자체를 직접 렌더
@@ -293,6 +293,20 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
       const src = readFileSync(join(__dirname, '../RecipeSection.tsx'), 'utf8');
       expect(src).not.toMatch(/riskTone|riskSafe|riskCaution|riskDanger|riskUnable|riskText/);
       expect(src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')).not.toContain('·');
+    });
+
+    it('P-645 시안 차이 정리: 와트 타일 = 전자레인지 아이콘(대기 = 타이머) · 좌우 여백 = 이웃 섹션(GUTTER)과 같은 값', () => {
+      const tt = (k: string) => k;
+      const base = { waterMl: 220, waterLine: null, drainKeepMl: null, steps: [], cautions: [] };
+      const icons = (m: Parameters<typeof methodTiles>[0]) => methodTiles(m, tt).map((x) => [x.key, x.icon]);
+      expect(icons({ ...base, type: 'MICROWAVE', power: [{ watt: 1000, seconds: 120 }, { watt: 700, seconds: 160 }], waitSeconds: null })).toEqual([['water', 'water'], ['w1000', 'microwave'], ['w700', 'microwave']]);
+      expect(icons({ ...base, type: 'BOILING_WATER', power: [], waitSeconds: 180 })).toEqual([['water', 'water'], ['wait', 'timer']]);
+      const sec = readFileSync(join(__dirname, '../RecipeSection.tsx'), 'utf8');
+      const page = readFileSync(join(__dirname, '../../../app/processed-foods/[id].tsx'), 'utf8');
+      const gutter = Number(/const GUTTER = (\d+);/.exec(page)?.[1]);
+      expect(gutter).toBe(20);
+      expect(sec).toMatch(new RegExp(`section: \\{[^}]*paddingHorizontal: ${gutter},`));
+      expect(page).toContain('recipeWrap: { marginHorizontal: -GUTTER,'); // 래퍼가 gutter를 상쇄하고 섹션이 같은 값으로 다시 채움
     });
 
     it('시간 문구: 120초 = 분 · 160초 = 분+초 · 40초 = 초', () => {

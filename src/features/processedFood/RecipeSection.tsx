@@ -57,19 +57,23 @@ export function summaryFacts(m: RecipeMethod, t: TFn): string[] {
   return [water, second].filter((x): x is string => !!x);
 }
 
-type Tile = { key: string; icon: 'water' | 'timer'; label: string; value: string };
+type Tile = { key: string; icon: 'water' | 'microwave' | 'timer'; label: string; value: string };
 /** B2 수치 타일: 전자레인지 = 물·첫 W·둘째 W / 끓는 물 = 물·대기. 값이 없는 타일은 빠진다. */
 export function methodTiles(m: RecipeMethod, t: TFn): Tile[] {
   const tiles: Tile[] = [];
   const water = waterText(m, t);
   if (water) tiles.push({ key: 'water', icon: 'water', label: t('packaged.recipe.water'), value: water });
   if (m.type === 'MICROWAVE') {
-    for (const p of m.power.slice(0, 2)) tiles.push({ key: `w${p.watt}`, icon: 'timer', label: t('packaged.recipe.watt', { value: p.watt }), value: formatDuration(p.seconds, t) });
+    for (const p of m.power.slice(0, 2)) tiles.push({ key: `w${p.watt}`, icon: 'microwave', label: t('packaged.recipe.watt', { value: p.watt }), value: formatDuration(p.seconds, t) });
   } else if (m.waitSeconds != null) {
     tiles.push({ key: 'wait', icon: 'timer', label: t('packaged.recipe.wait'), value: formatDuration(m.waitSeconds, t) });
   }
   return tiles;
 }
+
+/** P-645: 와트 타일 = 전자레인지(시안 D-34 B), 대기 = 타이머, 물 = 물방울 */
+const TileIcon = ({ icon }: { icon: Tile['icon'] }) =>
+  icon === 'water' ? <IconDroplet size={16} color={C.ink3} /> : icon === 'microwave' ? <IconMicrowave size={16} color={C.ink3} /> : <IconTimer size={16} color={C.ink3} />;
 
 const MethodIcon = ({ type }: { type: RecipeMethodType }) =>
   type === 'MICROWAVE' ? <IconMicrowave size={24} color={GRAY_800} /> : <IconTabFood size={24} color={GRAY_800} />;
@@ -135,7 +139,7 @@ function RecipeSheet({ recipe, initial, onClose, t }: { recipe: Recipe; initial:
               {tiles.map((tl) => (
                 <View key={tl.key} style={s.tile} testID={`pf-recipe-tile-${tl.key}`}>
                   <View style={s.tileLabelRow}>
-                    {tl.icon === 'water' ? <IconDroplet size={16} color={C.ink3} /> : <IconTimer size={16} color={C.ink3} />}
+                    <TileIcon icon={tl.icon} />
                     <Text style={s.tileLabel}>{tl.label}</Text>
                   </View>
                   <Text style={s.tileValue}>{tl.value}</Text>
@@ -170,8 +174,9 @@ function RecipeSheet({ recipe, initial, onClose, t }: { recipe: Recipe; initial:
 
 // README "Implementation numbers" — 텍스트 = DS 스타일(크기/굵기), 색 = DS 페인트 이름
 const s = StyleSheet.create({
-  // B1: 섹션 pad 24/16/24(위아래 8 띠는 호출측) · 제목 → 카드 12
-  section: { paddingTop: 24, paddingBottom: 24, paddingHorizontal: 16, gap: 12, backgroundColor: '#FFFFFF' },
+  // B1: 섹션 pad 24/20/24(위아래 8 띠는 호출측) · 제목 → 카드 12
+  // P-645: 좌우 = 이웃 섹션(상품명·What's inside — 상세 화면 GUTTER 20)과 같은 값. 시안은 16이지만 화면 전체 16 변경은 범위 밖이라 경계를 한 줄로 맞춘다
+  section: { paddingTop: 24, paddingBottom: 24, paddingHorizontal: 20, gap: 12, backgroundColor: '#FFFFFF' },
   title: { fontSize: 20, lineHeight: 26, fontWeight: '700', color: C.ink }, // title2-bold / gray-1000
   card: { borderRadius: radius.md, borderWidth: 1, borderColor: C.line, overflow: 'hidden' }, // r12 · gray-200
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 16 },
