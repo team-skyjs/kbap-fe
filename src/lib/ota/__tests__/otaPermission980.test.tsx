@@ -168,7 +168,7 @@ describe('잠금: 권한 요청은 withPermissionPrompt로만', () => {
 
   it('네이티브 request*Permissions*Async 호출 = 같은 줄에 withPermissionPrompt', () => {
     const calls = lines().filter(({ l }) => /\.request\w*Permissions?Async\(/.test(l));
-    expect(calls.length).toBeGreaterThanOrEqual(10); // 알림·카메라·사진·위치·ATT
+    expect(calls.length).toBeGreaterThanOrEqual(9); // 알림·카메라·사진·위치·ATT (KB-988: 스캔 시스템 카메라 런처 제거 −1)
     expect(calls.filter(({ l }) => !l.includes('withPermissionPrompt(() =>')).map(({ f, i }) => `${f}:${i + 1}`)).toEqual([]);
   });
   it('expo-camera 훅의 requestPermission 호출 = withPermissionPrompt(requestPermission)', () => {

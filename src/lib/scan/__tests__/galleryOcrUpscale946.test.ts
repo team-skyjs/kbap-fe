@@ -22,8 +22,8 @@ describe('KB-946 upscaleLongSide', () => {
 
 describe('KB-946 배선(소스)', () => {
   const src = fs.readFileSync(path.join(__dirname, '../../../app/scan.tsx'), 'utf8');
-  it('갤러리 = 가공식품·성분표(menu false)만 키움 · 메뉴판은 원본 그대로', () => {
-    expect(src).toContain('await onShot(menu ? picked : await upscaleForOcr(picked));');
+  it('갤러리 = 작은 이미지는 판독 전 키움(KB-988: 카메라 하나 — 비전 판별 전이라 메뉴판도 같은 길)', () => {
+    expect(src).toContain('await onShot(await upscaleForOcr(picked));');
     expect(src).toMatch(/async function upscaleForOcr\(pic[^)]*\)[^{]*\{\s*const size = upscaleLongSide\(pic\.width, pic\.height\);\s*if \(!size\) return pic;/);
     expect(src).toContain('ImageManipulator.manipulate(pic.uri).resize(size).renderAsync()');
   });

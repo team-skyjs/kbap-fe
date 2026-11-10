@@ -468,3 +468,26 @@ export const IconTabScan = (p: IconProps) => (
   </Glyph>
 );
 
+
+/* KB-990(D-34): 조리법 로컬 벡터 3종 — DS 마스터 부재(디자인 요청 중). 24 grid · stroke 1.75 · currentColor 규칙. 마스터가 생기면 교체. */
+export const IconMicrowave = (p: IconProps) => (
+  <Glyph {...p} sw={p.sw ?? 1.75}>
+    <Rect width={20} height={15} x={2} y={4} rx={2} />
+    <Rect width={8} height={7} x={6} y={8} rx={1} />
+    <Path d="M18 8v7" />
+    <Path d="M6 19v2" />
+    <Path d="M18 19v2" />
+  </Glyph>
+);
+export const IconTimer = (p: IconProps) => (
+  <Glyph {...p} sw={p.sw ?? 1.75}>
+    <Line x1={10} x2={14} y1={2} y2={2} />
+    <Line x1={12} x2={15} y1={14} y2={11} />
+    <Circle cx={12} cy={14} r={8} />
+  </Glyph>
+);
+export const IconDroplet = (p: IconProps) => (
+  <Glyph {...p} sw={p.sw ?? 1.75}>
+    <Path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
+  </Glyph>
+);

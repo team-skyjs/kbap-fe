@@ -39,11 +39,27 @@
 - 어댑터: 상세 `kcal`(포장 전체, 옵셔널 — S-957 초안) → 유한·0 이상이면 반올림 정수, 그 밖·null·부재 = null(미표시). 묶음 상품 규칙은 서버 소유.
 - 상세 메타 줄(유형 옆)에 `packaged.kcal`("{{value}} kcal") — 구분은 기존 columnGap(가운데 점 0), 유형이 없어도 kcal만으로 줄이 선다. 영양성분·목록·후보 카드 비표시.
 - i18n 1키 × 10로케일(ru ккал·id kkal·zh 千卡/大卡·th กิโลแคลอรี).
+
+## 2026-11-04 · P-606 KB-990 가공식품 상세 조리법(D-34 B안, Draft — 서버 S-961 전)
+
+- 어댑터 recipeAdapter: 상세 `recipe`(S-961 초안, 옵셔널) → 방식 MICROWAVE·BOILING_WATER만(대소문자 무관 — README 예시는 소문자), 전자레인지 먼저 · 수치는 유한 양수만(대기·남길 물 0 이상) · 빈 단계·주의 버림 · 보여 줄 게 없는 방식 버림 · 방식 0 = null(섹션 숨김).
+- 화면: 상품명 블록 바로 아래·What's inside 앞(판정 띠는 그대로 맨 위). B1 요약 카드(방식별 행 = 아이콘 + 이름 + 사실 2개 간격 구분 + 쉐브론) → 탭 = B2 시트(그 방식 선택 · 칩은 2개 이상일 때 · 수치 타일 · 번호 단계 · 주의 박스 · 출처 줄 · 닫기 X).
+- 수치·스타일 = kbap-design/exports/D-34/README.md "Implementation numbers"(DS 이름 → 테마: gray-50 surface2 · gray-100 #F5F5F5 띠 · gray-900 #2F3137 · Main-pressed primaryText · Main 12%). 위험도 색 0(소스 잠금), 가운데 점 0.
+- 시트는 SheetShell을 안 쓴다 — 공용 셸은 스크림 0.4·패딩 39·X 없음(P-310)이라 시안(스크림 50%·핸들·헤더 X)과 달라 같은 Modal 위에 시안 값으로.
+- 아이콘: 전자레인지·타이머·물방울 = 시안 로컬 벡터(icons.tsx IconMicrowave·IconTimer·IconDroplet, stroke 1.75) · 끓는 물 = DS ic/soup(IconTabFood).
+- i18n packaged.recipe.* 15키 × 10로케일(단위 약어는 {{value}} — 복수형 키 불필요). drainKeepMl은 어댑터만(시안에 표시 자리 없음).
 ## 2026-11-04 · P-602 KB-965 가공식품 상세 사진 여러 장(캐러셀)
 
 - 어댑터: 상세 응답 images[{url, kind}](S-953, 서버 dev 배포 전 — 옵셔널) → images: string[](서버 순서·https·빈 url·중복 버림) · 없음·빈 배열 = 대표(imageUrl) 한 장.
 - 히어로: 2장 이상 = 음식 상세 HeroGallery 재사용(2초 자동·도트) · 1장 = 현행 정적 히어로 그대로. HeroGallery에 renderPage(옵션) — 가공식품은 장마다 단일 히어로와 같은 바탕(surface2)·contain·안쪽 여백(누끼·실사진 혼재 배경 일치) · 음식 상세는 기본 CardPhoto 무변.
 - kind는 아직 화면에서 쓰지 않음(모든 장 같은 처리). 스크린샷·실기 = 서버 dev 배포 뒤 QA 세션.
+
+## 2026-11-04 · P-601 KB-988 가공식품 옛 ML Kit 스캔 경로 제거
+
+- PackagedScanFlow: 이름 스캔 OCR(runName·readText·앞면 OCR 주입)·성분표 OCR(addLabelText·면 OCR 주입)·앞면 못 읽음 단계·이름 스캔 앞면 사진 그림자 업로드(KB-892) 제거 — 촬영은 앞면·성분표 모두 비전(runVision). ML Kit import 0.
+- scan.tsx: Menu/Packaged 모드 탭·scanMode 상태 제거 → 카메라 = 늘 가공식품 흐름. 그 결과 도달 불가가 된 메뉴 카메라 분기·시스템 카메라 런처(P-137, 플래그 false)·가로 배지 함께 제거. 메뉴는 비전이 메뉴판으로 판별한 뒤(scanMenuFromVision) — v1 채널 온디바이스 ML Kit 메뉴 경로(scanImage)는 유지.
+- flags: packagedVisionScan·packagedNameScanPhoto·systemCamera·foodPhotoMode·SYSTEM_CAMERA_AUTOLAUNCH 삭제 · ScanModeTabs 컴포넌트 삭제 · 고아 i18n 키 11개 × 10로케일 삭제(scanMode 전체 등).
+- ML Kit 네이티브 패키지 유지(지문 무변). 메뉴 스위트는 visionMenuFlowMock(찍은 사진 = 메뉴판 판별)으로 메뉴 경로를 그대로 본다.
 
 ## 2026-11-04 · P-600 광고성 동의 시트 최초 1회·전 채널 ON(예진 11/4 결정)
 

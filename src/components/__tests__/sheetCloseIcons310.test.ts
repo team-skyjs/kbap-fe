@@ -17,7 +17,7 @@ it('시트 3종 — IconClose 잔존 0 + 배경 탭(backdrop onPress=onClose) �
 });
 
 it('화면 헤더·뷰어·입력 클리어 X = 유지(제거 아님) — 스캔 카메라·owner·사진 뷰어', () => {
-  expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain('IconClose size={22}'); // 카메라 헤더
+  expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain('IconClose size={cam ? 24 : 22}'); // 카메라 헤더(카메라 24 · 오류·오프라인 22)
   expect(fs.readFileSync('src/app/food/[id]/owner.tsx', 'utf8')).toContain('IconClose'); // 풀스크린 카드
   expect(fs.readFileSync('src/components/PhotoViewer.tsx', 'utf8')).toContain('viewer-close'); // 사진 뷰어(P-348 공용화)
 });

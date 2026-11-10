@@ -151,6 +151,8 @@ jest.mock('@/lib/push/pushAdapter', () => ({
   getPrimerResult: () => mockGetPrimer(),
 }));
 
+// KB-988: 스캔 카메라 = 늘 가공식품 흐름(비전) — 찍은 사진을 메뉴판 판별로 넘기는 목으로 메뉴 경로를 본다
+jest.mock('@/features/scan/PackagedScanFlow', () => jest.requireActual('@/__tests__/helpers/visionMenuFlowMock'));
 import Scan from '../scan';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { PushPrimerModal } from '@/features/push/PushPrimerModal';
@@ -265,8 +267,3 @@ it('④ 프라이머 기응답자 = 떠나도 프라이머 안 뜸(기록 로직
   expect(primerOpen(tree)).toBe(false);
 });
 
-// P-598: packagedVisionScan 전 채널 ON — 이 스위트는 탭·메뉴판·ML Kit 흐름(아직 코드에 남은 OFF 경로)을 본다 → OFF 고정(scanDesign 관례)
-const visionFlags = (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS;
-const visionPrev = visionFlags.packagedVisionScan;
-beforeEach(() => { visionFlags.packagedVisionScan = false; });
-afterAll(() => { visionFlags.packagedVisionScan = visionPrev; });

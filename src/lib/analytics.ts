@@ -141,8 +141,6 @@ export const EVENTS = {
   home_curation_gallery_swipe: 'home_curation_gallery_swipe', // KB-832 갤러리 사진 넘김(도착 인덱스)
   home_curation_map_open: 'home_curation_map_open', // KB-863 갤러리 사진 위 지도 버튼 탭(선택지 열림) — 모음 키·entry_id만(장소명 금지)
   home_curation_map_select: 'home_curation_map_select', // KB-863 지도 선택 — provider(google|kakao|naver)
-  scan_mode_select: 'scan_mode_select', // KB-813 스캔 모드 탭(menu|packaged)
-  food_packaged_scan_name: 'food_packaged_scan_name', // KB-813 이름 스캔 결과(후보 수 — OCR 원문 금지)
   food_packaged_scan_confirm: 'food_packaged_scan_confirm', // KB-813 확정 — 서버 charged 그대로
   food_packaged_scan_handoff: 'food_packaged_scan_handoff', // KB-813 성분표 안내 진입(from: none|rejected|capture)
   home_idol_pick_list_view: 'home_idol_pick_list_view', // KB-836 K-POP & K-FOOD 목록 화면 포커스(음식 수) — 발주명 idol_pick_list_view → 도메인 규칙상 home_
@@ -231,8 +229,6 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   home_curation_gallery_swipe: ['collection_key', 'entry_id', 'index'],
   home_curation_map_open: ['collection_key', 'entry_id'],
   home_curation_map_select: ['collection_key', 'entry_id', 'provider'],
-  scan_mode_select: ['mode'],
-  food_packaged_scan_name: ['candidate_count', 'photo_attached'], // KB-892: 사진·경로는 싣지 않음(동봉 여부만)
   food_packaged_scan_confirm: ['charged', 'rejected'],
   food_packaged_scan_handoff: ['from'],
   home_idol_pick_list_view: ['count'],
