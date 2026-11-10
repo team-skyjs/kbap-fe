@@ -1294,6 +1294,23 @@
     "safeBasis_one": "避けたい食材{{count}}件と表示を照合しました。",
     "safeBasis_other": "避けたい食材{{count}}件と表示を照合しました。",
     "findMore": "さらに探す",
+    "recipe": {
+      "title": "作り方",
+      "microwave": "電子レンジ",
+      "boilingWater": "熱湯",
+      "water": "水",
+      "wait": "待ち時間",
+      "watt": "{{value}}W",
+      "ml": "{{value}}ml",
+      "lineInner": "内側の線",
+      "lineOuter": "外側の線",
+      "lineCover": "麺が浸るまで",
+      "min": "{{value}}分",
+      "sec": "{{value}}秒",
+      "minSec": "{{min}}分{{sec}}秒",
+      "atWatt": "{{watt}}Wで{{time}}",
+      "source": "パッケージの表示に基づいています。違いがある場合はパッケージに従ってください。"
+    },
     "kcal": "{{value}} kcal",
     "ingredients": {
       "seeAll": "すべて見る",

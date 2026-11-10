@@ -1294,6 +1294,23 @@
     "safeBasis_one": "Kami sudah mencocokkan label dengan {{count}} bahan yang kamu hindari.",
     "safeBasis_other": "Kami sudah mencocokkan label dengan {{count}} bahan yang kamu hindari.",
     "findMore": "Cari lagi",
+    "recipe": {
+      "title": "Cara memasak",
+      "microwave": "Microwave",
+      "boilingWater": "Air mendidih",
+      "water": "Air",
+      "wait": "Tunggu",
+      "watt": "{{value}} W",
+      "ml": "{{value}} ml",
+      "lineInner": "Garis dalam",
+      "lineOuter": "Garis luar",
+      "lineCover": "Sampai mi terendam",
+      "min": "{{value}} mnt",
+      "sec": "{{value}} dtk",
+      "minSec": "{{min}} mnt {{sec}} dtk",
+      "atWatt": "{{time}} pada {{watt}} W",
+      "source": "Dari label kemasan. Jika ada yang berbeda, ikuti kemasan."
+    },
     "kcal": "{{value}} kkal",
     "ingredients": {
       "seeAll": "Lihat semua",

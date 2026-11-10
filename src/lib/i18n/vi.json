@@ -1294,6 +1294,23 @@
     "safeBasis_one": "Chúng tôi đã đối chiếu nhãn với {{count}} nguyên liệu bạn cần tránh.",
     "safeBasis_other": "Chúng tôi đã đối chiếu nhãn với {{count}} nguyên liệu bạn cần tránh.",
     "findMore": "Tìm thêm",
+    "recipe": {
+      "title": "Cách nấu",
+      "microwave": "Lò vi sóng",
+      "boilingWater": "Nước sôi",
+      "water": "Nước",
+      "wait": "Chờ",
+      "watt": "{{value}} W",
+      "ml": "{{value}} ml",
+      "lineInner": "Vạch trong",
+      "lineOuter": "Vạch ngoài",
+      "lineCover": "Ngập mì",
+      "min": "{{value}} phút",
+      "sec": "{{value}} giây",
+      "minSec": "{{min}} phút {{sec}} giây",
+      "atWatt": "{{time}} ở {{watt}} W",
+      "source": "Theo nhãn trên bao bì. Nếu có gì khác, hãy làm theo bao bì."
+    },
     "kcal": "{{value}} kcal",
     "ingredients": {
       "seeAll": "Xem tất cả",
