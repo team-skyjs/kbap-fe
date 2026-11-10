@@ -10,7 +10,7 @@ describe('등록', () => {
     expect(EVENTS.food_packaged_scan_fail).toBe('food_packaged_scan_fail');
     expect(EVENTS.food_segment_select).toBe('food_segment_select');
     expect(EVENTS.review_feed_target_select).toBe('review_feed_target_select');
-    for (const kept of ['scan_start', 'food_packaged_scan_confirm', 'food_packaged_scan_name', 'food_packaged_detail_view', 'home_card_view'] as const) expect(EVENTS[kept]).toBe(kept);
+    for (const kept of ['scan_start', 'food_packaged_scan_confirm', 'food_packaged_detail_view', 'home_card_view'] as const) expect(EVENTS[kept]).toBe(kept);
   });
 });
 

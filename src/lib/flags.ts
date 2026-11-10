@@ -95,12 +95,6 @@ export const FLAGS = {
    */
   reviewsLiveEnabled: true,
   /**
-   * 시스템 카메라 경로 (P-137, 8/6 예진 A/B) — true면 스캔 탭 = 런처 화면 +
-   * launchCameraAsync(네이티브 줌·가로·플래시). false = 현행 커스텀 인앱 카메라.
-   * 비교 확정 전 — 커스텀 코드 삭제 금지.
-   */
-  systemCamera: false,
-  /**
    * 커뮤니티 글/댓글 리액션 토글 (P-142) — 계약에 토글 API 부재(응답에
    * likeCount·dislikeCount만, 댓글은 카운트도 없음) → off = 카운트 표시만.
    * BE 리액션 API 배포 시 true + adapter 배선.
@@ -199,11 +193,6 @@ export const FLAGS = {
    */
   packagedLabelScan: true,
   /**
-   * KB-963(예진 11/2): 스캔 모드 탭의 Food photo(음식 사진 — 기능 미완, 자리만 "준비 중") 노출. 꺼짐 = Menu · Packaged food 두 칸.
-   * 기능이 생기면 이 줄을 켠다(탭 자리·문구 scanMode.food는 그대로 남아 있음).
-   */
-  foodPhotoMode: false,
-  /**
    * KB-873 lifecycle ②b: 화면 체류 송신(screen_visible_time — 보임 = 앱 앞·덮개 0·방문 중, 공용 1초 틱·15초 checkpoint).
    * **채널 게이트 의도(커맨드 10/27)**: dev 서버 채널만 명시 허용(development·teamtest-dev). teamtest-prod·production·preview OFF —
    * 양 OS Amplitude 실수신(③) 확인 전. OFF = 방문 시작만(②a 이전과 같음), 타이머 0.
@@ -217,18 +206,6 @@ export const FLAGS = {
    * P-588(KB-807, 11/03 예진 결정): 운영 서버 PROCESSED_FOOD_REVIEW_WRITE_ENABLED=true 적용 → 전 채널 true.
    */
   packagedReviewWrite: true,
-  /**
-   * KB-892(P-536): 가공식품 이름 스캔에 앞면 사진(긴 변 1,456px·JPEG 0.8) 업로드 + `imagePath` 동봉 — 서버 Haiku 그림자 모드용(S-893).
-   * **채널 게이트 의도(발주 P-536)**: dev 서버 채널만. 운영은 그림자 수치 확인 뒤 별도 결정. OFF = 요청 body 현행과 바이트 동일, 업로드 0.
-   */
-  packagedNameScanPhoto: DEV_SERVER_CHANNEL,
-  /**
-   * KB-969(P-592): 가공식품 사진 스캔 = 서버 비전(POST /api/processed-foods/scan/vision, 서버 #542) — 스캔 화면 Menu/Packaged 탭 없이 카메라 하나,
-   * 사진마다 종류 판별(앞면 후보·성분표 결과·메뉴판 = 같은 사진으로 메뉴 v2·그 밖 = 다시 찍기). 성분표 면 추가도 비전(읽은 원문으로 /scan/label 합침).
-   * 운영 서버 #542 배포 완료(26.11.5, 11/4 03:47) → 전 채널 ON(P-598). OFF 경로(탭 + 온디바이스 ML Kit OCR)는 아직 코드에 남겨 둔다 —
-   * ML Kit 가공식품 경로·탭 삭제는 운영 확인 뒤 후속 PR.
-   */
-  packagedVisionScan: true,
   /**
    * P-599 → P-600: KB-979(#416) 광고성 동의 시트(홈·알림함) — 예진 11/4 실기 확인 후 전 채널 ON(홈은 최초 1회).
    * 게이트(홈 큐 스텝·알림함 마운트)는 다시 끌 때 쓰는 스위치로 유지 — false = 노출·이벤트·설정 GET·홈 큐 소모 전부 0.
@@ -249,6 +226,3 @@ export const FLAGS = {
   avoidGroupCodesEnabled: true,
 } as const;
 
-/** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).
- *  false = 런처에서 촬영 버튼 탭. 예진 실기 비교용 상수. */
-export const SYSTEM_CAMERA_AUTOLAUNCH = false;

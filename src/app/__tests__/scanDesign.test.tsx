@@ -180,7 +180,10 @@ jest.mock('@/lib/data/useScanPending', () => ({
   },
 }));
 
+// KB-988: 스캔 카메라 = 늘 가공식품 흐름(비전). 기본 = 찍은 사진을 메뉴판 판별로 넘기는 목(메뉴 경로) · 가공식품 단계는 flowMode.real
+jest.mock('@/features/scan/PackagedScanFlow', () => jest.requireActual('@/__tests__/helpers/visionMenuFlowMock'));
 import Scan from '../scan';
+const { flowMode: mockFlowMode } = jest.requireActual('@/__tests__/helpers/visionMenuFlowMock') as typeof import('@/__tests__/helpers/visionMenuFlowMock');
 
 // KB-982: 담기 카트가 모듈 스토어라 남은 Scan 트리도 같이 다시 그린다(전역 __prevent를 덮음) — 테스트마다 정리
 const mounted: ReactTestRenderer[] = [];
@@ -205,9 +208,9 @@ const galleryBtn = (tree: ReactTestRenderer) =>
 beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 beforeEach(() => {
   jest.clearAllMocks();
+  mockFlowMode.real = false;
   mockScanExtra.v = {};
   Object.assign(mockPending, { items: [], polling: false, calls: [] });
-  (jest.requireActual('@/lib/flags') as { FLAGS: { packagedVisionScan: boolean } }).FLAGS.packagedVisionScan = false; // KB-969: 탭·메뉴 기본 = 플래그 OFF 흐름(이 스위트는 dev 서버 채널로 풀려 기본 ON) — 사진 스캔은 visionScan969·scanVisionMenu969
   mockRemoveGuards.length = 0;
   mockPreview.color = '#000000';
   mockPermission.granted = true; mockPermission.canAskAgain = true;
@@ -421,16 +424,15 @@ it.each(['cancel', 'success', 'failure'] as const)('P-529: importing pending 동
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } } });
   const tree = render(<QueryClientProvider client={client}><Scan /></QueryClientProvider>);
   const press = (id: string) => tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress as () => void;
-  const old = { gallery: galleryBtn(tree).props.onPress as () => void, shutter: press('scan-shutter'), zoom: press('zoom-x2'), flip: press('scan-flip'), close: press('scan-close'), mode: press('scan-mode-packaged'), pinchStart: mockPinch.start!, pinchUpdate: mockPinch.update! };
+  const old = { gallery: galleryBtn(tree).props.onPress as () => void, shutter: press('scan-shutter'), zoom: press('zoom-x2'), flip: press('scan-flip'), close: press('scan-close'), pinchStart: mockPinch.start!, pinchUpdate: mockPinch.update! };
   try {
     await act(async () => { old.gallery(); await Promise.resolve(); });
     // disabled 렌더를 우회한 오래된 콜백도 ref 가드로 막혀야 한다.
-    act(() => { old.gallery(); old.shutter(); old.zoom(); old.flip(); old.close(); old.mode(); old.pinchStart(); old.pinchUpdate({ scale: 2 }); });
+    act(() => { old.gallery(); old.shutter(); old.zoom(); old.flip(); old.close(); old.pinchStart(); old.pinchUpdate({ scale: 2 }); });
     expect(mockLaunchLibrary).toHaveBeenCalledTimes(1);
     expect(mockTakePicture).not.toHaveBeenCalled(); expect(mockBack).not.toHaveBeenCalled();
     expect(tree.root.findAll((n) => n.props?.facing === 'back' && n.props?.zoom === 0).length).toBeGreaterThan(0);
-    expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-menu' && n.props?.accessibilityState?.selected).length).toBeGreaterThan(0);
-    for (const id of ['scan-gallery', 'scan-shutter', 'zoom-x2', 'scan-flip', 'scan-close', 'scan-mode-packaged']) {
+    for (const id of ['scan-gallery', 'scan-shutter', 'zoom-x2', 'scan-flip', 'scan-close']) {
       const button = tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
       expect(button.props.disabled).toBe(true);
     }
@@ -443,9 +445,6 @@ it.each(['cancel', 'success', 'failure'] as const)('P-529: importing pending 동
     act(() => (removal.cb as (e: { data: { action: unknown } }) => void)({ data: { action: { type: 'GO_BACK' } } }));
     expect(dispatch).not.toHaveBeenCalled();
     delete globalNav.__navDispatch;
-    const tabs = tree.root.findAll((n) => n.props?.testID === 'scan-mode-tabs-scroll');
-    expect(tabs.length).toBeGreaterThan(0);
-    expect(tabs.every((n) => n.props.scrollEnabled === false)).toBe(true);
     await act(async () => {
       if (outcome === 'failure') fail(new Error('photo unavailable'));
       else release(outcome === 'cancel' ? { canceled: true } : { canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] });
@@ -455,9 +454,8 @@ it.each(['cancel', 'success', 'failure'] as const)('P-529: importing pending 동
     expect([...handlers].some((h) => h())).toBe(false);
     expect(mockRemoveGuards.slice(-2).some((g) => g.on)).toBe(false);
     if (outcome === 'cancel') {
-      act(() => { old.zoom(); old.flip(); old.close(); old.mode(); });
+      act(() => { old.zoom(); old.flip(); old.close(); });
       expect(mockBack).toHaveBeenCalledTimes(1);
-      expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-packaged' && n.props?.accessibilityState?.selected).length).toBeGreaterThan(0);
       expect(tree.root.findAll((n) => n.props?.facing === 'front' && n.props?.zoom > 0).length).toBeGreaterThan(0);
     } else {
       act(() => press(outcome === 'success' ? 'result-back' : 'scan-close')());
@@ -644,18 +642,23 @@ describe('KB-769 스캔 결과 뒤로가기 가드', () => {
 
 // KB-777 B1-4: 어두운 바탕(카메라·오류 "Not a menu" 등) = 상태바 아이콘 밝게 · 밝은 결과 화면 = 앱 기본(dark)으로.
 // KB-845: 인식 중 = 흰 로딩 C라 대상에서 뺀다(어두운 바탕 아님)
-it('KB-777 B1-4: 카메라 = StatusBar light · 결과(밝은 바탕) = 없음(기본 dark 복귀) · 오류 대상 · 인식 중(흰 로딩 C) 제외(소스 잠금)', async () => {
+it('KB-777 B1-4: 카메라 = StatusBar light(가공식품 흐름이 그림) · 결과(밝은 바탕) = 없음(기본 dark 복귀) · 오류 대상 · 인식 중(흰 로딩 C) 제외(소스 잠금)', async () => {
   const { StatusBar } = jest.requireActual('expo-status-bar') as typeof import('expo-status-bar');
+  const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
   const bars = (tr: ReactTestRenderer) => tr.root.findAll((n) => n.type === StatusBar).map((n) => n.props.style);
+  mockFlowMode.real = true;
+  const cam = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
+  expect(bars(cam)).toEqual(['light']);
+  act(() => cam.unmount());
+  mockFlowMode.real = false;
   const tree = render(<Scan />);
-  expect(bars(tree)).toEqual(['light']);
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
   expect(bars(tree)).toEqual([]);
   const src = jest.requireActual('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
   expect(src).toContain("const DARK_ROOT_PHASES = new Set<string>(['error']);");
-  expect(src).toContain("const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera && scanMode !== 'packaged');");
+  expect(src).toContain('const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase);'); // KB-988: 카메라 단계 = 가공식품 흐름이 자기 상태바
   expect(src).toContain('const lightBar = isFocused && darkRoot ?');
 });
 
@@ -672,13 +675,7 @@ it('KB-854 카메라 v2 B: 위·아래 단색 바(gray-1000 불투명) 2개 · �
   const corners = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('scan-frame-corner-') && n.props?.width === 28);
   expect([...new Set(corners.map((c) => c.props.testID as string))].sort()).toEqual(['scan-frame-corner-bl', 'scan-frame-corner-br', 'scan-frame-corner-tl', 'scan-frame-corner-tr']);
   expect(tree.root.findAll((n) => n.props?.testID === 'scan-frame-corners')[0].props.pointerEvents).toBe('none'); // 안내일 뿐 — 핀치·탭 통과
-  // 긴 번역 = 탭 가로 스크롤(줄이지 않음) · 칸 최소 폭 = 화면 ÷ 칸 수(KB-963: Food photo 숨김 = 두 칸 → 1/2)
-  const tabsScroll = tree.root.findAll((n) => n.props?.testID === 'scan-mode-tabs-scroll' && n.type === RN.ScrollView);
-  expect(tabsScroll).toHaveLength(1);
-  expect(tabsScroll[0].props.horizontal).toBe(true);
-  const w = RN.Dimensions.get('window').width;
-  const menuTab = tree.root.findAll((n) => n.props?.testID === 'scan-mode-menu' && typeof n.type === 'string')[0];
-  expect(RN.StyleSheet.flatten(menuTab.props.style).minWidth).toBeCloseTo(w / 2, 5);
+  expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-tabs')).toHaveLength(0); // KB-988: 모드 탭 없음(카메라 하나)
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
@@ -692,16 +689,15 @@ describe('KB-845 공통 카메라', () => {
   const pressId = async (tree: ReactTestRenderer, id: string) => {
     await act(async () => { await tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress(); });
   };
-  it('KB-854 메뉴: "Scan" 헤더만 · 안내 문구·Photos·라이브러리 링크 제거 · 갤러리 아이콘("Choose photo") = 라이브러리 · 전환 = "Switch camera" · Food photo 탭 숨김(KB-963)', async () => {
+  it('KB-854: "Scan" 헤더만 · 안내 문구·Photos·라이브러리 링크 제거 · 갤러리 아이콘("Choose photo") = 라이브러리 · 전환 = "Switch camera"', async () => {
     const tree = render(<Scan />);
     expect(texts(tree, 'scanCamera.title')).toBeGreaterThan(0);
     for (const k of ['scanCamera.menuTitle', 'scanCamera.menuHint', 'scanCamera.photos', 'scanCamera.menuLink', 'scan.cameraHintLandscape']) expect(texts(tree, k)).toBe(0);
     expect(byId(tree, 'scan-library-link')).toHaveLength(0);
-    expect(byId(tree, 'scan-cam-hint')).toHaveLength(0); // 메뉴 = 흐름 안내 없음
-    expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-food')).toHaveLength(0); // KB-963: Food photo 탭 숨김(FLAGS.foodPhotoMode)
+    expect(byId(tree, 'scan-cam-hint')).toHaveLength(0); // 첫 카메라 = 흐름 안내 없음
     expect(byId(tree, 'scan-flip')[0].props.accessibilityLabel).toBe('scanCamera.switchCamera');
     expect(byId(tree, 'scan-gallery')[0].props.accessibilityLabel).toBe('scanCamera.choosePhoto');
-    await pressId(tree, 'scan-gallery'); // 갤러리 = 메뉴 스캔 시작(로딩 C로 넘어간다)
+    await pressId(tree, 'scan-gallery'); // 갤러리 = 사진 스캔 시작(목: 메뉴판 판별 → 로딩 C)
     expect(mockLaunchLibrary).toHaveBeenCalledTimes(1);
   });
   it('줌 칩 1x·2x = 같은 틀(높이 36·테두리 1 — 상태는 색만) · KB-854 셔터 60 + 링 72 stroke 3 · 갤러리·전환 터치 52', () => {
@@ -717,51 +713,13 @@ describe('KB-845 공통 카메라', () => {
     expect(inner).toMatchObject({ width: 60, height: 60 });
     for (const id of ['scan-gallery', 'scan-flip']) expect(RN.StyleSheet.flatten(byId(tree, id)[0].props.style)).toMatchObject({ width: 52, height: 52 });
   });
-  it('탭 Packaged food = 같은 카메라(안내 문구 없음) · 링크 "성분표로 확인하기" 유지 → 성분표(탭은 Packaged 유지) → "앞면으로" 되돌림', async () => {
-    const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
-    const prev = FLAGS.packagedLabelScan;
-    FLAGS.packagedLabelScan = true;
-    try {
-      const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
-      const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
-      await pressId(tree, 'scan-mode-packaged');
-      for (const k of ['scanCamera.packageTitle', 'scanCamera.packageHint']) expect(texts(tree, k)).toBe(0); // KB-854: 안내 문구 제거
-      expect(byId(tree, 'scan-shutter')).toHaveLength(1);
-      expect(byId(tree, 'pscan-label-instead')).toHaveLength(1); // 기능 링크는 유지(시안 Packaged 하단)
-      await pressId(tree, 'pscan-label-instead');
-      for (const k of ['scanCamera.labelTitle', 'scanCamera.labelHint']) expect(texts(tree, k)).toBe(0);
-      expect(byId(tree, 'pscan-front-instead')).toHaveLength(1);
-      expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-packaged')[0].props.accessibilityState).toMatchObject({ selected: true });
-      await pressId(tree, 'pscan-front-instead');
-      expect(byId(tree, 'pscan-label-instead')).toHaveLength(1);
-      await pressId(tree, 'scan-mode-menu');
-      expect(byId(tree, 'pscan-label-instead')).toHaveLength(0);
-      expect(tree.root.findAll((n) => n.props?.testID === 'scan-mode-menu')[0].props.accessibilityState).toMatchObject({ selected: true });
-    } finally {
-      FLAGS.packagedLabelScan = prev;
-    }
-  });
-  it('QA(Android 검정 프리뷰): 탭 메뉴 ↔ 가공식품 ↔ 성분표 전환 = CameraView 한 인스턴스(재마운트·새 세션 0) · 카메라 화면 동안 active', async () => {
-    const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
-    const prev = FLAGS.packagedLabelScan;
-    FLAGS.packagedLabelScan = true;
-    try {
-      const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
-      const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
-      await act(async () => {});
-      const cam = () => tree.root.findAll((n) => typeof n.type === 'string' && n.props?.zoom !== undefined && n.props?.facing !== undefined);
-      const before = mockCamMounts.n;
-      expect(cam()).toHaveLength(1);
-      expect(cam()[0].props.active).toBe(true);
-      for (const id of ['scan-mode-packaged', 'pscan-label-instead', 'pscan-front-instead', 'scan-mode-menu', 'scan-mode-packaged']) {
-        await pressId(tree, id);
-        expect(cam()).toHaveLength(1);
-        expect(cam()[0].props.active).toBe(true);
-      }
-      expect(mockCamMounts.n).toBe(before); // 전환 내내 새 마운트 0
-    } finally {
-      FLAGS.packagedLabelScan = prev;
-    }
+  it('KB-988: 카메라 하나 — 모드 탭·"성분표로" 링크·옛 OCR 주입 0 · 비전 주입 패널(진단 채널)만', () => {
+    mockFlowMode.real = true;
+    const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
+    const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
+    expect(byId(tree, 'scan-shutter')).toHaveLength(1);
+    for (const id of ['scan-mode-tabs', 'scan-mode-menu', 'scan-mode-packaged', 'pscan-label-instead', 'pscan-ocr-debug', 'pscan-label-debug']) expect(tree.root.findAll((n) => n.props?.testID === id)).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'pscan-vision-debug').length).toBeGreaterThan(0);
   });
   it('Codex #318: 스캔이 다른 화면에 가려지면(포커스 잃음) 카메라 active=false → 돌아오면 다시 true(같은 인스턴스)', async () => {
     const { FLAGS } = jest.requireActual('@/lib/flags') as { FLAGS: { packagedLabelScan: boolean } };
@@ -771,8 +729,9 @@ describe('KB-845 공통 카메라', () => {
       const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
       const qc = new QueryClient();
       const el = () => <QueryClientProvider client={qc}><Scan /></QueryClientProvider>;
+      mockFlowMode.real = true;
       const tree = render(el());
-      await pressId(tree, 'scan-mode-packaged');
+      await act(async () => {});
       const cam = () => tree.root.findAll((n) => typeof n.type === 'string' && n.props?.zoom !== undefined && n.props?.facing !== undefined)[0];
       const before = mockCamMounts.n;
       expect(cam().props.active).toBe(true);
@@ -788,37 +747,14 @@ describe('KB-845 공통 카메라', () => {
       FLAGS.packagedLabelScan = prev;
     }
   });
-  it('KB-973: 가공식품 앞면 촬영 = food_packaged_scan_start(mode packaged, camera) · scan_start(메뉴 시계열) 0 · 메뉴 촬영 = scan_start 그대로', async () => {
+  it('KB-973 → KB-988: 촬영 = food_packaged_scan_start(mode vision, camera) · scan_start(메뉴 시계열)는 메뉴판 판별 뒤(source vision)', async () => {
     const track = jest.spyOn(analytics, 'track');
     try {
-      const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
-      const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
-      await pressId(tree, 'scan-mode-packaged');
+      const tree = render(<Scan />);
       await act(async () => { tree.root.findAll((n) => n.props?.testID === 'scan-shutter' && typeof n.props?.onPress === 'function')[0].props.onPress(); await new Promise((r) => setTimeout(r, 0)); });
-      expect(track.mock.calls.filter((c) => c[0] === 'food_packaged_scan_start')).toEqual([['food_packaged_scan_start', { mode: 'packaged', source: 'camera' }]]);
-      expect(track.mock.calls.filter((c) => c[0] === 'scan_start')).toHaveLength(0);
+      expect(track.mock.calls.filter((c) => c[0] === 'food_packaged_scan_start')).toEqual([['food_packaged_scan_start', { mode: 'vision', source: 'camera' }]]);
+      expect(track.mock.calls.filter((c) => c[0] === 'scan_start')).toEqual([['scan_start', { source: 'vision' }]]); // 목 = 비전이 메뉴판으로 판별
       act(() => tree.unmount());
-      track.mockClear();
-      const menu = render(<Scan />);
-      await act(async () => { menu.root.findAll((n) => n.props?.testID === 'scan-shutter' && typeof n.props?.onPress === 'function')[0].props.onPress(); await new Promise((r) => setTimeout(r, 0)); });
-      expect(track.mock.calls.filter((c) => c[0] === 'scan_start')).toEqual([['scan_start', { source: 'camera' }]]);
-      expect(track.mock.calls.filter((c) => c[0] === 'food_packaged_scan_start')).toHaveLength(0);
-      act(() => menu.unmount());
-    } finally {
-      track.mockRestore();
-    }
-  });
-  it('KB-973: 이름 인식 요청 실패 = food_packaged_scan_fail(stage name, result network)', async () => {
-    mockScanName.mockRejectedValueOnce(new Error('NETWORK: request failed'));
-    const track = jest.spyOn(analytics, 'track');
-    try {
-      const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
-      const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
-      await pressId(tree, 'scan-mode-packaged');
-      act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
-      await pressId(tree, 'pscan-ocr-debug-run');
-      await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
-      expect(track.mock.calls.filter((c) => c[0] === 'food_packaged_scan_fail')).toEqual([['food_packaged_scan_fail', { stage: 'name', result: 'network' }]]);
     } finally {
       track.mockRestore();
     }
@@ -831,10 +767,10 @@ describe('KB-845 공통 카메라', () => {
     const track = jest.spyOn(analytics, 'track');
     try {
       const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
+      mockFlowMode.real = true;
       const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
-      await pressId(tree, 'scan-mode-packaged');
-      act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
-      await pressId(tree, 'pscan-ocr-debug-run');
+      act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-vision-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
+      await pressId(tree, 'pscan-vision-debug-front');
       await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
       await pressId(tree, 'pscan-candidate-11');
       expect(track.mock.calls.filter((c) => c[0] === 'food_packaged_scan_fail')).toEqual([['food_packaged_scan_fail', { stage: 'confirm', result: 'quota' }]]);
@@ -849,11 +785,11 @@ describe('KB-845 공통 카메라', () => {
     mockScanName.mockResolvedValueOnce({ analysisId: 'A1', state: 'CANDIDATES', candidates: [cand] });
     mockConfirm.mockRejectedValueOnce(new ApiError('quota', 403, 'SCAN-004'));
     const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
+    mockFlowMode.real = true;
     const tree = render(<QueryClientProvider client={new QueryClient()}><Scan /></QueryClientProvider>);
-    await pressId(tree, 'scan-mode-packaged');
-    // 촬영 대역 = 카메라 위 OCR 주입 패널(개발·진단 채널 — 같은 runName 경로)
-    act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
-    await pressId(tree, 'pscan-ocr-debug-run');
+    // 촬영 대역 = 카메라 위 비전 주입 패널(개발·진단 채널 — 같은 applyVision 경로)
+    act(() => tree.root.findAll((n) => n.props?.testID === 'pscan-vision-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
+    await pressId(tree, 'pscan-vision-debug-front');
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(byId(tree, 'pscan-candidates').length).toBeGreaterThan(0);
     const flowNode = tree.root.findAll((n) => n.props?.testID === 'pscan-candidates')[0];

@@ -1,6 +1,5 @@
 import { armScanExitPrompt, fireScanExitPrompt } from '@/features/scan/ScanExitPrompts';
-import { ScanModeTabs, type ScanMode } from '@/features/scan/ScanModeTabs';
-import { CameraSlot, PackagedScanFlow, type ScanCamKind, type ScanCamOpts } from '@/features/scan/PackagedScanFlow';
+import { PackagedScanFlow, type ScanCamOpts } from '@/features/scan/PackagedScanFlow';
 import { ScanDarkMessage } from '@/features/scan/ScanDarkMessage';
 import { ScanLoading } from '@/features/scan/ScanLoading';
 import { UnlockCelebration } from '@/features/scan/UnlockCelebration';
@@ -23,8 +22,8 @@ import { currentGen } from '@/lib/auth/beTokens';
  */
 import { useCallback, useEffect, useRef, useState, useLayoutEffect, useSyncExternalStore, type ReactElement } from 'react';
 import { ActivityIndicator, AppState, BackHandler, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { Alert, Modal } from '@/lib/engagement/occlusionSurfaces';
-import { launchCameraAsync, launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
+import { Modal } from '@/lib/engagement/occlusionSurfaces';
+import { launchImageLibraryAsync } from '@/lib/engagement/occlusionPickers';
 import { withPermissionPrompt } from '@/lib/permissionPrompt';
 import { markPromptShown } from '@/lib/engagement/promptSlot';
 import { addScanItem, dropScanCartItem, migrateScanCartKey, rememberScanDish, removeScanItem, resetScanCart, scanCartKey, useScanCart } from '@/features/scan/scanCartStore';
@@ -43,7 +42,6 @@ import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { CameraView, useCameraPermissions, type CameraType, type CameraOrientation } from 'expo-camera';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoomPreset } from '@/features/scan/cameraZoom';
-import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, riskText, riskTone, shadow, radius } from '@/lib/theme';
@@ -70,6 +68,7 @@ import { upscaleLongSide, wysiwygCropRect } from '@/lib/scan/coverCrop'; // KB-9
 // P-354(KB-516): 정렬 라벨 — 메뉴판 순 → 가격 높은순 → 가격 낮은순(시트 순서 동일)
 import { recordScanSuccess } from '@/lib/reviewPrompt';
 import { useOneShotQueue } from '@/lib/oneShotQueue';
+import { FLAGS } from '@/lib/flags';
 const SORT_LABEL_KEY: Record<ResultSortMode, string> = {
   menu: 'scan.sortMenu',
   priceDesc: 'scan.sortPriceDesc',
@@ -91,7 +90,6 @@ import { TagPickerSheet } from '@/app/community/compose';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
 import { openAppSettings } from '@/lib/openExternal';
 
 type Photo = { uri: string; width: number; height: number } | null;
@@ -154,35 +152,14 @@ export default function Scan() {
     return () => sub.remove();
   }, [importing]);
   const closeCamera = () => { if (!importingRef.current) router.back(); };
-  // KB-813: 촬영 모드 — 메뉴판(기본·현행 흐름 그대로) / 음식 사진(자리만) / 가공식품(PackagedScanFlow)
-  // P-508: 가공식품 상세 "성분표 직접 확인" = /scan?mode=packaged&label=1 — 가공식품 모드 + 성분표 안내부터(새 분석)
+  // KB-988: 촬영 = 늘 가공식품 흐름의 카메라 하나(KB-969 비전) — 메뉴판은 서버가 판별해 메뉴 경로로 넘긴다(scanMenuFromVision). 옛 모드 탭 제거
+  // P-508: 가공식품 상세 "성분표 직접 확인" = /scan?mode=packaged&label=1 — 성분표 안내부터(새 분석)
   const scanParams = useLocalSearchParams<{ mode?: string; label?: string; t?: string }>();
-  // KB-969: 사진 스캔(packagedVisionScan) = 늘 가공식품 흐름의 카메라 하나 — 메뉴판은 서버가 판별해 메뉴 v2로 넘긴다(scanMenuFromVision)
-  const [scanMode, setScanModeState] = useState<ScanMode>(() => (FLAGS.packagedVisionScan || (scanParams.mode === 'packaged' && FLAGS.packagedLabelScan) ? 'packaged' : 'menu'));
-  // KB-877: 잠금 콜백(메모)이 읽는 현재 모드 — phaseRef와 같은 동기화
-  const scanModeRef = useRef(scanMode);
-  useLayoutEffect(() => { scanModeRef.current = scanMode; });
-  // Codex #315 R2: 성분표 진입 토큰 — 이미 열린 /scan으로 돌아와도(navigate 재사용) 토큰이 바뀌면 가공식품 모드 + **새 플로우**(key)로 새 분석부터.
-  // 렌더 중 이전값 비교(KB-603 — 값 키 effect는 A→B→A를 놓친다)
+  // Codex #315 R2: 성분표 진입 토큰 — 이미 열린 /scan으로 돌아와도(navigate 재사용) 토큰이 바뀌면 **새 플로우**(key)로 새 분석부터
   const labelEntry = scanParams.label === '1' && FLAGS.packagedLabelScan ? (scanParams.t ?? 'entry') : null;
-  const [seenLabelEntry, setSeenLabelEntry] = useState(labelEntry);
-  if (labelEntry !== seenLabelEntry) {
-    setSeenLabelEntry(labelEntry);
-    if (labelEntry) setScanModeState('packaged');
-  }
   // KB-865 ③(시안 21): 가공식품 확정이 한도(SCAN-004)에 걸림 = 기존 소진 화면을 **가공식품 흐름 위에** 띄운다 — 흐름(후보·선택)은 마운트 유지,
-  // 해제·나중에 = 같은 후보로 복귀(진입 플로우 문서). 잡고 있는 동안 프로필 잠금이 흐름을 갈아치우지 않게 ref로 막는다
+  // 해제·나중에 = 같은 후보로 복귀(진입 플로우 문서). 메뉴 오류(메뉴판 판별 뒤)는 덮개 없이 전체 오류 화면(카메라 정지)
   const [packagedHold, setPackagedHold] = useState(false);
-  const packagedHoldRef = useRef(false);
-  const setScanMode = (m: ScanMode) => {
-    if (importingRef.current) return;
-    if (m === scanMode) return;
-    track(EVENTS.scan_mode_select, { mode: m });
-    // Codex #339: 소진 덮개(packagedHold)는 가공식품 흐름에만 — 떠나면 해제(남으면 메뉴의 프로필 잠금·"나중에"가 가공식품 규칙을 탄다).
-    // 가공식품에 머무는 동안은 유지 — "나중에" 뒤 프로필 잠금이 방금 돌아간 흐름을 다시 덮지 않게
-    if (scanMode === 'packaged') { packagedHoldRef.current = false; setPackagedHold(false); }
-    setScanModeState(m);
-  };
   const modalQueue = useOneShotQueue(); // P-267 직렬화의 일반화 — KB-908: 결과 화면엔 코치마크만(알림 넛지·리뷰 유도는 스캔을 닫은 뒤 ScanExitPrompts)
   const coachDoneRef = useRef<(() => void) | null>(null);
   const settle = (ref: React.MutableRefObject<(() => void) | null>) => { const f = ref.current; ref.current = null; f?.(); };
@@ -625,22 +602,19 @@ export default function Scan() {
     }
   }
 
-  /** KB-845: onShot = 크롭본을 받을 곳(메뉴 = scanImage, 가공식품·성분표 = PackagedScanFlow) · menu = scan_start 계측(메뉴만 — 가공식품은 자기 이벤트) */
-  /** KB-973: 가공식품 촬영 시작 = food_packaged_scan_start(mode) — scan_start는 메뉴 전용 시계열 그대로 */
-  const trackShotStart = (kind: ScanCamKind, source: 'camera' | 'gallery') =>
-    kind === 'menu' ? track(EVENTS.scan_start, { source }) /* P-144 */ : track(EVENTS.food_packaged_scan_start, { mode: kind === 'vision' ? 'vision' : kind === 'ingredient' ? 'label' : 'packaged', source });
-  async function capture(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, kind: ScanCamKind = 'menu') {
-    const menu = kind === 'menu';
+  /** KB-845: onShot = 크롭본을 받을 곳(PackagedScanFlow — KB-969 비전). 메뉴 쿼터 소진 안내는 비전이 메뉴판으로 판별한 뒤(scanMenuFromVision)
+   *  KB-973: 촬영 시작 = food_packaged_scan_start(mode vision) — scan_start(메뉴 퍼널)는 메뉴판 판별 시점에 */
+  const trackShotStart = (source: 'camera' | 'gallery') => track(EVENTS.food_packaged_scan_start, { mode: 'vision', source });
+  async function capture(onShot: (p: NonNullable<Photo>) => void | Promise<void>) {
     if (capturingRef.current) return; // P-062⓪: 동기 가드 — 리렌더 전 연타도 차단
     if (isGuest) return setGateOpen(true); // 스캔=회원 전용 (게이트)
-    if (menu && blockMenuShot()) return; // KB-963: 메뉴 쿼터 소진 = 촬영 시점에 안내(가공식품 촬영은 통과)
     // P-131: 가로 촬영 허용 (KB-141 가드 폐기 — 캡슐 전환으로 겹침 사유 소멸)
     const cam = cameraRef.current;
     if (!cam) return;
     capturingRef.current = true;
     setCapturing(true);
     setError(null);
-    trackShotStart(kind, 'camera');
+    trackShotStart('camera');
     try {
       const pic = await cam.takePictureAsync({ quality: 0.7, exif: true }); // P-338: Orientation 태그 — raw 치수 정규화용
       console.log('[scan] photo =', JSON.stringify({ uri: pic?.uri, w: pic?.width, h: pic?.height }));
@@ -649,8 +623,7 @@ export default function Scan() {
       const cropped = await cropToPreview({ uri: pic.uri, width: pic.width ?? 0, height: pic.height ?? 0 }, (pic.exif as { Orientation?: number } | undefined)?.Orientation);
       await onShot(cropped);
     } catch (e) {
-      if (menu) fail('capture', (e as Error)?.message ?? String(e));
-      else console.log('[scan] packaged capture failed:', (e as Error)?.message ?? e); // 가공식품은 카메라에 그대로(메뉴 오류 화면으로 가지 않는다)
+      console.log('[scan] packaged capture failed:', (e as Error)?.message ?? e); // 카메라에 그대로(메뉴 오류 화면으로 가지 않는다)
     } finally {
       capturingRef.current = false;
       setCapturing(false); // 화면 전환(scanning) 후거나 실패 — 어느 쪽이든 셔터 복구
@@ -675,18 +648,16 @@ export default function Scan() {
     }
   }
 
-  async function pickFromGallery(onShot: (p: NonNullable<Photo>) => void | Promise<void> = scanImage, kind: ScanCamKind = 'menu') {
-    const menu = kind === 'menu';
+  async function pickFromGallery(onShot: (p: NonNullable<Photo>) => void | Promise<void>) {
     if (capturingRef.current) return; // P-062⓪: 셔터와 동일 동기 가드
     if (isGuest) return setGateOpen(true);
-    if (menu && blockMenuShot()) return; // KB-963
     capturingRef.current = true;
     setCapturing(true);
     importingGestureLock.set(true);
     importingRef.current = true; // 리렌더 전 연속 입력도 차단
     setImporting(true); // P-191: 픽커 복귀~원본 준비(iCloud 다운로드 수 초) 구간 표시
     setError(null);
-    trackShotStart(kind, 'gallery');
+    trackShotStart('gallery');
     try {
       const result = await launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -697,11 +668,10 @@ export default function Scan() {
       if (result.canceled || !result.assets?.length) return;
       const a = result.assets[0];
       const picked = { uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 };
-      // KB-946: 가공식품·성분표(온디바이스 OCR) = 작은 이미지는 OCR 전 키움 — 메뉴판 스캔은 무변
-      await onShot(menu ? picked : await upscaleForOcr(picked));
+      // KB-946: 작은 이미지는 판독 전 키움
+      await onShot(await upscaleForOcr(picked));
     } catch (e) {
-      if (menu) fail('capture', (e as Error)?.message ?? String(e));
-      else console.log('[scan] packaged library pick failed:', (e as Error)?.message ?? e);
+      console.log('[scan] packaged library pick failed:', (e as Error)?.message ?? e);
     } finally {
       capturingRef.current = false;
       setCapturing(false);
@@ -710,52 +680,6 @@ export default function Scan() {
       setImporting(false);
     }
   }
-
-  /**
-   * P-137: 시스템 카메라 경로 (FLAGS.systemCamera) — launchCameraAsync 촬영 후
-   * 기존 처리(scanImage → OCR → 세그 → BE)로 그대로 합류. 취소 = 런처 복귀.
-   * 권한 거부 = P-122 설정 딥링크 분기 재사용(프로필 pickBySource 관례 — Alert).
-   * HEIC/EXIF는 P-127 uploadImage 길목이 커버(산출물도 같은 경로).
-   */
-  async function captureViaSystem() {
-    if (capturingRef.current) return; // P-062⓪ 동기 가드 공유
-    if (isGuest) return setGateOpen(true);
-    if (blockMenuShot()) return; // KB-963: 시스템 카메라 = 메뉴 스캔 전용
-    capturingRef.current = true;
-    setCapturing(true);
-    setError(null);
-    try {
-      const perm = await withPermissionPrompt(() => ImagePicker.requestCameraPermissionsAsync());
-      if (!perm.granted) {
-        track(EVENTS.scan_permission, { state: 'deny' }); // P-214
-        Alert.alert(t('scan.permissionTitle'), t('scan.permissionSettingsBody'), [
-          { text: t('common.cancel'), style: 'cancel' },
-          { text: t('photo.openSettings'), onPress: () => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); } },
-        ]);
-        return;
-      }
-      track(EVENTS.scan_start, { source: 'camera' }); // P-144 (시스템 카메라도 camera)
-      const res = await launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
-      if (res.canceled || !res.assets?.length) return; // 취소 → 런처 복귀(무동작)
-      const a = res.assets[0];
-      await scanImage({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });
-    } catch (e) {
-      fail('capture', (e as Error)?.message ?? String(e));
-    } finally {
-      capturingRef.current = false;
-      setCapturing(false);
-    }
-  }
-
-  // P-137 autolaunch 변형 — 탭 진입 즉시 시스템 카메라(1회), 취소 시 런처 표시
-  const autoLaunched = useRef(false);
-  useEffect(() => {
-    if (!FLAGS.systemCamera || !SYSTEM_CAMERA_AUTOLAUNCH) return;
-    if (phase !== 'camera' || autoLaunched.current || isGuest || offline) return;
-    autoLaunched.current = true;
-    void captureViaSystem();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, isGuest, offline]);
 
   // Detail navigation: matched dishes only (KB-72 신계약). matched=false is
   // 조사 대기 — there is no detail screen even when foodId exists (Swagger 명시).
@@ -842,11 +766,10 @@ export default function Scan() {
 
   function cameraUi(o: ScanCamOpts): ReactElement {
     const granted = permission?.granted;
-    const menu = o.kind === 'menu';
     // KB-854: 안내 제목·힌트 문구 제거(시안 B) — 흐름이 주는 한 줄(성분표 n/4 · 같은 분석 차감 안내)만 아래 바 위에 남긴다(P-510 규칙)
     const hint = o.hint ?? null;
-    const shoot = () => void capture(o.onShot, o.kind);
-    const library = () => void pickFromGallery(o.onShot, o.kind);
+    const shoot = () => void capture(o.onShot);
+    const library = () => void pickFromGallery(o.onShot);
     const off = capturing || !!o.shootDisabled; // Codex #318: 성분표 4면이 차면 더 찍지 못한다
     return (
       <View style={styles.camRoot} pointerEvents="box-none">
@@ -885,8 +808,8 @@ export default function Scan() {
         {/* 헤더: 닫기 X + "Scan"(가운데). 가공식품 흐름 안의 한 면 더 찍기 등은 o.onClose = 직전 단계로 */}
         <View style={[styles.camTitleWrap, { top: insets.top + 16 }]} pointerEvents="none">
           <Text style={styles.camTitle}>{t('scanCamera.title')}</Text>
-          {/* KB-1013(예진 11/6): 첫 카메라 화면만 부제 — 모드 탭이 있으면(top + 60) 자리가 겹쳐 생략, 흐름 안 단계(o.onClose)는 그 단계 안내가 따로 있다 */}
-          {!o.onClose && !(FLAGS.processedFoodEnabled && !FLAGS.packagedVisionScan) && (
+          {/* KB-1013(예진 11/6): 첫 카메라 화면만 부제 — 흐름 안 단계(o.onClose)는 그 단계 안내가 따로 있다. KB-988: 모드 탭 제거로 탭 겹침 조건 소멸 */}
+          {!o.onClose && (
             <Text style={styles.camSubtitle} numberOfLines={2} testID="scan-cam-subtitle">{t('scanCamera.subtitle')}</Text>
           )}
         </View>
@@ -896,18 +819,6 @@ export default function Scan() {
           </Pressable>
         ) : (
           closeBtn(true)
-        )}
-        {menu && uiDeg !== 0 && (
-          <View style={[styles.landscapeBadge, styles.camBadge, { top: insets.top + 108 }]} testID="landscape-badge" pointerEvents="none">
-            <Text style={styles.landscapeBadgeText}>{t('scan.landscapeBadge')}</Text>
-          </View>
-        )}
-        {/* KB-813 → KB-845 탭: Menu / Food photo(비활성) / Packaged food — 성분표도 Packaged food 활성(screen-5) */}
-        {/* KB-870: 운영 채널(운영 서버에 가공식품 API 없음) = 모드 탭째 없음 → 메뉴 스캔만(main과 같음) */}
-        {FLAGS.processedFoodEnabled && !FLAGS.packagedVisionScan && ( /* KB-969: 사진 스캔 = 카메라 하나(탭 없음) */
-          <View style={[styles.camModeTabs, { top: insets.top + 60 }]} pointerEvents="box-none">
-            <ScanModeTabs value={menu ? 'menu' : 'packaged'} onChange={setScanMode} disabled={importing} tone="dark" />
-          </View>
         )}
         {o.debug ? <View style={[styles.camDebug, { top: insets.top + 116 }]}>{o.debug}</View> : null}
         {ImportingOverlay}
@@ -1022,8 +933,8 @@ export default function Scan() {
   ) : null;
   // KB-777 B1-4: 어두운 바탕(카메라 뷰파인더·인식 중·오류 — "Not a menu" 등)은 상태바 아이콘을 밝게. 앱 기본(_layout)은 dark —
   // 포커스를 잃거나 밝은 화면(결과·오프라인·시스템 카메라 런처)으로 가면 이 StatusBar가 빠져 기본으로 돌아간다.
-  // Codex #310: 가공식품 모드는 밝은 화면(PackagedScanFlow) — 카메라 단계여도 어두운 바탕이 아니다
-  const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera && scanMode !== 'packaged');
+  // Codex #310: 카메라 단계 = 가공식품 흐름(PackagedScanFlow)이 자기 상태바를 그린다
+  const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase);
   const lightBar = isFocused && darkRoot ? <StatusBar style="light" /> : null;
   const withPresenter = (node: ReactElement) => <>{node}{presenter}{lightBar}</>;
 
@@ -1343,8 +1254,9 @@ export default function Scan() {
 
   // ---- error ----
   // 가공식품 소진(packagedHold) = 아래 가공식품 분기가 흐름 위에 덮어 그린다(같은 트리 자리 — 흐름 상태 유지). 나중에 = 흐름으로 복귀
-  // KB-963: 소진 안내는 메뉴 촬영 시점에만 뜬다 — 나중에 = 카메라로 복귀(모드 탭에서 가공식품 바로 사용). 가공식품 덮개(packagedHold)도 같음
+  // KB-963: 소진 안내는 메뉴 촬영 시점(KB-988: 비전이 메뉴판으로 판별한 뒤)에만 뜬다 — 나중에 = 카메라로 복귀. 가공식품 덮개(packagedHold)도 같음
   const quotaLater = () => { quotaLockRef.current = false; setError(null); setPhase('camera'); };
+  const unlockRetry = () => void runUnlockRetry(() => preflight({ unlocked: true })); // renderError(렌더 중 호출) 밖에서 만든다 — 안에서 가드(ref)를 잡으면 react-hooks/refs
   const renderError = () => {
     const stage = error?.stage ?? 'be';
     return (
@@ -1380,7 +1292,7 @@ export default function Scan() {
             <>
               {/* KB-759: 해제됐는데 티켓 재발급 중/실패 — 광고·리뷰 CTA 대신 다시 시도(실패일 때만) + 나중에 */}
               {/* /review 3: 여는 중에도 같은 버튼을 busy로 유지(스피너·비활성) — 실패면 탭 가능 */}
-              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t(unlockState === 'ready' ? 'scan.startScanning' : 'common.retry')}</Btn>
+              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={unlockRetry} testID="scan-unlock-retry">{t(unlockState === 'ready' ? 'scan.startScanning' : 'common.retry')}</Btn>
               <Btn variant="ghost" onPress={quotaLater} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'quota' ? (
@@ -1403,22 +1315,19 @@ export default function Scan() {
     );
   };
 
-  // ---- KB-813 가공식품 모드 — 카메라 단계(결과·오류·쿼터 잠금은 아래에서 먼저) · KB-865 ③: 확정 소진은 흐름 위 덮개 ----
-  if (scanMode === 'packaged' && !offline && (phase !== 'error' || packagedHold)) {
+  // ---- 카메라 = 가공식품 흐름(KB-969 비전 · KB-988 탭 제거) — 결과·인식 중은 위에서 먼저 · KB-865 ③: 확정 소진은 흐름 위 덮개 ----
+  if (!offline && (phase !== 'error' || packagedHold)) {
     return withPresenter(
       <View style={styles.camHost}>
         {cameraLayer}
         <PackagedScanFlow
           key={labelEntry ?? 'flow'}
-          mode={scanMode}
-          onMode={setScanMode}
           onClose={() => router.back()}
           startLabel={labelEntry != null}
           renderCamera={cameraUi}
           focused={isFocused}
           onMenuPhoto={scanMenuFromVision}
           onQuota={() => {
-            packagedHoldRef.current = true;
             setPackagedHold(true);
             quotaLockRef.current = true;
             setError({ stage: 'quota', detail: 'packaged confirm SCAN-004' });
@@ -1432,58 +1341,15 @@ export default function Scan() {
 
   if (phase === 'error') return withPresenter(renderError());
 
-  // ---- camera (default) ----
+  // ---- offline ----
   // P-046: 오프라인 = 전체 J4 (카메라·갤러리·샘플 진입로 전부 이 화면으로 대체 —
-  // 촬영 자체가 불가). 밝은 배경으로 다른 탭 J4와 톤 통일.
-  if (offline) {
-    return withPresenter(
-      <View style={[styles.root, styles.center, { backgroundColor: C.surface }]}>
-        {Close}
-        <QueryErrorBlock error={probe.error} onRetry={() => void probe.refetch()} />
-      </View>
-    );
-  }
-  // P-137: 시스템 카메라 on = 커스텀 뷰파인더 대신 콰이엇 런처 — 안내 한 줄 +
-  // 촬영(주 CTA) + 갤러리(보조). 권한은 launchCameraAsync가 자체 처리.
-  if (FLAGS.systemCamera) {
-    return withPresenter(
-      <View style={styles.launcherRoot}>
-        <Pressable style={[styles.close, { top: insets.top + 8, backgroundColor: C.surface2 }]} onPress={closeCamera} disabled={importing} hitSlop={8} testID="scan-close">
-          <IconClose size={22} color={C.ink2} />
-        </Pressable>
-        {/* KB-813 모드 탭 — 시스템 카메라 런처(밝은 바탕) */}
-        {FLAGS.processedFoodEnabled && !FLAGS.packagedVisionScan && ( /* KB-969: 사진 스캔 = 카메라 하나(탭 없음) */
-          <View style={[styles.camModeTabs, { top: insets.top + 56 }]}>
-            <ScanModeTabs value={scanMode} onChange={setScanMode} disabled={importing} />
-          </View>
-        )}
-        <View style={styles.launcherBody}>
-          <IconScanLines size={44} color={C.ink3} />
-          <Text style={styles.launcherTitle}>{t('scan.cameraTitle')}</Text>
-          <Text style={styles.launcherHint}>{t('scan.launcherHint')}</Text>
-          <View style={{ alignSelf: 'stretch', marginTop: 10 }} testID="sys-capture-wrap">
-            <Btn testID="scan-system-camera" onPress={() => void captureViaSystem()} disabled={capturing}>
-              {t('photo.take')}
-            </Btn>
-          </View>
-          <Pressable onPress={() => void pickFromGallery()} disabled={capturing} hitSlop={8} testID="sys-gallery">
-            <Text style={styles.launcherGallery}>{t('scan.gallery')}</Text>
-          </Pressable>
-        </View>
-        {ImportingOverlay}
-        {GateSheet}
-      </View>
-    );
-  }
-
-  // 가공식품 분기와 같은 구조(camHost → cameraLayer → 화면) — 탭 전환에도 cameraLayer의 CameraView가 같은 인스턴스로 남는다
+  // 촬영 자체가 불가). 밝은 배경으로 다른 탭 J4와 톤 통일. 카메라(가공식품 흐름)는 위 분기
   return withPresenter(
-    <View style={styles.camHost}>
-      {cameraLayer}
-      <CameraSlot o={{ kind: 'menu', onShot: (p: NonNullable<Photo>) => scanImage(p) }} render={cameraUi} /* KB-854: 라이브러리 링크 → 아래 바 갤러리 아이콘 */ />
-    </View>,
+    <View style={[styles.root, styles.center, { backgroundColor: C.surface }]}>
+      {Close}
+      <QueryErrorBlock error={probe.error} onRetry={() => void probe.refetch()} />
+    </View>
   );
-
 }
 
 
