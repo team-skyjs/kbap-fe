@@ -7,7 +7,7 @@
  * - 로딩: 조리법은 상세 응답과 같이 온다 — 상세 스켈레톤이 덮고, 섹션 자체 로딩 상태 없음.
  */
 import * as React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/lib/engagement/occlusionSurfaces';
 import { Pressable } from '@/components/Pressable';
@@ -147,6 +147,8 @@ function RecipeSheet({ recipe, initial, onClose, t }: { recipe: Recipe; initial:
               ))}
             </View>
           )}
+          {/* P-646(Codex P2 11/4): 시트 최대 높이 85% — 손잡이·헤더(제목·X)·칩·타일은 고정, 단계·주의·출처만 스크롤(단계 12·주의 4·큰 글자에서도 X가 화면 안) */}
+          <ScrollView style={s.body} contentContainerStyle={s.bodyContent} showsVerticalScrollIndicator={false} testID="pf-recipe-body">
           {m.steps.length > 0 && (
             <View style={s.steps}>
               {m.steps.map((st, i) => (
@@ -166,6 +168,7 @@ function RecipeSheet({ recipe, initial, onClose, t }: { recipe: Recipe; initial:
             </View>
           ))}
           <Text style={s.source}>{t('packaged.recipe.source')}</Text>
+          </ScrollView>
         </Pressable>
       </Pressable>
     </Modal>
@@ -187,7 +190,9 @@ const s = StyleSheet.create({
   fact: { fontSize: 13, lineHeight: 18, fontWeight: '400', color: C.ink2 }, // caption1-regular / gray-700
   // B2
   backdrop: { flex: 1, backgroundColor: 'rgba(28,30,33,0.5)', justifyContent: 'flex-end' }, // gray-1000 50%
-  sheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingTop: 10, paddingHorizontal: 16, gap: 16 },
+  sheet: { maxHeight: '85%', backgroundColor: '#FFFFFF', borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingTop: 10, paddingHorizontal: 16, gap: 16 },
+  body: { flexShrink: 1 }, // 시트 maxHeight 안에서 줄어들어 스크롤(헤더는 밀려나지 않음)
+  bodyContent: { gap: 16 }, // 시트 gap과 같은 간격
   handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: radius.pill, backgroundColor: C.line2 }, // gray-300
   header: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { flex: 1 },

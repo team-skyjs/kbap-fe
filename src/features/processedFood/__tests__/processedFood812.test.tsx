@@ -295,6 +295,29 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
       expect(src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')).not.toContain('·');
     });
 
+    it('P-646(Codex P2): 단계 12·주의 4(서버 상한) + 큰 글자 — 시트 최대 85%, 단계·주의·출처만 스크롤, X·제목·칩은 스크롤 밖 고정', () => {
+      const steps = Array.from({ length: 12 }, (_, i) => `Step ${i + 1} ${Array(12).fill('long text').join(' ')}`);
+      const cautions = Array.from({ length: 4 }, (_, i) => `Caution ${i + 1} ${Array(10).fill('careful').join(' ')}`);
+      const big = { source: 'package_label', methods: [{ ...TOOMBA!.methods![1], steps, cautions }, TOOMBA!.methods![0]] } as DetailWire['recipe'];
+      const t = detail({ recipe: big });
+      press(t, 'pf-recipe-row-MICROWAVE');
+      const sheet = node(t, 'pf-recipe-sheet')[0];
+      expect(StyleSheet.flatten(sheet.props.style).maxHeight).toBe('85%');
+      const body = node(t, 'pf-recipe-body')[0];
+      expect(body).toBeDefined();
+      expect(StyleSheet.flatten(body.props.style).flexShrink).toBe(1);
+      const inBody = (id: string) => body.findAll((n) => n.props?.testID === id).length > 0;
+      expect(body.findAll((n) => n.props?.testID === 'pf-recipe-caution' && typeof n.type === 'string')).toHaveLength(4);
+      const bodyText = body.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+      expect(steps.every((st) => bodyText.includes(st))).toBe(true);
+      expect(bodyText).toContain('packaged.recipe.source');
+      // 고정 영역: 닫기·칩·타일은 스크롤 밖(넘쳐도 X가 밀려 올라가지 않음)
+      expect(inBody('pf-recipe-close')).toBe(false);
+      expect(inBody('pf-recipe-chip-MICROWAVE')).toBe(false);
+      expect(inBody('pf-recipe-tile-w1000')).toBe(false);
+      expect(node(t, 'pf-recipe-close').length).toBeGreaterThan(0);
+    });
+
     it('P-645 시안 차이 정리: 와트 타일 = 전자레인지 아이콘(대기 = 타이머) · 좌우 여백 = 이웃 섹션(GUTTER)과 같은 값', () => {
       const tt = (k: string) => k;
       const base = { waterMl: 220, waterLine: null, drainKeepMl: null, steps: [], cautions: [] };
