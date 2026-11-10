@@ -3,7 +3,7 @@
  * 커널 샘플링 공식과 VisionCamera FrameCoordinateSystemConverter(정답 좌표계)를 그대로 옮겨, 작은 버퍼로
  * "리사이저 → uprightBgr"가 픽셀 단위로 똑바로 선 이미지와 같은지 본다 — 후면(left)·전면(right, 거울 유무).
  */
-import { uprightBgr } from '../bbqModel';
+import { bufferToUpright as modelB2U, reorient, toView, uprightBgr, uprightInput, uprightToBuffer, type CamOrientation } from '../bbqModel';
 
 type O = 'left' | 'right';
 const BW = 6; // 버퍼(센서) 가로 — 가로로 누운 버퍼
@@ -80,13 +80,99 @@ it('uprightBgr: 픽셀 순서 180°·채널 RGB→BGR, 원본 버퍼 무변', ()
   expect(Array.from(src)).toEqual([1, 2, 3, 4, 5, 6]);
 });
 
-it('사용처 잠금: 가이드·쌈 코칭(runFrame)과 측정 화면 COCO 경로 모두 uprightBgr + bgr', () => {
+it('사용처 잠금: 가이드·쌈 코칭(runFrame)과 측정 화면 COCO 경로 모두 uprightInput(방향별)', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { readFileSync } = require('fs') as typeof import('fs');
   const hook = readFileSync('src/features/bbq/useBbqDetection.ts', 'utf8');
-  expect(hook).toContain("run({ data: uprightBgr(r.getPixelBuffer()), width: rd.w, height: rd.h, format: 'bgr', layout: 'hwc' })");
+  expect(hook).toContain('const inp = uprightInput(r.getPixelBuffer(), frame.orientation);');
+  expect(hook).toContain("run({ data: inp.data, width: rd.w, height: rd.h, format: inp.format, layout: 'hwc' })");
   const probe = readFileSync('src/features/bbq/ProbeScreen.tsx', 'utf8');
-  expect(probe).toContain("{ data: uprightBgr(resized.getPixelBuffer()), width: SIZE, height: SIZE, format: 'bgr', layout: 'hwc' }");
+  expect(probe).toContain('const inp = uprightInput(resized.getPixelBuffer(), frame.orientation);');
+  expect(probe).toContain("{ data: inp.data, width: SIZE, height: SIZE, format: inp.format, layout: 'hwc' }");
   expect(probe).toContain('runFrame(frame, bbqResizer, bbqRun, rd, '); // 측정 화면 자체 모델도 같은 runFrame
   expect(`${hook}\n${probe}`).not.toMatch(/new Uint8Array\((r|resized)\.getPixelBuffer\(\)\)/);
+});
+
+/** P-644: 커널(ResizerKernels.metal) 그대로 — 역회전(360 - 회전각) 뒤 거울. 회전각 up 0 · right 90 · down 180 · left 270 */
+function kernelAny(ux: number, uy: number, o: CamOrientation, mirrored: boolean): [number, number] {
+  const deg = { up: 0, right: 90, down: 180, left: 270 }[o];
+  const inv = (360 - deg) % 360;
+  let c: [number, number] = [ux, uy];
+  if (inv === 90) c = [1 - c[1], c[0]];
+  else if (inv === 180) c = [1 - c[0], 1 - c[1]];
+  else if (inv === 270) c = [c[1], 1 - c[0]];
+  if (mirrored) c = [1 - c[0], c[1]];
+  return c;
+}
+const ALL: CamOrientation[] = ['up', 'right', 'down', 'left'];
+
+describe('P-644 가로: 네 방향 리사이저 입력', () => {
+  it.each(ALL.flatMap((o) => [[o, false], [o, true]] as const))('%s 거울=%s: uprightInput = 정답 이미지', (o, m) => {
+    const side = o === 'left' || o === 'right';
+    const w = side ? BH : BW;
+    const h = side ? BW : BH;
+    const rgb = new Uint8Array(w * h * 3);
+    const truth = new Array<number>(w * h).fill(0);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const [sx, sy] = kernelAny((x + 0.5) / w, (y + 0.5) / h, o, m);
+        const v = bufferValue(Math.floor(sx * BW), Math.floor(sy * BH));
+        rgb.set([v, v, v], (y * w + x) * 3);
+      }
+    for (let by = 0; by < BH; by++)
+      for (let bx = 0; bx < BW; bx++) {
+        const [ux, uy] = modelB2U((bx + 0.5) / BW, (by + 0.5) / BH, o, m);
+        truth[Math.floor(uy * h) * w + Math.floor(ux * w)] = bufferValue(bx, by);
+      }
+    const inp = uprightInput(rgb.buffer as ArrayBuffer, o);
+    expect(inp.format).toBe(side ? 'bgr' : 'rgb');
+    expect(firstChannel(inp.data)).toEqual(truth);
+  });
+
+  it('kernelSample(테스트 원래 공식) = kernelAny(left·right)', () => {
+    for (const o of ['left', 'right'] as const) for (const m of [false, true]) expect(kernelAny(0.2, 0.7, o, m).map((v) => +v.toFixed(6))).toEqual(kernelSample(0.2, 0.7, o, m).map((v) => +v.toFixed(6)));
+  });
+});
+
+describe('P-644 가로: 네 기기 방향 x 후면·전면, 박스·관절점이 세로 UI 미리보기 제자리', () => {
+  const rot = (o: CamOrientation, k: number) => ALL[(ALL.indexOf(o) + k) % 4]!;
+  it('bufferToUpright ∘ uprightToBuffer = 항등', () => {
+    for (const o of ALL) for (const m of [false, true]) {
+      const [bx, by] = uprightToBuffer(0.3, 0.8, o, m);
+      const [ux, uy] = modelB2U(bx, by, o, m);
+      expect(ux).toBeCloseTo(0.3);
+      expect(uy).toBeCloseTo(0.8);
+    }
+  });
+  it.each([
+    ['후면', 'left', false],
+    ['전면', 'right', true],
+  ] as const)('%s: 세로(base) 기준 네 방향', (_n, base, m) => {
+    for (let k = 0; k < 4; k++) {
+      const f = rot(base, k); // 세로 · 가로 · 거꾸로 · 반대 가로
+      const side = f === 'left' || f === 'right';
+      const [fw, fh] = side ? [360, 640] : [640, 360]; // 프레임 방향 리사이즈 크기
+      // 버퍼의 한 물체(점 2개)를 프레임 방향 좌표로 → reorient → 세로 UI 정답과 같아야
+      const pts: [number, number][] = [[0.1, 0.2], [0.35, 0.6]];
+      const inF = pts.map(([bx, by]) => modelB2U(bx, by, f, m));
+      const box = { x1: Math.min(inF[0]![0], inF[1]![0]) * fw, y1: Math.min(inF[0]![1], inF[1]![1]) * fh, x2: Math.max(inF[0]![0], inF[1]![0]) * fw, y2: Math.max(inF[0]![1], inF[1]![1]) * fh };
+      const r = reorient(box, fw, fh, { f, base, m });
+      const truth = pts.map(([bx, by]) => modelB2U(bx, by, base, m));
+      expect([r.w, r.h]).toEqual([360, 640]); // 세로 UI 기준 크기
+      expect(r.box.x1 / r.w).toBeCloseTo(Math.min(truth[0]![0], truth[1]![0]));
+      expect(r.box.y1 / r.h).toBeCloseTo(Math.min(truth[0]![1], truth[1]![1]));
+      expect(r.box.x2 / r.w).toBeCloseTo(Math.max(truth[0]![0], truth[1]![0]));
+      expect(r.box.y2 / r.h).toBeCloseTo(Math.max(truth[0]![1], truth[1]![1]));
+      // 관절점(크기 0 상자)도 같은 변환
+      const [jx, jy] = inF[0]!;
+      const p = toView({ x1: jx * fw, y1: jy * fh, x2: jx * fw, y2: jy * fh }, fw, fh, { f, base, m }, 360, 640, false);
+      expect(p.x / 360).toBeCloseTo(truth[0]![0]);
+      expect(p.y / 640).toBeCloseTo(truth[0]![1]);
+    }
+  });
+  it('세로(f = base)는 변환 없음, xf 없음도 그대로', () => {
+    const b = { x1: 1, y1: 2, x2: 3, y2: 4 };
+    expect(reorient(b, 360, 640, { f: 'left', base: 'left', m: false })).toEqual({ box: b, w: 360, h: 640 });
+    expect(toView(b, 360, 640, null, 360, 640, false)).toEqual({ x: 1, y: 2, w: 2, h: 2 });
+  });
 });

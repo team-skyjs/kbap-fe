@@ -22,7 +22,7 @@ import { useSession } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { openAppSettings } from '@/lib/openExternal';
 import { isLongQuestion, ownerCardStyles as O } from '@/app/food/[id]/owner';
-import { LABELS, coverMap } from './bbqModel';
+import { LABELS, toView } from './bbqModel';
 import { avoidFrom, tagRisk } from './bbqAvoid';
 import { GRILL_ANSWERS, GRILL_ASK_KO, type GrillAnswer } from './grillAsk';
 import { useBbqDetection } from './useBbqDetection';
@@ -84,7 +84,7 @@ export function GuideScreen() {
           style={StyleSheet.absoluteFill}
           device={device}
           isActive={!asking}
-          orientationSource="interface"
+          orientationSource="device"
           outputs={[det.frameOutput]}
           resizeMode="cover"
           onError={() => setCamError(true)}
@@ -95,13 +95,13 @@ export function GuideScreen() {
         <>
           <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
             {det.shown.map((s) => {
-              const r = coverMap(s, det.rd.w, det.rd.h, view.w, view.h, false);
+              const r = toView(s, det.rd.w, det.rd.h, det.xf, view.w, view.h, false);
               const risk = tagRisk(s.cls, avoid);
               return <Rect key={s.id} x={r.x} y={r.y} width={r.w} height={r.h} color={risk ? RISK[risk.state].color : C.primary} style="stroke" strokeWidth={3} />;
             })}
           </Canvas>
           {det.shown.map((s) => {
-            const r = coverMap(s, det.rd.w, det.rd.h, view.w, view.h, false);
+            const r = toView(s, det.rd.w, det.rd.h, det.xf, view.w, view.h, false);
             const risk = tagRisk(s.cls, avoid);
             const label = LABELS[s.cls]!;
             return (

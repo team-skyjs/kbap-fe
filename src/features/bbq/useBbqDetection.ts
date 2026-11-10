@@ -4,22 +4,24 @@
  * 시각은 탐지기 워크릿 단조 시계(at) — 렌더 경로 Date.now 0(P-630).
  */
 import { useEffect, useRef, useState } from 'react';
-import { useFrameOutput, type Frame } from 'react-native-vision-camera';
+import { useFrameOutput, useOrientation, type Frame } from 'react-native-vision-camera';
 import { type GPUFrame, type Resizer, useResizer } from 'react-native-vision-camera-resizer';
 import { useModel } from 'react-native-executorch';
 import { scheduleOnRN } from 'react-native-worklets';
 import { createHandPose, type HandPose } from 'react-native-vision-camera-hands';
-import { resizeDims, uprightBgr, type Det } from './bbqModel';
+import { resizeDims, uprightInput, type CamOrientation, type Det, type Reorient } from './bbqModel';
 import { BBQ_MODELS, createBbqDetector, type BbqBackend, type BbqDetector, type BbqRun } from './bbqDetector';
 import { createGrillGate, createTracker, type Shown } from './bbqTracker';
-import { HAND_TUNING, parseHands, vnOrientation, type Hand } from './handPose';
+import { HAND_FIRST } from './bbqModel';
+import { HAND_TUNING, frameKey, parseHands, vnOrientation, type Hand } from './handPose';
 
 /** 장면 1 이름표 대상 = 0 grill ~ 6 scissors. 손 관련 7~9는 이 화면에서 버린다(트래커·불판 조건 모두). */
 export const SCENE1_MAX_CLS = 6;
 export const scene1Only = (dets: Det[]) => dets.filter((d) => d.cls <= SCENE1_MAX_CLS);
 
 /** hands = 이번 프레임에 손 인식을 돌렸을 때만(네이티브 원값). handErr = 손 인식만 실패(모델 결과는 살림) */
-export type BbqTick = BbqRun & { uw: number; uh: number; hands?: number[]; handMs?: number; handErr?: string };
+/** o·m = 프레임 방향·거울(P-644 가로: 그리기 좌표 변환) */
+export type BbqTick = BbqRun & { uw: number; uh: number; o: CamOrientation; m: boolean; hands?: number[]; handMs?: number; handErr?: string; handKey?: string; handVn?: number };
 export type HandRun = { pose: HandPose; everyN: number };
 /** 워크릿 예외도 결과로 돌려준다(P-637: catch가 삼켜 실기 추론 0의 원인이 화면에 안 보였다) */
 export type FrameResult = BbqTick | { error: string } | null;
@@ -37,9 +39,10 @@ export function runFrame(frame: Frame, resizer: Resizer | undefined, run: BbqDet
   try {
     const sideways = frame.orientation === 'right' || frame.orientation === 'left';
     r = resizer.resize(frame);
-    // P-639: 리사이저 출력 180° 뒤집힘 보정(역순 → BGR)
-    const res = run({ data: uprightBgr(r.getPixelBuffer()), width: rd.w, height: rd.h, format: 'bgr', layout: 'hwc' });
-    const out: BbqTick = { ...res, uw: sideways ? frame.height : frame.width, uh: sideways ? frame.width : frame.height };
+    // P-639: 리사이저 출력 180° 뒤집힘 보정(left·right만 역순 → BGR, P-644 가로의 up·down은 그대로)
+    const inp = uprightInput(r.getPixelBuffer(), frame.orientation);
+    const res = run({ data: inp.data, width: rd.w, height: rd.h, format: inp.format, layout: 'hwc' });
+    const out: BbqTick = { ...res, uw: sideways ? frame.height : frame.width, uh: sideways ? frame.width : frame.height, o: frame.orientation, m: frame.isMirrored };
     if (hand) {
       // P-643: N프레임에 한 번. 카운터는 프레임 런타임 전역(워크릿 클로저는 프레임마다 복사라 못 쓴다)
       const g = globalThis as { __kbHandN?: number };
@@ -47,8 +50,10 @@ export function runFrame(frame: Frame, resizer: Resizer | undefined, run: BbqDet
       g.__kbHandN = n;
       if (n % hand.everyN === 0) {
         const t0 = globalThis.performance?.now?.() ?? Date.now();
+        out.handKey = frameKey(frame.orientation, frame.isMirrored);
+        out.handVn = vnOrientation(frame.orientation, frame.isMirrored);
         try {
-          out.hands = hand.pose.detect(frame, vnOrientation(frame.orientation, frame.isMirrored));
+          out.hands = hand.pose.detect(frame, out.handVn);
         } catch (e) {
           out.handErr = String(e);
         }
@@ -67,6 +72,13 @@ export function runFrame(frame: Frame, resizer: Resizer | undefined, run: BbqDet
   }
 }
 
+/** 화면 기준 방향 갱신: 기기가 세로(up)일 때 본 프레임 방향을 base로 기억, 모르면 카메라 기본값(후면 left·전면 거울 right, P-639 실측) */
+export function nextReorient(prev: Reorient | null, f: CamOrientation, m: boolean, device: string | undefined): Reorient {
+  const base: CamOrientation = device === 'up' ? f : prev && prev.m === m ? prev.base : m ? 'right' : 'left'; // 카메라 전환(거울 바뀜) = 다시 배움
+  if (prev && prev.f === f && prev.m === m && prev.base === base) return prev;
+  return { f, base, m };
+}
+
 /** 손 인식 객체. 네이티브 모듈이 없는 빌드(빌드 4 이하)면 undefined — 손 없이 P-641 바닥 동작 */
 export function tryCreateHandPose(): HandPose | undefined {
   try {
@@ -77,10 +89,10 @@ export function tryCreateHandPose(): HandPose | undefined {
 }
 
 /**
- * @param scene table = 장면 1(0~6만), hand = 장면 2(전 클래스 + 손 인식 — 디버그 박스·신호는 화면이 고른다)
+ * @param scene table = 장면 1(0~6만), hand = 장면 2(7·8·9만 + 손 인식, P-644)
  * @param onShown 틱마다 트래커 결과·손(staleMs 안의 최근 값)·워크릿 시각을 넘긴다(상태 머신 입력). 렌더 중이 아니라 틱 콜백에서 불린다.
  */
-export function useBbqDetection(scene: 'table' | 'hand' = 'table', onShown?: (shown: Shown[], at: number, hands: Hand[], frameH: number) => void, backend: BbqBackend = 'coreml') {
+export function useBbqDetection(scene: 'table' | 'hand' = 'table', onShown?: (shown: Shown[], at: number, hands: Hand[], frame: { w: number; h: number }) => void, backend: BbqBackend = 'coreml') {
   const [attempt, setAttempt] = useState(0);
   const [upright, setUpright] = useState({ w: 1080, h: 1920 });
   const [shown, setShown] = useState<Shown[]>([]);
@@ -88,10 +100,13 @@ export function useBbqDetection(scene: 'table' | 'hand' = 'table', onShown?: (sh
   const [track] = useState(createTracker);
   const [grillGate] = useState(createGrillGate);
   const [pose] = useState(() => (scene === 'hand' ? tryCreateHandPose() : undefined));
-  type HandState = { hands: Hand[]; at: number; ms: number; err: string | null };
-  const [hands, setHands] = useState<HandState>({ hands: [], at: -Infinity, ms: 0, err: null });
+  // P-644 가로: 카메라 출력은 기기 방향(orientationSource="device"), UI는 세로 잠금. 기기가 세로일 때의 프레임 방향 = 화면 기준(base)
+  const device = useOrientation('device');
+  const [xf, setXf] = useState<Reorient | null>(null);
+  type HandState = { hands: Hand[]; at: number; ms: number; err: string | null; key: string };
+  const [hands, setHands] = useState<HandState>({ hands: [], at: -Infinity, ms: 0, err: null, key: '' });
   /** 틱 콜백 전용(렌더 중 읽지 않음) — 손은 everyN 프레임에 한 번이라 사이 프레임은 직전 값을 쓴다 */
-  const lastHands = useRef<HandState>({ hands: [], at: -Infinity, ms: 0, err: null });
+  const lastHands = useRef<HandState>({ hands: [], at: -Infinity, ms: 0, err: null, key: '' });
 
   const rd = resizeDims(upright.w, upright.h);
   const { resizer } = useResizer({ width: rd.w, height: rd.h, channelOrder: 'rgb', dataType: 'uint8', scaleMode: 'contain', pixelLayout: 'interleaved' });
@@ -111,17 +126,19 @@ export function useBbqDetection(scene: 'table' | 'hand' = 'table', onShown?: (sh
   const onError = (msg: string) => setLastError(msg);
   const onTick = (next: BbqTick) => {
     setTicks((n) => n + 1);
+    setXf((prev) => nextReorient(prev, next.o, next.m, device));
     if (next.uw !== upright.w || next.uh !== upright.h) setUpright({ w: next.uw, h: next.uh });
-    const dets = scene === 'table' ? scene1Only(next.dets) : next.dets;
+    // P-644: 쌈 코칭(hand)은 손 위 3종만 — 담요·머리카락 위 가위·날고기 오탐을 버린다
+    const dets = scene === 'table' ? scene1Only(next.dets) : next.dets.filter((d) => d.cls >= HAND_FIRST);
     const tracked = track(dets, next.at);
     setShown(tracked);
     setGrillOn(grillGate(dets, next.at));
     if (next.hands || next.handErr) {
-      lastHands.current = { hands: next.hands ? parseHands(next.hands, rd.w, rd.h) : [], at: next.at, ms: next.handMs ?? 0, err: next.handErr ?? null };
+      lastHands.current = { hands: next.hands ? parseHands(next.hands, rd.w, rd.h, next.handKey) : [], at: next.at, ms: next.handMs ?? 0, err: next.handErr ?? null, key: next.handKey ?? '' };
       setHands(lastHands.current);
     }
     const h = lastHands.current;
-    onShown?.(tracked, next.at, next.at - h.at <= HAND_TUNING.staleMs ? h.hands : [], rd.h);
+    onShown?.(tracked, next.at, next.at - h.at <= HAND_TUNING.staleMs ? h.hands : [], rd);
   };
 
   const frameOutput = useFrameOutput({
@@ -140,6 +157,8 @@ export function useBbqDetection(scene: 'table' | 'hand' = 'table', onShown?: (sh
     shown,
     grillOn,
     rd,
+    /** 그리기 좌표 변환(프레임 방향 → 세로 UI). toView에 넘긴다 */
+    xf,
     /** 손 인식(장면 2만): 최근 결과·프레임당 ms·오류, available = 네이티브 모듈 있음 */
     hands: { ...hands, available: pose != null },
     ready: bbq.model != null,

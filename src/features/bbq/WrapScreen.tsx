@@ -20,7 +20,7 @@ import { color as C, font, radius, riskText } from '@/lib/theme';
 import { useSession } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { openAppSettings } from '@/lib/openExternal';
-import { coverMap } from './bbqModel';
+import { toView } from './bbqModel';
 import { avoidFrom, tagRisk } from './bbqAvoid';
 import type { Shown } from './bbqTracker';
 import { NO_SIGNALS, STEPS, createCoach, currentStep, finishedByAuto, isDone, step, type CoachState, type Mark } from './wrapCoach';
@@ -51,9 +51,9 @@ export function WrapScreen() {
   const [coach, setCoach] = useState<CoachState>(() => createCoach({ sawSsamjang: ssamjang === '1', avoidSsamjang: avoidRisk != null }, 0));
 
   const [handSignals] = useState(createHandSignals);
-  const onShown = (shown: Shown[], at: number, hands: Hand[], frameH: number) => {
+  const onShown = (shown: Shown[], at: number, hands: Hand[], frame: { w: number; h: number }) => {
     lastAt.current = at;
-    const sig = handSignals(shown, hands, frameH);
+    const sig = handSignals(shown, hands, frame.h, frame.w, at);
     setCoach((c) => step(c, sig, at));
   };
   const det = useBbqDetection('hand', onShown);
@@ -92,25 +92,25 @@ export function WrapScreen() {
   return (
     <View style={styles.root} onLayout={(e) => setView({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
       {device && !camError && (
-        <Camera key={camKey} style={StyleSheet.absoluteFill} device={device} isActive={!done} orientationSource="interface" outputs={[det.frameOutput]} resizeMode="cover" onError={() => setCamError(true)} />
+        <Camera key={camKey} style={StyleSheet.absoluteFill} device={device} isActive={!done} orientationSource="device" outputs={[det.frameOutput]} resizeMode="cover" onError={() => setCamError(true)} />
       )}
       {boxes && view.w > 0 && (
         <>
           <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
             {det.shown.map((s) => {
-              const r = coverMap(s, det.rd.w, det.rd.h, view.w, view.h, false);
+              const r = toView(s, det.rd.w, det.rd.h, det.xf, view.w, view.h, false);
               return <Rect key={s.id} x={r.x} y={r.y} width={r.w} height={r.h} color={C.primary} style="stroke" strokeWidth={3} />;
             })}
             {det.hands.hands.flatMap((h, hi) =>
               h.joints.flatMap((j, ji) => {
                 if (j.c < HAND_TUNING.minConf) return [];
-                const p = coverMap({ x1: j.x, y1: j.y, x2: j.x, y2: j.y }, det.rd.w, det.rd.h, view.w, view.h, false);
+                const p = toView({ x1: j.x, y1: j.y, x2: j.x, y2: j.y }, det.rd.w, det.rd.h, det.xf, view.w, view.h, false);
                 return [<Circle key={`${hi}-${ji}`} cx={p.x} cy={p.y} r={4} color={C.accent} />];
               }),
             )}
           </Canvas>
           {det.shown.map((s) => {
-            const r = coverMap(s, det.rd.w, det.rd.h, view.w, view.h, false);
+            const r = toView(s, det.rd.w, det.rd.h, det.xf, view.w, view.h, false);
             return (
               <Text key={s.id} style={[styles.dbgTag, { left: Math.max(0, r.x), top: Math.max(0, r.y - 18) }]}>
                 {`${s.cls} ${Math.round(s.score * 100)}`}

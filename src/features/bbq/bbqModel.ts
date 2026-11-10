@@ -229,3 +229,57 @@ export function uprightBgr(resizedRgb: ArrayBuffer): Uint8Array {
   'worklet';
   return new Uint8Array(resizedRgb).slice().reverse();
 }
+
+/** VisionCamera frame.orientation */
+export type CamOrientation = 'up' | 'right' | 'down' | 'left';
+export const isSideways = (o: string) => o === 'left' || o === 'right';
+
+/**
+ * 리사이저 출력 → 탐지 입력. P-644 가로 지원: 리사이저 커널(ResizerKernels.metal)은 역회전을 반대로 해서
+ * 90°·270°(left·right)에서만 180° 뒤집힌다(P-639) — 0°·180°(up·down)는 커널 = VisionCamera라 그대로 둔다(orientation1019 커널 공식 대조).
+ */
+export function uprightInput(resizedRgb: ArrayBuffer, orientation: string): { data: Uint8Array; format: 'bgr' | 'rgb' } {
+  'worklet';
+  if (orientation === 'left' || orientation === 'right') return { data: uprightBgr(resizedRgb), format: 'bgr' };
+  return { data: new Uint8Array(resizedRgb), format: 'rgb' };
+}
+
+/** VisionCamera 정답: 버퍼 정규 좌표 → 똑바로 선 정규 좌표(거울이면 버퍼 x를 먼저 뒤집고 회전) */
+export function bufferToUpright(px: number, py: number, o: CamOrientation, mirrored: boolean): [number, number] {
+  const x = mirrored ? 1 - px : px;
+  if (o === 'left') return [1 - py, x];
+  if (o === 'right') return [py, 1 - x];
+  if (o === 'down') return [1 - x, 1 - py];
+  return [x, py];
+}
+export function uprightToBuffer(ux: number, uy: number, o: CamOrientation, mirrored: boolean): [number, number] {
+  let x: number;
+  let py: number;
+  if (o === 'left') [py, x] = [1 - ux, uy];
+  else if (o === 'right') [py, x] = [ux, 1 - uy];
+  else if (o === 'down') [x, py] = [1 - ux, 1 - uy];
+  else [x, py] = [ux, uy];
+  return [mirrored ? 1 - x : x, py];
+}
+
+/** 프레임 방향(f, 기기 기준) 좌표 → 화면(세로 잠금 UI) 방향(base) 좌표. base = 기기가 세로일 때의 프레임 방향 */
+export type Reorient = { f: CamOrientation; base: CamOrientation; m: boolean };
+export function reorient(b: Box, w: number, h: number, x: Reorient): { box: Box; w: number; h: number } {
+  if (x.f === x.base) return { box: b, w, h };
+  const map = (px: number, py: number) => {
+    const [bx, by] = uprightToBuffer(px / w, py / h, x.f, x.m);
+    return bufferToUpright(bx, by, x.base, x.m);
+  };
+  const swap = isSideways(x.f) !== isSideways(x.base);
+  const iw = swap ? h : w;
+  const ih = swap ? w : h;
+  const [ax, ay] = map(b.x1, b.y1);
+  const [bx, by] = map(b.x2, b.y2);
+  return { box: { x1: Math.min(ax, bx) * iw, y1: Math.min(ay, by) * ih, x2: Math.max(ax, bx) * iw, y2: Math.max(ay, by) * ih }, w: iw, h: ih };
+}
+
+/** 탐지·손 좌표(프레임 방향 w x h) → 화면 사각형. 가로로 든 폰도 세로 UI 미리보기 위 제자리에(P-644) */
+export function toView(b: Box, w: number, h: number, x: Reorient | null, viewW: number, viewH: number, mirror: boolean) {
+  const r = x ? reorient(b, w, h, x) : { box: b, w, h };
+  return coverMap(r.box, r.w, r.h, viewW, viewH, mirror);
+}

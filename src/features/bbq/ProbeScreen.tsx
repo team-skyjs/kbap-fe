@@ -1,26 +1,26 @@
 /**
  * KB-1019 1일 차 관문: 후면·전면 카메라 + executorch 기본 탐지 모델(YOLO26 nano 384, COCO) + Skia 박스.
  * 화면에 FPS·프레임당 추론 ms를 띄워 실기 측정값을 읽는다. 장면 구현 아님.
- * 박스: 리사이저가 회전·거울을 적용한 똑바로 선 정사각형(cover) 좌표 → squareCropToUpright → coverMap(P-636). 거울 토글만 보정 노브.
+ * 박스: 리사이저가 회전·거울을 적용한 똑바로 선 정사각형(cover) 좌표 → squareCropToUpright → coverMap(P-636), P-644부터 toView(가로 변환 포함). 거울 토글만 보정 노브.
  * P-630: 모델 토글로 자체 모델 v1(bbq) 선택 — 이름표 유지·고기 다수결·불판 조건(bbqTracker), 추론·후처리 ms 따로 표시.
  */
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { Camera, useCameraDevice, useCameraPermission, useFrameOutput, type Frame } from 'react-native-vision-camera';
+import { Camera, useCameraDevice, useCameraPermission, useFrameOutput, useOrientation, type Frame } from 'react-native-vision-camera';
 import { type GPUFrame, useResizer } from 'react-native-vision-camera-resizer';
 import { models, setTelemetryEnabled, useModel, useObjectDetector } from 'react-native-executorch';
 import type { ImageBuffer } from 'react-native-executorch/cv';
 import { scheduleOnRN } from 'react-native-worklets';
-import { Canvas, Rect } from '@shopify/react-native-skia';
+import { Canvas, Circle, Rect } from '@shopify/react-native-skia';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { SkBar } from '@/components/Skeleton';
 import { color as C } from '@/lib/theme';
-import { HAND_FIRST, LABELS, coverMap, fromXyxy, resizeDims, squareCropToUpright, uprightBgr } from './bbqModel';
+import { HAND_FIRST, LABELS, fromXyxy, resizeDims, squareCropToUpright, toView, uprightInput, type Reorient } from './bbqModel';
 import { BBQ_MODELS, createBbqDetector } from './bbqDetector';
-import { runFrame, tryCreateHandPose, type BbqTick } from './useBbqDetection';
+import { nextReorient, runFrame, tryCreateHandPose, type BbqTick } from './useBbqDetection';
 import { HAND_TUNING, parseHands, pickHand, tipSpread, type Hand } from './handPose';
 import { createGrillGate, createTracker, type Shown } from './bbqTracker';
 
@@ -36,7 +36,7 @@ type VariantKey = keyof typeof VARIANTS;
 type Orientation = 'up' | 'right' | 'down' | 'left';
 /** executorch 내장 탐지기 출력 — box는 xyxy({ xmin, ymin, xmax, ymax }), SIZE 정사각형 입력 좌표 */
 type Det = { label: string; confidence: number; box: { xmin?: number; ymin?: number; xmax?: number; ymax?: number } };
-type Tick = { dets: Det[]; ms: number; w: number; h: number; o: Orientation; at: number };
+type Tick = { dets: Det[]; ms: number; w: number; h: number; o: Orientation; m: boolean; at: number };
 
 export function ProbeScreen() {
   const { t } = useTranslation();
@@ -60,7 +60,10 @@ export function ProbeScreen() {
   const [grillGate] = useState(createGrillGate);
   // P-643: 자체 모델일 때 손 인식도(HUD 한 줄). 네이티브 모듈 없는 빌드면 undefined
   const [pose] = useState(tryCreateHandPose);
-  const [hand, setHand] = useState<{ hands: Hand[]; ms: number; err: string | null } | null>(null);
+  // P-644 가로: 기기 방향 출력 → 세로 UI 좌표(가이드·쌈 코칭과 같은 nextReorient)
+  const deviceO = useOrientation('device');
+  const [xf, setXf] = useState<Reorient | null>(null);
+  const [hand, setHand] = useState<{ hands: Hand[]; ms: number; err: string | null; key: string; vn: number } | null>(null);
 
   const device = useCameraDevice(position);
   const detector = useObjectDetector(VARIANTS[variant]);
@@ -84,6 +87,7 @@ export function ProbeScreen() {
     s.push(now);
     stamps.current = s;
     setFps(s.length);
+    setXf((prev) => nextReorient(prev, next.o, next.m, deviceO));
     setTick(next);
   };
 
@@ -105,7 +109,8 @@ export function ProbeScreen() {
     setFps(s.length);
     if (next.uw !== upright.w || next.uh !== upright.h) setUpright({ w: next.uw, h: next.uh });
     setBbqTick(next);
-    if (next.hands || next.handErr) setHand({ hands: next.hands ? parseHands(next.hands, rd.w, rd.h) : [], ms: next.handMs ?? 0, err: next.handErr ?? null });
+    setXf((prev) => nextReorient(prev, next.o, next.m, deviceO));
+    if (next.hands || next.handErr) setHand({ hands: next.hands ? parseHands(next.hands, rd.w, rd.h, next.handKey) : [], ms: next.handMs ?? 0, err: next.handErr ?? null, key: next.handKey ?? '', vn: next.handVn ?? 0 });
     setShown(track(next.dets, now));
     setGrillOn(grillGate(next.dets, now));
   };
@@ -131,11 +136,12 @@ export function ProbeScreen() {
         const now = () => globalThis.performance?.now?.() ?? Date.now();
         const t0 = now();
         resized = resizer.resize(frame);
-        // P-639: 리사이저 출력 180° 뒤집힘 보정 — 자체 모델과 같은 uprightBgr(COCO도 같은 리사이저)
-        const input: ImageBuffer = { data: uprightBgr(resized.getPixelBuffer()), width: SIZE, height: SIZE, format: 'bgr', layout: 'hwc' };
+        // P-639: 리사이저 출력 180° 뒤집힘 보정 — 자체 모델과 같은 uprightInput(COCO도 같은 리사이저, P-644 up·down은 그대로)
+        const inp = uprightInput(resized.getPixelBuffer(), frame.orientation);
+        const input: ImageBuffer = { data: inp.data, width: SIZE, height: SIZE, format: inp.format, layout: 'hwc' };
         const dets = detectObjectsWorklet(input) as unknown as Det[];
         const at = now();
-        scheduleOnRN(onTick, { dets, ms: at - t0, w: frame.width, h: frame.height, o: frame.orientation, at });
+        scheduleOnRN(onTick, { dets, ms: at - t0, w: frame.width, h: frame.height, o: frame.orientation, m: frame.isMirrored, at });
       } catch {
         // 언마운트·프레임 닫힘 중 예외는 버린다(#4219 확인 대상)
       } finally {
@@ -167,7 +173,7 @@ export function ProbeScreen() {
       ? tick.dets.flatMap((d) => {
           const b = fromXyxy(d.box);
           if (!b) return [];
-          return [{ d, b, r: coverMap(squareCropToUpright(b, SIZE, uw, uh), uw, uh, view.w, view.h, mirrorFix) }];
+          return [{ d, b, r: toView(squareCropToUpright(b, SIZE, uw, uh), uw, uh, xf, view.w, view.h, mirrorFix) }];
         })
       : [];
   // P-636 진단 줄: 첫 박스의 원본(입력) 좌표 → 화면 좌표. 스크린샷 한 장으로 매핑 확인
@@ -187,12 +193,12 @@ export function ProbeScreen() {
             if (hand.err) return `hands err ${hand.err}`;
             const main = pickHand(hand.hands, shown.filter((s) => s.cls >= HAND_FIRST))?.hand ?? hand.hands[0];
             const w = main?.joints[0];
-            const sp = main ? tipSpread(main) : null;
-            return `hands ${hand.hands.length} ${f(hand.ms)}ms wrist ${w ? `${f(w.x)},${f(w.y)}` : '-'} spread ${sp == null ? '-' : sp.toFixed(2)}`;
+            const sp = main ? tipSpread(main, HAND_TUNING.minConf, HAND_TUNING.tipConf) : null;
+            return `hands ${hand.hands.length} ${f(hand.ms)}ms o ${hand.key} vn ${hand.vn} wrist ${w ? `${f(w.x)},${f(w.y)}` : '-'} spread ${sp == null ? '-' : sp.toFixed(2)}`;
           })(),
           firstBbq &&
             (() => {
-              const r = coverMap(firstBbq, rd.w, rd.h, view.w, view.h, mirrorFix);
+              const r = toView(firstBbq, rd.w, rd.h, xf, view.w, view.h, mirrorFix);
               return `box0 ${LABELS[firstBbq.cls]} in ${f(firstBbq.x1)},${f(firstBbq.y1)},${f(firstBbq.x2)},${f(firstBbq.y2)} /${rd.w}x${rd.h} -> view ${f(r.x)},${f(r.y)} ${f(r.w)}x${f(r.h)}`;
             })(),
         ]
@@ -206,7 +212,7 @@ export function ProbeScreen() {
           style={StyleSheet.absoluteFill}
           device={device}
           isActive
-          orientationSource="interface"
+          orientationSource="device"
           outputs={[frameOutput]}
           resizeMode="cover"
           onError={(e) => setCamError(e.message)}
@@ -216,11 +222,21 @@ export function ProbeScreen() {
         {model === 'coco' && rects.map(({ r }, i) => (
           <Rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} color={C.primary} style="stroke" strokeWidth={3} />
         ))}
+        {/* P-644: 손 관절점(후면 좌표 확인용) */}
+        {model === 'bbq' &&
+          view.w > 0 &&
+          hand?.hands.flatMap((h, hi) =>
+            h.joints.flatMap((j, ji) => {
+              if (j.c < HAND_TUNING.minConf) return [];
+              const p = toView({ x1: j.x, y1: j.y, x2: j.x, y2: j.y }, rd.w, rd.h, xf, view.w, view.h, mirrorFix);
+              return [<Circle key={`${hi}-${ji}`} cx={p.x} cy={p.y} r={4} color={C.accent} />];
+            }),
+          )}
       </Canvas>
       {model === 'bbq' &&
         view.w > 0 &&
         shown.map((s) => {
-          const r = coverMap(s, rd.w, rd.h, view.w, view.h, mirrorFix);
+          const r = toView(s, rd.w, rd.h, xf, view.w, view.h, mirrorFix);
           return (
             <View key={s.id} pointerEvents="none" style={[styles.bbqBox, { left: r.x, top: r.y, width: r.w, height: r.h, opacity: s.held ? 0.6 : 1 }]}>
               <Text style={styles.bbqTag}>{`${t(`bbqProbe.label.${LABELS[s.cls]}`)} ${Math.round(s.score * 100)}%`}</Text>

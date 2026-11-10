@@ -3,7 +3,7 @@
  */
 import { readFileSync } from 'fs';
 import type { Shown } from '../bbqTracker';
-import { HAND_TUNING, JOINT_COUNT, createHandSignals, palmBox, parseHands, pickHand, tipSpread, vnOrientation, type Hand, type Joint } from '../handPose';
+import { HAND_TUNING, JOINT_COUNT, createHandSignals, frameKey, palmBox, parseHands, pickHand, tipSpread, vnOrientation, type Hand, type Joint } from '../handPose';
 import { NO_SIGNALS, createCoach, currentStep, finishedByAuto, isDone, step, type Signals } from '../wrapCoach';
 
 type O = 'up' | 'right' | 'down' | 'left';
@@ -74,6 +74,15 @@ describe('좌표·손 모양', () => {
     expect(hs[0]!.joints[0]).toEqual({ x: 90, y: 160, c: 0.9 });
     expect(hs[1]!.joints[0]!.y).toBeCloseTo(576);
     expect(parseHands([], 360, 640)).toEqual([]);
+  });
+
+  it('P-644 회귀: 전면(right/m)은 Vision y 그대로 — 화면 아래 손(y 0.7)이 위(0.3)로 찍히던 것', () => {
+    expect(frameKey('right', true)).toBe('right/m');
+    const flat = new Array(JOINT_COUNT * 3).fill(0);
+    flat.splice(0, 3, 0.5, 0.7, 0.9); // 실기: 손바닥이 화면 y 0.7일 때 Vision이 준 y
+    expect(parseHands(flat, 360, 640, 'right/m')[0]!.joints[0]!.y).toBeCloseTo(0.7 * 640);
+    expect(parseHands(flat, 360, 640, 'left')[0]!.joints[0]!.y).toBeCloseTo(0.3 * 640); // 후면은 Vision 정의대로 뒤집음
+    expect(HAND_TUNING.yAsIs).toContain('right/m');
   });
 
   it('손바닥 상자 = 손목·엄지 CMC·MCP, 믿을 관절 3개 미만이면 없음', () => {
@@ -173,9 +182,94 @@ describe('쌈 코칭 신호(손)', () => {
 
 it('사용처 잠금: 쌈 코칭 = 손 신호, 장면 2 훅만 손 인식, runFrame이 방향 표로 네이티브 호출', () => {
   const wrap = readFileSync('src/features/bbq/WrapScreen.tsx', 'utf8');
-  expect(wrap).toContain('const sig = handSignals(shown, hands, frameH);');
   expect(wrap).not.toContain('signalsFromClasses');
   const hook = readFileSync('src/features/bbq/useBbqDetection.ts', 'utf8');
   expect(hook).toContain("useState(() => (scene === 'hand' ? tryCreateHandPose() : undefined))");
-  expect(hook).toContain('hand.pose.detect(frame, vnOrientation(frame.orientation, frame.isMirrored))');
+  expect(hook).toContain('out.handVn = vnOrientation(frame.orientation, frame.isMirrored);');
+  expect(hook).toContain('out.hands = hand.pose.detect(frame, out.handVn);');
+});
+
+describe('P-644 손 동작 경로(발표용 대체 — 7·8·9 없음)', () => {
+  const W = 360;
+  const H = 640;
+  /** 손을 중심 기준으로 k배(작은 손 = 먼 손) */
+  const scaled = (h: Hand, k: number): Hand => {
+    const c = h.joints[9]!;
+    return { joints: h.joints.map((j) => ({ ...j, x: c.x + (j.x - c.x) * k, y: c.y + (j.y - c.y) * k })) };
+  };
+
+  it('켜짐이 기본, 끄면 손만으로는 신호 없음', () => {
+    expect(HAND_TUNING.handOnly).toBe(true);
+    const off = createHandSignals({ ...HAND_TUNING, handOnly: false });
+    expect(off([], [hand(180, 300)], H, W, 0)).toEqual({ ...NO_SIGNALS });
+  });
+
+  it('S1: 편 손바닥이 가운데에서 0.5초 유지 뒤 leafOnHand, 가장자리면 아님', () => {
+    const s = createHandSignals();
+    expect(s([], [hand(180, 300)], H, W, 0).leafOnHand).toBe(false);
+    expect(s([], [hand(180, 300)], H, W, 400).leafOnHand).toBe(false);
+    expect(s([], [hand(180, 300)], H, W, 500).leafOnHand).toBe(true);
+    const edge = createHandSignals();
+    edge([], [hand(40, 300)], H, W, 0);
+    expect(edge([], [hand(40, 300)], H, W, 900).leafOnHand).toBe(false);
+  });
+
+  it('S2 단순형: 편 손바닥을 S1 신호 뒤 1.5초 더 → toppedLeaf', () => {
+    const s = createHandSignals();
+    s([], [hand(180, 300)], H, W, 0);
+    expect(s([], [hand(180, 300)], H, W, 1900).toppedLeaf).toBe(false);
+    expect(s([], [hand(180, 300)], H, W, 2000).toppedLeaf).toBe(true);
+  });
+
+  it('S2 두 손: 작은(다른) 손이 손바닥에 들어왔다 나가면 toppedLeaf(편 손 유지 중)', () => {
+    const s = createHandSignals();
+    const main = hand(180, 300);
+    s([], [main], H, W, 0);
+    s([], [main, scaled(hand(180, 300), 0.5)], H, W, 100); // 겹침
+    expect(s([], [main, scaled(hand(180, 300), 0.5)], H, W, 200).toppedLeaf).toBe(false);
+    expect(s([], [main], H, W, 300).toppedLeaf).toBe(true); // 나감
+  });
+
+  it('S4: 손끝이 편 손 최대의 0.6배 이하로 모이면 wrapped, S5: 오므린 손이 위쪽 25%면 gone', () => {
+    const s = createHandSignals();
+    s([], [hand(180, 300, 40)], H, W, 0);
+    expect(s([], [hand(180, 300, 30)], H, W, 100).wrapped).toBe(false);
+    const closed = s([], [hand(180, 300, 10)], H, W, 200);
+    expect(closed.wrapped).toBe(true);
+    expect(closed.gone).toBe(false);
+    expect(s([], [hand(180, 60, 10)], H, W, 300).gone).toBe(true); // 손바닥 중심 y 90 < 160
+    expect(s([], [hand(180, 60, 40)], H, W, 400).gone).toBe(false); // 편 손은 아님
+  });
+
+  it('7·8·9가 잡히면 모델 신호 우선(손 동작 경로 안 씀)', () => {
+    const s = createHandSignals();
+    s([], [hand(180, 300)], H, W, 0);
+    // 잎 박스가 손과 안 겹침 = 모델 경로에서 leafOnHand 꺼짐(손 동작으로 켜지지 않음)
+    expect(s([box(7, 40, 80)], [hand(180, 300)], H, W, 900).leafOnHand).toBe(false);
+  });
+
+  it('손 동작만으로 끝까지 → Nice wrap (S1 1초 · S2 +1.5초 · S4 · S5)', () => {
+    const s = createHandSignals();
+    let c = createCoach({ sawSsamjang: false, avoidSsamjang: false }, 0);
+    let t = 0;
+    const feed = (hands: Hand[], ms: number) => {
+      for (const end = t + ms; t < end; t += 100) c = step(c, s([], hands, H, W, t), t);
+    };
+    feed([hand(180, 300)], 1100);
+    expect(currentStep(c)).not.toBe('leaf');
+    feed([hand(180, 300)], 1500);
+    expect(currentStep(c)).toBe('wrap'); // S3 쌈장 못 봄 = 건너뜀
+    feed([hand(180, 300, 10)], 600);
+    expect(currentStep(c)).toBe('eat');
+    feed([hand(180, 60, 10)], 600);
+    expect(isDone(c)).toBe(true);
+    expect(finishedByAuto(c)).toBe(true);
+  });
+});
+
+it('P-644 쌈 코칭 화면은 7·8·9만(오탐 가위·날고기 버림), 쌈 코칭 신호는 시각·폭을 받음', () => {
+  const hook = readFileSync('src/features/bbq/useBbqDetection.ts', 'utf8');
+  expect(hook).toContain("next.dets.filter((d) => d.cls >= HAND_FIRST)");
+  const wrap = readFileSync('src/features/bbq/WrapScreen.tsx', 'utf8');
+  expect(wrap).toContain('const sig = handSignals(shown, hands, frame.h, frame.w, at);');
 });
