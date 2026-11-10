@@ -17,8 +17,19 @@ export const HAND_TUNING = {
   minConf: 0.3,
   /** 손끝 모임 계산용 손끝 신뢰도 하한(주먹이면 손끝 신뢰도가 떨어진다) */
   tipConf: 0.1,
-  /** "입 쪽" 근사 = 화면 위쪽 비율(거치대 상반신 구도 전제) */
+  /** 모델 경로 gone: 손 위 박스를 마지막으로 본 손이 화면 위쪽 이 비율 안(거치대 상반신 구도 전제) */
   topFrac: 0.25,
+  /**
+   * P-647 손 동작 경로 먹기(S5): 셀카 화면에서 입은 높이 약 40%, 먹는 주먹 손바닥 중심은 55~65%(예진 실측)라 25%는 닿지 않았다.
+   * 오므린 손이 가장 낮았던 위치보다 화면 높이의 eatRiseFrac 이상 올라가거나, 위쪽 eatTopFrac 안에 들어오면 먹기.
+   * 좌표 = 프레임(기기 방향) 기준 — 가로로 든 폰도 기기 위쪽(실제 입 쪽)이 위.
+   */
+  eatTopFrac: 0.45,
+  eatRiseFrac: 0.12,
+  /** 오므린 손이 올라가던 중 이 시간 안에 손이 사라지면(입에 가져가며 가려짐) 먹기로 인정 */
+  eatLostMs: 500,
+  /** "올라가는 중" = 직전 오므린 손보다 화면 높이의 이 비율 이상 위 */
+  eatStepFrac: 0.01,
   /** 손끝 모임: 편 손(또는 올린 잎 8을 든 동안)의 최대 벌어짐 대비 이 비율 이하면 오므린 것 */
   gatherRatio: 0.6,
   /** 편 손바닥 기준(P-644 예진 실측 편 손 0.42~0.52) */
@@ -151,7 +162,7 @@ export function pickHand(hands: Hand[], handBoxes: Shown[]): HandPick | null {
  * - S1 leafOnHand = 편 손바닥(spread ≥ openSpread)이 가운데 영역에서 openHoldMs 유지
  * - S2 toppedLeaf = 다른 손이 주 손 손바닥에 들어왔다 나감, 또는 편 손바닥을 openHoldMs + palmExtraMs 유지(단순형)
  * - S4 wrapped = 손끝 모임이 편 손 최대값의 gatherRatio 이하(유지 0.5초는 상태 머신이)
- * - S5 gone = 오므린 손이 위쪽 영역(topFrac)
+ * - S5 gone = 오므린 손이 가장 낮던 위치보다 eatRiseFrac 이상 올라감, 또는 위쪽 eatTopFrac 안, 또는 올라가던 중 사라짐(P-647)
  */
 export function createHandSignals(t = HAND_TUNING) {
   let lastBoxTop = false;
@@ -161,6 +172,11 @@ export function createHandSignals(t = HAND_TUNING) {
   let openMax: number | null = null;
   let visited = false;
   let passedAt: number | null = null;
+  // 먹기(P-647): 오므린 손바닥 중심의 가장 낮은 y · 직전 y · 마지막으로 올라가던 시각 · 손이 사라진 뒤 인정 상태
+  let fistLowY: number | null = null;
+  let fistPrevY: number | null = null;
+  let risingAt: number | null = null;
+  let goneLatched = false;
 
   function handOnly(hands: Hand[], frameW: number, frameH: number, now: number): Partial<Signals> {
     const withPalm = hands.flatMap((hand) => {
@@ -170,8 +186,14 @@ export function createHandSignals(t = HAND_TUNING) {
     if (withPalm.length === 0) {
       openSince = null;
       visited = false;
-      return {};
+      // 오므린 손이 올라가던 중 사라짐 = 입에 가져감(다시 손이 보일 때까지 유지 — 0.5초 유지는 상태 머신)
+      if (risingAt != null && now - risingAt <= t.eatLostMs) goneLatched = true;
+      fistLowY = null;
+      fistPrevY = null;
+      risingAt = null;
+      return goneLatched ? { gone: true } : {};
     }
+    goneLatched = false;
     // 주 손 = 손바닥이 가장 큰(가까운) 손
     withPalm.sort((a, b) => area(b.palm) - area(a.palm));
     const main = withPalm[0]!;
@@ -196,11 +218,23 @@ export function createHandSignals(t = HAND_TUNING) {
     const openHeld = openSince != null && now - openSince >= t.openHoldMs;
     const extraHeld = openSince != null && now - openSince >= t.openHoldMs + t.palmExtraMs;
     const closed = spread != null && spread <= (openMax ?? t.openSpread) * t.gatherRatio;
+    let eat = false;
+    if (closed) {
+      fistLowY = Math.max(fistLowY ?? cy, cy); // y가 클수록 아래
+      if (fistPrevY != null && fistPrevY - cy >= frameH * t.eatStepFrac) risingAt = now;
+      fistPrevY = cy;
+      eat = fistLowY - cy >= frameH * t.eatRiseFrac || cy < frameH * t.eatTopFrac;
+    } else {
+      // 손이 펴지면 기준 초기화
+      fistLowY = null;
+      fistPrevY = null;
+      risingAt = null;
+    }
     return {
       leafOnHand: openHeld,
       toppedLeaf: extraHeld || (passedAt != null && open),
       wrapped: closed,
-      gone: closed && cy < frameH * t.topFrac,
+      gone: eat,
     };
   }
 

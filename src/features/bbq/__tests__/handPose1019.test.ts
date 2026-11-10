@@ -230,15 +230,79 @@ describe('P-644 손 동작 경로(발표용 대체 — 7·8·9 없음)', () => {
     expect(s([], [main], H, W, 300).toppedLeaf).toBe(true); // 나감
   });
 
-  it('S4: 손끝이 편 손 최대의 0.6배 이하로 모이면 wrapped, S5: 오므린 손이 위쪽 25%면 gone', () => {
+  it('S4: 손끝이 편 손 최대의 0.6배 이하로 모이면 wrapped, S5: 오므린 손이 위쪽 45% 안이면 gone', () => {
     const s = createHandSignals();
     s([], [hand(180, 300, 40)], H, W, 0);
     expect(s([], [hand(180, 300, 30)], H, W, 100).wrapped).toBe(false);
     const closed = s([], [hand(180, 300, 10)], H, W, 200);
     expect(closed.wrapped).toBe(true);
     expect(closed.gone).toBe(false);
-    expect(s([], [hand(180, 60, 10)], H, W, 300).gone).toBe(true); // 손바닥 중심 y 90 < 160
+    expect(s([], [hand(180, 60, 10)], H, W, 300).gone).toBe(true); // 손바닥 중심 y 90 < 288
     expect(s([], [hand(180, 60, 40)], H, W, 400).gone).toBe(false); // 편 손은 아님
+  });
+
+  describe('P-647 먹기 = 오므린 손이 올라감(손바닥 중심 비율, 화면 높이 640)', () => {
+    /** 손바닥 중심 y 비율 → hand() 인자(손바닥 중심 = cy + 30) */
+    const at = (frac: number, spread = 10) => hand(180, frac * H - 30, spread);
+    const opened = () => {
+      const s = createHandSignals();
+      s([], [hand(180, 300, 40)], H, W, 0); // 편 손 최대값 기억
+      return s;
+    };
+    it('주먹이 0.62 → 0.48로 올라가면 gone(위쪽 45% 밖이어도 12% 상승)', () => {
+      const s = opened();
+      expect(s([], [at(0.62)], H, W, 100).gone).toBe(false);
+      expect(s([], [at(0.55)], H, W, 200).gone).toBe(false); // 7%
+      expect(s([], [at(0.48)], H, W, 300).gone).toBe(true); // 14%
+    });
+    it('주먹이 0.62에 머물면 아님', () => {
+      const s = opened();
+      for (let t = 100; t <= 1500; t += 100) expect(s([], [at(0.62)], H, W, t).gone).toBe(false);
+    });
+    it('편 손으로 올라가면 아님, 펴면 기준 초기화', () => {
+      const s = opened();
+      expect(s([], [at(0.62, 40)], H, W, 100).gone).toBe(false);
+      expect(s([], [at(0.48, 40)], H, W, 200).gone).toBe(false);
+      s([], [at(0.62)], H, W, 300); // 주먹(낮은 곳)
+      s([], [at(0.62, 40)], H, W, 400); // 폈다가
+      expect(s([], [at(0.52)], H, W, 500).gone).toBe(false); // 다시 주먹 — 기준은 0.52부터
+    });
+    it('위쪽 45% 안의 주먹은 바로 gone', () => {
+      expect(opened()([], [at(0.4)], H, W, 100).gone).toBe(true);
+    });
+    it('올라가던 주먹이 0.5초 안에 사라지면 gone(손이 다시 보일 때까지), 멈춰 있다 사라지면 아님', () => {
+      const s = opened();
+      s([], [at(0.62)], H, W, 100);
+      s([], [at(0.58)], H, W, 200); // 올라가는 중
+      expect(s([], [], H, W, 600).gone).toBe(true);
+      expect(s([], [], H, W, 900).gone).toBe(true);
+      expect(s([], [at(0.62, 40)], H, W, 1000).gone).toBe(false);
+      const still = opened();
+      still([], [at(0.62)], H, W, 100);
+      still([], [at(0.62)], H, W, 200);
+      expect(still([], [], H, W, 800).gone).toBe(false); // 마지막 상승 없음
+    });
+    it('먹기 상수는 모델 경로 topFrac(0.25)과 따로', () => {
+      expect(HAND_TUNING.topFrac).toBe(0.25);
+      expect([HAND_TUNING.eatTopFrac, HAND_TUNING.eatRiseFrac]).toEqual([0.45, 0.12]);
+    });
+    it('실기 순서: 싸기(주먹 0.6) → 먹기 단계에서 턱 높이(0.47)로 올림 → Nice wrap', () => {
+      const s = createHandSignals();
+      let c = createCoach({ sawSsamjang: false, avoidSsamjang: false }, 0);
+      let t = 0;
+      const feed = (hands: Hand[], ms: number) => {
+        for (const end = t + ms; t < end; t += 100) c = step(c, s([], hands, H, W, t), t);
+      };
+      feed([at(0.5, 40)], 2600);
+      expect(currentStep(c)).toBe('wrap');
+      feed([at(0.6)], 700);
+      expect(currentStep(c)).toBe('eat');
+      feed([at(0.6)], 1000);
+      expect(isDone(c)).toBe(false); // 제자리 주먹은 안 끝남
+      feed([at(0.47)], 700);
+      expect(isDone(c)).toBe(true);
+      expect(finishedByAuto(c)).toBe(true);
+    });
   });
 
   it('7·8·9가 잡히면 모델 신호 우선(손 동작 경로 안 씀)', () => {
