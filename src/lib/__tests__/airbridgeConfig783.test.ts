@@ -30,7 +30,8 @@ it('래퍼 평가 = config에 토큰 없음(환경변수가 있어도) · 토큰
 
 it('딥링크 도메인 — iOS applinks 2 · Android https/http × 2호스트 autoVerify · 스킴 kbap 유지', () => {
   expect(app.scheme).toBe('kbap');
-  expect(app.ios.associatedDomains).toEqual(expect.arrayContaining(['applinks:kbap.airbridge.io', 'applinks:kbap.abr.ge']));
+  // KB-1019 시연 브랜치 전용(머지 금지): AdHoc 프로파일에 Associated Domains가 없어 서명 실패(빌드 8cf6290b) → 예진 결정으로 iOS applinks 제거.
+  expect(app.ios.associatedDomains).toBeUndefined();
   const filters = app.android.intentFilters as { action: string; autoVerify: boolean; data: { scheme: string; host: string }[]; category: string[] }[];
   const pairs = filters.flatMap((f) => f.data.map((d) => `${d.scheme}://${d.host}`)).sort();
   expect(pairs).toEqual(['http://kbap.abr.ge', 'http://kbap.airbridge.io', 'https://kbap.abr.ge', 'https://kbap.airbridge.io']);

@@ -1452,5 +1452,91 @@
     "photoInvalid": "One of the photos couldn't be sent. Please choose another photo.",
     "invalid": "Couldn't send this message. Please check it and try again.",
     "fabCoach": "Get Free Unlimited Scans✨"
+  },
+  "bbqProbe": {
+    "needCamera": "Camera access is needed to try the table guide.",
+    "allowCamera": "Allow camera",
+    "loadingModel": "Loading the model {{pct}}%",
+    "flip": "Flip camera",
+    "backend": "Switch backend",
+    "mirror": "Mirror boxes",
+    "model": "Switch model",
+    "loadingBbq": "Loading the table model",
+    "label": {
+      "grill": "Grill",
+      "raw_meat": "Raw meat",
+      "cooked_meat": "Cooked meat",
+      "leaf": "Leafy wrap",
+      "ssamjang": "Ssamjang",
+      "tongs": "Tongs",
+      "scissors": "Scissors",
+      "leaf_on_hand": "Leaf in hand",
+      "topped_leaf": "Topped leaf",
+      "wrapped_ssam": "Wrapped ssam"
+    }
+  },
+  "bbqGuide": {
+    "entryTitle": "Having Korean BBQ?",
+    "entrySub": "Follow along with the guide.",
+    "close": "Close",
+    "needCamera": "Allow camera access to see labels on your table.",
+    "allowCamera": "Allow camera",
+    "openSettings": "Open Settings",
+    "loading": "Loading the table guide",
+    "loadFail": "Couldn't load the table guide.",
+    "camFail": "Couldn't start the camera.",
+    "retry": "Try again",
+    "pointHint": "Point the camera at your table.",
+    "desc": {
+      "grill": "Grill: the tabletop grill where the meat is cooked.",
+      "raw_meat": "Raw meat: meat that hasn't been grilled yet.",
+      "cooked_meat": "Cooked meat: meat that has been on the grill.",
+      "leaf": "Leafy wrap: lettuce or perilla leaves for wrapping the meat.",
+      "ssamjang": "Ssamjang: a savory dip. Contains soy and wheat.",
+      "tongs": "Tongs: for turning the meat on the grill.",
+      "scissors": "Scissors: for cutting the meat into bite-size pieces."
+    },
+    "risk": {
+      "ssamjang": "You avoid soy or wheat. Ssamjang has both.",
+      "meat": "Can't tell the meat type. Ask staff.",
+      "unknown": "Couldn't load your avoid list. Ask staff."
+    },
+    "grillBand": "Grill spotted. Not sure who cooks?",
+    "result": {
+      "self": "You grill it yourself. Lay the meat on the grill with the tongs, then cut it with the scissors.",
+      "staff": "The staff will grill it for you. Wait until they tell you it's ready."
+    },
+    "resultDone": "Got it",
+    "wrapEntry": "Learn to wrap",
+    "measure": "Measure",
+    "stuck": "The table guide stopped responding."
+  },
+  "bbqWrap": {
+    "prop": "Prop your phone and face the camera",
+    "propSub": "Hold the leaf where the camera can see your hand.",
+    "start": "Start",
+    "step": {
+      "leaf": "Lay a leaf on your palm",
+      "meat": "Add a piece of meat",
+      "ssamjang": "Add a little ssamjang",
+      "wrap": "Fold it into a bundle you can eat in one bite",
+      "eat": "Eat it in one bite. Do not bite it in half."
+    },
+    "short": {
+      "leaf": "Leaf",
+      "meat": "Meat",
+      "ssamjang": "Ssamjang",
+      "wrap": "Wrap",
+      "eat": "Eat"
+    },
+    "tip": {
+      "noMeat": "Add meat before you wrap",
+      "noSsamjang": "Try a little ssamjang next time"
+    },
+    "niceWrap": "Nice wrap",
+    "allDone": "All steps done.",
+    "again": "Start over",
+    "next": "Next",
+    "boxes": "Show boxes"
   }
 }

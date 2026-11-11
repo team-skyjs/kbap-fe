@@ -1,0 +1,20 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": ["kbap", "hands"],
+  "ios": {
+    "iosModuleName": "VisionCameraHands"
+  },
+  "android": {
+    "androidNamespace": ["kbap", "hands"],
+    "androidCxxLibName": "VisionCameraHands"
+  },
+  "autolinking": {
+    "HandPose": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridHandPose"
+      }
+    }
+  },
+  "ignorePaths": ["**/node_modules"]
+}

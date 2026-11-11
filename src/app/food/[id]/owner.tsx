@@ -103,3 +103,6 @@ const styles = StyleSheet.create({
   done: { backgroundColor: C.ink, borderRadius: radius.lg, paddingVertical: 18, alignItems: 'center' },
   doneText: { fontFamily: font.display, fontSize: 17, color: '#fff' },
 });
+
+/** KB-1019 시연(장면 3 굽는 방식 카드)이 같은 레이아웃을 재사용 — 문구·렌더 무변 */
+export { styles as ownerCardStyles };
