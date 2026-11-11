@@ -11,9 +11,9 @@ import { OUTPUT_SHAPE, TUNING, decode, fileUriToPath, postprocess, topScore, typ
 
 // 자산 모듈 id는 require로만 얻는다(Metro 자산)
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const COREML = require('../../../assets/models/bbq_v2_coreml_o2o.pte') as number;
+const COREML = require('../../../assets/models/bbq_v3_coreml_o2o.pte') as number;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const XNNPACK = require('../../../assets/models/bbq_v2_xnnpack_e2e.pte') as number;
+const XNNPACK = require('../../../assets/models/bbq_v3_xnnpack_e2e.pte') as number;
 export type BbqBackend = 'coreml' | 'xnnpack';
 export const BBQ_MODELS: Record<BbqBackend, { module: number; kind: ModelKind }> = {
   coreml: { module: COREML, kind: 'o2o' },

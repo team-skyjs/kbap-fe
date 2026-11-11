@@ -13,8 +13,8 @@ jest.mock('react-native-executorch', () => ({}));
 jest.mock('react-native-executorch/cv', () => ({}));
 jest.mock('react-native-worklets', () => ({}));
 jest.mock('expo-asset', () => ({}));
-jest.mock('../../../../assets/models/bbq_v2_coreml_o2o.pte', () => 1, { virtual: true });
-jest.mock('../../../../assets/models/bbq_v2_xnnpack_e2e.pte', () => 2, { virtual: true });
+jest.mock('../../../../assets/models/bbq_v3_coreml_o2o.pte', () => 1, { virtual: true });
+jest.mock('../../../../assets/models/bbq_v3_xnnpack_e2e.pte', () => 2, { virtual: true });
 
 const known = (...codes: string[]): AvoidState => ({ kind: 'known', codes: new Set(codes) });
 const me = (...codes: string[]) => ({ restrictions: codes.map((code) => ({ code })) });

@@ -1,6 +1,6 @@
 /**
- * KB-1019 장면 1: 자체 탐지 모델(KB-1020, et_coreml_o2o.pte) 후처리. P-642부터 2차(nano).
- * 정본 = kbap-bbq-vision-lab/docs/handoff-to-app.md 2~5절 + handoff-to-app-v2.md(달라진 것만). 워크릿·jest 양쪽에서 도는 순수 함수.
+ * KB-1019 장면 1: 자체 탐지 모델(KB-1020, et_coreml_o2o.pte) 후처리. P-642 2차(nano) → P-648 3차(nano).
+ * 정본 = kbap-bbq-vision-lab/docs/handoff-to-app.md 2~5절 + handoff-to-app-v2.md·v3.md(달라진 것만). 워크릿·jest 양쪽에서 도는 순수 함수.
  * 실기에서 다시 맞출 수치는 전부 TUNING 한곳에 둔다.
  */
 
@@ -35,7 +35,9 @@ export const TUNING = {
   // P-639: leaf·cooked_meat 0.15 → 0.30(접시·그릇 오탐, 전달 문서 2절 권고). 2차 모델에서 다시 맞춘다
   // P-640: 손 위 3종(7·8·9) 0.35·0.65·0.50 → 공통 0.20(손 위 쌈 재현 39% → 64%, 단계 구분은 47%라 신호에서 묶어 씀)
   // P-642(2차 모델): grill 0.25 · raw 0.15 · scissors 0.40. cooked·leaf 0.30과 tongs 0.25(2차 권장 0.15는 오탐 많음)는 앱 값 유지
-  thresholds: [0.25, 0.15, 0.3, 0.3, 0.3, 0.25, 0.4, 0.2, 0.2, 0.2] as readonly number[],
+  // P-648(3차 nano, v3n_thresholds_app.json): grill 0.20 · ssamjang 0.25 · tongs 0.30 · scissors 0.35 · 손 위 3종 0.35.
+  //   cooked·leaf 0.30은 앱 값 유지(접시 오탐). 7·8·9 0.35 = 3차에서 손 위 박스 수가 2차 0.20과 비슷(128 vs 127) — 손 동작 대체 경로(7·8·9 없을 때) 진입이 P-647 실기 통과 때와 같은 수준
+  thresholds: [0.2, 0.15, 0.3, 0.3, 0.25, 0.3, 0.35, 0.35, 0.35, 0.35] as readonly number[],
   /** 같은 묶음 중복 박스 제거 겹침(클래스별, 손 위 3종은 셋을 한 묶음으로) */
   nmsIou: 0.6,
   /** 이름표 유지(0.3~0.5초) */
