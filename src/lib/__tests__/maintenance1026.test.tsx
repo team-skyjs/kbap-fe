@@ -1,19 +1,22 @@
 /**
  * KB-1026 점검 화면 잠금 — 원격 스위치(절대 URL·캐시 금지·5초 타임아웃) · **페일 오픈**(실패·타임아웃·404·깨진 JSON·
- * 필드 누락 = 통과) · 점검 중 30초 재조회와 자동 해제 · 버전 게이트 blocked 우선 · 10개 로케일 문구.
+ * 필드 누락 = 통과) · 재조회(점검 중 30초·아닐 때 60초·시작 재시도 5초·백그라운드 0)와 자동 해제 · 버전 게이트 blocked 우선 · 10개 로케일 문구.
  */
 import * as React from 'react';
 import { readFileSync } from 'fs';
-import { StyleSheet } from 'react-native';
+import { AppState, StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import {
+  MAINTENANCE_IDLE_POLL_MS,
   MAINTENANCE_POLL_MS,
+  MAINTENANCE_START_RETRY_MS,
   MAINTENANCE_TIMEOUT_MS,
   MAINTENANCE_URL,
   __isPolling,
   __resetMaintenance,
   isMaintenanceOn,
   refreshMaintenance,
+  startMaintenance,
   getMaintenanceState,
 } from '../maintenance';
 import { __resetVersionGate, refreshVersionGate } from '../versionGate';
@@ -98,7 +101,7 @@ describe('페일 오픈 — 오프라인 사용자를 잠그지 않는다', () =
     expect(getMaintenanceState()).toBe(false);
   });
 
-  it('이미 점검 중이면 조회 실패·404·깨진 JSON에도 유지, 재조회는 계속 돌고 false로 읽히면 해제', async () => {
+  it('이미 점검 중이면 조회 실패·404·깨진 JSON에도 유지, false로 읽히면 해제', async () => {
     fetchMock.mockResolvedValueOnce(okJson({ maintenance: true }));
     await act(() => refreshMaintenance());
     expect(getMaintenanceState()).toBe(true);
@@ -111,42 +114,146 @@ describe('페일 오픈 — 오프라인 사용자를 잠그지 않는다', () =
       fetchMock.mockImplementationOnce(f);
       await act(() => refreshMaintenance());
       expect(getMaintenanceState()).toBe(true);
-      expect(__isPolling()).toBe(true);
     }
     fetchMock.mockResolvedValueOnce(okJson({})); // 읽었고 true가 아님 = 해제
     await act(() => refreshMaintenance());
     expect(getMaintenanceState()).toBe(false);
-    expect(__isPolling()).toBe(false);
   });
 });
 
-describe('점검 중 30초마다 재조회 → false면 자동 해제', () => {
-  it('켜지면 폴링 시작, false 응답에 해제·폴링 멈춤', async () => {
-    jest.useFakeTimers();
+describe('재조회 — active인 동안 항상(점검 중 30초 · 아닐 때 60초), 타이머 하나, 백그라운드 0', () => {
+  let appState: (s: string) => void = () => {};
+  let stop: () => void = () => {};
+  const fail = () => Promise.reject(new TypeError('offline'));
+  /** 타이머를 ms만큼 돌리고 조회 프라미스 사슬을 비운다 */
+  const tick = (ms: number) =>
+    act(async () => {
+      jest.advanceTimersByTime(ms);
+      for (let i = 0; i < 8; i++) await Promise.resolve();
+    });
+  const start = async () => {
+    jest.spyOn(AppState, 'addEventListener').mockImplementation(((_e: string, cb: (s: string) => void) => {
+      appState = cb;
+      return { remove: jest.fn() };
+    }) as never);
+    stop = startMaintenance();
+    await tick(0);
+  };
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => {
+    stop();
+    jest.restoreAllMocks();
+  });
+
+  it('주기 상수: 점검 중 30초 · 아닐 때 60초 · 시작 재시도 5초', () => {
+    expect([MAINTENANCE_POLL_MS, MAINTENANCE_IDLE_POLL_MS, MAINTENANCE_START_RETRY_MS]).toEqual([30_000, 60_000, 5_000]);
+  });
+
+  it('점검 아닐 때도 60초마다 조회 → 스위치를 켜면 쓰던 사용자도 1분 안에 점검 화면', async () => {
+    fetchMock.mockResolvedValue(okJson({ maintenance: false }));
+    await start();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(__isPolling()).toBe(true);
+    await tick(MAINTENANCE_IDLE_POLL_MS - 1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    fetchMock.mockResolvedValue(okJson({ maintenance: true })); // 스위치 켬
+    await tick(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(getMaintenanceState()).toBe(true);
+  });
+
+  it('점검 중에는 30초 주기, false로 읽히면 해제되고 60초 주기로', async () => {
     fetchMock.mockResolvedValue(okJson({ maintenance: true }));
-    await act(() => refreshMaintenance());
+    await start();
+    expect(getMaintenanceState()).toBe(true);
+    await tick(MAINTENANCE_POLL_MS - 1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    fetchMock.mockResolvedValue(okJson({ maintenance: false }));
+    await tick(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(getMaintenanceState()).toBe(false);
+    await tick(MAINTENANCE_POLL_MS); // 30초로는 안 돎
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await tick(MAINTENANCE_IDLE_POLL_MS - MAINTENANCE_POLL_MS);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('점검 중 못 읽어도 유지하고 30초 재조회는 계속', async () => {
+    fetchMock.mockResolvedValue(okJson({ maintenance: true }));
+    await start();
+    fetchMock.mockImplementation(fail);
+    await tick(MAINTENANCE_POLL_MS);
+    await tick(MAINTENANCE_POLL_MS);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(getMaintenanceState()).toBe(true);
     expect(__isPolling()).toBe(true);
-    expect(MAINTENANCE_POLL_MS).toBe(30_000);
+  });
 
-    fetchMock.mockClear();
-    await act(async () => {
-      jest.advanceTimersByTime(MAINTENANCE_POLL_MS - 1);
-    });
-    expect(fetchMock).not.toHaveBeenCalled();
-    fetchMock.mockResolvedValue(okJson({ maintenance: false }));
-    await act(async () => {
-      jest.advanceTimersByTime(1);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+  it('Q-431: 시작 조회를 못 읽으면 5초 뒤 1회 재시도, 그 뒤는 60초 주기', async () => {
+    fetchMock.mockImplementation(fail);
+    await start();
+    expect(getMaintenanceState()).toBe(false); // 페일 오픈
+    await tick(MAINTENANCE_START_RETRY_MS - 1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(getMaintenanceState()).toBe(false);
+    await tick(1); // 재시도도 실패
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await tick(MAINTENANCE_START_RETRY_MS); // 두 번째 5초 재시도는 없음
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    fetchMock.mockResolvedValue(okJson({ maintenance: true }));
+    await tick(MAINTENANCE_IDLE_POLL_MS - MAINTENANCE_START_RETRY_MS);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(getMaintenanceState()).toBe(true);
+  });
+
+  it('시작 재시도가 읽히면 바로 점검 화면(5초 안)', async () => {
+    fetchMock.mockImplementationOnce(fail);
+    await start();
+    fetchMock.mockResolvedValue(okJson({ maintenance: true }));
+    await tick(MAINTENANCE_START_RETRY_MS);
+    expect(getMaintenanceState()).toBe(true);
+  });
+
+  it('백그라운드에서는 타이머 0, 복귀하면 바로 조회하고 주기 재개', async () => {
+    fetchMock.mockResolvedValue(okJson({ maintenance: false }));
+    await start();
+    act(() => appState('background'));
+    expect(__isPolling()).toBe(false);
+    await tick(MAINTENANCE_IDLE_POLL_MS * 5);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    act(() => appState('active'));
+    await tick(0);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(__isPolling()).toBe(true);
+    await tick(MAINTENANCE_IDLE_POLL_MS);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('백그라운드로 간 뒤 도착한 응답은 다음 조회를 예약하지 않음', async () => {
+    let done: (v: unknown) => void = () => {};
+    fetchMock.mockImplementationOnce(() => new Promise((r) => (done = r)));
+    await start();
+    act(() => appState('background'));
+    done(okJson({ maintenance: false }));
+    await tick(0);
     expect(__isPolling()).toBe(false);
   });
 
-  it('꺼져 있을 땐 폴링 없음', async () => {
+  it('타이머는 하나 — 복귀 조회와 주기 조회가 겹쳐 쌓이지 않음', async () => {
     fetchMock.mockResolvedValue(okJson({ maintenance: false }));
+    await start();
+    for (let i = 0; i < 3; i++) {
+      act(() => appState('active'));
+      await tick(0);
+    }
+    const before = fetchMock.mock.calls.length; // 시작 1 + 복귀 3
+    expect(before).toBe(4);
+    await tick(MAINTENANCE_IDLE_POLL_MS);
+    expect(fetchMock.mock.calls.length).toBe(before + 1);
+  });
+
+  it('startMaintenance 전(직접 조회)에는 예약 없음', async () => {
+    jest.useRealTimers();
+    fetchMock.mockResolvedValue(okJson({ maintenance: true }));
     await act(() => refreshMaintenance());
     expect(__isPolling()).toBe(false);
   });
@@ -188,6 +295,9 @@ describe('화면', () => {
     const title = t.root.findAll((n) => n.props?.accessibilityRole === 'header' && typeof n.type === 'string')[0]!;
     expect(StyleSheet.flatten(title.props.style).color).toBe('#FFFFFF');
     expect(title.props.numberOfLines).toBeUndefined();
+    // Q-431: 한국어 어절 단위 줄바꿈("자동 / 으로" 방지) — 제목·본문 둘 다
+    const strategies = t.root.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string').map((n) => n.props.lineBreakStrategyIOS);
+    expect(strategies).toEqual(['hangul-word', 'hangul-word']);
     expect(t.root.findAll((n) => n.props?.accessibilityRole === 'button' || n.props?.onPress != null)).toHaveLength(0);
     fetchMock.mockResolvedValue(okJson({ maintenance: false }));
     await act(() => refreshMaintenance());

@@ -6,6 +6,7 @@
  * 디자인(예진 11/22 참고 화면 방향): 항상 어두운 단색 배경(라이트·다크 무관) · 세로 중앙보다 약간 위에 원형 그래픽 하나 =
  * K-Bap 앱 아이콘(브랜드 정본 kbap-design/brand/icon-1024.png와 바이트 동일한 assets/images/icon.png) ·
  * 그 아래 굵은 흰 제목 · 흐린 회색 본문, 가운데 정렬. 색은 전부 theme 토큰(ink = gray-1000 배경, surface = 흰 제목, inkMute = 본문).
+ * 한국어는 어절 단위 줄바꿈(hangul-word — Q-431 "자동 / 으로" 방지, 앱의 다른 화면과 같은 방식).
  * 상태 표시줄 글자는 밝게. 긴 번역(ru·es·th)에서 제목이 3줄이 돼도 잘리지 않게 줄 수 제한 없음 + 스크롤.
  */
 import * as React from 'react';
@@ -38,8 +39,8 @@ export function MaintenanceOverlay() {
       <StatusBar style="light" />
       <ScrollView contentContainerStyle={styles.content} bounces={false} showsVerticalScrollIndicator={false}>
         <Image source={APP_ICON} style={styles.logo} accessibilityIgnoresInvertColors testID="maintenance-logo" />
-        <Text style={styles.title} accessibilityRole="header">{t('maintenance.title')}</Text>
-        <Text style={styles.body}>{t('maintenance.body')}</Text>
+        <Text style={styles.title} accessibilityRole="header" lineBreakStrategyIOS="hangul-word">{t('maintenance.title')}</Text>
+        <Text style={styles.body} lineBreakStrategyIOS="hangul-word">{t('maintenance.body')}</Text>
       </ScrollView>
     </View>
   );
