@@ -1021,6 +1021,10 @@
     "nudgeText": "有新版本可用",
     "nudgeCta": "更新"
   },
+  "maintenance": {
+    "title": "正在维护中",
+    "body": "我们正在迁移服务器。维护结束后，此页面会自动关闭。"
+  },
   "ingCat": {
     "dairy": "乳制品·动物性",
     "nuts": "坚果·种子",

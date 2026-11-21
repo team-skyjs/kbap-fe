@@ -45,6 +45,7 @@ import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
 import { ScanExitPrompts } from '@/features/scan/ScanExitPrompts';
 import { VersionGateOverlay } from '@/components/VersionGate';
+import { MaintenanceOverlay } from '@/components/MaintenanceOverlay';
 import { PhotoSourceSheetHost } from '@/components/PhotoSourceSheetHost';
 import { OtaAutoApplyHost, OtaLaunchGate } from '@/lib/ota/OtaAutoApplyHost';
 
@@ -245,6 +246,8 @@ function AppRoot() {
               <ScanExitPrompts />
               {/* P-111(KB-269): 최소 지원 버전 하드 게이트 — 내비 전체 덮음, 페일 오픈 */}
               <VersionGateOverlay />
+              {/* KB-1026: 점검 화면 — 원격 스위치(kbap-status.pages.dev), 페일 오픈, 버전 게이트 blocked 우선 */}
+              <MaintenanceOverlay />
               {!splashVisible && <VisitTrackingHost />}
               {/* P-123: 안드 사진 소스 시트 호스트 (iOS는 네이티브 시트 — 호스트 미사용) */}
               <PhotoSourceSheetHost />
