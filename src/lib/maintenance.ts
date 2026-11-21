@@ -86,6 +86,11 @@ export function useMaintenance(): boolean {
   );
 }
 
+/** 현재 상태 — 훅 밖 조회(테스트·비리액트 코드). */
+export function getMaintenanceState(): boolean {
+  return on;
+}
+
 /** 테스트 전용 */
 export function __resetMaintenance(): void {
   on = false;

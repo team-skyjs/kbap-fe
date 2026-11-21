@@ -18,7 +18,7 @@ import {
   __resetMaintenance,
   isMaintenanceOn,
   refreshMaintenance,
-  useMaintenance,
+  getMaintenanceState,
 } from '../maintenance';
 import { __resetVersionGate, refreshVersionGate } from '../versionGate';
 import { MaintenanceOverlay } from '@/components/MaintenanceOverlay';
@@ -28,24 +28,14 @@ const { api } = require('@/lib/api/client');
 
 const fetchMock = jest.fn();
 const okJson = (body: unknown) => ({ ok: true, status: 200, json: () => Promise.resolve(body) });
-let state = false;
-function Probe() {
-  state = useMaintenance();
-  return null;
-}
-let probe: ReactTestRenderer | null = null;
 
 beforeEach(() => {
   __resetMaintenance();
   __resetVersionGate();
   fetchMock.mockReset();
   (globalThis as { fetch: unknown }).fetch = fetchMock;
-  act(() => {
-    probe = create(<Probe />);
-  });
 });
 afterEach(() => {
-  act(() => probe?.unmount());
   jest.useRealTimers();
   __resetMaintenance(); // 켜진 채 끝난 테스트의 30초 폴링 타이머 정리
 });
@@ -74,7 +64,7 @@ describe('조회 — 절대 URL·캐시 금지', () => {
   it('true면 켜짐', async () => {
     fetchMock.mockResolvedValue(okJson({ maintenance: true }));
     await act(() => refreshMaintenance());
-    expect(state).toBe(true);
+    expect(getMaintenanceState()).toBe(true);
   });
 });
 
@@ -87,7 +77,7 @@ describe('페일 오픈 — 오프라인 사용자를 잠그지 않는다', () =
   ])('%s = 통과', async (_n, impl) => {
     fetchMock.mockImplementation(impl);
     await act(() => refreshMaintenance());
-    expect(state).toBe(false);
+    expect(getMaintenanceState()).toBe(false);
   });
 
   it('5초 타임아웃 = 중단 후 통과', async () => {
@@ -104,16 +94,16 @@ describe('페일 오픈 — 오프라인 사용자를 잠그지 않는다', () =
     });
     expect(MAINTENANCE_TIMEOUT_MS).toBe(5000);
     expect(signal?.aborted).toBe(true);
-    expect(state).toBe(false);
+    expect(getMaintenanceState()).toBe(false);
   });
 
   it('점검 중 재조회가 실패하면 풀린다(스위치를 못 읽는 사용자가 갇히지 않게)', async () => {
     fetchMock.mockResolvedValueOnce(okJson({ maintenance: true }));
     await act(() => refreshMaintenance());
-    expect(state).toBe(true);
+    expect(getMaintenanceState()).toBe(true);
     fetchMock.mockRejectedValueOnce(new TypeError('offline'));
     await act(() => refreshMaintenance());
-    expect(state).toBe(false);
+    expect(getMaintenanceState()).toBe(false);
   });
 });
 
@@ -122,7 +112,7 @@ describe('점검 중 30초마다 재조회 → false면 자동 해제', () => {
     jest.useFakeTimers();
     fetchMock.mockResolvedValue(okJson({ maintenance: true }));
     await act(() => refreshMaintenance());
-    expect(state).toBe(true);
+    expect(getMaintenanceState()).toBe(true);
     expect(__isPolling()).toBe(true);
     expect(MAINTENANCE_POLL_MS).toBe(30_000);
 
@@ -138,7 +128,7 @@ describe('점검 중 30초마다 재조회 → false면 자동 해제', () => {
       await Promise.resolve();
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(state).toBe(false);
+    expect(getMaintenanceState()).toBe(false);
     expect(__isPolling()).toBe(false);
   });
 
@@ -156,7 +146,7 @@ describe('점검 중 30초마다 재조회 → false면 자동 해제', () => {
     await act(() => refreshMaintenance());
     slow(okJson({ maintenance: true }));
     await act(() => old);
-    expect(state).toBe(false);
+    expect(getMaintenanceState()).toBe(false);
   });
 });
 
@@ -198,7 +188,7 @@ describe('화면', () => {
     fetchMock.mockResolvedValue(okJson({ maintenance: true }));
     const t = render();
     await act(() => refreshMaintenance());
-    expect(state).toBe(true);
+    expect(getMaintenanceState()).toBe(true);
     expect(ids(t)).not.toContain('maintenance-gate');
     act(() => t.unmount());
   });
