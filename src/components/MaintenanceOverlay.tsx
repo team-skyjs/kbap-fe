@@ -17,7 +17,7 @@ import { color as C, font } from '@/lib/theme';
 import { startMaintenance, useMaintenance } from '@/lib/maintenance';
 import { useVersionGate } from '@/lib/versionGate';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- 로컬 번들 이미지(Metro 자산)
+// 로컬 번들 이미지(Metro 자산)
 const APP_ICON = require('../../assets/images/icon.png') as number;
 
 export function MaintenanceOverlay() {

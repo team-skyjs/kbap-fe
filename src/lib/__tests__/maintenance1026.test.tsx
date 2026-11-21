@@ -2,10 +2,6 @@
  * KB-1026 점검 화면 잠금 — 원격 스위치(절대 URL·캐시 금지·5초 타임아웃) · **페일 오픈**(실패·타임아웃·404·깨진 JSON·
  * 필드 누락 = 통과) · 점검 중 30초 재조회와 자동 해제 · 버전 게이트 blocked 우선 · 10개 로케일 문구.
  */
-jest.mock('@/lib/api/client', () => ({ api: { get: jest.fn() }, APP_VERSION_PATH: '/api/app-version' }));
-jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { version: '1.0.5' } } }));
-jest.mock('@/lib/openExternal', () => ({ openStoreLink: jest.fn() }));
-
 import * as React from 'react';
 import { readFileSync } from 'fs';
 import { StyleSheet } from 'react-native';
@@ -22,6 +18,11 @@ import {
 } from '../maintenance';
 import { __resetVersionGate, refreshVersionGate } from '../versionGate';
 import { MaintenanceOverlay } from '@/components/MaintenanceOverlay';
+
+// jest.mock은 babel-jest가 import 위로 끌어올린다
+jest.mock('@/lib/api/client', () => ({ api: { get: jest.fn() }, APP_VERSION_PATH: '/api/app-version' }));
+jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { version: '1.0.5' } } }));
+jest.mock('@/lib/openExternal', () => ({ openStoreLink: jest.fn() }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { api } = require('@/lib/api/client');
