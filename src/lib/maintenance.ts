@@ -4,8 +4,9 @@
  * 스위치 = Cloudflare Pages 정적 파일 {"maintenance": boolean} — API 서버(BE_BASE)와 무관하게 살아 있다.
  * 그래서 api 클라이언트가 아니라 절대 URL fetch(캐시 금지, 5초 타임아웃).
  *
- * **페일 오픈**: 조회 실패·타임아웃·404·깨진 JSON·필드 누락·true가 아닌 값 = 전부 통과(오프라인 사용자를 잠그지 않는다).
- * 표시 중 재조회가 실패해도 통과로 푼다 — 점검이 끝났는데 스위치 파일만 못 읽는 사용자가 갇히지 않게.
+ * **페일 오픈**: 점검이 아닌 상태에서 조회 실패·타임아웃·404·깨진 JSON = 통과(오프라인 사용자를 잠그지 않는다).
+ * 읽었는데 필드 누락·true가 아닌 값 = 통과. 이미 점검 중일 때의 조회 실패는 **유지**(versionGate의 "blocked면 유지"와 같은 규칙) —
+ * 30초 재조회는 계속 돌아, 파일이 false로 읽히는 순간 풀린다.
  *
  * 구조: versionGate와 같은 모듈 스토어. 루트에서 startMaintenance() 1회(시작 + 포그라운드 복귀 조회),
  * 점검 중에는 30초마다 재조회해 false가 되면 자동 해제. 화면은 useMaintenance() 구독(useSyncExternalStore).
@@ -48,15 +49,15 @@ export async function refreshMaintenance(): Promise<void> {
   const my = ++seq;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), MAINTENANCE_TIMEOUT_MS);
-  let next = false;
+  let next: boolean | null = null; // null = 못 읽음 → 상태 유지
   try {
     const res = await fetch(MAINTENANCE_URL, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' }, signal: ctrl.signal });
     if (res.ok) next = isMaintenanceOn(await res.json());
   } catch {
-    // 페일 오픈 — 통과
+    // 못 읽음 — 상태 유지(초기값 통과 = 페일 오픈). 이미 점검 중이면 유지: 그때는 API 서버가 내려가 있어 풀면 오류 화면이다
   }
   clearTimeout(timer);
-  if (my === seq) setOn(next);
+  if (my === seq && next !== null) setOn(next);
 }
 
 /** 루트 1회 — 시작 조회 + 포그라운드 복귀 재조회. cleanup 반환. */

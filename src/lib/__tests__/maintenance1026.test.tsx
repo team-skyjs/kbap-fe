@@ -98,13 +98,25 @@ describe('페일 오픈 — 오프라인 사용자를 잠그지 않는다', () =
     expect(getMaintenanceState()).toBe(false);
   });
 
-  it('점검 중 재조회가 실패하면 풀린다(스위치를 못 읽는 사용자가 갇히지 않게)', async () => {
+  it('이미 점검 중이면 조회 실패·404·깨진 JSON에도 유지, 재조회는 계속 돌고 false로 읽히면 해제', async () => {
     fetchMock.mockResolvedValueOnce(okJson({ maintenance: true }));
     await act(() => refreshMaintenance());
     expect(getMaintenanceState()).toBe(true);
-    fetchMock.mockRejectedValueOnce(new TypeError('offline'));
+    const fails = [
+      () => Promise.reject(new TypeError('offline')),
+      () => Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) }),
+      () => Promise.resolve({ ok: true, status: 200, json: () => Promise.reject(new SyntaxError('bad')) }),
+    ];
+    for (const f of fails) {
+      fetchMock.mockImplementationOnce(f);
+      await act(() => refreshMaintenance());
+      expect(getMaintenanceState()).toBe(true);
+      expect(__isPolling()).toBe(true);
+    }
+    fetchMock.mockResolvedValueOnce(okJson({})); // 읽었고 true가 아님 = 해제
     await act(() => refreshMaintenance());
     expect(getMaintenanceState()).toBe(false);
+    expect(__isPolling()).toBe(false);
   });
 });
 
