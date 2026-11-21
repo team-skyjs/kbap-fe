@@ -1017,6 +1017,10 @@
     "nudgeText": "A new version is available",
     "nudgeCta": "Update"
   },
+  "maintenance": {
+    "title": "We're doing maintenance",
+    "body": "We're moving our servers. This screen closes on its own when we're done."
+  },
   "ingCat": {
     "dairy": "Dairy & animal",
     "nuts": "Nuts & seeds",

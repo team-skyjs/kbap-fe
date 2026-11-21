@@ -1021,6 +1021,10 @@
     "nudgeText": "Versi baru tersedia",
     "nudgeCta": "Perbarui"
   },
+  "maintenance": {
+    "title": "Kami sedang melakukan pemeliharaan",
+    "body": "Kami sedang memindahkan server. Layar ini akan tertutup sendiri setelah selesai."
+  },
   "ingCat": {
     "dairy": "Susu & hewani",
     "nuts": "Kacang & biji",

@@ -1021,6 +1021,10 @@
     "nudgeText": "Đã có phiên bản mới",
     "nudgeCta": "Cập nhật"
   },
+  "maintenance": {
+    "title": "Chúng tôi đang bảo trì",
+    "body": "Chúng tôi đang chuyển máy chủ. Màn hình này sẽ tự đóng khi hoàn tất."
+  },
   "ingCat": {
     "dairy": "Sữa & nguồn gốc động vật",
     "nuts": "Hạt & hạt giống",

@@ -1021,6 +1021,10 @@
     "nudgeText": "Hay una nueva versión disponible",
     "nudgeCta": "Actualizar"
   },
+  "maintenance": {
+    "title": "Estamos en mantenimiento",
+    "body": "Estamos trasladando nuestros servidores. Esta pantalla se cerrará sola cuando terminemos."
+  },
   "ingCat": {
     "dairy": "Lácteos y de origen animal",
     "nuts": "Frutos secos y semillas",
