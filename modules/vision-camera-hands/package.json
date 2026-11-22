@@ -1,0 +1,13 @@
+{
+  "name": "react-native-vision-camera-hands",
+  "version": "0.1.0",
+  "private": true,
+  "description": "KB-1019 demo only: Apple Vision hand pose (VNDetectHumanHandPoseRequest) on VisionCamera 5 frames. iOS only.",
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "source": "src/index.ts",
+  "peerDependencies": {
+    "react-native-nitro-modules": "*",
+    "react-native-vision-camera": "*"
+  }
+}
