@@ -336,7 +336,8 @@
         {
           "appName": "kbap"
         }
-      ]
+      ],
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -345,7 +346,20 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "249f1d0b-6a85-4aaf-ac33-973f558ce180"
+        "projectId": "249f1d0b-6a85-4aaf-ac33-973f558ce180",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "notificationservice",
+                  "bundleIdentifier": "com.rocher.kbap.NotificationService",
+                  "entitlements": {}
+                }
+              ]
+            }
+          }
+        }
       },
       "metaAppId": "2530115400831168"
     },
