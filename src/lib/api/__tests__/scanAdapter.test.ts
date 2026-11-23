@@ -154,7 +154,7 @@ it('P-366 ⑤(KB-529): 서버 기본 이미지 imageRef = null 강등 — CardPh
     riskLevel: null, price: null, imageRef, avoidances: null,
   }) as never;
   const [def, real, none] = photoOnlyResults([
-    wire('https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png'),
+    wire('https://img.kbap.site/images/webp/default_miss_food/food_not_found.png'),
     wire('https://cdn/real.jpg'),
     wire(null),
   ]);

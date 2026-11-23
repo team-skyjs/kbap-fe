@@ -32,7 +32,7 @@ describe('isDefaultProfileImage (P-016 — 기본 사진 = 사진 없음 취급)
     );
     for (const p of DEFAULT_AVATAR_PATHS) {
       expect(isDefaultProfileImage(p)).toBe(true);
-      expect(isDefaultProfileImage(`https://d29c1cr2ng7w0.cloudfront.net/${p}`)).toBe(true);
+      expect(isDefaultProfileImage(`https://img.kbap.site/${p}`)).toBe(true);
     }
   });
 });

@@ -12,7 +12,7 @@ export interface RailFood {
   imageUrl: string;
 }
 
-const CDN = 'https://d29c1cr2ng7w0.cloudfront.net/images/webp/food';
+const CDN = 'https://img.kbap.site/images/webp/food';
 
 export const SPICE_RAIL: Record<SpiceLevel, RailFood[]> = {
   NONE: [
