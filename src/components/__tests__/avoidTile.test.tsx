@@ -42,7 +42,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
 it('P-188: expo-image 소스(문자열 — 디스크 캐시 기본) + 로딩 = 스켈레톤·약어 미노출', () => {
   const tree = render(<AvoidTile code="PINE_NUT" abbr="PN" tint="rgba(0,0,0,0.1)" />);
   const img = tree.root.findAll((n) => n.props?.testID === 'avtile-img-PINE_NUT')[0];
-  expect(img.props.source).toBe('https://d29c1cr2ng7w0.cloudfront.net/images/webp/ingredients-cut/pine_nut.webp'); // P-341: 누끼 선두
+  expect(img.props.source).toBe('https://img.kbap.site/images/webp/ingredients-cut/pine_nut.webp'); // P-341: 누끼 선두
   expect(tree.root.findAll((n) => n.props?.testID === 'avtile-skel-PINE_NUT').length).toBeGreaterThanOrEqual(1);
   expect(JSON.stringify(tree.toJSON())).not.toContain('"PN"'); // 로딩 중 약어("GM") 노출 소멸
 });
