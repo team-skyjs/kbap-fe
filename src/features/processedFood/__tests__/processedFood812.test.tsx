@@ -635,7 +635,7 @@ describe('상세 v4(시안 08~13·34~38·51·52)', () => {
     expect(ids(one)).not.toContain('img:https://h/cut.png');
   });
   it('KB-965 dev 실응답(14727 앵그리짜파구리큰사발면, S-953 #556 11/4): 대표 누끼 + FRONT·TOP·OTHER·LABEL 5장 = 서버 순서 그대로 캐러셀 5장·도트 5', () => {
-    const CDN = 'https://d29c1cr2ng7w0.cloudfront.net/dev/processed';
+    const CDN = 'https://img.kbap.site/dev/processed';
     const cut = `${CDN}/cutout/20010549541142-f9242ff2d7247caa.png`;
     const rest = ['dea3ce6d8f9a8346.jpg', 'fce56aab26951af2.jpg', 'd7586f3b0ba7f874.jpg', 'a3f7b01c8b9d7b90.jpg'].map((f) => `${CDN}/images/20010549541142-${f}`);
     const wire = {
