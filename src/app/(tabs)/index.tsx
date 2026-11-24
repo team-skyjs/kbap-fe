@@ -27,6 +27,8 @@ import {
 } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { RecentRow, TopRatedRow } from '@/features/food/FoodCards';
+import { AffiliateItemCard } from '@/components/AffiliateCard';
+import { randomAffiliateStart } from '@/lib/affiliate';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { CurationSection } from '@/features/curation/CurationSection';
 import { IdolPickBanner } from '@/features/home/IdolPickBanner';
@@ -125,6 +127,7 @@ function HomeBody() {
   const restrictions = me?.restrictions ?? [];
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
   const hasR = restrictions.length > 0;
+  const [affiliateStart] = useState(randomAffiliateStart); // KB-1031: 홈 진입마다 검색어 하나
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=home` as Href);
   // KB-784: 섹션 노출 노드(home_section_view)
   const recentImpressionRef = useImpressionRef('recent');
@@ -192,6 +195,9 @@ function HomeBody() {
           afterRail={<>{FLAGS.processedFoodEnabled && <HomeCvsRail />}{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}</>} /* KB-955: 편의점 줄 = 레일 바로 아래, 아이돌·큐레이션 위 · 운영 채널 off = 0 */
         />
       </View>
+
+      {/* KB-1031: Amazon 카드 1장 — 음식 블록 아래·최근 스캔 위. 추적 ID 없으면 0(여백 포함) */}
+      <AffiliateItemCard placement="home" variant="row" n={affiliateStart} style={styles.affiliate} testID="affiliate-home" />
 
       {/* RECENTLY SCANNED (§1-6~7) — P-314(KB-481): 회원 0건 = 섹션 통째 숨김
           (구 P-287 빈 블록 폐기 — 로딩은 SkeletonHome이 선행). 게스트 CTA는 유지. */}
@@ -301,6 +307,8 @@ function HomeBody() {
 export { FoodGridCard, RecentRow } from '@/features/food/FoodCards';
 
 const styles = StyleSheet.create({
+  affiliate: { marginHorizontal: 20, marginVertical: 12 }, // KB-1031
+
   root: { flex: 1, backgroundColor: C.surface },
 
   // 언더라인 탭 (§1-3)

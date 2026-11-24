@@ -13,6 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { Pressable } from '@/components/Pressable';
 import { IconClose } from '@/components/icons';
+import { AffiliateItemCard } from '@/components/AffiliateCard';
+import { randomAffiliateStart } from '@/lib/affiliate';
 import { color as C, font, radius } from '@/lib/theme';
 import { useBottomInset } from '@/lib/useBottomInset';
 
@@ -52,6 +54,7 @@ export function ScanLoading({ title, body, photoUri, caption, onClose, testID }:
   const reduced = useReducedMotion();
   const [area, setArea] = React.useState({ w: 0, h: 0 });
   const [img, setImg] = React.useState({ w: 0, h: 0 });
+  const [affiliateStart] = React.useState(randomAffiliateStart);
   const box = fitPhotoBox(area.w, area.h, img.w, img.h);
   const photoH = box.height;
   const p = useSharedValue(0);
@@ -100,6 +103,8 @@ export function ScanLoading({ title, body, photoUri, caption, onClose, testID }:
         </View>
       </View>
       <Text style={st.caption}>{caption}</Text>
+      {/* KB-1031: Amazon 카드 — 보여 주기만 한다. 스캔은 누르지 않아도 그대로 진행·완료(이 화면은 진행을 소유하지 않는다) */}
+      <AffiliateItemCard placement="scan_loading" variant="row" n={affiliateStart} style={st.affiliate} testID="affiliate-scan-loading" />
     </View>
   );
 }
@@ -124,5 +129,6 @@ const st = StyleSheet.create({
   trailUp: { position: 'absolute', left: 0, right: 0, top: 0, height: SCAN_GLOW_REACH },
   line: { position: 'absolute', left: 0, right: 0, top: SCAN_GLOW_REACH, height: SCAN_LINE_H, backgroundColor: SWEEP, shadowColor: SWEEP, shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   trailDown: { position: 'absolute', left: 0, right: 0, top: SCAN_GLOW_REACH + SCAN_LINE_H, height: SCAN_GLOW_REACH },
+  affiliate: { marginTop: 16 },
   caption: { marginTop: 20, fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.ink2 },
 });

@@ -224,5 +224,7 @@ export const FLAGS = {
   popularByReviews: true,
   idolPicksEnabled: true,
   avoidGroupCodesEnabled: true,
+  /** KB-1031: Amazon 제휴 링크 킬스위치 — 실제 노출은 추적 ID(EXPO_PUBLIC_AMAZON_TAG)가 있을 때만(lib/affiliate) */
+  affiliate: true,
 } as const;
 

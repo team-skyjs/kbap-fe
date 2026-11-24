@@ -1460,5 +1460,18 @@
     "photoInvalid": "Ada foto yang tidak bisa dikirim. Pilih foto lain.",
     "invalid": "Pesan ini tidak bisa dikirim. Periksa lalu coba lagi.",
     "fabCoach": "Pindai tanpa batas gratis✨"
+  },
+  "affiliate": {
+    "disclosure": "Sebagai Amazon Associate, K-Bap memperoleh penghasilan dari pembelian yang memenuhi syarat.",
+    "buy": "Beli di Amazon",
+    "findKits": "Cari paket {{food}} di Amazon",
+    "shop": "Belanja {{item}} di Amazon",
+    "items": {
+      "ramen": "ramen Korea",
+      "tteokbokki": "paket tteokbokki",
+      "gochujang": "gochujang",
+      "kimchi": "kimchi",
+      "snacks": "camilan Korea"
+    }
   }
 }

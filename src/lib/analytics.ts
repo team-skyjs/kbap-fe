@@ -11,7 +11,7 @@ import { ENGAGEMENT_EVENTS, ENGAGEMENT_ALLOWED, sanitizeEngagement, type Engagem
  *   app · auth · onboarding · scan · order · owner · food · search ·
  *   review · community · profile · push · error · ad(KB-739 AdMob — ad_impression/ad_click/ad_reward_earned/ad_consent_result)
  *   · screen(KB-784 screen_view — 라우트 패턴) · ui(KB-784 ui_click — 공용 Pressable 자동) · home(KB-784 홈 섹션·카드 노출/클릭)
- *   · chat(KB-1010 운영진 채팅 진입·전송 결과)
+ *   · chat(KB-1010 운영진 채팅 진입·전송 결과) · affiliate(KB-1031 Amazon 제휴 링크 노출·클릭)
  * user property = `user_info_` 접두 (예: user_info_country).
  * 신규 추가 시 이 규칙을 먼저 적용할 것 — CSV 대조 유닛이 구 이름을 막는다.
  *
@@ -162,6 +162,9 @@ export const EVENTS = {
   // KB-1010 운영진 채팅 — 진입 경로(source enum)·전송 결과(서버 응답 뒤 1회). 본문·사진 URL·메시지 id 금지
   chat_open: 'chat_open',
   chat_message_send: 'chat_message_send',
+  // KB-1031 Amazon 제휴 링크 — placement(processed_detail|home|food_list|processed_list|scan_loading|scan_result) · query = 카탈로그 이름·고정 검색어(사용자 입력 0)
+  affiliate_impression: 'affiliate_impression',
+  affiliate_click: 'affiliate_click',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -274,6 +277,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   // KB-1010 🔒: 값은 enum·boolean·개수만 — 본문·사진 URL·메시지 id·자유 텍스트 금지
   chat_open: ['source', 'has_unread'], // source: CHAT_OPEN_SOURCES
   chat_message_send: ['result', 'has_photos', 'photo_count', 'is_retry'], // result: ok|fail
+  affiliate_impression: ['placement', 'query'],
+  affiliate_click: ['placement', 'query'],
 };
 
 /** P-144 user property 허용 키 — CSV와 1:1. country는 alpha-2 코드(멘토 확정

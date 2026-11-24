@@ -55,19 +55,23 @@ jobs:
         run: |
           # KB-870/P-527: JSON target·build 프로필·실제 번들 호스트를 한 기준으로 검사.
           TEAMTEST_BE_BASE=$(node scripts/teamtest-target.mjs base) || exit 1
-          EXPO_PUBLIC_BE_BASE="$TEAMTEST_BE_BASE" npx expo export --clear --platform ios --platform android
+          # KB-1031: Amazon 추적 ID — eas.json build.teamtest.env가 정본(값이 없으면 제휴 UI 0)
+          TEAMTEST_AMAZON_TAG=$(node -p "require('./eas.json').build.teamtest.env.EXPO_PUBLIC_AMAZON_TAG || ''")
+          EXPO_PUBLIC_BE_BASE="$TEAMTEST_BE_BASE" EXPO_PUBLIC_AMAZON_TAG="$TEAMTEST_AMAZON_TAG" npx expo export --clear --platform ios --platform android
           node scripts/teamtest-target.mjs guard dist || exit 1
       - name: Publish to teamtest (per-platform — P-293b)
         run: |
           # P-293b: fp 게이트가 판정한 발행 가능 플랫폼만 발행(불일치 플랫폼 SKIP).
           # 캐시 규칙(--clear-cache)·env 인라인(P-073)은 플랫폼별 명령에 그대로.
           TEAMTEST_BE_BASE=$(node scripts/teamtest-target.mjs base) || exit 1
+          # KB-1031: Amazon 추적 ID — eas.json build.teamtest.env가 정본(값이 없으면 제휴 UI 0)
+          TEAMTEST_AMAZON_TAG=$(node -p "require('./eas.json').build.teamtest.env.EXPO_PUBLIC_AMAZON_TAG || ''")
           node scripts/teamtest-target.mjs guard dist || exit 1
           PLATS=$(cat /tmp/ota-publish-platforms)
           SHA7=$(git rev-parse --short HEAD)
           SUBJECT=$(git log -1 --pretty=%s)
           for P in $PLATS; do
-            EXPO_PUBLIC_BE_BASE="$TEAMTEST_BE_BASE" npx eas-cli update \
+            EXPO_PUBLIC_BE_BASE="$TEAMTEST_BE_BASE" EXPO_PUBLIC_AMAZON_TAG="$TEAMTEST_AMAZON_TAG" npx eas-cli update \
               --channel teamtest --platform "$P" --clear-cache --non-interactive \
               --message "$SHA7 $SUBJECT"
           done

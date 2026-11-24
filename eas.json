@@ -36,6 +36,7 @@
       "channel": "production",
       "env": {
         "EXPO_PUBLIC_BE_BASE": "https://prod.kbap.site",
+        "EXPO_PUBLIC_AMAZON_TAG": "kbap-20",
         "EXPO_PUBLIC_AMPLITUDE_API_KEY": "e989a20b64845040d8dc43b1b9c8299f"
       }
     },
@@ -43,7 +44,8 @@
       "autoIncrement": true,
       "channel": "teamtest",
       "env": {
-        "EXPO_PUBLIC_BE_BASE": "https://dev.kbap.site"
+        "EXPO_PUBLIC_BE_BASE": "https://dev.kbap.site",
+        "EXPO_PUBLIC_AMAZON_TAG": "kbap-20"
       },
       "android": {
         "buildType": "apk",

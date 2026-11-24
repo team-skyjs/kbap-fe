@@ -1460,5 +1460,18 @@
     "photoInvalid": "送信できない写真があります。別の写真を選んでください。",
     "invalid": "このメッセージは送信できません。確認してもう一度お試しください。",
     "fabCoach": "無制限スキャンを無料で✨"
+  },
+  "affiliate": {
+    "disclosure": "Amazonのアソシエイトとして、K-Bapは適格販売により収入を得ています。",
+    "buy": "Amazonで購入",
+    "findKits": "Amazonで{{food}}のキットを探す",
+    "shop": "Amazonで{{item}}を見る",
+    "items": {
+      "ramen": "韓国ラーメン",
+      "tteokbokki": "トッポッキキット",
+      "gochujang": "コチュジャン",
+      "kimchi": "キムチ",
+      "snacks": "韓国のお菓子"
+    }
   }
 }

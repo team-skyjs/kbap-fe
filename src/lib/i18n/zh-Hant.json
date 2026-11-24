@@ -1460,5 +1460,18 @@
     "photoInvalid": "有照片無法傳送，請換一張。",
     "invalid": "無法傳送此訊息，請檢查後再試一次。",
     "fabCoach": "免費無限次掃描✨"
+  },
+  "affiliate": {
+    "disclosure": "身為 Amazon 聯盟成員，K-Bap 可從符合條件的購買中獲得收入。",
+    "buy": "在 Amazon 購買",
+    "findKits": "在 Amazon 上找{{food}}料理包",
+    "shop": "在 Amazon 上選購{{item}}",
+    "items": {
+      "ramen": "韓國拉麵",
+      "tteokbokki": "辣炒年糕料理包",
+      "gochujang": "韓式辣椒醬",
+      "kimchi": "泡菜",
+      "snacks": "韓國零食"
+    }
   }
 }
