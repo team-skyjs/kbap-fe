@@ -1460,5 +1460,18 @@
     "photoInvalid": "มีรูปภาพที่ส่งไม่ได้ โปรดเลือกรูปอื่น",
     "invalid": "ส่งข้อความนี้ไม่ได้ โปรดตรวจสอบแล้วลองอีกครั้ง",
     "fabCoach": "สแกนไม่จำกัดฟรี✨"
+  },
+  "affiliate": {
+    "disclosure": "ในฐานะ Amazon Associate K-Bap ได้รับรายได้จากการสั่งซื้อที่เข้าเงื่อนไข",
+    "buy": "ซื้อบน Amazon",
+    "findKits": "ค้นหาชุด{{food}}บน Amazon",
+    "shop": "เลือกซื้อ{{item}}บน Amazon",
+    "items": {
+      "ramen": "รามยอนเกาหลี",
+      "tteokbokki": "ชุดต็อกบกกี",
+      "gochujang": "โคชูจัง",
+      "kimchi": "กิมจิ",
+      "snacks": "ขนมเกาหลี"
+    }
   }
 }

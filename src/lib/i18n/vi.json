@@ -1460,5 +1460,18 @@
     "photoInvalid": "Có ảnh không gửi được. Vui lòng chọn ảnh khác.",
     "invalid": "Không gửi được tin nhắn này. Vui lòng kiểm tra và thử lại.",
     "fabCoach": "Quét không giới hạn miễn phí✨"
+  },
+  "affiliate": {
+    "disclosure": "Là Cộng tác viên của Amazon, K-Bap nhận được thu nhập từ các giao dịch mua hàng đủ điều kiện.",
+    "buy": "Mua trên Amazon",
+    "findKits": "Tìm bộ nguyên liệu {{food}} trên Amazon",
+    "shop": "Mua {{item}} trên Amazon",
+    "items": {
+      "ramen": "mì Hàn Quốc",
+      "tteokbokki": "bộ tteokbokki",
+      "gochujang": "gochujang",
+      "kimchi": "kimchi",
+      "snacks": "bánh kẹo Hàn Quốc"
+    }
   }
 }

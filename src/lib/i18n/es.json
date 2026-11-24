@@ -1460,5 +1460,18 @@
     "photoInvalid": "No se pudo enviar una de las fotos. Elige otra foto.",
     "invalid": "No se pudo enviar este mensaje. Revísalo e inténtalo de nuevo.",
     "fabCoach": "Escaneos ilimitados gratis✨"
+  },
+  "affiliate": {
+    "disclosure": "Como Afiliado de Amazon, K-Bap obtiene ingresos por las compras adscritas que cumplen los requisitos aplicables.",
+    "buy": "Comprar en Amazon",
+    "findKits": "Buscar kits de {{food}} en Amazon",
+    "shop": "Comprar {{item}} en Amazon",
+    "items": {
+      "ramen": "ramen coreano",
+      "tteokbokki": "kits de tteokbokki",
+      "gochujang": "gochujang",
+      "kimchi": "kimchi",
+      "snacks": "snacks coreanos"
+    }
   }
 }

@@ -39,6 +39,7 @@ import { useIdolPickVideo } from '@/lib/data/useIdolPicks';
 import { useIsNewFood } from '@/lib/newFood';
 import { IngChainImage, IngredientTile, tile } from '@/components/IngredientTile';
 import { VerdictBand, VerdictLockRow, VERDICT_TITLE } from '@/components/VerdictBand';
+import { AffiliateCard } from '@/components/AffiliateCard';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
@@ -631,6 +632,9 @@ function Registered({
         </>
       )}
 
+      {/* KB-1031: 스캔 결과에서 들어온 상세 — 재료 아래 Amazon 링크 1줄(판정 띠·재료 판정 밖). 추적 ID 없으면 0 */}
+      {scanEntry && <AffiliateCard placement="scan_result" variant="link" query={`${food.name} kit`} title={t('affiliate.findKits', { food: food.name })} style={styles.affiliate} />}
+
       {/* §1-7: 리뷰 섹션(4150:16940) — 디바이더 + 헤더 행 + D-2 카드 ×3 + More */}
       {emptyCta && (
         <View style={styles.reviewSec} testID="review-empty-cta" onLayout={(e) => onEmptyCtaLayout?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height)}>
@@ -840,6 +844,8 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
 const FHEAD_BAR_BG = C.surface;
 
 const styles = StyleSheet.create({
+  affiliate: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 20 }, // KB-1031
+
   root: { flex: 1, backgroundColor: C.surface },
   // KB-620: 숨김 안내를 잔여 높이 중앙에(상단 플로팅 헤더와 겹치지 않게)
   hiddenFill: { flex: 1, justifyContent: 'center' },

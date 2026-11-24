@@ -1460,5 +1460,18 @@
     "photoInvalid": "보낼 수 없는 사진이 있어요. 다른 사진을 골라 주세요.",
     "invalid": "이 메시지는 보낼 수 없어요. 확인 후 다시 보내 주세요.",
     "fabCoach": "무제한 스캔 무료로 받기✨"
+  },
+  "affiliate": {
+    "disclosure": "K-Bap은 Amazon 제휴 프로그램에 참여해요. 조건에 맞는 구매가 이뤄지면 수수료를 받아요.",
+    "buy": "Amazon에서 구매하기",
+    "findKits": "Amazon에서 {{food}} 밀키트 찾기",
+    "shop": "Amazon에서 {{item}} 보기",
+    "items": {
+      "ramen": "한국 라면",
+      "tteokbokki": "떡볶이 키트",
+      "gochujang": "고추장",
+      "kimchi": "김치",
+      "snacks": "한국 과자"
+    }
   }
 }

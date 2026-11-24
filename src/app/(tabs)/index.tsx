@@ -27,6 +27,8 @@ import {
 } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { RecentRow, TopRatedRow } from '@/features/food/FoodCards';
+import { AffiliateItemCard } from '@/components/AffiliateCard';
+import { randomAffiliateStart } from '@/lib/affiliate';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { CurationSection } from '@/features/curation/CurationSection';
 import { IdolPickBanner } from '@/features/home/IdolPickBanner';
@@ -125,6 +127,7 @@ function HomeBody() {
   const restrictions = me?.restrictions ?? [];
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
   const hasR = restrictions.length > 0;
+  const [affiliateStart] = useState(randomAffiliateStart); // KB-1031: 홈 진입마다 검색어 하나
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=home` as Href);
   // KB-784: 섹션 노출 노드(home_section_view)
   const recentImpressionRef = useImpressionRef('recent');
@@ -189,7 +192,7 @@ function HomeBody() {
           popularLoading={isPending}
           onScanRowBottom={setScanRowBottom}
           // KB-796: 음식 레일 뒤·Safe picks 앞 · KB-836: 정적 배너 → 큐레이션 순서(세 탭 모두, D1)
-          afterRail={<>{FLAGS.processedFoodEnabled && <HomeCvsRail />}{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}</>} /* KB-955: 편의점 줄 = 레일 바로 아래, 아이돌·큐레이션 위 · 운영 채널 off = 0 */
+          afterRail={<>{FLAGS.processedFoodEnabled && <HomeCvsRail />}{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}<AffiliateItemCard placement="home" variant="row" n={affiliateStart} style={styles.affiliate} /></>} /* KB-955: 편의점 줄 = 레일 바로 아래, 아이돌·큐레이션 위 · 운영 채널 off = 0 */
         />
       </View>
 
@@ -301,6 +304,8 @@ function HomeBody() {
 export { FoodGridCard, RecentRow } from '@/features/food/FoodCards';
 
 const styles = StyleSheet.create({
+  affiliate: { marginHorizontal: 20, marginBottom: 24 }, // KB-1031
+
   root: { flex: 1, backgroundColor: C.surface },
 
   // 언더라인 탭 (§1-3)

@@ -28,6 +28,8 @@ import { EmptyBlock } from '@/components/StateBlock';
 import { Shimmer } from '@/components/Skeleton';
 import { ActionSheet } from '@/components/ActionSheet';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { AffiliateItemCard } from '@/components/AffiliateCard';
+import { affiliateEnabled, isAffiliateCell, randomAffiliateStart, withAffiliateCells } from '@/lib/affiliate';
 import { FoodGridCard, isGridPad, padOddGrid, RISK_CHIPS } from '@/features/food/FoodCards'; // KB-949: 위험 칩 목록 = 저장 목록과 공통
 import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/food/foodFilterParams';
 import { railCardW } from '@/features/food/railLayout';
@@ -137,6 +139,8 @@ export function FoodExplorer({
   const hasR = (me?.restrictions.length ?? 0) > 0;
 
   const [gridTab, setGridTab] = React.useState<GridTab>(initialTab);
+  const [affiliateStart] = React.useState(randomAffiliateStart); // KB-1031: 화면 진입마다 검색어 하나
+  const [affiliateOn] = React.useState(affiliateEnabled); // 추적 ID = 빌드 상수 — 한 번만 읽는다(렌더 중 바깥 값 읽기 0)
   // P-318: 딥링크 초기값 — 게스트는 개인화 상태 강등(칩 게이트·저장 게이트 우회 방지)
   const [riskChip, setRiskChip] = React.useState<RiskChip>(guest ? 'all' : (initialRisk ?? 'all'));
   const [savedOnly, setSavedOnly] = React.useState(initialSaved === true && !guest);
@@ -476,7 +480,7 @@ export function FoodExplorer({
       <>
         <Animated.FlatList
           ref={gridRef}
-          data={padOddGrid(gridFoods)}
+          data={padOddGrid(withAffiliateCells(gridFoods, affiliateOn))} /* KB-1031: 8개마다 Amazon 카드 1칸(추적 ID 없으면 그대로) */
           keyExtractor={(f) => f.foodId}
           numColumns={2}
           onScroll={onScroll}
@@ -513,7 +517,7 @@ export function FoodExplorer({
             // 무한 스크롤 — 활성 목록(gridQ: browse 또는 Saved+risk) 페이징
             if (gridQ.hasNextPage && !gridQ.isFetchingNextPage) void gridQ.fetchNextPage();
           }}
-          renderItem={({ item }) => (isGridPad(item) ? <View style={styles.gridCell} testID="food-grid-pad" /> : <View style={styles.gridCell}>{card(item, styles.gridCellCard)}</View>)}
+          renderItem={({ item }) => (isAffiliateCell(item) ? <View style={styles.gridCell}><AffiliateItemCard placement="food_list" variant="cell" n={affiliateStart + item.n} /></View> : isGridPad(item) ? <View style={styles.gridCell} testID="food-grid-pad" /> : <View style={styles.gridCell}>{card(item, styles.gridCellCard)}</View>)}
           testID="food-explorer-list"
         />
         {/* P-318: 정렬 시트 — 공용 ActionSheet(리뷰 P-237 문법), 현재값 = SVG 체크 */}

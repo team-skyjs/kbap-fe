@@ -19,6 +19,8 @@ import { Btn, Chip, Input, IconSearch, IconClose, IconCamera, IconTabFood, Overa
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { AffiliateItemCard } from '@/components/AffiliateCard';
+import { affiliateEnabled, isAffiliateCell, randomAffiliateStart, withAffiliateCells } from '@/lib/affiliate';
 import { useMe } from '@/lib/data/useMe';
 import { RemoteImage } from '@/components/RemoteImage';
 import { Shimmer } from '@/components/Skeleton';
@@ -164,6 +166,8 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
   const [verdictChip, setVerdictChip] = React.useState<'all' | VerdictChipRisk>('all');
   const [searchSeq, setSearchSeq] = React.useState(0); // 제출 회차 — 같은 검색어를 다시 제출해도 1회로 센다(Codex #308 R2)
   const [gate, setGate] = React.useState(false);
+  const [affiliateStart] = React.useState(randomAffiliateStart); // KB-1031: 화면 진입마다 검색어 하나
+  const [affiliateOn] = React.useState(affiliateEnabled); // 추적 ID = 빌드 상수 — 한 번만 읽는다(렌더 중 바깥 값 읽기 0)
   // KB-954(P-570 QA: 당겨도 스피너·요청 0): ['processedFoods'] 접두 = 목록·판정·리뷰 + ['me']
   const pull = usePullRefresh([['processedFoods']]);
   const listRef = React.useRef<React.ComponentRef<typeof Animated.FlatList<ProcessedFoodSummary>>>(null);
@@ -343,11 +347,11 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
     <>
     <Animated.FlatList
       ref={listRef}
-      data={items}
+      data={withAffiliateCells(items, affiliateOn) as ProcessedFoodSummary[]} /* KB-1031: 8개마다 Amazon 카드 1칸 — 칸은 renderItem에서 isAffiliateCell로 가른다 */
       numColumns={2}
       columnWrapperStyle={st.columns}
       keyExtractor={(it: ProcessedFoodSummary) => it.id}
-      renderItem={({ item }: { item: ProcessedFoodSummary }) => <ProductCard item={item} width={cardW} personalized={personalized} unset={unset} onOpen={() => router.push(`/processed-foods/${item.id}?src=list` as Href)} />}
+      renderItem={({ item }: { item: ProcessedFoodSummary }) => isAffiliateCell(item) ? <AffiliateItemCard placement="processed_list" variant="cell" n={affiliateStart + item.n} style={{ flex: 0, width: cardW }} /> : <ProductCard item={item} width={cardW} personalized={personalized} unset={unset} onOpen={() => router.push(`/processed-foods/${item.id}?src=list` as Href)} />}
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       ListFooterComponent={
