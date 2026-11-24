@@ -3,6 +3,7 @@
  * - 추적 ID가 비어 있으면 **null**(래퍼·여백 0) — 호출처는 조건 없이 놓아도 된다.
  * - 고지 문구를 늘 같이 그린다(제휴 UI가 있는 화면 = 고지가 있는 화면).
  * - 누르면 OS가 연다(아마존 앱·기본 브라우저). 앱 안 기능은 누르지 않아도 그대로다 — 이 컴포넌트는 아무것도 막지 않는다.
+ * - 글자는 한글 어절 단위로 줄바꿈(iOS hangul-word — Q-434: 고지 문구가 낱말 중간에서 끊겼다).
  * - 가격·로고 0(글자 "Amazon"만). 판정 띠 위·안에 두지 말 것(호출처 책임 — affiliate1031 테스트가 순서를 잠근다).
  */
 import * as React from 'react';
@@ -30,7 +31,7 @@ export function AffiliateCard({ placement, variant, query, title, style, testID 
   }, [on, placement, query]);
   if (!on) return null;
   const open = () => { void openAmazon(placement, query); }; // 실패는 openStoreLink가 잡아 토스트(거부가 새지 않는다)
-  const disclosure = <Text style={st.disclosure} testID={`${testID}-disclosure`}>{t('affiliate.disclosure')}</Text>;
+  const disclosure = <Text style={st.disclosure} lineBreakStrategyIOS="hangul-word" testID={`${testID}-disclosure`}>{t('affiliate.disclosure')}</Text>;
 
   if (variant === 'button') {
     return (
@@ -44,7 +45,7 @@ export function AffiliateCard({ placement, variant, query, title, style, testID 
     return (
       <View style={[st.stack, style]} testID={testID}>
         <Pressable style={st.link} onPress={open} accessibilityRole="link" testID={`${testID}-open`}>
-          <Text style={st.linkText}>{title}</Text>
+          <Text style={st.linkText} lineBreakStrategyIOS="hangul-word">{title}</Text>
           <IconArrowRight size={16} color={C.primaryText} />
         </Pressable>
         {disclosure}
@@ -54,7 +55,7 @@ export function AffiliateCard({ placement, variant, query, title, style, testID 
   return (
     <Pressable style={[variant === 'cell' ? st.cell : st.row, style]} onPress={open} accessibilityRole="link" testID={testID}>
       <View style={st.body}>
-        <Text style={st.title}>{title}</Text>
+        <Text style={st.title} lineBreakStrategyIOS="hangul-word">{title}</Text>
         {disclosure}
       </View>
       <IconArrowRight size={18} color={C.ink2} />

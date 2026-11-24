@@ -87,6 +87,9 @@ describe('추적 ID가 있으면', () => {
     let r!: ReturnType<typeof create>;
     act(() => { r = create(<AffiliateCard placement="scan_result" variant={variant} query="Bibimbap kit" title="Find Bibimbap kits on Amazon" testID="aff" />); });
     expect(r.root.findByProps({ testID: 'aff-disclosure' }).props.children).toBe('As an Amazon Associate, K-Bap earns from qualifying purchases.');
+    // Q-434: 고지·제목 = 한글 어절 단위 줄바꿈(낱말 중간에서 끊기지 않게)
+    const texts = r.root.findAll((n) => typeof n.type === 'string' && 'lineBreakStrategyIOS' in n.props);
+    expect(texts.map((n) => n.props.lineBreakStrategyIOS)).toEqual(variant === 'button' ? ['hangul-word'] : ['hangul-word', 'hangul-word']);
     expect(mockTrack.mock.calls).toEqual([['affiliate_impression', { placement: 'scan_result', query: 'Bibimbap kit' }]]);
     const target = variant === 'button' || variant === 'link' ? 'aff-open' : 'aff';
     act(() => { r.root.findAllByProps({ testID: target }).find((n) => typeof n.props.onPress === 'function')!.props.onPress(); });
@@ -147,6 +150,9 @@ describe('자리 — 판정 영역 위·안에 없다(원문 순서 잠금)', ()
     expect(at).toBeGreaterThan(s.indexOf('testID="detail-verdict"'));
     expect(at).toBeGreaterThan(s.indexOf("t('detail.dataDisclaimer')"));
     expect(at).toBeLessThan(s.indexOf('testID="review-empty-cta"'));
+  });
+  it('가공식품 목록 칸 = 옆 ProductCard와 같은 아래 간격(card.root) — Q-434: 다음 줄과 붙음', () => {
+    expect(read('features/processedFood/PackagedExplorer.tsx')).toContain('variant="cell" n={affiliateStart + item.n} style={[card.root, { flex: 0, width: cardW }]}');
   });
   it('판정 부품·스캔 결과 목록에는 제휴 코드가 없다', () => {
     for (const p of ['components/VerdictBand.tsx', 'features/processedFood/PackagedVerdict.tsx']) expect(read(p)).not.toMatch(/affiliate/i);
