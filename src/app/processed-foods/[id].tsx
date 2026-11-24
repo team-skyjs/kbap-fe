@@ -313,7 +313,7 @@ export function ProcessedFoodDetailScreen() {
         </View>
 
         {/* KB-1031: Amazon 구매 버튼 — 판정 띠·이름 아래, 조리법 위(판정 영역 밖). 추적 ID 없으면 0 */}
-        <AffiliateCard placement="processed_detail" variant="button" query={d.name} title={t('affiliate.buy')} />
+        <AffiliateCard placement="processed_detail" variant="button" query={d.name} title={t('affiliate.buy')} testID="affiliate-processed-detail" />
 
         {/* KB-990(D-34 B): 조리법 — 상품명 블록 바로 아래·What's inside 앞(판정 띠는 그대로 맨 위). 없으면 숨김.
             시안 섹션 = 화면 폭(좌우 16) · 위 8 띠 · 아래 24 뒤 다음 띠(페이지 gap 20 상쇄) */}

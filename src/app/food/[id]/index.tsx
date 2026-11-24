@@ -633,7 +633,7 @@ function Registered({
       )}
 
       {/* KB-1031: 스캔 결과에서 들어온 상세 — 재료 아래 Amazon 링크 1줄(판정 띠·재료 판정 밖). 추적 ID 없으면 0 */}
-      {scanEntry && <AffiliateCard placement="scan_result" variant="link" query={`${food.name} kit`} title={t('affiliate.findKits', { food: food.name })} style={styles.affiliate} />}
+      {scanEntry && <AffiliateCard placement="scan_result" variant="link" query={`${food.name} kit`} title={t('affiliate.findKits', { food: food.name })} style={styles.affiliate} testID="affiliate-scan-result" />}
 
       {/* §1-7: 리뷰 섹션(4150:16940) — 디바이더 + 헤더 행 + D-2 카드 ×3 + More */}
       {emptyCta && (

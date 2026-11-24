@@ -59,7 +59,7 @@ describe('추적 ID가 비어 있으면 제휴 UI 0', () => {
   it('꺼지면 카드 = null(래퍼·여백 0) · 노출 계측 0', () => {
     mockSwitch.on = false;
     let r!: ReturnType<typeof create>;
-    act(() => { r = create(<><AffiliateCard placement="processed_detail" variant="button" query="Shin Ramyun" title="Buy" /><AffiliateItemCard placement="home" variant="row" n={0} /></>); });
+    act(() => { r = create(<><AffiliateCard placement="processed_detail" variant="button" query="Shin Ramyun" title="Buy" testID="a" /><AffiliateItemCard placement="home" variant="row" n={0} testID="b" /></>); });
     expect(r.toJSON()).toBeNull();
     expect(mockTrack).not.toHaveBeenCalled();
   });
@@ -108,7 +108,7 @@ describe('추적 ID가 있으면', () => {
     const a = load('kbap-test-20');
     expect(a.affiliateItemAt(a.AFFILIATE_ITEMS.length + 1)).toBe(a.AFFILIATE_ITEMS[1]);
     let r!: ReturnType<typeof create>;
-    act(() => { r = create(<AffiliateItemCard placement="scan_loading" variant="row" n={0} />); });
+    act(() => { r = create(<AffiliateItemCard placement="scan_loading" variant="row" n={0} testID="c" />); });
     expect(JSON.stringify(r.toJSON())).toContain('Shop Korean ramen on Amazon');
     expect(mockTrack).toHaveBeenCalledWith('affiliate_impression', { placement: 'scan_loading', query: 'Korean ramen' });
   });

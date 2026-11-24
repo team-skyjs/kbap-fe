@@ -104,7 +104,7 @@ export function ScanLoading({ title, body, photoUri, caption, onClose, testID }:
       </View>
       <Text style={st.caption}>{caption}</Text>
       {/* KB-1031: Amazon 카드 — 보여 주기만 한다. 스캔은 누르지 않아도 그대로 진행·완료(이 화면은 진행을 소유하지 않는다) */}
-      <AffiliateItemCard placement="scan_loading" variant="row" n={affiliateStart} style={st.affiliate} />
+      <AffiliateItemCard placement="scan_loading" variant="row" n={affiliateStart} style={st.affiliate} testID="affiliate-scan-loading" />
     </View>
   );
 }

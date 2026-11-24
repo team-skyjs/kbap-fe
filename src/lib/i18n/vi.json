@@ -1464,7 +1464,7 @@
   "affiliate": {
     "disclosure": "Là Cộng tác viên của Amazon, K-Bap nhận được thu nhập từ các giao dịch mua hàng đủ điều kiện.",
     "buy": "Mua trên Amazon",
-    "findKits": "Tìm bộ nguyên liệu {{food}} trên Amazon",
+    "findKits": "Tìm bộ kit {{food}} trên Amazon",
     "shop": "Mua {{item}} trên Amazon",
     "items": {
       "ramen": "mì Hàn Quốc",

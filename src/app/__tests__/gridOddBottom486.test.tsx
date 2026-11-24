@@ -75,7 +75,7 @@ it('P-333 ① 배선 — saved·음식 탭 그리드 = padOddGrid + __pad 빈 �
   expect(sv).toContain('data={padOddGrid(items)}');
   expect(sv).toContain('testID="saved-grid-pad"');
   const fx = read('src/features/food/FoodExplorer.tsx');
-  expect(fx).toContain('data={padOddGrid(gridFoods)}');
+  expect(fx).toContain('data={padOddGrid(withAffiliateCells(gridFoods, affiliateOn))}'); // KB-1031: Amazon 카드 칸이 끼어도 홀수 채움은 바깥에서 그대로
   expect(fx).toContain('testID="food-grid-pad"');
   const fc = read('src/features/food/FoodCards.tsx');
   expect(fc).not.toContain("width: '47%'");

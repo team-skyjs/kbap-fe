@@ -351,7 +351,7 @@ export function PackagedExplorer({ top, topPad = 0, onScroll }: { top: React.Rea
       numColumns={2}
       columnWrapperStyle={st.columns}
       keyExtractor={(it: ProcessedFoodSummary) => it.id}
-      renderItem={({ item }: { item: ProcessedFoodSummary }) => isAffiliateCell(item) ? <AffiliateItemCard placement="processed_list" variant="cell" n={affiliateStart + item.n} style={{ flex: 0, width: cardW }} /> : <ProductCard item={item} width={cardW} personalized={personalized} unset={unset} onOpen={() => router.push(`/processed-foods/${item.id}?src=list` as Href)} />}
+      renderItem={({ item }: { item: ProcessedFoodSummary }) => isAffiliateCell(item) ? <AffiliateItemCard placement="processed_list" variant="cell" n={affiliateStart + item.n} style={{ flex: 0, width: cardW }} testID="affiliate-processed-list" /> : <ProductCard item={item} width={cardW} personalized={personalized} unset={unset} onOpen={() => router.push(`/processed-foods/${item.id}?src=list` as Href)} />}
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       ListFooterComponent={

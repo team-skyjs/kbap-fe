@@ -12,7 +12,7 @@ jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual('react-native');
   return {
     __esModule: true,
-    default: { View },
+    default: { View, createAnimatedComponent: (c: unknown) => c }, // KB-1031: ScanLoading → AffiliateCard → Btn
     useReducedMotion: () => mockReduced,
     useSharedValue: (v: number) => { let x = v; return { get: () => x, set: (n: number) => { x = n; } }; },
     useAnimatedStyle: (f: () => object) => f(),

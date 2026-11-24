@@ -19,10 +19,9 @@ import { color as C, font, radius } from '@/lib/theme';
 /** button = 상세의 구매 버튼 · link = 한 줄 링크 · row = 화면 폭 카드 · cell = 2열 그리드 한 칸 */
 export type AffiliateVariant = 'button' | 'link' | 'row' | 'cell';
 
-type Props = { placement: AffiliatePlacement; variant: AffiliateVariant; query: string; title: string; style?: StyleProp<ViewStyle>; testID?: string };
+type Props = { placement: AffiliatePlacement; variant: AffiliateVariant; query: string; title: string; style?: StyleProp<ViewStyle>; testID: string };
 
-export function AffiliateCard({ placement, variant, query, title, style, testID: testIDProp }: Props) {
-  const testID = testIDProp ?? `affiliate-${placement}`; // 기본 인자에 템플릿을 쓰면 컴파일러가 이 컴포넌트를 건너뛴다
+export function AffiliateCard({ placement, variant, query, title, style, testID }: Props) {
   const { t } = useTranslation();
   const [on] = React.useState(affiliateEnabled); // 추적 ID = 빌드 상수 — 한 번만 읽는다(렌더 중 바깥 값 읽기 0)
   React.useEffect(() => {

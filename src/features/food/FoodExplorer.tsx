@@ -517,7 +517,7 @@ export function FoodExplorer({
             // 무한 스크롤 — 활성 목록(gridQ: browse 또는 Saved+risk) 페이징
             if (gridQ.hasNextPage && !gridQ.isFetchingNextPage) void gridQ.fetchNextPage();
           }}
-          renderItem={({ item }) => (isAffiliateCell(item) ? <View style={styles.gridCell}><AffiliateItemCard placement="food_list" variant="cell" n={affiliateStart + item.n} /></View> : isGridPad(item) ? <View style={styles.gridCell} testID="food-grid-pad" /> : <View style={styles.gridCell}>{card(item, styles.gridCellCard)}</View>)}
+          renderItem={({ item }) => (isAffiliateCell(item) ? <View style={styles.gridCell}><AffiliateItemCard placement="food_list" variant="cell" n={affiliateStart + item.n} testID="affiliate-food-list" /></View> : isGridPad(item) ? <View style={styles.gridCell} testID="food-grid-pad" /> : <View style={styles.gridCell}>{card(item, styles.gridCellCard)}</View>)}
           testID="food-explorer-list"
         />
         {/* P-318: 정렬 시트 — 공용 ActionSheet(리뷰 P-237 문법), 현재값 = SVG 체크 */}

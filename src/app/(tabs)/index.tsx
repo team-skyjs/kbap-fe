@@ -192,9 +192,12 @@ function HomeBody() {
           popularLoading={isPending}
           onScanRowBottom={setScanRowBottom}
           // KB-796: 음식 레일 뒤·Safe picks 앞 · KB-836: 정적 배너 → 큐레이션 순서(세 탭 모두, D1)
-          afterRail={<>{FLAGS.processedFoodEnabled && <HomeCvsRail />}{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}<AffiliateItemCard placement="home" variant="row" n={affiliateStart} style={styles.affiliate} /></>} /* KB-955: 편의점 줄 = 레일 바로 아래, 아이돌·큐레이션 위 · 운영 채널 off = 0 */
+          afterRail={<>{FLAGS.processedFoodEnabled && <HomeCvsRail />}{FLAGS.idolPicksEnabled && <IdolPickBanner />}{FLAGS.curationEnabled && <CurationSection />}</>} /* KB-955: 편의점 줄 = 레일 바로 아래, 아이돌·큐레이션 위 · 운영 채널 off = 0 */
         />
       </View>
+
+      {/* KB-1031: Amazon 카드 1장 — 음식 블록 아래·최근 스캔 위. 추적 ID 없으면 0(여백 포함) */}
+      <AffiliateItemCard placement="home" variant="row" n={affiliateStart} style={styles.affiliate} testID="affiliate-home" />
 
       {/* RECENTLY SCANNED (§1-6~7) — P-314(KB-481): 회원 0건 = 섹션 통째 숨김
           (구 P-287 빈 블록 폐기 — 로딩은 SkeletonHome이 선행). 게스트 CTA는 유지. */}
@@ -304,7 +307,7 @@ function HomeBody() {
 export { FoodGridCard, RecentRow } from '@/features/food/FoodCards';
 
 const styles = StyleSheet.create({
-  affiliate: { marginHorizontal: 20, marginBottom: 24 }, // KB-1031
+  affiliate: { marginHorizontal: 20, marginVertical: 12 }, // KB-1031
 
   root: { flex: 1, backgroundColor: C.surface },
 
