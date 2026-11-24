@@ -21,6 +21,8 @@ unset NODE_OPTIONS
 export EXPO_PUBLIC_BE_BASE=$(node -p "require('./eas.json').build.production.env.EXPO_PUBLIC_BE_BASE")
 export EXPO_PUBLIC_AMPLITUDE_API_KEY=$(node -p "require('./eas.json').build.production.env.EXPO_PUBLIC_AMPLITUDE_API_KEY")
 echo "BE=$EXPO_PUBLIC_BE_BASE keylen=${#EXPO_PUBLIC_AMPLITUDE_API_KEY}"
+# 3-1) KB-1031 Amazon 제휴 UI — **이 줄을 넣은 발행만 운영에 제휴 UI가 켜진다**(빈 값 = 전부 숨김). 예진이 제휴 노출을 승인한 발행에서만 실행
+# export EXPO_PUBLIC_AMAZON_TAG=$(node -p "require('./eas.json').build.production.env.EXPO_PUBLIC_AMAZON_TAG")
 # 4) export + 게이트 (prod 호스트 1+ · dev 0 · 키 1+, 플랫폼별 launch 번들)
 npx expo export --clear --platform ios --platform android --output-dir dist
 node scripts/prod-export-gate.mjs production dist || exit 1
